@@ -115,6 +115,8 @@ import java.util.stream.Collectors;
 public class DataStorageManager implements SecuredEntityManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStorageManager.class);
+    private static final String DEFAULT_USER_STORAGE_NAME_TEMPLATE = "@@-home";
+    private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -190,6 +192,10 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.notNull(dbDataStorage, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, id));
         dbDataStorage.setHasMetadata(this.metadataManager.hasMetadata(new EntityVO(id, AclClass.DATA_STORAGE)));
         return dbDataStorage;
+    }
+
+    public boolean exists(final Long id) {
+        return dataStorageDao.loadDataStorage(id) != null;
     }
 
     public List<AbstractDataStorage> getDatastoragesByIds(final List<Long> ids) {
@@ -354,12 +360,19 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public AbstractDataStorage createDefaultStorageForUser(final String userName) {
-        final String dataStorageTemplateJson =
-            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE);
-        final DataStorageTemplate dataStorageTemplate = JsonMapper.parseData(
-            dataStorageTemplateJson.replaceAll(FolderTemplateManager.TEMPLATE_REPLACE_MARK, userName),
-            new TypeReference<DataStorageTemplate>() {});
+    public Optional<AbstractDataStorage> createDefaultStorageForUser(final String userName) {
+        final DataStorageTemplate dataStorageTemplate =
+            Optional.ofNullable(preferenceManager
+                                    .getObjectPreferenceAs(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE,
+                                                           new TypeReference<String>() {}))
+                .map(templateJson ->JsonMapper.<DataStorageTemplate>
+                    parseData(replaceInTemplate(templateJson, userName), new TypeReference<DataStorageTemplate>() {}))
+                .orElseGet(() -> {
+                    final DataStorageVO storageVO = new DataStorageVO();
+                    storageVO.setName(replaceInTemplate(DEFAULT_USER_STORAGE_NAME_TEMPLATE, userName));
+                    storageVO.setDescription(replaceInTemplate(DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE, userName));
+                    return new DataStorageTemplate(storageVO, Collections.emptyList(), Collections.emptyMap());
+                });
         final DataStorageVO dataStorageDetails = dataStorageTemplate.getDatastorage();
         if (dataStorageDetails.getPath() == null) {
             dataStorageDetails.setPath(adjustStoragePath(dataStorageDetails.getName(), null));
@@ -371,10 +384,10 @@ public class DataStorageManager implements SecuredEntityManager {
                                               dataStorageDetails.getPath(),
                                               userName,
                                               correspondingExistingStorage.getId()));
-            return null;
+            return Optional.empty();
         }
         if (!folderManager.exists(dataStorageDetails.getParentFolderId())) {
-            dataStorageTemplate.getDatastorage().setParentFolderId(null);
+            dataStorageDetails.setParentFolderId(null);
         }
         if (dataStorageDetails.getServiceType() == null) {
             dataStorageDetails.setServiceType(StorageServiceType.OBJECT_STORAGE);
@@ -384,7 +397,7 @@ public class DataStorageManager implements SecuredEntityManager {
             .updateEntityMetadata(dataStorageTemplate.getMetadata(), dataStorage.getId(), AclClass.DATA_STORAGE);
         permissionManager
             .setPermissionsToEntity(dataStorageTemplate.getPermissions(), dataStorage.getId(), AclClass.DATA_STORAGE);
-        return dataStorage;
+        return Optional.of(dataStorage);
     }
 
     private AbstractCloudRegion getDatastorageCloudRegionOrDefault(DataStorageVO dataStorageVO) {
@@ -1030,5 +1043,9 @@ public class DataStorageManager implements SecuredEntityManager {
         } else {
             return dataStorageDao.loadDataStorageByNameOrPath(dataStorageName, dataStorageName);
         }
+    }
+
+    private String replaceInTemplate(final String template, final String replacement) {
+        return template.replaceAll(FolderTemplateManager.TEMPLATE_REPLACE_MARK, replacement);
     }
 }

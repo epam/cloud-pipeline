@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
@@ -132,19 +133,12 @@ public class SystemPreferences {
             "storage.mounts.per.gb.ratio", null, DATA_STORAGE_GROUP, isNullOrGreaterThan(0));
     public static final BooleanPreference DEFAULT_USER_DATA_STORAGE_ENABLED =
         new BooleanPreference("storage.user.home.auto", false, DATA_STORAGE_GROUP, pass);
-    public static final StringPreference DEFAULT_USER_DATA_STORAGE_TEMPLATE =
-        new StringPreference("user.default.storage.template",
-                             "{ \n"
-                             + "    \"datastorage\": {\n"
-                             + "        \"parentFolderId\": 1,\n"
-                             + "        \"name\": \"@@-home\",\n"
-                             + "        \"description\": \"Home folder for user @@\"\n"
-                             + "    },\n"
-                             + "    \"permissions\": [],\n"
-                             + "    \"metadata\": {}\n"
-                             + "}",
-                             DATA_STORAGE_GROUP,
-                             PreferenceValidators.isNotBlank);
+    public static final ObjectPreference<DataStorageTemplate> DEFAULT_USER_DATA_STORAGE_TEMPLATE =
+        new ObjectPreference<>("storage.user.home.template",
+                               null,
+                               new TypeReference<DataStorageTemplate>() {},
+                               DATA_STORAGE_GROUP,
+                               isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'

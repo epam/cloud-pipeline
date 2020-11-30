@@ -24,7 +24,7 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.JwtRawToken;
@@ -115,7 +115,7 @@ public class UserManager {
                                    Long defaultStorageId) {
         final PipelineUser newUser = createUser(name, roles, groups, attributes);
         try {
-            return createUserDefaultStorage(defaultStorageId, newUser);
+            return initUserDefaultStorage(defaultStorageId, newUser);
         } catch (RuntimeException e) {
             log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION, name, e.getMessage()));
         }
@@ -123,20 +123,16 @@ public class UserManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser createUserDefaultStorage(final Long defaultStorageId, final PipelineUser newUser) {
+    public PipelineUser initUserDefaultStorage(final Long defaultStorageId, final PipelineUser newUser) {
         final boolean shouldCreateDefaultHome =
             preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
         final Long storageId = Optional.ofNullable(defaultStorageId)
-            .orElseGet(() -> {
-                if (shouldCreateDefaultHome) {
-                    final AbstractDataStorage defaultStorageForUser =
-                        dataStorageManager.createDefaultStorageForUser(newUser.getUserName());
-                    if (defaultStorageForUser != null) {
-                        return defaultStorageForUser.getId();
-                    }
-                }
-                return null;
-            });
+            .filter(dataStorageManager::exists)
+            .orElse(shouldCreateDefaultHome
+                    ? dataStorageManager.createDefaultStorageForUser(newUser.getUserName())
+                        .map(BaseEntity::getId)
+                        .orElse(null)
+                    : null);
         if (storageId == null) {
             return newUser;
         }
@@ -440,7 +436,6 @@ public class UserManager {
         user.setRoles(roleDao.loadRolesList(userRoles));
         user.setGroups(groups);
         user.setAttributes(attributes);
-        storageValidator.validate(user);
         log.info(messageHelper.getMessage(MessageConstants.INFO_CREATE_USER, userName));
         return userDao.createUser(user, userRoles);
     }

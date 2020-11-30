@@ -56,7 +56,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -311,8 +310,9 @@ public class UserManagerTest extends AbstractSpringTest {
         final Folder folder = new Folder();
         folder.setName(PARENT_FOLDER_NAME);
         final Folder parentFolder = folderManager.create(folder);
-        Mockito.when(preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE))
-            .thenReturn(STORAGE_TEMPLATE.replace("<folder_id>", parentFolder.getId().toString()));
+        Mockito.doReturn(STORAGE_TEMPLATE.replace("<folder_id>", parentFolder.getId().toString()))
+            .when(preferenceManager)
+            .getObjectPreferenceAs(Mockito.eq(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE), Mockito.any());
         ReflectionTestUtils.setField(dataStorageManager, "preferenceManager", preferenceManager);
         prepareContextForDefaultUserStorage();
         final PipelineUser newUser = createDefaultPipelineUser();
@@ -324,6 +324,43 @@ public class UserManagerTest extends AbstractSpringTest {
     public void createUserAndDefaultStorageWhenParentFolderDoesntExists() {
         prepareContextForDefaultUserStorage();
         final PipelineUser newUser = createDefaultPipelineUser();
+        assertDefaultStorage(newUser, null);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserAndDefaultStorageWhenDefaultStorageIdIsSpecifiedExplicitly() {
+        final String expectedDefaultUserStorageName =
+            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, TEST_USER);
+        createAwsRegion(REGION_NAME, REGION_CODE);
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(expectedDefaultUserStorageName,
+                                                                            null, DataStorageType.S3,
+                                                                            expectedDefaultUserStorageName,
+                                                                            null, null,
+                                                                            null);
+        final AbstractDataStorage storage = dataStorageManager.create(storageVO, false, false, false).getEntity();
+        prepareContextForDefaultUserStorage();
+        final PipelineUser newUser = userManager.createUser(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
+                                                            DEFAULT_USER_ATTRIBUTE, storage.getId());
+        Assert.assertEquals(storage.getId(), newUser.getDefaultStorageId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserAndDefaultStorageWhenExplicitDefaultStorageDoesntExist() {
+        final String expectedDefaultUserStorageName =
+            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, TEST_USER);
+        createAwsRegion(REGION_NAME, REGION_CODE);
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(expectedDefaultUserStorageName,
+                                                                            null, DataStorageType.S3,
+                                                                            expectedDefaultUserStorageName,
+                                                                            null, null,
+                                                                            null);
+        final Long removedId = dataStorageManager.create(storageVO, false, false, false).getEntity().getId();
+        dataStorageManager.delete(removedId, false);
+        prepareContextForDefaultUserStorage();
+        final PipelineUser newUser = userManager.createUser(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
+                                                            DEFAULT_USER_ATTRIBUTE, removedId);
         assertDefaultStorage(newUser, null);
     }
 
