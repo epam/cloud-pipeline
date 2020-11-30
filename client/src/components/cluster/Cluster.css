@@ -136,6 +136,13 @@ thead[class*="ant-table-thead"] .cluster-node-row-pipeline {
   font-size: x-small;
 }
 
+.node-label[data-pool="true"] {
+  color: #8d09ab;
+  border-color: #8d09ab;
+  font-size: x-small;
+  font-weight: bold;
+}
+
 .filter-popover-container {
   background-color: white;
   padding: 5px;

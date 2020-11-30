@@ -32,6 +32,46 @@
   border-color: #aaa;
 }
 
+.header-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.header-container .info-block {
+  height: 50px;
+  width: 50px;
+  margin-right: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: small;
+  position: relative;
+  color: #999;
+}
+
+.header-container .info-block.has-runs {
+  color: rgb(61, 122, 20);
+}
+
+.header-container .info-block .progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  width: 50px;
+  height: 50px;
+}
+
+.header-container .info-block i {
+  font-size: large;
+}
+
+.header-container .name-block {
+  flex: 1;
+}
+
 .header {
   display: flex;
   flex-direction: row;

@@ -19,6 +19,7 @@ import {Alert, Menu, Row, Col, Button} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
 import clusterNodes from '../../models/cluster/ClusterNodes';
+import pools from '../../models/cluster/HotNodePools';
 import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
 import styles from './ClusterNode.css';
@@ -29,6 +30,7 @@ import {PIPELINE_INFO_LABEL} from './node-roles';
 @inject((stores, {params, location}) => {
   const {from, to} = location?.query;
   return {
+    pools,
     name: params.nodeName,
     node: clusterNodes.getNode(params.nodeName),
     chartsData: new ChartsData(params.nodeName, from, to)
@@ -42,6 +44,9 @@ class ClusterNode extends Component {
     }
     if (!this.props.chartsData.pending) {
       this.props.chartsData.fetch();
+    }
+    if (!this.props.pools.pending) {
+      this.props.pools.fetch();
     }
   };
 
@@ -125,7 +130,8 @@ class ClusterNode extends Component {
           marginBottom: 2
         },
         location: this.props.router.location,
-        pipelineRun: this.props.node.value ? this.props.node.value.pipelineRun : null
+        pipelineRun: this.props.node.value ? this.props.node.value.pipelineRun : null,
+        pools: this.props.pools.loaded ? (this.props.pools.value || []) : []
       });
   };
 

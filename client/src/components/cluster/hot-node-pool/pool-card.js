@@ -18,9 +18,11 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {
   Button,
-  Icon
+  Icon,
+  Progress
 } from 'antd';
 import moment from 'moment-timezone';
+import classNames from 'classnames';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DockerImageDetails from './docker-image-details';
@@ -121,59 +123,68 @@ function PoolCard ({
       node.labels.hasOwnProperty('runid') &&
       !/^p-/i.test(`${node.labels.runid}`)
     );
-  const subInfoParts = [];
-  if (poolNodes.length > 0) {
-    subInfoParts.push(`${poolNodes.length} node${poolNodes.length > 1 ? 's' : ''}`);
-    if (runNodes.length > 0) {
-      subInfoParts.push(
-        `${runNodes.length} node${runNodes.length > 1 ? 's' : ''} with associated run id`
-      );
-    }
-  }
+  const runs = runNodes.length;
+  const total = poolNodes.length;
+  const runsCountLabel = runs > 100 ? '99+' : `${runs}`;
   return (
     <div
       className={styles.container}
       onClick={onClick}
     >
-      <div className={styles.header}>
-        <div className={styles.title}>
-          <span className={styles.main}>{name}</span>
-          <span className={styles.sub}>
-            {subInfoParts.length > 0 ? `(${subInfoParts.join(', ')})` : ''}
-          </span>
+      <div className={styles.headerContainer}>
+        <div className={classNames(styles.infoBlock, {[styles.hasRuns]: runs > 0})}>
+          <div className={styles.progress}>
+            <Progress
+              type="circle"
+              status={runs > 0 ? 'success' : 'active'}
+              percent={(runs / (total || 1)) * 100.0}
+              width={50}
+              strokeWidth={8}
+              showInfo={false}
+            />
+          </div>
+          <Icon type="play-circle-o" />
+          <span style={{marginLeft: 2}}>{runsCountLabel}</span>
         </div>
-        <div className={styles.actions}>
-          <Button
-            disabled={disabled}
-            size="small"
-            onClick={onEdit}
-          >
-            <Icon type="edit" />
-          </Button>
-          <Button
-            disabled={disabled}
-            size="small"
-            type="danger"
-            onClick={onRemove}
-          >
-            <Icon type="delete" />
-          </Button>
+        <div className={styles.nameBlock}>
+          <div className={styles.header}>
+            <div className={styles.title}>
+              <span className={styles.main}>{name}</span>
+            </div>
+            <div className={styles.actions}>
+              <Button
+                disabled={disabled}
+                size="small"
+                onClick={onEdit}
+              >
+                <Icon type="edit" />
+              </Button>
+              <Button
+                disabled={disabled}
+                size="small"
+                type="danger"
+                onClick={onRemove}
+              >
+                <Icon type="delete" />
+              </Button>
+            </div>
+          </div>
+          <div className={styles.instance}>
+            <AWSRegionTag regionId={regionId} />
+            <span className={styles.count}>
+              {nodeCount} node{nodeCount > 1 ? 's' : ''}
+            </span>
+            <span className={styles.type}>
+              {instanceType}
+            </span>
+            <span className={styles.priceType}>
+              {getSpotTypeName(isSpot, provider)}
+            </span>
+            <span className={styles.count}>
+              {instanceDisk} GB
+            </span>
+          </div>
         </div>
-      </div>
-      <div className={styles.instance}>
-        <AWSRegionTag regionId={regionId} />
-        <span className={styles.count}>
-          {nodeCount} node{nodeCount > 1 ? 's' : ''}
-        </span>
-        <span className={styles.type}>
-          {instanceType}
-        </span>
-        <span className={styles.priceType}>
-          {getSpotTypeName(isSpot, provider)}
-        </span>
-        <span className={styles.count}>
-          {instanceDisk} GB
-        </span>
       </div>
       <div className={styles.images}>
         {

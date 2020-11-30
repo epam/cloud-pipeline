@@ -71,7 +71,9 @@ export default class extends React.Component {
               <Menu.Item key={tab.key}>
                 <AdaptedLink
                   to={tab.path}
-                  location={location}>
+                  location={location}
+                  ignoreCurrentPath
+                >
                   {tab.title}
                 </AdaptedLink>
               </Menu.Item>
