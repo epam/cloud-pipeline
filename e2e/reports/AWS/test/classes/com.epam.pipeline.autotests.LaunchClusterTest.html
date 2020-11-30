@@ -23,25 +23,25 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">14</div>
+<div class="counter">15</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">14</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">2h52m16.66s</div>
+<div class="counter">1m44.10s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">0%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,57 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="setPreferences"></a>
+<h3 class="failures">setPreferences</h3>
+<span class="code">
+<pre>Element should be enabled {By.id: edit-preference-form-ok-button}
+Element: '&lt;button class=&quot;ant-btn ant-btn-primary ant-btn-sm&quot; id=&quot;edit-preference-form-ok-button&quot; type=&quot;button&quot;&gt;Save&lt;/button&gt;'
+Actual value: disabled
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1606708826281.11.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1606708826281.11.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:95)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.save(SettingsPageAO.java:1017)
+	at com.epam.pipeline.autotests.LaunchClusterTest.lambda$setPreferences$0(LaunchClusterTest.java:88)
+	at com.epam.pipeline.autotests.mixins.Authorization.lambda$loginAsAdminAndPerform$2(Authorization.java:89)
+	at com.epam.pipeline.autotests.mixins.Authorization.logoutIfNeededAndPerform(Authorization.java:82)
+	at com.epam.pipeline.autotests.mixins.Authorization.loginAsAdminAndPerform(Authorization.java:87)
+	at com.epam.pipeline.autotests.LaunchClusterTest.setPreferences(LaunchClusterTest.java:81)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -78,84 +122,81 @@
 </tr>
 </thead>
 <tr>
-<td class="success">autoScaledClusterWithDefaultChildNodesValidationTest - EPMCMBIBPC-2628</td>
-<td>1h6m51.94s</td>
-<td class="success">passed</td>
+<td class="skipped">autoScaledClusterWithDefaultChildNodesValidationTest - EPMCMBIBPC-2628</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">autoScaledClusterWorkersPriceTypeMastersConfig - EPMCMBIBPC-3161</td>
-<td>9m49.72s</td>
-<td class="success">passed</td>
+<td class="skipped">autoScaledClusterWorkersPriceTypeMastersConfig - EPMCMBIBPC-3161</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">autoScaledClusterWorkersPriceTypeOnDemand - EPMCMBIBPC-3160</td>
-<td>8m52.58s</td>
-<td class="success">passed</td>
+<td class="skipped">autoScaledClusterWorkersPriceTypeOnDemand - EPMCMBIBPC-3160</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</td>
-<td>5m44.96s</td>
-<td class="success">passed</td>
+<td class="skipped">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">hybridAutoScaledCluster - EPMCMBIBPC-3153</td>
-<td>13m7.77s</td>
-<td class="success">passed</td>
+<td class="skipped">hybridAutoScaledCluster - EPMCMBIBPC-3153</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">hybridAutoScaledClusterCPUDeadlock - EPMCMBIBPC-3154</td>
-<td>8m56.15s</td>
-<td class="success">passed</td>
+<td class="skipped">hybridAutoScaledClusterCPUDeadlock - EPMCMBIBPC-3154</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions - EPMCMBIBPC-3159</td>
-<td>7m46.54s</td>
-<td class="success">passed</td>
+<td class="skipped">hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions - EPMCMBIBPC-3159</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">hybridAutoScaledClusterInstanceTypeFamily - EPMCMBIBPC-3155</td>
-<td>8m52.30s</td>
-<td class="success">passed</td>
+<td class="skipped">hybridAutoScaledClusterInstanceTypeFamily - EPMCMBIBPC-3155</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">invalidValuesOnConfigureClusterPopUp - EPMCMBIBPC-2620</td>
-<td>22.138s</td>
-<td class="success">passed</td>
+<td class="skipped">invalidValuesOnConfigureClusterPopUp - EPMCMBIBPC-2620</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">launchAutoScaledClusterTest - EPMCMBIBPC-2618</td>
-<td>9m15.51s</td>
-<td class="success">passed</td>
+<td class="skipped">launchAutoScaledClusterTest - EPMCMBIBPC-2618</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">launchPipelineWithLaunchFlag - EPMCMBIBPC-975</td>
-<td>7m8.35s</td>
-<td class="success">passed</td>
+<td class="skipped">launchPipelineWithLaunchFlag - EPMCMBIBPC-975</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validationOfApacheSparkCluster - EPMCMBIBPC-3152</td>
-<td>7m28.98s</td>
-<td class="success">passed</td>
+<td class="failures">setPreferences</td>
+<td>1m44.10s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">validationOfGECluster - EPMCMBIBPC-3150</td>
-<td>9m8.60s</td>
-<td class="success">passed</td>
+<td class="skipped">validationOfApacheSparkCluster - EPMCMBIBPC-3152</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
-<td>8m51.13s</td>
-<td class="success">passed</td>
+<td class="skipped">validationOfGECluster - EPMCMBIBPC-3150</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="skipped">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
-</div>
-<div id="tab1" class="tab">
-<h2>Standard output</h2>
-<span class="code">
-<pre>Run with id 48891 has been stopped.
-Run with id 48890 has been stopped.
-</pre>
-</span>
 </div>
 </div>
 <div id="footer">
@@ -165,7 +206,7 @@ Run with id 48890 has been stopped.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 28, 2020 4:25:34 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 30, 2020 12:16:43 PM</p>
 </div>
 </div>
 </body>
