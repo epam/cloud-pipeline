@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     @Autowired
     private DaoHelper daoHelper;
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.MANDATORY)
     public PipelineUser createUser(PipelineUser user, List<Long> roles) {
         user.setId(daoHelper.createId(userSequence));
         user.setRegistrationDate(DateUtils.nowUTC());
