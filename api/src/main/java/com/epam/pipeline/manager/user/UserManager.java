@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.JwtRawToken;
@@ -35,7 +36,6 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
-import com.epam.pipeline.exception.DefaultStorageCreationException;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -117,9 +117,9 @@ public class UserManager {
         try {
             return createUserDefaultStorage(defaultStorageId, newUser);
         } catch (RuntimeException e) {
-            throw new DefaultStorageCreationException(
-                messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION, name, e.getMessage()));
+            log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION, name, e.getMessage()));
         }
+        return newUser;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -127,9 +127,16 @@ public class UserManager {
         final boolean shouldCreateDefaultHome =
             preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
         final Long storageId = Optional.ofNullable(defaultStorageId)
-            .orElse(shouldCreateDefaultHome
-                    ? dataStorageManager.createDefaultStorageForUser(newUser.getUserName()).getId()
-                    : null);
+            .orElseGet(() -> {
+                if (shouldCreateDefaultHome) {
+                    final AbstractDataStorage defaultStorageForUser =
+                        dataStorageManager.createDefaultStorageForUser(newUser.getUserName());
+                    if (defaultStorageForUser != null) {
+                        return defaultStorageForUser.getId();
+                    }
+                }
+                return null;
+            });
         if (storageId == null) {
             return newUser;
         }

@@ -70,6 +70,7 @@ import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -110,6 +111,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AclSync
+@Slf4j
 public class DataStorageManager implements SecuredEntityManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStorageManager.class);
@@ -359,14 +361,23 @@ public class DataStorageManager implements SecuredEntityManager {
             dataStorageTemplateJson.replaceAll(FolderTemplateManager.TEMPLATE_REPLACE_MARK, userName),
             new TypeReference<DataStorageTemplate>() {});
         final DataStorageVO dataStorageDetails = dataStorageTemplate.getDatastorage();
+        if (dataStorageDetails.getPath() == null) {
+            dataStorageDetails.setPath(adjustStoragePath(dataStorageDetails.getName(), null));
+        }
+        final AbstractDataStorage correspondingExistingStorage =
+            dataStorageDao.loadDataStorageByNameOrPath(dataStorageDetails.getName(), dataStorageDetails.getPath());
+        if (correspondingExistingStorage != null) {
+            log.warn(messageHelper.getMessage(MessageConstants.DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS,
+                                              dataStorageDetails.getPath(),
+                                              userName,
+                                              correspondingExistingStorage.getId()));
+            return null;
+        }
         if (!folderManager.exists(dataStorageDetails.getParentFolderId())) {
             dataStorageTemplate.getDatastorage().setParentFolderId(null);
         }
         if (dataStorageDetails.getServiceType() == null) {
             dataStorageDetails.setServiceType(StorageServiceType.OBJECT_STORAGE);
-        }
-        if (dataStorageDetails.getPath() == null) {
-            dataStorageDetails.setPath(adjustStoragePath(dataStorageDetails.getName(), null));
         }
         final AbstractDataStorage dataStorage = create(dataStorageDetails, true, true, true).getEntity();
         metadataManager

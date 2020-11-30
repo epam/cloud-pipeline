@@ -279,7 +279,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         storageManager.update(storageVO);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailCreateDefaultUserStorageWhenSameNameExists() {
         final String expectedDefaultUserStorageName =
@@ -291,7 +291,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                                                                             WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
                                                                             TEST_MOUNT_OPTIONS);
         storageManager.create(storageVO, false, false, false);
-        storageManager.createDefaultStorageForUser(NAME);
+        Assert.assertNull(storageManager.createDefaultStorageForUser(NAME));
     }
 
     private void assertDataStorageAccordingToUpdateStorageVO(DataStorageVO updateStorageVO,

@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
@@ -33,7 +34,7 @@ import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.exception.DefaultStorageCreationException;
+import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
@@ -46,9 +47,7 @@ import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -114,9 +113,6 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @Mock
     private PreferenceManager preferenceManager;
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUpPreferenceManager() {
@@ -333,21 +329,34 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserAndDefaultStorageWhenCorrespondingStorageExistsAlready() {
+        final String expectedDefaultUserStorageName =
+            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, TEST_USER);
+        createAwsRegion(REGION_NAME, REGION_CODE);
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(expectedDefaultUserStorageName,
+                                                                            null, DataStorageType.S3,
+                                                                            expectedDefaultUserStorageName,
+                                                                            null, null,
+                                                                            null);
+        dataStorageManager.create(storageVO, false, false, false);
+        prepareContextForDefaultUserStorage();
+        final PipelineUser newUser = createDefaultPipelineUser();
+        Assert.assertNull(newUser.getDefaultStorageId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createUserErrorAtDefaultStorageCreation() {
         prepareContextForDefaultUserStorage();
         Mockito.doThrow(IllegalArgumentException.class)
             .when(dataStorageManager)
             .create(Mockito.any(), Matchers.eq(true), Mockito.anyBoolean(), Mockito.anyBoolean());
-        try {
-            createDefaultPipelineUser();
-            Assert.fail("The expected exception during default storage initialization was not thrown!");
-        } catch (DefaultStorageCreationException e) {
-            final PipelineUser newUser = userManager.loadUserByName(TEST_USER);
-            Assert.assertNotNull(newUser);
-            Assert.assertEquals(TEST_USER.toUpperCase(), newUser.getUserName());
-            Assert.assertNull(newUser.getDefaultStorageId());
-            Assert.assertTrue(CollectionUtils.isEmpty(folderManager.loadAllProjects().getChildFolders()));
-        }
+        createDefaultPipelineUser();
+        final PipelineUser newUser = userManager.loadUserByName(TEST_USER);
+        Assert.assertNotNull(newUser);
+        Assert.assertEquals(TEST_USER.toUpperCase(), newUser.getUserName());
+        Assert.assertNull(newUser.getDefaultStorageId());
+        Assert.assertTrue(CollectionUtils.isEmpty(folderManager.loadAllProjects().getChildFolders()));
     }
 
     private void prepareContextForDefaultUserStorage() {
