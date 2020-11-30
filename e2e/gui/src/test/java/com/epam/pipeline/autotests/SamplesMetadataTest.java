@@ -284,7 +284,7 @@ public class SamplesMetadataTest
                                     .ensure(samplesForKey(samplesField), numberOfSamples(11));
                             libraryContent()
                                     .metadataSamples(sampleFolder)
-                                    .validateFields("ID", "R1_Fastq", "R2_Fastq", "SampleName");
+                                    .validateFields("ID", createDateField, "R1_Fastq", "R2_Fastq", "SampleName");
                         }
                 );
     }
