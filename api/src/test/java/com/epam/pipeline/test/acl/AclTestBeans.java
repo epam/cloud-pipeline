@@ -27,7 +27,6 @@ import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.dao.pipeline.RunStatusDao;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
@@ -41,7 +40,6 @@ import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
-import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
@@ -93,7 +91,6 @@ import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.RunScheduleManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
-import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
@@ -367,9 +364,6 @@ public class AclTestBeans {
     protected RunStatusDao mockRunStatusDao;
 
     @MockBean
-    protected StopServerlessRunDao mockStopServerlessRunDao;
-
-    @MockBean
     protected DockerContainerOperationManager mockDockerContainerOperationManager;
 
     @MockBean
@@ -419,12 +413,6 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunCRUDService mockPipelineRunCRUDService;
-
-    @MockBean
-    protected StopServerlessRunManager mockStopServerlessRunManager;
-
-    @MockBean
-    protected ServerlessConfigurationManager mockServerlessConfigurationManager;
 
     @MockBean
     protected ParameterMapper mockParameterMapper;

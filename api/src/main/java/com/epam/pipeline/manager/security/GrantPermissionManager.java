@@ -73,6 +73,7 @@ import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -128,6 +129,7 @@ import static java.util.stream.Collectors.toSet;
 // - all operations regarding permission granting shall be moved to GrantPermissionHandler.class;
 // - entity specific permission checks shall be extracted into separate classes, like RunPermissionManager.class
 @Service
+@Setter
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class GrantPermissionManager {
 
