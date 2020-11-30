@@ -26,6 +26,20 @@ create_execution_host() {
     rm -f $TMPFILE
 }
 
+delete_existing_queues() {
+    _CURRENT_QUEUES=$(qconf -sql)
+    for _Q in $_CURRENT_QUEUES; do
+      qconf -dq "$_Q"
+    done
+}
+
+delete_existing_hostlists() {
+    _CURRENT_HOSTLISTS=$(qconf -shgrpl)
+    for _H in $_CURRENT_HOSTLISTS; do
+      qconf -dhgrp "$_H"
+    done
+}
+
 configure_global() {
     _MAX_PROCS_LIMIT="${MAX_PROCS_LIMIT:-65536}"
     _MAX_NOPEN_LIMIT="${MAX_NOPEN_LIMIT:-65536}"
@@ -365,11 +379,9 @@ configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
              "FALSE" \
              "$CP_CAP_SGE_PE_MPI_SLOTS"
 
-# Delete any existing-default queues, before adding new ones
-_CURRENT_QUEUES=$(qconf -sql)
-for _Q in $_CURRENT_QUEUES; do
-  qconf -dq "$_Q"
-done
+# Delete any existing-default queues and hostlists, before adding new ones
+delete_existing_queues
+delete_existing_hostlists
 
 create_execution_host
 
