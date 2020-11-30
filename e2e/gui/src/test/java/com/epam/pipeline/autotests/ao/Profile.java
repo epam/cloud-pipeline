@@ -26,6 +26,7 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.and;
 import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
@@ -35,6 +36,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATE_PRICE;
@@ -83,7 +85,9 @@ public class Profile implements AccessObject<Profile> {
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
                 entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type")))),
                 entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type")))),
-                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
+                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(CLOUD_REGION, context().find(byXpath("//*[contains(text(), 'Cloud Region')]"))
+                        .closest(".ant-row").find(by("role", "combobox")))
         );
     }
 
@@ -122,6 +126,10 @@ public class Profile implements AccessObject<Profile> {
     public Profile removeParameter(final ParameterFieldAO parameter) {
         parameter.click(parameter.removeButton);
         return this;
+    }
+
+    public String getCloudRegion() {
+        return get(CLOUD_REGION).text();
     }
 
     public static Stream<ParameterFieldAO> parameters() {
