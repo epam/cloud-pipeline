@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -182,6 +183,18 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         compareDataStorage(saved, loaded);
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testCreateDefaultUserStorage() {
+        final AbstractDataStorage defaultStorageForUser = storageManager.createDefaultStorageForUser(NAME);
+        final String expectedDefaultUserStorageName =
+            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, NAME);
+        Assert.assertEquals(expectedDefaultUserStorageName, defaultStorageForUser.getName());
+        Assert.assertEquals(expectedDefaultUserStorageName, defaultStorageForUser.getPath());
+        Assert.assertEquals(DataStorageType.S3, defaultStorageForUser.getType());
+    }
+
+
     @Test(expected = IllegalArgumentException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailCreateOfStorageWithForbiddenMountPoint() {
@@ -264,6 +277,21 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         storageVO.setId(saved.getId());
         storageVO.setMountPoint(FORBIDDEN_MOUNT_POINT);
         storageManager.update(storageVO);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void testFailCreateDefaultUserStorageWhenSameNameExists() {
+        final String expectedDefaultUserStorageName =
+            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, NAME);
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(expectedDefaultUserStorageName,
+                                                                            DESCRIPTION, DataStorageType.S3,
+                                                                            expectedDefaultUserStorageName,
+                                                                            STS_DURATION, LTS_DURATION,
+                                                                            WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
+                                                                            TEST_MOUNT_OPTIONS);
+        storageManager.create(storageVO, false, false, false);
+        storageManager.createDefaultStorageForUser(NAME);
     }
 
     private void assertDataStorageAccordingToUpdateStorageVO(DataStorageVO updateStorageVO,

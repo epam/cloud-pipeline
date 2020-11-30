@@ -42,6 +42,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -81,8 +82,6 @@ public class UserManagerTest extends AbstractSpringTest {
     private static final String REGION_CODE = "eu-central-1";
     private static final String REGION_NAME = "aws_region";
     private static final String PARENT_FOLDER_NAME = "parentFolder";
-    private static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
-    private static final String REPLACE_MARK = "@@";
     private static final String STORAGE_TEMPLATE = "{ \n"
                                            + "    \"datastorage\": {\n"
                                            + "        \"parentFolderId\": <folder_id>,\n"
@@ -369,7 +368,8 @@ public class UserManagerTest extends AbstractSpringTest {
     private void assertDefaultStorage(final PipelineUser user, final Long defaultFolderId) {
         final AbstractDataStorage defaultStorage = dataStorageManager.load(user.getDefaultStorageId());
         final String userName = user.getUserName();
-        final String expectedStorageName = DEFAULT_STORAGE_NAME_PATTERN.replace(REPLACE_MARK, userName.toUpperCase());
+        final String expectedStorageName =
+            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, userName.toUpperCase());
         Assert.assertEquals(expectedStorageName, defaultStorage.getName());
         Assert.assertEquals(defaultFolderId, defaultStorage.getParentFolderId());
         Assert.assertEquals(userName, defaultStorage.getOwner());
