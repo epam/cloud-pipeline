@@ -320,6 +320,7 @@ class AddDockerRegistryControl extends React.Component {
           </Select>
           {this.renderVersionsSelector()}
           <Button
+            disabled={disabled}
             size="small"
             type="danger"
             onClick={onRemove}

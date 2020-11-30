@@ -719,7 +719,7 @@ class EditHotNodePool extends React.Component {
     );
   };
 
-  renderInstanceImageControl = () => {
+  renderInstanceImageControl = (readOnly) => {
     const {
       disabled
     } = this.props;
@@ -738,7 +738,7 @@ class EditHotNodePool extends React.Component {
           </span>
           <div className={classNames(styles.formItem, styles.small)}>
             <Input
-              disabled={disabled}
+              disabled={disabled || readOnly}
               value={instanceImage}
               onChange={this.onChangeInstanceImage}
             />
@@ -755,7 +755,7 @@ class EditHotNodePool extends React.Component {
     );
   };
 
-  renderInstanceTypeControl = () => {
+  renderInstanceTypeControl = (readOnly) => {
     const {
       disabled
     } = this.props;
@@ -775,7 +775,7 @@ class EditHotNodePool extends React.Component {
             Instance Type:
           </span>
           <Select
-            disabled={disabled || allowedInstanceTypesPending}
+            disabled={disabled || allowedInstanceTypesPending || readOnly}
             showSearch
             className={classNames(styles.formItem, styles.small)}
             value={instanceType}
@@ -814,7 +814,7 @@ class EditHotNodePool extends React.Component {
     );
   };
 
-  renderSpotControl = () => {
+  renderSpotControl = (readOnly) => {
     const {
       disabled
     } = this.props;
@@ -831,7 +831,7 @@ class EditHotNodePool extends React.Component {
             Price type:
           </span>
           <Select
-            disabled={disabled || allowedInstanceTypesPending}
+            disabled={disabled || allowedInstanceTypesPending || readOnly}
             showSearch
             className={classNames(styles.formItem, styles.small)}
             value={spot}
@@ -858,7 +858,7 @@ class EditHotNodePool extends React.Component {
     );
   };
 
-  renderRegionControl = () => {
+  renderRegionControl = (readOnly) => {
     const {
       disabled
     } = this.props;
@@ -881,7 +881,7 @@ class EditHotNodePool extends React.Component {
             Region:
           </span>
           <Select
-            disabled={disabled}
+            disabled={disabled || readOnly}
             showSearch
             className={classNames(styles.formItem, styles.small)}
             value={region ? `${region}` : undefined}
@@ -922,7 +922,7 @@ class EditHotNodePool extends React.Component {
     );
   };
 
-  renderDiskControl = () => {
+  renderDiskControl = (readOnly) => {
     const {
       disabled
     } = this.props;
@@ -941,7 +941,7 @@ class EditHotNodePool extends React.Component {
           </span>
           <InputNumber
             className={classNames(styles.formItem, styles.small)}
-            disabled={disabled}
+            disabled={disabled || readOnly}
             value={disk}
             min={DISK_MIN_SIZE}
             max={DISK_MAX_SIZE}
@@ -959,7 +959,7 @@ class EditHotNodePool extends React.Component {
     );
   };
 
-  renderDockerImagesControl = () => {
+  renderDockerImagesControl = (readOnly) => {
     const {
       disabled
     } = this.props;
@@ -990,7 +990,7 @@ class EditHotNodePool extends React.Component {
                 .map((image) => (
                   <AddDockerRegistryControl
                     key={image.id}
-                    disabled={disabled}
+                    disabled={disabled || readOnly}
                     duplicate={isDuplicateImage(image.image)}
                     docker={image.image}
                     onChange={this.onChangeDockerImage(image.id)}
@@ -998,15 +998,20 @@ class EditHotNodePool extends React.Component {
                   />
                 ))
             }
-            <div>
-              <Button
-                onClick={this.onAddDockerImage}
-                type="dashed"
-              >
-                <Icon type="plus" />
-                Add docker image
-              </Button>
-            </div>
+            {
+              !readOnly && (
+                <div>
+                  <Button
+                    disabled={disabled}
+                    onClick={this.onAddDockerImage}
+                    type="dashed"
+                  >
+                    <Icon type="plus" />
+                    Add docker image
+                  </Button>
+                </div>
+              )
+            }
           </div>
         </div>
         {
@@ -1063,12 +1068,12 @@ class EditHotNodePool extends React.Component {
           <h2>Configuration</h2>
         </div>
         {this.renderNodeCountControl()}
-        {this.renderRegionControl()}
-        {this.renderSpotControl()}
-        {this.renderInstanceTypeControl()}
-        {this.renderInstanceImageControl()}
-        {this.renderDiskControl()}
-        {this.renderDockerImagesControl()}
+        {this.renderRegionControl(!isNew)}
+        {this.renderSpotControl(!isNew)}
+        {this.renderInstanceTypeControl(!isNew)}
+        {this.renderInstanceImageControl(!isNew)}
+        {this.renderDiskControl(!isNew)}
+        {this.renderDockerImagesControl(!isNew)}
       </Modal>
     );
   }
