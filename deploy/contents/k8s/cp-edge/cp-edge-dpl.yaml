@@ -55,6 +55,9 @@ spec:
             - mountPath: /opt/common/pki
               name: common-pki
               readOnly: true
+            - mountPath: /etc/nginx/external-apps
+              name: edge-external-apps
+              readOnly: true
       volumes:
         - name: edge-logs
           hostPath:
@@ -74,5 +77,8 @@ spec:
         - name: common-pki
           hostPath:
             path: /opt/common/pki
+        - name: edge-external-apps
+          hostPath:
+            path: /opt/edge/external-apps
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
