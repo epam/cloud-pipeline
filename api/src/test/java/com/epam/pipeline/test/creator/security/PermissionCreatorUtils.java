@@ -54,6 +54,7 @@ public final class PermissionCreatorUtils {
         permissionGrantVO.setId(ID);
         permissionGrantVO.setMask(TEST_INT);
         permissionGrantVO.setPrincipal(true);
+        permissionGrantVO.setAclClass(AclClass.DATA_STORAGE);
         return permissionGrantVO;
     }
 
