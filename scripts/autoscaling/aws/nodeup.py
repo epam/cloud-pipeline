@@ -574,8 +574,6 @@ def get_swap_ratio(swap_params):
 
 def replace_docker_images(pre_pull_images, user_data_script):
     global api_token
-    if not pre_pull_images:
-        return user_data_script
     payload = jwt.decode(api_token, verify=False)
     if 'sub' in payload:
         subject = payload['sub']
