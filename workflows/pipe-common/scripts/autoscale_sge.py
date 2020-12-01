@@ -1793,9 +1793,6 @@ if __name__ == '__main__':
     Logger.init(log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue),
                 task=log_task, verbose=log_verbose)
 
-    Logger.init(cmd=args.debug, log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue),
-                task=log_task, verbose=log_verbose)
-
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(logging_directory, '.autoscaler.%s.pipe.log' % queue))
     api = CloudPipelineAPI(pipe=pipe)
