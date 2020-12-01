@@ -272,7 +272,6 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
-
     public LogAO removeShareUserGroup(final String name) {
         click(SHARE_WITH);
         new ShareWith().removeUserFromShare(name);

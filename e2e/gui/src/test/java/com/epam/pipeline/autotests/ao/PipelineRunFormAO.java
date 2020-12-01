@@ -310,12 +310,6 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public PipelineRunFormAO checkLaunchErrorMessage(String err) {
-        launch();
-        messageShouldAppear(err);
-        return this;
-    }
-
     public void validateException(String exception) {
         $(".ant-alert-message").shouldHave(text(exception));
     }
