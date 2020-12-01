@@ -15,7 +15,7 @@ export function log(message) {
     const fileName = `${moment.utc().format('YYYY-MM-DD')}-log.txt`;
     const logFileName = path.join(require('os').homedir(), '.pipe-webdav-client', fileName);
     try {
-      fs.appendFileSync(logFileName, `${messageWithDate}\n`);
+      fs.appendFileSync(logFileName, `${messageWithDate}\r\n`);
     } catch (e) {
     }
   }
