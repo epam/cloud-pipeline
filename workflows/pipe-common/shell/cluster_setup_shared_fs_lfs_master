@@ -31,8 +31,11 @@ pipe_log_info "--> Installing LFS master server" "$FS_SETUP_TASK"
 
 _LFS_INSTALL_RESULT=1
 if [[ "$IS_RPM_BASED" = 0 ]]; then
-    yum -y -q install lizardfs-master
-    _LFS_INSTALL_RESULT=$?
+    _LFS_INSTALL_RESULT=0
+    if ! rpm -q "lizardfs-master"  &> /dev/null; then
+        yum -y -q install lizardfs-master
+        _LFS_INSTALL_RESULT=$?
+    fi
 else
     apt-get install lsb-release gnupg -y -qq && \
     apt-get install -t stable lizardfs-master -y -qq
