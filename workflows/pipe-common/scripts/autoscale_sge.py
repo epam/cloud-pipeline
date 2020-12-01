@@ -1358,6 +1358,9 @@ if __name__ == '__main__':
     log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK',
                               'GridEngineAutoscaling-%s' % (queue if not queue.endswith('.q') else queue[:-2]))
 
+    Logger.init(cmd=args.debug, log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue),
+                task=log_task, verbose=log_verbose)
+
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(logging_directory, '.autoscaler.%s.pipe.log' % queue))
     api = CloudPipelineAPI(pipe=pipe)
@@ -1374,9 +1377,6 @@ if __name__ == '__main__':
     max_cluster_cores = max_instance_cores * additional_hosts \
                         + (instance_cores - free_cores) * static_hosts \
                         + master_cores
-
-    Logger.init(cmd=args.debug, log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue),
-                task=log_task, verbose=log_verbose)
 
     Logger.info('##################################################\n'
                 'Cloud Pipeline: {pipeline_api}\n'
