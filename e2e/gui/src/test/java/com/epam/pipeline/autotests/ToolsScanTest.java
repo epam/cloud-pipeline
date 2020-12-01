@@ -88,14 +88,14 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                     .switchToPreferences()
                     .switchToDockerSecurity()
                     .setGraceHours(graceHours)
-                    .save();
+                    .saveIfNeeded();
             if (!policyDenyNotScanned) {
                 navigationMenu()
                         .settings()
                         .switchToPreferences()
                         .switchToDockerSecurity()
                         .clickPolicyDenyNotScanned()
-                        .save();
+                        .saveIfNeeded();
             }
         });
     }
@@ -184,7 +184,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .switchToDockerSecurity()
                         .enablePolicyDenyNotScanned()
                         .setGraceHours("0")
-                        .save()
+                        .saveIfNeeded()
         );
         tools().perform(registry, group, group ->
                 group.sleep(3, SECONDS)
@@ -219,8 +219,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .switchToDockerSecurity()
                         .enablePolicyDenyNotScanned()
                         .setGraceHours("1")
-                        .save()
-                        .sleep(1, SECONDS)
+                        .saveIfNeeded()
         );
         tools().perform(registry, group, group ->
                 group.sleep(3, SECONDS)
@@ -248,7 +247,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .switchToDockerSecurity()
                         .disablePolicyDenyNotScanned()
                         .setGraceHours("0")
-                        .save()
+                        .saveIfNeeded()
         );
         tools().perform(registry, group, group ->
                 group.sleep(3, SECONDS)
@@ -282,8 +281,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .switchToDockerSecurity()
                         .enablePolicyDenyNotScanned()
                         .setGraceHours("0")
-                        .save()
-                        .sleep(1, SECONDS)
+                        .saveIfNeeded()
         );
         tools().perform(registry, group, group ->
                 group.sleep(3, SECONDS)
