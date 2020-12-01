@@ -432,7 +432,7 @@ for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
         # shellcheck source=/dev/null
         [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
         if check_cp_cap "CP_CAP_AUTOSCALE"; then
-            nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_sge.py" >"$LOG_DIR/.nohup.sge.autoscale.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
+            nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_sge.py" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
         fi
     )
 done
