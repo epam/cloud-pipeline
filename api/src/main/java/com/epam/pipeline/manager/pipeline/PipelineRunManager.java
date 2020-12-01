@@ -907,6 +907,10 @@ public class PipelineRunManager {
         pipelineRunDao.updateRunsTags(runs);
     }
 
+    public List<PipelineRun> loadAllRunsByServiceURL(final String serviceUrl) {
+        return pipelineRunDao.loadAllRunsWithServiceURL(serviceUrl);
+    }
+
     /**
      * Updates run state reason message which was retrieved from instance {@StateReason}
      * @param run {@link PipelineRun} for pipeline run which state reason message should be updated

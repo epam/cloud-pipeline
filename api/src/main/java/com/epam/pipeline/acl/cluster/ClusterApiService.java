@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -112,4 +113,11 @@ public class ClusterApiService {
     public List<NodeDisk> loadNodeDisks(final String name) {
         return nodeDiskManager.loadByNodeId(name);
     }
+
+
+    public InstanceDNSRecord changeInstanceDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord,
+                                                     final boolean delete) {
+        return nodesManager.changeInstanceDNSRecord(regionId, dnsRecord, delete);
+    }
+
 }

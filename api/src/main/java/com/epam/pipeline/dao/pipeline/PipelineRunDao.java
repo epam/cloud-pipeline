@@ -87,6 +87,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String pipelineRunSequence;
     private String createPipelineRunQuery;
     private String loadAllRunsByVersionIdQuery;
+    private String loadAllRunsByServiceURL;
     private String loadRunByIdQuery;
     private String loadSshPasswordQuery;
     private String updateRunStatusQuery;
@@ -665,6 +666,14 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
     }
 
+    public List<PipelineRun> loadAllRunsWithServiceURL(final String serviceUrl) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.SERVICE_URL.name(),
+                DaoHelper.POSTGRES_LIKE_CHARACTER + serviceUrl + DaoHelper.POSTGRES_LIKE_CHARACTER);
+        return getNamedParameterJdbcTemplate().query(loadAllRunsByServiceURL, params,
+                PipelineRunParameters.getRowMapper());
+    }
+
     public enum PipelineRunParameters {
         RUN_ID,
         PIPELINE_ID,
@@ -1018,6 +1027,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadAllRunsByVersionIdQuery(String loadAllRunsByVersionIdQuery) {
         this.loadAllRunsByVersionIdQuery = loadAllRunsByVersionIdQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsByServiceURL(String loadAllRunsByServiceURL) {
+        this.loadAllRunsByServiceURL = loadAllRunsByServiceURL;
     }
 
     @Required

@@ -38,10 +38,13 @@ EDGE_ROUTE_LOCATION_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
+EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
 RUN_ID = 'runid'
 API_UPDATE_SVC = 'run/{run_id}/serviceUrl'
 API_GET_RUN_DETAILS = 'run/{run_id}'
 API_GET_TOOL = 'tool/load?registry={registry}&image={image}'
+API_POST_DNS_RECORD = 'cluster/dnsrecord'
+API_GET_HOSTED_ZONE_BASE_PREF = 'preferences/instance.dns.hosted.zone.base'
 NUMBER_OF_RETRIES = 10
 SECS_TO_WAIT_BEFORE_RETRY = 15
 
@@ -212,6 +215,18 @@ def remove_custom_domain(domain, location_block):
         if (sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
                 # If no more location block exist in the domain - delete the config file
                 print('No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
+
+                # If domain was dns record - delete it with API
+                dns_record_delete = os.path.join(api_url, API_POST_DNS_RECORD + "?delete={delete}".format(delete=True))
+                data = json.dumps({
+                        'dnsRecord': domain,
+                        'target': "{external_ip}".format(external_ip=edge_service_external_ip)
+                })
+                dns_record_delete_response = call_api(dns_record_delete, data)
+                if not dns_record_delete_response or "payload" not in dns_record_delete_response or "status" not in dns_record_delete_response["payload"] \
+                        or dns_record_delete_response["payload"]["status"] != "INSYNC":
+                        print('INFO: Unable to delete dns-record {} from cloud'.format(domain))
+
                 os.remove(domain_path)
         else:
                 # Save the domain config back to file
@@ -353,6 +368,10 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                         pretty_url = parse_pretty_url(run_info["prettyUrl"])
                 sensitive = run_info.get("sensitive") or False
 
+                cloud_region_id = None
+                if "instance" in run_info:
+                        cloud_region_id = run_info["instance"].get("cloudRegionId")
+
 
                 print('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
 
@@ -393,6 +412,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
+                                        create_dns_record = False
                                         if not pretty_url or has_explicit_endpoint_num:
                                                 edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
                                         else:
@@ -420,6 +440,10 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                         # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
                                         if EDGE_ROUTE_NO_PATH_CROP in additional:
                                                 additional = additional.replace(EDGE_ROUTE_NO_PATH_CROP, "")
+                                        elif EDGE_ROUTE_CREATE_DNS in additional:
+                                                additional = additional.replace(EDGE_ROUTE_CREATE_DNS, "")
+                                                edge_target = edge_target + "/"
+                                                create_dns_record = True
                                         else:
                                                 edge_target = edge_target + "/"
 
@@ -437,7 +461,9 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                                         "edge_target": edge_target,
                                                                         "run_id": pod_run_id,
                                                                         "additional" : additional,
-                                                                        "sensitive": sensitive}
+                                                                        "sensitive": sensitive,
+                                                                        "create_dns_record": create_dns_record,
+                                                                        "cloudRegionId": cloud_region_id}
                 else:
                         print('No endpoints required for the tool {}'.format(docker_image))
         else:
@@ -598,6 +624,34 @@ with open(nginx_sensitive_routes_config_path, 'r') as sensitive_routes_file:
 service_url_dict = {}
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
+
+        need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] else False
+        hosted_zone_base_value = None
+        if need_to_create_dns_record:
+                load_hosted_zone_method = os.path.join(api_url, API_GET_HOSTED_ZONE_BASE_PREF)
+                hosted_zone_response = call_api(load_hosted_zone_method)
+                if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"]\
+                        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base":
+                        hosted_zone_base_value = hosted_zone_response["payload"]["value"]
+                        if hosted_zone_base_value == '' or hosted_zone_base_value == None:
+                               print("No hosted zone is configured for currect environment, will not create any DNS records")
+                        else:
+                                dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
+                                dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
+                                                                 + "?regionId={regionId}&delete={delete}"
+                                                                 .format(regionId=service_spec["cloudRegionId"], delete=False))
+                                data = json.dumps({
+                                        'dnsRecord': dns_custom_domain,
+                                        'target': "{external_ip}".format(external_ip=edge_service_external_ip)
+                                })
+                                dns_record_create_response = call_api(dns_record_create, data)
+                                if dns_record_create_response and "payload" in dns_record_create_response and "status" in dns_record_create_response["payload"] \
+                                        and dns_record_create_response["payload"]["status"] == "INSYNC":
+                                        service_spec["custom_domain"] = dns_custom_domain
+                                        service_spec["edge_location"] = None
+                                else:
+                                        # TODO Log to pipeline logs fail and fail run
+                                        pass
 
         has_custom_domain = service_spec["custom_domain"] is not None
         service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip

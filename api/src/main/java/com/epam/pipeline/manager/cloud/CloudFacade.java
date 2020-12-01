@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -94,4 +95,7 @@ public interface CloudFacade {
     List<InstanceDisk> loadDisks(Long regionId, Long runId);
 
     CloudInstanceState getInstanceState(Long runId);
+
+    InstanceDNSRecord changeInstanceDNSRecord(Long regionId, InstanceDNSRecord dnsRecord, boolean delete);
+
 }

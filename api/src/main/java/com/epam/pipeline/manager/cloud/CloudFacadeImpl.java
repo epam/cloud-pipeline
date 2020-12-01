@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
@@ -257,6 +258,23 @@ public class CloudFacadeImpl implements CloudFacade {
     public CloudInstanceState getInstanceState(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
         return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
+    }
+
+    @Override
+    public InstanceDNSRecord changeInstanceDNSRecord(Long regionId, final InstanceDNSRecord dnsRecord, final boolean delete) {
+
+        if (delete && regionId == null) {
+            List<PipelineRun> runs = pipelineRunManager.loadAllRunsByServiceURL(dnsRecord.getDnsRecord());
+            if (!runs.stream().allMatch(pipelineRun -> pipelineRun.getEndDate() != null)) {
+                log.warn("Won't try to delete dns record: " + dnsRecord.getDnsRecord() + " because it is still used a least in one active run.");
+                return null;
+            } else {
+                regionId = runs.stream().findFirst().map(pipelineRun -> pipelineRun.getInstance().getCloudRegionId()).orElse(null);
+            }
+        }
+
+        AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
+        return getInstanceService(cloudRegion).changeInstanceDNSRecord(dnsRecord, delete);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

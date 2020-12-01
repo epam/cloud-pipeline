@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.cluster;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -35,13 +36,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -235,5 +230,18 @@ public class ClusterController extends AbstractRestController {
     @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
     public Result<List<NodeDisk>> loadNodeDisks(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.loadNodeDisks(name));
+    }
+
+    @PostMapping("/cluster/dnsrecord")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates or deletes dns record for the specified pipeline run.",
+            notes = "Creates or deletes dns record for the specified pipeline run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<InstanceDNSRecord> dnsRecordChangeRequest(@RequestParam(required = false) final Long regionId,
+                                                            @RequestParam(defaultValue = "false") final boolean delete,
+                                                            @RequestBody InstanceDNSRecord dnsRecord) {
+        return Result.success(clusterApiService.changeInstanceDNSRecord(regionId, dnsRecord, delete));
     }
 }
