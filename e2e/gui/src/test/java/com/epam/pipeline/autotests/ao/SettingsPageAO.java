@@ -1013,6 +1013,22 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             };
         }
 
+        public String[] getAmisFromClusterNetworksConfigPreference() {
+            searchPreference("cluster.networks.config");
+            String[] result = new String[2];
+            String[] strings = context().$(byClassName("CodeMirror-code"))
+                            .findAll(byClassName("CodeMirror-line")).texts().stream()
+                            .toArray(String[]::new);
+            for(int i=0; i<strings.length; i++) {
+                if(strings[i].contains("\"instance_mask\":")){
+                    if(strings[i].contains("\"*\"")) {
+                        result[0]=strings[i+1];
+                    } else {result[1]=strings[i+1];}
+                }
+            }
+            return result;
+        }
+
         public PreferencesAO save() {
             click(SAVE);
             get(SAVE).shouldBe(disabled);

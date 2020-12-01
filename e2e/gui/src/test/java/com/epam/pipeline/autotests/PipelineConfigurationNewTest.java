@@ -15,8 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.Primitive;
-import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
@@ -42,8 +40,10 @@ public class PipelineConfigurationNewTest extends AbstractSeveralPipelineRunning
                             .expandTab(EXEC_ENVIRONMENT)
                             .getCloudRegion();});
 
-        navigationMenu()
+        String[] amis = navigationMenu()
                 .settings()
-                .switchToPreferences();
+                .switchToPreferences()
+                .getAmisFromClusterNetworksConfigPreference();
+        library();
     }
 }
