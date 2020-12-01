@@ -231,6 +231,10 @@ public class LogAO implements AccessObject<LogAO> {
         return get(ENDPOINT).shouldBe(visible).attr("href");
     }
 
+    public String getEndpointName() {
+        return get(ENDPOINT).shouldBe(visible).text();
+    }
+
     public String getEndpointLink(String link){
         return $(withText("Endpoint")).closest("tr").$(byXpath(format(".//a[.='%s']", link)))
                 .shouldBe(visible).attr("href");
@@ -253,6 +257,24 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO shareWithGroup(final String groupName) {
         click(SHARE_WITH);
         new ShareWith().addGroupToShare(groupName);
+        return this;
+    }
+
+    public LogAO shareWithUser(final String userName, boolean sshConnection) {
+        click(SHARE_WITH);
+        new ShareWith().addUserToShare(userName, sshConnection);
+        return this;
+    }
+
+    public LogAO setEnableSShConnection(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().selectEnableSShConnection(name);
+        return this;
+    }
+
+    public LogAO removeShareUserGroup(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().removeUserFromShare(name);
         return this;
     }
 
@@ -557,10 +579,43 @@ public class LogAO implements AccessObject<LogAO> {
 
         public void addGroupToShare(final String groupName) {
             click(ADD_GROUP);
-            setValue(context().find(byClassName("ant-select-search__field")), groupName).enter();
+            setValue($(byClassName("ant-select-search__field")), groupName).enter();
             click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
                     ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
             click(OK);
+        }
+
+        public void addUserToShare(final String userName, boolean sshConnection) {
+            click(ADD_USER);
+            setValue($(byClassName("ant-select-search__field")), userName);
+            $(byXpath(format("//div[.='%s']", userName))).click();
+            $(byText("Select user")).parent()
+                    .parent().find(byClassName("ant-btn-primary")).click();
+            if (sshConnection) {
+                checkEnableSShConnection(userName);
+            }
+            click(OK);
+        }
+
+        public void selectEnableSShConnection(final String name) {
+            checkEnableSShConnection(name);
+            click(OK);
+        }
+
+        public void checkEnableSShConnection(final String userName) {
+            $(byXpath("//div[@class='ant-table-content']")).$$(byText(userName)).first().closest("td")
+                    .find(By.xpath("following-sibling::td[.='Enable SSH connection']")).parent().click();
+        }
+
+        public void removeUserFromShare(final String userName) {
+            context().$(byXpath("//div[@class='ant-table-content']")).$$(byText(userName)).first().parent().parent()
+                    .parent().find("button").shouldBe(visible).click();
+            click(OK);
+        }
+
+        @Override
+        public SelenideElement context() {
+            return Utils.getPopupByTitle("Share with users and groups");
         }
 
         @Override

@@ -1013,6 +1013,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             };
         }
 
+        public PreferencesAO setSystemSshDefaultRootUserEnabled() {
+            setValue(SEARCH, "system.ssh.default.root.user.enabled").enter();
+            SelenideElement checkBox = context().shouldBe(visible)
+                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
+            if (!checkBox.has(cssClass("ant-checkbox-checked"))) {
+                checkBox.click();
+            }
+            if (context().find(byClassName("anticon-eye-o")).isDisplayed()) {
+                context().find(byClassName("anticon-eye-o")).click();
+            }
+            return this;
+        }
+
         public PreferencesAO save() {
             click(SAVE);
             get(SAVE).shouldBe(disabled);
