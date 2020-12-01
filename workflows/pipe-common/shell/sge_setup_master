@@ -393,12 +393,12 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     /etc/init.d/gridengine-master restart
     check_last_exit_code $? "Master host was successfully configured" "Failed to configure master host"
 
-elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
-    yum remove -y -q gridengine-*
-    rm -rf /opt/sge/*
-    rm -rf /etc/rc.d/init.d/*.CLOUD_PIPELINE
-    
+elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then   
     if [ "$CP_CAP_SGE_PREINSTALLED" != "true" ]; then
+        yum remove -y -q gridengine-*
+        rm -rf /opt/sge/*
+        rm -rf /etc/rc.d/init.d/*.CLOUD_PIPELINE
+
         yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDir.noarch \
                             perl-Getopt-Long.noarch perl-libs perl-POSIX-strptime.x86_64 \
                             perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \

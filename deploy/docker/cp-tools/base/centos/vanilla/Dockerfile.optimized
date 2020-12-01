@@ -98,3 +98,6 @@ RUN yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDi
                         gridengine-qmaster \
                         gridengine-qmon
 ENV CP_CAP_SGE_PREINSTALLED="true"
+
+# Install LFS
+RUN yum -y install lizardfs-master lizardfs-chunkserver lizardfs-client 
