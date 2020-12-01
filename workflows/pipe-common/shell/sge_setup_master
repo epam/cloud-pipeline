@@ -398,20 +398,22 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     rm -rf /opt/sge/*
     rm -rf /etc/rc.d/init.d/*.CLOUD_PIPELINE
     
-    yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDir.noarch \
-                        perl-Getopt-Long.noarch perl-libs perl-POSIX-strptime.x86_64 \
-                        perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
-                        ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
-                        xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
-                        compat-db-headers compat-db47 libpipeline man-db \
-    && yum install -y -q gridengine \
-                        gridengine-debuginfo \
-                        gridengine-devel \
-                        gridengine-drmaa4ruby \
-                        gridengine-execd \
-                        gridengine-guiinst \
-                        gridengine-qmaster \
-                        gridengine-qmon
+    if [ "$CP_CAP_SGE_PREINSTALLED" != "true" ]; then
+        yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDir.noarch \
+                            perl-Getopt-Long.noarch perl-libs perl-POSIX-strptime.x86_64 \
+                            perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
+                            ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
+                            xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
+                            compat-db-headers compat-db47 libpipeline man-db \
+        && yum install -y -q gridengine \
+                            gridengine-debuginfo \
+                            gridengine-devel \
+                            gridengine-drmaa4ruby \
+                            gridengine-execd \
+                            gridengine-guiinst \
+                            gridengine-qmaster \
+                            gridengine-qmon
+    fi
 
     check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
 
