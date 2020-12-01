@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.controller.vo;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class UploadFileMetadata {
     private String fileName;
     private String fileSize;

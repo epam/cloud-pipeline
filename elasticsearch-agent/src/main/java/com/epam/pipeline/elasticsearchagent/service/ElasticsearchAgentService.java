@@ -16,7 +16,6 @@
 package com.epam.pipeline.elasticsearchagent.service;
 
 import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -72,7 +71,6 @@ public class ElasticsearchAgentService {
      */
     @Scheduled(fixedDelayString = "${sync.scheduler.delay}")
     @Transactional(propagation = Propagation.REQUIRED)
-    @SchedulerLock(name = "ElasticsearchAgentService_startElasticsearchAgent", lockAtMostForString = "PT3H")
     public void startElasticsearchAgent() {
         log.debug("Start scheduled database changes...");
 

@@ -443,7 +443,7 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
                 .collect(Collectors.toMap(e -> e.getMetadataClass().getId(), Function.identity()));
         Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_1, DATA_TYPE_1)),
                 results.get(metadataClass1.getId()).getFields());
-        Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_2, CLASS_NAME_2)),
+        Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_2, CLASS_NAME_2, true, false)),
                 results.get(metadataClass2.getId()).getFields());
     }
 
@@ -528,9 +528,10 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         actual.forEach(e -> compareMetadata(expectedMap.get(e.getId()), e, true));
     }
 
-    private void compareMetadata(MetadataEntity metadataEntity, MetadataEntity result, boolean compareIds) {
-        if (compareIds) {
+    private void compareMetadata(MetadataEntity metadataEntity, MetadataEntity result, boolean compareExactly) {
+        if (compareExactly) {
             Assert.assertEquals(metadataEntity.getId(), result.getId());
+            Assert.assertEquals(metadataEntity.getCreatedDate(), result.getCreatedDate());
         }
         Assert.assertEquals(metadataEntity.getName(), result.getName());
         Assert.assertEquals(metadataEntity.getClassEntity().getName(), result.getClassEntity().getName());

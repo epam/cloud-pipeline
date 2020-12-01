@@ -290,7 +290,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForLog(final String message) {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 70; i++) {
             refresh();
             if ($(log()).is(matchText(message))) {
                 break;
@@ -399,6 +399,12 @@ public class LogAO implements AccessObject<LogAO> {
                 .forEach(storage -> $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
                         .shouldHave(text(storage)));
         return this;
+    }
+
+    public StorageContentAO openStorageFromLimitMountsParameter(String storage) {
+        $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                .shouldHave(text(storage)).click();
+        return new StorageContentAO();
     }
 
     public static By log() {

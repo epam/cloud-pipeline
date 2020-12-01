@@ -72,8 +72,9 @@ def sync_groups_statuses(api_source, api_target):
 
 def create_new_user_in_target(api_target, roles_mapping, user):
     roles_ids = []
-    for role in user['roles']:
-        roles_ids.append(roles_mapping.get(role['name']))
+    if 'roles' in user and user['roles']:
+        for role in user['roles']:
+            roles_ids.append(roles_mapping.get(role['name']))
     return api_target.create_user(name=user['userName'], roles_ids=roles_ids)
 
 
@@ -88,8 +89,8 @@ def sync_users(api_source, api_target, roles_mapping):
         if username in target_users_dict:
             print_info_message('User [{}] exists in the target deployment already'.format(username))
             existing_user = target_users_dict[username]
-            source_user_roles = [role['name'] for role in user['roles']]
-            existing_user_roles = [role['name'] for role in existing_user['roles']]
+            source_user_roles = get_user_roles_names(user)
+            existing_user_roles = get_user_roles_names(existing_user)
             for role in source_user_roles:
                 if role not in existing_user_roles:
                     if role not in roles_to_assign:
@@ -110,6 +111,13 @@ def sync_users(api_source, api_target, roles_mapping):
         print_info_message('Syncing {} users for [{}] role'.format(len(users_ids), role_name))
         api_target.assign_users_to_roles(roles_mapping[role_name], users_ids)
     return user_ids_mapping
+
+
+def get_user_roles_names(user):
+    user_roles = []
+    if 'roles' in user and user['roles']:
+        user_roles = [role['name'] for role in user['roles']]
+    return user_roles
 
 
 def sync_metadata_for_entity_class(api_source, api_target, ids_mapping, entity_class):

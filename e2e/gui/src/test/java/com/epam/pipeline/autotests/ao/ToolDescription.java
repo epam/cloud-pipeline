@@ -153,6 +153,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
 
         public InstanceManagementSectionAO clickApply() {
             click(APPLY);
+            ensureDisable(APPLY);
             return this;
         }
 

@@ -300,8 +300,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             tool.showInstanceManagement(instanceManagement ->
                                     instanceManagement
                                             .addAllowedToolInstanceTypesMask(format("%s.*", instanceFamilyName))
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
             tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
@@ -320,8 +319,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             tool.showInstanceManagement(instanceManagement ->
                                     instanceManagement
                                             .addAllowedToolInstanceTypesMask("")
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
         }
     }
 
@@ -476,8 +474,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             tool.showInstanceManagement(instanceManagement ->
                                     instanceManagement
                                             .addAllowedToolInstanceTypesMask(format("%s.*", instanceFamilyName))
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
             tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
@@ -500,8 +497,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             tool.showInstanceManagement(instanceManagement ->
                                     instanceManagement
                                             .addAllowedToolInstanceTypesMask("")
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
         }
     }
 
@@ -567,8 +563,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     instanceManagement
                                             .clearAllowedPriceTypeField()
                                             .setPriceType(onDemandPrice)
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
             tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                     .expandTab(ADVANCED_PANEL)
@@ -624,8 +619,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     instanceManagement
                                             .clearAllowedPriceTypeField()
                                             .setPriceType(spotPriceName)
-                                            .clickApply()
-                                            .sleep(2,SECONDS)));
+                                            .clickApply()));
             logout();
             loginAs(user);
             validationOfPriceTypesRestrictions(ON_DEMAND, ON_DEMAND, spotPriceName);
@@ -684,8 +678,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .switchToPreferences()
                 .switchToCluster()
                 .setClusterAllowedStringPreference(pref, value)
-                .save();
-        sleep(10, SECONDS);
+                .saveIfNeeded();
     }
 
     private void validationOfInstanceTypesRestrictions() {

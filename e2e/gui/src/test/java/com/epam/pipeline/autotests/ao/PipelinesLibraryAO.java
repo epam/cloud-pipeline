@@ -183,7 +183,8 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO createStorage(String storageName) {
         return clickOnCreateStorageButton()
                 .setStoragePath(storageName)
-                .ok();
+                .ok()
+                .checkStorageCreation(storageName);
     }
 
     public CreateStoragePopupAO clickOnCreateStorageButton() {
@@ -440,6 +441,18 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO removeStorageIfExists(final String storageName) {
         return sleep(5, SECONDS)
                 .performIf(treeItem(storageName), visible, page -> page.removeStorage(storageName));
+    }
+
+    private PipelinesLibraryAO checkStorageCreation(final String storageName) {
+        if ($(byId("pipelines-library-tree-container")).shouldBe(visible)
+                .find(titleOfTreeItem(treeItem(storageName))).is(not(exist))
+                && $(withText("The specified bucket does not exist")).exists()
+                && $(withText("Service: Amazon S3; Status Code: 404")).exists()) {
+            screenshot("AmazonS3_404");
+            $(byClassName("ant-confirm-btns")).find(byText("OK")).shouldBe(enabled).click();
+            createStorage(storageName);
+        }
+        return this;
     }
 
     @Override

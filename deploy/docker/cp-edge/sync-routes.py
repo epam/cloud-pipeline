@@ -296,11 +296,12 @@ def append_system_endpoints(tool_endpoints, run_details):
                                 system_endpoint_name = system_endpoint["friendly_name"]
                         if "endpoint_num" in system_endpoint and system_endpoint["endpoint_num"]:
                                 tool_endpoint["endpoint_num"] = system_endpoint["endpoint_num"]
-                        non_matching_with_system_tool_endpoints, is_default_endpoint = \
+                        non_matching_with_system_tool_endpoints, is_default_endpoint, is_ssl_backend = \
                                 remove_from_tool_endpoints_if_fully_matches(system_endpoint_name,
                                                                             system_endpoint_port, tool_endpoints)
                         removed_endpoints_count = len(tool_endpoints) - len(non_matching_with_system_tool_endpoints)
                         tool_endpoint["isDefault"] = str(is_default_endpoint).lower()
+                        tool_endpoint["sslBackend"] = is_ssl_backend
                         if removed_endpoints_count != 0:
                                 tool_endpoints = non_matching_with_system_tool_endpoints
                                 overridden_endpoints_count += removed_endpoints_count
@@ -311,6 +312,7 @@ def append_system_endpoints(tool_endpoints, run_details):
 def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, tool_endpoints):
         non_matching_tool_endpoints = []
         is_default_endpoint = False
+        is_ssl_backend = False
         for endpoint in tool_endpoints:
                 tool_endpoint_obj = json.loads(endpoint)
                 if tool_endpoint_obj \
@@ -324,9 +326,11 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
                         and tool_endpoint_obj['nginx']['port'] == endpoint_port:
                         if 'isDefault' in tool_endpoint_obj and tool_endpoint_obj['isDefault']:
                                 is_default_endpoint = is_default_endpoint | tool_endpoint_obj['isDefault']
+                        if 'sslBackend' in tool_endpoint_obj and tool_endpoint_obj['sslBackend']:
+                                is_ssl_backend = is_ssl_backend | tool_endpoint_obj['sslBackend']
                 else:
                         non_matching_tool_endpoints.append(endpoint)
-        return non_matching_tool_endpoints, is_default_endpoint
+        return non_matching_tool_endpoints, is_default_endpoint, is_ssl_backend
 
 def get_service_list(pod_id, pod_run_id, pod_ip):
         service_list = {}
@@ -385,6 +389,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                         path = endpoint["nginx"].get("path", "")
                                         service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
                                         is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
+                                        is_ssl_backend = str(endpoint["sslBackend"]).lower() == 'true' if "sslBackend" in endpoint.keys() else False
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
@@ -425,6 +430,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                                         "shared_groups_sids": shared_groups_sids,
                                                                         "service_name": service_name,
                                                                         "is_default_endpoint": is_default_endpoint,
+                                                                        "is_ssl_backend": is_ssl_backend,
                                                                         "edge_num": i,
                                                                         "edge_location": edge_location,
                                                                         "custom_domain": pretty_url['domain'] if pretty_url else None,
@@ -604,6 +610,7 @@ for added_route in routes_to_add:
                 .replace('{run_id}', service_spec["run_id"]) \
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
+                .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
                 .replace('{additional}', service_spec["additional"])
 
         nginx_sensitive_route_definitions = []

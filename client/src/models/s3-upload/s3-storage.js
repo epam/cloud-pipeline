@@ -15,8 +15,8 @@
  */
 
 import AWS from 'aws-sdk/index';
-import DataStorageTempCredentials from '../dataStorage/DataStorageTempCredentials';
 import Credentials from './credentials';
+import fetchTempCredentials from './fetch-temp-credentials';
 import displaySize from '../../utils/displaySize';
 
 const KB = 1024;
@@ -32,13 +32,28 @@ const S3_MAX_UPLOAD_CHUNKS_COUNT = 10000;
 const MAX_FILE_SIZE = S3_MAX_FILE_SIZE_TB * TB;
 const MAX_FILE_SIZE_DESCRIPTION = displaySize(MAX_FILE_SIZE, false);
 
+const FETCH_CREDENTIALS_MAX_ATTEMPTS = 12;
+
 export {MAX_FILE_SIZE_DESCRIPTION};
 
 // https://github.com/aws/aws-sdk-js/issues/1895#issuecomment-518466151
 AWS.util.update(AWS.S3.prototype, {
   reqRegionForNetworkingError (resp, done) {
     if (AWS.util.isBrowser() && resp.error) {
-      done(resp.error.message);
+      if (/^ExpiredToken$/i.test(resp.error.code)) {
+        // we got 'expired token' error; we don't need to stop uploading process by setting
+        // error (via "done(error)")
+        done();
+      } else if (/^CredentialsError$/i.test(resp.error.code)) {
+        const details = resp.error.originalError
+          ? ` (${resp.error.originalError.message})`
+          : '';
+        done(
+          `Could not load credentials${details}`
+        );
+      } else {
+        done(resp.error.message);
+      }
     } else {
       done();
     }
@@ -80,37 +95,43 @@ class S3Storage {
 
   updateCredentials = async () => {
     let success = true;
-    const request = new DataStorageTempCredentials();
-    let tempCredentials = {};
     try {
-      await request.send([{
-        id: this._storage.id,
-        write: true
-      }]);
-      if (request.error) {
-        tempCredentials = {};
-        return Promise.reject(new Error(request.error));
-      } else {
-        tempCredentials = request.value;
+      const updateCredentialsAttempt = (attempt = 0, error = undefined) => {
+        if (attempt >= FETCH_CREDENTIALS_MAX_ATTEMPTS) {
+          return Promise.reject(error || new Error('credentials API is not available'));
+        }
+        return new Promise((resolve, reject) => {
+          fetchTempCredentials(this._storage.id, {write: true})
+            .then(resolve)
+            .catch((e) => {
+              updateCredentialsAttempt(attempt + 1, e)
+                .then(resolve)
+                .catch(reject);
+            });
+        });
+      };
+      const {error, payload} = await updateCredentialsAttempt();
+      if (error) {
+        return Promise.reject(new Error(error));
       }
       if (this._credentials) {
-        this._credentials.accessKeyId = tempCredentials.keyID;
-        this._credentials.secretAccessKey = tempCredentials.accessKey;
-        this._credentials.sessionToken = tempCredentials.token;
+        this._credentials.accessKeyId = payload.keyID;
+        this._credentials.secretAccessKey = payload.accessKey;
+        this._credentials.sessionToken = payload.token;
 
         AWS.config.update({
-          region: tempCredentials.region || this._storage.region,
+          region: payload.region || this._storage.region,
           credentials: this._credentials
         });
       } else {
         this._credentials = new Credentials(
-          tempCredentials.keyID,
-          tempCredentials.accessKey,
-          tempCredentials.token,
+          payload.keyID,
+          payload.accessKey,
+          payload.token,
           this.updateCredentials);
 
         AWS.config.update({
-          region: tempCredentials.region || this._storage.region,
+          region: payload.region || this._storage.region,
           credentials: this._credentials
         });
       }

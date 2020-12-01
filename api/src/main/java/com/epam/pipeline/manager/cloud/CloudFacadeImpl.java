@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
@@ -25,6 +26,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -87,15 +89,21 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public void scaleUpFreeNode(final String nodeId) {
-        AbstractCloudRegion defaultRegion = regionManager.loadDefaultRegion();
-        getInstanceService(defaultRegion).scaleUpFreeNode(defaultRegion, nodeId);
+    public RunInstance scaleUpPoolNode(final String nodeId, final NodePool node) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(node.getRegionId());
+        return getInstanceService(region).scaleUpPoolNode(region, nodeId, node);
     }
 
     @Override
     public void scaleDownNode(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
         getInstanceService(region).scaleDownNode(region, runId);
+    }
+
+    @Override
+    public void scaleDownPoolNode(final String nodeLabel) {
+        final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
+        getInstanceService(region).scaleDownPoolNode(region, nodeLabel);
     }
 
     @Override
@@ -122,6 +130,12 @@ public class CloudFacadeImpl implements CloudFacade {
     public boolean reassignNode(final Long oldId, final Long newId) {
         final AbstractCloudRegion region = getRegionByRunId(oldId);
         return getInstanceService(region).reassignNode(region, oldId, newId);
+    }
+
+    @Override
+    public boolean reassignPoolNode(final String nodeLabel, final Long newId) {
+        final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
+        return getInstanceService(region).reassignPoolNode(region, nodeLabel, newId);
     }
 
     @Override
@@ -239,6 +253,12 @@ public class CloudFacadeImpl implements CloudFacade {
         return getInstanceService(region).loadDisks(region, runId);
     }
 
+    @Override
+    public CloudInstanceState getInstanceState(final Long runId) {
+        final AbstractCloudRegion region = getRegionByRunId(runId);
+        return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
+    }
+
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
         try {
             final PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
@@ -247,9 +267,13 @@ public class CloudFacadeImpl implements CloudFacade {
         } catch (IllegalArgumentException e) {
             log.trace(e.getMessage(), e);
             log.debug("RunID {} was not found. Trying to get instance details from Node", runId);
-            final NodeRegionLabels nodeRegion = kubernetesManager.getNodeRegion(String.valueOf(runId));
-            return regionManager.load(nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
+            return loadRegionFromNodeLabels(String.valueOf(runId));
         }
+    }
+
+    private AbstractCloudRegion loadRegionFromNodeLabels(final String nodeLabel) {
+        final NodeRegionLabels nodeRegion = kubernetesManager.getNodeRegion(nodeLabel);
+        return regionManager.load(nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
     }
 
     private List<InstanceType> loadInstancesForAllRegions(final Boolean spot) {

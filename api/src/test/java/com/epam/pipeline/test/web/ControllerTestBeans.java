@@ -17,6 +17,8 @@
 package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
+import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
+import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
@@ -26,8 +28,8 @@ import com.epam.pipeline.acl.cluster.ClusterApiService;
 import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
 import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
-import com.epam.pipeline.manager.datastorage.DataStorageApiService;
-import com.epam.pipeline.manager.datastorage.FileShareMountApiService;
+import com.epam.pipeline.acl.datastorage.DataStorageApiService;
+import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
 import com.epam.pipeline.manager.docker.DockerRegistryApiService;
 import com.epam.pipeline.manager.dts.DtsOperationsApiService;
 import com.epam.pipeline.manager.dts.DtsRegistryApiService;
@@ -45,7 +47,7 @@ import com.epam.pipeline.manager.notification.NotificationTemplateApiService;
 import com.epam.pipeline.manager.notification.SystemNotificationApiService;
 import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.manager.pipeline.PipelineConfigApiService;
-import com.epam.pipeline.manager.pipeline.ToolApiService;
+import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolGroupApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceApiService;
@@ -62,11 +64,14 @@ import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.saml.SAMLAuthenticationProvider;
 import org.springframework.security.saml.SAMLEntryPoint;
+import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
+@Import(InternalResourceViewResolver.class)
 @EnableWebSecurity
 public class ControllerTestBeans {
 
@@ -207,4 +212,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected LustreFSApiService lustreFSApiService;
+
+    @MockBean
+    protected NodePoolApiService nodePoolApiService;
+
+    @MockBean
+    protected NodeScheduleApiService nodeScheduleApiService;
 }

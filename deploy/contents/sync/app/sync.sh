@@ -52,6 +52,11 @@ function parse_options {
         shift
         shift
         ;;
+        --docker-cmd)
+        export CP_ENV_SYNC_DOCKER_CMD="$2"
+        shift
+        shift
+        ;;
         *)    # unknown option
         POSITIONAL+=("$1") # save it in an array for later
         shift
@@ -77,6 +82,7 @@ function parse_options {
         print_err "Token for the target deployment's API access is not defined. Please, specify it using \"--target-token\" flag"
         valid_params=1
     fi
+    export CP_ENV_SYNC_DOCKER_CMD="${CP_ENV_SYNC_DOCKER_CMD:-docker}"
     return $valid_params
 }
 
@@ -131,13 +137,7 @@ function prepare_environment {
 }
 
 function check_docker {
-    if ! check_installed "docker"; then
-        print_err "Docker is not detected"
-        return 1
-    else
-        print_info "Found Docker, checking if it is active"
-    fi
-    docker info > /dev/null 2>&1
+    $CP_ENV_SYNC_DOCKER_CMD info > /dev/null 2>&1
     return $?
 }
 
@@ -170,7 +170,11 @@ if [ ! -z "$CP_SYNC_TOOLS" ] ; then
         exit 1
     fi
     print_ok "Start tool synchronization from '$CP_ENV_SYNC_SRC_URL' to '$CP_ENV_SYNC_TARGET_URL'"
-    python sync_tools.py $CP_ENV_SYNC_SRC_URL $CP_ENV_SYNC_SRC_TOKEN $CP_ENV_SYNC_TARGET_URL $CP_ENV_SYNC_TARGET_TOKEN
+    python sync_tools.py $CP_ENV_SYNC_SRC_URL \
+                          $CP_ENV_SYNC_SRC_TOKEN \
+                          $CP_ENV_SYNC_TARGET_URL \
+                          $CP_ENV_SYNC_TARGET_TOKEN \
+                          $CP_ENV_SYNC_DOCKER_CMD
     if [ $? -ne 0 ]; then
         print_err "Errors during tools sync"
     else

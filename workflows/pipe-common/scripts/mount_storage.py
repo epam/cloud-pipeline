@@ -45,6 +45,7 @@ FUSE_NA_ID = None
 AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
 READ_ONLY_MOUNT_OPT = 'ro'
+MOUNT_LIMITS_NONE = 'none'
 
 
 class PermissionHelper:
@@ -103,7 +104,7 @@ class MountStorageTask:
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
             if limited_storages:
                 try:
-                    limited_storages_list = [int(x.strip()) for x in limited_storages.split(',')]
+                    limited_storages_list = [] if limited_storages.lower() == MOUNT_LIMITS_NONE else [int(x.strip()) for x in limited_storages.split(',')]
                     available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
                     # append sensitive storages since they are not returned in common mounts
                     for storage_id in limited_storages_list:
@@ -115,7 +116,7 @@ class MountStorageTask:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
 
             if not available_storages_with_mounts:
-                Logger.success('No remote storages are available', task_name=self.task_name)
+                Logger.success('No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none', task_name=self.task_name)
                 return
             Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 

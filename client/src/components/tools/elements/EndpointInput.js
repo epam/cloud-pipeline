@@ -26,7 +26,6 @@ import '../../../staticStyles/EndpointInput.css';
 
 @observer
 export default class EndpointInput extends React.Component {
-
   static propTypes = {
     disabled: PropTypes.bool,
     even: PropTypes.bool,
@@ -116,6 +115,17 @@ export default class EndpointInput extends React.Component {
   }
 
   @computed
+  get sslBackend () {
+    if (this.state.value) {
+      try {
+        const json = JSON.parse(this.state.value || '');
+        return `${json.sslBackend}` === 'true';
+      } catch (__) {}
+    }
+    return false;
+  }
+
+  @computed
   get additional () {
     if (this.state.value) {
       try {
@@ -128,7 +138,7 @@ export default class EndpointInput extends React.Component {
     return undefined;
   }
 
-  composeValue = (name, port, additional, isDefault) => {
+  composeValue = (name, port, additional, isDefault, sslBackend) => {
     if (name === undefined || name === null) {
       name = this.name;
     }
@@ -141,13 +151,17 @@ export default class EndpointInput extends React.Component {
     if (isDefault === undefined || isDefault === null) {
       isDefault = this.isDefault;
     }
+    if (sslBackend === undefined || sslBackend === null) {
+      sslBackend = this.sslBackend;
+    }
     const value = {
       name,
       nginx: {
         port,
         additional
       },
-      isDefault
+      isDefault,
+      sslBackend
     };
     let result = '';
     try {
@@ -158,7 +172,7 @@ export default class EndpointInput extends React.Component {
 
   onChangeName = (e) => {
     const name = e.target.value;
-    const value = this.composeValue(name, null, null, null);
+    const value = this.composeValue(name, null, null, null, null);
     this.setState({
       value
     }, () => {
@@ -169,7 +183,7 @@ export default class EndpointInput extends React.Component {
 
   onChangePort = (e) => {
     const port = e.target.value;
-    const value = this.composeValue(null, port, null, null);
+    const value = this.composeValue(null, port, null, null, null);
     this.setState({
       value
     }, () => {
@@ -180,7 +194,18 @@ export default class EndpointInput extends React.Component {
 
   onChangeDefault = (e) => {
     const checked = e.target.checked;
-    const value = this.composeValue(null, null, null, checked);
+    const value = this.composeValue(null, null, null, checked, null);
+    this.setState({
+      value
+    }, () => {
+      this.props.onChange && this.props.onChange(value);
+      this.validate();
+    });
+  };
+
+  onChangeSSLBackend = (e) => {
+    const checked = e.target.checked;
+    const value = this.composeValue(null, null, null, null, checked);
     this.setState({
       value
     }, () => {
@@ -190,7 +215,7 @@ export default class EndpointInput extends React.Component {
   };
 
   onChangeAdditional = (additional) => {
-    const value = this.composeValue(null, null, additional, null);
+    const value = this.composeValue(null, null, additional, null, null);
     this.setState({
       value
     }, () => {
@@ -275,8 +300,21 @@ export default class EndpointInput extends React.Component {
             }
           </Col>
           <Col style={{paddingLeft: 5}}>
-            <Checkbox checked={this.isDefault} onChange={this.onChangeDefault}>
+            <Checkbox
+              disabled={this.props.disabled}
+              checked={this.isDefault}
+              onChange={this.onChangeDefault}
+            >
               Is default
+            </Checkbox>
+          </Col>
+          <Col style={{paddingLeft: 5}}>
+            <Checkbox
+              disabled={this.props.disabled}
+              checked={this.sslBackend}
+              onChange={this.onChangeSSLBackend}
+            >
+              SSL Backend
             </Checkbox>
           </Col>
           <Col style={{paddingLeft: 5}}>

@@ -19,7 +19,7 @@ package com.epam.pipeline.controller.datastorage;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
-import com.epam.pipeline.manager.datastorage.FileShareMountApiService;
+import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

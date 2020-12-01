@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.docker;
 
 import com.epam.pipeline.manager.docker.DockerParsingUtils;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -26,6 +27,7 @@ import java.util.Date;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class ImageDescription {
     private Long registryId;
     private String image;

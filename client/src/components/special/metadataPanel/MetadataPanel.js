@@ -33,9 +33,10 @@ import PropTypes from 'prop-types';
 }))
 @observer
 export default class MetadataPanel extends React.Component {
-
   static propTypes = {
     readOnly: PropTypes.bool,
+    readOnlyKeys: PropTypes.array,
+    columnNamesFn: PropTypes.func,
     classId: PropTypes.number,
     className: PropTypes.string,
     entityId: PropTypes.number,
@@ -44,6 +45,11 @@ export default class MetadataPanel extends React.Component {
     parentId: PropTypes.number,
     currentItem: PropTypes.object,
     onUpdateMetadata: PropTypes.func
+  };
+
+  static defaultProps = {
+    readOnlyKeys: ['ID'],
+    columnNamesFn: (o => o)
   };
 
   state = {
@@ -139,7 +145,7 @@ export default class MetadataPanel extends React.Component {
       }
 
       for (let k in this.props.currentItem) {
-        if (k !== 'rowKey' && k !== 'ID' && k !== key) {
+        if (k !== 'rowKey' && (this.props.readOnlyKeys || []).indexOf(k) === -1 && k !== key) {
           newCurrentItem[k] = this.props.currentItem[k];
         }
       }
@@ -327,7 +333,8 @@ export default class MetadataPanel extends React.Component {
               onChange={onChange('value')}
               size="small"
               type="textarea"
-              autosize={true} />
+              autosize
+            />
           </td>
         </tr>,
         <tr className={MetadataStyles.newKeyRow} key="new key title row">
@@ -460,7 +467,7 @@ export default class MetadataPanel extends React.Component {
           };
         };
         valueElement.push(this.renderDivider(`${key}_divider`, 6));
-        if (this.state.editableKey === key && key!=='ID') {
+        if (this.state.editableKey === key && (this.props.readOnlyKeys || []).indexOf(key) === -1) {
           valueElement.push((
             <tr key={`${key}_key`} className={MetadataStyles.keyRowEdit}>
               <td colSpan={6}>
@@ -470,48 +477,71 @@ export default class MetadataPanel extends React.Component {
           ));
         } else {
           valueElement.push((
-            <tr key={`${key}_key`} className={this.props.readOnly || key==='ID'
-                  ? MetadataStyles.readOnlyKeyRow : MetadataStyles.keyRow}>
+            <tr
+              key={`${key}_key`}
+              className={
+                this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0
+                  ? MetadataStyles.readOnlyKeyRow
+                  : MetadataStyles.keyRow
+              }
+            >
               <td
                 id={`key-column-${key}`}
-                colSpan={this.props.readOnly || key==='ID' ? 6 : 5}
+                colSpan={
+                  this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0
+                    ? 6
+                    : 5
+                }
                 className={MetadataStyles.key}
                 style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
                 onClick={this.onMetadataEditStarted('key', key, value)}>
-                {key}
+                {this.props.columnNamesFn(key)}
               </td>
               {
-                this.props.readOnly || key==='ID' ? undefined : (
-                  <td style={{minWidth: 30, textAlign: 'right'}}>
-                    <Button
-                      id={`delete-metadata-key-${key}-button`}
-                      type="danger"
-                      size="small"
-                      onClick={() => this.confirmDeleteKey(key)}>
-                      <Icon type="delete" />
-                    </Button>
-                  </td>
-                )
+                this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0
+                  ? undefined
+                  : (
+                    <td style={{minWidth: 30, textAlign: 'right'}}>
+                      <Button
+                        id={`delete-metadata-key-${key}-button`}
+                        type="danger"
+                        size="small"
+                        onClick={() => this.confirmDeleteKey(key)}>
+                        <Icon type="delete" />
+                      </Button>
+                    </td>
+                  )
               }
             </tr>
           ));
         }
-        if (this.state.editableValue === key && key!=='ID') {
+        if (
+          this.state.editableValue === key &&
+          (this.props.readOnlyKeys || []).indexOf(key) === -1
+        ) {
           valueElement.push((
             <tr key={`${key}_value`} className={MetadataStyles.valueRowEdit}>
               <td colSpan={6}>
                 <Input
                   {...inputOptions('value', key, metadataItem[key].value)}
                   type="textarea"
-                  autosize={true}
+                  autosize
                 />
               </td>
             </tr>
           ));
         } else {
           valueElement.push((
-            <tr key={`${key}_value`} className={this.props.readOnly || key==='ID' || metadataItem[key].type.startsWith('Array')
-              ? MetadataStyles.readOnlyValueRow : MetadataStyles.valueRow}>
+            <tr
+              key={`${key}_value`}
+              className={
+                this.props.readOnly ||
+                (this.props.readOnlyKeys || []).indexOf(key) >= 0 ||
+                metadataItem[key].type.startsWith('Array')
+                  ? MetadataStyles.readOnlyValueRow
+                  : MetadataStyles.valueRow
+              }
+            >
               <td
                 id={`value-column-${key}`}
                 colSpan={6}
@@ -558,9 +588,9 @@ export default class MetadataPanel extends React.Component {
           <table style={{width: '100%', tableLayout: 'fixed'}}>
             <tbody>
               {
-              this.props.currentItem
-                ? this.renderMetadataItem(this.props.currentItem)
-                : this.renderEmptyPlaceholder()
+                this.props.currentItem
+                  ? this.renderMetadataItem(this.props.currentItem)
+                  : this.renderEmptyPlaceholder()
               }
             </tbody>
           </table>

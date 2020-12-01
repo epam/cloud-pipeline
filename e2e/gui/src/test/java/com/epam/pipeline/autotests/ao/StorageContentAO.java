@@ -158,6 +158,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO rmFile(String name) {
+        elementRow(name).find(byClassName("ant-btn-danger")).shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this).ensureTitleIs("Remove file").ok();
+        return this;
+    }
+
     public StorageContentAO createFolder(String folderName) {
         sleep(1, SECONDS);
         resetMouse().hover(CREATE).click(CREATE_FOLDER);
@@ -179,11 +185,26 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO createFileWithContent(String fileName, String content) {
+        sleep(1, SECONDS);
+        resetMouse().hover(CREATE).click(CREATE_FILE);
+        $$(byId("name")).findBy(visible).setValue(fileName);
+        $$(byId("content")).findBy(visible).setValue(content);
+        $(button("OK")).shouldBe(visible).click();
+        return this;
+    }
+
     public StorageContentAO createAndEditFile(String fileName, String fileText) {
         return createFile(fileName)
                 .fileMetadata(fileName)
                 .fullScreen()
                 .editFileWithText(fileText);
+    }
+
+    public StorageContentAO editFile(String fileName, String fileText) {
+        return fileMetadata(fileName)
+               .fullScreen()
+               .editFileWithText(fileText);
     }
 
     public StorageContentAO validateElementIsPresent(String elementName) {
@@ -454,6 +475,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public StorageContentAO shouldContainNumberOfElements(int number) {
         filesAndFolderElements().shouldHaveSize(number);
         return this;
+    }
+
+    public String getStoragePath() {
+        return get(STORAGEPATH).text();
     }
 
     public StorageContentAO removeAllSelectedElements() {

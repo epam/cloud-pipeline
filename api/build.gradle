@@ -76,8 +76,11 @@ ext {
 
 ext["elasticsearch.version"] = project.ext.versionElasticsearch
 
-build.mustRunAfter ":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin"
-bootRepackage.mustRunAfter ":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin"
+def apiDeps = [":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux",
+":pipe-cli:buildWin", ":fs-browser:build", ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux"]
+
+build.mustRunAfter apiDeps
+bootRepackage.mustRunAfter apiDeps
 
 dependencies {
     // Spring Boot

@@ -210,6 +210,8 @@ Environment variables for controlling execution flow:
                 --source-url {url_a} \          # URL of `source` environment's API host
                 --source-token {token_a} \      # JWT token to access `source` environment
                 --target-url {url_b} \          # URL of `destination` environment's API host
-                --target-token {token_b}        # JWT token to access `destination` environment
+                --target-token {token_b} \      # JWT token to access `destination` environment
+                --docker-cmd {path_to_docker}   # specifies the command, that will be used instead of simple `docker` 
+                                                # during tools synchronization
             
 ```

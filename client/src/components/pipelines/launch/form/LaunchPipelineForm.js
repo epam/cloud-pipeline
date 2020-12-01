@@ -1841,7 +1841,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               value = getBooleanValue(value);
             }
             required = parameter.required;
-            readOnly = !!value && noOverride;
+            readOnly = this.props.isDetachedConfiguration && this.props.detached && !!value && noOverride;
           } else {
             value = parameter;
           }
@@ -3599,8 +3599,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         : lines.push(<span>{disk} <b>Gb</b></span>);
     }
     if (lines.length > 0) {
-      return (
-        <div className={styles.summaryContainer}>
+      return [
+        <div key="summary" className={styles.summaryContainer}>
           <div className={styles.summary}>
             {
               lines.map((l, index) => (
@@ -3610,8 +3610,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               ))
             }
           </div>
+        </div>,
+        <div key="hint" style={{width: 30, textAlign: 'center'}}>
+          {hints.renderHint(
+            this.localizedStringWithSpotDictionaryFn,
+            hints.executionEnvironmentSummaryHint
+          )}
         </div>
-      );
+      ];
     } else {
       return null;
     }
@@ -3949,16 +3955,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       const availableMounts = new Set((dataStorageAvailable.value || []).map(d => +d.id));
       const defaultValue = (getDefaultValue() || '')
         .split(',')
-        .map(o => +o)
-        .filter(o => availableMounts.has(o))
+        .filter(o => /^none$/i.test(o) || availableMounts.has(+o))
         .join(',') || null;
       let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
       if (currentValue === undefined) {
         currentValue = defaultValue;
       }
+      const noStoragesSelected = /^none$/i.test(currentValue);
       const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
         this.getDefaultValue('instance_size');
       const instance = this.instanceTypes.find(t => t.name === instanceType);
+      const toggleDoNotMountStorages = (e) => {
+        if (e.target.checked) {
+          this.props.form.setFieldsValue({
+            [`${ADVANCED}.limitMounts`]: 'None'
+          });
+        } else {
+          this.props.form.setFieldsValue({
+            [`${ADVANCED}.limitMounts`]: null
+          });
+        }
+      };
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
@@ -3966,10 +3983,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           label="Limit mounts">
           <div>
             <Row type="flex" align="middle">
+              <Checkbox
+                checked={/^none$/i.test(currentValue)}
+                onChange={toggleDoNotMountStorages}
+              >
+                Do not mount storages
+              </Checkbox>
+              <div style={{marginLeft: 7, marginTop: 3}}>
+                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.doNotMountStoragesHint)}
+              </div>
+            </Row>
+            <Row
+              type="flex"
+              align="middle"
+              style={{display: noStoragesSelected ? 'none' : undefined}}
+            >
               <div style={{flex: 1}}>
                 <FormItem
                   className={styles.formItemRow}
-                  hasFeedback>
+                >
                   {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
                     {
                       initialValue: defaultValue
@@ -3990,7 +4022,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               </div>
             </Row>
             {
-              !this.toolAllowSensitive && (
+              !this.toolAllowSensitive && !noStoragesSelected && (
                 <Alert
                   type="warning"
                   showIcon
@@ -3999,7 +4031,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               )
             }
             {
-              !this.props.editConfigurationMode && (
+              !this.props.editConfigurationMode && !noStoragesSelected && (
                 <OOMCheck
                   dataStorages={
                     dataStorageAvailable.loaded
@@ -4851,12 +4883,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       {
                         this.renderExecutionEnvironmentSummary()
                       }
-                      <div style={{width: 30, textAlign: 'center'}}>
-                        {hints.renderHint(
-                          this.localizedStringWithSpotDictionaryFn,
-                          hints.executionEnvironmentSummaryHint
-                        )}
-                      </div>
                     </Row>
                   </div>
                 </div>

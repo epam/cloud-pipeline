@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -32,15 +34,19 @@ import java.util.Optional;
 public interface CloudFacade {
     RunInstance scaleUpNode(Long runId, RunInstance instance);
 
-    void scaleUpFreeNode(String nodeId);
+    RunInstance scaleUpPoolNode(String nodeId, NodePool node);
 
     void scaleDownNode(Long runId);
+
+    void scaleDownPoolNode(String nodeLabel);
 
     void terminateNode(AbstractCloudRegion region, String internalIp, String nodeName);
 
     boolean isNodeExpired(Long runId);
 
     boolean reassignNode(Long oldId, Long newId);
+
+    boolean reassignPoolNode(String nodeLabel, Long newId);
 
     /**
      * Fills in provider related data for running instance associated with run,
@@ -86,4 +92,6 @@ public interface CloudFacade {
      * Loads all disks attached to an instance associated with run including os, data and swap disks.
      */
     List<InstanceDisk> loadDisks(Long regionId, Long runId);
+
+    CloudInstanceState getInstanceState(Long runId);
 }

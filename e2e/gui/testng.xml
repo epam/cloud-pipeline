@@ -382,12 +382,6 @@
         </classes>
     </test>
 
-    <test name="RestrictionsOnInstancePriceTypeTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
-        </classes>
-    </test>
-
     <test name="RoleBasedAccessControlTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RoleBasedAccessControlTest"/>
@@ -415,6 +409,24 @@
     <test name="SharingRunsTest">
         <classes>
             <class name="com.epam.pipeline.autotests.SharingRunsTest"/>
+        </classes>
+    </test>
+
+    <test name="ParallelLoadTests" enabled="false">
+        <classes>
+            <class name="com.epam.pipeline.autotests.ParallelLoadTests"/>
+        </classes>
+    </test>
+
+    <test name="DataStoragesCLITest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.DataStoragesCLITest"/>
+        </classes>
+    </test>
+
+    <test name="RestrictionsOnInstancePriceTypeTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
         </classes>
     </test>
 </suite>

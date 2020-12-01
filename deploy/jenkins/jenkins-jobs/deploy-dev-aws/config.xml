@@ -23,7 +23,12 @@
           <description></description>
           <defaultValue>false</defaultValue>
         </hudson.model.BooleanParameterDefinition>
-      </parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>CP_DOCKER_DIST_SRV</name>
+          <description></description>
+          <defaultValue>quay.io/</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
     <hudson.plugins.throttleconcurrents.ThrottleJobProperty plugin="throttle-concurrents">

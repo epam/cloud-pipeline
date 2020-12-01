@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.vo;
 
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.util.List;
 
 
@@ -35,4 +36,6 @@ public class PipelineUserExportVO {
     private boolean includeHeader;
     private boolean includeAttributes;
     private List<String> metadataColumns;
+    private LocalDate from;
+    private LocalDate to;
 }

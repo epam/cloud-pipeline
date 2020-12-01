@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -111,9 +111,10 @@ WETTY_PID="$!"
 env > /etc/sync-routes/env.sh
 
 # Start cron
-crond
+nohup bash /etc/sync-routes/crontab.sh &> /dev/null &
+CRON_PID="$!"
 
-#Run Filebeat
+# Run Filebeat
 envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
 nohup filebeat &
 
@@ -124,10 +125,14 @@ sleep 5
 
 # Workaround the container hanging when being terminated
 function sig_handler {
-    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), quitting nginx and exiting"
+    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), stopping cron (PID $CRON_PID) quitting nginx and exiting"
     if [ $WETTY_PID -ne 0 ]; then
         kill -SIGTERM "$WETTY_PID"
         wait "$WETTY_PID"
+    fi
+    if [ $CRON_PID -ne 0 ]; then
+        kill -SIGTERM "$CRON_PID"
+        wait "$CRON_PID"
     fi
     nginx -s quit
     exit 143

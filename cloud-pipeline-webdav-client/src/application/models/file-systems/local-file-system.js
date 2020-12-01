@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import moment from 'moment-timezone';
 import FileSystem from './file-system';
+import {log, error} from '../log';
 import * as utilities from './utilities';
 
 class LocalFileSystem extends FileSystem {
@@ -98,12 +99,27 @@ class LocalFileSystem extends FileSystem {
     return new Promise((resolve, reject) => {
       const parentDirectory = path.dirname(destinationPath);
       if (!fs.existsSync(parentDirectory)) {
-        fs.mkdirSync(parentDirectory, {recursive: true});
+        log(`Creating directory ${parentDirectory}...`);
+        try {
+          fs.mkdirSync(parentDirectory, {recursive: true});
+        } catch (e) {
+          error(e);
+          reject(e);
+          return;
+        }
+        log(`Creating directory ${parentDirectory}: done.`);
       }
+      log(`Copying ${size} bytes to ${destinationPath}...`);
       this.watchCopyProgress(stream, callback, size);
       const writeStream = stream.pipe(fs.createWriteStream(destinationPath));
-      writeStream.on('finish', resolve);
-      writeStream.on('error', ({message}) => reject(message));
+      writeStream.on('finish', (e) => {
+        log(`Copying ${size} bytes to ${destinationPath}: done`);
+        resolve(e);
+      });
+      writeStream.on('error', ({message}) => {
+        error(message);
+        reject(message);
+      });
     });
   }
   remove(path) {
@@ -111,11 +127,11 @@ class LocalFileSystem extends FileSystem {
       try {
         if (fs.existsSync(path)) {
           if (fs.lstatSync(path).isDirectory()) {
-            console.log('removing directory', path);
+            log(`Removing directory ${path}`);
             fs.rmdirSync(path, {recursive: true});
             resolve();
           } else {
-            console.log('removing file', path);
+            log(`Removing file ${path}`);
             fs.unlinkSync(path);
             resolve();
           }

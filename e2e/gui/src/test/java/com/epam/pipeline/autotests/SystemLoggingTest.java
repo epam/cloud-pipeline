@@ -74,8 +74,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
     public void userAuthentication() {
         logoutIfNeeded();
         loginAs(user);
+        sleep(30, SECONDS);
         logout();
         loginAs(admin);
+        sleep(30, SECONDS);
         SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemLogs();

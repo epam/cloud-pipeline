@@ -101,8 +101,15 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     private Optional<SimpleEntry<String, StoragePricing>> extractEntryFromAwsPricing(final AwsPricingCard price) {
         final String regionName = price.getProduct().getAttributes().get(LOCATION_KEY);
         return getRegionFromFullLocation(regionName)
-            .map(region -> new SimpleEntry<>(region.getName(),
-                                             convertAwsPricing(price.getTerms().getOnDemand())));
+            .map(region -> {
+                final StoragePricing storagePricing = convertAwsPricing(price.getTerms().getOnDemand());
+                if (CollectionUtils.isEmpty(storagePricing.getPrices())) {
+                    log.warn(String.format("Region [%s] doesn't have price rates specified in USD, will be skipped.",
+                                           region.getName()));
+                    return null;
+                }
+                return new SimpleEntry<>(region.getName(), storagePricing);
+            });
     }
 
     private StoragePricing convertAwsPricing(final Map<String, AwsPriceDimensions> allPrices) {
@@ -112,18 +119,21 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             .map(Map::values)
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
-        rates.forEach(rate -> {
-            final BigDecimal priceGb = new BigDecimal(rate.getPricePerUnit().get(US_DOLLAR_CODE),
-                                                      new MathContext(PRECISION))
-                .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
-            final Long beginRange = rate.getBeginRange() * BYTES_TO_GB;
-            final Long endRange = rate.getEndRange().equals(Long.MAX_VALUE)
-                                  ? Long.MAX_VALUE
-                                  : rate.getEndRange() * BYTES_TO_GB;
-            final StoragePricing.StoragePricingEntity pricingEntity =
-                new StoragePricing.StoragePricingEntity(beginRange, endRange, priceGb);
-            pricing.addPrice(pricingEntity);
-        });
+        rates.stream()
+            .filter(rate -> MapUtils.isNotEmpty(rate.getPricePerUnit()))
+            .filter(rate -> rate.getPricePerUnit().containsKey(US_DOLLAR_CODE))
+            .forEach(rate -> {
+                final BigDecimal priceGb = new BigDecimal(rate.getPricePerUnit().get(US_DOLLAR_CODE),
+                                                          new MathContext(PRECISION))
+                    .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
+                final Long beginRange = rate.getBeginRange() * BYTES_TO_GB;
+                final Long endRange = rate.getEndRange().equals(Long.MAX_VALUE)
+                                      ? Long.MAX_VALUE
+                                      : rate.getEndRange() * BYTES_TO_GB;
+                final StoragePricing.StoragePricingEntity pricingEntity =
+                    new StoragePricing.StoragePricingEntity(beginRange, endRange, priceGb);
+                pricing.addPrice(pricingEntity);
+            });
         return pricing;
     }
 

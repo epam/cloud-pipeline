@@ -1,0 +1,21 @@
+version: 0.17.{build}
+
+branches:
+  only:
+    - develop
+    - /release\/.*/
+
+skip_tags: true
+max_jobs: 1
+image: Ubuntu1604
+stack: node 10, jdk 8
+
+build_script:
+- |-
+  sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/node" "/usr/local/bin/node"
+  sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/npm" "/usr/local/bin/npm"
+  sudo -E bash -s <<EOF
+    python2 -m pip install awscli==1.14.56 mkdocs
+    bash deploy/appveyor/appveyor_pack_dist.sh
+  EOF
+test: off

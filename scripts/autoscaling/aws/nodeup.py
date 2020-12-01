@@ -34,6 +34,7 @@ import fnmatch
 import sys
 import math
 import socket
+import jwt
 
 SPOT_UNAVAILABLE_EXIT_CODE = 5
 LIMIT_EXCEEDED_EXIT_CODE = 6
@@ -53,6 +54,21 @@ api_token = None
 script_path = None
 
 
+def is_run_id_numerical(run_id):
+    try:
+        int(run_id)
+        return True
+    except ValueError:
+        return False
+
+
+def is_api_logging_enabled():
+    global api_token
+    global api_url
+    global current_run_id
+    return is_run_id_numerical(current_run_id) and api_url and api_token
+
+
 def pipe_log_init(run_id):
     global api_token
     global api_url
@@ -62,7 +78,7 @@ def pipe_log_init(run_id):
     api_url = os.environ["API"]
     api_token = os.environ["API_TOKEN"]
 
-    if not api_url or not api_token:
+    if not is_api_logging_enabled():
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
@@ -72,7 +88,7 @@ def pipe_log_warn(message):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.warn('[{}] {}'.format(current_run_id, message),
                     task_name=NODEUP_TASK,
                     run_id=current_run_id,
@@ -89,7 +105,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.log_task_event(NODEUP_TASK,
                               '[{}] {}'.format(current_run_id, message),
                               run_id=current_run_id,
@@ -234,7 +250,7 @@ ROOT_DEVICE_DEFAULT = {
                         "Ebs": {"VolumeSize": 40}
                       }
 
-def root_device(ec2, ins_img):
+def root_device(ec2, ins_img, kms_encyr_key_id):
     try:
         pipe_log('- Getting image {} block device mapping details'.format(ins_img))
         img_details = ec2.describe_images(ImageIds=[ins_img])
@@ -256,6 +272,9 @@ def root_device(ec2, ins_img):
             "DeviceName": block_device_name,
             "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp2"}
         }
+        if kms_encyr_key_id:
+            device_spec["Ebs"]["Encrypted"] = True
+            device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
         return device_spec
     except Exception as e:
         pipe_log('Error while getting image {} root device, using default device: {}\n{}'.format(ins_img,
@@ -325,9 +344,11 @@ def run_id_filter(run_id):
            }
 
 
-def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kube_client):
+def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type,
+                 is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kube_client, pre_pull_images):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    user_data_script = get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip,
+                                            kubeadm_token, swap_size, pre_pull_images)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size, kube_client)
@@ -411,7 +432,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
 
 
 def get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size):
-    block_devices = [root_device(ec2, ins_img), block_device(ins_hdd, kms_encyr_key_id)]
+    block_devices = [root_device(ec2, ins_img, kms_encyr_key_id), block_device(ins_hdd, kms_encyr_key_id)]
     if swap_size is not None and swap_size > 0:
         block_devices.append(block_device(swap_size, kms_encyr_key_id, name="/dev/sdc"))
     return block_devices
@@ -550,7 +571,24 @@ def get_swap_ratio(swap_params):
                     pipe_log("Unexpected swap_ratio value: {}".format(item_value))
     return None
 
-def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
+
+def replace_docker_images(pre_pull_images, user_data_script):
+    global api_token
+    if not pre_pull_images:
+        return user_data_script
+    payload = jwt.decode(api_token, verify=False)
+    if 'sub' in payload:
+        subject = payload['sub']
+        user_data_script = user_data_script\
+            .replace("@PRE_PULL_DOCKERS@", ",".join(pre_pull_images))\
+            .replace("@API_USER@", subject)
+        return user_data_script
+    else:
+        raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
+
+
+def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip,
+                         kubeadm_token, swap_size, pre_pull_images):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -560,6 +598,7 @@ def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube
         init_script.close()
         user_data_script = replace_proxies(aws_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
+        user_data_script = replace_docker_images(pre_pull_images, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                             .replace('@KUBE_IP@', kube_ip) \
@@ -613,7 +652,7 @@ def check_instance(ec2, ins_id, run_id, num_rep, time_rep, kube_client):
     pipe_log('Instance is booted. ID: {}, IP: {}\n-'.format(ins_id, ipaddr))
 
 
-def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region):
+def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region, additional_labels):
     pipe_log('Assigning instance {} to RunID: {}'.format(nodename, run_id))
     obj = {
         "apiVersion": "v1",
@@ -626,6 +665,13 @@ def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region):
             }
         }
     }
+    if additional_labels:
+        for label in additional_labels:
+            label_parts = label.split("=")
+            if len(label_parts) == 1:
+                obj["metadata"]["labels"][label_parts[0]] = None
+            else:
+                obj["metadata"]["labels"][label_parts[0]] = label_parts[1]
 
     if cluster_name:
         obj["metadata"]["labels"]["cp-cluster-name"] = cluster_name
@@ -1078,6 +1124,8 @@ def main():
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
+    parser.add_argument("--label", type=str, default=[], required=False, action='append')
+    parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
     args, unknown = parser.parse_known_args()
     ins_key = args.ins_key
@@ -1095,7 +1143,8 @@ def main():
     kubeadm_token = args.kubeadm_token
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
-
+    pre_pull_images = args.image
+    additional_labels = args.label
 
     if not kube_ip or not kubeadm_token:
         raise RuntimeError('Kubernetes configuration is required to create a new node')
@@ -1161,12 +1210,12 @@ def main():
             api_url = os.environ["API"]
             api_token = os.environ["API_TOKEN"]
             ins_id, ins_ip = run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
-                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, api)
+                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, api, pre_pull_images)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
         nodename = verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api)
-        label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region)
+        label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region, additional_labels)
         pipe_log('Node created:\n'
                  '- {}\n'
                  '- {}'.format(ins_id, ins_ip))

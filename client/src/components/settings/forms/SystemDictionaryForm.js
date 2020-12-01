@@ -70,16 +70,19 @@ function dictionariesAreEqual (dictionaryA, dictionaryB) {
   return true;
 }
 
-function mapValue (value) {
-  const {
-    autofill = true,
-    value: linkValue,
-    links = []
-  } = value || {};
-  return {
-    autofill,
-    value: linkValue,
-    links: links.map(link => ({key: link.key, value: link.value}))
+function mapValue (filter) {
+  return function map (value) {
+    const {
+      autofill = true,
+      value: linkValue,
+      links = []
+    } = value || {};
+    return {
+      autofill,
+      value: linkValue,
+      links: links.map(link => ({key: link.key, value: link.value})),
+      filtered: !filter || (linkValue || '').toLowerCase().indexOf(filter.toLowerCase()) >= 0
+    };
   };
 }
 
@@ -108,6 +111,8 @@ class SystemDictionaryForm extends React.Component {
       !dictionariesAreEqual(prevProps.items, this.props.items)
     ) {
       this.updateState();
+    } else if (this.props.filter !== prevProps.filter) {
+      this.updateFilters();
     }
   }
 
@@ -137,9 +142,16 @@ class SystemDictionaryForm extends React.Component {
     this.setState({
       name,
       initialName: name,
-      items: (items || []).map(mapValue),
-      initialItems: (items || []).map(mapValue)
+      items: (items || []).map(mapValue(this.props.filter)),
+      initialItems: (items || []).map(mapValue(this.props.filter))
     }, this.afterChange);
+  };
+
+  updateFilters = () => {
+    const {items} = this.state;
+    this.setState({
+      items: (items || []).map(mapValue(this.props.filter))
+    });
   };
 
   validate = () => {
@@ -192,7 +204,12 @@ class SystemDictionaryForm extends React.Component {
     const {onSave, isNew} = this.props;
     if (onSave && this.valid && this.modified) {
       const {name, initialName, items} = this.state;
-      onSave(name, items, !isNew && initialName !== name ? initialName : undefined);
+      const itemsProcessed = (items || [])
+        .map((item) => {
+          const {filtered, ...rest} = item;
+          return rest;
+        });
+      onSave(name, itemsProcessed, !isNew && initialName !== name ? initialName : undefined);
     }
   };
 
@@ -232,10 +249,17 @@ class SystemDictionaryForm extends React.Component {
 
   onItemAdd = () => {
     const {items} = this.state;
-    items.push({value: '', autofill: true, links: []});
+    items.push({value: '', autofill: true, links: [], filtered: true});
     this.setState({
       items: items.slice()
-    }, this.afterChange);
+    }, () => {
+      setTimeout(() => {
+        if (this.itemsPanel) {
+          this.itemsPanel.scrollTop = this.itemsPanel.scrollHeight;
+        }
+      });
+      this.afterChange();
+    });
   };
 
   onChangeLinks = (links) => {
@@ -265,6 +289,10 @@ class SystemDictionaryForm extends React.Component {
       }
     }
   };
+
+  onItemsPanelInitialized = (ref) => {
+    this.itemsPanel = ref;
+  }
 
   render () {
     const {disabled, isNew} = this.props;
@@ -305,10 +333,16 @@ class SystemDictionaryForm extends React.Component {
             </div>
           )
         }
-        <div className={styles.items}>
+        <div
+          ref={this.onItemsPanelInitialized}
+          className={styles.items}
+        >
           {
             items.map((item, index) => (
-              <div key={index} className={styles.item}>
+              <div
+                key={index}
+                className={`${styles.item} ${item.filtered ? '' : styles.hidden}`}
+              >
                 <div className={styles.row}>
                   <Input
                     className={`${styles.input} ${itemsError[index] ? styles.error : ''}`}
@@ -439,7 +473,8 @@ SystemDictionaryForm.propTypes = {
   onChange: PropTypes.func,
   onSave: PropTypes.func,
   onDelete: PropTypes.func,
-  dictionaries: PropTypes.array
+  dictionaries: PropTypes.array,
+  filter: PropTypes.string
 };
 
 export default SystemDictionaryForm;

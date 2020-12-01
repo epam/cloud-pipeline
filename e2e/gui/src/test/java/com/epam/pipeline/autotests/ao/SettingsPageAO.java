@@ -183,6 +183,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public SystemEventsAO deleteAllEntries() {
+            sleep(2, SECONDS);
             List<SelenideElement> entries = getAllEntries();
             if (!entries.isEmpty()) {
                 entries.forEach(this::removeEntry);
@@ -196,7 +197,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         private void removeEntry(SelenideElement entry) {
-            entry.find(byId("delete-notification-button")).shouldBe(visible).click();
+            entry.find(byId("delete-notification-button")).shouldBe(visible, enabled).click();
             new ConfirmationPopupAO<>(this)
                     .ensureTitleIs("Are you sure you want to delete notification")
                     .ok();
@@ -497,11 +498,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
-            public UsersTabAO setSearchName(String name) {
-                actions().sendKeys(name).perform();
-                return this;
-            }
-
             public UsersTabAO searchUser(String name) {
                 sleep(1, SECONDS);
                 return clickSearch()
@@ -549,6 +545,50 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 $(byText("No data")).shouldBe(visible, exist);
                 return this;
             }
+
+            public UsersTabAO setSearchName(String name) {
+                actions().sendKeys(name).perform();
+                return this;
+            }
+
+            private boolean userTabIsEmpty() {
+                sleep(1, SECONDS);
+                return $(byText("No data")).isDisplayed();
+            }
+
+            public CreateUserPopup clickCreateButton() {
+                click(CREATE_USER);
+                return new CreateUserPopup(this);
+            }
+
+            public UsersTabAO createIfNotExist(String name) {
+                if (clickSearch().setSearchName(name).pressEnter().userTabIsEmpty()) {
+                    clickCreateButton()
+                            .setValue(NAME, name)
+                            .ok();
+                }
+                return this;
+            }
+
+            public UsersTabAO deleteUserIfExist(String name) {
+                if (!clickSearch().setSearchName(name).pressEnter().userTabIsEmpty()) {
+                    SelenideElement entry = getUser(name.toUpperCase()).shouldBe(visible);
+                    new UserEntry(this, name.toUpperCase(), entry)
+                            .edit()
+                            .delete();
+                    confirmUserDeletion(name);
+                }
+                return this;
+            }
+
+            private UsersTabAO confirmUserDeletion(final String name) {
+                new ConfirmationPopupAO(this.parentAO)
+                        .ensureTitleIs(String.format("Are you sure you want to delete user %s?", name.toUpperCase()))
+                        .sleep(1, SECONDS)
+                        .click(OK);
+                return this;
+            }
+
 
             public class UserEntry implements AccessObject<SystemEventsEntry> {
                 private final UsersTabAO parentAO;
@@ -606,6 +646,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     @Override
                     public UsersTabAO ok() {
                         click(OK);
+                        return parentAO;
+                    }
+
+                    public UsersTabAO delete() {
+                        click(DELETE);
                         return parentAO;
                     }
 
@@ -683,6 +728,28 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         }
                         return this;
                     }
+                }
+            }
+
+            public class CreateUserPopup extends PopupAO<CreateUserPopup, UsersTabAO> {
+
+                public CreateUserPopup(UsersTabAO parentAO) {
+                    super(parentAO);
+                }
+
+                public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                        entry(NAME, context().$(byId("name"))),
+                        entry(OK, context().$(byId("create-user-form-ok-button")))
+                );
+
+                @Override
+                public UsersTabAO ok() {
+                    return click(OK).parent();
+                }
+
+                @Override
+                public Map<Primitive, SelenideElement> elements() {
+                    return elements;
                 }
             }
         }
@@ -912,6 +979,40 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return new DockerSecurityAO(parentAO);
         }
 
+        public PreferencesAO searchPreference(String preference) {
+            setValue(SEARCH, preference);
+            enter();
+            return this;
+        }
+
+        public PreferencesAO setPreference(String preference, String value, boolean eyeIsChecked) {
+            searchPreference(preference);
+            final By pref = getByField(preference);
+            click(pref)
+                    .clear(pref)
+                    .setValue(pref, value);
+            final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
+                    .find(byClassName("anticon"));
+            if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
+                    (eye.has(cssClass("anticon-eye")) && !eyeIsChecked)) {
+                eye.click();
+            }
+            return this;
+        }
+
+        private By getByField(final String variable) {
+            return new By() {
+                @Override
+                public List<WebElement> findElements(final SearchContext context) {
+                    return $$(byClassName("preference-group__preference-row"))
+                            .stream()
+                            .filter(element -> exactText(variable).apply(element))
+                            .map(e -> e.find(".ant-input-sm"))
+                            .collect(toList());
+                }
+            };
+        }
+
         public PreferencesAO setSystemSshDefaultRootUserEnabled() {
             setValue(SEARCH, "system.ssh.default.root.user.enabled");
             enter();
@@ -928,12 +1029,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public PreferencesAO save() {
             click(SAVE);
+            get(SAVE).shouldBe(disabled);
             return this;
         }
 
         public PreferencesAO saveIfNeeded() {
             if(get(SAVE).isEnabled()) {
-                click(SAVE);
+                save();
             }
             return this;
         }
@@ -1083,14 +1185,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public DockerSecurityAO enablePolicyDenyNotScanned() {
-                if ($(policyDenyNotScanned).has(text("Disabled"))) {
+                if (!$(policyDenyNotScanned).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"))) {
                     clickPolicyDenyNotScanned();
                 }
                 return this;
             }
 
             public DockerSecurityAO disablePolicyDenyNotScanned() {
-                if ($(policyDenyNotScanned).has(text("Enable"))) {
+                if ($(policyDenyNotScanned).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"))) {
                     clickPolicyDenyNotScanned();
                 }
                 return this;

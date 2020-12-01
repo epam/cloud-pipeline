@@ -16,19 +16,13 @@
 
 package com.epam.pipeline.test.web;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -39,13 +33,35 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.WebApplicationContext;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
 @WebTestConfiguration
 public abstract class AbstractControllerTest {
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String SERVLET_PATH = "/restapi";
+    protected static final String CERTIFICATE_NAME = "ca.crt";
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+    protected static final String MULTIPART_CONTENT_TYPE =
+            "multipart/form-data; boundary=--------------------------boundary";
+    protected static final String MULTIPART_CONTENT =
+            "----------------------------boundary\r\n" +
+                    "Content-Disposition: form-data; name=\"file\"; filename=\"file.txt\"\r\n" +
+                    "Content-Type:  application/octet-stream\r\n" +
+                    "\r\n" +
+                    "file.txt" +
+                    "\r\n" +
+                    "----------------------------boundary";
 
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
@@ -57,7 +73,7 @@ public abstract class AbstractControllerTest {
     protected WebApplicationContext wac;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         // checks that all required dependencies are provided.
         assertNotNull("WebApplicationContext isn't provided.", wac);
         assertNotNull("ObjectMapper isn't provided.", objectMapper);
@@ -82,9 +98,10 @@ public abstract class AbstractControllerTest {
         return expectedResult;
     }
 
+    @SneakyThrows
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final T payload,
-                                   final TypeReference<Result<T>> typeReference) throws Exception {
+                                   final TypeReference<Result<T>> typeReference) {
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
@@ -96,23 +113,78 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
-    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+    public void assertFileResponse(final MvcResult mvcResult, final String fileName, final byte[] fileContent) {
+        assertResponseHeader(mvcResult, fileName);
+        assertContent(mvcResult, fileContent);
+    }
+
+    public void assertResponseHeader(final MvcResult mvcResult, final String fileName) {
+        assertThat(mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER)).contains(fileName);
+    }
+
+    public void assertContent(final MvcResult mvcResult, final byte[] fileContent) {
+        assertThat(mvcResult.getResponse().getContentAsByteArray()).isEqualTo(fileContent);
+    }
+
+    @SneakyThrows
+    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) {
         mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH))
                 .andExpect(status().isUnauthorized());
     }
 
-    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+    @SneakyThrows
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder) {
         return performRequest(requestBuilder, EXPECTED_CONTENT_TYPE);
     }
 
-    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, String contentType)
-            throws Exception {
+
+    @SneakyThrows
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, final String contentType) {
         return mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
                 .contentType(contentType))
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType(contentType))
                 .andReturn();
+    }
+
+    @SneakyThrows
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder,
+                                    final String requestContentType,
+                                    final String responseContentType) {
+        return mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(requestContentType))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType(responseContentType))
+                .andReturn();
+    }
+
+    @SneakyThrows
+    public MvcResult performRedirectedRequest(final MockHttpServletRequestBuilder requestBuilder,
+                                              final String redirectUrl) {
+        return mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl(redirectUrl))
+                .andReturn();
+    }
+
+    @SneakyThrows
+    public void performRequestWithoutResponse(final MockHttpServletRequestBuilder requestBuilder) {
+        mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isOk());
+    }
+
+    public MultiValueMap<String, String> multiValueMapOf(Object... objects) {
+        final MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        for (int i = 0; i < objects.length; i += 2) {
+            map.add(String.valueOf(objects[i]), String.valueOf(objects[i + 1]));
+        }
+        return map;
     }
 }

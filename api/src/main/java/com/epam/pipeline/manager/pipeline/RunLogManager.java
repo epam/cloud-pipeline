@@ -134,6 +134,10 @@ public class RunLogManager {
         return runLogDao.loadAllLogsForTask(runId, taskId);
     }
 
+    public List<RunLog> loadAllLogsForTask(final Long runId, final String taskName) {
+        String taskId = PipelineTask.buildTaskId(taskName, null);
+        return runLogDao.loadAllLogsForTask(runId, taskId);
+    }
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineTask> loadTasksByRunIdExternal(Long runId) {

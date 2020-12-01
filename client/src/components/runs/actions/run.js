@@ -364,6 +364,9 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get initialSelectedDataStorageIndecis () {
+    if (/^none$/i.test(this.props.limitMounts)) {
+      return [];
+    }
     return (
       this.props.limitMounts ||
       this.dataStorages.filter(d => !d.sensitive)
@@ -375,6 +378,9 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get selectedDataStorageIndecis () {
+    if (/^none$/i.test(this.state.limitMounts)) {
+      return [];
+    }
     return (
       this.state.limitMounts ||
       this.dataStorages.filter(d => !d.sensitive)

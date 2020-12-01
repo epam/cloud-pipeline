@@ -76,17 +76,33 @@ pipe_log_info "Starting kubernetes setup" "$KUBE_MASTER_SETUP_TASK"
 
 export CP_CAP_KUBE_PODS_CIDR="${CP_CAP_KUBE_PODS_CIDR:-172.16.0.0/18}" # Default 16382 IPs:  172.16.0.1 - 172.16.63.254
 export CP_CAP_KUBE_SVC_CIDR="${CP_CAP_KUBE_SVC_CIDR:-172.16.64.0/22}"  # Default 254 IPs:    172.16.64.1 - 172.16.67.254 
-export CP_CAP_KUBE_DOMAIN="${CP_CAP_KUBE_DOMAIN:-$(hostname).cloud-pipeline}"
+export CP_CAP_KUBE_DOMAIN="${CP_CAP_KUBE_DOMAIN:-${RUN_ID}.cp}"
 export CP_CAP_KUBE_CNI_CONFIG="${CP_CAP_KUBE_CNI_CONFIG:-https://raw.githubusercontent.com/epam/cloud-pipeline/6d210f2dd2f376737f97269385ae6a192f0a521c/deploy/contents/k8s/kube-system/canal.yaml}"
 export CP_CAP_KUBE_INSTALL_LOG="${CP_CAP_KUBE_INSTALL_LOG:-/var/log/kube-install/install.log}"
 export CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS="${CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS:-60}"
 export CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC="${CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC:-10}"
 mkdir -p $(dirname $CP_CAP_KUBE_INSTALL_LOG)
 
+# If this is enabled - Kube's DNS IP will be added to the host machine, so the Services names can be resolved from host, not only from within the pods
+export CP_CAP_KUBE_DNS_ADD_TO_HOST="${CP_CAP_KUBE_DNS_ADD_TO_HOST:-true}"
+# If the DNS IP is not provided explicitely - it is calculated from the SVC CIDR
+if [ -z "$CP_CAP_KUBE_DNS_IP" ]; then
+    # Split the SVC CIDR by dot
+    IFS='.' read -r -a _kube_svc_dns_parts <<< "$CP_CAP_KUBE_SVC_CIDR"
+    # The last part contains also a subnet mask (e.g. 0/22). So we split the last part by "/" and take only the IP item
+    IFS='/' read -r -a _kube_svc_dns_parts_last <<< "${_kube_svc_dns_parts[3]}"
+    # Kube DNS always takes the 10th address in the SVC CIDR range
+    # FIXME: consider the IP range overflow, e.g. if the SVC CIDR is: 172.16.64.254/22. Adding "10" - will produce an invalid IP
+    _kube_svc_dns_parts_last=$(( _kube_svc_dns_parts_last[0] + 10 ))
+    export CP_CAP_KUBE_DNS_IP="${_kube_svc_dns_parts[0]}.${_kube_svc_dns_parts[1]}.${_kube_svc_dns_parts[2]}.$_kube_svc_dns_parts_last"
+fi
+
 pipe_log_info "- Install log: $CP_CAP_KUBE_INSTALL_LOG\n \
 - Kube pods CIDR: $CP_CAP_KUBE_PODS_CIDR\n \
 - Kube services CIDR: $CP_CAP_KUBE_SVC_CIDR\n \
 - Kube domain: $CP_CAP_KUBE_DOMAIN\n \
+- Kube DNS IP: $CP_CAP_KUBE_DNS_IP\n \
+- Kube DNS IP added to host: $CP_CAP_KUBE_DNS_ADD_TO_HOST\n \
 - Kube CNI config URL: $CP_CAP_KUBE_CNI_CONFIG" "$KUBE_MASTER_SETUP_TASK"
 
 # Remove /usr/cpbin from the PATH, so the kubelet will use the "real" docker binary
@@ -233,4 +249,15 @@ else
         fi
     done
     pipe_log_success "All worker nodes are connected" "$KUBE_MASTER_SETUP_TASK_WORKERS"
+fi
+
+#############################################################
+# Update the /etc/resolv.conf with the Kube's DNS IP
+#############################################################
+if [ "$CP_CAP_KUBE_DNS_ADD_TO_HOST" == "true" ]; then
+    \cp /etc/resolv.conf /tmp/resolv.conf
+    sed -i "/$CP_CAP_KUBE_DNS_IP/d" /tmp/resolv.conf
+    echo "nameserver $CP_CAP_KUBE_DNS_IP" >> /tmp/resolv.conf
+    echo "options rotate" >> /tmp/resolv.conf
+    \cp /tmp/resolv.conf /etc/resolv.conf
 fi

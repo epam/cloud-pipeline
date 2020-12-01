@@ -15,11 +15,13 @@
 
 package com.epam.pipeline.entity.datastorage;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
+@EqualsAndHashCode
 public class StorageMountPath {
 
     private final String path;

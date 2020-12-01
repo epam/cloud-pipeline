@@ -20,11 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.epam.pipeline.entity.issue.Attachment;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class IssueCommentVO {
     private String text;
 

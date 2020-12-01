@@ -157,6 +157,8 @@ public final class MessageConstants {
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
     public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
     public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
+    public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
+    public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -329,6 +331,7 @@ public final class MessageConstants {
     public static final String ERROR_INVALID_METADATA_ENTITY_CLASS_ID = "error.invalid.metadata.entity.class.id";
     public static final String ERROR_METADATA_ENTITY_CLASS_NOT_FOUND = "error.metadata.entity.class.not.found";
     public static final String ERROR_METADATA_ENTITY_NOT_FOUND = "error.metadata.entity.not.found";
+    public static final String ERROR_METADATA_ENTITY_ALREADY_EXIST = "error.metadata.entity.already.exists";
     public static final String ERROR_METADATA_UPDATE_KEY_NOT_FOUND = "error.metadata.update.key.not.found";
     public static final String ERROR_INVALID_METADATA_FILTER = "error.invalid.metadata.filter";
     public static final String ERROR_METADATA_UPLOAD_CHANGED_TYPE = "error.metadata.upload.changed.type";
@@ -475,8 +478,8 @@ public final class MessageConstants {
             "error.contextual.preference.external.resource.id.missing";
     public static final String ERROR_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_NOT_FOUND =
             "error.contextual.preference.external.resource.not.found";
-    public static final String WARN_CONTEXTUAL_PREFERENCE_REDUCER_NOT_FOUND =
-            "warn.contextual.preference.reducer.not.found";
+    public static final String WARN_CONTEXTUAL_PREFERENCE_DIFFERENT_VALUES =
+            "warn.contextual.preference.reducer.different.values";
     public static final String WARN_CONTEXTUAL_PREFERENCE_REDUCING_FAILED =
             "warn.contextual.preference.reducing.failed";
 
@@ -539,6 +542,24 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_REGION_NOT_SUPPORTED = "error.lustre.region.not.supported";
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
     public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
+
+    //Node Schedule
+    public static final String ERROR_NODE_SCHEDULE_MISSING_ENTRIES = "error.node.schedule.missing.entries";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_FROM = "error.node.schedule.missing.from";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_FROM_TIME = "error.node.schedule.missing.from.time";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_TO = "error.node.schedule.missing.to";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_TO_TIME = "error.node.schedule.missing.to.time";
+    public static final String ERROR_NODE_SCHEDULE_NOT_FOUND = "error.node.schedule.not.found";
+
+    //Persistent Nodes
+    public static final String ERROR_NODE_POOL_NOT_FOUND = "error.node.pool.not.found";
+    public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
+    public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
+    public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";
+    public static final String ERROR_NODE_POOL_PRICE_TYPE_NOT_ALLOWED = "error.node.pool.price.type.not.allowed";
+    public static final String ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED = "error.node.pool.instance.type.not.allowed";
+    public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";
+    public static final String ERROR_NODE_POOL_INVALID_COUNT = "error.node.pool.invalid.count";
 
     private MessageConstants() {
         // no-op
