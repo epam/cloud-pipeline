@@ -107,7 +107,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
-        private final Set<Long> poolNodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
+        private final Map<Long, Integer> poolNodeUpTaskInProgress = new ConcurrentHashMap<>();
 
         @Autowired
         AutoscaleManagerCore(final PipelineRunManager pipelineRunManager,
@@ -146,7 +146,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 scaleDownHandler.checkFreeNodes(scheduledRuns, client, pods);
                 checkPoolNodes(client);
                 int clusterSize = kubernetesManager.getAvailableNodes(client).getItems().size();
-                int nodeUpTasksSize = nodeUpTaskInProgress.size() + poolNodeUpTaskInProgress.size();
+                int nodeUpTasksSize = nodeUpTaskInProgress.size() + getPoolNodeUpTasksCount();
 
                 log.debug(
                         "Finished autoscaling job. Minimum cluster size {}. Maximum cluster size {}. "
@@ -157,6 +157,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                         nodeUpTasksSize,
                         clusterSize + nodeUpTasksSize);
                 log.debug("Current retry queue size: {}.", nodeUpAttempts.size());
+                log.debug("Current pool instance queue: {}.", poolNodeUpTaskInProgress);
             } catch (KubernetesClientException e) {
                 log.error(e.getMessage(), e);
             }
@@ -186,22 +187,24 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             }
             final List<Node> currentNodes = ListUtils.emptyIfNull(kubernetesManager.getAvailableNodes(client)
                     .getItems());
-            activePools.forEach(node -> {
-                if (poolNodeUpTaskInProgress.contains(node.getId())) {
-                    log.debug("Instance for {} is already created.", node);
+            activePools.forEach(pool -> {
+                final Integer activeTasks = poolNodeUpTaskInProgress.getOrDefault(pool.getId(), 0);
+                log.debug("{} instance(s) are already created for pool {}.", activeTasks, pool);
+                if (activeTasks >= pool.getCount()) {
                     return;
                 }
                 final long matchingNodeCount = currentNodes.stream().filter(currentNode -> {
                     final String nodeIdLabel = MapUtils.emptyIfNull(currentNode.getMetadata().getLabels())
                             .get(KubernetesConstants.NODE_POOL_ID_LABEL);
                     return StringUtils.isNotBlank(nodeIdLabel) && NumberUtils.isDigits(nodeIdLabel) &&
-                            node.getId().equals(Long.parseLong(nodeIdLabel));
+                            pool.getId().equals(Long.parseLong(nodeIdLabel));
                 }).count();
-                log.debug("Found {} existing instances matching {}.", matchingNodeCount, node);
-                if (matchingNodeCount < node.getCount()) {
-                    final long nodesToCreate = node.getCount() - matchingNodeCount;
-                    log.debug("Creating {} node pool instance(s) for {}.", nodesToCreate, node);
-                    LongStream.range(0, nodesToCreate).forEach(i -> createPoolNode(node, client));
+                log.debug("Found {} existing instances matching {}.", matchingNodeCount, pool);
+                final long totalCount = activeTasks + matchingNodeCount;
+                if (totalCount < pool.getCount()) {
+                    final long nodesToCreate = pool.getCount() - totalCount;
+                    log.debug("Creating {} pool instance(s) for {}.", nodesToCreate, pool);
+                    LongStream.range(0, nodesToCreate).forEach(i -> createPoolNode(pool, client));
                 }
             });
         }
@@ -216,20 +219,20 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             if (!hasFreeNodeUpThreads()) {
                 return;
             }
-            poolNodeUpTaskInProgress.add(node.getId());
+            poolNodeUpTaskInProgress.merge(node.getId(), 1, (oldVal, newVal) -> oldVal + 1);
             CompletableFuture.runAsync(
                 () -> {
                     Instant start = Instant.now();
                     String nodeId = AutoscaleContants.NODE_POOL_PREFIX + nodesManager.getNextFreeNodeId();
                     cloudFacade.scaleUpPoolNode(nodeId, node);
                     Instant end = Instant.now();
-                    poolNodeUpTaskInProgress.remove(node.getId());
+                    poolNodeUpTaskInProgress.merge(node.getId(), 0, (oldVal, newVal) -> oldVal - 1);
                     log.debug("Time to create {} : {} s.", node, Duration.between(start, end).getSeconds());
                 },
                 executorService.getExecutorService())
                 .exceptionally(e -> {
                     log.error(e.getMessage(), e);
-                    poolNodeUpTaskInProgress.remove(node.getId());
+                    poolNodeUpTaskInProgress.merge(node.getId(), 0, (oldVal, newVal) -> oldVal - 1);
                     return null;
                 });
         }
@@ -331,7 +334,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
         private boolean hasFreeNodeUpThreads() {
             final int maxNodeUpThreads = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_MAX_THREADS);
-            final int nodeUpTasks = nodeUpTaskInProgress.size() + poolNodeUpTaskInProgress.size();
+            final int nodeUpTasks = nodeUpTaskInProgress.size() + getPoolNodeUpTasksCount();
             if (nodeUpTasks >= maxNodeUpThreads) {
                 log.debug("Exceeded maximum node up tasks queue size {}.", nodeUpTasks);
                 return false;
@@ -474,7 +477,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private int getCurrentClusterSize(KubernetesClient client) {
-            return nodeUpTaskInProgress.size() + poolNodeUpTaskInProgress.size() +
+            return nodeUpTaskInProgress.size() + getPoolNodeUpTasksCount() +
                     kubernetesManager.getAvailableNodes(client).getItems().size();
         }
 
@@ -500,6 +503,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
             return instanceRequest;
+        }
+
+        private int getPoolNodeUpTasksCount() {
+            return MapUtils.emptyIfNull(poolNodeUpTaskInProgress)
+                    .values()
+                    .stream()
+                    .mapToInt(i -> i)
+                    .sum();
         }
     }
 }
