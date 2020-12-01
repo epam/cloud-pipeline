@@ -23,14 +23,15 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getAclSecuredEntry;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getEntityPermissionVO;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVO;
@@ -43,7 +44,8 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     private final AclSecuredEntry aclSecuredEntry = getAclSecuredEntry();
     private final PermissionGrantVO permissionGrantVO = getPermissionGrantVO();
     private final EntityPermissionVO entityPermissionVO = getEntityPermissionVO();
-    private final S3bucketDataStorage s3bucket = DatastorageCreatorUtils.getS3bucketDataStorage(ID, SIMPLE_USER);
+    private final S3bucketDataStorage s3bucket = getS3bucketDataStorage(ID, SIMPLE_USER);
+    private final S3bucketDataStorage anotherS3bucket = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
 
     @Autowired
     private GrantPermissionManager spyPermissionManager;
@@ -93,7 +95,6 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldGetPermissionForOwner() {
-        initAclEntity(s3bucket);
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
         doReturn(aclSecuredEntry).when(spyPermissionManager).getPermissions(ID, AclClass.DATA_STORAGE);
         mockSecurityContext();
@@ -109,7 +110,29 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
         doReturn(aclSecuredEntry).when(spyPermissionManager).getPermissions(ID, AclClass.DATA_STORAGE);
         mockSecurityContext();
-        mockUser(ANOTHER_SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class,
+            () -> aclPermissionApiService.getPermissions(ID, AclClass.DATA_STORAGE));
+    }
+
+    @Test
+    @WithMockUser(SIMPLE_USER)
+    public void shouldGetPermissionWhenPermissionIsGranted() {
+        initAclEntity(anotherS3bucket, AclPermission.READ);
+        doReturn(anotherS3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
+        doReturn(aclSecuredEntry).when(spyPermissionManager).getPermissions(ID, AclClass.DATA_STORAGE);
+        mockSecurityContext();
+
+        assertThat(aclPermissionApiService.getPermissions(ID, AclClass.DATA_STORAGE)).isEqualTo(aclSecuredEntry);
+    }
+
+    @Test
+    @WithMockUser(SIMPLE_USER)
+    public void shouldDenyGetPermissionWhenPermissionIsNotGranted() {
+        initAclEntity(anotherS3bucket);
+        doReturn(anotherS3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
+        doReturn(aclSecuredEntry).when(spyPermissionManager).getPermissions(ID, AclClass.DATA_STORAGE);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> aclPermissionApiService.getPermissions(ID, AclClass.DATA_STORAGE));
