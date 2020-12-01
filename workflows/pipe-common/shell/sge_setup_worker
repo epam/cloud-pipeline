@@ -20,7 +20,7 @@ CURRENT_PID=$$
 add_worker() {
     local _QUEUE=$1
     local _HOSTLIST=$2
-	  local _SLOTS=$3
+    local _SLOTS=$3
     local _MASTER_NAME=$4
 
     if [ "$LINUX_DISTRIBUTION" = "debian" ]; then

@@ -294,8 +294,8 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
 
     ## Configure default locale, see https://github.com/rocker-org/rocker/issues/19
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
-	&& locale-gen en_US.UTF-8 \
-	&& /usr/sbin/update-locale LANG=en_US.UTF-8
+  && locale-gen en_US.UTF-8 \
+  && /usr/sbin/update-locale LANG=en_US.UTF-8
 
     export LC_ALL=en_US.UTF-8
     export LANG=en_US.UTF-8
