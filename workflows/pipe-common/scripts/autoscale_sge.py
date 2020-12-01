@@ -1752,7 +1752,8 @@ if __name__ == '__main__':
     free_cores = int(os.getenv('CP_CAP_SGE_WORKER_FREE_CORES', 0))
     master_cores = int(os.getenv('CP_CAP_SGE_MASTER_CORES', instance_cores))
     master_cores = master_cores - free_cores if master_cores - free_cores > 0 else master_cores
-    shared_work_dir = os.getenv('SHARED_WORK_FOLDER', '/common/workdir')
+    working_directory = os.getenv('TMP_DIR', os.getenv('SHARED_WORK_FOLDER', '/common/workdir'))
+    logging_directory = os.getenv('LOG_DIR', '/var/log')
     hybrid_autoscale = os.getenv('CP_CAP_AUTOSCALE_HYBRID', 'false').strip().lower() == 'true'
     hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
@@ -1767,11 +1768,11 @@ if __name__ == '__main__':
     scale_up_batch_size = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_BATCH_SIZE', 1))
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
 
-    Logger.init(log_file=os.path.join(shared_work_dir, '.autoscaler.%s.log' % queue),
+    Logger.init(log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue),
                 task=log_task, verbose=log_verbose)
 
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
-    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.autoscaler.%s.pipe.log' % queue))
+    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(logging_directory, '.autoscaler.%s.pipe.log' % queue))
     api = CloudPipelineAPI(pipe=pipe)
 
     worker_launch_system_params = fetch_worker_launch_system_params(api, master_run_id, queue, hostlist)
@@ -1804,7 +1805,7 @@ if __name__ == '__main__':
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
                              max_cluster_cores=max_cluster_cores, queue=queue, hostlist=hostlist)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
-                                         storage_file=os.path.join(shared_work_dir, '.autoscaler.%s.storage' % queue),
+                                         storage_file=os.path.join(working_directory, '.autoscaler.%s.storage' % queue),
                                          clock=scaling_operations_clock)
     host_storage = ThreadSafeHostStorage(host_storage)
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
