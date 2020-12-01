@@ -37,6 +37,11 @@ import static java.lang.String.format;
 public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
         implements Authorization, Navigation {
 
+    private final String anotherCloudRegion = C.ANOTHER_CLOUD_REGION;
+    private final String registry = C.DEFAULT_REGISTRY;
+    private final String tool = C.TESTING_TOOL_NAME;
+    private final String group = C.DEFAULT_GROUP;
+    private final String rootHost = "root@pipeline";
     private String storage1 = "dataStorageCLI-" + Utils.randomSuffix();
     private String storage2 = "dataStorageCLI-" + Utils.randomSuffix();
     private String fileFor1469 = "fileFromStorage1";
@@ -50,10 +55,6 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
     private String fileFor1339_3 = "7-fileFor1339";
     private String pathStorage3 = "";
     private String runID1339 = "";
-    private String anotherCloudRegion = C.ANOTHER_CLOUD_REGION;
-    private final String registry = C.DEFAULT_REGISTRY;
-    private final String tool = C.TESTING_TOOL_NAME;
-    private final String group = C.DEFAULT_GROUP;
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
@@ -91,7 +92,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
                         .execute(format("pipe storage cp %s/%s %s/", pathStorage1, fileFor1469, pathStorage2))
-                        .assertNextStringIsVisibleAtfileUpload("100%", format("pipeline-%s", getLastRunId()))
+                        .assertNextStringIsVisibleAtFileUpload("100%", format("pipeline-%s", getLastRunId()))
                         .close());
         library()
                 .selectStorage(storage2)
@@ -106,7 +107,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
                         .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
-                        .assertNextStringIsVisibleAtfileUpload("100%", format("pipeline-%s", getLastRunId()))
+                        .assertNextStringIsVisibleAtFileUpload("100%", format("pipeline-%s", getLastRunId()))
                         .close());
         library()
                 .selectStorage(storage2)
@@ -146,18 +147,18 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runID1339)
                         .execute(commands[0])
-                        .assertNextStringIsVisible(commands[0], "root@pipeline")
+                        .assertNextStringIsVisible(commands[0], rootHost)
                         .assertPageAfterCommandContainsStrings(commands[0],
                                 folder1, folder2, folder3, folder4, fileFor1339_1, fileFor1339_2)
                         .assertResultsCount(commands[0], runID1339, 6)
                         .execute(commands[1])
-                        .assertNextStringIsVisible(commands[1], "root@pipeline")
+                        .assertNextStringIsVisible(commands[1], rootHost)
                         .assertPageAfterCommandContainsStrings(commands[1], folder2, fileFor1339_2)
                         .assertPageAfterCommandNotContainsStrings(commands[1],
                                 folder1, folder3, folder4, fileFor1339_1)
                         .assertResultsCount(commands[1], runID1339, 2)
                         .execute(commands[2])
-                        .assertNextStringIsVisible(commands[2], "root@pipeline")
+                        .assertNextStringIsVisible(commands[2], rootHost)
                         .assertPageAfterCommandContainsStrings(commands[2],
                                 folder1, folder2, folder3, fileFor1339_2)
                         .assertPageAfterCommandNotContainsStrings(commands[2], folder4, fileFor1339_1)
@@ -186,15 +187,15 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runID1339)
                         .execute(commands[0])
-                        .assertNextStringIsVisible(commands[0], "root@pipeline")
+                        .assertNextStringIsVisible(commands[0], rootHost)
                         .assertFileVersionsCount(commands[0], fileFor1339_3, 6)
                         .execute(commands[1])
-                        .assertNextStringIsVisible(commands[1], "root@pipeline")
+                        .assertNextStringIsVisible(commands[1], rootHost)
                         .assertFileVersionsCount(commands[1], fileFor1339_3, 4)
                         .checkVersionsListIsSorted(commands[1])
                         .assertPageAfterCommandContainsStrings("(latest)")
                         .execute(commands[2])
-                        .assertNextStringIsVisible(commands[2], "root@pipeline")
+                        .assertNextStringIsVisible(commands[2], rootHost)
                         .assertFileVersionsCount(commands[2], fileFor1339_3, 2)
                         .checkVersionsListIsSorted(commands[2])
                         .assertPageAfterCommandContainsStrings("(latest)")

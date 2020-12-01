@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.Comparators;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.Keys;
 
 import static com.codeborne.selenide.Condition.text;
@@ -43,6 +44,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertFalse;
 
@@ -108,23 +110,21 @@ public class ShellAO implements AccessObject<ShellAO> {
     public ShellAO assertResultsCount(String command, String runID, int expectedCount) {
         String results = lastCommandResult(command)
                 .replace(format("root@pipeline-%s:/runs/pipeline-%s#", runID, runID), "");
-        assertTrue(results.split("\\s+").length == expectedCount);
+        assertEquals(expectedCount, results.split("\\s+").length);
         return this;
     }
 
     public ShellAO assertFileVersionsCount(String command, String fileName, int expectedCount) {
         String results = lastCommandResult(command);
-        Matcher matcher = Pattern.compile(fileName).matcher(results);
-        int count = 0;
-        while(matcher.find()) {count++;}
-        assertTrue(count == expectedCount, format("Actual count: %s. Expected count: %s", count, expectedCount));
+        int countMatches = StringUtils.countMatches(results, fileName);
+        assertEquals(expectedCount, countMatches,
+                format("Actual count: %s. Expected count: %s", countMatches, expectedCount));
         return this;
     }
 
     private String lastCommandResult(String command) {
-        String str = context().text().substring(context().text().indexOf(command))
-                .replace("\n", "");
-        return str.replace(command, "");
+        return context().text().substring(context().text().indexOf(command))
+                .replace("\n", "").replace(command, "");
     }
 
     public ShellAO assertPageContainsString(String str) {
@@ -132,13 +132,7 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
-    public ShellAO assertPageContainsStrings(String... messages) {
-        Arrays.stream(messages)
-                .forEach(this::assertPageContainsString);
-        return this;
-    }
-
-    public ShellAO assertNextStringIsVisibleAtfileUpload(String str1, String str2) {
+    public ShellAO assertNextStringIsVisibleAtFileUpload(String str1, String str2) {
         $(withText(str1)).shouldBe(visible).parent()
                 .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
         return this;
@@ -175,16 +169,6 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
-    public List<String> versionsCreationData(String command){
-        String log = lastCommandResult(command);
-        List<String> list = new ArrayList<>();
-        Matcher matcher = Pattern.compile(" \\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2} ").matcher(log);
-        while(matcher.find()) {
-            list.add(matcher.group());
-        }
-        return list;
-    }
-
     public ShellAO checkVersionsListIsSorted(String command) {
         List<String> vers = versionsCreationData(command);
         assertTrue(Comparators.isInOrder(vers, Comparator.reverseOrder()));
@@ -194,5 +178,15 @@ public class ShellAO implements AccessObject<ShellAO> {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return Collections.emptyMap();
+    }
+
+    private List<String> versionsCreationData(String command) {
+        String log = lastCommandResult(command);
+        List<String> list = new ArrayList<>();
+        Matcher matcher = Pattern.compile(" \\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2} ").matcher(log);
+        while (matcher.find()) {
+            list.add(matcher.group());
+        }
+        return list;
     }
 }

@@ -29,7 +29,6 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
-import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
@@ -89,7 +88,7 @@ public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePo
                     (isChecked && !get(ENABLE_VERSIONING).has(cssClass("ant-checkbox-checked")))) {
                 clickEnableVersioningCheckbox();
             }
-        };
+        }
         return this;
     }
 
