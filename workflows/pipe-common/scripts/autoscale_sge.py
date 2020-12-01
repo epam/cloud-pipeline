@@ -273,14 +273,25 @@ class GridEngine:
     def is_job_valid(self, job):
         result = True
         allocation_rule = self.get_pe_allocation_rule(job.pe) if job.pe else AllocationRule.pe_slots()
-        Logger.info('Validation of job #{job_id} allocation rule: {alloc_rule} job slots: {slots}'.format(
-            job_id=job.id, alloc_rule=allocation_rule.value, slots=job.slots))
         if job.slots:
             if allocation_rule == AllocationRule.pe_slots():
                 result = job.slots <= self.max_instance_cores
+                if not result:
+                    Logger.warn('Invalid job {job_id} found with allocation_rule={alloc_rule} and slots={slots}. '
+                                'Number of job slots should be less or equal '
+                                'to the number of instance cores of the largest allowed instance. '
+                                'It is {max_instance_cores} for the current launch.'
+                                .format(job_id=job.id, alloc_rule=allocation_rule.value, slots=job.slots,
+                                        max_instance_cores=self.max_instance_cores))
             elif allocation_rule in [AllocationRule.fill_up(), AllocationRule.round_robin()]:
                 result = job.slots <= self.max_cluster_cores
-        Logger.info('Validation of job #{job_id}: {res}'.format(job_id=job.id, res=result))
+                if not result:
+                    Logger.warn('Invalid job {job_id} found with allocation_rule={alloc_rule} and slots={slots}. '
+                                'Number of job slots should be less or equal '
+                                'to the maximum possible number of cluster cores. '
+                                'It is {max_cluster_cores} for the current launch.'
+                                .format(job_id=job.id, alloc_rule=allocation_rule.value, slots=job.slots,
+                                        max_cluster_cores=self.max_cluster_cores))
         return result
 
     def disable_host(self, host):
@@ -924,8 +935,11 @@ class GridEngineAutoscaler:
         # kill jobs that are pending and can't be satisfied with requested resource
         # f.i. we have only 3 instance max and the biggest possible type has 10 cores but job requests 40 coresf
         pending_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]
+        if not pending_jobs:
+            return []
         valid_pending_jobs = []
         invalid_pending_jobs = []
+        Logger.info('Validate %s pending jobs.' % len(pending_jobs))
         for pending_job in pending_jobs:
             if not self.grid_engine.is_job_valid(pending_job):
                 invalid_pending_jobs.append(pending_job)
@@ -937,6 +951,7 @@ class GridEngineAutoscaler:
                         % ', '.join('%s (%s cpu)' % (job.id, job.slots) for job in invalid_pending_jobs),
                         crucial=True)
             self.grid_engine.kill_jobs(invalid_pending_jobs)
+        Logger.info('Pending jobs validation has finished.')
         return valid_pending_jobs
 
     def scale_up(self, resource):
@@ -1154,6 +1169,9 @@ class CloudProvider:
             return False
         return other.value == self.value
 
+    def __repr__(self):
+        return self.value
+
 
 class AllocationRule:
 
@@ -1323,6 +1341,7 @@ if __name__ == '__main__':
     price_type = os.getenv('CP_CAP_AUTOSCALE_PRICE_TYPE', os.environ['price_type'])
     region_id = os.environ['CLOUD_REGION_ID']
     instance_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
+    static_hosts = int(os.getenv('node_count', 0))
     additional_hosts = int(os.getenv('CP_CAP_AUTOSCALE_WORKERS', 3))
     log_verbose = os.getenv('CP_CAP_AUTOSCALE_VERBOSE', 'false').strip().lower() == 'true'
     free_cores = int(os.getenv('CP_CAP_SGE_WORKER_FREE_CORES', 0))
@@ -1351,15 +1370,70 @@ if __name__ == '__main__':
                                                   hybrid_instance_cores=hybrid_instance_cores,
                                                   free_cores=free_cores)
 
-    default_hosts = int(os.getenv('node_count', 0))
-
     max_instance_cores = instance_helper.get_max_allowed(price_type).cpu - free_cores
     max_cluster_cores = max_instance_cores * additional_hosts \
-                        + (instance_cores - free_cores) * default_hosts \
+                        + (instance_cores - free_cores) * static_hosts \
                         + master_cores
 
     Logger.init(cmd=args.debug, log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue),
                 task=log_task, verbose=log_verbose)
+
+    Logger.info('##################################################\n'
+                'Cloud Pipeline: {pipeline_api}\n'
+                'Cloud provider: {cloud_provider}\n'
+                'Cloud region id: {region_id}\n'
+                'Manager run id: {master_run_id}\n'
+                'Manager cores: {master_cores}\n'
+                'Static hosts: {static_hosts}\n'
+                'Instance disk: {instance_disk}\n'
+                'Instance type: {instance_type}\n'
+                'Instance image: {instance_image}\n'
+                'Instance cmd template: {cmd_template}\n'
+                'Instance price type: {price_type}\n'
+                'Instance cores: {instance_cores}\n'
+                'Instance free cores: {free_cores}\n'
+                'Max instance cores: {max_instance_cores}\n'
+                'Max cluster cores: {max_cluster_cores}\n'
+                'Max additional hosts: {additional_hosts}\n'
+                'Grid Engine queue: {queue}\n'
+                'Grid Engine hostlist: {hostlist}\n'
+                'Hybrid autoscaling: {hybrid_autoscale}\n'
+                'Hybrid instance cores: {hybrid_instance_cores}\n'
+                'Hybrid instance family: {instance_family}\n'
+                'Logging task: {log_task}\n'
+                'Logging verbose: {log_verbose}\n'
+                'Logging directory: {logging_directory}\n'
+                'Working directory: {working_directory}\n'
+                'Default hostfile: {default_hostfile}\n'
+                'Shared fs type: {shared_fs_type}\n'
+                '##################################################'
+                .format(pipeline_api=pipeline_api,
+                        cloud_provider=cloud_provider,
+                        region_id=region_id,
+                        master_run_id=master_run_id,
+                        master_cores=master_cores,
+                        static_hosts=static_hosts,
+                        instance_disk=instance_disk,
+                        instance_type=instance_type,
+                        instance_image=instance_image,
+                        cmd_template=cmd_template,
+                        price_type=price_type,
+                        instance_cores=instance_cores,
+                        free_cores=free_cores,
+                        max_instance_cores=max_instance_cores,
+                        max_cluster_cores=max_cluster_cores,
+                        additional_hosts=additional_hosts,
+                        queue=queue,
+                        hostlist=hostlist,
+                        hybrid_autoscale=hybrid_autoscale,
+                        hybrid_instance_cores=hybrid_instance_cores,
+                        instance_family=instance_family,
+                        log_task=log_task,
+                        log_verbose=log_verbose,
+                        logging_directory=logging_directory,
+                        working_directory=working_directory,
+                        default_hostfile=default_hostfile,
+                        shared_fs_type=shared_fs_type))
 
     cmd_executor = CmdExecutor()
 
