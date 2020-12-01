@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -267,6 +268,11 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 .collect(Collectors.joining(","));
         return new HashSet<>(getJdbcTemplate().query(String.format(loadByExternalIdsQuery, idClause),
                 MetadataEntityParameters.getRowMapper(), folderId, className));
+    }
+
+    public Optional<MetadataEntity> loadByExternalId(Long folderId, String className, String externalId) {
+        return loadExisting(folderId, className, new HashSet<>(Collections.singletonList(externalId))).stream()
+                .findAny();
     }
 
     public List<MetadataEntity> loadAllReferences(List<Long> entitiesIds, Long parentId) {

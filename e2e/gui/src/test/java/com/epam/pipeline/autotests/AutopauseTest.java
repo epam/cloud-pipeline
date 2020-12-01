@@ -149,8 +149,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                         .setIdleActionTimeout(idleActionTimeout)
                         .setIdleCpuThreshold(idleCpuThreshold)
                         .setIdleAction(idleAction)
-                        .save()
-                        .sleep(1, SECONDS)
+                        .saveIfNeeded()
         );
     }
 

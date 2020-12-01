@@ -134,6 +134,10 @@ export default class AddInstanceForm extends React.Component {
     return (this.props.entityTypes || []).map(e => e.metadataClass);
   };
 
+  ownEntityTypes = () => {
+    return this.entityTypes().filter(t => !t.outOfProject);
+  };
+
   onSelectEntityType = (id) => {
     this.props.form.setFieldsValue({entityClass: id});
     this.rebuildEntityTypeParameters(id);
@@ -248,7 +252,7 @@ export default class AddInstanceForm extends React.Component {
     const [field] = fields.filter(filter);
     if (field) {
       if (multiple) {
-        field.value = items;
+        field.value = items && items.length ? items : undefined;
       } else {
         field.value = items && items.length === 1 ? items[0] : undefined;
       }
@@ -449,7 +453,7 @@ export default class AddInstanceForm extends React.Component {
       <Menu onClick={onSelect}>
         <Menu.Item key="string">String parameter</Menu.Item>
         {
-          this.entityTypes().map(e => {
+          this.ownEntityTypes().map(e => {
             return (
               <Menu.Item key={e.name}>Link to '{e.name}' instance</Menu.Item>
             );

@@ -44,7 +44,9 @@ import ReactTable from 'react-table';
 import roleModel from '../../../utils/roleModel';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import PropTypes from 'prop-types';
-import MetadataEntityDeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
+import MetadataEntityDeleteFromProject
+  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
 import ConfigurationBrowser from '../launch/dialogs/ConfigurationBrowser';
 import FolderProject from '../../../models/folders/FolderProject';
@@ -76,7 +78,7 @@ function unmapColumnName (name) {
   return name;
 }
 
-function getColumnTitle(key) {
+function getColumnTitle (key) {
   if (key === 'createdDate') {
     return 'Created Date';
   }
@@ -98,6 +100,7 @@ function getColumnTitle(key) {
     folderId: componentParameters.id,
     metadataClass: componentParameters.class,
     entityFields: new MetadataEntityFields(componentParameters.id),
+    metadataClasses: new MetadataClassLoadAll(),
     onReloadTree: params.onReloadTree,
     authenticatedUserInfo,
     preferences,
@@ -152,8 +155,20 @@ export default class Metadata extends React.Component {
 
   @computed
   get entityTypes () {
-    if (this.props.entityFields.loaded) {
-      return (this.props.entityFields.value || []).map(e => e);
+    if (this.props.entityFields.loaded && this.props.metadataClasses.loaded) {
+      const entityFields = (this.props.entityFields.value || [])
+        .map(e => e);
+      const ignoreClasses = new Set(entityFields.map(f => f.metadataClass.id));
+      const otherClasses = (this.props.metadataClasses.value || [])
+        .filter(({id}) => !ignoreClasses.has(id))
+        .map(metadataClass => ({
+          fields: [],
+          metadataClass: {...metadataClass, outOfProject: true}
+        }));
+      return [
+        ...entityFields,
+        ...otherClasses
+      ];
     }
     return [];
   }
@@ -242,7 +257,8 @@ export default class Metadata extends React.Component {
 
   addInstance = async (values) => {
     const classId = +values.entityClass;
-    const [metadataClass] = this.entityTypes.map(e => e.metadataClass).filter(m => m.id === classId);
+    const [metadataClass] = this.entityTypes
+      .map(e => e.metadataClass).filter(m => m.id === classId);
     if (metadataClass) {
       const className = metadataClass.name;
       const payload = {
@@ -735,6 +751,8 @@ export default class Metadata extends React.Component {
             key={METADATA_PANEL_KEY}
             readOnly={!(roleModel.writeAllowed(this.props.folder.value) &&
             this.props.folderId !== undefined)}
+            readOnlyKeys={['ID', 'createdDate']}
+            columnNamesFn={getColumnTitle}
             classId={currentItem ? currentItem.classEntity.id : null}
             className={currentItem ? currentItem.classEntity.name : null}
             entityId={currentItem ? currentItem.id : null}
