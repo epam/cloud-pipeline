@@ -1095,6 +1095,8 @@ class CloudPipelineInstanceHelper:
         for instance in allowed:
             if instance.cpu - self.free_cores >= resource.cpu:
                 return instance
+        if not allowed:
+            raise ScalingError('There are no allowed instance types to use')
         return allowed.pop()
 
     def get_max_allowed(self, price_type):
