@@ -58,9 +58,10 @@ import static org.mockito.Mockito.verify;
 
 public class MetadataEntityApiServiceTest extends AbstractAclTest {
 
+    private static final FireCloudClass PARTICIPANT = FireCloudClass.PARTICIPANT;
     private final MetadataClass metadataClass = MetadataCreatorUtils.getMetadataClass();
     private final MetadataEntityVO metadataEntityVO = MetadataCreatorUtils.getMetadataEntityVO(ID);
-    private final Folder folder = FolderCreatorUtils.getFolder(ID, SIMPLE_USER);
+    private final Folder folder = FolderCreatorUtils.getFolder(ID, ANOTHER_SIMPLE_USER);
     private final MetadataEntity metadataEntity = MetadataCreatorUtils.getMetadataEntity(ID, folder);
     private final PagedResult<List<MetadataEntity>> pagedResult = MetadataCreatorUtils.getPagedResult();
     private final MetadataFilter metadataFilter = MetadataCreatorUtils.getMetadataFilter(ID);
@@ -72,6 +73,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     private final List<MetadataField> metadataFields = Collections.singletonList(metadataField);
     private final List<MetadataClassDescription> descriptions =
             Collections.singletonList(MetadataCreatorUtils.getMetadataClassDescription());
+    private final List<MetadataClass> metadataClasses = Collections.singletonList(metadataClass);
 
     @Autowired
     private MetadataEntityApiService entityApiService;
@@ -105,6 +107,13 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    public void shouldLoadAllMetadataClasses() {
+        doReturn(metadataClasses).when(mockMetadataEntityManager).loadAllMetadataClasses();
+
+        assertThat(entityApiService.loadAllMetadataClasses()).isEqualTo(metadataClasses);
+    }
+
+    @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteMetadataClassForAdmin() {
         doReturn(metadataClass).when(mockMetadataEntityManager).deleteMetadataClass(ID);
@@ -123,7 +132,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateMetadataClassForAdmin() {
-        doReturn(metadataClass).when(mockMetadataEntityManager).updateExternalClassName(ID, FireCloudClass.PARTICIPANT);
+        doReturn(metadataClass).when(mockMetadataEntityManager).updateExternalClassName(ID, PARTICIPANT);
 
         assertThat(entityApiService.updateExternalClassName(ID, FireCloudClass.PARTICIPANT)).isEqualTo(metadataClass);
     }
@@ -198,11 +207,11 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadMetadataEntityWhenPermissionIsGranted() {
         initAclEntity(folder, AclPermission.READ);
         mockLoadEntities();
-        mockAuthentication(SIMPLE_USER);
+        mockAuthUser(SIMPLE_USER);
 
         assertThat(entityApiService.loadMetadataEntity(ID)).isEqualTo(metadataEntity);
     }
@@ -231,7 +240,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(metadataEntity).when(mockMetadataEntityManager).deleteMetadataEntity(ID);
         mockLoadEntities();
-        mockAuthentication(SIMPLE_USER);
+        mockAuthUser(SIMPLE_USER);
 
         assertThat(entityApiService.deleteMetadataEntity(ID)).isEqualTo(metadataEntity);
     }
@@ -316,7 +325,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(metadataEntity).when(mockMetadataEntityManager).deleteMetadataItemKey(ID, TEST_STRING);
         mockLoadEntities();
-        mockAuthentication(SIMPLE_USER);
+        mockAuthUser(SIMPLE_USER);
 
         assertThat(entityApiService.deleteMetadataItemKey(ID, TEST_STRING)).isEqualTo(metadataEntity);
     }
@@ -346,7 +355,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(TEST_LONG_SET).when(mockMetadataEntityManager).deleteMetadataEntities(TEST_LONG_SET);
         mockLoadEntities();
-        mockAuthentication(SIMPLE_USER);
+        mockAuthUser(SIMPLE_USER);
 
         assertThat(entityApiService.deleteMetadataEntities(TEST_LONG_SET)).isEqualTo(TEST_LONG_SET);
     }
@@ -373,7 +382,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldFilterMetadataWhenPermissionIsGranted() {
-        initAclEntity(folder, AclPermission.WRITE);
+        initAclEntity(folder, AclPermission.READ);
         doReturn(pagedResult).when(mockMetadataEntityManager).filterMetadata(metadataFilter);
 
         assertThat(entityApiService.filterMetadata(metadataFilter)).isEqualTo(pagedResult);
@@ -451,7 +460,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = ENTITIES_MANAGER_ROLE)
     public void shouldUploadMetadataFromFileWhenPermissionIsGranted() {
-        initAclEntity(folder, AclPermission.READ);
+        initAclEntity(folder, AclPermission.WRITE);
         doReturn(metadataEntities).when(mockMetadataUploadManager).uploadFromFile(ID, file);
 
         assertThat(entityApiService.uploadMetadataFromFile(ID, file)).isEqualTo(metadataEntities);
@@ -506,7 +515,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDeleteMetadataFromProjectWhenPermissionIsGranted() {
-        initAclEntity(folder, AclPermission.READ);
+        initAclEntity(folder, AclPermission.WRITE);
         doNothing().when(mockMetadataEntityManager).deleteMetadataEntitiesInProject(ID, TEST_STRING);
 
         entityApiService.deleteMetadataFromProject(ID, TEST_STRING);
@@ -537,7 +546,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
         initAclEntity(folder, AclPermission.READ);
         doReturn(TEST_STRING_MAP).when(mockMetadataEntityManager).loadEntitiesData(TEST_LONG_SET);
         mockLoadEntities();
-        mockAuthentication(SIMPLE_USER);
+        mockAuthUser(SIMPLE_USER);
 
         assertThat(entityApiService.loadEntitiesData(TEST_LONG_SET)).isEqualTo(TEST_STRING_MAP);
     }

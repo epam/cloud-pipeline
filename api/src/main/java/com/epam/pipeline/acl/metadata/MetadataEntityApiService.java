@@ -132,7 +132,7 @@ public class MetadataEntityApiService {
     public Collection<MetadataClassDescription> getMetadataFields(Long folderId) {
         return metadataEntityManager.getMetadataFields(folderId);
     }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND hasPermission(#parentId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
     public List<MetadataEntity> uploadMetadataFromFile(Long parentId, MultipartFile file) {
