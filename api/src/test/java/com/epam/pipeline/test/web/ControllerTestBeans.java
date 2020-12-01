@@ -17,6 +17,12 @@
 package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
+import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
+import com.epam.pipeline.acl.log.LogApiService;
+import com.epam.pipeline.acl.ontology.OntologyApiService;
+import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.acl.run.RunApiService;
+import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
 import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
@@ -222,4 +228,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected InfrastructureApiService infrastructureApiService;
+
+    @MockBean
+    protected OntologyApiService ontologyApiService;
 }

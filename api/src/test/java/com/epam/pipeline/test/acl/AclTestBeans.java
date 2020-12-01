@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.acl;
 
+import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -402,9 +403,6 @@ public class AclTestBeans {
     protected NotificationManager mockNotificationManager;
 
     @MockBean
-    protected Pipeline mockPipeline;
-
-    @MockBean
     protected PipelineManager mockPipelineManager;
 
     @MockBean
@@ -463,6 +461,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UsersFileImportManager usersFileImportManager;
+
+    @MockBean
+    protected OntologyApiService ontologyApiService;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {
