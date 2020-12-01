@@ -1652,7 +1652,9 @@ echo "-"
 ######################################################
 
 # Check whether there are any capabilities init scripts available and execute them before main SCRIPT
-cp_cap_init
+if [ "$CP_CAP_DELAY_SETUP" != "true" ]; then
+      cp_cap_init
+fi
 
 # Configure docker wrapper
 if check_cp_cap CP_CAP_DIND_CONTAINER && ! check_cp_cap CP_CAP_DIND_CONTAINER_NO_VARS
