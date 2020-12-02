@@ -23,6 +23,7 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.text;
@@ -47,6 +48,11 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     private String endpointsName = "";
     private String userGroup = "ROLE_USER";
     private int timeout = C.SHARING_TIMEOUT;
+
+    @BeforeMethod
+    public void openPage() {
+        open(C.ROOT_ADDRESS);
+    }
 
     @Test
     @TestCase({"EPMCMBIBPC-2674"})
