@@ -48,7 +48,7 @@ public class Route53Helper {
     }
 
     public InstanceDNSRecord createDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        LOGGER.info("Creating DSN record for hostedZoneId: " + hostedZoneId + " and target: " + dnsRecord.getTarget());
+        LOGGER.info("Creating DNS record for hostedZoneId: " + hostedZoneId + " and target: " + dnsRecord.getTarget());
         final AmazonRoute53 client = getRoute53Client();
         if (!isDnsRecordExists(hostedZoneId, dnsRecord.getDnsRecord(), client)) {
             try {
@@ -68,7 +68,7 @@ public class Route53Helper {
     }
 
     public InstanceDNSRecord removeDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        LOGGER.info("Removing DSN record: " + dnsRecord.getDnsRecord() + " in hostedZoneId: " + hostedZoneId);
+        LOGGER.info("Removing DNS record: " + dnsRecord.getDnsRecord() + " in hostedZoneId: " + hostedZoneId);
         final AmazonRoute53 client = getRoute53Client();
         if (!isDnsRecordExists(hostedZoneId, dnsRecord.getDnsRecord(), client)) {
             return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), InstanceDNSRecord.DNSRecordStatus.INSYNC.name());

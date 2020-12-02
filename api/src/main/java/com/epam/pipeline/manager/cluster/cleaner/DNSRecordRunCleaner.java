@@ -23,7 +23,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,20 +33,25 @@ import java.io.IOException;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class DNSRecordRunCleaner implements RunCleaner {
 
     private static final String HTTP = "http://";
     private static final String HTTPS = "https://";
-    private static final String DELIMETER = "/";
+    private static final String DELIMITER = "/";
+    private static final String PORT_DELIMITER = ":";
 
     private final PreferenceManager preferenceManager;
     private final Route53Helper route53Helper = new Route53Helper();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @Value("${edge.external.host:}")
     private final String edgeExternalHost;
+
+    public DNSRecordRunCleaner(final PreferenceManager preferenceManager,
+                               final @Value("${edge.external.host:}") String edgeExternalHost) {
+        this.preferenceManager = preferenceManager;
+        this.edgeExternalHost = edgeExternalHost;
+    }
 
     @Override
     public void cleanResources(final PipelineRun run) {
@@ -58,7 +62,7 @@ public class DNSRecordRunCleaner implements RunCleaner {
             final String hostZoneUrlBase = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE);
             Assert.isTrue(
                     !StringUtils.isEmpty(hostZoneId) && !StringUtils.isEmpty(hostZoneUrlBase),
-                    ""
+                    "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
             );
 
             try {
@@ -84,7 +88,8 @@ public class DNSRecordRunCleaner implements RunCleaner {
         return url.trim()
                 .replace(HTTP, "")
                 .replace(HTTPS, "")
-                .split(DELIMETER)[0];
+                .split(DELIMITER)[0]
+                .split(PORT_DELIMITER)[0];
     }
 
 }
