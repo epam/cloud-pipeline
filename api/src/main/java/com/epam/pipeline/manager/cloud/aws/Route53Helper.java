@@ -18,7 +18,18 @@ package com.epam.pipeline.manager.cloud.aws;
 
 import com.amazonaws.services.route53.AmazonRoute53;
 import com.amazonaws.services.route53.AmazonRoute53AsyncClientBuilder;
-import com.amazonaws.services.route53.model.*;
+import com.amazonaws.services.route53.model.Change;
+import com.amazonaws.services.route53.model.ChangeAction;
+import com.amazonaws.services.route53.model.ChangeBatch;
+import com.amazonaws.services.route53.model.ChangeResourceRecordSetsRequest;
+import com.amazonaws.services.route53.model.ChangeResourceRecordSetsResult;
+import com.amazonaws.services.route53.model.ChangeStatus;
+import com.amazonaws.services.route53.model.GetChangeRequest;
+import com.amazonaws.services.route53.model.GetChangeResult;
+import com.amazonaws.services.route53.model.ListResourceRecordSetsRequest;
+import com.amazonaws.services.route53.model.RRType;
+import com.amazonaws.services.route53.model.ResourceRecord;
+import com.amazonaws.services.route53.model.ResourceRecordSet;
 import com.amazonaws.services.route53.waiters.AmazonRoute53Waiters;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
@@ -39,13 +50,21 @@ public class Route53Helper {
     public InstanceDNSRecord createDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
         LOGGER.info("Creating DSN record for hostedZoneId: " + hostedZoneId + " and target: " + dnsRecord.getTarget());
         final AmazonRoute53 client = getRoute53Client();
-        if (isDnsRecordExists(hostedZoneId, dnsRecord.getDnsRecord(), client)) {
-            return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
-        } else {
-            final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
-                    dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.CREATE);
-            return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), result.getChangeInfo().getStatus());
+        if (!isDnsRecordExists(hostedZoneId, dnsRecord.getDnsRecord(), client)) {
+            try {
+                final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
+                        dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.CREATE);
+                return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), result.getChangeInfo().getStatus());
+            } catch (com.amazonaws.services.route53.model.InvalidChangeBatchException e) {
+                LOGGER.error("AWS 53 Route service responded with: " + e.getLocalizedMessage());
+                if (e.getLocalizedMessage().matches(".*Tried to create resource record set.*but it already exists.*")) {
+                    LOGGER.info("DNS Record already exists, API will proceed with this record.");
+                } else {
+                    throw e;
+                }
+            }
         }
+        return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
     }
 
     public InstanceDNSRecord removeDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
