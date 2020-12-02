@@ -1,4 +1,3 @@
-import argparse
 import logging
 import os
 
@@ -55,12 +54,8 @@ def generate_sge_profiles():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generates sge profile scripts.')
-    parser.add_argument('-v', '--log-level',
-                        default=logging.getLevelName(logging.ERROR),
-                        help='Logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG.')
-    args = parser.parse_args()
+    log_level = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL', logging.getLevelName(logging.ERROR))
 
-    logging.basicConfig(level=args.log_level, format=_LOGGING_FORMAT)
+    logging.basicConfig(level=log_level, format=_LOGGING_FORMAT)
 
     generate_sge_profiles()
