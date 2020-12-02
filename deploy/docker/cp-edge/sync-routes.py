@@ -230,18 +230,6 @@ def remove_custom_domain(domain, location_block):
         if (sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
                 # If no more location block exist in the domain - delete the config file
                 print('No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
-
-                # If domain was dns record - delete it with API
-                dns_record_delete = os.path.join(api_url, API_POST_DNS_RECORD + "?delete={delete}".format(delete=True))
-                data = json.dumps({
-                        'dnsRecord': domain,
-                        'target': "{external_ip}".format(external_ip=edge_service_external_ip)
-                })
-                dns_record_delete_response = call_api(dns_record_delete, data)
-                if not dns_record_delete_response or "payload" not in dns_record_delete_response or "status" not in dns_record_delete_response["payload"] \
-                        or dns_record_delete_response["payload"]["status"] != "INSYNC":
-                        print('INFO: Unable to delete dns-record {} from cloud'.format(domain))
-
                 os.remove(domain_path)
         else:
                 # Save the domain config back to file
