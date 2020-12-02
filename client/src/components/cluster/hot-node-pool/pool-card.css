@@ -39,15 +39,21 @@
 }
 
 .header-container .info-block {
-  height: 50px;
-  width: 50px;
+  height: 55px;
+  width: 55px;
   margin-right: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: small;
+  padding: 10px;
+  font-size: 9pt;
   position: relative;
   color: #999;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-weight: bold;
+  line-height: 8pt;
+  word-break: break-word;
 }
 
 .header-container .info-block.has-runs {

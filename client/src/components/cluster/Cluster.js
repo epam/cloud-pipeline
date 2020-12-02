@@ -493,7 +493,9 @@ export default class Cluster extends localization.LocalizedReactComponent {
     let description;
     if (this.filteredNodes.length > 0) {
       total = this.filteredNodes.filter(this.nodeIsSlave).length;
-      totalWithRunId = this.filteredNodes.map(n => n).filter(n => Number(n.runId) > 0).length;
+      totalWithRunId = this.filteredNodes
+        .filter(n => n.labels && n.labels.runid)
+        .length;
       if (total > 0) {
         let totalPart = `${total} nodes`;
         if (total === 1) {
