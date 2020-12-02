@@ -123,6 +123,21 @@ def call_api(method_url, data=None):
         return result
 
 
+def log_task_event(task_name, message, run_id, instance, status="RUNNING"):
+        print("Log run log: " + message)
+        log_entry = json.dumps({"runId": run_id,
+                             "status": status,
+                             "logText": message,
+                             "taskName": task_name,
+                             "instance": instance})
+        call_api("run/{run_id}/log".format(run_id=run_id), data=log_entry)
+
+
+def update_run_status(run_id, status):
+        print("Update run status: run_id {} status {}".format(run_id, status))
+        call_api("/run/{run_id}/status".format(run_id=run_id), data=json.dumps({"status": status}))
+
+
 def run_sids_to_str(run_sids, is_principal):
         if not run_sids or len(run_sids) == 0:
                 return ""
@@ -625,16 +640,20 @@ service_url_dict = {}
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
-        need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] else False
-        hosted_zone_base_value = None
+        need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] and not service_spec["custom_domain"] else False
         if need_to_create_dns_record:
                 load_hosted_zone_method = os.path.join(api_url, API_GET_HOSTED_ZONE_BASE_PREF)
                 hosted_zone_response = call_api(load_hosted_zone_method)
-                if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"]\
+                if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"] \
                         and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base":
                         hosted_zone_base_value = hosted_zone_response["payload"]["value"]
-                        if hosted_zone_base_value == '' or hosted_zone_base_value == None:
-                               print("No hosted zone is configured for currect environment, will not create any DNS records")
+                        if hosted_zone_base_value == '' or hosted_zone_base_value is None:
+                                log_task_event("CreateDNSRecord",
+                                               "No hosted zone is configured for currect environment, will not create any DNS records",
+                                               service_spec["run_id"],
+                                               service_spec["pod_id"],
+                                               "FAILURE")
+                                update_run_status(service_spec["run_id"], "FAILURE")
                         else:
                                 dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
                                 dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
@@ -650,8 +669,12 @@ for added_route in routes_to_add:
                                         service_spec["custom_domain"] = dns_custom_domain
                                         service_spec["edge_location"] = None
                                 else:
-                                        # TODO Log to pipeline logs fail and fail run
-                                        pass
+                                        log_task_event("CreateDNSRecord",
+                                                       "Fail to create DNS record for the run",
+                                                       service_spec["run_id"],
+                                                       service_spec["pod_id"],
+                                                       "FAILURE")
+                                        update_run_status(service_spec["run_id"], "FAILURE")
 
         has_custom_domain = service_spec["custom_domain"] is not None
         service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip
