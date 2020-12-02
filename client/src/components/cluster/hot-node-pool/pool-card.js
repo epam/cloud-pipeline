@@ -43,6 +43,24 @@ function displayTime (time) {
   return moment(localTime).format('HH:mm');
 }
 
+const countPostfixes = ['', 'K', 'M', 'G', 'T', 'P'];
+
+function displayCount (count) {
+  if (isNaN(count)) {
+    return count;
+  }
+  let countValue = +count;
+  let index = 0;
+  while (countValue > 1024 && index < countPostfixes.length - 1) {
+    index += 1;
+    countValue /= 1024;
+  }
+  if (index === 0) {
+    return `${countValue}${countPostfixes[index]}`;
+  }
+  return `${countValue.toFixed(1)}${countPostfixes[index]}`;
+}
+
 function scheduleEntryString (scheduleEntry) {
   if (!scheduleEntry) {
     return null;
@@ -125,26 +143,43 @@ function PoolCard ({
     );
   const runs = runNodes.length;
   const total = poolNodes.length;
-  const runsCountLabel = runs > 100 ? '99+' : `${runs}`;
+  const runsCountLabel = displayCount(runs);
+  const totalLabel = displayCount(total);
+  const fontSize = total >= 100 ? 10 : 12;
   return (
     <div
       className={styles.container}
       onClick={onClick}
     >
       <div className={styles.headerContainer}>
-        <div className={classNames(styles.infoBlock, {[styles.hasRuns]: runs > 0})}>
+        <div
+          className={
+            classNames(
+              styles.infoBlock,
+              {[styles.hasRuns]: runs > 0}
+            )
+          }
+          style={{fontSize: `${fontSize}pt`}}
+        >
           <div className={styles.progress}>
             <Progress
               type="circle"
               status={runs > 0 ? 'success' : 'active'}
               percent={(runs / (total || 1)) * 100.0}
-              width={50}
+              width={55}
               strokeWidth={8}
               showInfo={false}
             />
           </div>
-          <Icon type="play-circle-o" />
-          <span style={{marginLeft: 2}}>{runsCountLabel}</span>
+          <span>
+            {runsCountLabel}
+          </span>
+          <span style={{fontWeight: 'normal', margin: '0 2px'}}>
+            /
+          </span>
+          <span>
+            {totalLabel}
+          </span>
         </div>
         <div className={styles.nameBlock}>
           <div className={styles.header}>
