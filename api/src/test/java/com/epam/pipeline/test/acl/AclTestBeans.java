@@ -432,12 +432,6 @@ public class AclTestBeans {
     protected NodePoolManager nodePoolManager;
 
     @MockBean
-    protected NodeScheduleManager nodeScheduleManager;
-
-    @MockBean
-    protected NodePoolManager nodePoolManager;
-
-    @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
 
     @Bean
