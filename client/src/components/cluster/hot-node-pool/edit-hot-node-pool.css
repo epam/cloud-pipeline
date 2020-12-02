@@ -1,0 +1,66 @@
+/*
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.modal-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 5px 0;
+}
+
+.label {
+  display: inline-block;
+  width: 100px;
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.form-row .form-item {
+  flex: 1;
+}
+
+.form-row .form-item.small {
+  flex: 0.5;
+}
+
+.form-row.multi-row {
+  align-items: start;
+  line-height: 32px;
+}
+
+.form-row.multi-row .column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row.error {
+  line-height: 12px;
+  font-size: 12px;
+  color: red;
+}
+
+.section-header {
+  border-bottom: 1px solid #ddd;
+  padding: 5px 0;
+}
