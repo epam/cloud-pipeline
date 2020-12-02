@@ -19,7 +19,6 @@ import moment from 'moment-timezone';
 import {
   Alert,
   Button,
-  Card,
   Col,
   Input,
   message,
@@ -30,14 +29,17 @@ import {
 } from 'antd';
 import clusterNodes from '../../models/cluster/ClusterNodes';
 import nodesFilter from '../../models/cluster/FilterClusterNodes';
+import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import displayDate from '../../utils/displayDate';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import styles from './Cluster.css';
 import {renderNodeLabels} from './renderers';
+import parseQueryParameters from '../../utils/queryParameters';
 import {
   getRoles,
   nodeRoles,
@@ -50,9 +52,17 @@ import {
 })
 @localization.localizedComponent
 @inject('clusterNodes', 'nodesFilter')
+@inject((stores) => {
+  const {routing} = stores;
+  const query = parseQueryParameters(routing);
+  return {
+    ...stores,
+    pools,
+    filter: query
+  };
+})
 @observer
 export default class Cluster extends localization.LocalizedReactComponent {
-
   state = {
     appliedFilter: {
       runId: null,
@@ -78,18 +88,68 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
   };
 
+  @computed
+  get currentNodePool () {
+    const {filter, pools} = this.props;
+    if (filter && filter.pool_id && pools.loaded) {
+      return (pools.value || []).find(p => `${p.id}` === `${filter.pool_id}`);
+    }
+    return undefined;
+  }
+
+  get nodes () {
+    const {clusterNodes, nodesFilter, filter} = this.props;
+    if (filter && Object.keys(filter).length > 0) {
+      if (clusterNodes.loaded) {
+        const nodes = this.props.clusterNodes.value || [];
+        const nodeMatchesLabel = (label) => (node) => node.labels &&
+          node.labels.hasOwnProperty(label) &&
+          `${node.labels[label] || ''}` === `${filter[label]}`;
+        const nodeMatchesLabels = (node) => !Object.keys(filter)
+          .find(label => !nodeMatchesLabel(label)(node));
+        return (nodes || [])
+          .filter(nodeMatchesLabels);
+      }
+    } else if (nodesFilter.loaded) {
+      return nodesFilter.value || [];
+    }
+    return [];
+  }
+
+  get filteredNodes () {
+    const {filter} = this.props;
+    const {appliedFilter} = this.state;
+    if (filter && Object.keys(filter).length > 0) {
+      const {runId, address} = appliedFilter;
+      const matchesRunId = node => node.labels &&
+        node.labels.hasOwnProperty('runid') &&
+        `${node.labels.runid}` === `${runId}`;
+      const matchesAddress = node => node.addresses &&
+        node.addresses.map(a => a.address).find(a => a === address);
+      const matches = node =>
+        (!runId || matchesRunId(node)) &&
+        (!address || matchesAddress(node));
+      return this.nodes.filter(matches);
+    }
+    return this.nodes;
+  }
+
   refreshCluster = () => {
+    if (!this.props.clusterNodes.pending) {
+      this.props.clusterNodes.fetch();
+    }
     if (!this.props.nodesFilter.pending) {
       this.props.nodesFilter.send({
         runId: this.state.appliedFilter.runId,
         address: this.state.appliedFilter.address
       });
     }
+    this.props.pools.fetch();
   };
 
   isFilterChanged = () => {
     return this.state.filter.runId.finalValue !== this.state.appliedFilter.runId ||
-        this.state.filter.address.finalValue !== this.state.appliedFilter.address;
+      this.state.filter.address.finalValue !== this.state.appliedFilter.address;
   };
 
   applyFilter = () => {
@@ -111,18 +171,19 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
   }
 
-  renderLabels = (labels, item) => {
+  renderLabels = (labels, item, pools) => {
     const {router: {location}} = this.props;
     return renderNodeLabels(
       labels,
       {
         className: styles.nodeLabel,
         location,
-        pipelineRun: item.pipelineRun
+        pipelineRun: item.pipelineRun,
+        pools
       });
   };
 
-  terminateNode = async(item) => {
+  terminateNode = async (item) => {
     const hide = message.loading('Processing...', 0);
     const request = new TerminateNodeRequest(item.name);
     await request.fetch();
@@ -145,7 +206,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         wordWrap: 'break-word'
       },
       onOk () {
-        (async() => {
+        (async () => {
           await terminateNode(item);
         })();
       }
@@ -185,7 +246,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     } else {
       return -1;
     }
-  }
+  };
 
   runSorter = (a, b) => {
     const runA = +(a.runId || 0);
@@ -293,11 +354,11 @@ export default class Cluster extends localization.LocalizedReactComponent {
         />
         {
           this.state.filter[parameter].validationError !== undefined
-          ? (
-            <Row style={{color: '#f00'}}>
-              {this.state.filter[parameter].validationError}
-            </Row>
-          ) : undefined
+            ? (
+              <Row style={{color: '#f00'}}>
+                {this.state.filter[parameter].validationError}
+              </Row>
+            ) : undefined
         }
         <Row type="flex" justify="space-between" className={styles.filterActionsButtonsContainer}>
           <a onClick={validateAndSubmit}>OK</a>
@@ -315,7 +376,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     };
   };
 
-  generateNodeInstancesTable (nodes, isLoading) {
+  generateNodeInstancesTable = (nodes, isLoading, pools) => {
     const createdCellContent = (date) => (
       <div className={styles.clusterNodeCellCreated}>
         <span className={styles.clusterNodeContentCreated}>
@@ -360,7 +421,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         dataIndex: 'labels',
         key: 'labels',
         title: 'Labels',
-        render: this.renderLabels,
+        render: (labels, item) => this.renderLabels(labels, item, pools),
         ...this.getInputFilter('runId', 'Run Id'),
         sorter: this.runSorter,
         className: styles.clusterNodeRowLabels
@@ -411,7 +472,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         pagination={{pageSize: 25}}
         rowClassName={(item) => `cluster-row-${item.name}`}
         onRowClick={this.onNodeInstanceSelect}
-        size="small" />
+        size="small"
+      />
     );
   }
 
@@ -425,13 +487,13 @@ export default class Cluster extends localization.LocalizedReactComponent {
     return !testRole(roles, nodeRoles.master) && !testRole(roles, nodeRoles.cloudPipelineRole);
   };
 
-  render () {
+  getDescription = () => {
     let total = 1;
     let totalWithRunId = 0;
     let description;
-    if (this.props.nodesFilter.loaded) {
-      total = this.props.nodesFilter.value.filter(this.nodeIsSlave).length;
-      totalWithRunId = this.props.nodesFilter.value.map(n => n).filter(n => n.runId > 0).length;
+    if (this.filteredNodes.length > 0) {
+      total = this.filteredNodes.filter(this.nodeIsSlave).length;
+      totalWithRunId = this.filteredNodes.map(n => n).filter(n => Number(n.runId) > 0).length;
       if (total > 0) {
         let totalPart = `${total} nodes`;
         if (total === 1) {
@@ -448,35 +510,53 @@ export default class Cluster extends localization.LocalizedReactComponent {
         }
       }
     }
+    return description;
+  };
+
+  render () {
+    let description = this.getDescription();
+    const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
     return (
-      <Card className={styles.clusterCard} bodyStyle={{padding: 15}}>
+      <div>
         <Row type="flex" align="middle">
           <Col span={22}>
-            <span className={styles.nodeMainInfo}>Cluster nodes {description}</span>
+            <span className={styles.nodeMainInfo}>
+              {
+                this.currentNodePool
+                  ? `${this.currentNodePool.name} nodes `
+                  : 'Cluster nodes '
+              }
+              {description}
+            </span>
           </Col>
           <Col span={2} className={styles.refreshButtonContainer}>
             <Button
               id="cluster-refresh-button"
               onClick={this.refreshCluster}
-              disabled={this.props.nodesFilter.pending}>Refresh</Button>
+              disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}>
+              Refresh
+            </Button>
           </Col>
         </Row>
         {
-          this.props.nodesFilter.error &&
+          error && (
             <Row>
               <br />
               <Alert
-                message={`Error retrieving cluster nodes: ${this.props.nodesFilter.error}`}
+                message={`Error retrieving cluster nodes: ${error}`}
                 type="error" />
             </Row>
+          )
         }
         <br />
-        {this.generateNodeInstancesTable(
-          this.props.nodesFilter.value,
-          this.props.nodesFilter.pending
-        )}
-      </Card>
+        {
+          this.generateNodeInstancesTable(
+            this.filteredNodes,
+            this.props.nodesFilter.pending || this.props.clusterNodes.pending,
+            this.props.pools.loaded ? (this.props.pools.value || []) : []
+          )
+        }
+      </div>
     );
   }
-
-}
+};

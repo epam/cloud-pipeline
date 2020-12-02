@@ -33,7 +33,9 @@ import PipelineGraph from '../pipelines/version/graph/PipelineGraph';
 import PipelineDocuments from '../pipelines/version/documents/PipelineDocuments';
 import PipelineStorageRules from '../pipelines/version/storageRules/PipelineStorageRules';
 import LaunchPipeline from '../pipelines/launch/LaunchPipeline';
+import ClusterRoot from '../cluster';
 import Cluster from '../cluster/Cluster';
+import HotCluster from '../cluster/hot-node-pool';
 import ClusterNode from '../cluster/ClusterNode';
 import ClusterNodeGeneralInfo from '../cluster/ClusterNodeGeneralInfo';
 import ClusterNodePods from '../cluster/ClusterNodePods';
@@ -83,7 +85,10 @@ export default class AppRouter extends React.Component {
           <Route path="logs" component={SystemLogs} />
           <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
         </Route>
-        <Route path="/cluster" component={Cluster} />
+        <Route path="/cluster" component={ClusterRoot}>
+          <IndexRoute component={Cluster} />
+          <Route path="hot" component={HotCluster} />
+        </Route>
         <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
         <Route path="/cluster/:nodeName" component={ClusterNode}>
           <Route path="info" component={ClusterNodeGeneralInfo} />

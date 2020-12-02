@@ -2,7 +2,8 @@ export const nodeRoles = {
   master: 1,
   run: 1 << 1,
   cloudPipelineRole: 1 << 2,
-  pipelineInfo: 1 << 3
+  pipelineInfo: 1 << 3,
+  nodePoolRole: 1 << 4
 };
 
 export default nodeRoles;
@@ -20,13 +21,14 @@ export function roleIsDefined (test) {
   return test !== 0;
 }
 
-export function parseLabel (label, value) {
+export function parseLabel (label, value, config = {}) {
   let role = 0;
   let displayName = label;
   let displayValue = value;
   if ((displayValue || '').toLowerCase() === 'true') {
     displayValue = label;
   }
+  const {pools = []} = config;
   if (/^RUNID$/i.test(label)) {
     role = nodeRoles.run;
     displayValue = `RUN ID ${value}`;
@@ -61,6 +63,14 @@ export function parseLabel (label, value) {
     role = nodeRoles.cloudPipelineRole;
     if (exec) {
       displayValue = exec[1];
+    }
+  } else if (/^pool_id$/i.test(label)) {
+    role = nodeRoles.nodePoolRole;
+    const pool = pools.find(p => `${p.id}` === `${value}`);
+    if (pool) {
+      displayValue = pool.name;
+    } else {
+      displayValue = `Pool #${value}`;
     }
   }
   return {name: displayName, role, value: displayValue};
