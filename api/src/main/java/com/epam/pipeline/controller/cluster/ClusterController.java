@@ -36,7 +36,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -235,8 +242,8 @@ public class ClusterController extends AbstractRestController {
     @PostMapping("/cluster/dnsrecord")
     @ResponseBody
     @ApiOperation(
-            value = "Creates or deletes dns record for the specified pipeline run.",
-            notes = "Creates or deletes dns record for the specified pipeline run.",
+            value = "Creates or deletes dns record.",
+            notes = "Creates or deletes dns record.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<InstanceDNSRecord> dnsRecordChangeRequest(@RequestParam(required = false) final Long regionId,

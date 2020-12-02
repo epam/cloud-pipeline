@@ -645,36 +645,35 @@ for added_route in routes_to_add:
                 load_hosted_zone_method = os.path.join(api_url, API_GET_HOSTED_ZONE_BASE_PREF)
                 hosted_zone_response = call_api(load_hosted_zone_method)
                 if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"] \
-                        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base":
+                        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base" and hosted_zone_response["payload"]["value"]:
                         hosted_zone_base_value = hosted_zone_response["payload"]["value"]
-                        if hosted_zone_base_value == '' or hosted_zone_base_value is None:
+                        dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
+                        dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
+                                                         + "?regionId={regionId}&delete={delete}"
+                                                         .format(regionId=service_spec["cloudRegionId"], delete=False))
+                        data = json.dumps({
+                                'dnsRecord': dns_custom_domain,
+                                'target': "{external_ip}".format(external_ip=edge_service_external_ip)
+                        })
+                        dns_record_create_response = call_api(dns_record_create, data)
+                        if dns_record_create_response and "payload" in dns_record_create_response and "status" in dns_record_create_response["payload"] \
+                                and dns_record_create_response["payload"]["status"] == "INSYNC":
+                                service_spec["custom_domain"] = dns_custom_domain
+                                service_spec["edge_location"] = None
+                        else:
                                 log_task_event("CreateDNSRecord",
-                                               "No hosted zone is configured for currect environment, will not create any DNS records",
+                                               "Fail to create DNS record for the run",
                                                service_spec["run_id"],
                                                service_spec["pod_id"],
                                                "FAILURE")
                                 update_run_status(service_spec["run_id"], "FAILURE")
-                        else:
-                                dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
-                                dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
-                                                                 + "?regionId={regionId}&delete={delete}"
-                                                                 .format(regionId=service_spec["cloudRegionId"], delete=False))
-                                data = json.dumps({
-                                        'dnsRecord': dns_custom_domain,
-                                        'target': "{external_ip}".format(external_ip=edge_service_external_ip)
-                                })
-                                dns_record_create_response = call_api(dns_record_create, data)
-                                if dns_record_create_response and "payload" in dns_record_create_response and "status" in dns_record_create_response["payload"] \
-                                        and dns_record_create_response["payload"]["status"] == "INSYNC":
-                                        service_spec["custom_domain"] = dns_custom_domain
-                                        service_spec["edge_location"] = None
-                                else:
-                                        log_task_event("CreateDNSRecord",
-                                                       "Fail to create DNS record for the run",
-                                                       service_spec["run_id"],
-                                                       service_spec["pod_id"],
-                                                       "FAILURE")
-                                        update_run_status(service_spec["run_id"], "FAILURE")
+                else:
+                        log_task_event("CreateDNSRecord",
+                                       "No hosted zone is configured for currect environment, will not create any DNS records",
+                                       service_spec["run_id"],
+                                       service_spec["pod_id"],
+                                       "FAILURE")
+                        update_run_status(service_spec["run_id"], "FAILURE")
 
         has_custom_domain = service_spec["custom_domain"] is not None
         service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip
