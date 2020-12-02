@@ -41,7 +41,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String tool = C.TESTING_TOOL_NAME;
-    private final String friendlyURL = "tool_page-" + Utils.randomSuffix();
+    private final String friendlyURL = "tool_page" + Utils.randomSuffix();
     private String runID = "";
     private String errorMessage = "Url '{\"path\":\"%s\"}' is already used for run '%s'.";
     private String endpointsLink = "";
