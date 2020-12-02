@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.docker;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
@@ -134,10 +135,10 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
         final List<ToolGroup> toolGroups = mutableListOf(toolGroup);
         doReturn(toolGroups).when(mockToolGroupManager).loadByRegistryId(ID);
 
-        final List<ToolGroup> returnedTollGroups = toolGroupApiService.loadByRegistryId(ID);
+        final List<ToolGroup> returnedToolGroups = toolGroupApiService.loadByRegistryId(ID);
 
-        assertThat(returnedTollGroups).isEqualTo(toolGroups);
-        assertThat(returnedTollGroups.get(0).getMask()).isEqualTo(READ_PERMISSION);
+        assertThat(returnedToolGroups).isEqualTo(toolGroups);
+        assertThat(returnedToolGroups.get(0).getMask()).isEqualTo(READ_PERMISSION);
     }
 
     @Test
@@ -175,10 +176,10 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
         final List<ToolGroup> toolGroups = mutableListOf(toolGroup);
         doReturn(toolGroups).when(mockToolGroupManager).loadByRegistryNameOrId(TEST_STRING);
 
-        final List<ToolGroup> returnedTollGroups = toolGroupApiService.loadByRegistryNameOrId(TEST_STRING);
+        final List<ToolGroup> returnedToolGroups = toolGroupApiService.loadByRegistryNameOrId(TEST_STRING);
 
-        assertThat(returnedTollGroups).isEqualTo(toolGroups);
-        assertThat(returnedTollGroups.get(0).getMask()).isEqualTo(READ_PERMISSION);
+        assertThat(returnedToolGroups).isEqualTo(toolGroups);
+        assertThat(returnedToolGroups.get(0).getMask()).isEqualTo(READ_PERMISSION);
     }
 
     @Test
@@ -400,7 +401,6 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
         assertThat(toolGroupApiService.deleteForce(TEST_STRING)).isEqualTo(toolGroup);
     }
 
-
     @Test
     @WithMockUser(roles = TOOL_GROUP_MANAGER, username = SIMPLE_USER)
     public void shouldDenyDeleteForceToolGroupForManagerWhenChildPermissionIsNotGranted() {
@@ -436,8 +436,11 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     }
 
     private void assertToolGroupAclTree(final ToolGroup returnedToolGroup) {
+        final AbstractSecuredEntity returnedTool = returnedToolGroup.getLeaves().get(0);
+
         assertThat(returnedToolGroup.getParent()).isEqualTo(dockerRegistry);
         assertThat(returnedToolGroup.getLeaves()).hasSize(1);
-        assertThat(returnedToolGroup.getLeaves().get(0)).isEqualTo(tool);
+        assertThat(returnedTool).isEqualTo(tool);
+        assertThat(returnedTool.getMask()).isEqualTo(READ_PERMISSION);
     }
 }

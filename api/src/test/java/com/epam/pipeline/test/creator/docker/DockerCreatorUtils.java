@@ -137,6 +137,10 @@ public final class DockerCreatorUtils {
         return getDockerRegistry(ID, TEST_STRING);
     }
 
+    public static DockerRegistry getDockerRegistry(String owner) {
+        return getDockerRegistry(ID, owner);
+    }
+
     public static DockerRegistry getDockerRegistry(final Long id, final String owner) {
         final DockerRegistry dockerRegistry = new DockerRegistry();
         dockerRegistry.setOwner(owner);
