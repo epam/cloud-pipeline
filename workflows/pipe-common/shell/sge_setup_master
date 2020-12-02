@@ -385,7 +385,7 @@ delete_existing_hostlists
 
 create_execution_host
 
-"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py" -v INFO
+"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py"
 
 for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*.sh; do
     (
