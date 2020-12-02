@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -1019,13 +1020,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             String[] strings = context().$(byClassName("CodeMirror-code"))
                             .findAll(byClassName("CodeMirror-line")).texts().stream()
                             .toArray(String[]::new);
-            for(int i=0; i<strings.length; i++) {
-                if(strings[i].contains("\"instance_mask\":")){
-                    if(strings[i].contains("\"*\"")) {
+            IntStream.range(0, strings.length).forEach((i) -> {
+                if (strings[i].contains("\"instance_mask\":")) {
+                    if (strings[i].contains("\"*\"")) {
                         result[0]=strings[i+1];
                     } else {result[1]=strings[i+1];}
                 }
-            }
+            });
             return result;
         }
 

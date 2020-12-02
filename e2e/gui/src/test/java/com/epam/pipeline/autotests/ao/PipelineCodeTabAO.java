@@ -52,6 +52,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
@@ -265,13 +266,16 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
 
         public FileEditingPopupAO shouldContainInCode(final String expectedCode) {
             final Function<String, SelenideElement> lineWithText =
-                    text -> $x(String.format("//pre[contains(@class, 'CodeMirror-line') and contains(., '%s')]", text));
+                    text -> $x(format("//pre[contains(@class, 'CodeMirror-line') and contains(., '%s')]", text));
             Arrays.stream(expectedCode.split("\n"))
                     .map(String::trim)
                     .map(lineWithText)
                     .forEach(el -> el.should(exist));
             return this;
         }
+
+
+
 
         public PipelineCodeTabAO close() {
             return click(CLOSE).parent();

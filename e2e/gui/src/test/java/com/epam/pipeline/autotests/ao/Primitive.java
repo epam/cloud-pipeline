@@ -275,5 +275,6 @@ public enum Primitive {
     SENSITIVE_STORAGE,
     ALL_PIPELINES,
     ALL_STORAGES,
-    CLOUD_REGION
+    CLOUD_REGION,
+    NODE_IMAGE
 }
