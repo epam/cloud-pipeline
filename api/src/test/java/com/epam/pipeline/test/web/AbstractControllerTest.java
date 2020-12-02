@@ -57,14 +57,12 @@ public abstract class AbstractControllerTest {
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String MULTIPART_CONTENT_TYPE =
             "multipart/form-data; boundary=--------------------------boundary";
-    protected static final String FILE_NAME = "file.txt";
-    protected static final String FILE_CONTENT = "content of file.txt";
     protected static final String MULTIPART_CONTENT =
             "----------------------------boundary\r\n" +
-            "Content-Disposition: form-data; name=\"file\"; filename=\"" + FILE_NAME + "\"\r\n" +
+            "Content-Disposition: form-data; name=\"file\"; filename=\" file.txt \"\r\n" +
             "Content-Type:  application/octet-stream\r\n" +
             "\r\n" +
-            FILE_CONTENT +
+            "content of file.txt" +
             "\r\n" +
             "----------------------------boundary";
 
@@ -129,10 +127,6 @@ public abstract class AbstractControllerTest {
 
     public void assertContent(final MvcResult mvcResult, final byte[] fileContent) {
         assertThat(mvcResult.getResponse().getContentAsByteArray()).isEqualTo(fileContent);
-    }
-
-    public void assertRequestFile(final MultipartFile capturedValue) {
-        assertRequestFile(capturedValue, FILE_NAME, FILE_CONTENT.getBytes());
     }
 
     @SneakyThrows
