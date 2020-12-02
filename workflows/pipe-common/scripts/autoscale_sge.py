@@ -174,7 +174,7 @@ class GridEngine:
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
     _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
-    _QSTAT = 'qstat -u "*" -r -xml -q %s'
+    _QSTAT = 'qstat -u "*" -r -f -xml -q %s'
     _QHOST = 'qhost -q -xml'
     _QSTAT_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _QMOD_DISABLE = 'qmod -d %s@%s'
@@ -199,9 +199,18 @@ class GridEngine:
             return []
         jobs = {}
         root = ElementTree.fromstring(output)
+        running_jobs = []
         queue_info = root.find('queue_info')
+        for queue_list in queue_info.findall('Queue-List'):
+            queue_name = queue_list.findtext('name')
+            queue_running_jobs = queue_list.findall('job_list')
+            for job_list in queue_running_jobs:
+                job_queue_name = ElementTree.SubElement(job_list, 'queue_name')
+                job_queue_name.text = queue_name
+            running_jobs.extend(queue_running_jobs)
         job_info = root.find('job_info')
-        for job_list in queue_info.findall('job_list') + job_info.findall('job_list'):
+        pending_jobs = job_info.findall('job_list')
+        for job_list in running_jobs + pending_jobs:
             job_id = job_list.findtext('JB_job_number')
             job_tasks = self._parse_array(job_list.findtext('tasks'))
             job_ids = ['{}.{}'.format(job_id, job_task) for job_task in job_tasks] or [job_id]
@@ -211,8 +220,8 @@ class GridEngine:
             job_datetime = self._parse_date(job_list.findtext('JAT_start_time') or job_list.findtext('JB_submission_time'))
             job_host = self._parse_host(job_list.findtext('queue_name'))
             job_hosts = [job_host] if job_host else []
-            job_slots = int(job_list.findtext('slots') or '1')
             requested_pe = job_list.find('requested_pe')
+            job_slots = int(requested_pe.text if requested_pe is not None else '1')
             job_pe = requested_pe.get('name') if requested_pe is not None else 'local'
             for job_id in job_ids:
                 if job_id in jobs:
@@ -345,22 +354,13 @@ class GridEngine:
         output = self.cmd_executor.execute(GridEngine._QHOST)
         root = ElementTree.fromstring(output)
         for host in root.findall('host'):
-            for queue in host.findall('queue'):
-                queue_name = queue.get('name')
-                if queue_name == self.queue:
-                    host_used = None
-                    host_resv = None
-                    host_slots = None
-                    for queuevalue in queue.findall('queuevalue'):
-                        queuevalue_name = queuevalue.get('name')
-                        if queuevalue_name == 'slots_used':
-                            host_used = int(queuevalue.text)
-                        if queuevalue_name == 'slots_resv':
-                            host_resv = int(queuevalue.text)
-                        if queuevalue_name == 'slots':
-                            host_slots = int(queuevalue.text)
-                    if host_used is not None and host_resv is not None and host_slots is not None:
-                        available_slots += host_slots - host_used - host_resv
+            for queue in host.findall('queue[@name=\'%s\']' % self.queue):
+                host_used = int(queue.find('queuevalue[@name=\'slots_used\']').text or '0')
+                host_resv = int(queue.find('queuevalue[@name=\'slots_resv\']').text or '0')
+                host_slots = int(queue.find('queuevalue[@name=\'slots\']').text or '0')
+                host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                if all(host_state not in self._BAD_HOST_STATES for host_state in host_states):
+                    available_slots += max(host_slots - host_used - host_resv, 0)
         return available_slots
 
     def get_host_resource(self, host):
@@ -428,20 +428,17 @@ class GridEngine:
             self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host)
             output = self.cmd_executor.execute(GridEngine._QHOST)
             root = ElementTree.fromstring(output)
-            host_states = ''
-            for host_object in root.findall('host'):
-                if host_object.get('name') == host:
-                    for queue in host_object.findall('queue'):
-                        if queue.get('name') == self.queue:
-                            for queuevalue in queue.findall('queuevalue'):
-                                if queuevalue.get('name') == 'state_string':
-                                    host_states = queuevalue.text or ''
-            for host_state in host_states:
-                if host_state in self._BAD_HOST_STATES:
-                    Logger.warn('Execution host %s GE state is %s which makes host invalid.' % (host, host_states))
-                    return False
-            if host_states:
-                Logger.warn('Execution host %s GE state is not empty: %s.' % (host, host_states))
+            for host_object in root.findall('host[@name=\'%s\']' % host):
+                for queue in host_object.findall('queue[@name=\'%s\']' % self.queue):
+                    host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                    for host_state in host_states:
+                        if host_state in self._BAD_HOST_STATES:
+                            Logger.warn('Execution host %s GE state is %s which makes host invalid.'
+                                        % (host, host_state))
+                            return False
+                    if host_states:
+                        Logger.warn('Execution host %s GE state is not empty but is considered valid: %s.'
+                                    % (host, host_states))
             return True
         except RuntimeError as e:
             Logger.warn('Execution host %s validation has failed in GE: %s' % (host, e))
