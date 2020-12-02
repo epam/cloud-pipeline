@@ -406,6 +406,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
                                 endpoint = json.loads(endpoints_data[i])
+                                create_dns_record = True if endpoint["customDNS"] and endpoint["customDNS"].lower() == "true" else False
                                 if endpoint["nginx"]:
                                         port = endpoint["nginx"]["port"]
                                         path = endpoint["nginx"].get("path", "")
@@ -415,7 +416,6 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
-                                        create_dns_record = False
                                         if not pretty_url or has_explicit_endpoint_num:
                                                 edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
                                         else:
@@ -443,10 +443,6 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                         # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
                                         if EDGE_ROUTE_NO_PATH_CROP in additional:
                                                 additional = additional.replace(EDGE_ROUTE_NO_PATH_CROP, "")
-                                        elif EDGE_ROUTE_CREATE_DNS in additional:
-                                                additional = additional.replace(EDGE_ROUTE_CREATE_DNS, "")
-                                                edge_target = edge_target + "/"
-                                                create_dns_record = True
                                         else:
                                                 edge_target = edge_target + "/"
 
