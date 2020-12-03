@@ -73,6 +73,7 @@ fi
 #
 _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}
+pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
 _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / (1024 * 1024)) "G"}')
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM:-ram}
