@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -49,7 +50,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -110,7 +110,7 @@ public class UserManagerTest extends AbstractSpringTest {
     @SpyBean
     private StorageProviderManager storageProviderManager;
 
-    @Mock
+    @SpyBean
     private PreferenceManager preferenceManager;
 
     @Before
@@ -310,10 +310,9 @@ public class UserManagerTest extends AbstractSpringTest {
         final Folder folder = new Folder();
         folder.setName(PARENT_FOLDER_NAME);
         final Folder parentFolder = folderManager.create(folder);
-        Mockito.doReturn(STORAGE_TEMPLATE.replace("<folder_id>", parentFolder.getId().toString()))
-            .when(preferenceManager)
-            .getObjectPreferenceAs(Mockito.eq(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE), Mockito.any());
-        ReflectionTestUtils.setField(dataStorageManager, "preferenceManager", preferenceManager);
+        final Preference preference = SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE.toPreference();
+        preference.setValue(STORAGE_TEMPLATE.replace("<folder_id>", parentFolder.getId().toString()));
+        preferenceManager.update(Collections.singletonList(preference));
         prepareContextForDefaultUserStorage();
         final PipelineUser newUser = createDefaultPipelineUser();
         assertDefaultStorage(newUser, parentFolder.getId());
@@ -387,7 +386,7 @@ public class UserManagerTest extends AbstractSpringTest {
         prepareContextForDefaultUserStorage();
         Mockito.doThrow(IllegalArgumentException.class)
             .when(dataStorageManager)
-            .create(Mockito.any(), Matchers.eq(true), Mockito.anyBoolean(), Mockito.anyBoolean());
+            .createDefaultStorageForUser(Mockito.anyString());
         createDefaultPipelineUser();
         final PipelineUser newUser = userManager.loadUserByName(TEST_USER);
         Assert.assertNotNull(newUser);

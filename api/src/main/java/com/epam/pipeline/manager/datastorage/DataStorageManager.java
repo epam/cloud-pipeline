@@ -358,10 +358,10 @@ public class DataStorageManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public Optional<AbstractDataStorage> createDefaultStorageForUser(final String userName) {
         final DataStorageTemplate dataStorageTemplate =
-            Optional.ofNullable(preferenceManager
-                                    .getObjectPreferenceAs(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE,
-                                                           new TypeReference<String>() {}))
-                .map(templateJson ->JsonMapper.<DataStorageTemplate>
+            Optional
+                .ofNullable(preferenceManager.getSystemPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE))
+                .map(preference -> preference.get(Function.identity()))
+                .map(templateJson -> JsonMapper.<DataStorageTemplate>
                     parseData(replaceInTemplate(templateJson, userName), new TypeReference<DataStorageTemplate>() {}))
                 .orElseGet(() -> {
                     final DataStorageVO storageVO = new DataStorageVO();
