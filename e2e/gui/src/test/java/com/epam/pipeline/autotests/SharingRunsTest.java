@@ -23,6 +23,7 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.text;
@@ -40,13 +41,18 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String tool = C.TESTING_TOOL_NAME;
-    private final String friendlyURL = "tool_page1";
+    private final String friendlyURL = "tool_page" + Utils.randomSuffix();
     private String runID = "";
     private String errorMessage = "Url '{\"path\":\"%s\"}' is already used for run '%s'.";
     private String endpointsLink = "";
     private String endpointsName = "";
     private String userGroup = "ROLE_USER";
     private int timeout = C.SHARING_TIMEOUT;
+
+    @BeforeMethod
+    public void openPage() {
+        open(C.ROOT_ADDRESS);
+    }
 
     @Test
     @TestCase({"EPMCMBIBPC-2674"})

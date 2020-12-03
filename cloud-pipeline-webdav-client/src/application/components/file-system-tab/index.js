@@ -29,11 +29,11 @@ function SortingIcon ({sorting, property}) {
   }
   if (index === 0) {
     return (
-      <CaretDownOutlined />
+      <CaretUpOutlined />
     );
   }
   return (
-    <CaretUpOutlined />
+    <CaretDownOutlined />
   );
 }
 
