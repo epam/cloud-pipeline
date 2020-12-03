@@ -70,9 +70,4 @@ public class OntologyApiService {
     public Ontology getExternal(final String externalId, final Long parentId) {
         return ontologyManager.getExternal(externalId, parentId);
     }
-
-    @PreAuthorize(ADMIN_ONLY)
-    public List<Ontology> getAnnotations(final Long ontologyId, final Long entityId) {
-        return ontologyManager.getAnnotations(ontologyId, entityId);
-    }
 }

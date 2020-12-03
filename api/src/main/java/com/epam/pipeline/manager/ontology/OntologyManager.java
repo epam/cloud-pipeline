@@ -98,11 +98,6 @@ public class OntologyManager {
                 .orElse(null));
     }
 
-    // TODO: do we need?
-    public List<Ontology> getAnnotations(final Long ontologyId, final Long entityId) {
-        return null;
-    }
-
     private Ontology buildTree(final Iterable<OntologyEntity> children, Ontology ontology, final Integer depth) {
         if (depth == 1) {
             return ontology;

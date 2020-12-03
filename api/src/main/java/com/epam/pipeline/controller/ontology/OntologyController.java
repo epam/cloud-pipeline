@@ -97,12 +97,4 @@ public class OntologyController extends AbstractRestController {
                                         @RequestParam(required = false) final Long parentId) {
         return Result.success(ontologyApiService.getExternal(externalId, parentId));
     }
-
-    @GetMapping("/annotations")
-    @ApiOperation(value = "Loads ontology annotations", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<Ontology>> getAnnotations(@RequestParam final Long ontologyId,
-                                                 @RequestParam final Long entityId) {
-        return Result.success(ontologyApiService.getAnnotations(ontologyId, entityId));
-    }
 }
