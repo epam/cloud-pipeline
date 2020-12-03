@@ -1354,6 +1354,7 @@ if __name__ == '__main__':
     hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceHelper.get_family_from_type(cloud_provider, instance_type))
+    queue_static = os.getenv('CP_CAP_SGE_STATIC', 'false').strip().lower() == 'true'
     queue = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
     hostlist = os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts')
     log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK',
@@ -1375,9 +1376,9 @@ if __name__ == '__main__':
                                                   free_cores=free_cores)
 
     max_instance_cores = instance_helper.get_max_allowed(price_type).cpu - free_cores
-    max_cluster_cores = max_instance_cores * additional_hosts \
-                        + (instance_cores - free_cores) * static_hosts \
-                        + master_cores
+    max_cluster_cores = max_instance_cores * additional_hosts
+    if queue_static:
+        max_cluster_cores += master_cores + (instance_cores - free_cores) * static_hosts
 
     Logger.info('##################################################\n'
                 'Cloud Pipeline: {pipeline_api}\n'
@@ -1396,6 +1397,7 @@ if __name__ == '__main__':
                 'Max instance cores: {max_instance_cores}\n'
                 'Max cluster cores: {max_cluster_cores}\n'
                 'Max additional hosts: {additional_hosts}\n'
+                'Static Grid Engine queue: {queue_static}\n'
                 'Grid Engine queue: {queue}\n'
                 'Grid Engine hostlist: {hostlist}\n'
                 'Hybrid autoscaling: {hybrid_autoscale}\n'
@@ -1424,6 +1426,7 @@ if __name__ == '__main__':
                         max_instance_cores=max_instance_cores,
                         max_cluster_cores=max_cluster_cores,
                         additional_hosts=additional_hosts,
+                        queue_static=queue_static,
                         queue=queue,
                         hostlist=hostlist,
                         hybrid_autoscale=hybrid_autoscale,
