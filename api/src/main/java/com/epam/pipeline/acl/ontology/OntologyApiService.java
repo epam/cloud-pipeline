@@ -27,6 +27,7 @@ import javax.transaction.Transactional;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class OntologyApiService {
         return ontologyManager.create(ontology);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public Ontology get(final Long id) {
         return ontologyManager.get(id);
     }
@@ -56,17 +57,17 @@ public class OntologyApiService {
         return ontologyManager.delete(id);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<Ontology> getTree(final OntologyType type, final Long parentId, final Integer depth) {
         return ontologyManager.getTree(type, parentId, depth);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<Ontology> getExternals(final List<String> externalIds) {
         return ontologyManager.getExternals(externalIds);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public Ontology getExternal(final String externalId, final Long parentId) {
         return ontologyManager.getExternal(externalId, parentId);
     }
