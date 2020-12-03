@@ -406,7 +406,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
                                 endpoint = json.loads(endpoints_data[i])
-                                create_dns_record = True if endpoint["customDNS"] and endpoint["customDNS"].lower() == "true" else False
+                                create_dns_record = str(endpoint["customDNS"]).lower() == 'true' if "customDNS" in endpoint.keys() else False
                                 if endpoint["nginx"]:
                                         port = endpoint["nginx"]["port"]
                                         path = endpoint["nginx"].get("path", "")

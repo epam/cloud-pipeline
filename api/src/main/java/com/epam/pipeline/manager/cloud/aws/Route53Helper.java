@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 public class Route53Helper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Route53Helper.class);
+    private static final long TTL_TIME = 60L;
 
     public AmazonRoute53 getRoute53Client() {
         AmazonRoute53AsyncClientBuilder builder = AmazonRoute53AsyncClientBuilder.standard();
@@ -119,7 +120,7 @@ public class Route53Helper {
                                                 new ResourceRecordSet()
                                                         .withName(dnsRecord)
                                                         .withType(RRType.CNAME)
-                                                        .withTTL(60L)
+                                                        .withTTL(TTL_TIME)
                                                         .withResourceRecords(
                                                                 new ResourceRecord().withValue(target)
                                                         )
