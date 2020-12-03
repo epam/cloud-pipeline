@@ -24,7 +24,6 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
-import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.JwtRawToken;
@@ -120,25 +119,6 @@ public class UserManager {
             log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION, name, e.getMessage()));
         }
         return newUser;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser initUserDefaultStorage(final Long defaultStorageId, final PipelineUser newUser) {
-        final boolean shouldCreateDefaultHome =
-            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
-        final Long storageId = Optional.ofNullable(defaultStorageId)
-            .filter(id -> dataStorageManager.load(id) != null)
-            .orElseGet(() -> shouldCreateDefaultHome
-                             ? dataStorageManager.createDefaultStorageForUser(newUser.getUserName())
-                                 .map(BaseEntity::getId)
-                                 .orElse(null)
-                             : null);
-        if (storageId == null) {
-            return newUser;
-        }
-        grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
-        newUser.setDefaultStorageId(storageId);
-        return userDao.updateUser(newUser);
     }
 
     /**
@@ -417,11 +397,32 @@ public class UserManager {
                 || !CollectionUtils.isEqualCollection(loadedUserAttributes.entrySet(), attributes.entrySet());
     }
 
+    private PipelineUser initUserDefaultStorage(final Long defaultStorageId, final PipelineUser newUser) {
+        if (defaultStorageId != null && !dataStorageManager.exists(defaultStorageId)) {
+            log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
+                                              newUser.getUserName(),
+                                              messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND,
+                                                                       defaultStorageId)));
+            return newUser;
+        }
+        return Optional.ofNullable(defaultStorageId)
+            .map(Optional::of)
+            .orElseGet(() -> dataStorageManager.tryInitUserDefaultStorage(newUser))
+            .map(storageId -> assignDefaultStorageToUser(newUser, storageId))
+            .orElse(newUser);
+    }
+
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
         final List<String> sensitiveKeys = preferenceManager.getPreference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, users, sensitiveKeys).getBytes(Charset.defaultCharset());
+    }
+
+    private PipelineUser assignDefaultStorageToUser(final PipelineUser newUser, final Long storageId) {
+        grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
+        newUser.setDefaultStorageId(storageId);
+        return userDao.updateUser(newUser);
     }
 
     private PipelineUser createUser(final String name, final List<Long> roles, final List<String> groups,

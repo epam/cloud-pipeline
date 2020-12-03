@@ -54,6 +54,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -192,6 +193,10 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.notNull(dbDataStorage, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, id));
         dbDataStorage.setHasMetadata(this.metadataManager.hasMetadata(new EntityVO(id, AclClass.DATA_STORAGE)));
         return dbDataStorage;
+    }
+
+    public boolean exists(final Long id) {
+        return dataStorageDao.loadDataStorage(id) != null;
     }
 
     public List<AbstractDataStorage> getDatastoragesByIds(final List<Long> ids) {
@@ -355,7 +360,15 @@ public class DataStorageManager implements SecuredEntityManager {
         return createdStorage;
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Optional<Long> tryInitUserDefaultStorage(final PipelineUser user) {
+        final boolean shouldCreateDefaultHome =
+            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
+        return shouldCreateDefaultHome
+               ? createDefaultStorageForUser(user.getUserName()).map(AbstractDataStorage::getId)
+               : Optional.empty();
+    }
+
     public Optional<AbstractDataStorage> createDefaultStorageForUser(final String userName) {
         final DataStorageTemplate dataStorageTemplate =
             Optional

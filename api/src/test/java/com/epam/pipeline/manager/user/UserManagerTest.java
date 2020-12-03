@@ -27,8 +27,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
-import com.epam.pipeline.entity.pipeline.Folder;
-import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -79,16 +77,7 @@ public class UserManagerTest extends AbstractSpringTest {
     private static final String USER_DEFAULT_DS = "user-default-ds";
     private static final String REGION_CODE = "eu-central-1";
     private static final String REGION_NAME = "aws_region";
-    private static final String PARENT_FOLDER_NAME = "parentFolder";
-    private static final String STORAGE_TEMPLATE = "{ \n"
-                                           + "    \"datastorage\": {\n"
-                                           + "        \"parentFolderId\": <folder_id>,\n"
-                                           + "        \"name\": \"@@-home\",\n"
-                                           + "        \"description\": \"Home folder for user @@\"\n"
-                                           + "    },\n"
-                                           + "    \"permissions\": [],\n"
-                                           + "    \"metadata\": {}\n"
-                                           + "}";
+
     @Autowired
     private UserManager userManager;
 
@@ -302,28 +291,6 @@ public class UserManagerTest extends AbstractSpringTest {
     public void loadGroupStatusForEmptyGroupList() {
         Assert.assertTrue(userManager.loadGroupBlockingStatus(Collections.emptyList()).isEmpty());
         Assert.assertTrue(userManager.loadGroupBlockingStatus(null).isEmpty());
-    }
-
-    @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void createUserAndDefaultStorage() {
-        final Folder folder = new Folder();
-        folder.setName(PARENT_FOLDER_NAME);
-        final Folder parentFolder = folderManager.create(folder);
-        final Preference preference = SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE.toPreference();
-        preference.setValue(STORAGE_TEMPLATE.replace("<folder_id>", parentFolder.getId().toString()));
-        preferenceManager.update(Collections.singletonList(preference));
-        prepareContextForDefaultUserStorage();
-        final PipelineUser newUser = createDefaultPipelineUser();
-        assertDefaultStorage(newUser, parentFolder.getId());
-    }
-
-    @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void createUserAndDefaultStorageWhenParentFolderDoesntExists() {
-        prepareContextForDefaultUserStorage();
-        final PipelineUser newUser = createDefaultPipelineUser();
-        assertDefaultStorage(newUser, null);
     }
 
     @Test
