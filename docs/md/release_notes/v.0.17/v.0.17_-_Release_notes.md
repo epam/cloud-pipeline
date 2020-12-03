@@ -346,6 +346,22 @@ In the current version, this viewing was changed to more "friendly" for users:
 
 See details [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#example-limit-mounted-storages).
 
+### Allow to create run without mounts
+
+Previously, users could select all/several storages (from the available scope) to be mounted during the run.  
+But in some cases, it might be needed to launch runs without mounts at all.  
+In the current version, such ability was implemented.
+
+For that, the separate checkbox was added to the "Limit mounts" settings section:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_LimitWithoutMounts_1.png)
+
+If this checkbox is set - there are **_no storages_** will be mounted during the run initialization:
+
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_LimitWithoutMounts_2.png)
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_LimitWithoutMounts_3.png)
+
+The ability to set "Do not mount storages" is added to all forms where limit mounts can be configured.
+
 ### Warning in case of a risk of `OOM` due to the number of the object storage mounts
 
 If the user has 100+ object storages available - they all are mounted to the jobs, by default. When using rather small nodes - this leads to the `OOM` errors, as the 100+ mount processes may oversubscribe the memory.  
