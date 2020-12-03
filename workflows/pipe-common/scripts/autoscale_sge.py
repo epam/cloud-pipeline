@@ -174,7 +174,7 @@ class GridEngine:
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
     _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
-    _QSTAT = 'qstat -u "*" -r -f -xml -q %s'
+    _QSTAT = 'qstat -u "*" -r -f -xml'
     _QHOST = 'qhost -q -xml'
     _QSTAT_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _QMOD_DISABLE = 'qmod -d %s@%s'
@@ -190,10 +190,11 @@ class GridEngine:
         self.max_cluster_cores = max_cluster_cores
         self.queue = queue
         self.hostlist = hostlist
+        self.tmp_queue_name_attribute = 'tmp_queue_name'
 
     def get_jobs(self):
         try:
-            output = self.cmd_executor.execute(GridEngine._QSTAT % self.queue)
+            output = self.cmd_executor.execute(GridEngine._QSTAT)
         except ExecutionError:
             Logger.warn('Grid engine jobs listing has failed.')
             return []
@@ -205,12 +206,17 @@ class GridEngine:
             queue_name = queue_list.findtext('name')
             queue_running_jobs = queue_list.findall('job_list')
             for job_list in queue_running_jobs:
-                job_queue_name = ElementTree.SubElement(job_list, 'queue_name')
+                job_queue_name = ElementTree.SubElement(job_list, self.tmp_queue_name_attribute)
                 job_queue_name.text = queue_name
             running_jobs.extend(queue_running_jobs)
         job_info = root.find('job_info')
         pending_jobs = job_info.findall('job_list')
         for job_list in running_jobs + pending_jobs:
+            job_requested_queue = job_list.findtext('hard_req_queue')
+            job_actual_queue, job_host = self._parse_queue_and_host(job_list.findtext(self.tmp_queue_name_attribute))
+            if job_requested_queue and job_requested_queue != self.queue \
+                    or job_actual_queue and job_actual_queue != self.queue:
+                continue
             job_id = job_list.findtext('JB_job_number')
             job_tasks = self._parse_array(job_list.findtext('tasks'))
             job_ids = ['{}.{}'.format(job_id, job_task) for job_task in job_tasks] or [job_id]
@@ -218,7 +224,6 @@ class GridEngine:
             job_user = job_list.findtext('JB_owner')
             job_state = GridEngineJobState.from_letter_code(job_list.findtext('state'))
             job_datetime = self._parse_date(job_list.findtext('JAT_start_time') or job_list.findtext('JB_submission_time'))
-            job_host = self._parse_host(job_list.findtext('queue_name'))
             job_hosts = [job_host] if job_host else []
             requested_pe = job_list.find('requested_pe')
             job_slots = int(requested_pe.text if requested_pe is not None else '1')
@@ -244,8 +249,8 @@ class GridEngine:
     def _parse_date(self, date):
         return datetime.strptime(date, GridEngine._QSTAT_DATETIME_FORMAT)
 
-    def _parse_host(self, queue_and_host):
-        return queue_and_host.split('@')[1] if queue_and_host else None
+    def _parse_queue_and_host(self, queue_and_host):
+        return queue_and_host.split('@')[:2] if queue_and_host else (None, None)
 
     def _parse_array(self, array_jobs):
         result = []
