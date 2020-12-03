@@ -56,7 +56,7 @@ public abstract class AbstractControllerTest {
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String MULTIPART_CONTENT_FILE_NAME = "file.txt";
-    protected static final byte[] MULTIPART_CONTENT_FILE_CONTENT = "content of file.txt".getBytes();
+    protected static final String  MULTIPART_CONTENT_FILE_CONTENT = "content of file.txt";
     protected static final String MULTIPART_CONTENT_TYPE =
             "multipart/form-data; boundary=--------------------------boundary";
     protected static final String MULTIPART_CONTENT =
@@ -64,7 +64,7 @@ public abstract class AbstractControllerTest {
             "Content-Disposition: form-data; name=\"file\"; filename=\" " + MULTIPART_CONTENT_FILE_NAME + " \"\r\n" +
             "Content-Type:  application/octet-stream\r\n" +
             "\r\n" +
-            "content of file.txt" +
+            MULTIPART_CONTENT_FILE_CONTENT +
             "\r\n" +
             "----------------------------boundary";
 
