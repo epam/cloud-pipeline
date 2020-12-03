@@ -20,10 +20,6 @@ from src.mesh_tree_uploader import get_uploader
 from src.ontology_type import OntologyType
 
 
-# ftp://nlmpubs.nlm.nih.gov/online/mesh/MESH_FILES/xmlmesh/qual2020.xml
-# ftp://nlmpubs.nlm.nih.gov/online/mesh/MESH_FILES/xmlmesh/desc2020.xml
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", type=str, required=True)
