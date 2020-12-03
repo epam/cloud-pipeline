@@ -361,7 +361,7 @@ public class UserManagerTest extends AbstractSpringTest {
         prepareContextForDefaultUserStorage();
         final PipelineUser newUser = userManager.createUser(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
                                                             DEFAULT_USER_ATTRIBUTE, removedId);
-        assertDefaultStorage(newUser, null);
+        Assert.assertNull(newUser.getDefaultStorageId());
     }
 
     @Test

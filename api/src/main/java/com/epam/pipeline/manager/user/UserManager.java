@@ -127,12 +127,12 @@ public class UserManager {
         final boolean shouldCreateDefaultHome =
             preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
         final Long storageId = Optional.ofNullable(defaultStorageId)
-            .filter(dataStorageManager::exists)
-            .orElse(shouldCreateDefaultHome
-                    ? dataStorageManager.createDefaultStorageForUser(newUser.getUserName())
-                        .map(BaseEntity::getId)
-                        .orElse(null)
-                    : null);
+            .filter(id -> dataStorageManager.load(id) != null)
+            .orElseGet(() -> shouldCreateDefaultHome
+                             ? dataStorageManager.createDefaultStorageForUser(newUser.getUserName())
+                                 .map(BaseEntity::getId)
+                                 .orElse(null)
+                             : null);
         if (storageId == null) {
             return newUser;
         }
