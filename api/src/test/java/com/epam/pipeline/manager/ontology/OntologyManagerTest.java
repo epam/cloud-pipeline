@@ -91,6 +91,39 @@ public class OntologyManagerTest {
 
     @Test
     public void shouldLoadTree() {
+        mockOntologyTree();
+
+        final List<Ontology> tree = manager.getTree(OntologyType.QUAL, ID, 1);
+        Assert.assertThat(tree.size(), is(2));
+    }
+
+    @Test
+    public void shouldDeleteOntologyNonRecursive() {
+        doReturn(ontologyEntity).when(ontologyRepository).findOne(ID);
+        doReturn(EMPTY_ITERABLE).when(ontologyRepository).findByParent_Id(ID);
+        manager.delete(ID, false);
+        verify(ontologyRepository).delete(ID);
+    }
+
+    @Test
+    public void shouldNotDeleteOntologyIfChildrenExist() {
+        mockOntologyTree();
+
+        assertThrows(IllegalStateException.class, () -> manager.delete(ID, false));
+    }
+
+    @Test
+    public void shouldDeleteOntologyRecursive() {
+        mockOntologyTree();
+
+        manager.delete(ID, true);
+
+        verify(ontologyRepository).delete(ID);
+        verify(ontologyRepository).delete(ID_2);
+        verify(ontologyRepository).delete(ID_3);
+    }
+
+    private void mockOntologyTree() {
         final OntologyEntity parentOntologyEntity = OntologyCreatorsUtils.ontologyEntity(null);
         parentOntologyEntity.setId(ID);
         final Ontology parentOntology = OntologyCreatorsUtils.ontology(null);
@@ -105,19 +138,8 @@ public class OntologyManagerTest {
         final Iterable<OntologyEntity> parentIterable = () ->
                 Arrays.asList(ontologyEntity1, ontologyEntity2).iterator();
         doReturn(parentIterable).when(ontologyRepository).findByParent_Id(ID);
-        final Iterable<OntologyEntity> emptyIterable = Collections::emptyIterator;
-        doReturn(emptyIterable).when(ontologyRepository).findByParent_Id(ID_2);
-        doReturn(emptyIterable).when(ontologyRepository).findByParent_Id(ID_3);
-
-        final List<Ontology> tree = manager.getTree(OntologyType.QUAL, ID, 1);
-        Assert.assertThat(tree.size(), is(2));
-    }
-
-    @Test
-    public void shouldDeleteOntology() {
-        doReturn(ontologyEntity).when(ontologyRepository).findOne(ID);
-        manager.delete(ID);
-        verify(ontologyRepository).delete(ID);
+        doReturn(EMPTY_ITERABLE).when(ontologyRepository).findByParent_Id(ID_2);
+        doReturn(EMPTY_ITERABLE).when(ontologyRepository).findByParent_Id(ID_3);
     }
 
     private OntologyEntity mockOntology(final OntologyEntity parentOntologyEntity,

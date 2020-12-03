@@ -23,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
@@ -35,7 +34,6 @@ public class OntologyApiService {
     private final OntologyManager ontologyManager;
 
     @PreAuthorize(ADMIN_ONLY)
-    @Transactional
     public Ontology create(final Ontology ontology) {
         return ontologyManager.create(ontology);
     }
@@ -46,15 +44,13 @@ public class OntologyApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    @Transactional
     public Ontology update(final Long id, final Ontology ontology) {
         return ontologyManager.update(id, ontology);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    @Transactional
-    public Ontology delete(final Long id) {
-        return ontologyManager.delete(id);
+    public Ontology delete(final Long id, final boolean recursive) {
+        return ontologyManager.delete(id, recursive);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)

@@ -24,10 +24,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.StreamSupport;
 
+import static com.epam.pipeline.test.creator.ontology.OntologyCreatorsUtils.EXTERNAL_ID;
+import static com.epam.pipeline.test.creator.ontology.OntologyCreatorsUtils.EXTERNAL_ID_2;
+import static com.epam.pipeline.test.creator.ontology.OntologyCreatorsUtils.EXTERNAL_ID_3;
 import static com.epam.pipeline.test.creator.ontology.OntologyCreatorsUtils.ontologyEntity;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -96,5 +101,43 @@ public class OntologyRepositoryTest extends AbstractJpaTest {
 
         final Iterable<OntologyEntity> roots = ontologyRepository.findByParentIsNullAndType(ontology.getType());
         assertThat(StreamSupport.stream(roots.spliterator(), false).count(), is(2L));
+    }
+
+    @Test
+    @Transactional
+    public void shouldLoadByExternalIds() {
+        ontologyRepository.save(ontologyEntity(null));
+        final OntologyEntity entity2 = ontologyEntity(null);
+        entity2.setExternalId(EXTERNAL_ID_2);
+        ontologyRepository.save(entity2);
+        final OntologyEntity entity3 = ontologyEntity(null);
+        entity3.setExternalId(EXTERNAL_ID_3);
+        ontologyRepository.save(entity3);
+
+        entityManager.clear();
+
+        final Iterable<OntologyEntity> result = ontologyRepository.findByExternalIdIn(
+                Arrays.asList(EXTERNAL_ID, EXTERNAL_ID_2));
+        assertThat(StreamSupport.stream(result.spliterator(), false).count(), is(2L));
+    }
+
+    @Test
+    @Transactional
+    public void shouldLoadByExternalIdAndParent() {
+        final OntologyEntity parentEntity = ontologyEntity(null);
+        final OntologyEntity anotherParentEntity = ontologyEntity(null);
+        ontologyRepository.save(parentEntity);
+        final OntologyEntity entity2 = ontologyEntity(parentEntity);
+        entity2.setExternalId(EXTERNAL_ID_2);
+        ontologyRepository.save(entity2);
+        final OntologyEntity entity3 = ontologyEntity(anotherParentEntity);
+        entity3.setExternalId(EXTERNAL_ID_2);
+        ontologyRepository.save(entity3);
+
+        entityManager.clear();
+
+        final Optional<OntologyEntity> result = ontologyRepository
+                .findByExternalIdAndParent_Id(EXTERNAL_ID_2, parentEntity.getId());
+        assertThat(result.orElseThrow(IllegalArgumentException::new).getId(), is(entity2.getId()));
     }
 }

@@ -28,6 +28,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 
 public final class OntologyCreatorsUtils {
     public static final String EXTERNAL_ID = "1";
+    public static final String EXTERNAL_ID_2 = "2";
+    public static final String EXTERNAL_ID_3 = "3";
     public static final Map<String, String> ATTRIBUTES = new HashMap<>();
     public static final LocalDateTime CREATED = LocalDateTime.of(2019, 10, 7, 0, 0);
     public static final String NAME = "NAME";

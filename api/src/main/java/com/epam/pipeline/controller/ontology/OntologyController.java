@@ -70,8 +70,9 @@ public class OntologyController extends AbstractRestController {
     @DeleteMapping("/{id}")
     @ApiOperation(value = "Deletes ontology", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Ontology> delete(@PathVariable final Long id) {
-        return Result.success(ontologyApiService.delete(id));
+    public Result<Ontology> delete(@PathVariable final Long id,
+                                   @RequestParam(required = false) final boolean recursive) {
+        return Result.success(ontologyApiService.delete(id, recursive));
     }
 
     @GetMapping("/tree")

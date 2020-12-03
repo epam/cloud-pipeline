@@ -23,9 +23,11 @@ import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +41,7 @@ public class OntologyManager {
     private final OntologyMapper ontologyMapper;
     private final OntologyRepository ontologyRepository;
 
+    @Transactional
     public Ontology create(final Ontology ontology) {
         Assert.notNull(ontology.getName(), "Ontology name is missing.");
         Assert.notNull(ontology.getType(), "Ontology type is missing.");
@@ -53,6 +56,7 @@ public class OntologyManager {
         return ontologyMapper.toDto(ontologyRepository.save(entity));
     }
 
+    @Transactional
     public Ontology update(final Long id, final Ontology ontology) {
         final OntologyEntity entity = findEntity(id);
         final Ontology parent = ontology.getParent();
@@ -65,8 +69,19 @@ public class OntologyManager {
         return ontologyMapper.toDto(entity);
     }
 
-    public Ontology delete(final Long id) {
+    @Transactional
+    public Ontology delete(final Long id, final boolean recursive) {
         final Ontology ontology = ontologyMapper.toDto(findEntity(id));
+        final List<OntologyEntity> children = findChildren(ontology.getId());
+        if (!recursive && CollectionUtils.isNotEmpty(children)) {
+            throw new IllegalStateException(
+                    String.format("Ontology '%d' cannot be deleted: children were found.", id));
+        }
+        if (!recursive || CollectionUtils.isEmpty(children)) {
+            ontologyRepository.delete(id);
+            return ontology;
+        }
+        children.forEach(this::deleteRecursive);
         ontologyRepository.delete(id);
         return ontology;
     }
@@ -163,5 +178,21 @@ public class OntologyManager {
         Assert.notNull(parentId, "Parent id was not found");
         findEntity(parentId);
         entity.setParent(ontologyMapper.toEntity(parent));
+    }
+
+    private void deleteRecursive(final OntologyEntity ontology) {
+        final List<OntologyEntity> children = findChildren(ontology.getId());
+        if (CollectionUtils.isEmpty(children)) {
+            ontologyRepository.delete(ontology.getId());
+            return;
+        }
+        children.forEach(this::deleteRecursive);
+        ontologyRepository.delete(ontology.getId());
+    }
+
+    private List<OntologyEntity> findChildren(final Long id) {
+        return StreamSupport
+                .stream(findByParent(id).spliterator(), false)
+                .collect(Collectors.toList());
     }
 }
