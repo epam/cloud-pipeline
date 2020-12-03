@@ -1356,8 +1356,8 @@ if __name__ == '__main__':
     free_cores = int(os.getenv('CP_CAP_SGE_WORKER_FREE_CORES', 0))
     master_cores = int(os.getenv('CP_CAP_SGE_MASTER_CORES', instance_cores))
     master_cores = master_cores - free_cores if master_cores - free_cores > 0 else master_cores
-    working_directory = os.getenv('TMP_DIR', os.getenv('SHARED_WORK_FOLDER', '/common/workdir'))
-    logging_directory = os.getenv('LOG_DIR', '/var/log')
+    working_directory = os.getenv('CP_CAP_AUTOSCALE_WORKDIR', os.getenv('TMP_DIR', '/tmp'))
+    logging_directory = os.getenv('CP_CAP_AUTOSCALE_LOGDIR', os.getenv('LOG_DIR', '/var/log'))
     hybrid_autoscale = os.getenv('CP_CAP_AUTOSCALE_HYBRID', 'false').strip().lower() == 'true'
     hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
