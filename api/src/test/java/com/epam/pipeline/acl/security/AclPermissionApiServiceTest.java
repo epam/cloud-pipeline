@@ -41,6 +41,7 @@ import static org.mockito.Mockito.doReturn;
 
 public class AclPermissionApiServiceTest extends AbstractAclTest {
 
+    private static final AclClass DATA_STORAGE = AclClass.DATA_STORAGE;
     private final AclSecuredEntry aclSecuredEntry = getAclSecuredEntry();
     private final PermissionGrantVO permissionGrantVO = getPermissionGrantVO();
     private final EntityPermissionVO entityPermissionVO = getEntityPermissionVO();
@@ -67,7 +68,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldSetPermissionsForOwner() {
-        doReturn(s3bucket).when(entityManager).load(AclClass.ATTACHMENT, ID);
+        doReturn(s3bucket).when(entityManager).load(DATA_STORAGE, ID);
         doReturn(aclSecuredEntry).when(spyPermissionManager).setPermissions(permissionGrantVO);
         mockUser(SIMPLE_USER);
 
@@ -77,7 +78,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenySetPermissionForNotOwner() {
-        doReturn(s3bucket).when(entityManager).load(AclClass.ATTACHMENT, ID);
+        doReturn(s3bucket).when(entityManager).load(DATA_STORAGE, ID);
         mockUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () -> aclPermissionApiService.setPermissions(permissionGrantVO));
@@ -86,10 +87,10 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetPermissionsForAdmin() {
-        doReturn(s3bucket).when(entityManager).load(AclClass.ATTACHMENT, ID);
-        doReturn(aclSecuredEntry).when(spyPermissionManager).getPermissions(ID, AclClass.ATTACHMENT);
+        doReturn(s3bucket).when(entityManager).load(DATA_STORAGE, ID);
+        doReturn(aclSecuredEntry).when(spyPermissionManager).getPermissions(ID, DATA_STORAGE);
 
-        assertThat(aclPermissionApiService.getPermissions(ID, AclClass.ATTACHMENT)).isEqualTo(aclSecuredEntry);
+        assertThat(aclPermissionApiService.getPermissions(ID, DATA_STORAGE)).isEqualTo(aclSecuredEntry);
     }
 
     @Test
@@ -264,9 +265,5 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
 
         assertThrows(AccessDeniedException.class,
             () -> aclPermissionApiService.loadEntityPermission(ID, AclClass.DATA_STORAGE));
-    }
-
-    private void mockUser(final String username) {
-        doReturn(username).when(mockAuthManager).getAuthorizedUser();
     }
 }

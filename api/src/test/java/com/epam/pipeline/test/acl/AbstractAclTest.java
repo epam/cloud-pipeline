@@ -158,4 +158,9 @@ public abstract class AbstractAclTest {
     protected void mockSecurityContext() {
         doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
     }
+
+    protected void mockUser(final String username) {
+        doReturn(username).when(mockAuthManager).getAuthorizedUser();
+    }
+
 }
