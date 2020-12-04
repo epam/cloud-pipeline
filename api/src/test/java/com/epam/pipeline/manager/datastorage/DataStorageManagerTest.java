@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,6 +48,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -116,6 +118,17 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void existsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                                                                            PATH, STS_DURATION, LTS_DURATION,
+                                                                            WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
+                                                                            TEST_MOUNT_OPTIONS);
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        Assert.assertTrue(storageManager.exists(saved.getId()));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void loadByIdsDataStorageTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
                 PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
@@ -181,6 +194,20 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         AbstractDataStorage loaded = storageManager.load(saved.getId());
         compareDataStorage(saved, loaded);
     }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testCreateDefaultUserStorage() {
+        final Optional<AbstractDataStorage> defaultStorage = storageManager.createDefaultStorageForUser(NAME);
+        Assert.assertTrue(defaultStorage.isPresent());
+        final AbstractDataStorage defaultStorageContent = defaultStorage.get();
+        final String expectedDefaultUserStorageName =
+            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, NAME);
+        Assert.assertEquals(expectedDefaultUserStorageName, defaultStorageContent.getName());
+        Assert.assertEquals(expectedDefaultUserStorageName, defaultStorageContent.getPath());
+        Assert.assertEquals(DataStorageType.S3, defaultStorageContent.getType());
+    }
+
 
     @Test(expected = IllegalArgumentException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -264,6 +291,21 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         storageVO.setId(saved.getId());
         storageVO.setMountPoint(FORBIDDEN_MOUNT_POINT);
         storageManager.update(storageVO);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void testFailCreateDefaultUserStorageWhenSameNameExists() {
+        final String expectedDefaultUserStorageName =
+            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, NAME);
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(expectedDefaultUserStorageName,
+                                                                            DESCRIPTION, DataStorageType.S3,
+                                                                            expectedDefaultUserStorageName,
+                                                                            STS_DURATION, LTS_DURATION,
+                                                                            WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
+                                                                            TEST_MOUNT_OPTIONS);
+        storageManager.create(storageVO, false, false, false);
+        Assert.assertFalse(storageManager.createDefaultStorageForUser(NAME).isPresent());
     }
 
     private void assertDataStorageAccordingToUpdateStorageVO(DataStorageVO updateStorageVO,
