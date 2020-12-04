@@ -397,7 +397,7 @@ public class UserManager {
                 || !CollectionUtils.isEqualCollection(loadedUserAttributes.entrySet(), attributes.entrySet());
     }
 
-    private PipelineUser initUserDefaultStorage(final Long defaultStorageId, final PipelineUser newUser) {
+    PipelineUser initUserDefaultStorage(final Long defaultStorageId, final PipelineUser newUser) {
         if (defaultStorageId != null && !dataStorageManager.exists(defaultStorageId)) {
             log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
                                               newUser.getUserName(),

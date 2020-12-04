@@ -27,6 +27,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -77,7 +79,16 @@ public class UserManagerTest extends AbstractSpringTest {
     private static final String USER_DEFAULT_DS = "user-default-ds";
     private static final String REGION_CODE = "eu-central-1";
     private static final String REGION_NAME = "aws_region";
-
+    private static final String PARENT_FOLDER_NAME = "parentFolder";
+    private static final String STORAGE_TEMPLATE = "{ \n"
+                                           + "    \"datastorage\": {\n"
+                                           + "        \"parentFolderId\": <folder_id>,\n"
+                                           + "        \"name\": \"@@-home\",\n"
+                                           + "        \"description\": \"Home folder for user @@\"\n"
+                                           + "    },\n"
+                                           + "    \"permissions\": [],\n"
+                                           + "    \"metadata\": {}\n"
+                                           + "}";
     @Autowired
     private UserManager userManager;
 
@@ -295,6 +306,32 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserAndDefaultStorage() {
+        final Folder folder = new Folder();
+        folder.setName(PARENT_FOLDER_NAME);
+        final Folder parentFolder = folderManager.create(folder);
+        final Preference preference = SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE.toPreference();
+        preference.setValue(STORAGE_TEMPLATE.replace("<folder_id>", parentFolder.getId().toString()));
+        preferenceManager.update(Collections.singletonList(preference));
+        prepareContextForDefaultUserStorage();
+        mockDataStorageManagerToExecuteTryInitDefaultStorage();
+        final PipelineUser newUser = createDefaultPipelineUser();
+        assertDefaultStorage(newUser, parentFolder.getId());
+        restoreDataStorageManager();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserAndDefaultStorageWhenParentFolderDoesntExists() {
+        prepareContextForDefaultUserStorage();
+        mockDataStorageManagerToExecuteTryInitDefaultStorage();
+        final PipelineUser newUser = createDefaultPipelineUser();
+        assertDefaultStorage(newUser, null);
+        restoreDataStorageManager();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createUserAndDefaultStorageWhenDefaultStorageIdIsSpecifiedExplicitly() {
         final String expectedDefaultUserStorageName =
             TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, TEST_USER);
@@ -375,6 +412,21 @@ public class UserManagerTest extends AbstractSpringTest {
             return dataStorageManager.create((DataStorageVO) args[0], false, (boolean) args[2], (boolean) args[3]);
         }).when(dataStorageManager)
             .create(Mockito.any(), Matchers.eq(true), Mockito.anyBoolean(), Mockito.anyBoolean());
+    }
+
+    private void mockDataStorageManagerToExecuteTryInitDefaultStorage() {
+        final DataStorageManager dataStorageManagerMock = Mockito.mock(DataStorageManager.class);
+        ReflectionTestUtils.setField(userManager, "dataStorageManager", dataStorageManagerMock);
+        Mockito.doAnswer(invocation -> {
+            final Object[] args = invocation.getArguments();
+            final PipelineUser user = (PipelineUser) args[0];
+            return dataStorageManager.createDefaultStorageForUser(user.getUserName()).map(AbstractDataStorage::getId);
+        }).when(dataStorageManagerMock)
+            .tryInitUserDefaultStorage(Mockito.any());
+    }
+
+    private void restoreDataStorageManager() {
+        ReflectionTestUtils.setField(userManager, "dataStorageManager", dataStorageManager);
     }
 
     private void assertDefaultStorage(final PipelineUser user, final Long defaultFolderId) {
