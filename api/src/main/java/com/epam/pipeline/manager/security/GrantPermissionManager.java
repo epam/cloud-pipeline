@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
+import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
@@ -67,6 +68,7 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
+import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -74,6 +76,7 @@ import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -101,7 +104,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -182,6 +184,8 @@ public class GrantPermissionManager {
 
     @Autowired private RunPermissionManager runPermissionManager;
 
+    @Autowired private PermissionGrantVOMapper permissionGrantVOMapper;
+
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
     }
@@ -215,6 +219,19 @@ public class GrantPermissionManager {
             return false;
         }
         return true;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void setPermissionsToEntity(final List<PermissionVO> permissions, final Long entityId,
+                                       final AclClass entityClass) {
+        if (CollectionUtils.isNotEmpty(permissions)) {
+            permissions.forEach(permission -> {
+                PermissionGrantVO permissionGrantVO = permissionGrantVOMapper.toPermissionGrantVO(permission);
+                permissionGrantVO.setId(entityId);
+                permissionGrantVO.setAclClass(entityClass);
+                setPermissions(permissionGrantVO);
+            });
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
