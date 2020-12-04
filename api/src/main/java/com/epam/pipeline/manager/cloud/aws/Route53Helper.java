@@ -49,9 +49,9 @@ public class Route53Helper {
     }
 
     public InstanceDNSRecord createDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        LOGGER.info("Creating DNS record for hostedZoneId: " + hostedZoneId + " and target: " + dnsRecord.getTarget());
+        LOGGER.info("Creating DNS record for hostedZoneId: " + hostedZoneId + " record: " + dnsRecord.getDnsRecord() + " and target: " + dnsRecord.getTarget());
         final AmazonRoute53 client = getRoute53Client();
-        if (!isDnsRecordExists(hostedZoneId, dnsRecord.getDnsRecord(), client)) {
+        if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
             try {
                 final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
                         dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.CREATE);
@@ -69,9 +69,11 @@ public class Route53Helper {
     }
 
     public InstanceDNSRecord removeDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        LOGGER.info("Removing DNS record: " + dnsRecord.getDnsRecord() + " in hostedZoneId: " + hostedZoneId);
+        LOGGER.info("Removing DNS record: " + dnsRecord.getDnsRecord() + " for target: " + dnsRecord.getTarget() + " in hostedZoneId: " + hostedZoneId);
         final AmazonRoute53 client = getRoute53Client();
-        if (!isDnsRecordExists(hostedZoneId, dnsRecord.getDnsRecord(), client)) {
+        if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
+            LOGGER.info("DNS record: " + dnsRecord.getDnsRecord() + " type: " + getRRType(dnsRecord.getTarget()) + " for target: " + dnsRecord.getTarget()
+                    + " in hostedZoneId: " + hostedZoneId + " doesn't exists");
             return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
         } else {
             final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
@@ -81,14 +83,14 @@ public class Route53Helper {
 
     }
 
-    private boolean isDnsRecordExists(final String hostedZoneId, final String dnsRecord, final AmazonRoute53 client) {
+    private boolean isDnsRecordExists(final String hostedZoneId, final InstanceDNSRecord dnsRecord, final AmazonRoute53 client) {
         return client.listResourceRecordSets(new ListResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZoneId)
-                .withStartRecordName(dnsRecord)
-                .withStartRecordType(RRType.CNAME)).getResourceRecordSets().stream()
+                .withStartRecordName(dnsRecord.getDnsRecord())
+                .withStartRecordType(getRRType(dnsRecord.getTarget()))).getResourceRecordSets().stream()
                 .map(ResourceRecordSet::getName)
-                .anyMatch(resourceRecord -> resourceRecord.equalsIgnoreCase(dnsRecord)
-                        || resourceRecord.equalsIgnoreCase(dnsRecord + "."));
+                .anyMatch(resourceRecord -> resourceRecord.equalsIgnoreCase(dnsRecord.getDnsRecord())
+                        || resourceRecord.equalsIgnoreCase(dnsRecord.getDnsRecord() + "."));
     }
 
     private InstanceDNSRecord buildInstanceDNSRecord(final String dnsRecord,
@@ -119,7 +121,7 @@ public class Route53Helper {
                                         .withResourceRecordSet(
                                                 new ResourceRecordSet()
                                                         .withName(dnsRecord)
-                                                        .withType(RRType.CNAME)
+                                                        .withType(getRRType(target))
                                                         .withTTL(TTL_TIME)
                                                         .withResourceRecords(
                                                                 new ResourceRecord().withValue(target)
@@ -137,6 +139,14 @@ public class Route53Helper {
             return result;
         } else {
             throw new IllegalStateException("Can't create Route53 DNS record for some reason.");
+        }
+    }
+
+    private static RRType getRRType(final String target) {
+        if (target.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
+            return RRType.A;
+        } else {
+            return RRType.CNAME;
         }
     }
 

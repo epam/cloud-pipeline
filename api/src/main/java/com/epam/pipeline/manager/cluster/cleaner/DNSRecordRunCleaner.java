@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cloud.aws.Route53Helper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.utils.UtilsManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,15 +43,14 @@ public class DNSRecordRunCleaner implements RunCleaner {
     private static final String PORT_DELIMITER = ":";
 
     private final PreferenceManager preferenceManager;
+    private final UtilsManager utilsManager;
     private final Route53Helper route53Helper = new Route53Helper();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private final String edgeExternalHost;
-
     public DNSRecordRunCleaner(final PreferenceManager preferenceManager,
-                               final @Value("${edge.external.host:}") String edgeExternalHost) {
+                               UtilsManager utilsManager) {
         this.preferenceManager = preferenceManager;
-        this.edgeExternalHost = edgeExternalHost;
+        this.utilsManager = utilsManager;
     }
 
     @Override
@@ -75,7 +75,7 @@ public class DNSRecordRunCleaner implements RunCleaner {
 
                     final String url = map.get("url");
                     if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
-                        route53Helper.removeDNSRecord(hostZoneId, new InstanceDNSRecord(unify(url), edgeExternalHost, null));
+                        route53Helper.removeDNSRecord(hostZoneId, new InstanceDNSRecord(unify(url), utilsManager.getEdgeUrl(), null));
                     }
                 });
             } catch (IOException e) {

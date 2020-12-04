@@ -53,6 +53,14 @@ public class UtilsManager {
         return buildUrl(SSH_URL_TEMPLATE, runId);
     }
 
+    public String getEdgeUrl() {
+        ServiceDescription service = kubeManager.getServiceByLabel(edgeLabel);
+        if (service == null) {
+            throw new IllegalArgumentException("Edge server is not registered in the cluster.");
+        }
+        return service.getIp();
+    }
+
     public String buildFSBrowserUrl(Long runId) {
         if (isFSBrowserEnabled() && runIsNotSensitive(runId)) {
             return buildUrl(FSBROWSER_URL_TEMPLATE, runId);
