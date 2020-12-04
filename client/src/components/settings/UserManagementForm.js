@@ -742,6 +742,7 @@ export default class UserManagementForm extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
+      await this.props.dataStorages.fetch();
       this.setState({
         createUserDialogVisible: false
       }, this.reload);
@@ -786,6 +787,7 @@ export default class UserManagementForm extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
+      await this.props.dataStorages.fetch();
       this.setState({
         createGroupDialogVisible: false,
         createGroupName: null,
