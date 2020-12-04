@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -49,9 +50,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
@@ -63,7 +64,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.*;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 
+@Transactional
 public class UserManagerTest extends AbstractSpringTest {
 
     private static final String TEST_USER = "TestUser";
@@ -113,6 +118,9 @@ public class UserManagerTest extends AbstractSpringTest {
     @SpyBean
     private PreferenceManager preferenceManager;
 
+    @MockBean
+    protected DataStorageValidator storageValidator;
+
     @Before
     public void setUpPreferenceManager() {
         ReflectionTestUtils.setField(userManager, "preferenceManager", preferenceManager);
@@ -121,7 +129,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createUser() {
         Assert.assertNull(userManager.loadUserByName(TEST_USER));
         final PipelineUser newUser = createDefaultPipelineUser();
@@ -138,7 +145,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void readUser() {
         Assert.assertNull(userManager.loadUserByName(TEST_USER));
         final PipelineUser newUser = createDefaultPipelineUser();
@@ -147,7 +153,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void exportUsers() {
         final PipelineUser newUser = createDefaultPipelineUser();
         PipelineUserExportVO attr = new PipelineUserExportVO();
@@ -155,7 +160,7 @@ public class UserManagerTest extends AbstractSpringTest {
         attr.setIncludeUserName(true);
 
         String[] exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(1, exported.length);
+        Assert.assertEquals(2, exported.length);
         Assert.assertTrue(
                 Arrays.stream(exported).anyMatch(
                     s -> ("" + newUser.getId() + CSV_SEPARATOR + newUser.getUserName()).equals(s)
@@ -164,12 +169,12 @@ public class UserManagerTest extends AbstractSpringTest {
 
         attr.setIncludeHeader(true);
         exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(2, exported.length);
+        Assert.assertEquals(3, exported.length);
         Assert.assertEquals(ID.getValue() + CSV_SEPARATOR + USER_NAME.getValue(), exported[0]);
 
         attr.setIncludeRoles(true);
         exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(2, exported.length);
+        Assert.assertEquals(3, exported.length);
         Assert.assertEquals(
                 ID.getValue() + CSV_SEPARATOR + USER_NAME.getValue() + CSV_SEPARATOR + ROLES.getValue(),
                 exported[0]
@@ -178,7 +183,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void exportUsersWithDataStorage() {
         final PipelineUser userWithDS = createPipelineUserWithDataStorage();
         PipelineUserExportVO attr = new PipelineUserExportVO();
@@ -186,7 +190,7 @@ public class UserManagerTest extends AbstractSpringTest {
         attr.setIncludeHeader(true);
         attr.setIncludeId(true);
         final String[] exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(2, exported.length);
+        Assert.assertEquals(3, exported.length);
         Assert.assertEquals(
                 ID.getValue() + CSV_SEPARATOR +
                         DEFAULT_STORAGE_ID.getValue() + CSV_SEPARATOR +
@@ -198,7 +202,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateUser() {
         final PipelineUser user = createDefaultPipelineUser();
         Assert.assertFalse(user.isBlocked());
@@ -225,7 +228,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteUser() {
         final PipelineUser user = createDefaultPipelineUser();
 
@@ -245,14 +247,12 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createGroupStatus() {
         Assert.assertNotNull(userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false));
         Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateGroupStatus() {
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
         Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
@@ -270,7 +270,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteGroupStatus() {
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
         Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
@@ -279,7 +278,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void loadAllGroupsStatuses() {
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_2, true);
@@ -292,20 +290,17 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void loadGroupStatusForNonexistentGroup() {
         Assert.assertNull(getGroupStatus(TEST_GROUP_NAME_1));
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void loadGroupStatusForEmptyGroupList() {
         Assert.assertTrue(userManager.loadGroupBlockingStatus(Collections.emptyList()).isEmpty());
         Assert.assertTrue(userManager.loadGroupBlockingStatus(null).isEmpty());
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createUserAndDefaultStorage() {
         final Folder folder = new Folder();
         folder.setName(PARENT_FOLDER_NAME);
@@ -321,7 +316,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createUserAndDefaultStorageWhenParentFolderDoesntExists() {
         prepareContextForDefaultUserStorage();
         mockDataStorageManagerToExecuteTryInitDefaultStorage();
@@ -331,7 +325,6 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createUserAndDefaultStorageWhenDefaultStorageIdIsSpecifiedExplicitly() {
         final String expectedDefaultUserStorageName =
             TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, TEST_USER);
@@ -348,27 +341,15 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertEquals(storage.getId(), newUser.getDefaultStorageId());
     }
 
-    @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Test(expected = IllegalArgumentException.class)
     public void createUserAndDefaultStorageWhenExplicitDefaultStorageDoesntExist() {
-        final String expectedDefaultUserStorageName =
-            TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, TEST_USER);
-        createAwsRegion(REGION_NAME, REGION_CODE);
-        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(expectedDefaultUserStorageName,
-                                                                            null, DataStorageType.S3,
-                                                                            expectedDefaultUserStorageName,
-                                                                            null, null,
-                                                                            null);
-        final Long removedId = dataStorageManager.create(storageVO, false, false, false).getEntity().getId();
-        dataStorageManager.delete(removedId, false);
-        prepareContextForDefaultUserStorage();
-        final PipelineUser newUser = userManager.createUser(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
-                                                            DEFAULT_USER_ATTRIBUTE, removedId);
-        Assert.assertNull(newUser.getDefaultStorageId());
+        final long storageId = 1;
+        doThrow(new IllegalArgumentException()).when(storageValidator).validate(eq(storageId));
+        userManager.createUser(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
+                                                            DEFAULT_USER_ATTRIBUTE, storageId);
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createUserAndDefaultStorageWhenCorrespondingStorageExistsAlready() {
         final String expectedDefaultUserStorageName =
             TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, TEST_USER);
@@ -385,10 +366,9 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createUserErrorAtDefaultStorageCreation() {
         prepareContextForDefaultUserStorage();
-        Mockito.doThrow(IllegalArgumentException.class)
+        doThrow(IllegalArgumentException.class)
             .when(dataStorageManager)
             .createDefaultStorageForUser(Mockito.anyString());
         createDefaultPipelineUser();
@@ -402,7 +382,7 @@ public class UserManagerTest extends AbstractSpringTest {
     private void prepareContextForDefaultUserStorage() {
         Mockito.when(preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED))
             .thenReturn(true);
-        Mockito.doReturn(true).when(storageProviderManager).checkStorage(Mockito.any());
+        doReturn(true).when(storageProviderManager).checkStorage(Mockito.any());
         final JdbcMutableAclServiceImpl aclService = Mockito.mock(JdbcMutableAclServiceImpl.class);
         Mockito.doNothing().when(aclService).changeOwner(Mockito.any(), Mockito.anyString());
         ReflectionTestUtils.setField(permissionManager, "aclService", aclService);
@@ -411,7 +391,7 @@ public class UserManagerTest extends AbstractSpringTest {
             final Object[] args = invocation.getArguments();
             return dataStorageManager.create((DataStorageVO) args[0], false, (boolean) args[2], (boolean) args[3]);
         }).when(dataStorageManager)
-            .create(Mockito.any(), Matchers.eq(true), Mockito.anyBoolean(), Mockito.anyBoolean());
+            .create(Mockito.any(), eq(true), Mockito.anyBoolean(), Mockito.anyBoolean());
     }
 
     private void mockDataStorageManagerToExecuteTryInitDefaultStorage() {

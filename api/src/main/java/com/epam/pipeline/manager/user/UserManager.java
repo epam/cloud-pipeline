@@ -67,7 +67,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -114,10 +113,16 @@ public class UserManager {
                                    List<String> groups, Map<String, String> attributes,
                                    Long defaultStorageId) {
         final PipelineUser newUser = createUser(name, roles, groups, attributes);
-        try {
-            return initUserDefaultStorage(defaultStorageId, newUser);
-        } catch (RuntimeException e) {
-            log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION, name, e.getMessage()));
+        if (defaultStorageId != null) {
+            storageValidator.validate(defaultStorageId);
+            assignDefaultStorageToUser(newUser, defaultStorageId);
+        } else {
+            try {
+                return initUserDefaultStorage(newUser);
+            } catch (RuntimeException e) {
+                log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
+                        name, e.getMessage()));
+            }
         }
         return newUser;
     }
@@ -398,19 +403,13 @@ public class UserManager {
                 || !CollectionUtils.isEqualCollection(loadedUserAttributes.entrySet(), attributes.entrySet());
     }
 
-    PipelineUser initUserDefaultStorage(final Long defaultStorageId, final PipelineUser newUser) {
-        if (defaultStorageId != null && !dataStorageManager.exists(defaultStorageId)) {
-            log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
-                                              newUser.getUserName(),
-                                              messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND,
-                                                                       defaultStorageId)));
-            return newUser;
-        }
-        return Optional.ofNullable(defaultStorageId)
-            .map(Optional::of)
-            .orElseGet(() -> dataStorageManager.tryInitUserDefaultStorage(newUser))
-            .map(storageId -> assignDefaultStorageToUser(newUser, storageId))
-            .orElse(newUser);
+    PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
+            dataStorageManager.tryInitUserDefaultStorage(newUser)
+                    .ifPresent(storageId -> {
+                        assignDefaultStorageToUser(newUser, storageId);
+                        grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
+                    });
+        return newUser;
     }
 
     public byte[] exportUsers(final PipelineUserExportVO attr) {
@@ -438,7 +437,6 @@ public class UserManager {
     }
 
     private PipelineUser assignDefaultStorageToUser(final PipelineUser newUser, final Long storageId) {
-        grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
         newUser.setDefaultStorageId(storageId);
         return userDao.updateUser(newUser);
     }
