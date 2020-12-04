@@ -15,30 +15,34 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.nodeLabel;
+import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.NODE_IMAGE;
-import static com.epam.pipeline.autotests.ao.Primitive.RUN;
-import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static java.lang.String.format;
-import static org.openqa.selenium.By.className;
+import static java.util.stream.Collectors.toSet;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 public class PipelineConfigurationNewTest extends AbstractSeveralPipelineRunningTest {
     private final String pipeline1 = "pipe-config-" + Utils.randomSuffix();
     private final String pipeline2 = "pipe-config-" + Utils.randomSuffix();
     private String clusterNetworksConfig = "cluster.networks.config";
+    private String runID1517_1 = "";
+    private String testAmi = "";
 
     @AfterClass(alwaysRun = true)
     public void removePipelines() {
@@ -67,18 +71,58 @@ public class PipelineConfigurationNewTest extends AbstractSeveralPipelineRunning
                 .settings()
                 .switchToPreferences()
                 .getAmisFromClusterNetworksConfigPreference();
+        assertNotEquals(amiValue(amis[0]), testAmi = amiValue(amis[1]));
         library()
                 .clickOnDraftVersion(pipeline1)
                 .codeTab()
                 .clickOnFile("config.json")
-                .editFile(configuration -> addInstanceImageToConfig(configuration, amiValue(amis[1])))
+                .editFile(configuration -> addInstanceImageToConfig(configuration, testAmi))
                 .saveAndCommitWithMessage("test: Add instance image")
                 .runPipeline()
                 .launch(this);
+        final Set<String> logMess =
+                runsMenu()
+                .showLog(runID1517_1 = getLastRunId())
+                .instanceParameters(instance ->
+                        instance.ensure(NODE_IMAGE, text(testAmi)))
+                .waitForCompletion()
+                .click(taskWithName("InitializeNode"))
+                .ensure(STATUS, SUCCESS.reached)
+                .logMessages()
+                .collect(toSet());
         runsMenu()
+                .completedRuns()
+                .showLog(runID1517_1)
+                .logContainsMessage(logMess, format("Image: %s", testAmi))
+                .logContainsMessage(logMess, format("Specified in configuration image %s will be used", testAmi));
+    }
+
+    @Test (dependsOnMethods = {"checkCustomNodeImageForThePipelineRun"})
+    @TestCase("1517_2")
+    public void checkNodeReuseAfterTheCustomNodeImageRrun() {
+        library()
+                .clickOnDraftVersion(pipeline2)
+                .runPipeline()
+                .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->
-                        instance.ensure(NODE_IMAGE, text(amiValue(amis[1]))));
+                        instance.ensureNotVisible(NODE_IMAGE));
+        String nodeName =
+                clusterMenu()
+                .waitForTheNode(pipeline1, runID1517_1)
+                .getNodeName(runID1517_1);
+        clusterMenu()
+                .waitForTheNode(pipeline2, getLastRunId())
+                .click(nodeLabel(format("RUN ID %s", getLastRunId())), LogAO::new)
+                .waitForCompletion();
+        library()
+                .clickOnDraftVersion(pipeline1)
+                .runPipeline()
+                .launch(this)
+                .showLog(getLastRunId());
+        assertEquals(clusterMenu()
+                .waitForTheNode(getLastRunId())
+                .getNodeName(getLastRunId()), nodeName);
     }
 
     private String addInstanceImageToConfig(String code, String image) {
