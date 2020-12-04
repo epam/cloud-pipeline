@@ -574,8 +574,6 @@ def get_swap_ratio(swap_params):
 
 def replace_docker_images(pre_pull_images, user_data_script):
     global api_token
-    if not pre_pull_images:
-        return user_data_script
     payload = jwt.decode(api_token, verify=False)
     if 'sub' in payload:
         subject = payload['sub']
@@ -615,11 +613,18 @@ def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube
 
 
 def get_current_status(ec2, ins_id):
-    response = ec2.describe_instance_status(InstanceIds=[ins_id])
-    if len(response['InstanceStatuses']) > 0:
-        return response['InstanceStatuses'][0]['InstanceState']['Code']
-    else:
-        return -1
+    try:
+        response = ec2.describe_instance_status(InstanceIds=[ins_id])
+        if len(response['InstanceStatuses']) > 0:
+            return response['InstanceStatuses'][0]['InstanceState']['Code']
+        else:
+            return -1
+    except ClientError as client_error:
+        if 'does not exist' in client_error.message:
+            pipe_log_warn('Get status request for instance %s returned error %s.' % (ins_id, client_error.message))
+            return -1
+        else:
+            raise client_error
 
 def poll_instance(sock, timeout, ip, port):
     result = -1

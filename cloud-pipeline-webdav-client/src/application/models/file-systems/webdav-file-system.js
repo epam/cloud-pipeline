@@ -275,7 +275,14 @@ class WebdavFileSystem extends FileSystem {
           .then(() => {
             log(`Copying ${size} bytes to ${destinationPath}...`);
             this.watchCopyProgress(stream, callback, size);
-            const writeStream = stream.pipe(this.webdavClient.createWriteStream(destinationPath));
+            const writeStream = stream.pipe(
+              this.webdavClient.createWriteStream(
+                destinationPath,
+                {
+                  maxContentLength: Infinity
+                }
+              )
+            );
             writeStream.on('finish', (e) => {
               log(`Copying ${size} bytes to ${destinationPath}: done`);
               setTimeout(resolve, 500, e);

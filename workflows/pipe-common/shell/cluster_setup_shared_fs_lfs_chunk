@@ -84,8 +84,11 @@ pipe_log_info "--> Installing LFS chunk server" "$FS_SETUP_TASK"
 _LFS_INSTALL_RESULT=1
 
 if [[ "$IS_RPM_BASED" = 0 ]]; then
-    yum -y -q install lizardfs-chunkserver
-    _LFS_INSTALL_RESULT=$?
+    _LFS_INSTALL_RESULT=0
+    if ! rpm -q "lizardfs-chunkserver"  &> /dev/null; then
+        yum -y -q install lizardfs-chunkserver
+        _LFS_INSTALL_RESULT=$?
+    fi
 else
     apt-get install lsb-release gnupg -y -qq && \
     apt-get install -t stable lizardfs-chunkserver -y -qq

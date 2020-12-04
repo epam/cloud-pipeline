@@ -276,5 +276,7 @@ public enum Primitive {
     ALL_PIPELINES,
     ALL_STORAGES,
     CLOUD_REGION,
+    FRIENDLY_URL,
+    SERVICES,
     NODE_IMAGE
 }

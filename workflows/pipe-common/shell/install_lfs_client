@@ -28,8 +28,11 @@ IS_RPM_BASED=$?
 pipe_log_info "--> Installing LFS client" "$LFS_INSTALL_TASK"
 
 if [[ "$IS_RPM_BASED" = 0 ]]; then
-    yum -y -q install lizardfs-client
-    _LFS_INSTALL_RESULT=$?
+    _LFS_INSTALL_RESULT=0
+    if ! rpm -q "lizardfs-client"  &> /dev/null; then
+        yum -y -q install lizardfs-client
+        _LFS_INSTALL_RESULT=$?
+    fi
 else
     apt-get install lsb-release gnupg -y -qq && \
     apt-get install -t stable lizardfs-client -y -qq

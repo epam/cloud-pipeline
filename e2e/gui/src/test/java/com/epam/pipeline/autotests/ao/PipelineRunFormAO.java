@@ -70,7 +70,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
             entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
-            entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
+            entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+            entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
