@@ -30,6 +30,7 @@ public class MetadataField {
     private String dbName;
     private boolean predefined = false;
 
+    @SuppressWarnings("linelength")
     //todo: Replace with @AllArgsConstructor once lombok version 1.16.20 is used.
     // The current version causes JsonMappingException.
     // See more https://stackoverflow.com/questions/40546508/jsoncreator-could-not-find-creator-property-with-name-even-with-ignoreunknown
