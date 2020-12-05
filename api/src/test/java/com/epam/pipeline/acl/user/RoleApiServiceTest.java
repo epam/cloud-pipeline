@@ -83,7 +83,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldLoadRolesForAdmin() {
+    public void shouldLoadRoleForAdmin() {
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
         assertThat(roleApiService.loadRole(ID)).isEqualTo(extendedRole);
