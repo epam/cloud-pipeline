@@ -431,6 +431,8 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
 
                                         if pretty_url and pretty_url['domain']:
                                                 edge_location_id = '{}-{}.inc'.format(pretty_url['domain'], edge_location)
+                                        elif create_dns_record:
+                                                edge_location_id = '{}.{}.inc'.format(edge_location, hosted_zone_base_value)
                                         else:
                                                 edge_location_id = '{}.loc'.format(edge_location)
 
@@ -524,6 +526,14 @@ def load_pods_for_runs_with_endpoints():
                         if len(matched_sys_endpoints) > 0:
                                 pods_with_endpoints.append(pod)
         return pods_with_endpoints
+
+
+hosted_zone_base_value = None
+load_hosted_zone_method = os.path.join(api_url, API_GET_HOSTED_ZONE_BASE_PREF)
+hosted_zone_response = call_api(load_hosted_zone_method)
+if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"] \
+        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base" and hosted_zone_response["payload"]["value"]:
+        hosted_zone_base_value = hosted_zone_response["payload"]["value"]
 
 pods_with_endpoints = load_pods_for_runs_with_endpoints()
 
@@ -626,11 +636,7 @@ for added_route in routes_to_add:
 
         need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] and not service_spec["custom_domain"] else False
         if need_to_create_dns_record:
-                load_hosted_zone_method = os.path.join(api_url, API_GET_HOSTED_ZONE_BASE_PREF)
-                hosted_zone_response = call_api(load_hosted_zone_method)
-                if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"] \
-                        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base" and hosted_zone_response["payload"]["value"]:
-                        hosted_zone_base_value = hosted_zone_response["payload"]["value"]
+                if hosted_zone_base_value is not None:
                         dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
                         dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
                                                          + "?regionId={regionId}&delete={delete}"
