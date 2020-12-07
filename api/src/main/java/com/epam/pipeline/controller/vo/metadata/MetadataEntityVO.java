@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,6 +28,7 @@ import java.util.Map;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class MetadataEntityVO {
     private Long entityId;
     private Long classId;
