@@ -27,6 +27,7 @@ from src.api.user import User
 from src.config import Config, ConfigNotFoundError, silent_print_config_info, is_frozen
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
+from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
 from src.utilities.du_format_type import DuFormatType
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
 from src.utilities.tool_operations import ToolOperations
@@ -1531,6 +1532,36 @@ def remove_share_run(run_id, shared_user, shared_group, share_ssh):
     Disables shared pipeline run for specified users or groups
     """
     PipelineRunShareManager().remove(run_id, shared_user, shared_group, share_ssh)
+
+
+@cli.group()
+def cluster():
+    """ Cluster commands
+    """
+    pass
+
+
+@cluster.command(name='monitor')
+@click.option('-i', '--instance-id', required=False, help='The cloud instance ID. This option cannot be used '
+                                                          'in conjunction with the --run_id option')
+@click.option('-r', '--run-id', required=False, help='The pipeline run ID. This option cannot be used '
+                                                     'in conjunction with the --instance-id option')
+@click.option('-o', '--output', help='The output file for monitoring report. If not specified the report file will '
+                                     'be generated in the current folder.')
+@click.option('-df', '--date-from', required=False, help='The start date for monitoring data collection. '
+                                                         'If not specified the current date and time will be used.')
+@click.option('-dt', '--date-to', required=False, help='The end date for monitoring data collection. If not '
+                                                       'specified a --date-from option value minus 1 day will be used.')
+@click.option('-p', '--interval', required=False, help='The time interval. This option shall have the following format:'
+                                                       ' <N>m for minutes or <N>h for hours, where <N> is the required '
+                                                       'number of minutes/hours. Default: 1m.')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def monitor(instance_id, run_id, output, date_from, date_to, interval):
+    """
+    Downloads node utilization report
+    """
+    ClusterMonitoringManager().generate_report(instance_id, run_id, output, date_from, date_to, interval)
 
 
 # Used to run a PyInstaller "freezed" version
