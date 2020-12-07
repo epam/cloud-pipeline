@@ -20,6 +20,8 @@ import requests
 from subprocess import check_output
 import urllib3
 from time import sleep
+import datetime
+import time
 
 try:
         from pykube.config import KubeConfig
@@ -71,6 +73,7 @@ pki_search_suffix_cert = '-public-cert.pem'
 pki_search_suffix_key = '-private-key.pem'
 pki_default_cert = '/opt/edge/pki/ssl-public-cert.pem'
 pki_default_cert_key = '/opt/edge/pki/ssl-private-key.pem'
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 urllib3.disable_warnings()
 api_url = os.environ.get('API')
@@ -125,17 +128,20 @@ def call_api(method_url, data=None):
 
 def log_task_event(task_name, message, run_id, instance, status="RUNNING"):
         print("Log run log: " + message)
+        now = datetime.datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+        date = now[0:len(now) - 3]
         log_entry = json.dumps({"runId": run_id,
+                             "date": date,
                              "status": status,
                              "logText": message,
                              "taskName": task_name,
                              "instance": instance})
-        call_api("run/{run_id}/log".format(run_id=run_id), data=log_entry)
+        call_api(os.path.join(api_url, "run/{run_id}/log".format(run_id=run_id)), data=log_entry)
 
 
 def update_run_status(run_id, status):
         print("Update run status: run_id {} status {}".format(run_id, status))
-        call_api("/run/{run_id}/status".format(run_id=run_id), data=json.dumps({"status": status}))
+        call_api(os.path.join(api_url, "run/{run_id}/status".format(run_id=run_id)), data=json.dumps({"status": status}))
 
 
 def run_sids_to_str(run_sids, is_principal):
@@ -532,7 +538,7 @@ hosted_zone_base_value = None
 load_hosted_zone_method = os.path.join(api_url, API_GET_HOSTED_ZONE_BASE_PREF)
 hosted_zone_response = call_api(load_hosted_zone_method)
 if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"] \
-        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base" and hosted_zone_response["payload"]["value"]:
+        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base" and "value" in hosted_zone_response["payload"]:
         hosted_zone_base_value = hosted_zone_response["payload"]["value"]
 
 pods_with_endpoints = load_pods_for_runs_with_endpoints()
