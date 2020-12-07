@@ -136,7 +136,8 @@ public class UserManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser createUser(PipelineUserVO userVO) {
-        return createUser(userVO.getUserName(), userVO.getRoleIds(), null, null, null);
+        return createUser(userVO.getUserName(), userVO.getRoleIds(), null, null,
+                userVO.getDefaultStorageId());
     }
 
     public UserContext loadUserContext(String name) {
