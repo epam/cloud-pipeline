@@ -49,7 +49,7 @@ public class NotificationControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldCreateForUnauthorizedUser() throws Exception {
+    public void shouldCreate() throws Exception {
         final String content = getObjectMapper().writeValueAsString(notificationMessageVO);
         doReturn(notificationMessage).when(mockNotificationApiService).createNotification(notificationMessageVO);
 
