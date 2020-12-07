@@ -30,7 +30,7 @@ import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
-import com.epam.pipeline.manager.docker.DockerRegistryApiService;
+import com.epam.pipeline.acl.docker.DockerRegistryApiService;
 import com.epam.pipeline.manager.dts.DtsOperationsApiService;
 import com.epam.pipeline.manager.dts.DtsRegistryApiService;
 import com.epam.pipeline.manager.entity.EntityApiService;
