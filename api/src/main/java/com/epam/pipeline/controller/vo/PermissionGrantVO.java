@@ -25,7 +25,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 public class PermissionGrantVO extends PermissionVO {
     private AclClass aclClass;
     private Long id;
