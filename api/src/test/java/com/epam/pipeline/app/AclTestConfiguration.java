@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.acl.dts.DtsOperationsApiService;
+import com.epam.pipeline.acl.dts.DtsRegistryApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
@@ -221,6 +223,12 @@ public class AclTestConfiguration {
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @MockBean
+    protected DtsOperationsApiService mockDtsOperationsApiService;
+
+    @MockBean
+    protected DtsRegistryApiService mockDtsRegistryApiService;
 
     @Bean
     public PermissionFactory permissionFactory() {

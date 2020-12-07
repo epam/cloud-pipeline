@@ -60,6 +60,7 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.dts.DtsListingManager;
 import com.epam.pipeline.manager.dts.DtsRegistryManager;
 import com.epam.pipeline.manager.dts.DtsSubmissionManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
@@ -445,6 +446,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @MockBean
+    protected DtsListingManager mockDtsListingManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

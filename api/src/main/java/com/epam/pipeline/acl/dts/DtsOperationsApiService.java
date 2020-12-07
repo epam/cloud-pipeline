@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.dts;
+package com.epam.pipeline.acl.dts;
 
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsSubmission;
+import com.epam.pipeline.manager.dts.DtsListingManager;
+import com.epam.pipeline.manager.dts.DtsSubmissionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
 @RequiredArgsConstructor
@@ -29,17 +33,17 @@ public class DtsOperationsApiService {
     private final DtsListingManager dtsListingManager;
     private final DtsSubmissionManager dtsSubmissionManager;
 
-    @PreAuthorize("hasRole('ADMIN') OR hasRole('ROLE_USER')")
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsDataStorageListing list(String path, Long dtsId, Integer pageSize, String marker) {
         return dtsListingManager.list(path, dtsId, pageSize, marker);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasRole('ROLE_USER')")
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsSubmission findSubmission(Long dtsId, Long runId) {
         return dtsSubmissionManager.findSubmission(dtsId, runId);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasRole('ROLE_USER')")
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsClusterConfiguration getClusterConfiguration(Long dtsId) {
         return dtsSubmissionManager.getClusterConfiguration(dtsId);
     }
