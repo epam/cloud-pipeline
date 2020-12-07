@@ -34,6 +34,10 @@ public final class CommonCreatorConstants {
             new TypeReference<Result<Long>>() {};
     public static final TypeReference<Result<Map<String, String>>> STRING_MAP_INSTANCE_TYPE =
             new TypeReference<Result<Map<String, String>>>() {};
+    public static final TypeReference<Result<Set<String>>> STRING_SET_INSTANCE_TYPE =
+            new TypeReference<Result<Set<String>>>() {};
+    public static final TypeReference<Result<Set<Long>>> LONG_SET_INSTANCE_TYPE =
+            new TypeReference<Result<Set<Long>>>() {};
     public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
     public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
 
