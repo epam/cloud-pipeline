@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmation;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmationRequest;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
+import com.epam.pipeline.security.acl.AclExpressions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -31,42 +32,40 @@ import java.util.List;
 @Service
 public class SystemNotificationApiService {
 
-    private static final String ADMIN_ROLE = "hasRole('ADMIN')";
-
     @Autowired
     private SystemNotificationManager systemNotificationManager;
 
-    @PreAuthorize(ADMIN_ROLE)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public SystemNotification createOrUpdateNotification(SystemNotification notification) {
         return systemNotificationManager.createOrUpdateNotification(notification);
     }
 
-    @PreAuthorize(ADMIN_ROLE)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public SystemNotification createNotification(SystemNotification notification) {
         return systemNotificationManager.createNotification(notification);
     }
 
-    @PreAuthorize(ADMIN_ROLE)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public SystemNotification updateNotification(SystemNotification notification) {
         return systemNotificationManager.updateNotification(notification);
     }
 
-    @PreAuthorize(ADMIN_ROLE)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public SystemNotification deleteNotification(Long id) {
         return systemNotificationManager.deleteNotification(id);
     }
 
-    @PreAuthorize(ADMIN_ROLE)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public SystemNotification loadNotification(Long id) {
         return systemNotificationManager.loadNotification(id);
     }
 
-    @PreAuthorize(ADMIN_ROLE)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public List<SystemNotification> loadAllNotifications() {
         return systemNotificationManager.loadAllNotifications();
     }
 
-    @PreAuthorize(ADMIN_ROLE)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public List<SystemNotification> filterNotifications(SystemNotificationFilterVO filterVO) {
         return systemNotificationManager.filterNotifications(filterVO);
     }
