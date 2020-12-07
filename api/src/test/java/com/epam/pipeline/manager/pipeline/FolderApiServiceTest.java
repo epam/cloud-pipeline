@@ -23,6 +23,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;

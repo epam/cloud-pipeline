@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline;
+package com.epam.pipeline.acl.folder;
 
 import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclTree;
 import com.epam.pipeline.security.acl.AclExpressions;

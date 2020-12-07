@@ -84,7 +84,6 @@ import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
-import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
@@ -408,9 +407,6 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineConfigurationManager mockPipelineConfigurationManager;
-
-    @MockBean
-    protected FolderApiService mockFolderApiService;
 
     @MockBean
     protected RestartRunManager mockRestartRunManager;

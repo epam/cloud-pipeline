@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
-import com.epam.pipeline.manager.pipeline.FolderApiService;
+import com.epam.pipeline.acl.folder.FolderApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
