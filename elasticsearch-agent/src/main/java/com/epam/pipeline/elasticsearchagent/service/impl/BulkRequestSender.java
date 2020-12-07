@@ -22,16 +22,13 @@ import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.ListUtils;
 import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.springframework.util.ObjectUtils;
+import org.elasticsearch.action.index.IndexRequest;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -43,15 +40,25 @@ public class BulkRequestSender {
     private static final int MIN_PARTITION_SIZE = 10;
     private final ElasticsearchServiceClient elasticsearchClient;
     private final BulkResponsePostProcessor responsePostProcessor;
-
     private ResponseIdConverter idConverter = new ResponseIdConverter() {};
     private int currentBulkSize = DEFAULT_BULK_SIZE;
+    private long requestLimitMb = MemLimitIndexRequestContainer.DEFAULT_MAX_REQUEST_SIZE_MB;
 
     public BulkRequestSender(final ElasticsearchServiceClient elasticsearchClient,
                              final BulkResponsePostProcessor responsePostProcessor,
                              final ResponseIdConverter idConverter) {
         this(elasticsearchClient, responsePostProcessor);
         this.idConverter = idConverter;
+    }
+
+    public BulkRequestSender(final ElasticsearchServiceClient elasticsearchClient,
+                             final BulkResponsePostProcessor responsePostProcessor,
+                             final ResponseIdConverter idConverter,
+                             final Integer bulkSize,
+                             final Integer requestLimitMb) {
+        this(elasticsearchClient, responsePostProcessor, idConverter);
+        this.currentBulkSize = bulkSize;
+        this.requestLimitMb = requestLimitMb;
     }
 
     public void indexDocuments(final String indexName,
@@ -87,29 +94,22 @@ public class BulkRequestSender {
                                final int bulkSize) {
         final int partitionSize = Integer.min(MAX_PARTITION_SIZE,
                                               Integer.max(MIN_PARTITION_SIZE, bulkSize / 10));
-        ListUtils.partition(documentRequests, partitionSize).forEach(chunk -> {
-            try {
-                indexChunk(indexName, chunk, objectTypes, syncStart);
-            } catch (Exception e) {
-                log.error("Partial error during {} index sync: {}.", indexName, e.getMessage());
-            }
-        });
+        try (IndexRequestContainer requestContainer =
+                 new MemLimitIndexRequestContainer(requests -> elasticsearchClient.sendRequests(indexName, requests),
+                                                   partitionSize, requestLimitMb)) {
+            requestContainer.enablePostProcessing(responsePostProcessor, idConverter, objectTypes, syncStart);
+            documentRequests.stream()
+                .map(this::tryToCastToIndexRequest)
+                .filter(Objects::nonNull)
+                .forEach(requestContainer::add);
+        }
     }
 
-    private void indexChunk(final String indexName,
-                            final List<DocWriteRequest> documentRequests,
-                            final List<PipelineEvent.ObjectType> objectTypes,
-                            final LocalDateTime syncStart) {
-        log.debug("Inserting {} documents for {}", documentRequests.size(), objectTypes);
-        final BulkResponse response = elasticsearchClient
-                .sendRequests(indexName, documentRequests);
-
-        if (ObjectUtils.isEmpty(response)) {
-            log.error("Elasticsearch documents for {} were not created.", objectTypes);
-            return;
+    private IndexRequest tryToCastToIndexRequest(final DocWriteRequest request) {
+        try {
+            return (IndexRequest) request;
+        } catch (ClassCastException e) {
+            return null;
         }
-        Arrays.stream(response.getItems())
-            .collect(Collectors.groupingBy(idConverter::getId))
-            .forEach((id, items) -> responsePostProcessor.postProcessResponse(items, objectTypes, id, syncStart));
     }
 }

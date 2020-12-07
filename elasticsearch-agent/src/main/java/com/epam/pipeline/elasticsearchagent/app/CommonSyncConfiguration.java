@@ -55,6 +55,8 @@ public class CommonSyncConfiguration {
     private String commonIndexPrefix;
     @Value("${sync.load.common.entity.chunk.size:1000}")
     private int syncChunkSize;
+    @Value("${elastic.request.limit.size.mb:100}")
+    private int maxRequestSizeMb;
 
     @Bean
     public BulkRequestSender bulkRequestSender(
@@ -76,7 +78,7 @@ public class CommonSyncConfiguration {
             final @Value("${sync.run.index.mapping}") String runMapping,
             final @Value("${sync.run.bulk.insert.size:100}") int bulkSize) {
         final BulkRequestSender requestSender = new BulkRequestSender(
-                elasticsearchClient, responsePostProcessor, new ResponseIdConverter() {}, bulkSize);
+                elasticsearchClient, responsePostProcessor, new ResponseIdConverter() {}, bulkSize, maxRequestSizeMb);
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.RUN,
                 runMapping,
