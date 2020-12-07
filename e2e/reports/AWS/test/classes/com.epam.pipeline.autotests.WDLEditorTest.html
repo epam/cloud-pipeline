@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1m50.12s</div>
+<div class="counter">1m31.33s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">85%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,10 +61,65 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="checkDiagramChangeForScatterWithTask - EPMCMBIBPC-640"></a>
+<h3 class="failures">checkDiagramChangeForScatterWithTask - EPMCMBIBPC-640</h3>
+<span class="code">
+<pre>org.openqa.selenium.StaleElementReferenceException: stale element reference: element is not attached to the page document
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/stale_element_reference.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'dfd69a41d15e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 612f7c8e49447fece4c6fea23bfa9277
+	at sun.reflect.GeneratedConstructorAccessor17.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteExecuteMethod.execute(RemoteExecuteMethod.java:35)
+	at org.openqa.selenium.remote.RemoteMouse.mouseMove(RemoteMouse.java:89)
+	at org.openqa.selenium.interactions.MoveMouseAction.perform(MoveMouseAction.java:43)
+	at org.openqa.selenium.interactions.CompositeAction.perform(CompositeAction.java:36)
+	at org.openqa.selenium.interactions.Actions$BuiltAction.perform(Actions.java:641)
+	at org.openqa.selenium.interactions.Actions.perform(Actions.java:594)
+	at com.epam.pipeline.autotests.ao.PipelineCodeTabAO$FileEditingPopupAO.clear(PipelineCodeTabAO.java:242)
+	at com.epam.pipeline.autotests.WDLEditorTest.checkDiagramChangeForScatterWithTask(WDLEditorTest.java:137)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -76,18 +131,18 @@
 </thead>
 <tr>
 <td class="success">checkDiagramChange - EPMCMBIBPC-621</td>
-<td>17.249s</td>
+<td>17.366s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkDiagramChangeForScatter - EPMCMBIBPC-638</td>
-<td>22.659s</td>
+<td>22.270s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">checkDiagramChangeForScatterWithTask - EPMCMBIBPC-640</td>
-<td>23.141s</td>
-<td class="success">passed</td>
+<td class="failures">checkDiagramChangeForScatterWithTask - EPMCMBIBPC-640</td>
+<td>4.760s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">checkJsonAfterChangingParameters - EPMCMBIBPC-650</td>
@@ -96,17 +151,17 @@
 </tr>
 <tr>
 <td class="success">checkRevertButton - EPMCMBIBPC-639</td>
-<td>11.189s</td>
+<td>11.090s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateAddTaskInScatter - EPMCMBIBPC-637</td>
-<td>9.118s</td>
+<td>9.195s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateTaskEdit - EPMCMBIBPC-641</td>
-<td>9.041s</td>
+<td>8.926s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -119,7 +174,7 @@
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 5, 2020 5:46:15 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 7, 2020 5:51:54 PM</p>
 </div>
 </div>
 </body>

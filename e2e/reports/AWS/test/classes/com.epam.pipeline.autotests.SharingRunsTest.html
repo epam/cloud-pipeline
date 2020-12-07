@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">21m15.46s</div>
+<div class="counter">21m35.43s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">83%</div>
+<div class="percent">66%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,13 +73,81 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
+<a name="displayingSharingToolAtServicesPanel - EPMCMBIBPC-2680"></a>
+<h3 class="failures">displayingSharingToolAtServicesPanel - EPMCMBIBPC-2680</h3>
+<span class="code">
+<pre>Element not found {By.id: owner}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607359768965.102.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607359768965.102.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;owner&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.ToolPageAO.validateEndpointPage(ToolPageAO.java:65)
+	at com.epam.pipeline.autotests.SharingRunsTest.displayingSharingToolAtServicesPanel(SharingRunsTest.java:185)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;owner&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'dfd69a41d15e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 06db6458771c8b0f687ebbcc9208a22b
+*** Element info: {Using=id, value=owner}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
+	at org.openqa.selenium.By$ById.findElement(By.java:218)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
+</pre>
+</span>
+</div>
+<div class="test">
 <a name="validationOfFriendlyURLNegative - EPMCMBIBPC-2677"></a>
 <h3 class="failures">validationOfFriendlyURLNegative - EPMCMBIBPC-2677</h3>
 <span class="code">
 <pre>Element not found {e2e-endpoints}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1607187621505.87.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1607187621505.87.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607360548141.103.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607360548141.103.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: Cannot locate an element using e2e-endpoints
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -112,7 +180,7 @@ Caused by: NoSuchElementException: Cannot locate an element using e2e-endpoints
 Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using e2e-endpoints
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '9dcf1cb069d2', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'dfd69a41d15e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: driver.version: RemoteWebDriver
 	at org.openqa.selenium.By.findElement(By.java:162)
 	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
@@ -135,33 +203,33 @@ Driver info: driver.version: RemoteWebDriver
 </tr>
 </thead>
 <tr>
-<td class="success">displayingSharingToolAtServicesPanel - EPMCMBIBPC-2680</td>
-<td>3m29.29s</td>
-<td class="success">passed</td>
+<td class="failures">displayingSharingToolAtServicesPanel - EPMCMBIBPC-2680</td>
+<td>3m6.45s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">shareSSHsession - EPMCMBIBPC-3179</td>
-<td>3m48.38s</td>
+<td>3m50.28s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shareToolRunWithUser - EPMCMBIBPC-2678</td>
-<td>3m30.83s</td>
+<td>3m33.58s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shareToolRunWithUserGroup - EPMCMBIBPC-2679</td>
-<td>3m31.25s</td>
+<td>3m33.29s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfFriendlyURL - EPMCMBIBPC-2674</td>
-<td>5m21.03s</td>
+<td>5m56.59s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">validationOfFriendlyURLNegative - EPMCMBIBPC-2677</td>
-<td>1m34.68s</td>
+<td>1m35.25s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -169,168 +237,150 @@ Driver info: driver.version: RemoteWebDriver
 <div id="tab2" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Dec 05, 2020 4:44:35 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (d3d89401908ad65f636b5726093bf504)
-Dec 05, 2020 4:44:35 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Dec 07, 2020 4:46:56 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 887 -&gt; ChromeDriver: chrome on LINUX (897504986856e9dfe7a878ec554b8f50)
+Dec 07, 2020 4:46:56 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:44:35 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 130 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 4598
+Dec 07, 2020 4:46:56 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 88 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 32516
 Only local connections are allowed.
-Dec 05, 2020 4:44:35 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Dec 07, 2020 4:46:57 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Dec 05, 2020 4:44:36 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Dec 07, 2020 4:46:57 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:44:36 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Dec 07, 2020 4:46:57 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:44:36 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Dec 07, 2020 4:46:57 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:44:36 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (f4c53a818e9a09f3d6577343618961b8)
-Dec 05, 2020 4:46:19 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (f4c53a818e9a09f3d6577343618961b8)
-Dec 05, 2020 4:46:19 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+Dec 07, 2020 4:46:57 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 887: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (06db6458771c8b0f687ebbcc9208a22b)
+Dec 07, 2020 4:50:22 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 887 -&gt; ChromeDriver: chrome on LINUX (06db6458771c8b0f687ebbcc9208a22b)
+Dec 07, 2020 4:50:22 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:46:19 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+Dec 07, 2020 4:50:22 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 84 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 19257
+Only local connections are allowed.
+Dec 07, 2020 4:50:23 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+INFO: Detected dialect: OSS
+Dec 07, 2020 4:50:23 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
+Dec 07, 2020 4:50:23 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+INFO: Selenide v. 4.10.01
+Dec 07, 2020 4:50:23 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
+Dec 07, 2020 4:50:23 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 887: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (df0b7abd0d789ac46837a7130ad2087d)
+Dec 07, 2020 4:51:45 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 887 -&gt; ChromeDriver: chrome on LINUX (df0b7abd0d789ac46837a7130ad2087d)
+Dec 07, 2020 4:51:45 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+INFO: Trying to close the browser ChromeDriver ...
+Dec 07, 2020 4:51:45 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 75 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 3860
+Only local connections are allowed.
+Dec 07, 2020 4:51:45 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+INFO: Detected dialect: OSS
+Dec 07, 2020 4:51:46 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
+Dec 07, 2020 4:51:46 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+INFO: Selenide v. 4.10.01
+Dec 07, 2020 4:51:46 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
+Dec 07, 2020 4:51:46 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 887: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (a6f7756dff0fdc32e57aa0b5a208676c)
+Dec 07, 2020 4:52:09 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 887 -&gt; ChromeDriver: chrome on LINUX (a6f7756dff0fdc32e57aa0b5a208676c)
+Dec 07, 2020 4:52:09 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+INFO: Trying to close the browser ChromeDriver ...
+Dec 07, 2020 4:52:09 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
 INFO: Closed webdriver in 73 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 16902
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 29059
 Only local connections are allowed.
-Dec 05, 2020 4:46:19 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Dec 07, 2020 4:52:10 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Dec 05, 2020 4:46:20 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Dec 07, 2020 4:52:10 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:46:20 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Dec 07, 2020 4:52:10 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:46:20 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Dec 07, 2020 4:52:10 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:46:20 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (01c63a79d78cf1b8db8a4d79c29a5f5e)
-Dec 05, 2020 4:48:22 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (01c63a79d78cf1b8db8a4d79c29a5f5e)
-Dec 05, 2020 4:48:22 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+Dec 07, 2020 4:52:10 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 887: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (e23ec57361482a967680a843e4bdb427)
+Dec 07, 2020 4:53:58 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 887 -&gt; ChromeDriver: chrome on LINUX (e23ec57361482a967680a843e4bdb427)
+Dec 07, 2020 4:53:58 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:48:22 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+Dec 07, 2020 4:53:58 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 75 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 7331
+Only local connections are allowed.
+Dec 07, 2020 4:53:58 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+INFO: Detected dialect: OSS
+Dec 07, 2020 4:53:59 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
+Dec 07, 2020 4:53:59 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+INFO: Selenide v. 4.10.01
+Dec 07, 2020 4:53:59 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
+Dec 07, 2020 4:53:59 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 887: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (f76200a08707f1f1ab71aa2ca61330f1)
+Dec 07, 2020 4:55:42 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 887 -&gt; ChromeDriver: chrome on LINUX (f76200a08707f1f1ab71aa2ca61330f1)
+Dec 07, 2020 4:55:42 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+INFO: Trying to close the browser ChromeDriver ...
+Dec 07, 2020 4:55:43 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
 INFO: Closed webdriver in 76 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 3542
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 13012
 Only local connections are allowed.
-Dec 05, 2020 4:48:23 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Dec 07, 2020 4:55:43 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Dec 05, 2020 4:48:23 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Dec 07, 2020 4:55:43 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:48:23 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Dec 07, 2020 4:55:43 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:48:23 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Dec 07, 2020 4:55:43 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:48:23 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (68d32d5007b5dd661d6b47d3ba824fb3)
-Dec 05, 2020 4:49:45 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (68d32d5007b5dd661d6b47d3ba824fb3)
-Dec 05, 2020 4:49:45 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+Dec 07, 2020 4:55:43 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 887: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (a29e16c0d773b0608675e4ec36d2b1b3)
+Dec 07, 2020 4:57:35 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 887 -&gt; ChromeDriver: chrome on LINUX (a29e16c0d773b0608675e4ec36d2b1b3)
+Dec 07, 2020 4:57:35 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:49:45 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 75 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 30206
+Dec 07, 2020 4:57:35 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 77 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 16540
 Only local connections are allowed.
-Dec 05, 2020 4:49:45 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Dec 07, 2020 4:57:35 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Dec 05, 2020 4:49:45 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Dec 07, 2020 4:57:36 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:49:45 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Dec 07, 2020 4:57:36 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:49:45 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Dec 07, 2020 4:57:36 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:49:45 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (c049ef36873e536523da78d464e8e414)
-Dec 05, 2020 4:50:08 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (c049ef36873e536523da78d464e8e414)
-Dec 05, 2020 4:50:08 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+Dec 07, 2020 4:57:36 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 887: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (709d80bdd9006b8ee70b6528304a6288)
+Dec 07, 2020 4:59:19 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 887 -&gt; ChromeDriver: chrome on LINUX (709d80bdd9006b8ee70b6528304a6288)
+Dec 07, 2020 4:59:19 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:50:09 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 72 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 2358
+Dec 07, 2020 4:59:19 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 79 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 22437
 Only local connections are allowed.
-Dec 05, 2020 4:50:09 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Dec 07, 2020 4:59:20 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Dec 05, 2020 4:50:09 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Dec 07, 2020 4:59:20 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:50:09 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Dec 07, 2020 4:59:20 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:50:09 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Dec 07, 2020 4:59:20 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:50:09 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (d595020de1afde8fd9c59545a03e6b05)
-Dec 05, 2020 4:51:56 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (d595020de1afde8fd9c59545a03e6b05)
-Dec 05, 2020 4:51:56 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
-INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:51:56 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 73 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 15757
-Only local connections are allowed.
-Dec 05, 2020 4:51:57 PM org.openqa.selenium.remote.ProtocolHandshake createSession
-INFO: Detected dialect: OSS
-Dec 05, 2020 4:51:57 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
-INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:51:57 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
-INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:51:57 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
-INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:51:57 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (dc7809e404dad516e607c1eef560a4ca)
-Dec 05, 2020 4:53:40 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (dc7809e404dad516e607c1eef560a4ca)
-Dec 05, 2020 4:53:40 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
-INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:53:40 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 75 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 5581
-Only local connections are allowed.
-Dec 05, 2020 4:53:40 PM org.openqa.selenium.remote.ProtocolHandshake createSession
-INFO: Detected dialect: OSS
-Dec 05, 2020 4:53:41 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
-INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:53:41 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
-INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:53:41 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
-INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:53:41 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (1bfb4037323dfcafe4b7b37361e59d20)
-Dec 05, 2020 4:55:30 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (1bfb4037323dfcafe4b7b37361e59d20)
-Dec 05, 2020 4:55:30 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
-INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:55:30 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 70 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 18847
-Only local connections are allowed.
-Dec 05, 2020 4:55:30 PM org.openqa.selenium.remote.ProtocolHandshake createSession
-INFO: Detected dialect: OSS
-Dec 05, 2020 4:55:31 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
-INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:55:31 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
-INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:55:31 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
-INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:55:31 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (39d640fb8b853b76c41baff5bf971778)
-Dec 05, 2020 4:57:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 921 -&gt; ChromeDriver: chrome on LINUX (39d640fb8b853b76c41baff5bf971778)
-Dec 05, 2020 4:57:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
-INFO: Trying to close the browser ChromeDriver ...
-Dec 05, 2020 4:57:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 74 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 10603
-Only local connections are allowed.
-Dec 05, 2020 4:57:14 PM org.openqa.selenium.remote.ProtocolHandshake createSession
-INFO: Detected dialect: OSS
-Dec 05, 2020 4:57:14 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
-INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 05, 2020 4:57:14 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
-INFO: Selenide v. 4.10.01
-Dec 05, 2020 4:57:14 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
-INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 05, 2020 4:57:14 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (b9ac200fca2b8df0bad21c80c36bfafb)
+Dec 07, 2020 4:59:20 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 887: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (acf107551b09e0de86b46058210d9879)
 </pre>
 </span>
 </div>
@@ -342,7 +392,7 @@ INFO: Create webdriver in current thread 921: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 5, 2020 5:46:15 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 7, 2020 5:51:54 PM</p>
 </div>
 </div>
 </body>
