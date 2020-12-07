@@ -26,11 +26,15 @@ import com.amazonaws.services.route53.model.ChangeResourceRecordSetsResult;
 import com.amazonaws.services.route53.model.ChangeStatus;
 import com.amazonaws.services.route53.model.GetChangeRequest;
 import com.amazonaws.services.route53.model.GetChangeResult;
+import com.amazonaws.services.route53.model.InvalidChangeBatchException;
 import com.amazonaws.services.route53.model.ListResourceRecordSetsRequest;
 import com.amazonaws.services.route53.model.RRType;
 import com.amazonaws.services.route53.model.ResourceRecord;
 import com.amazonaws.services.route53.model.ResourceRecordSet;
 import com.amazonaws.services.route53.waiters.AmazonRoute53Waiters;
+import com.amazonaws.waiters.FixedDelayStrategy;
+import com.amazonaws.waiters.MaxAttemptsRetryStrategy;
+import com.amazonaws.waiters.PollingStrategy;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +46,8 @@ public class Route53Helper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Route53Helper.class);
     private static final long TTL_TIME = 60L;
+    private static final int MAX_ATTEMPTS = 100;
+    private static final int DELAY_IN_SECONDS = 1;
 
     public AmazonRoute53 getRoute53Client() {
         AmazonRoute53AsyncClientBuilder builder = AmazonRoute53AsyncClientBuilder.standard();
@@ -54,9 +60,9 @@ public class Route53Helper {
         if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
             try {
                 final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
-                        dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.CREATE);
+                        dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.CREATE, true);
                 return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), result.getChangeInfo().getStatus());
-            } catch (com.amazonaws.services.route53.model.InvalidChangeBatchException e) {
+            } catch (InvalidChangeBatchException e) {
                 LOGGER.error("AWS 53 Route service responded with: " + e.getLocalizedMessage());
                 if (e.getLocalizedMessage().matches(".*Tried to create resource record set.*but it already exists.*")) {
                     LOGGER.info("DNS Record already exists, API will proceed with this record.");
@@ -77,7 +83,7 @@ public class Route53Helper {
             return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
         } else {
             final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
-                    dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.DELETE);
+                    dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.DELETE, false);
             return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), result.getChangeInfo().getStatus());
         }
 
@@ -111,7 +117,7 @@ public class Route53Helper {
 
     private ChangeResourceRecordSetsResult performChangeRequest(final String hostedZoneId, final String dnsRecord,
                                                                 final String target, final AmazonRoute53 client,
-                                                                final ChangeAction action) {
+                                                                final ChangeAction action, final boolean await) {
         ChangeResourceRecordSetsResult result = client.changeResourceRecordSets(new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZoneId)
                 .withChangeBatch(new ChangeBatch()
@@ -130,16 +136,25 @@ public class Route53Helper {
                         )
                 )
         );
-        WaiterParameters<GetChangeRequest> request = new WaiterParameters<GetChangeRequest>()
-                .withRequest(new GetChangeRequest().withId(result.getChangeInfo().getId()));
-        new AmazonRoute53Waiters(client).resourceRecordSetsChanged().run(request);
-        String status = checkRequestStatus(client, request.getRequest().getId()).getChangeInfo().getStatus();
-        if (status.equalsIgnoreCase(ChangeStatus.INSYNC.name())) {
-            result.getChangeInfo().setStatus(status);
-            return result;
-        } else {
-            throw new IllegalStateException("Can't create Route53 DNS record for some reason.");
+
+        if (await) {
+            WaiterParameters<GetChangeRequest> request = new WaiterParameters<GetChangeRequest>()
+                    .withPollingStrategy(
+                            new PollingStrategy(
+                                    new MaxAttemptsRetryStrategy(MAX_ATTEMPTS),
+                                    new FixedDelayStrategy(DELAY_IN_SECONDS)
+                            )
+                    ).withRequest(new GetChangeRequest().withId(result.getChangeInfo().getId()));
+            new AmazonRoute53Waiters(client).resourceRecordSetsChanged().run(request);
+            String status = checkRequestStatus(client, request.getRequest().getId()).getChangeInfo().getStatus();
+            if (status.equalsIgnoreCase(ChangeStatus.INSYNC.name())) {
+                result.getChangeInfo().setStatus(status);
+            } else {
+                throw new IllegalStateException("Can't create Route53 DNS record for some reason.");
+            }
         }
+
+        return result;
     }
 
     private static RRType getRRType(final String target) {
