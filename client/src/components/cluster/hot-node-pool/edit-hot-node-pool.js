@@ -329,7 +329,7 @@ class EditHotNodePool extends React.Component {
       Number.isNaN(Number(count)) ||
       Number(count) < COUNT_MIN_SIZE
     ) {
-      countError = `Count should be greater than ${COUNT_MIN_SIZE}`;
+      countError = `Count should be at least ${COUNT_MIN_SIZE}`;
     }
     if (!instanceType) {
       instanceTypeError = 'Instance type is required';
