@@ -44,7 +44,11 @@ import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
+import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
+import com.epam.pipeline.manager.metadata.MetadataDownloadManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.metadata.MetadataUploadManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
@@ -233,6 +237,18 @@ public class AclTestConfiguration {
 
     @MockBean
     protected HierarchicalEntityManager hierarchicalEntityManager;
+
+    @MockBean
+    protected CategoricalAttributeManager categoricalAttributeManager;
+
+    @MockBean
+    protected MetadataManager metadataManager;
+
+    @MockBean
+    protected MetadataUploadManager metadataUploadManager;
+
+    @MockBean
+    protected MetadataDownloadManager metadataDownloadManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

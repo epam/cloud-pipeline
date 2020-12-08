@@ -53,6 +53,7 @@ public abstract class AbstractAclTest {
 
     protected static final String ADMIN_ROLE = "ADMIN";
     protected static final String CONFIGURATION_MANAGER_ROLE = "CONFIGURATION_MANAGER";
+    protected static final String ENTITIES_MANAGER_ROLE = "ENTITIES_MANAGER";
     protected static final String OWNER_USER = "OWNER";
     protected static final String GENERAL_USER_ROLE = "USER";
     protected static final String SIMPLE_USER_ROLE = "SIMPLE_USER";
@@ -146,6 +147,11 @@ public abstract class AbstractAclTest {
         final List<T> list = new ArrayList<>();
         Collections.addAll(list, objects);
         return list;
+    }
+
+    protected void mockAuthUser(final String user) {
+        mockSecurityContext();
+        doReturn(user).when(mockAuthManager).getAuthorizedUser();
     }
 
     protected void mockSecurityContext() {

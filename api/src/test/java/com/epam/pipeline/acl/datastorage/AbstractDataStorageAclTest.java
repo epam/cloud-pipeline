@@ -26,7 +26,6 @@ import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
@@ -60,11 +59,6 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
         mockAuthUser(user);
         mockS3bucket(entity);
         mockUserContext(context);
-    }
-
-    protected void mockAuthUser(final String user) {
-        doReturn(user).when(mockAuthManager).getAuthorizedUser();
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
     }
 
     protected void mockS3bucket(final AbstractDataStorage entity) {

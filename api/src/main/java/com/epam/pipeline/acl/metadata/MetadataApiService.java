@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.metadata;
+package com.epam.pipeline.acl.metadata;
 
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;

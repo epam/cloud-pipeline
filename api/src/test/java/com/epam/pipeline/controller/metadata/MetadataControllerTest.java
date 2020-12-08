@@ -21,7 +21,7 @@ import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.manager.metadata.MetadataApiService;
+import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
@@ -239,7 +239,7 @@ public class MetadataControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldUploadMetadataFromFile() throws Exception {
+    public void shouldUploadMetadataFromFile() {
         doReturn(metadataEntry).when(mockMetadataApiService)
                 .uploadMetadataFromFile(eq(new EntityVO(ID, aclClass)), any(), eq(true));
 
