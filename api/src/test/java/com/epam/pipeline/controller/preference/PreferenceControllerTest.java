@@ -17,7 +17,7 @@
 package com.epam.pipeline.controller.preference;
 
 import com.epam.pipeline.entity.preference.Preference;
-import com.epam.pipeline.manager.preference.PreferenceApiService;
+import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
