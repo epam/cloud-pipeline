@@ -121,7 +121,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public void scaleDownNode(final AzureRegion region, final Long runId) {
-        final String command = buildNodeDownCommand(runId);
+        final String command = buildNodeDownCommand(String.valueOf(runId));
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                 executorService.getExecutorService());
@@ -129,7 +129,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public void scaleDownPoolNode(final AzureRegion region, final String nodeLabel) {
-        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, getProviderName());
+        final String command = buildNodeDownCommand(nodeLabel);
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                                    executorService.getExecutorService());
@@ -300,11 +300,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         return commandBuilder.build().getCommand();
     }
 
-    private String buildNodeDownCommand(final Long runId) {
+    private String buildNodeDownCommand(final String nodeLabel) {
         return RunIdArgCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeDownScript)
-                .runId(String.valueOf(runId))
+                .runId(nodeLabel)
                 .build()
                 .getCommand();
     }
