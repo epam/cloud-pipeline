@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
-import com.epam.pipeline.manager.issue.IssueApiService;
+import com.epam.pipeline.acl.issue.IssueApiService;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.issue.IssueCreatorUtils;
@@ -66,7 +66,6 @@ public class IssueControllerTest extends AbstractControllerTest {
     private static final String ATTACHMENTS_URL = SERVLET_PATH + "/attachment";
     private static final String ATTACHMENTS_ID_URL = ATTACHMENTS_URL + "/%d";
 
-
     private static final String ENTITY_ID = "entityId";
     private static final String ENTITY_CLASS = "entityClass";
     private static final String PAGE = "page";
@@ -85,7 +84,6 @@ public class IssueControllerTest extends AbstractControllerTest {
 
     @Autowired
     private AttachmentFileManager mockAttachmentFileManager;
-
 
     @Test
     @WithMockUser
