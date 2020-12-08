@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">7</div>
+<div class="counter">2</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">8m45.74s</div>
+<div class="counter">14m28.84s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">85%</div>
+<div class="percent">91%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,16 +73,38 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="shouldLaunchPipeline - EPMCMBIBPC-100"></a>
-<h3 class="failures">shouldLaunchPipeline - EPMCMBIBPC-100</h3>
+<a name="logShouldBeValid - EPMCMBIBPC-309"></a>
+<h3 class="failures">logShouldBeValid - EPMCMBIBPC-309</h3>
 <span class="code">
-<pre>Element should be be expanded tab {By.id: launch-pipeline-exec-environment-panel}
-Element: '&lt;div class=&quot;ant-collapse-item launch-pipeline-form__section&quot; id=&quot;launch-pipeline-exec-environment-panel&quot; role=&quot;tablist&quot;&gt;Exec environment
-library/centos:7
-m5.large
-20Gb&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1607343618484.68.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1607343618484.68.html
+<pre>Element should contains messages {By.className: ReactVirtualized__List}
+Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;019:[2020-12-08 13:19:35] COMMON_REPO_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/CommonRepo
+020:[2020-12-08 13:19:35] Creating default common code directory at /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/CommonRepo
+021:[2020-12-08 13:19:35] LOG_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/logs
+022:[2020-12-08 13:19:35] Creating default logs directory at /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/logs
+023:[2020-12-08 13:19:35] TMP_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/tmp
+024:[2020-12-08 13:19:35] Creating default tmp directory at /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/tmp
+025:[2020-12-08 13:19:35] ANALYSIS_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/analysis
+026:[2020-12-08 13:19:35] Creating default analysis directory at /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/analysis
+027:[2020-12-08 13:19:35] INPUT_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/input
+028:[2020-12-08 13:19:35] Creating default input directory at /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/input
+029:[2020-12-08 13:19:35] CONFIG_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/config
+030:[2020-12-08 13:19:35] Creating default config directory at /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/config
+031:[2020-12-08 13:19:35] SCRIPTS_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/scripts
+032:[2020-12-08 13:19:35] Creating default scripts directory at /runs/ui-tests-epmcmbibpc-100-4605823427224408852-50086/scripts. Please use 'SCRIPTS_DIR' variable to run pipeline script
+033:[2020-12-08 13:19:35] SHARED_FOLDER is not defined, setting to /common
+034:[2020-12-08 13:19:35] SHARED_WORK_FOLDER is not defined, setting to /common/workdir
+035:[2020-12-08 13:19:35] PUBLISH_SHARED_FOLDER is not defined, setting to /to-be-shared
+036:[2020-12-08 13:19:35] DEFAULT_HOSTFILE is not defined, setting to /common/hostfile
+037:[2020-12-08 13:19:35] REPOSITORY_MOUNT is not defined, setting to /code-repository
+038:[2020-12-08 13:19:35] Cleaning any data in common repository mount point directory: /code-repository
+039:[2020-12-08 13:19:35] MAX_PROCS_LIMIT is not defined, setting to 65536
+040:[2020-12-08 13:19:35] MAX_NOPEN_LIMIT is not defined, setting to 65536
+041:[2020-12-08 13:19:35] CP_CAP_ENV_UMASK is not defined, setting to 0002
+042:[2020-12-08 13:19:35] CP_CAP_SUDO_ENABLE is not defined, setting to true&lt;/div&gt;'
+Actual value: Following messages wasn't found in log:
+COMMON_DIR is not defined, setting to /common
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607433871836.68.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607433871836.68.html
 Timeout: 80 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -91,11 +113,9 @@ Timeout: 80 s.
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.expandTab(AccessObject.java:272)
-	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.&lt;init&gt;(PipelineRunFormAO.java:85)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.runPipeline(AbstractPipelineTabAO.java:112)
-	at com.epam.pipeline.autotests.RunPipelineTest.shouldLaunchPipeline(RunPipelineTest.java:123)
+	at com.sun.proxy.$Proxy13.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
+	at com.epam.pipeline.autotests.RunPipelineTest.logShouldBeValid(RunPipelineTest.java:190)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -124,64 +144,64 @@ Timeout: 80 s.
 </tr>
 </thead>
 <tr>
-<td class="skipped">activePipelineShouldBeOpenedFromNodeInfo</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">activePipelineShouldBeOpenedFromNodeInfo - EPMCMBIBPC-302</td>
+<td>0.971s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">clusterNodePageShouldBeValid - EPMCMBIBPC-267</td>
-<td>4.668s</td>
+<td>4.483s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">cmdTemplateShouldBeCorrect - EPMCMBIBPC-306</td>
-<td>17.646s</td>
+<td>17.368s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">instanceTabShouldBeValid</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">instanceTabShouldBeValid - EPMCMBIBPC-307</td>
+<td>0.644s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">logShouldBeValid</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="failures">logShouldBeValid - EPMCMBIBPC-309</td>
+<td>4m44.89s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">nodePageShouldBeValid - EPMCMBIBPC-301</td>
-<td>2.164s</td>
+<td>2.267s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">pipelineLogPageShouldBeValid</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">pipelineLogPageShouldBeValid - EPMCMBIBPC-305</td>
+<td>2m39.14s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pipelineRunFormShouldBeValid - EPMCMBIBPC-299</td>
-<td>17.729s</td>
+<td>17.203s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runShouldNotAppearInActiveRuns - EPMCMBIBPC-312</td>
-<td>6m18.68s</td>
+<td>3m13.21s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldContainCorrectNode</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldContainCorrectNode - EPMCMBIBPC-304</td>
+<td>2m38.70s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldCreatePipelineFromPythonTemplate - EPMCMBIBPC-298</td>
-<td>10.047s</td>
+<td>10.180s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">shouldLaunchPipeline - EPMCMBIBPC-100</td>
-<td>1m34.80s</td>
-<td class="failures">failed</td>
+<td class="success">shouldLaunchPipeline - EPMCMBIBPC-100</td>
+<td>19.786s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="skipped">shouldNavigateToTheNode</td>
@@ -198,9 +218,15 @@ Timeout: 80 s.
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 49928 from [49928]
-Returns latest run with runId 49928 from [49928]
-Returns latest run with runId 49928 from [49928]
+<pre>Returns latest run with runId 50086 from [50086]
+Returns latest run with runId 50086 from [50086]
+Returns latest run with runId 50086 from [50086]
+Returns latest run with runId 50086 from [50086]
+Returns latest run with runId 50086 from [50086]
+Returns latest run with runId 50086 from [50086]
+Returns latest run with runId 50087 from [50086, 50087]
+Returns latest run with runId 50087 from [50086, 50087]
+Returns latest run with runId 50087 from [50086, 50087]
 </pre>
 </span>
 </div>
@@ -212,7 +238,7 @@ Returns latest run with runId 49928 from [49928]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 7, 2020 5:51:54 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 8, 2020 6:04:43 PM</p>
 </div>
 </div>
 </body>
