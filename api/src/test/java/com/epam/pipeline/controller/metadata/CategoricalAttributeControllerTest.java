@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.controller.metadata;
 
+import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
-import com.epam.pipeline.manager.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
