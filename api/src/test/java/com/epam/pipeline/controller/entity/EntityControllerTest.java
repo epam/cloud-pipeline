@@ -19,7 +19,7 @@ package com.epam.pipeline.controller.entity;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSid;
-import com.epam.pipeline.manager.entity.EntityApiService;
+import com.epam.pipeline.acl.entity.EntityApiService;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
