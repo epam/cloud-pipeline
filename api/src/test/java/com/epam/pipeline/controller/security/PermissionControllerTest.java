@@ -49,8 +49,8 @@ public class PermissionControllerTest extends AbstractControllerTest {
     private static final String ID_AS_STRING = String.valueOf(ID);
     private static final String ID_PARAM = "id";
     private static final String ACL_CLASS_PARAM = "aclClass";
-    private static final AclClass ATTACHMENT = AclClass.ATTACHMENT;
-    private static final String ATTACHMENT_STRING = AclClass.ATTACHMENT.name();
+    private static final AclClass DATA_STORAGE = AclClass.DATA_STORAGE;
+    private static final String DATA_STORAGE_STRING = AclClass.DATA_STORAGE.name();
     private static final String USER_PARAM = "user";
     private static final String USER_NAME_PARAM = "userName";
     private static final String PRINCIPAL_PARAM = "isPrincipal";
@@ -88,15 +88,15 @@ public class PermissionControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldDeletePermissionsForUser() {
         doReturn(aclSecuredEntry).when(mockPermissionApiService)
-                .deletePermissions(ID, ATTACHMENT, TEST_STRING, true);
+                .deletePermissions(ID, DATA_STORAGE, TEST_STRING, true);
 
         final MvcResult mvcResult = performRequest(delete(GRANT_URL)
                 .params(multiValueMapOf(ID_PARAM, ID_AS_STRING,
-                                        ACL_CLASS_PARAM, ATTACHMENT_STRING,
+                                        ACL_CLASS_PARAM, DATA_STORAGE_STRING,
                                         USER_PARAM, TEST_STRING,
                                         PRINCIPAL_PARAM, TRUE_AS_STRING)));
 
-        verify(mockPermissionApiService).deletePermissions(ID, ATTACHMENT, TEST_STRING, true);
+        verify(mockPermissionApiService).deletePermissions(ID, DATA_STORAGE, TEST_STRING, true);
         assertResponse(mvcResult, aclSecuredEntry, ACL_SECURED_ENTRY_TYPE);
     }
 
@@ -108,13 +108,13 @@ public class PermissionControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldDeleteAllPermissions() {
-        doReturn(aclSecuredEntry).when(mockPermissionApiService).deleteAllPermissions(ID, ATTACHMENT);
+        doReturn(aclSecuredEntry).when(mockPermissionApiService).deleteAllPermissions(ID, DATA_STORAGE);
 
         final MvcResult mvcResult = performRequest(delete(ALL_PERMISSIONS_URL)
                 .params(multiValueMapOf(ID_PARAM, ID_AS_STRING,
-                                        ACL_CLASS_PARAM, ATTACHMENT_STRING)));
+                                        ACL_CLASS_PARAM, DATA_STORAGE_STRING)));
 
-        verify(mockPermissionApiService).deleteAllPermissions(ID, ATTACHMENT);
+        verify(mockPermissionApiService).deleteAllPermissions(ID, DATA_STORAGE);
         assertResponse(mvcResult, aclSecuredEntry, ACL_SECURED_ENTRY_TYPE);
     }
 
@@ -126,13 +126,13 @@ public class PermissionControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGetPipelinePermissions() {
-        doReturn(aclSecuredEntry).when(mockPermissionApiService).getPermissions(ID, ATTACHMENT);
+        doReturn(aclSecuredEntry).when(mockPermissionApiService).getPermissions(ID, DATA_STORAGE);
 
         final MvcResult mvcResult = performRequest(get(GRANT_URL)
                 .params(multiValueMapOf(ID_PARAM, ID_AS_STRING,
-                                        ACL_CLASS_PARAM, ATTACHMENT_STRING)));
+                                        ACL_CLASS_PARAM, DATA_STORAGE_STRING)));
 
-        verify(mockPermissionApiService).getPermissions(ID, ATTACHMENT);
+        verify(mockPermissionApiService).getPermissions(ID, DATA_STORAGE);
         assertResponse(mvcResult, aclSecuredEntry, ACL_SECURED_ENTRY_TYPE);
     }
 
@@ -144,14 +144,14 @@ public class PermissionControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldChangeOwner() {
-        doReturn(aclSecuredEntry).when(mockPermissionApiService).changeOwner(ID, ATTACHMENT, TEST_STRING);
+        doReturn(aclSecuredEntry).when(mockPermissionApiService).changeOwner(ID, DATA_STORAGE, TEST_STRING);
 
         final MvcResult mvcResult = performRequest(post(OWNER_URL)
                 .params(multiValueMapOf(ID_PARAM, ID_AS_STRING,
-                                        ACL_CLASS_PARAM, ATTACHMENT_STRING,
+                                        ACL_CLASS_PARAM, DATA_STORAGE_STRING,
                                         USER_NAME_PARAM, TEST_STRING)));
 
-        verify(mockPermissionApiService).changeOwner(ID, ATTACHMENT, TEST_STRING);
+        verify(mockPermissionApiService).changeOwner(ID, DATA_STORAGE, TEST_STRING);
         assertResponse(mvcResult, aclSecuredEntry, ACL_SECURED_ENTRY_TYPE);
     }
 
@@ -163,13 +163,13 @@ public class PermissionControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadEntityPermissions() {
-        doReturn(entityPermissionVO).when(mockPermissionApiService).loadEntityPermission(ID, ATTACHMENT);
+        doReturn(entityPermissionVO).when(mockPermissionApiService).loadEntityPermission(ID, DATA_STORAGE);
 
         final MvcResult mvcResult = performRequest(get(PERMISSIONS_URL)
                 .params(multiValueMapOf(ID_PARAM, ID_AS_STRING,
-                                        ACL_CLASS_PARAM, ATTACHMENT_STRING)));
+                                        ACL_CLASS_PARAM, DATA_STORAGE_STRING)));
 
-        verify(mockPermissionApiService).loadEntityPermission(ID, ATTACHMENT);
+        verify(mockPermissionApiService).loadEntityPermission(ID, DATA_STORAGE);
         assertResponse(mvcResult, entityPermissionVO, ENTITY_WITH_PERMISSION_VO_TYPE);
     }
 }

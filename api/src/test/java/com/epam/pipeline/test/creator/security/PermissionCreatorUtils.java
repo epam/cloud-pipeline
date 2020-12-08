@@ -61,7 +61,7 @@ public final class PermissionCreatorUtils {
         final EntityPermissionVO entityPermissionVO = new EntityPermissionVO();
         entityPermissionVO.setEntityId(ID);
         entityPermissionVO.setOwner(TEST_STRING);
-        entityPermissionVO.setEntityClass(AclClass.ATTACHMENT);
+        entityPermissionVO.setEntityClass(AclClass.DATA_STORAGE);
         entityPermissionVO.setPermissions(Collections.singleton(new AclPermissionEntry(new AclSid(), TEST_INT)));
         return entityPermissionVO;
     }
