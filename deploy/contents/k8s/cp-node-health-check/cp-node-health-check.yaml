@@ -1,0 +1,43 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: cp-node-health-check
+  namespace: default
+  labels:
+    k8s-app: cp-node-health-check
+spec:
+  selector:
+    matchLabels:
+      name: cp-node-health-check
+  template:
+    metadata:
+      labels:
+        name: cp-node-health-check
+    spec:
+      containers:
+      - name: cp-node-health-check
+        image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-health-check-$CP_VERSION
+        imagePullPolicy: "IfNotPresent"
+        resources:
+          limits:
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: node-health-check
+          mountPath: /opt/node-health-check
+        envFrom:
+        - configMapRef:
+            name: cp-config-global
+        env:
+        - name: SYNC_FILE
+          value: "/opt/node-health-check/sync_file"
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      volumes:
+      - name: node-health-check
+        hostPath:
+          path: /opt/node-health-check

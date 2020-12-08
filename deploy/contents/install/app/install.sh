@@ -395,6 +395,15 @@ kubectl delete daemonset cp-node-logger
 print_info "-> Deploying Node logger daemonset"
 create_kube_resource $K8S_SPECS_HOME/cp-node-logger/cp-node-logger-ds.yaml
 
+# Node Health Check - monitor and report OOM related events for each pipeline run
+print_ok "[Starting Node Health Check daemonset deployment]"
+
+print_info "-> Deleting existing instance of Node Health Check daemonset"
+kubectl delete daemonset cp-node-health-check
+
+print_info "-> Deploying Node logger daemonset"
+create_kube_resource $K8S_SPECS_HOME/cp-node-logger/cp-node-health-check.yaml
+
 
 # Heapster (CPU Utilization monitoring)
 if is_service_requested cp-heapster; then
