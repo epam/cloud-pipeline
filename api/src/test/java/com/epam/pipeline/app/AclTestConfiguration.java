@@ -21,6 +21,7 @@ import com.epam.pipeline.acl.dts.DtsRegistryApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -229,6 +230,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected DtsRegistryApiService mockDtsRegistryApiService;
+
+    @MockBean
+    protected HierarchicalEntityManager hierarchicalEntityManager;
 
     @Bean
     public PermissionFactory permissionFactory() {
