@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
@@ -130,6 +131,14 @@ public class SystemPreferences {
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(
             "storage.mounts.per.gb.ratio", null, DATA_STORAGE_GROUP, isNullOrGreaterThan(0));
+    public static final BooleanPreference DEFAULT_USER_DATA_STORAGE_ENABLED =
+        new BooleanPreference("storage.user.home.auto", false, DATA_STORAGE_GROUP, pass);
+    public static final ObjectPreference<DataStorageTemplate> DEFAULT_USER_DATA_STORAGE_TEMPLATE =
+        new ObjectPreference<>("storage.user.home.template",
+                               null,
+                               new TypeReference<DataStorageTemplate>() {},
+                               DATA_STORAGE_GROUP,
+                               isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -331,6 +340,8 @@ public class SystemPreferences {
     public static final ObjectPreference<CloudRegionsConfiguration> CLUSTER_NETWORKS_CONFIG =
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
+    public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
+            100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     /**
      * If this property is true, pipelines without parent (batch ID) will have the highest priority,
      * otherwise - the lowest

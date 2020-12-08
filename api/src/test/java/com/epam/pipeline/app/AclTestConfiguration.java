@@ -16,15 +16,20 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.acl.dts.DtsOperationsApiService;
+import com.epam.pipeline.acl.dts.DtsRegistryApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
@@ -39,7 +44,11 @@ import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
+import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
+import com.epam.pipeline.manager.metadata.MetadataDownloadManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.metadata.MetadataUploadManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
@@ -56,6 +65,7 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.security.acl.AclPermissionFactory;
@@ -213,10 +223,40 @@ public class AclTestConfiguration {
     protected FileShareMountManager mockFileShareMountManager;
 
     @MockBean
+    protected NodeScheduleManager nodeScheduleManager;
+
+    @MockBean
+    protected NodePoolManager nodePoolManager;
+
+    @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
 
     @MockBean
     protected PreferenceManager preferenceManager;
+ 
+    @MockBean
+    protected RoleManager mockRoleManager;
+
+    @MockBean
+    protected DtsOperationsApiService mockDtsOperationsApiService;
+
+    @MockBean
+    protected DtsRegistryApiService mockDtsRegistryApiService;
+
+    @MockBean
+    protected HierarchicalEntityManager hierarchicalEntityManager;
+
+    @MockBean
+    protected CategoricalAttributeManager categoricalAttributeManager;
+
+    @MockBean
+    protected MetadataManager metadataManager;
+
+    @MockBean
+    protected MetadataUploadManager metadataUploadManager;
+
+    @MockBean
+    protected MetadataDownloadManager metadataDownloadManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

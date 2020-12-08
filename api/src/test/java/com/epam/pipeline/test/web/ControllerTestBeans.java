@@ -17,46 +17,48 @@
 package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
-import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
-import com.epam.pipeline.acl.log.LogApiService;
-import com.epam.pipeline.acl.pipeline.PipelineApiService;
-import com.epam.pipeline.acl.run.RunApiService;
-import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
+import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
+import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
 import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
 import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
-import com.epam.pipeline.manager.docker.DockerRegistryApiService;
-import com.epam.pipeline.manager.dts.DtsOperationsApiService;
-import com.epam.pipeline.manager.dts.DtsRegistryApiService;
-import com.epam.pipeline.manager.entity.EntityApiService;
+import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
+import com.epam.pipeline.acl.docker.DockerRegistryApiService;
+import com.epam.pipeline.acl.docker.ToolApiService;
+import com.epam.pipeline.acl.docker.ToolGroupApiService;
+import com.epam.pipeline.acl.dts.DtsOperationsApiService;
+import com.epam.pipeline.acl.dts.DtsRegistryApiService;
+import com.epam.pipeline.acl.entity.EntityApiService;
+import com.epam.pipeline.acl.issue.IssueApiService;
+import com.epam.pipeline.acl.log.LogApiService;
+import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
+import com.epam.pipeline.acl.metadata.MetadataApiService;
+import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
+import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.acl.region.CloudRegionApiService;
+import com.epam.pipeline.acl.run.RunApiService;
+import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
-import com.epam.pipeline.manager.issue.IssueApiService;
-import com.epam.pipeline.manager.metadata.CategoricalAttributeApiService;
-import com.epam.pipeline.manager.metadata.MetadataApiService;
-import com.epam.pipeline.manager.metadata.MetadataEntityApiService;
 import com.epam.pipeline.manager.notification.NotificationApiService;
 import com.epam.pipeline.manager.notification.NotificationSettingsApiService;
 import com.epam.pipeline.manager.notification.NotificationTemplateApiService;
 import com.epam.pipeline.manager.notification.SystemNotificationApiService;
 import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.manager.pipeline.PipelineConfigApiService;
-import com.epam.pipeline.acl.docker.ToolApiService;
-import com.epam.pipeline.manager.pipeline.ToolGroupApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AclPermissionApiService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.template.TemplateManager;
-import com.epam.pipeline.manager.user.RoleApiService;
-import com.epam.pipeline.manager.user.UserApiService;
+import com.epam.pipeline.acl.user.RoleApiService;
+import com.epam.pipeline.acl.user.UserApiService;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -210,4 +212,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected LustreFSApiService lustreFSApiService;
+
+    @MockBean
+    protected NodePoolApiService nodePoolApiService;
+
+    @MockBean
+    protected NodeScheduleApiService nodeScheduleApiService;
 }

@@ -27,10 +27,12 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretList;
@@ -47,6 +49,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,7 +128,8 @@ public class KubernetesManager {
 
     /**
      * Returns docker container id for specified podId and docker image name
-     * @param podId id of a kubernetes pod
+     *
+     * @param podId       id of a kubernetes pod
      * @param dockerImage docker image name from the pod
      * @return docker container id
      */
@@ -156,8 +160,8 @@ public class KubernetesManager {
             dockerRegistrySecret = client.secrets()
                     .createNew()
                     .withNewMetadata()
-                        .withName(secretName)
-                        .withNamespace(kubeNamespace)
+                    .withName(secretName)
+                    .withNamespace(kubeNamespace)
                     .endMetadata()
                     .withType("kubernetes.io/dockercfg")
                     .withData(Collections.singletonMap(".dockercfg", encodedSecret))
@@ -262,8 +266,9 @@ public class KubernetesManager {
 
     /**
      * Updates current status with node statuses that indicate node failure.
+     *
      * @param status current status
-     * @param node corresponding node
+     * @param node   corresponding node
      * @return status updated with node conditions failure statuses
      */
     public String updateStatusWithNodeConditions(StringBuilder status, Node node) {
@@ -298,7 +303,7 @@ public class KubernetesManager {
     }
 
     public Optional<Node> findNodeByRunId(final String runIdLabel) {
-        try(KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             final NodeList list = client.nodes()
                     .withLabel(KubernetesConstants.RUN_ID_LABEL, runIdLabel).list();
             return Optional.ofNullable(list)
@@ -319,8 +324,8 @@ public class KubernetesManager {
         final PodMasterStatusApi client = buildMasterStatusClient();
         try {
             final MasterPodInfo info = client.getMasterName()
-                .execute()
-                .body();
+                    .execute()
+                    .body();
             if (info != null) {
                 return info.getName();
             }
@@ -341,15 +346,15 @@ public class KubernetesManager {
 
     private PodMasterStatusApi buildMasterStatusClient() {
         return new Retrofit.Builder()
-            .baseUrl(kubePodLeaderElectionUrl)
-            .addConverterFactory(JacksonConverterFactory.create())
-            .client(new OkHttpClient())
-            .build()
-            .create(PodMasterStatusApi.class);
+                .baseUrl(kubePodLeaderElectionUrl)
+                .addConverterFactory(JacksonConverterFactory.create())
+                .client(new OkHttpClient())
+                .build()
+                .create(PodMasterStatusApi.class);
     }
 
     public Optional<Node> findNodeByName(final String nodeName) {
-        try(KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             return Optional.ofNullable(client.nodes().withName(nodeName).get());
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
@@ -381,11 +386,12 @@ public class KubernetesManager {
 
     /**
      * Waits until node will be removed from Kubernetes cluster.
+     *
      * @param nodeName
      * @param attempts
      */
     public void waitNodeDown(final String nodeName, final int attempts) {
-        try(KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             int tries = 0;
             while (tries < attempts) {
                 final Node node = client.nodes().withName(nodeName).get();
@@ -410,7 +416,7 @@ public class KubernetesManager {
         if (StringUtils.isBlank(nodeName) || StringUtils.isBlank(labelName)) {
             return;
         }
-        try(KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             Node node = client.nodes().withName(nodeName).get();
             Assert.notNull(node, messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND,
                     node.getMetadata().getName()));
@@ -499,7 +505,7 @@ public class KubernetesManager {
         final Node node = nodes.get(0);
         final Map<String, String> labels = node.getMetadata().getLabels();
         if (MapUtils.isEmpty(labels) || (!labels.containsKey(KubernetesConstants.CLOUD_REGION_LABEL)
-                        && !labels.containsKey(KubernetesConstants.AWS_REGION_LABEL))) {
+                && !labels.containsKey(KubernetesConstants.AWS_REGION_LABEL))) {
             throw new IllegalArgumentException(String.format("Node %s is not labeled with Cloud Region",
                     node.getMetadata().getName()));
         }
@@ -549,6 +555,49 @@ public class KubernetesManager {
                 .orElse(true);
     }
 
+    public NodeList getAvailableNodes(KubernetesClient client) {
+        return client.nodes().withLabel(KubernetesConstants.RUN_ID_LABEL)
+                .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL)
+                .list();
+    }
+
+    public Set<String> getAvailableNodesIds(KubernetesClient client) {
+        NodeList nodeList = getAvailableNodes(client);
+        return convertKubeItemsToRunIdSet(nodeList.getItems());
+    }
+
+    public Set<String> getAllPodIds(KubernetesClient client) {
+        PodList podList = getPodList(client);
+        return convertKubeItemsToRunIdSet(podList.getItems());
+    }
+
+    public Set<String> convertKubeItemsToRunIdSet(List<? extends HasMetadata> items) {
+        if (CollectionUtils.isEmpty(items)) {
+            return Collections.emptySet();
+        }
+        return items.stream()
+                .map(item -> item.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL))
+                .collect(Collectors.toSet());
+    }
+
+    public PodList getPodList(KubernetesClient client) {
+        return client.pods()
+                .inNamespace(kubeNamespace)
+                .withLabel("type", "pipeline")
+                .withLabel(KubernetesConstants.RUN_ID_LABEL).list();
+    }
+
+    public boolean isPodUnscheduled(Pod pod) {
+        String phase = pod.getStatus().getPhase();
+        if (KubernetesConstants.POD_SUCCEEDED_PHASE.equals(phase)
+                || KubernetesConstants.POD_FAILED_PHASE.equals(phase)) {
+            return false;
+        }
+        List<PodCondition> conditions = pod.getStatus().getConditions();
+        return !CollectionUtils.isEmpty(conditions) && KubernetesConstants.POD_UNSCHEDULABLE
+                .equals(conditions.get(0).getReason());
+    }
+
     private ServiceDescription getServiceDescription(final Service service) {
         final Map<String, String> labels = service.getMetadata().getLabels();
         final String scheme = getValueFromLabelsOrDefault(labels, kubeEdgeSchemeLabel, () -> DEFAULT_SVC_SCHEME);
@@ -569,14 +618,15 @@ public class KubernetesManager {
         final String portLabelValue = getValueFromLabelsOrDefault(service.getMetadata().getLabels(),
             kubeEdgePortLabel, () -> {
                 final Integer port = ListUtils.emptyIfNull(service.getSpec().getPorts())
-                    .stream()
-                    .findFirst()
-                    .map(ServicePort::getPort)
-                    .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
-                            MessageConstants.ERROR_KUBE_SERVICE_PORT_UNDEFINED, service.getMetadata().getName())));
+                        .stream()
+                        .findFirst()
+                        .map(ServicePort::getPort)
+                        .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                                    MessageConstants.ERROR_KUBE_SERVICE_PORT_UNDEFINED,
+                                service.getMetadata().getName())));
                 return String.valueOf(port);
             });
-        if (org.apache.commons.lang3.math.NumberUtils.isDigits(portLabelValue)) {
+        if (NumberUtils.isDigits(portLabelValue)) {
             return Integer.parseInt(portLabelValue);
         }
         throw new IllegalArgumentException(messageHelper.getMessage(
@@ -629,5 +679,38 @@ public class KubernetesManager {
     private boolean isConfigOKFailure(NodeCondition condition) {
         return condition.getType().equals(KubernetesConstants.CONFIG_OK)
                 && condition.getStatus().equals(KubernetesConstants.FALSE);
+    }
+
+    public boolean isNodeAvailable(final KubernetesClient client, final String nodeId) {
+        return client.nodes()
+                .withLabel(KubernetesConstants.RUN_ID_LABEL, nodeId)
+                .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL)
+                .list().getItems()
+                .stream()
+                .findFirst()
+                .filter(this::isNodeAvailable)
+                .isPresent();
+    }
+
+    public boolean isNodeAvailable(final Node node) {
+        if (node == null) {
+            return false;
+        }
+        List<NodeCondition> conditions = node.getStatus().getConditions();
+        if (CollectionUtils.isEmpty(conditions)) {
+            return true;
+        }
+        String lastReason = conditions.get(0).getReason();
+        for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
+            if (lastReason.contains(reason)) {
+                log.debug("Node is out of order: {}", conditions);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isNodeUnavailable(final Node node) {
+        return !isNodeAvailable(node);
     }
 }

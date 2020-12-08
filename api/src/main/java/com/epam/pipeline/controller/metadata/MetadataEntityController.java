@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
-import com.epam.pipeline.manager.metadata.MetadataEntityApiService;
+import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -209,8 +209,8 @@ public class MetadataEntityController extends AbstractRestController {
     @RequestMapping(value = "/metadataEntity/save", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Update user entity. If id not specified or not fount a new one will be created",
-            notes = "Update user entity. If id not specified or not fount a new one will be created.",
+            value = "Update user entity. If id not specified or not found a new one will be created",
+            notes = "Update user entity. If id not specified or not found a new one will be created.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)

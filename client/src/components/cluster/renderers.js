@@ -40,12 +40,14 @@ export function renderNodeLabels (labels, config) {
         data-master={testRole(role, nodeRoles.master)}
         data-cloud-pipeline-role={testRole(role, nodeRoles.cloudPipelineRole)}
         data-pipeline-info={testRole(role, nodeRoles.pipelineInfo)}
-        data-label={label}>
+        data-pool={testRole(role, nodeRoles.nodePoolRole)}
+        data-label={label}
+      >
         {value.toUpperCase()}
       </span>;
   for (let key in labels) {
     if (labels.hasOwnProperty(key)) {
-      const info = parseLabel(key, labels[key]);
+      const info = parseLabel(key, labels[key], config);
       if (testRole(info.role, nodeRoles.run)) {
         const labelKey = pipelineRun ? key.toUpperCase() : 'default';
         if (location && pipelineRun) {
@@ -54,7 +56,8 @@ export function renderNodeLabels (labels, config) {
               id="label-link-run-id"
               key={key}
               to={`/run/${pipelineRun.id}`}
-              location={location}>
+              location={location}
+            >
               {displayTag(labelKey, info.value, info.role)}
             </AdaptedLink>
           );

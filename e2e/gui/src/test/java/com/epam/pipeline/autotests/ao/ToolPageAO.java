@@ -16,10 +16,8 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.C;
+import com.codeborne.selenide.WebDriverRunner;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.appear;
@@ -30,11 +28,11 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.switchTo;
 import static com.codeborne.selenide.Selenide.title;
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
 public class ToolPageAO implements AccessObject<ToolPageAO> {
 
@@ -78,6 +76,12 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
         return this;
     }
 
+    public ToolPageAO assertURLEndsWith(String str) {
+        assertTrue(WebDriverRunner.getWebDriver().getCurrentUrl().endsWith(str + "/"),
+                format("Link from the address bar doesn't end by the '%s'", str));
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
@@ -85,11 +89,5 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
 
     public String getEndpoint() {
         return endpoint;
-    }
-
-    public void closeTab() {
-        List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
-        getWebDriver().close();
-        switchTo().window(tabs.get(0));
     }
 }

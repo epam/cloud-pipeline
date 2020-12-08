@@ -17,10 +17,14 @@
 package com.epam.pipeline.manager.cloud.commands;
 
 import lombok.Builder;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Builder
 public class NodeUpCommand extends AbstractClusterCommand {
@@ -41,6 +45,8 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final boolean isSpot;
     private final String bidPrice;
     private final String cloud;
+    private final Map<String, String> additionalLabels;
+    private final Set<String> prePulledImages;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -77,6 +83,14 @@ public class NodeUpCommand extends AbstractClusterCommand {
                 commands.add(String.valueOf(bidPrice));
             }
         }
+        MapUtils.emptyIfNull(additionalLabels).forEach((key, value) -> {
+            commands.add("--label");
+            commands.add(key + "=" + value);
+        });
+        SetUtils.emptyIfNull(prePulledImages).forEach(image -> {
+            commands.add("--image");
+            commands.add(image);
+        });
         return commands;
     }
 }

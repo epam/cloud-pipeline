@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,6 +105,7 @@ public class SamplesMetadataTest
     private final String idField = "ID";
     private final String nameField = "Name";
     private final String samplesField = "Samples";
+    private final String createDateField = "Created Date";
 
     private final String fastqR1D710 = "NA12878_D710_L001_R1_001.fastq.gz";
     private final String fastqR1D711 = "NA12878_D711_L001_R1_001.fastq.gz";
@@ -270,7 +271,7 @@ public class SamplesMetadataTest
                 .cd(project)
                 .cd(metadataFolder)
                 .metadataSamples(sampleSetFolder, metadata -> {
-                            metadata.validateFields(idField, nameField, samplesField)
+                            metadata.validateFields(idField, createDateField, nameField, samplesField)
                                     .getRow(1)
                                     .clickOnRow()
                                     .assertKeysArePresent(idField, nameField, samplesField);
@@ -283,7 +284,7 @@ public class SamplesMetadataTest
                                     .ensure(samplesForKey(samplesField), numberOfSamples(11));
                             libraryContent()
                                     .metadataSamples(sampleFolder)
-                                    .validateFields("ID", "R1_Fastq", "R2_Fastq", "SampleName");
+                                    .validateFields("ID", createDateField, "R1_Fastq", "R2_Fastq", "SampleName");
                         }
                 );
     }

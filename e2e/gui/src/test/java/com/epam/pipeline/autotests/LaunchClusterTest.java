@@ -85,7 +85,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .switchToAutoscaling()
                         .setScaleDownTimeout("30")
                         .setScaleUpTimeout("30")
-                        .save()
+                        .saveIfNeeded()
         );
     }
 

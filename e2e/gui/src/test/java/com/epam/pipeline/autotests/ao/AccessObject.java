@@ -23,10 +23,13 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -39,6 +42,7 @@ import org.openqa.selenium.*;
 
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.appears;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
@@ -49,6 +53,8 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.Selenide.switchTo;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.utils.Conditions.collapsedTab;
 import static com.epam.pipeline.autotests.utils.Conditions.expandedTab;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
@@ -229,6 +235,11 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE ensureNotVisible(final Primitive... elements) {
         Arrays.stream(elements).forEach(el -> ensure(el, not(visible)));
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE ensureDisable(final Primitive... elements) {
+        Arrays.stream(elements).forEach(el -> ensure(el, disabled));
         return (ELEMENT_TYPE) this;
     }
 
@@ -516,6 +527,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
                 .ensureTitleIs("You have unsaved changes. Continue?")
                 .ok();
         return (ELEMENT_TYPE) this;
+    }
+
+    default void closeTab() {
+        List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
+        getWebDriver().close();
+        switchTo().window(tabs.get(0));
     }
 
     class Entry {

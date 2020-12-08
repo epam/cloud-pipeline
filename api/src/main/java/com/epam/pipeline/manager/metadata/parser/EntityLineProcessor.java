@@ -21,7 +21,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.metadata.MetadataClass;
@@ -116,15 +118,20 @@ public class EntityLineProcessor implements LineProcessor<MetadataParsingResult>
     }
 
     private MetadataEntity getOrCreateEntity(String id) {
-        MetadataEntity entity = currentResults.get(id);
-        if (entity == null) {
-            entity = new MetadataEntity();
-            entity.setExternalId(id);
-            entity.setParent(parent);
-            entity.setClassEntity(metadataClass);
-            entity.setData(new HashMap<>());
-            currentResults.put(id, entity);
-        }
+        MetadataEntity entity = StringUtils.isBlank(id) 
+                ? createEntity(UUID.randomUUID().toString())
+                : Optional.ofNullable(currentResults.get(id)).orElseGet(() -> createEntity(id));
+        currentResults.put(entity.getExternalId(), entity);
+        return entity;
+    }
+
+    private MetadataEntity createEntity(String id) {
+        MetadataEntity entity;
+        entity = new MetadataEntity();
+        entity.setExternalId(id);
+        entity.setParent(parent);
+        entity.setClassEntity(metadataClass);
+        entity.setData(new HashMap<>());
         return entity;
     }
 

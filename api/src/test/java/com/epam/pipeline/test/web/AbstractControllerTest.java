@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -36,6 +37,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -49,10 +51,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebTestConfiguration
 public abstract class AbstractControllerTest {
 
-    protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String SERVLET_PATH = "/restapi";
     protected static final String CERTIFICATE_NAME = "ca.crt";
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+    protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
+    protected static final String MULTIPART_CONTENT_FILE_NAME = "file.txt";
+    protected static final String  MULTIPART_CONTENT_FILE_CONTENT = "content of file.txt";
+    protected static final String MULTIPART_CONTENT_TYPE =
+            "multipart/form-data; boundary=--------------------------boundary";
+    protected static final String MULTIPART_CONTENT =
+            "----------------------------boundary\r\n" +
+            "Content-Disposition: form-data; name=\"file\"; filename=\" " + MULTIPART_CONTENT_FILE_NAME + " \"\r\n" +
+            "Content-Type:  application/octet-stream\r\n" +
+            "\r\n" +
+            MULTIPART_CONTENT_FILE_CONTENT +
+            "\r\n" +
+            "----------------------------boundary";
 
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
@@ -115,6 +129,15 @@ public abstract class AbstractControllerTest {
 
     public void assertContent(final MvcResult mvcResult, final byte[] fileContent) {
         assertThat(mvcResult.getResponse().getContentAsByteArray()).isEqualTo(fileContent);
+    }
+
+    @SneakyThrows
+    public void assertRequestFile(final MultipartFile capturedValue,
+                                      final String expectedFileName,
+                                      final byte[] expectedContentAsBytes) {
+        assertThat(capturedValue.getOriginalFilename()).isEqualTo(expectedFileName);
+        assertThat(capturedValue.getContentType()).isEqualTo(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        assertThat(capturedValue.getBytes()).isEqualTo(expectedContentAsBytes);
     }
 
     @SneakyThrows

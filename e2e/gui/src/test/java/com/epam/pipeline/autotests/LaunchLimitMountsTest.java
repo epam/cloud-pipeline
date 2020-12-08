@@ -15,23 +15,30 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
+import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
+import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
@@ -39,6 +46,7 @@ import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_SELECTION;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -47,12 +55,18 @@ import static com.epam.pipeline.autotests.ao.Primitive.SEARCH_INPUT;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
+import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
+import static com.epam.pipeline.autotests.utils.Privilege.READ;
+import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 
-public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation {
+public class LaunchLimitMountsTest
+        extends AbstractSeveralPipelineRunningTest
+        implements Navigation, Authorization {
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage2 = "launchLimitMountsStorage" + Utils.randomSuffix();
+    private String storage3 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storageSensitive = "launchLimitMountsStorage" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
@@ -64,6 +78,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
     private String message = "Selection contains sensitive storages. This will apply a number of restrictions " +
             "for the job: no Internet access, all the storages will be available in a read-only mode, " +
             "you won't be able to extract the data from the running job and other.";
+    private String warningMessage = "A large number of the object data storages (%s) are going to be mounted for this job";
 
     @BeforeClass(alwaysRun = true)
     public void setPreferences() {
@@ -91,12 +106,21 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 );
     }
 
+    @BeforeMethod
+    public void openPage() {
+        open(C.ROOT_ADDRESS);
+    }
+
     @AfterClass(alwaysRun = true)
     public void removeEntities() {
+        open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
         library()
                 .removeStorage(storage1)
                 .removeStorage(storage2)
-                .removeStorage(storageSensitive);
+                .removeStorage(storageSensitive)
+                .removeStorage(storage3);
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.settings()
@@ -119,8 +143,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .validateFields("", "Name", "Type")
                 .storagesCountShouldBeGreaterThan(2)
                 .clearSelection()
-                .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE)
-                .ensureAll(disabled, OK)
+                .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)
                 .ensureNotVisible(CLEAR_SELECTION)
                 .searchStorage(storage1)
                 .selectStorage(storage1)
@@ -142,7 +165,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .selectStorage(storage1)
                 .ok()
                 .launch(this)
-                .showLog(testRunID = getRunId())
+                .showLog(testRunID = getLastRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage1), exist)
                 .waitForSshLink()
@@ -173,7 +196,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .ok()
                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                 .launch(this)
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .ensureNotVisible(PARAMETERS)
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
@@ -182,7 +205,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .collect(toSet());
 
         runsMenu()
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .logContainsMessage(logMess, " available storage(s). Checking mount options.")
                 .checkAvailableStoragesCount(logMess, 2)
                 .logNotContainsMessage(logMess, "Run is launched with mount limits")
@@ -215,8 +238,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .validateFields("", "Name", "Type")
                 .storagesCountShouldBeGreaterThan(2)
                 .clearSelection()
-                .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE)
-                .ensureAll(disabled, OK)
+                .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)
                 .ensureNotVisible(CLEAR_SELECTION)
                 .click(SELECT_ALL)
                 .ensure(SENSITIVE_STORAGE, text(message))
@@ -225,7 +247,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .clearSelection()
                 .ensureNotVisible(SENSITIVE_STORAGE)
                 .ensureNotVisible(CLEAR_SELECTION)
-                .ensure(OK, disabled)
+                .ensure(OK, enabled)
                 .searchStorage(storageSensitive)
                 .selectStorage(storageSensitive)
                 .ensure(SENSITIVE_STORAGE, text(message))
@@ -255,7 +277,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .ok()
                 .inputSystemParameterValue("CP_S3_FUSE_TYPE", "pipefuse")
                 .launch(this)
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
                 .checkMountLimitsParameter(storageSensitive, storage1)
                 .waitForSshLink()
@@ -273,7 +295,103 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                         .close());
     }
 
+    @Test(priority = 3)
+    @TestCase(value = {"1447"})
+    public void displayingCPCAPLIMITMOUNTSinUserFriendlyManner() {
+        library()
+                .createStorage(storage3);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .selectDataStoragesToLimitMounts()
+                .clearSelection()
+                .searchStorage(storage3)
+                .selectStorage(storage3)
+                .ok()
+                .launch(this)
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), exist)
+                .openStorageFromLimitMountsParameter(storage3)
+                .validateHeader(storage3);
+    }
+
+    @Test(priority = 4)
+    @TestCase(value = {"1480"})
+    public void checkWarningInCaseOfOOMriskDueToStorageMountsNumber() {
+        List<String> addStor = new ArrayList<>();
+        int countObjectStorages = 0;
+        int minRAM = 0;
+        try {
+            logoutIfNeeded();
+            loginAs(user);
+            countObjectStorages = tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .selectDataStoragesToLimitMounts()
+                    .clearSelection()
+                    .selectAll()
+                    .countObjectStorages();
+            minRAM = tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(ADVANCED_PANEL)
+                    .minNodeTypeRAM();
+            addStor = createStoragesIfNeeded(countObjectStorages, minRAM);
+            final String warning = format(warningMessage, countObjectStorages);
+            checkOOMwarningMessage("1", true, warning);
+            checkOOMwarningMessage("100", false, warning);
+        } finally {
+            if(countObjectStorages < minRAM) {
+                logoutIfNeeded();
+                loginAs(admin);
+                addStor.forEach(stor -> library().removeStorage(stor));
+            }
+        }
+    }
+
     private String mountStorageMessage(String storage) {
         return format("%s mounted to /cloud-data/%s", storage.toLowerCase(), storage.toLowerCase());
+    }
+
+    private void checkOOMwarningMessage(String storageMountsPerGBratio, boolean messageIsVisible, String warning) {
+        logout();
+        loginAs(admin);
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .setPreference("storage.mounts.per.gb.ratio", storageMountsPerGBratio, true)
+                .saveIfNeeded();
+        logout();
+        loginAs(user);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .checkWarningMessage(warning, messageIsVisible)
+                .checkLaunchWarningMessage(warning, messageIsVisible);
+    }
+
+    private List<String> createStoragesIfNeeded(int objStor, int min) {
+        if (objStor >= min) {
+            return new ArrayList<>();
+        }
+        logout();
+        loginAs(admin);
+        return IntStream.range(0, min - objStor)
+                .mapToObj(i -> {
+                    String storage = "launchLimitMountsStorage" + Utils.randomSuffix();
+                    library()
+                            .createStorage(storage)
+                            .selectStorage(storage)
+                            .clickEditStorageButton()
+                            .clickOnPermissionsTab()
+                            .addNewUser(user.login)
+                            .closeAll();
+                    givePermissions(user,
+                            BucketPermission.allow(READ, storage),
+                            BucketPermission.allow(WRITE, storage),
+                            BucketPermission.allow(EXECUTE, storage)
+                    );
+                    return storage;
+                }).collect(Collectors.toList());
     }
 }

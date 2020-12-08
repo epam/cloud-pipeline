@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class DockerCreatorUtils {
@@ -119,28 +118,7 @@ public final class DockerCreatorUtils {
     }
 
     public static Tool getTool() {
-        final Tool tool = new Tool();
-        tool.setId(ID);
-        tool.setImage(TEST_STRING);
-        tool.setCpu(TEST_STRING);
-        tool.setRam(TEST_STRING);
-        tool.setInstanceType(TEST_STRING);
-        tool.setDisk(TEST_INT);
-        return tool;
-    }
-
-    public static Tool getTool(final String owner) {
-        final Tool tool = new Tool();
-        tool.setId(ID);
-        tool.setOwner(owner);
-        tool.setImage(TEST_STRING);
-        tool.setCpu(TEST_STRING);
-        tool.setRam(TEST_STRING);
-        tool.setInstanceType(TEST_STRING);
-        tool.setDisk(TEST_INT);
-        tool.setToolGroupId(ID);
-        tool.setRegistry(TEST_STRING);
-        return tool;
+        return getTool(null, null);
     }
 
     public static ToolSymlinkRequest getToolSymlinkRequest() {
@@ -151,25 +129,31 @@ public final class DockerCreatorUtils {
         return new ToolGroup();
     }
 
-    public static ToolGroup getToolGroup(final String owner) {
-        final ToolGroup toolGroup = new ToolGroup();
-        toolGroup.setId(ID);
-        toolGroup.setRegistryId(ID);
-        toolGroup.setOwner(owner);
-        return toolGroup;
-    }
-
     public static ToolGroupWithIssues getToolGroupWithIssues() {
         return new ToolGroupWithIssues();
     }
 
     public static DockerRegistry getDockerRegistry() {
+        return getDockerRegistry(ID, TEST_STRING);
+    }
+
+    public static DockerRegistry getDockerRegistry(String owner) {
+        return getDockerRegistry(ID, owner);
+    }
+
+    public static DockerRegistry getDockerRegistry(final Long id, final String owner) {
         final DockerRegistry dockerRegistry = new DockerRegistry();
+        dockerRegistry.setOwner(owner);
+        dockerRegistry.setCaCert(TEST_STRING);
+        dockerRegistry.setId(id);
+        dockerRegistry.setDescription(TEST_STRING);
+        dockerRegistry.setExternalUrl(TEST_STRING);
+        dockerRegistry.setHasMetadata(true);
+        dockerRegistry.setPassword(TEST_STRING);
         dockerRegistry.setPath(TEST_STRING);
         dockerRegistry.setDescription(TEST_STRING);
         dockerRegistry.setSecretName(TEST_STRING);
         dockerRegistry.setUserName(TEST_STRING);
-        dockerRegistry.setPassword(TEST_STRING);
         dockerRegistry.setCaCert(TEST_STRING);
         return dockerRegistry;
     }
@@ -189,7 +173,12 @@ public final class DockerCreatorUtils {
     }
 
     public static DockerRegistryList getDockerRegistryList() {
-        return new DockerRegistryList(Collections.singletonList(getDockerRegistry()));
+        final List<DockerRegistry> dockerRegistries = Collections.singletonList(getDockerRegistry());
+        return new DockerRegistryList(dockerRegistries);
+    }
+
+    public static DockerRegistryList getDockerRegistryList(final DockerRegistry dockerRegistry) {
+        return new DockerRegistryList(Collections.singletonList(dockerRegistry));
     }
 
     public static DockerRegistryEventEnvelope getDockerRegistryEventEnvelope() {
@@ -204,5 +193,40 @@ public final class DockerCreatorUtils {
         toolScanResult.setToolId(ID);
         toolScanResult.setToolVersionScanResults(map);
         return toolScanResult;
+    }
+
+    public static Tool getTool(final String owner) {
+        return getTool(ID, owner);
+    }
+
+    public static ToolGroup getToolGroup(final Long id, final String owner) {
+        final ToolGroup toolGroup = new ToolGroup();
+        toolGroup.setId(id);
+        toolGroup.setRegistryId(id);
+        toolGroup.setOwner(owner);
+        return toolGroup;
+    }
+
+    public static ToolGroup getToolGroup(final String owner) {
+        return getToolGroup(ID, owner);
+    }
+
+    public static Tool getTool(final Long id, final String owner) {
+        final Tool tool = new Tool();
+        tool.setOwner(owner);
+        tool.setId(id);
+        tool.setCpu(TEST_STRING);
+        tool.setDefaultCommand(TEST_STRING);
+        tool.setImage(TEST_STRING);
+        tool.setToolGroupId(id);
+        tool.setRegistry(TEST_STRING);
+        return tool;
+    }
+
+    public static ToolGroupWithIssues getToolGroupWithIssues(final Long id, final String owner) {
+        final ToolGroupWithIssues toolGroupWithIssues = new ToolGroupWithIssues();
+        toolGroupWithIssues.setId(id);
+        toolGroupWithIssues.setOwner(owner);
+        return toolGroupWithIssues;
     }
 }

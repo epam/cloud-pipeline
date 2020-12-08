@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +43,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -94,6 +97,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void createMetadataEntity(MetadataEntity metadataEntity) {
         metadataEntity.setId(daoHelper.createId(metadataEntitySequence));
+        metadataEntity.setCreatedDate(DateUtils.now());
         getNamedParameterJdbcTemplate().update(createMetadataEntityQuery,
                 MetadataEntityParameters.getParameters(metadataEntity));
     }
@@ -101,14 +105,16 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     @SuppressWarnings("unchecked")
     public Collection<MetadataEntity> batchInsert(List<MetadataEntity> entitiesToCreate) {
+        final Date now = DateUtils.now();
         for (int i = 0; i < entitiesToCreate.size(); i += BATCH_SIZE) {
             final List<MetadataEntity> batchList = entitiesToCreate.subList(i,
-                    i + BATCH_SIZE > entitiesToCreate.size() ? entitiesToCreate.size() : i + BATCH_SIZE);
+                    Math.min(i + BATCH_SIZE, entitiesToCreate.size()));
             List<Long> ids = daoHelper.createIds(metadataEntitySequence, batchList.size());
             Map<String, Object>[] batchValues = new Map[batchList.size()];
             for (int j = 0; j < batchList.size(); j++) {
                 MetadataEntity entity = batchList.get(j);
                 entity.setId(ids.get(j));
+                entity.setCreatedDate(now);
                 batchValues[j] = MetadataEntityParameters.getParameters(entity).getValues();
             }
             getNamedParameterJdbcTemplate().batchUpdate(this.createMetadataEntityQuery, batchValues);
@@ -127,7 +133,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     public Collection<MetadataEntity> batchUpdate(List<MetadataEntity> entitiesToUpdate) {
         for (int i = 0; i < entitiesToUpdate.size(); i += BATCH_SIZE) {
             final List<MetadataEntity> batchList = entitiesToUpdate.subList(i,
-                    i + BATCH_SIZE > entitiesToUpdate.size() ? entitiesToUpdate.size() : i + BATCH_SIZE);
+                    Math.min(i + BATCH_SIZE, entitiesToUpdate.size()));
             Map<String, Object>[] batchValues = new Map[batchList.size()];
             for (int j = 0; j < batchList.size(); j++) {
                 MetadataEntity entity = batchList.get(j);
@@ -264,6 +270,11 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 MetadataEntityParameters.getRowMapper(), folderId, className));
     }
 
+    public Optional<MetadataEntity> loadByExternalId(Long folderId, String className, String externalId) {
+        return loadExisting(folderId, className, new HashSet<>(Collections.singletonList(externalId))).stream()
+                .findAny();
+    }
+
     public List<MetadataEntity> loadAllReferences(List<Long> entitiesIds, Long parentId) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(MetadataEntityParameters.PARENT_ID.name(), parentId);
@@ -377,6 +388,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         EXTERNAL_ID,
         CLASS_NAME,
         DATA,
+        CREATED_DATE,
         EXTERNAL_IDS,
         KEY,
         TYPE,
@@ -390,6 +402,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             fieldNames.put("ID", new MetadataField("id", "e.entity_id", true));
             fieldNames.put("NAME", new MetadataField("name", "e.entity_name", true));
             fieldNames.put("EXTERNALID", new MetadataField("externalId", "e.external_id", true));
+            fieldNames.put("CREATEDDATE", new MetadataField("createdDate", "e.created_date", true));
             fieldNames.put("PARENT.ID", new MetadataField("parent.id", "e.parent_id", true));
             fieldNames.put("CLASSENTITY.ID", new MetadataField("classEntity.id", "c.class_id", true));
             fieldNames.put("CLASSENTITY.NAME", new MetadataField("classEntity.name", "c.class_name", true));
@@ -414,6 +427,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             params.addValue(ENTITY_NAME.name(), metadataEntity.getName());
             params.addValue(EXTERNAL_ID.name(), metadataEntity.getExternalId());
             params.addValue(DATA.name(), convertDataToJsonStringForQuery(metadataEntity.getData()));
+            params.addValue(CREATED_DATE.name(), metadataEntity.getCreatedDate());
             return params;
         }
 
@@ -482,6 +496,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             entity.setName(rs.getString(ENTITY_NAME.name()));
             entity.setExternalId(rs.getString(EXTERNAL_ID.name()));
             entity.setData(MetadataDao.MetadataParameters.parseData(rs.getString(DATA.name())));
+            entity.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
             return entity;
         }
 

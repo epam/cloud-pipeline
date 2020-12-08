@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,7 +40,6 @@ import org.springframework.util.MultiValueMap;
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_TYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -183,7 +183,7 @@ public class DataStorageControllerTest extends AbstractDataStorageControllerTest
         final MvcResult mvcResult = performRequest(get(String.format(SHARED_LINK_URL, ID)));
 
         Mockito.verify(mockStorageApiService).getDataStorageSharedLink(ID);
-        assertResponse(mvcResult, TEST, STRING_TYPE);
+        assertResponse(mvcResult, TEST, CommonCreatorConstants.STRING_INSTANCE_TYPE);
     }
 
     @Test

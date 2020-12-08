@@ -100,6 +100,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.entity.configuration.RunConfigurationUtils.getNodeCount;
 
@@ -117,6 +118,7 @@ public class PipelineRunManager {
     private static final int USER_PRICE_SCALE = 2;
     private static final int BILLING_PRICE_SCALE = 5;
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
+    private static final String LIMIT_MOUNTS_NONE = "none";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -800,10 +802,15 @@ public class PipelineRunManager {
         List<Long> datastorageIds = MapUtils.emptyIfNull(parameters).entrySet().stream()
                 .filter(v -> v.getKey().equals(CP_CAP_LIMIT_MOUNTS))
                 .map(Map.Entry::getValue)
-                .flatMap(pipeConfValueVO -> Arrays.stream(
-                        StringUtils.commaDelimitedListToStringArray(pipeConfValueVO.getValue()))
+                .flatMap(pipeConfValueVO -> {
+                            String limitMounts = pipeConfValueVO.getValue();
+                            if (LIMIT_MOUNTS_NONE.equalsIgnoreCase(limitMounts)) {
+                                return Stream.empty();
+                            }
+                            return Arrays.stream(StringUtils.commaDelimitedListToStringArray(limitMounts))
+                                         .map(Long::valueOf);
+                        }
                 )
-                .map(Long::valueOf)
                 .collect(Collectors.toList());
         if (datastorageIds.isEmpty()) {
             return false;

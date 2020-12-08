@@ -26,7 +26,9 @@ import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
-import MetadataEntityDeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
+import MetadataEntityDeleteFromProject
+  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityFields from '../../../models/folderMetadata/MetadataEntityFields';
 import UploadButton from '../../special/UploadButton';
 import AddInstanceForm from './forms/AddInstanceForm';
@@ -46,6 +48,7 @@ import Breadcrumbs from '../../special/Breadcrumbs';
     folder: componentParameters.id ? folders.load(componentParameters.id) : pipelinesLibrary,
     folderId: componentParameters.id,
     entityFields: new MetadataEntityFields(componentParameters.id),
+    metadataClasses: new MetadataClassLoadAll(),
     onReloadTree: params.onReloadTree
   };
 })
@@ -85,8 +88,20 @@ export default class MetadataFolder extends React.Component {
 
   @computed
   get entityTypes () {
-    if (this.props.entityFields.loaded) {
-      return (this.props.entityFields.value || []).map(e => e);
+    if (this.props.entityFields.loaded && this.props.metadataClasses.loaded) {
+      const entityFields = (this.props.entityFields.value || [])
+        .map(e => e);
+      const ignoreClasses = new Set(entityFields.map(f => f.metadataClass.id));
+      const otherClasses = (this.props.metadataClasses.value || [])
+        .filter(({id}) => !ignoreClasses.has(id))
+        .map(metadataClass => ({
+          fields: [],
+          metadataClass: {...metadataClass, outOfProject: true}
+        }));
+      return [
+        ...entityFields,
+        ...otherClasses
+      ];
     }
     return [];
   }
@@ -131,6 +146,7 @@ export default class MetadataFolder extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       } else {
+        await this.props.entityFields.fetch();
         await this.props.folder.fetch();
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this.props.folder.value.parentId);
@@ -255,6 +271,7 @@ export default class MetadataFolder extends React.Component {
       actions.push(
         roleModel.manager.entities(
           <Button
+            disabled={this.entityTypes.length === 0}
             size="small"
             onClick={this.openAddInstanceForm}
             key="add-metadata">
@@ -268,8 +285,9 @@ export default class MetadataFolder extends React.Component {
           <UploadButton
             key="upload-metadata"
             multiple={false}
-            synchronous={true}
+            synchronous
             onRefresh={async () => {
+              await this.props.entityFields.fetch();
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);

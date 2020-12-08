@@ -18,7 +18,7 @@ package com.epam.pipeline.controller.dts;
 
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.entity.dts.DtsRegistry;
-import com.epam.pipeline.manager.dts.DtsRegistryApiService;
+import com.epam.pipeline.acl.dts.DtsRegistryApiService;
 import com.epam.pipeline.test.creator.dts.DtsCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;

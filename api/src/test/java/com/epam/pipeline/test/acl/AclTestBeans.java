@@ -41,6 +41,8 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
@@ -58,6 +60,7 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.dts.DtsListingManager;
 import com.epam.pipeline.manager.dts.DtsRegistryManager;
 import com.epam.pipeline.manager.dts.DtsSubmissionManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
@@ -70,6 +73,8 @@ import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
+import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
+import com.epam.pipeline.manager.metadata.MetadataDownloadManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.MetadataUploadManager;
@@ -436,7 +441,22 @@ public class AclTestBeans {
     protected TemporaryCredentialsManager mockTemporaryCredentialsManager;
 
     @MockBean
+    protected NodeScheduleManager nodeScheduleManager;
+
+    @MockBean
+    protected NodePoolManager nodePoolManager;
+
+    @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @MockBean
+    protected DtsListingManager mockDtsListingManager;
+
+    @MockBean
+    protected CategoricalAttributeManager mockCategoricalAttributeManager;
+
+    @MockBean
+    protected MetadataDownloadManager mockMetadataDownloadManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

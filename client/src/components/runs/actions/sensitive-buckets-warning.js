@@ -29,7 +29,7 @@ function getSensitiveBuckets (parameters, dataStoragesStore) {
     return [];
   }
   const {value} = parameters[CP_CAP_LIMIT_MOUNTS];
-  if (!value) {
+  if (!value || /^none$/i.test(value)) {
     return [];
   }
   const ids = (value || '').split(',').map(id => +id);

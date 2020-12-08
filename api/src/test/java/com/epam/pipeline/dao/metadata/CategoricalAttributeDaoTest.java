@@ -19,13 +19,13 @@ package com.epam.pipeline.dao.metadata;
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertValuesPresentedForKeyInMap;
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.convertToMap;
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,8 +37,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class CategoricalAttributeDaoTest extends AbstractSpringTest {
@@ -112,19 +110,17 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testLoadAllValuesForKeys() {
+        final List<CategoricalAttributeValue> key1Values = fromStrings(ATTRIBUTE_KEY_1,
+                Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2));
         final List<CategoricalAttribute> values = Arrays.asList(
-            new CategoricalAttribute(ATTRIBUTE_KEY_1, fromStrings(ATTRIBUTE_KEY_1,
-                                                                  Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2))),
+            new CategoricalAttribute(ATTRIBUTE_KEY_1, key1Values),
             new CategoricalAttribute(ATTRIBUTE_KEY_2, fromStrings(ATTRIBUTE_KEY_2,
                                                                   Collections.singletonList(ATTRIBUTE_VALUE_3))));
         categoricalAttributeDao.insertAttributesValues(values);
         final CategoricalAttribute attributeWithValues = categoricalAttributeDao.loadAllValuesForKey(ATTRIBUTE_KEY_1);
         Assert.assertNotNull(attributeWithValues);
         Assert.assertEquals(ATTRIBUTE_KEY_1, attributeWithValues.getKey());
-        final List<CategoricalAttributeValue> attributeValues = Stream.of(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2)
-            .map(v -> new CategoricalAttributeValue(attributeWithValues.getKey(), v))
-            .collect(Collectors.toList());
-        Assert.assertThat(attributeWithValues.getValues(), CoreMatchers.is(attributeValues));
+        Assert.assertThat(attributeWithValues.getValues(), containsInAnyOrder(key1Values.toArray()));
     }
 
     @Test

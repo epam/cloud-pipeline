@@ -273,12 +273,29 @@ class WebdavFileSystem extends FileSystem {
         };
         createDirectorySafe()
           .then(() => {
+            log(`Copying ${size} bytes to ${destinationPath}...`);
             this.watchCopyProgress(stream, callback, size);
-            const writeStream = stream.pipe(this.webdavClient.createWriteStream(destinationPath));
-            writeStream.on('finish', resolve);
-            writeStream.on('error', ({message}) => reject(message));
+            const writeStream = stream.pipe(
+              this.webdavClient.createWriteStream(
+                destinationPath,
+                {
+                  maxContentLength: Infinity
+                }
+              )
+            );
+            writeStream.on('finish', (e) => {
+              log(`Copying ${size} bytes to ${destinationPath}: done`);
+              setTimeout(resolve, 500, e);
+            });
+            writeStream.on('error', ({message}) => {
+              error(message);
+              reject(message);
+            });
           })
-          .catch(({message}) => reject(message));
+          .catch(({message}) => {
+            error(message);
+            reject(message);
+          });
       }
     });
   }
@@ -287,10 +304,17 @@ class WebdavFileSystem extends FileSystem {
       if (!this.webdavClient) {
         reject(`${this.appName || 'Cloud Data'} client was not initialized`);
       }
+      log(`Removing ${path}...`);
       this.isDirectory(path)
         .then((isDirectory) => this.webdavClient.deleteFile(isDirectory ? path.concat('/') : path))
-        .then(resolve)
-        .catch(({message}) => reject(message));
+        .then(e => {
+          log(`Removing ${path}: done`);
+          resolve(e);
+        })
+        .catch(({message}) => {
+          error(`Removing ${path} error: ${message}`);
+          reject(message);
+        });
     });
   }
   createDirectory(name) {
@@ -298,9 +322,16 @@ class WebdavFileSystem extends FileSystem {
       if (!this.webdavClient) {
         reject(`${this.appName || 'Cloud Data'} client was not initialized`);
       }
+      log(`Creating directory ${name}...`);
       this.webdavClient.createDirectory(name)
-        .then(() => resolve())
-        .catch(e => reject(e.message));
+        .then(() => {
+          log(`Creating directory ${name}: done`);
+          resolve();
+        })
+        .catch(e => {
+          error(`Creating directory ${name} error: ${e.message || e}`);
+          reject(e.message);
+        });
     });
   }
 }

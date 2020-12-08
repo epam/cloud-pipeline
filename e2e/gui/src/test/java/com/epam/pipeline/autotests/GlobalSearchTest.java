@@ -346,7 +346,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickEditStorageButton()
                 .setAlias(storageAlias)
                 .ok();
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
         search()
                 .search(storageAlias)
                 .enter()

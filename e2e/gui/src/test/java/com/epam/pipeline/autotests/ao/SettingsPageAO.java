@@ -44,6 +44,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO> {
@@ -949,7 +950,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster"))),
                 entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System"))),
                 entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security"))),
-                entry(AUTOSCALING_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Grid engine autoscaling")))
+                entry(AUTOSCALING_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Grid engine autoscaling"))),
+                entry(SEARCH,  context().find(byClassName("ant-input-search")).find(tagName("input"))),
+                entry(SAVE, $(byId("edit-preference-form-ok-button")))
         );
 
         PreferencesAO(final PipelinesLibraryAO pipelinesLibraryAO) {
@@ -976,8 +979,63 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return new DockerSecurityAO(parentAO);
         }
 
+        public PreferencesAO searchPreference(String preference) {
+            setValue(SEARCH, preference);
+            enter();
+            return this;
+        }
+
+        public PreferencesAO setPreference(String preference, String value, boolean eyeIsChecked) {
+            searchPreference(preference);
+            final By pref = getByField(preference);
+            click(pref)
+                    .clear(pref)
+                    .setValue(pref, value);
+            final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
+                    .find(byClassName("anticon"));
+            if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
+                    (eye.has(cssClass("anticon-eye")) && !eyeIsChecked)) {
+                eye.click();
+            }
+            return this;
+        }
+
+        private By getByField(final String variable) {
+            return new By() {
+                @Override
+                public List<WebElement> findElements(final SearchContext context) {
+                    return $$(byClassName("preference-group__preference-row"))
+                            .stream()
+                            .filter(element -> exactText(variable).apply(element))
+                            .map(e -> e.find(".ant-input-sm"))
+                            .collect(toList());
+                }
+            };
+        }
+
+        public PreferencesAO setSystemSshDefaultRootUserEnabled() {
+            setValue(SEARCH, "system.ssh.default.root.user.enabled").enter();
+            SelenideElement checkBox = context().shouldBe(visible)
+                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
+            if (!checkBox.has(cssClass("ant-checkbox-checked"))) {
+                checkBox.click();
+            }
+            if (context().find(byClassName("anticon-eye-o")).isDisplayed()) {
+                context().find(byClassName("anticon-eye-o")).click();
+            }
+            return this;
+        }
+
         public PreferencesAO save() {
-            $(byId("edit-preference-form-ok-button")).shouldBe(visible).click();
+            click(SAVE);
+            get(SAVE).shouldBe(disabled);
+            return this;
+        }
+
+        public PreferencesAO saveIfNeeded() {
+            if(get(SAVE).isEnabled()) {
+                save();
+            }
             return this;
         }
 
@@ -1126,14 +1184,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public DockerSecurityAO enablePolicyDenyNotScanned() {
-                if ($(policyDenyNotScanned).has(text("Disabled"))) {
+                if (!$(policyDenyNotScanned).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"))) {
                     clickPolicyDenyNotScanned();
                 }
                 return this;
             }
 
             public DockerSecurityAO disablePolicyDenyNotScanned() {
-                if ($(policyDenyNotScanned).has(text("Enable"))) {
+                if ($(policyDenyNotScanned).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"))) {
                     clickPolicyDenyNotScanned();
                 }
                 return this;

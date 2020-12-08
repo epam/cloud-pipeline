@@ -1,0 +1,147 @@
+/*
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  margin: 10px 0;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  -webkit-box-shadow: 0 0 2px 2px #eee;
+  box-shadow: 0 0 2px 2px #eee;
+  font-size: 12pt;
+  line-height: 24px;
+  color: #666;
+  cursor: pointer;
+  transition: box-shadow 250ms ease-in-out, border-color 250ms ease-in-out;
+}
+
+.container:hover {
+  box-shadow: 0 0 2px 2px #ddd;
+  border-color: #aaa;
+}
+
+.header-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.header-container .info-block {
+  height: 55px;
+  width: 55px;
+  margin-right: 5px;
+  padding: 10px;
+  font-size: 9pt;
+  position: relative;
+  color: #999;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-weight: bold;
+  line-height: 8pt;
+  word-break: break-word;
+}
+
+.header-container .info-block.has-runs {
+  color: rgb(61, 122, 20);
+}
+
+.header-container .info-block .progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  width: 50px;
+  height: 50px;
+}
+
+.header-container .info-block i {
+  font-size: large;
+}
+
+.header-container .name-block {
+  flex: 1;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header .title .main {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.header .title .sub {
+  font-weight: bold;
+  font-size: smaller;
+}
+
+.schedule-row {
+  line-height: 16px;
+}
+
+.schedule {
+  font-size: 9pt;
+  color: #777;
+}
+
+.header .actions > * {
+  margin-left: 5px;
+}
+
+.header .actions > * {
+  line-height: 1;
+}
+
+.instance {
+  font-size: 10pt;
+}
+
+.instance > * {
+  margin-left: 5px;
+}
+
+.instance > *:first-child {
+  margin-left: 0;
+}
+
+.instance .count,
+.instance .type,
+.instance .price-type,
+.instance .disk {
+  font-size: 8pt;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.images {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 5px 0;
+}
+
+.image {
+  margin-right: 10px;
+  font-size: 10pt;
+}
