@@ -18,6 +18,7 @@ import logging
 import json
 import math
 from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents
+import jwt
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
@@ -248,7 +249,20 @@ def replace_swap(swap_size, init_script):
     return init_script
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
+def replace_docker_images(pre_pull_images, user_data_script):
+    global api_token
+    payload = jwt.decode(api_token, verify=False)
+    if 'sub' in payload:
+        subject = payload['sub']
+        user_data_script = user_data_script \
+            .replace("@PRE_PULL_DOCKERS@", ",".join(pre_pull_images)) \
+            .replace("@API_USER@", subject)
+        return user_data_script
+    else:
+        raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
+
+
+def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size, pre_pull_images=None):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -258,6 +272,8 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
+        if pre_pull_images:
+            user_data_script = replace_docker_images(pre_pull_images, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string)\
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string)\
                                             .replace('@KUBE_IP@', kube_ip)\
