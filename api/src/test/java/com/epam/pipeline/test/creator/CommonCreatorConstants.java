@@ -53,6 +53,7 @@ public final class CommonCreatorConstants {
     public static final byte[] TEST_ARRAY = {1, 1, 1};
     public static final Map<String, String> TEST_STRING_MAP = Collections.singletonMap(TEST_STRING, TEST_STRING);
     public static final Set<String> TEST_STRING_SET = Collections.singleton(TEST_STRING);
+    public static final List<Long> TEST_LONG_LIST = Collections.singletonList(ID);
     public static final Set<Long> TEST_LONG_SET = Collections.singleton(ID);
 
     private CommonCreatorConstants() {

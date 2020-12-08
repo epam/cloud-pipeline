@@ -16,9 +16,17 @@
 
 package com.epam.pipeline.test.creator.user;
 
+import com.epam.pipeline.controller.vo.PipelineUserExportVO;
+import com.epam.pipeline.controller.vo.user.RoleVO;
+import com.epam.pipeline.entity.info.UserInfo;
+import com.epam.pipeline.entity.user.CustomControl;
+import com.epam.pipeline.entity.user.ExtendedRole;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class UserCreatorUtils {
 
@@ -26,10 +34,42 @@ public final class UserCreatorUtils {
 
     }
 
+    public static PipelineUser getPipelineUser() {
+        return new PipelineUser();
+    }
+
     public static PipelineUser getPipelineUser(final String name) {
         final PipelineUser pipelineUser = new PipelineUser();
         pipelineUser.setId(ID);
         pipelineUser.setUserName(name);
         return pipelineUser;
+    }
+
+    public static GroupStatus getGroupStatus() {
+        return new GroupStatus(TEST_STRING, true);
+    }
+
+    public static UserInfo getUserInfo(final PipelineUser pipelineUser) {
+        return new UserInfo(pipelineUser);
+    }
+
+    public static CustomControl getCustomControl() {
+        return new CustomControl();
+    }
+
+    public static PipelineUserExportVO getPipelineUserExportVO() {
+        return new PipelineUserExportVO();
+    }
+
+    public static Role getRole() {
+        return new Role();
+    }
+
+    public static RoleVO getRoleVO() {
+        return new RoleVO();
+    }
+
+    public static ExtendedRole getExtendedRole() {
+        return new ExtendedRole();
     }
 }

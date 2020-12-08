@@ -64,6 +64,7 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.security.acl.AclPermissionFactory;
@@ -228,6 +229,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @MockBean
+    protected RoleManager mockRoleManager;
 
     @MockBean
     protected DtsOperationsApiService mockDtsOperationsApiService;
