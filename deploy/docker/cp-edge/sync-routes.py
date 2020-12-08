@@ -22,6 +22,8 @@ import urllib3
 from time import sleep
 import datetime
 import time
+from multiprocessing.pool import ThreadPool as Pool
+
 
 try:
         from pykube.config import KubeConfig
@@ -86,6 +88,9 @@ edge_service_external_schema=os.environ.get('EDGE_EXTERNAL_SCHEMA', 'https')
 
 api_headers = {'Content-Type': 'application/json',
                'Authorization': 'Bearer {}'.format(api_token)}
+
+pool_size = 8
+dns_services_pool = Pool(pool_size)
 
 class ServiceEndpoint:
         def __init__(self, num, port, path, additional):
@@ -477,29 +482,6 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                 print('Unable to get details of a RunID {} from API due to errors'.format(pod_run_id))
         return service_list
 
-kube_api = HTTPClient(KubeConfig.from_service_account())
-kube_api.session.verify = False
-
-edge_kube_service = Service.objects(kube_api).filter(selector={EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE})
-if len(edge_kube_service.response['items']) == 0:
-        print('EDGE service is not found by label: cloud-pipeline/role=EDGE')
-        exit(1)
-else:
-        edge_kube_service_object = edge_kube_service.response['items'][0]
-        edge_kube_service_object_metadata = edge_kube_service_object['metadata']
-
-        if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_HOST_LABEL in edge_kube_service_object_metadata['labels']:
-                edge_service_external_ip = edge_kube_service_object_metadata['labels'][EDGE_SVC_HOST_LABEL]
-
-        if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_PORT_LABEL in edge_kube_service_object_metadata['labels']:
-                edge_service_port = edge_kube_service_object_metadata['labels'][EDGE_SVC_PORT_LABEL]
-
-        if not edge_service_external_ip:
-                edge_service_external_ip = edge_kube_service_object['spec']['externalIPs'][0]
-        if not edge_service_port:
-                edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
-        print('EDGE service port: ' + str(edge_service_port))
-        print('EDGE service ip: ' + edge_service_external_ip)
 
 # From each pod with a container, which has endpoints ("job-type=Service" or container's environment
 # has a parameter from SYSTEM_ENDPOINTS) we shall take:
@@ -532,6 +514,139 @@ def load_pods_for_runs_with_endpoints():
                         if len(matched_sys_endpoints) > 0:
                                 pods_with_endpoints.append(pod)
         return pods_with_endpoints
+
+
+def sort_routes_by_dns_creation(service_path_1, service_path_2):
+        service_1 = services_list[service_path_1] if service_path_1 in services_list else None
+        service_2 = services_list[service_path_2] if service_path_2 in services_list else None
+        need_to_create_dns_record_1 = service_1["create_dns_record"] if service_1["create_dns_record"] and not service_1["custom_domain"] else False
+        need_to_create_dns_record_2 = service_2["create_dns_record"] if service_2["create_dns_record"] and not service_2["custom_domain"] else False
+
+        if need_to_create_dns_record_1 and not need_to_create_dns_record_2:
+                return 1
+        elif need_to_create_dns_record_2 and not need_to_create_dns_record_1:
+                return -1
+        else:
+                return 0
+
+
+def create_dns_record(service_spec):
+        if hosted_zone_base_value is not None:
+                dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
+                dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
+                                                 + "?regionId={regionId}&delete={delete}"
+                                                 .format(regionId=service_spec["cloudRegionId"], delete=False))
+                data = json.dumps({
+                        'dnsRecord': dns_custom_domain,
+                        'target': "{external_ip}".format(external_ip=edge_service_external_ip)
+                })
+                dns_record_create_response = call_api(dns_record_create, data)
+                if dns_record_create_response and "payload" in dns_record_create_response and "status" in \
+                        dns_record_create_response["payload"] \
+                        and dns_record_create_response["payload"]["status"] == "INSYNC":
+                        service_spec["custom_domain"] = dns_custom_domain
+                        service_spec["edge_location"] = None
+                else:
+                        log_task_event("CreateDNSRecord",
+                                       "Fail to create DNS record for the run",
+                                       service_spec["run_id"],
+                                       service_spec["pod_id"],
+                                       "FAILURE")
+                        update_run_status(service_spec["run_id"], "FAILURE")
+                        raise ValueError("Couldn't create DNS record")
+        else:
+                log_task_event("CreateDNSRecord",
+                               "No hosted zone is configured for currect environment, will not create any DNS records",
+                               service_spec["run_id"],
+                               service_spec["pod_id"],
+                               "FAILURE")
+                update_run_status(service_spec["run_id"], "FAILURE")
+                raise ValueError("Hosted DNS zone is not configured or couldn't be retrieved")
+
+
+def create_dns_service_location(service_spec):
+        create_dns_record(service_spec)
+        create_service_location(service_spec)
+
+def create_service_location(service_spec):
+        has_custom_domain = service_spec["custom_domain"] is not None
+        service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip
+        service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
+        nginx_route_definition = nginx_loc_module_template_contents \
+                .replace('{edge_route_location}', service_location) \
+                .replace('{edge_route_target}', service_spec["edge_target"]) \
+                .replace('{edge_route_owner}', service_spec["pod_owner"]) \
+                .replace('{run_id}', service_spec["run_id"]) \
+                .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
+                .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
+                .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
+                .replace('{additional}', service_spec["additional"])
+        nginx_sensitive_route_definitions = []
+        if service_spec["sensitive"]:
+                for sensitive_route in sensitive_routes:
+                        # proxy_pass cannot have trailing slash for regexp locations
+                        edge_target = service_spec["edge_target"]
+                        if edge_target.endswith("/"):
+                                edge_target = edge_target[:-1]
+                        nginx_sensitive_route_definition = nginx_sensitive_loc_module_template_contents \
+                                .replace('{edge_route_location}', service_location + sensitive_route['route']) \
+                                .replace('{edge_route_sensitive_methods}', '|'.join(sensitive_route['methods'])) \
+                                .replace('{edge_route_target}', edge_target) \
+                                .replace('{edge_route_owner}', service_spec["pod_owner"]) \
+                                .replace('{run_id}', service_spec["run_id"]) \
+                                .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
+                                .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
+                                .replace('{additional}', service_spec["additional"])
+                        nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
+        path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
+        if service_spec["sensitive"]:
+                print('Adding new sensitive route: ' + path_to_route)
+        else:
+                print('Adding new route: ' + path_to_route)
+        with open(path_to_route, "w") as added_route_file:
+                added_route_file.write(nginx_route_definition)
+                if nginx_sensitive_route_definitions:
+                        for nginx_sensitive_route_definition in nginx_sensitive_route_definitions:
+                                added_route_file.write(nginx_sensitive_route_definition)
+        if has_custom_domain:
+                print('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
+                add_custom_domain(service_hostname, path_to_route)
+        service_url = SVC_URL_TMPL.format(external_ip=service_hostname,
+                                          edge_location=service_spec["edge_location"] if service_spec[
+                                                  "edge_location"] else "",
+                                          edge_port=str(edge_service_port),
+                                          service_name=service_spec["service_name"],
+                                          is_default_endpoint=service_spec["is_default_endpoint"],
+                                          external_schema=edge_service_external_schema)
+        run_id = service_spec["run_id"]
+        if run_id in service_url_dict:
+                service_url = service_url_dict[run_id] + ',' + service_url
+        service_url_dict[run_id] = service_url
+
+
+kube_api = HTTPClient(KubeConfig.from_service_account())
+kube_api.session.verify = False
+
+edge_kube_service = Service.objects(kube_api).filter(selector={EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE})
+if len(edge_kube_service.response['items']) == 0:
+        print('EDGE service is not found by label: cloud-pipeline/role=EDGE')
+        exit(1)
+else:
+        edge_kube_service_object = edge_kube_service.response['items'][0]
+        edge_kube_service_object_metadata = edge_kube_service_object['metadata']
+
+        if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_HOST_LABEL in edge_kube_service_object_metadata['labels']:
+                edge_service_external_ip = edge_kube_service_object_metadata['labels'][EDGE_SVC_HOST_LABEL]
+
+        if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_PORT_LABEL in edge_kube_service_object_metadata['labels']:
+                edge_service_port = edge_kube_service_object_metadata['labels'][EDGE_SVC_PORT_LABEL]
+
+        if not edge_service_external_ip:
+                edge_service_external_ip = edge_kube_service_object['spec']['externalIPs'][0]
+        if not edge_service_port:
+                edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
+        print('EDGE service port: ' + str(edge_service_port))
+        print('EDGE service ip: ' + edge_service_external_ip)
 
 
 hosted_zone_base_value = None
@@ -637,97 +752,27 @@ with open(nginx_sensitive_routes_config_path, 'r') as sensitive_routes_file:
     sensitive_routes = json.load(sensitive_routes_file)
 
 service_url_dict = {}
+
+sorted(routes_to_add, cmp=sort_routes_by_dns_creation)
+async_operation_results = []
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
         need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] and not service_spec["custom_domain"] else False
         if need_to_create_dns_record:
-                if hosted_zone_base_value is not None:
-                        dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
-                        dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
-                                                         + "?regionId={regionId}&delete={delete}"
-                                                         .format(regionId=service_spec["cloudRegionId"], delete=False))
-                        data = json.dumps({
-                                'dnsRecord': dns_custom_domain,
-                                'target': "{external_ip}".format(external_ip=edge_service_external_ip)
-                        })
-                        dns_record_create_response = call_api(dns_record_create, data)
-                        if dns_record_create_response and "payload" in dns_record_create_response and "status" in dns_record_create_response["payload"] \
-                                and dns_record_create_response["payload"]["status"] == "INSYNC":
-                                service_spec["custom_domain"] = dns_custom_domain
-                                service_spec["edge_location"] = None
-                        else:
-                                log_task_event("CreateDNSRecord",
-                                               "Fail to create DNS record for the run",
-                                               service_spec["run_id"],
-                                               service_spec["pod_id"],
-                                               "FAILURE")
-                                update_run_status(service_spec["run_id"], "FAILURE")
-                else:
-                        log_task_event("CreateDNSRecord",
-                                       "No hosted zone is configured for currect environment, will not create any DNS records",
-                                       service_spec["run_id"],
-                                       service_spec["pod_id"],
-                                       "FAILURE")
-                        update_run_status(service_spec["run_id"], "FAILURE")
-
-        has_custom_domain = service_spec["custom_domain"] is not None
-        service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip
-        service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
-
-        nginx_route_definition = nginx_loc_module_template_contents\
-                .replace('{edge_route_location}', service_location)\
-                .replace('{edge_route_target}', service_spec["edge_target"])\
-                .replace('{edge_route_owner}', service_spec["pod_owner"]) \
-                .replace('{run_id}', service_spec["run_id"]) \
-                .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
-                .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
-                .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
-                .replace('{additional}', service_spec["additional"])
-
-        nginx_sensitive_route_definitions = []
-        if service_spec["sensitive"]:
-                for sensitive_route in sensitive_routes:
-                        # proxy_pass cannot have trailing slash for regexp locations
-                        edge_target = service_spec["edge_target"]
-                        if edge_target.endswith("/"):
-                                edge_target = edge_target[:-1]
-                        nginx_sensitive_route_definition = nginx_sensitive_loc_module_template_contents \
-                                .replace('{edge_route_location}', service_location + sensitive_route['route']) \
-                                .replace('{edge_route_sensitive_methods}', '|'.join(sensitive_route['methods'])) \
-                                .replace('{edge_route_target}', edge_target) \
-                                .replace('{edge_route_owner}', service_spec["pod_owner"]) \
-                                .replace('{run_id}', service_spec["run_id"]) \
-                                .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
-                                .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
-                                .replace('{additional}', service_spec["additional"])
-                        nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
-
-        path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
-        if service_spec["sensitive"]:
-                print('Adding new sensitive route: ' + path_to_route)
+                result = dns_services_pool.apply_async(create_dns_service_location, (service_spec, ))
+                async_operation_results.append(result)
         else:
-                print('Adding new route: ' + path_to_route)
-        with open(path_to_route, "w") as added_route_file:
-                added_route_file.write(nginx_route_definition)
-                if nginx_sensitive_route_definitions:
-                        for nginx_sensitive_route_definition in nginx_sensitive_route_definitions:
-                                added_route_file.write(nginx_sensitive_route_definition)
+                create_service_location(service_spec)
 
-        if has_custom_domain:
-                print('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
-                add_custom_domain(service_hostname, path_to_route)
+for task_status in async_operation_results:
+        try:
+                code, content = task_status.get()
+                if code != 0:
+                        print("Something is wrong with creation of Service URL with custom DNS")
+        except ValueError as e:
+                print(e)
 
-        service_url = SVC_URL_TMPL.format(external_ip=service_hostname,
-                                          edge_location=service_spec["edge_location"] if service_spec["edge_location"] else "",
-                                          edge_port=str(edge_service_port),
-                                          service_name=service_spec["service_name"],
-                                          is_default_endpoint=service_spec["is_default_endpoint"],
-                                          external_schema=edge_service_external_schema)
-        run_id = service_spec["run_id"]
-        if run_id in service_url_dict:
-                service_url = service_url_dict[run_id] + ',' + service_url
-        service_url_dict[run_id] = service_url
 
 # Once all entries are added to the template - run "nginx -s reload"
 # TODO: Add error handling, if non-zero is returned - restore previous state
