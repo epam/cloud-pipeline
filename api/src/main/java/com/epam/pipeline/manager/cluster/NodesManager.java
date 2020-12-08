@@ -370,8 +370,7 @@ public class NodesManager {
         return clusterDao.createNextFreeNodeId();
     }
 
-    public InstanceDNSRecord changeInstanceDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord,
-                                                     final boolean delete) {
-        return cloudFacade.changeInstanceDNSRecord(regionId, dnsRecord, delete);
+    public InstanceDNSRecord createInstanceDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
+        return cloudFacade.createDNSRecord(regionId, dnsRecord);
     }
 }

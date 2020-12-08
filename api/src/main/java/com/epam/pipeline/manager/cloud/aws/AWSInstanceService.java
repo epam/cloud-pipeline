@@ -62,8 +62,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     private static final String MANUAL = "manual";
     private static final String ON_DEMAND = "on_demand";
-    // This InstanceDNSRecord used when no operation is required, f.e. when DNS record that doesn't exist asked to be deleted
-    private static final InstanceDNSRecord NO_OP_INSTANCE_DNS_RECORD = new InstanceDNSRecord("", "", InstanceDNSRecord.DNSRecordStatus.NO_OP);
+
+    // This InstanceDNSRecord used when no operation is required, f.e.
+    // when DNS record that doesn't exist asked to be deleted
+    private static final InstanceDNSRecord NO_OP_INSTANCE_DNS_RECORD = new InstanceDNSRecord(
+            "", "", InstanceDNSRecord.DNSRecordStatus.NO_OP);
 
     private final EC2Helper ec2Helper;
     private final PreferenceManager preferenceManager;
@@ -74,6 +77,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     private final String nodeDownScript;
     private final String nodeReassignScript;
     private final String nodeTerminateScript;
+    private final Route53Helper route53Helper;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
     // TODO: 25-10-2019 @Lazy annotation added to resolve issue with circular dependency.
@@ -84,6 +88,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                               final @Lazy InstanceOfferManager instanceOfferManager,
                               final CommonCloudInstanceService instanceService,
                               final ClusterCommandService commandService,
+                              final Route53Helper route53Helper,
                               @Value("${cluster.nodeup.script}") final String nodeUpScript,
                               @Value("${cluster.nodedown.script}") final String nodeDownScript,
                               @Value("${cluster.reassign.script}") final String nodeReassignScript,
@@ -93,6 +98,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         this.instanceOfferManager = instanceOfferManager;
         this.instanceService = instanceService;
         this.commandService = commandService;
+        this.route53Helper = route53Helper;
         this.nodeUpScript = nodeUpScript;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
@@ -275,19 +281,13 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public InstanceDNSRecord changeInstanceDNSRecord(final InstanceDNSRecord dnsRecord, final boolean delete) {
-        if (dnsRecord.getDnsRecord().contains(preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
-            if (delete) {
-                return new Route53Helper()
-                        .removeDNSRecord(preferenceManager.getPreference(
-                                SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
-                        );
-            } else {
-                return new Route53Helper()
-                        .createDNSRecord(preferenceManager.getPreference(
-                                SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
-                        );
-            }
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        if (dnsRecord.getDnsRecord().contains(
+                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
+            return route53Helper
+                    .createDNSRecord(preferenceManager.getPreference(
+                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
+                    );
         } else {
             return NO_OP_INSTANCE_DNS_RECORD;
         }

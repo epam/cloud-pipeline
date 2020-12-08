@@ -40,9 +40,7 @@ import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
-import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
-import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
+import static com.epam.pipeline.security.acl.AclExpressions.*;
 
 @Service
 @RequiredArgsConstructor
@@ -115,9 +113,9 @@ public class ClusterApiService {
     }
 
 
-    public InstanceDNSRecord changeInstanceDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord,
-                                                     final boolean delete) {
-        return nodesManager.changeInstanceDNSRecord(regionId, dnsRecord, delete);
+    @PreAuthorize(ADMIN_ONLY)
+    public InstanceDNSRecord createInstanceDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
+        return nodesManager.createInstanceDNSRecord(regionId, dnsRecord);
     }
 
 }

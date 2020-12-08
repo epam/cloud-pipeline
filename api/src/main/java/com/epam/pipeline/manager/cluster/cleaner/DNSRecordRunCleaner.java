@@ -25,7 +25,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -44,43 +43,46 @@ public class DNSRecordRunCleaner implements RunCleaner {
 
     private final PreferenceManager preferenceManager;
     private final UtilsManager utilsManager;
-    private final Route53Helper route53Helper = new Route53Helper();
+    private final Route53Helper route53Helper;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public DNSRecordRunCleaner(final PreferenceManager preferenceManager,
-                               UtilsManager utilsManager) {
+                               final UtilsManager utilsManager,
+                               final Route53Helper route53Helper) {
         this.preferenceManager = preferenceManager;
         this.utilsManager = utilsManager;
+        this.route53Helper = route53Helper;
     }
 
     @Override
     public void cleanResources(final PipelineRun run) {
         final String serviceUrls = run.getServiceUrl();
-        if (!StringUtils.isEmpty(serviceUrls)) {
+        if (StringUtils.isEmpty(serviceUrls)) {
+            return;
+        }
 
-            final String hostZoneId = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID);
-            final String hostZoneUrlBase = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE);
-            Assert.isTrue(
-                    !StringUtils.isEmpty(hostZoneId) && !StringUtils.isEmpty(hostZoneUrlBase),
-                    "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
-            );
+        final String hostZoneId = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID);
+        final String hostZoneUrlBase = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE);
+        Assert.isTrue(
+                !StringUtils.isEmpty(hostZoneId) && !StringUtils.isEmpty(hostZoneUrlBase),
+                "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
+        );
 
-            try {
-                final JsonNode serviceUrlsNode = mapper.readTree(serviceUrls);
-                serviceUrlsNode.iterator().forEachRemaining(jsonNode -> {
-                    final Map<String, String> map = mapper.convertValue(
-                            jsonNode,
-                            new TypeReference<Map<String, String>>(){}
-                    );
+        try {
+            final JsonNode serviceUrlsNode = mapper.readTree(serviceUrls);
+            serviceUrlsNode.iterator().forEachRemaining(jsonNode -> {
+                final Map<String, String> map = mapper.convertValue(
+                        jsonNode,
+                        new TypeReference<Map<String, String>>(){}
+                );
 
-                    final String url = map.get("url");
-                    if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
-                        route53Helper.removeDNSRecord(hostZoneId, new InstanceDNSRecord(unify(url), utilsManager.getEdgeUrl(), null));
-                    }
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                final String url = map.get("url");
+                if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
+                    route53Helper.removeDNSRecord(hostZoneId, new InstanceDNSRecord(unify(url), utilsManager.getEdgeDomainNameOrIP(), null));
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

@@ -520,8 +520,8 @@ def create_dns_record(service_spec):
         if hosted_zone_base_value is not None:
                 dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
                 dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
-                                                 + "?regionId={regionId}&delete={delete}"
-                                                 .format(regionId=service_spec["cloudRegionId"], delete=False))
+                                                 + "?regionId={regionId}"
+                                                 .format(regionId=service_spec["cloudRegionId"]))
                 data = json.dumps({
                         'dnsRecord': dns_custom_domain,
                         'target': "{external_ip}".format(external_ip=edge_service_external_ip)

@@ -40,7 +40,9 @@ import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+@Service
 @RequiredArgsConstructor
 public class Route53Helper {
 
@@ -49,47 +51,55 @@ public class Route53Helper {
     private static final int MAX_ATTEMPTS = 100;
     private static final int DELAY_IN_SECONDS = 1;
 
-    public AmazonRoute53 getRoute53Client() {
-        AmazonRoute53AsyncClientBuilder builder = AmazonRoute53AsyncClientBuilder.standard();
-        return builder.build();
-    }
-
     public InstanceDNSRecord createDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        LOGGER.info("Creating DNS record for hostedZoneId: " + hostedZoneId + " record: " + dnsRecord.getDnsRecord() + " and target: " + dnsRecord.getTarget());
+        LOGGER.info("Creating DNS record for hostedZoneId: " + hostedZoneId + " record: "
+                + dnsRecord.getDnsRecord() + " and target: " + dnsRecord.getTarget());
         final AmazonRoute53 client = getRoute53Client();
         if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
             try {
                 final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
                         dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.CREATE, true);
-                return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), result.getChangeInfo().getStatus());
+                return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
+                        result.getChangeInfo().getStatus());
             } catch (InvalidChangeBatchException e) {
-                LOGGER.error("AWS 53 Route service responded with: " + e.getLocalizedMessage());
-                if (e.getLocalizedMessage().matches(".*Tried to create resource record set.*but it already exists.*")) {
+                final String message = e.getLocalizedMessage();
+                LOGGER.error("AWS 53 Route service responded with: " + message);
+                if (message.matches(".*Tried to create resource record set.*but it already exists.*")) {
                     LOGGER.info("DNS Record already exists, API will proceed with this record.");
                 } else {
                     throw e;
                 }
             }
         }
-        return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
+        return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
+                InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
     }
 
     public InstanceDNSRecord removeDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        LOGGER.info("Removing DNS record: " + dnsRecord.getDnsRecord() + " for target: " + dnsRecord.getTarget() + " in hostedZoneId: " + hostedZoneId);
+        LOGGER.info("Removing DNS record: " + dnsRecord.getDnsRecord() + " for target: "
+                + dnsRecord.getTarget() + " in hostedZoneId: " + hostedZoneId);
         final AmazonRoute53 client = getRoute53Client();
         if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
-            LOGGER.info("DNS record: " + dnsRecord.getDnsRecord() + " type: " + getRRType(dnsRecord.getTarget()) + " for target: " + dnsRecord.getTarget()
+            LOGGER.info("DNS record: " + dnsRecord.getDnsRecord() + " type: "
+                    + getRRType(dnsRecord.getTarget()) + " for target: " + dnsRecord.getTarget()
                     + " in hostedZoneId: " + hostedZoneId + " doesn't exists");
-            return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
+            return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
+                    InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
         } else {
             final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
                     dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.DELETE, false);
-            return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(), result.getChangeInfo().getStatus());
+            return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
+                    result.getChangeInfo().getStatus());
         }
 
     }
 
-    private boolean isDnsRecordExists(final String hostedZoneId, final InstanceDNSRecord dnsRecord, final AmazonRoute53 client) {
+    private AmazonRoute53 getRoute53Client() {
+        return AmazonRoute53AsyncClientBuilder.standard().build();
+    }
+
+    private boolean isDnsRecordExists(final String hostedZoneId, final InstanceDNSRecord dnsRecord,
+                                      final AmazonRoute53 client) {
         return client.listResourceRecordSets(new ListResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZoneId)
                 .withStartRecordName(dnsRecord.getDnsRecord())
@@ -118,27 +128,28 @@ public class Route53Helper {
     private ChangeResourceRecordSetsResult performChangeRequest(final String hostedZoneId, final String dnsRecord,
                                                                 final String target, final AmazonRoute53 client,
                                                                 final ChangeAction action, final boolean await) {
-        ChangeResourceRecordSetsResult result = client.changeResourceRecordSets(new ChangeResourceRecordSetsRequest()
-                .withHostedZoneId(hostedZoneId)
-                .withChangeBatch(new ChangeBatch()
-                        .withChanges(
-                                new Change()
-                                        .withAction(action)
-                                        .withResourceRecordSet(
-                                                new ResourceRecordSet()
-                                                        .withName(dnsRecord)
-                                                        .withType(getRRType(target))
-                                                        .withTTL(TTL_TIME)
-                                                        .withResourceRecords(
-                                                                new ResourceRecord().withValue(target)
-                                                        )
-                                        )
-                        )
-                )
+        final ChangeResourceRecordSetsResult result = client.changeResourceRecordSets(
+                new ChangeResourceRecordSetsRequest()
+                    .withHostedZoneId(hostedZoneId)
+                    .withChangeBatch(new ChangeBatch()
+                            .withChanges(
+                                    new Change()
+                                            .withAction(action)
+                                            .withResourceRecordSet(
+                                                    new ResourceRecordSet()
+                                                            .withName(dnsRecord)
+                                                            .withType(getRRType(target))
+                                                            .withTTL(TTL_TIME)
+                                                            .withResourceRecords(
+                                                                    new ResourceRecord().withValue(target)
+                                                            )
+                                            )
+                            )
+                    )
         );
 
         if (await) {
-            WaiterParameters<GetChangeRequest> request = new WaiterParameters<GetChangeRequest>()
+            final WaiterParameters<GetChangeRequest> request = new WaiterParameters<GetChangeRequest>()
                     .withPollingStrategy(
                             new PollingStrategy(
                                     new MaxAttemptsRetryStrategy(MAX_ATTEMPTS),
@@ -146,7 +157,7 @@ public class Route53Helper {
                             )
                     ).withRequest(new GetChangeRequest().withId(result.getChangeInfo().getId()));
             new AmazonRoute53Waiters(client).resourceRecordSetsChanged().run(request);
-            String status = checkRequestStatus(client, request.getRequest().getId()).getChangeInfo().getStatus();
+            final String status = checkRequestStatus(client, request.getRequest().getId()).getChangeInfo().getStatus();
             if (status.equalsIgnoreCase(ChangeStatus.INSYNC.name())) {
                 result.getChangeInfo().setStatus(status);
             } else {

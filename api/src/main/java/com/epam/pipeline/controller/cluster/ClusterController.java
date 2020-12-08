@@ -242,13 +242,12 @@ public class ClusterController extends AbstractRestController {
     @PostMapping("/cluster/dnsrecord")
     @ResponseBody
     @ApiOperation(
-            value = "Creates or deletes dns record.",
-            notes = "Creates or deletes dns record.",
+            value = "Creates dns record.",
+            notes = "Creates dns record.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<InstanceDNSRecord> dnsRecordChangeRequest(@RequestParam(required = false) final Long regionId,
-                                                            @RequestParam(defaultValue = "false") final boolean delete,
-                                                            @RequestBody InstanceDNSRecord dnsRecord) {
-        return Result.success(clusterApiService.changeInstanceDNSRecord(regionId, dnsRecord, delete));
+    public Result<InstanceDNSRecord> requestDnsRecord(@RequestParam final Long regionId,
+                                                      @RequestBody final InstanceDNSRecord dnsRecord) {
+        return Result.success(clusterApiService.createInstanceDNSRecord(regionId, dnsRecord));
     }
 }

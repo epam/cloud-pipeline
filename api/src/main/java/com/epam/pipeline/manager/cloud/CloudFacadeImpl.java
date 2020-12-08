@@ -260,21 +260,9 @@ public class CloudFacadeImpl implements CloudFacade {
         return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
     }
 
-    @Override
-    public InstanceDNSRecord changeInstanceDNSRecord(Long regionId, final InstanceDNSRecord dnsRecord, final boolean delete) {
-
-        if (delete && regionId == null) {
-            List<PipelineRun> runs = pipelineRunManager.loadAllRunsByServiceURL(dnsRecord.getDnsRecord());
-            if (!runs.stream().allMatch(pipelineRun -> pipelineRun.getEndDate() != null)) {
-                log.warn("Won't try to delete dns record: " + dnsRecord.getDnsRecord() + " because it is still used a least in one active run.");
-                return null;
-            } else {
-                regionId = runs.stream().findFirst().map(pipelineRun -> pipelineRun.getInstance().getCloudRegionId()).orElse(null);
-            }
-        }
-
+    public InstanceDNSRecord createDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
         AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
-        return getInstanceService(cloudRegion).changeInstanceDNSRecord(dnsRecord, delete);
+        return getInstanceService(cloudRegion).getOrCreateInstanceDNSRecord(dnsRecord);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
