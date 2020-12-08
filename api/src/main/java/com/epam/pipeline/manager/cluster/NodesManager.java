@@ -20,7 +20,6 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.dao.cluster.ClusterDao;
-import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
@@ -370,7 +369,4 @@ public class NodesManager {
         return clusterDao.createNextFreeNodeId();
     }
 
-    public InstanceDNSRecord createInstanceDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
-        return cloudFacade.createDNSRecord(regionId, dnsRecord);
-    }
 }

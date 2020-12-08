@@ -112,10 +112,4 @@ public class ClusterApiService {
         return nodeDiskManager.loadByNodeId(name);
     }
 
-
-    @PreAuthorize(ADMIN_ONLY)
-    public InstanceDNSRecord createInstanceDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
-        return nodesManager.createInstanceDNSRecord(regionId, dnsRecord);
-    }
-
 }
