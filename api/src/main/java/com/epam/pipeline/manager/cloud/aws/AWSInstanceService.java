@@ -36,7 +36,6 @@ import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
-import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -109,9 +108,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                                        final String nodeIdLabel,
                                        final NodePool node) {
         final RunInstance instance = node.toRunInstance();
-        final Map<String, String> labels = Collections.singletonMap(
-                KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(node.getId()));
-        final String command = buildNodeUpCommand(region, nodeIdLabel, instance, labels);
+        final String command = buildNodeUpCommand(region, nodeIdLabel, instance, getPoolLabels(node));
         return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptEnvVars());
     }
 

@@ -47,6 +47,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +105,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     public RunInstance scaleUpNode(final AzureRegion region,
                                    final Long runId,
                                    final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, runId, instance);
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
@@ -112,8 +113,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public RunInstance scaleUpPoolNode(final AzureRegion region,
                                        final String nodeId,
-                                       final NodePool node) {
-        throw new UnsupportedOperationException();
+                                       final NodePool nodePool) {
+        final RunInstance instance = nodePool.toRunInstance();
+        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(nodePool));
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptAzureEnvVars(region));
     }
 
     @Override
@@ -126,7 +129,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public void scaleDownPoolNode(final AzureRegion region, final String nodeLabel) {
-        throw new UnsupportedOperationException();
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, getProviderName());
+        final Map<String, String> envVars = buildScriptAzureEnvVars(region);
+        CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
+                                   executorService.getExecutorService());
     }
 
     @Override
@@ -138,10 +144,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public boolean reassignPoolNode(final AzureRegion region,
-                                    final String nodeLabel,
-                                    final Long newId) {
-        throw new UnsupportedOperationException();
+    public boolean reassignPoolNode(final AzureRegion region, final String nodeLabel, final Long newId) {
+        final String command = commandService.
+            buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
+                                                     String.valueOf(newId), buildScriptAzureEnvVars(region));
     }
 
     @Override
@@ -266,19 +273,22 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         return envVars;
     }
 
-    private String buildNodeUpCommand(final AzureRegion region, final Long runId, final RunInstance instance) {
+    private String buildNodeUpCommand(final AzureRegion region, final String nodeLabel, final RunInstance instance,
+                                      final Map<String, String> labels) {
 
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
-                .runId(String.valueOf(runId))
+                .runId(nodeLabel)
                 .sshKey(region.getSshPublicKeyPath())
                 .instanceImage(instance.getNodeImage())
                 .instanceType(instance.getNodeType())
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
-                .region(region.getRegionCode());
+                .region(region.getRegionCode())
+                .prePulledImages(instance.getPrePulledDockerImages())
+                .additionalLabels(labels);
 
         final Boolean clusterSpotStrategy = instance.getSpot() == null
                 ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)
