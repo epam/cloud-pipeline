@@ -13,27 +13,31 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.cluster.pool;
+package com.epam.pipeline.entity.cluster.pool.filter.value;
 
-import com.epam.pipeline.entity.cluster.PriceType;
-import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
-import java.util.Set;
-
+import java.util.Objects;
 
 @Data
-public class NodePoolVO {
+@NoArgsConstructor
+public class StringFilterValue implements FilterValue<String> {
 
-    private Long id;
-    private String name;
-    private Long regionId;
-    private String instanceType;
-    private int instanceDisk;
-    private PriceType priceType;
-    private Set<String> dockerImages;
-    private String instanceImage;
-    private int count;
-    private Long scheduleId;
-    private PoolFilter filter;
+    private String value;
+
+    public StringFilterValue(final String value) {
+        this.value = value;
+    }
+
+    @Override
+    public boolean matches(final String anotherValue) {
+        return Objects.equals(getValue(), anotherValue);
+    }
+
+    @Override
+    public boolean empty(final String anotherValue) {
+        return StringUtils.isBlank(getValue());
+    }
 }

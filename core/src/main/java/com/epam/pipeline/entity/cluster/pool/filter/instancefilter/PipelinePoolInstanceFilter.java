@@ -13,27 +13,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.cluster.pool;
+package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 
-import com.epam.pipeline.entity.cluster.PriceType;
-import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import lombok.Data;
 
-import java.util.Set;
-
-
 @Data
-public class NodePoolVO {
+public class PipelinePoolInstanceFilter implements PoolInstanceFilter<Long> {
 
-    private Long id;
-    private String name;
-    private Long regionId;
-    private String instanceType;
-    private int instanceDisk;
-    private PriceType priceType;
-    private Set<String> dockerImages;
-    private String instanceImage;
-    private int count;
-    private Long scheduleId;
-    private PoolFilter filter;
+    private PoolInstanceFilterOperator operator;
+    private Long value;
+    private PoolInstanceFilterType type = PoolInstanceFilterType.PIPELINE_ID;
 }

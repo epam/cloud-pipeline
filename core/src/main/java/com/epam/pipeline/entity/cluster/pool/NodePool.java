@@ -16,6 +16,7 @@
 package com.epam.pipeline.entity.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import lombok.Data;
 
@@ -37,6 +38,7 @@ public class NodePool {
     private String instanceImage;
     private int count;
     private NodeSchedule schedule;
+    private PoolFilter filter;
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {
