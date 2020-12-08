@@ -516,20 +516,6 @@ def load_pods_for_runs_with_endpoints():
         return pods_with_endpoints
 
 
-def sort_routes_by_dns_creation(service_path_1, service_path_2):
-        service_1 = services_list[service_path_1] if service_path_1 in services_list else None
-        service_2 = services_list[service_path_2] if service_path_2 in services_list else None
-        need_to_create_dns_record_1 = service_1["create_dns_record"] if service_1["create_dns_record"] and not service_1["custom_domain"] else False
-        need_to_create_dns_record_2 = service_2["create_dns_record"] if service_2["create_dns_record"] and not service_2["custom_domain"] else False
-
-        if need_to_create_dns_record_1 and not need_to_create_dns_record_2:
-                return 1
-        elif need_to_create_dns_record_2 and not need_to_create_dns_record_1:
-                return -1
-        else:
-                return 0
-
-
 def create_dns_record(service_spec):
         if hosted_zone_base_value is not None:
                 dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
@@ -753,18 +739,22 @@ with open(nginx_sensitive_routes_config_path, 'r') as sensitive_routes_file:
 
 service_url_dict = {}
 
-sorted(routes_to_add, cmp=sort_routes_by_dns_creation)
+# loop through all routes that we need to create, if this route doesn't have option to create custom DNS record
+# we handle it it the main thread, if custom DNS record should be created, since it consume some time ~ 20 sec,
+# we put it to the async pool and store result future.
 async_operation_results = []
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
         need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] and not service_spec["custom_domain"] else False
         if need_to_create_dns_record:
-                result = dns_services_pool.apply_async(create_dns_service_location, (service_spec, ))
-                async_operation_results.append(result)
+                async_operation_results.append(
+                        dns_services_pool.apply_async(create_dns_service_location, (service_spec, ))
+                )
         else:
                 create_service_location(service_spec)
 
+# Here we check all future on completion, if any of it fail - just print it to the log
 for task_status in async_operation_results:
         try:
                 code, content = task_status.get()
