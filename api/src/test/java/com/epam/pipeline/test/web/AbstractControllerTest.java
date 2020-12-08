@@ -197,7 +197,8 @@ public abstract class AbstractControllerTest {
     public MultiValueMap<String, String> multiValueMapOf(Object... objects) {
         final MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         for (int i = 0; i < objects.length; i += 2) {
-            map.add(String.valueOf(objects[i]), String.valueOf(objects[i + 1]));
+            map.add(String.valueOf(objects[i]).replaceAll("[\\[\\]]", ""),
+                    String.valueOf(objects[i + 1]).replaceAll("[\\[\\]]", ""));
         }
         return map;
     }

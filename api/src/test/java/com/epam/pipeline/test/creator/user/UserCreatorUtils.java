@@ -26,18 +26,13 @@ import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
-
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-
-public final class UserCreatorUtils {
-
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
@@ -67,15 +62,14 @@ public final class UserCreatorUtils {
 
     }
 
-    public static PipelineUser getPipelineUser() {
-        return new PipelineUser();
-    }
-
     public static PipelineUser getPipelineUser(final String name) {
         final PipelineUser pipelineUser = new PipelineUser();
         pipelineUser.setId(ID);
         pipelineUser.setUserName(name);
         return pipelineUser;
+    }
+
+    public static PipelineUser getPipelineUser() {
         PipelineUser pipelineUser = new PipelineUser(TEST_STRING);
         pipelineUser.setRoles(Collections.singletonList(getRole()));
         pipelineUser.setGroups(TEST_STRING_LIST);

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.user;
 
+import com.epam.pipeline.acl.user.UserApiService;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
@@ -25,13 +26,13 @@ import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.user.UserApiService;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -40,6 +41,8 @@ import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.OBJECT_TYPE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_ARRAY;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,32 +79,30 @@ public class UserControllerTest extends AbstractControllerTest {
     private static final String NAME = "name";
     private static final String PREFIX = "prefix";
     private static final String BLOCK_STATUS = "blockStatus";
-    private static final String ROLE_IDs = "roleIds";
+    private static final String ROLE_IDS = "roleIds";
     private static final String USER_NAME = "userName";
     private static final String GROUP = "group";
     private static final String GROUP_NAME = "groupName";
     private static final String URL = "url";
     private static final String TYPE = "type";
     private final String redirectCookie =
-            "<html><body><script>window.location.href = \\\"TEST\\\"</script></body></html>";
+            "\"<html><body><script>window.location.href = \\\"TEST\\\"</script></body></html>\"";
     private final String redirectForm =
-            String.format(
-                    "<html>\n"
-                            + "<body>\n"
-                            + "<form id=\"form\" method=\"post\" action=\"%s\">\n"
-                            + " <input type=\"hidden\" name=\"bearer\" value=\"%s\" />\n"
-                            + "</form>\n"
-                            + "<script>\n" + "document.getElementById('form').submit()\n"
-                            + "</script>\n"
-                            + "</body>\n"
-                            + "</html>",
-                    TEST_STRING, TEST_STRING);
-    private final String TEXT_HTML_UTF8_CONTENT_TYPE = "text/html;charset=UTF-8";
+            "\"<html>\\n"
+            + "<body>\\n"
+            + "<form id=\\\"form\\\" method=\\\"post\\\" action=\\\"TEST\\\">\\n"
+            + " <input type=\\\"hidden\\\" name=\\\"bearer\\\" value=\\\"TEST\\\" />\\n"
+            + "</form>\\n"
+            + "<script>\\n" + "document.getElementById('form').submit()\\n"
+            + "</script>\\n"
+            + "</body>\\n"
+            + "</html>\"";
+    private static final String TEXT_HTML_UTF8_CONTENT_TYPE = "text/html;charset=UTF-8";
 
     private final JwtRawToken token = SecurityCreatorUtils.getJwtRawToken();
     private final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser();
     private final PipelineUserVO pipelineUserVO = UserCreatorUtils.getPipelineUserVO();
-    private final UserInfo userInfo = UserCreatorUtils.getUserInfo(pipelineUser);
+    private final UserInfo userInfo = UserCreatorUtils.getUserInfo(UserCreatorUtils.getPipelineUser());
     private final CustomControl customControl = UserCreatorUtils.getCustomControl();
     private final PipelineUserExportVO userExportVO = UserCreatorUtils.getPipelineUserExportVO();
     private final GroupStatus groupStatus = UserCreatorUtils.getGroupStatus();
@@ -110,7 +111,6 @@ public class UserControllerTest extends AbstractControllerTest {
     private final List<UserInfo> userInfoList = Collections.singletonList(userInfo);
     private final List<CustomControl> customControlList = Collections.singletonList(customControl);
     private final List<GroupStatus> groupStatusList = Collections.singletonList(groupStatus);
-
 
     @Autowired
     private UserApiService mockUserApiService;
@@ -124,7 +124,8 @@ public class UserControllerTest extends AbstractControllerTest {
         doReturn(token).when(mockUserApiService).issueToken(TEST_STRING, ID);
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
-                .params(multiValueMapOf(EXPIRATION, ID, NAME, TEST_STRING)));
+                .params(multiValueMapOf(EXPIRATION, ID,
+                                        NAME, TEST_STRING)));
 
         verify(mockUserApiService).issueToken(TEST_STRING, ID);
         assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
@@ -136,7 +137,8 @@ public class UserControllerTest extends AbstractControllerTest {
         doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID);
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
-                .params(multiValueMapOf(EXPIRATION, ID, null, null)));
+                .params(multiValueMapOf(EXPIRATION, ID,
+                                        null, null)));
 
         verify(mockAuthManager).issueTokenForCurrentUser(ID);
         assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
@@ -169,37 +171,35 @@ public class UserControllerTest extends AbstractControllerTest {
         doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
 
         final MvcResult mvcResult = performRequest(get(ROUTE_URL)
-                .params(multiValueMapOf(URL, TEST_STRING, TYPE, RouteType.COOKIE)), TEXT_HTML_UTF8_CONTENT_TYPE);
+                .params(multiValueMapOf(URL, TEST_STRING,
+                                        TYPE, RouteType.COOKIE)),
+                                        TEXT_HTML_UTF8_CONTENT_TYPE);
 
         verify(mockAuthManager).issueTokenForCurrentUser(null);
         assertThat(mvcResult.getResponse().getContentAsString()).contains(redirectCookie);
     }
 
-//    @Test
-//    @WithMockUser
-//    public void shouldRedirectWithFormRouteType() throws Exception{
-//        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
-//
-//        final MvcResult mvcResult = performRequest(get(ROUTE_URL)
-//                .params(multiValueMapOf(URL, TEST_STRING, TYPE, RouteType.FORM)), TEXT_HTML_UTF8_CONTENT_TYPE);
-//
-//        verify(mockAuthManager).issueTokenForCurrentUser(null);
-//
-//        assertThat(mvcResult.getResponse().getContentAsString()).contains(redirectForm);
-//    }
+    @Test
+    @WithMockUser
+    public void shouldRedirectWithFormRouteType() throws Exception {
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
 
-//    @Test
-//    public void shouldFailRedirect() {
-//        performUnauthorizedRequest(get(ROUTE_URL));
-//    }
+        final MvcResult mvcResult = performRequest(get(ROUTE_URL)
+                .params(multiValueMapOf(URL, TEST_STRING,
+                                        TYPE, RouteType.FORM)),
+                                        TEXT_HTML_UTF8_CONTENT_TYPE);
+
+        verify(mockAuthManager).issueTokenForCurrentUser(null);
+
+        assertThat(mvcResult.getResponse().getContentAsString()).contains(redirectForm);
+    }
 
     @Test
     @WithMockUser
     public void shouldFindUsers() {
         doReturn(pipelineUserList).when(mockUserApiService).findUsers(TEST_STRING);
 
-        final MvcResult mvcResult = performRequest(get(USER_FIND_URL)
-                .params(multiValueMapOf(PREFIX, TEST_STRING)));
+        final MvcResult mvcResult = performRequest(get(USER_FIND_URL).params(multiValueMapOf(PREFIX, TEST_STRING)));
 
         verify(mockUserApiService).findUsers(TEST_STRING);
         assertResponse(mvcResult, pipelineUserList, UserCreatorUtils.PIPELINE_USER_LIST_INSTANCE_TYPE);
@@ -308,6 +308,22 @@ public class UserControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
+    public void shouldLoadUsersInfo() {
+        doReturn(userInfoList).when(mockUserApiService).loadUsersInfo();
+
+        final MvcResult mvcResult = performRequest(get(USERS_INFO_URL));
+
+        verify(mockUserApiService).loadUsersInfo();
+        assertResponse(mvcResult, userInfoList, UserCreatorUtils.USER_INFO_LIST_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailLoadUsersInfo() {
+        performUnauthorizedRequest(get(USERS_URL));
+    }
+
+    @Test
+    @WithMockUser
     public void shouldGetUserControls() {
         doReturn(customControlList).when(mockUserApiService).getUserControls();
 
@@ -339,20 +355,22 @@ public class UserControllerTest extends AbstractControllerTest {
         performUnauthorizedRequest(put(String.format(USER_ID_BLOCK_URL, ID)));
     }
 
-//    @RequestMapping(value = "/user/{id}/update", method = RequestMethod.POST)
-//    @ResponseBody
-//    @ApiOperation(
-//            value = "Updates user roles.",
-//            notes = "Updates user roles. Pass all assigned roles, "
-//                    + "as they will be completely replaced with passes IDs",
-//            produces = MediaType.APPLICATION_JSON_VALUE)
-//    @ApiResponses(
-//            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-//            })
-//    public Result<PipelineUser> updateUserRoles(@PathVariable Long id, @RequestParam List<Long> roleIds) {
-//        return Result.success(userApiService.updateUserRoles(id, roleIds));
-//    }
+    @Test
+    @WithMockUser
+    public void shouldUpdateUserRoles() {
+        doReturn(pipelineUser).when(mockUserApiService).updateUserRoles(ID, TEST_LONG_LIST);
 
+        final MvcResult mvcResult = performRequest(post(String.format(USER_ID_UPDATE_URL, ID))
+                .params(multiValueMapOf(ROLE_IDS, TEST_LONG_LIST)));
+
+        verify(mockUserApiService).updateUserRoles(ID, TEST_LONG_LIST);
+        assertResponse(mvcResult, pipelineUser, UserCreatorUtils.PIPELINE_USER_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailUpdateUserRoles() {
+        performUnauthorizedRequest(put(String.format(USER_ID_BLOCK_URL, ID)));
+    }
 
     @Test
     @WithMockUser
@@ -360,7 +378,8 @@ public class UserControllerTest extends AbstractControllerTest {
         doReturn(true).when(mockUserApiService).checkUserByGroup(TEST_STRING, TEST_STRING);
 
         final MvcResult mvcResult = performRequest(get(USER_MEMBER_URL)
-                .params(multiValueMapOf(USER_NAME, TEST_STRING, GROUP, TEST_STRING)));
+                .params(multiValueMapOf(USER_NAME, TEST_STRING,
+                                        GROUP, TEST_STRING)));
 
         verify(mockUserApiService).checkUserByGroup(TEST_STRING, TEST_STRING);
         assertResponse(mvcResult, true, CommonCreatorConstants.BOOLEAN_INSTANCE_TYPE);
@@ -371,19 +390,23 @@ public class UserControllerTest extends AbstractControllerTest {
         performUnauthorizedRequest(get(USER_MEMBER_URL));
     }
 
-//    @RequestMapping(value = "/user/export", method = RequestMethod.POST)
-//    @ResponseBody
-//    @ApiOperation(
-//            value = "Exports users.",
-//            notes = "Exports users with specified information",
-//            produces = MediaType.APPLICATION_JSON_VALUE)
-//    @ApiResponses(
-//            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-//            })
-//    public void exportUsers(@RequestBody PipelineUserExportVO attr, HttpServletResponse response) throws IOException {
-//        writeFileToResponse(response, userApiService.exportUsers(attr), "users.csv");
-//    }
+    @Test
+    @WithMockUser
+    public void shouldExportUsers() throws Exception {
+        final String content = getObjectMapper().writeValueAsString(userExportVO);
+        doReturn(TEST_ARRAY).when(mockUserApiService).exportUsers(userExportVO);
 
+        final MvcResult mvcResult = performRequest(post(USER_EXPORT_URL).content(content),
+                EXPECTED_CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
+
+        verify(mockUserApiService).exportUsers(userExportVO);
+        assertFileResponse(mvcResult, "users.csv", TEST_ARRAY);
+    }
+
+    @Test
+    public void shouldFailExportUsers() {
+        performUnauthorizedRequest(post(USER_EXPORT_URL));
+    }
 
     @Test
     @WithMockUser

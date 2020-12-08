@@ -16,10 +16,10 @@
 
 package com.epam.pipeline.controller.user;
 
+import com.epam.pipeline.acl.user.RoleApiService;
 import com.epam.pipeline.controller.vo.user.RoleVO;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.Role;
-import com.epam.pipeline.manager.user.RoleApiService;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -49,7 +50,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     private static final String CREATE_URL = ROLE_URL + "/create";
 
     private static final String LOAD_USERS = "loadUsers";
-    private static final String USER_IDs = "userIds";
+    private static final String USER_IDS = "userIds";
     private static final String ROLE_NAME = "roleName";
     private static final String USER_DEFAULT = "userDefault";
     private static final String DEFAULT_STORAGE_ID = "defaultStorageId";
@@ -57,9 +58,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     private final Role role = UserCreatorUtils.getRole();
     private final ExtendedRole extendedRole = UserCreatorUtils.getExtendedRole();
     private final RoleVO roleVO = UserCreatorUtils.getRoleVO();
-
     private final List<Role> roleList = Collections.singletonList(role);
-
 
     @Autowired
     private RoleApiService mockRoleApiService;
@@ -91,34 +90,39 @@ public class RoleControllerTest extends AbstractControllerTest {
         performUnauthorizedRequest(get(LOAD_ALL_URL));
     }
 
-//    @RequestMapping(value = "/{id}/assign", method = RequestMethod.POST)
-//    @ResponseBody
-//    @ApiOperation(
-//            value = "Assigns a list of users to role.",
-//            notes = "Assigns a list of users to role",
-//            produces = MediaType.APPLICATION_JSON_VALUE)
-//    @ApiResponses(
-//            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-//            })
-//    public Result<ExtendedRole> assignRole(@PathVariable Long id,
-//                                           @RequestParam List<Long> userIds) {
-//        return Result.success(roleApiService.assignRole(id, userIds));
-//    }
+    @Test
+    @WithMockUser
+    public void shouldAssignRole() {
+        doReturn(extendedRole).when(mockRoleApiService).assignRole(ID, TEST_LONG_LIST);
 
-//    @RequestMapping(value = "/{id}/remove", method = RequestMethod.DELETE)
-//    @ResponseBody
-//    @ApiOperation(
-//            value = "Removes a role from a list of users",
-//            notes = "Removes a role from a list of users",
-//            produces = MediaType.APPLICATION_JSON_VALUE)
-//    @ApiResponses(
-//            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-//            })
-//    public Result<ExtendedRole> removeRole(@PathVariable Long id,
-//                                           @RequestParam List<Long> userIds) {
-//        return Result.success(roleApiService.removeRole(id, userIds));
-//    }
+        final MvcResult mvcResult = performRequest(post(String.format(ASSIGN_URL, ID))
+                .params(multiValueMapOf(USER_IDS, TEST_LONG_LIST)));
 
+        verify(mockRoleApiService).assignRole(ID, TEST_LONG_LIST);
+        assertResponse(mvcResult, extendedRole, UserCreatorUtils.EXTENDED_ROLE_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailAssignRole() {
+        performUnauthorizedRequest(post(String.format(ASSIGN_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldRemoveRole() {
+        doReturn(extendedRole).when(mockRoleApiService).removeRole(ID, TEST_LONG_LIST);
+
+        final MvcResult mvcResult = performRequest(delete(String.format(REMOVE_URL, ID))
+                .params(multiValueMapOf(USER_IDS, TEST_LONG_LIST)));
+
+        verify(mockRoleApiService).removeRole(ID, TEST_LONG_LIST);
+        assertResponse(mvcResult, extendedRole, UserCreatorUtils.EXTENDED_ROLE_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailRemoveRole() {
+        performUnauthorizedRequest(delete(String.format(REMOVE_URL, ID)));
+    }
 
     @Test
     @WithMockUser
@@ -126,7 +130,9 @@ public class RoleControllerTest extends AbstractControllerTest {
         doReturn(role).when(mockRoleApiService).createRole(TEST_STRING, true, ID);
 
         final MvcResult mvcResult = performRequest(post(CREATE_URL)
-                .params(multiValueMapOf(ROLE_NAME, TEST_STRING, USER_DEFAULT, true, DEFAULT_STORAGE_ID, ID)));
+                .params(multiValueMapOf(ROLE_NAME, TEST_STRING,
+                                        USER_DEFAULT, true,
+                                        DEFAULT_STORAGE_ID, ID)));
 
         verify(mockRoleApiService).createRole(TEST_STRING, true, ID);
         assertResponse(mvcResult, role, UserCreatorUtils.ROLE_INSTANCE_TYPE);
