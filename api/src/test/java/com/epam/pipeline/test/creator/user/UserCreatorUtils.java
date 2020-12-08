@@ -71,10 +71,5 @@ public final class UserCreatorUtils {
 
     public static ExtendedRole getExtendedRole() {
         return new ExtendedRole();
-    public static PipelineUser getPipelineUser(final String name) {
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setId(ID);
-        pipelineUser.setUserName(name);
-        return pipelineUser;
     }
 }
