@@ -26,6 +26,9 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
@@ -54,6 +57,7 @@ import static org.mockito.Mockito.doReturn;
 
 public class PipelineApiServiceGitTest extends AbstractAclTest {
 
+    protected final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
     private final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
     private final GitTagEntry gitTagEntry = GitCreatorUtils.getGitTagEntry();
     private final GitCommitEntry gitCommitEntry = GitCreatorUtils.getGitCommitEntry();
@@ -62,6 +66,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private final GitCredentials gitCredentials = GitCreatorUtils.getGitCredentials();
     private final GitRepositoryEntry gitRepositoryEntry = GitCreatorUtils.getGitRepositoryEntry();
     private final UploadFileMetadata fileMetadata = PipelineCreatorUtils.getUploadFileMetadata();
+    private final List<GitRepositoryEntry> gitRepositoryEntries = Collections.singletonList(gitRepositoryEntry);
+    private final List<UploadFileMetadata> files = Collections.singletonList(fileMetadata);
     private final Revision revision = PipelineCreatorUtils.getRevision();
     private final TaskGraphVO taskGraphVO = PipelineCreatorUtils.getTaskGraphVO();
     private final RegisterPipelineVersionVO pipelineVersionVO = PipelineCreatorUtils.getRegisterPipelineVersionVO();
@@ -103,6 +109,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         initAclEntity(pipeline);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
         doReturn(gitTagEntry).when(mockGitManager).loadRevision(pipeline, TEST_STRING);
+
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.loadRevision(ID, TEST_STRING));
     }
