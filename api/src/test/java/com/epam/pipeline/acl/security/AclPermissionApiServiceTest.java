@@ -259,7 +259,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser
-    public void shouldLoadEntityPermissionForNotOwner() {
+    public void shouldDenyLoadEntityPermissionForNotOwner() {
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
         mockUser(ANOTHER_SIMPLE_USER);
 
