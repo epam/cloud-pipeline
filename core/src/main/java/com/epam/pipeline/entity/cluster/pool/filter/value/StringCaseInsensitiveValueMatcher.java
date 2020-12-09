@@ -13,16 +13,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool;
+package com.epam.pipeline.entity.cluster.pool.filter.value;
 
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
-import java.util.Set;
+public class StringCaseInsensitiveValueMatcher extends StringValueMatcher {
 
-@Data
-public class RunningInstance {
-    private RunInstance instance;
-    private NodePool pool;
-    private Set<String> prePulledImages;
+    public StringCaseInsensitiveValueMatcher(final String value) {
+        super(value);
+    }
+
+    @Override
+    public boolean matches(final String anotherValue) {
+        return StringUtils.equalsIgnoreCase(getValue(), anotherValue);
+    }
 }

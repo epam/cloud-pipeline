@@ -466,6 +466,11 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
+    public Optional<PipelineRun> findRun(final Long id) {
+        return Optional.ofNullable(pipelineRunDao.loadPipelineRun(id));
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
     public AbstractSecuredEntity loadRunParent(Long runId) {
         PipelineRun run = loadPipelineRun(runId);
         return loadRunParent(run);

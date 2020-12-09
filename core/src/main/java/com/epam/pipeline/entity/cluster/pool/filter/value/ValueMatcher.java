@@ -13,16 +13,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool;
+package com.epam.pipeline.entity.cluster.pool.filter.value;
 
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import lombok.Data;
+public interface ValueMatcher<T> {
 
-import java.util.Set;
-
-@Data
-public class RunningInstance {
-    private RunInstance instance;
-    private NodePool pool;
-    private Set<String> prePulledImages;
+    T getValue();
+    boolean matches(T anotherValue);
+    default boolean notMatches(T anotherValue) {
+        return !matches(anotherValue);
+    }
+    boolean empty(T anotherValue);
+    default boolean notEmpty(T anotherValue) {
+        return !empty(anotherValue);
+    }
 }

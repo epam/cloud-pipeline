@@ -17,9 +17,21 @@ package com.epam.pipeline.test.creator.cluster.schedule;
 
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.PoolFilterOperator;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.ConfigurationPoolInstanceFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.DockerPoolInstanceFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.ParameterPoolInstanceFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PipelinePoolInstanceFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilterOperator;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.RunOwnerGroupPoolInstanceFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.RunOwnerPoolInstanceFilter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public final class NodePoolCreatorUtils {
 
@@ -45,5 +57,44 @@ public final class NodePoolCreatorUtils {
         pool.setRegionId(REGION_ID);
         pool.setInstanceDisk(INSTANCE_DISK);
         return pool;
+    }
+
+    public static PoolFilter getAllFilters() {
+        return new PoolFilter(PoolFilterOperator.AND, buildAllFilters());
+    }
+
+    private static List<PoolInstanceFilter> buildAllFilters() {
+        final List<PoolInstanceFilter> filters = new ArrayList<>();
+
+        final RunOwnerPoolInstanceFilter ownerFilter = new RunOwnerPoolInstanceFilter();
+        ownerFilter.setOperator(PoolInstanceFilterOperator.EQUAL);
+        ownerFilter.setValue("user");
+        filters.add(ownerFilter);
+
+        final RunOwnerGroupPoolInstanceFilter groupFilter = new RunOwnerGroupPoolInstanceFilter();
+        groupFilter.setOperator(PoolInstanceFilterOperator.NOT_EQUAL);
+        groupFilter.setValue("group");
+        filters.add(groupFilter);
+
+        final ConfigurationPoolInstanceFilter configurationFilter = new ConfigurationPoolInstanceFilter();
+        configurationFilter.setOperator(PoolInstanceFilterOperator.EMPTY);
+        filters.add(configurationFilter);
+
+        final PipelinePoolInstanceFilter pipelineFilter = new PipelinePoolInstanceFilter();
+        pipelineFilter.setOperator(PoolInstanceFilterOperator.NOT_EMPTY);
+        pipelineFilter.setValue(1L);
+        filters.add(pipelineFilter);
+
+        final DockerPoolInstanceFilter dockerFilter = new DockerPoolInstanceFilter();
+        dockerFilter.setOperator(PoolInstanceFilterOperator.EQUAL);
+        dockerFilter.setValue("centos");
+        filters.add(dockerFilter);
+
+        final ParameterPoolInstanceFilter parameterFilter = new ParameterPoolInstanceFilter();
+        parameterFilter.setOperator(PoolInstanceFilterOperator.EQUAL);
+        parameterFilter.setValue(Collections.singletonMap("key", "val"));
+        filters.add(parameterFilter);
+
+        return filters;
     }
 }
