@@ -13,23 +13,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool.filter;
+package com.epam.pipeline.entity.cluster.pool.filter.value;
 
-import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
-import java.util.Collections;
-import java.util.List;
+public class StringCaseInsensitiveValueMatcher extends StringValueMatcher {
 
-@Data
-public class PoolFilter {
-    private final PoolFilterOperator operator;
-    private final List<PoolInstanceFilter> filters;
+    public StringCaseInsensitiveValueMatcher(final String value) {
+        super(value);
+    }
 
-    @JsonIgnore
-    public boolean isEmpty() {
-        return CollectionUtils.isEmpty(filters);
+    @Override
+    public boolean matches(final String anotherValue) {
+        return StringUtils.equalsIgnoreCase(getValue(), anotherValue);
     }
 }

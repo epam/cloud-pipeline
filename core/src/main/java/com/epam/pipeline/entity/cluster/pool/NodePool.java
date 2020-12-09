@@ -68,6 +68,7 @@ public class NodePool {
         final RunningInstance runningInstance = new RunningInstance();
         runningInstance.setInstance(toRunInstance());
         runningInstance.setPrePulledImages(dockerImages);
+        runningInstance.setPool(this);
         return runningInstance;
     }
 

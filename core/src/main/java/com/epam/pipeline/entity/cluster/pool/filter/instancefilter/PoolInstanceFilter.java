@@ -15,10 +15,13 @@
 
 package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 
-import com.epam.pipeline.entity.cluster.pool.filter.value.FilterValue;
+import com.epam.pipeline.entity.cluster.pool.filter.value.ValueMatcher;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import java.util.Collection;
+import java.util.List;
 
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -34,6 +37,19 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 public interface PoolInstanceFilter<T> {
 
     PoolInstanceFilterOperator getOperator();
+
     T getValue();
+
     PoolInstanceFilterType getType();
+
+    @JsonIgnore
+    ValueMatcher<T> getMatcher();
+
+    default boolean evaluate(T value) {
+        return getOperator().evaluate(getMatcher(), value);
+    }
+
+    default boolean evaluate(Collection<T> value) {
+        return getOperator().evaluate(getMatcher(), value);
+    }
 }

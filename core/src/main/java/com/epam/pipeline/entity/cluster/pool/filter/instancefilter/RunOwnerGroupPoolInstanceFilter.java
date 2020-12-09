@@ -15,12 +15,19 @@
 
 package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 
+import com.epam.pipeline.entity.cluster.pool.filter.value.StringCaseInsensitiveValueMatcher;
+import com.epam.pipeline.entity.cluster.pool.filter.value.ValueMatcher;
 import lombok.Data;
 
 @Data
-public class RunOwnerGroupPoolInstanceFilter implements PoolInstanceFilter<String> {
+public class RunOwnerGroupPoolInstanceFilter implements StringInstanceFilter {
 
     private PoolInstanceFilterOperator operator;
     private String value;
     private PoolInstanceFilterType type = PoolInstanceFilterType.RUN_OWNER_GROUP;
+
+    @Override
+    public ValueMatcher<String> getMatcher() {
+        return new StringCaseInsensitiveValueMatcher(value);
+    }
 }

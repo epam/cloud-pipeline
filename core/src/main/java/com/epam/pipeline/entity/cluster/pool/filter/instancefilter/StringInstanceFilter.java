@@ -13,23 +13,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool.filter;
+package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 
-import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-import org.apache.commons.collections4.CollectionUtils;
+import com.epam.pipeline.entity.cluster.pool.filter.value.StringValueMatcher;
+import com.epam.pipeline.entity.cluster.pool.filter.value.ValueMatcher;
 
-import java.util.Collections;
-import java.util.List;
+public interface StringInstanceFilter extends PoolInstanceFilter<String> {
 
-@Data
-public class PoolFilter {
-    private final PoolFilterOperator operator;
-    private final List<PoolInstanceFilter> filters;
-
-    @JsonIgnore
-    public boolean isEmpty() {
-        return CollectionUtils.isEmpty(filters);
+    @Override
+    default ValueMatcher<String> getMatcher() {
+        return new StringValueMatcher(getValue());
     }
 }

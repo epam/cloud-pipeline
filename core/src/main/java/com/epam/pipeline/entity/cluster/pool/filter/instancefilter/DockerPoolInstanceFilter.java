@@ -18,7 +18,7 @@ package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 import lombok.Data;
 
 @Data
-public class DockerPoolInstanceFilter implements PoolInstanceFilter<String> {
+public class DockerPoolInstanceFilter implements StringInstanceFilter {
 
     private PoolInstanceFilterOperator operator;
     private String value;

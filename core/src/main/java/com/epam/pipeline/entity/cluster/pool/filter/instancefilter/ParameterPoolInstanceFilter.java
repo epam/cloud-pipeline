@@ -20,7 +20,7 @@ import lombok.Data;
 import java.util.Map;
 
 @Data
-public class ParameterPoolInstanceFilter implements PoolInstanceFilter<Map<String, String>> {
+public class ParameterPoolInstanceFilter implements MapInstanceFilter {
 
     private PoolInstanceFilterOperator operator;
     private Map<String, String> value;

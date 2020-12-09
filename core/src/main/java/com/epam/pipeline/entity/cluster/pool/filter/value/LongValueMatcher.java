@@ -15,29 +15,24 @@
 
 package com.epam.pipeline.entity.cluster.pool.filter.value;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Objects;
 
-@Data
-@NoArgsConstructor
-public class StringFilterValue implements FilterValue<String> {
+@RequiredArgsConstructor
+@Getter
+public class LongValueMatcher implements ValueMatcher<Long> {
 
-    private String value;
-
-    public StringFilterValue(final String value) {
-        this.value = value;
-    }
+    private final Long value;
 
     @Override
-    public boolean matches(final String anotherValue) {
+    public boolean matches(final Long anotherValue) {
         return Objects.equals(getValue(), anotherValue);
     }
 
     @Override
-    public boolean empty(final String anotherValue) {
-        return StringUtils.isBlank(getValue());
+    public boolean empty(final Long anotherValue) {
+        return Objects.isNull(anotherValue);
     }
 }

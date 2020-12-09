@@ -15,23 +15,19 @@
 
 package com.epam.pipeline.entity.cluster.pool.filter.value;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Objects;
 
-@Data
-@NoArgsConstructor
-public class MapFilterValue implements FilterValue<Map<String, String>> {
+@RequiredArgsConstructor
+@Getter
+public class MapValueMatcher implements ValueMatcher<Map<String, String>> {
 
-    private Map<String, String> value;
-
-    public MapFilterValue(final Map<String, String> value) {
-        this.value = value;
-    }
+    private final Map<String, String> value;
 
     @Override
     public boolean matches(final Map<String, String> anotherValue) {

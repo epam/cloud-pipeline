@@ -15,7 +15,7 @@
 
 package com.epam.pipeline.entity.cluster.pool.filter.value;
 
-public interface FilterValue<T> {
+public interface ValueMatcher<T> {
 
     T getValue();
     boolean matches(T anotherValue);
