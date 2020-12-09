@@ -54,12 +54,12 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         self.resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token):
+                     num_rep, time_rep, kube_ip, kubeadm_token, pre_pull_images=None):
         try:
             ins_key = utils.read_ssh_key(ins_key)
             swap_size = utils.get_swap_size(self.zone, ins_type, is_spot, "AZURE")
             user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token,
-                                                          swap_size)
+                                                          swap_size, pre_pull_images)
             instance_name = "az-" + uuid.uuid4().hex[0:16]
             access_config = utils.get_access_config(self.cloud_region)
             disable_external_access = False
