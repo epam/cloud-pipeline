@@ -90,8 +90,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
 
         final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
-        final Map<String, String> envVars = buildScriptGCPEnvVars(region);
-        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
+        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptGCPEnvVars(region));
     }
 
     @Override
@@ -111,8 +110,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public void scaleDownPoolNode(final GCPRegion region, final String nodeLabel) {
         final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, getProviderName());
-        final Map<String, String> envVars = buildScriptGCPEnvVars(region);
-        instanceService.runNodeDownScript(cmdExecutor, command, envVars);
+        instanceService.runNodeDownScript(cmdExecutor, command, buildScriptGCPEnvVars(region));
     }
 
     @Override

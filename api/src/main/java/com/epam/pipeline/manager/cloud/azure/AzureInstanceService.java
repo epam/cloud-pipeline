@@ -106,8 +106,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                    final Long runId,
                                    final RunInstance instance) {
         final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
-        final Map<String, String> envVars = buildScriptAzureEnvVars(region);
-        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
+        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptAzureEnvVars(region));
     }
 
     @Override
