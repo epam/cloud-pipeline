@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.util.Collection;
-import java.util.List;
 
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -33,7 +32,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = ConfigurationPoolInstanceFilter.class, name = "CONFIGURATION_ID"),
         @JsonSubTypes.Type(value = DockerPoolInstanceFilter.class, name = "DOCKER_IMAGE"),
         @JsonSubTypes.Type(value = ParameterPoolInstanceFilter.class, name = "RUN_PARAMETER")
-})
+    })
 public interface PoolInstanceFilter<T> {
 
     PoolInstanceFilterOperator getOperator();
