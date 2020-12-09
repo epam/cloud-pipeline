@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,7 @@ public class GCPInstanceServiceTest {
 
     private GCPRegion region;
     private GCPRegion regionWithoutAuthFile;
-    private GCPScalingService service = new GCPScalingService(
-            null, null, null, null, null, null, null, null);
+    private GCPScalingService service = new GCPScalingService(null, null, null, null, null, null, null);
 
     @Before
     public void setup() throws IOException {
