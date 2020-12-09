@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.notification;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,6 +26,7 @@ import java.util.Date;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class SystemNotification {
     private Long notificationId;
     private SystemNotificationSeverity severity;
