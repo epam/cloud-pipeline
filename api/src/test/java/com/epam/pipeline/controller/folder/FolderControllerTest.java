@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.manager.metadata.MetadataEntityApiService;
+import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
@@ -38,7 +38,7 @@ import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.FOLDER_TY
 import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.FOLDER_WITH_METADATA_TYPE;
 import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolder;
 import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolderWithMetadata;
-import static com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils.METADATA_ENTITY_LIST;
+import static com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils.METADATA_ENTITY_LIST_TYPE;
 import static com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils.getMetadataEntity;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -216,7 +216,7 @@ public class FolderControllerTest extends AbstractControllerTest {
                 .param("class", TEST_STRING));
 
         verify(mockMetadataEntityApiService).loadMetadataEntityByClass(ID, TEST_STRING);
-        assertResponse(mvcResult, metadataEntities, METADATA_ENTITY_LIST);
+        assertResponse(mvcResult, metadataEntities, METADATA_ENTITY_LIST_TYPE);
     }
 
     @Test
