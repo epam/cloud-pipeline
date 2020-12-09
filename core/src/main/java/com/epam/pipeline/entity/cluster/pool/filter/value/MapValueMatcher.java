@@ -35,21 +35,21 @@ public class MapValueMatcher implements ValueMatcher<Map<String, String>> {
         if (Objects.isNull(currentValue) || Objects.isNull(anotherValue)) {
             return false;
         }
-        return anotherValue.entrySet()
+        return currentValue.entrySet()
                 .stream()
-                .allMatch(anotherEntry -> {
-                    final String value = currentValue.get(anotherEntry.getKey());
+                .allMatch(entry -> {
+                    final String value = anotherValue.get(entry.getKey());
                     if (Objects.isNull(value)) {
                         return false;
                     }
-                    return Objects.equals(value, anotherEntry.getValue());
+                    return Objects.equals(value, entry.getValue());
                 });
     }
 
     /**
      * @param anotherValue
      * @return {@code true} if current map does not contain any value for
-     * any of {@param anotherValue} keys
+     * any of {@param anotherValue} keys or does not contain key at all
      */
     @Override
     public boolean empty(final Map<String, String> anotherValue) {
@@ -57,11 +57,11 @@ public class MapValueMatcher implements ValueMatcher<Map<String, String>> {
         if (Objects.isNull(currentValue)) {
             return Objects.nonNull(anotherValue);
         }
-        return MapUtils.emptyIfNull(anotherValue)
+        return MapUtils.emptyIfNull(currentValue)
                 .keySet()
                 .stream()
                 .allMatch(key -> {
-                    final String value = currentValue.get(key);
+                    final String value = anotherValue.get(key);
                     return StringUtils.isBlank(value);
                 });
     }
