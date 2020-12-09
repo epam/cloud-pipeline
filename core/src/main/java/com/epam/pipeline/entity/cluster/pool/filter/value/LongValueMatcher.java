@@ -13,16 +13,26 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool;
+package com.epam.pipeline.entity.cluster.pool.filter.value;
 
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import java.util.Set;
+import java.util.Objects;
 
-@Data
-public class RunningInstance {
-    private RunInstance instance;
-    private NodePool pool;
-    private Set<String> prePulledImages;
+@RequiredArgsConstructor
+@Getter
+public class LongValueMatcher implements ValueMatcher<Long> {
+
+    private final Long value;
+
+    @Override
+    public boolean matches(final Long anotherValue) {
+        return Objects.equals(getValue(), anotherValue);
+    }
+
+    @Override
+    public boolean empty(final Long anotherValue) {
+        return Objects.isNull(anotherValue);
+    }
 }

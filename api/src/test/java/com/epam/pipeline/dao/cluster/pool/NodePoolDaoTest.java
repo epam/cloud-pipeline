@@ -18,8 +18,8 @@ package com.epam.pipeline.dao.cluster.pool;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
-import com.epam.pipeline.test.creator.cluster.schedule.NodeScheduleCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.schedule.NodePoolCreatorUtils;
+import com.epam.pipeline.test.creator.cluster.schedule.NodeScheduleCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 
 @Transactional
 public class NodePoolDaoTest extends AbstractSpringTest {
@@ -45,6 +44,15 @@ public class NodePoolDaoTest extends AbstractSpringTest {
     @Test
     public void shouldCreateAndLoadNewPoolWithoutSchedule() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        final NodePool created = poolDao.create(pool);
+        assertThat(created.getId()).isNotNull();
+        findAndAssertPool(created);
+    }
+
+    @Test
+    public void shouldCreateAndLoadNewPoolWithFilter() {
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setFilter(NodePoolCreatorUtils.getAllFilters());
         final NodePool created = poolDao.create(pool);
         assertThat(created.getId()).isNotNull();
         findAndAssertPool(created);

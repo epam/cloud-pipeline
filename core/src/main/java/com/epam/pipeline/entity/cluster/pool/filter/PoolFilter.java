@@ -13,16 +13,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool;
+package com.epam.pipeline.entity.cluster.pool.filter;
 
-import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import org.apache.commons.collections4.CollectionUtils;
 
-import java.util.Set;
+import java.util.Collections;
+import java.util.List;
 
 @Data
-public class RunningInstance {
-    private RunInstance instance;
-    private NodePool pool;
-    private Set<String> prePulledImages;
+public class PoolFilter {
+    private final PoolFilterOperator operator;
+    private final List<PoolInstanceFilter> filters;
+
+    @JsonIgnore
+    public boolean isEmpty() {
+        return CollectionUtils.isEmpty(filters);
+    }
 }

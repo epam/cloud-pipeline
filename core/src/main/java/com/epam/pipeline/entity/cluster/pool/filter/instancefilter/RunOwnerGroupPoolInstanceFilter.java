@@ -13,16 +13,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool;
+package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 
-import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.cluster.pool.filter.value.StringCaseInsensitiveValueMatcher;
+import com.epam.pipeline.entity.cluster.pool.filter.value.ValueMatcher;
 import lombok.Data;
 
-import java.util.Set;
-
 @Data
-public class RunningInstance {
-    private RunInstance instance;
-    private NodePool pool;
-    private Set<String> prePulledImages;
+public class RunOwnerGroupPoolInstanceFilter implements StringInstanceFilter {
+
+    private PoolInstanceFilterOperator operator;
+    private String value;
+    private PoolInstanceFilterType type = PoolInstanceFilterType.RUN_OWNER_GROUP;
+
+    @Override
+    public ValueMatcher<String> getMatcher() {
+        return new StringCaseInsensitiveValueMatcher(value);
+    }
 }

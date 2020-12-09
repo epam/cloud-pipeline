@@ -16,6 +16,7 @@
 package com.epam.pipeline.controller.vo.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import lombok.Data;
 
 import java.util.Set;
@@ -34,4 +35,5 @@ public class NodePoolVO {
     private String instanceImage;
     private int count;
     private Long scheduleId;
+    private PoolFilter filter;
 }

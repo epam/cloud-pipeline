@@ -13,16 +13,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool;
+package com.epam.pipeline.manager.cluster.autoscale.filter;
 
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import lombok.Data;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilterType;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 
-import java.util.Set;
+public interface PoolFilterHandler<E, T extends PoolInstanceFilter<E>> {
 
-@Data
-public class RunningInstance {
-    private RunInstance instance;
-    private NodePool pool;
-    private Set<String> prePulledImages;
+    boolean matches(T filter, PipelineRun run);
+    PoolInstanceFilterType type();
 }
