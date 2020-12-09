@@ -38,59 +38,22 @@ function call_api() {
 
 }
 
-function pipe_api_log() {
-  _MESSAGE="$1"
-  _STATUS="$2"
-  if [[ "$RUN_ID" ]] && [[ "$LOG_TASK" ]]
-  then
-    if [[ "$_STATUS" == "$ERROR_LOG_LEVEL" ]]
-    then
-      STATUS="FAILURE"
-    else
-      STATUS="RUNNING"
-    fi
-    call_api "$API" "$API_TOKEN" "run/$RUN_ID/log" "POST" '{
-        "date": "'"$(get_current_date)"'",
-        "logText": "'"$_MESSAGE"'",
-        "runId": '"$RUN_ID"',
-        "status": "'"$STATUS"'",
-        "taskName": "'"$LOG_TASK"'"
-      }'
-  fi
-}
-
-function pipe_log_debug() {
-  _MESSAGE="$1"
-  pipe_log "$_MESSAGE" "$DEBUG_LOG_LEVEL"
-}
-
-function pipe_log_info() {
-  _MESSAGE="$1"
-  pipe_log "$_MESSAGE" "$INFO_LOG_LEVEL"
-}
-
-function pipe_log_error() {
-  _MESSAGE="$1"
-  pipe_log "$_MESSAGE" "$ERROR_LOG_LEVEL"
+function get_event_mark() {
+  _EVENT="$1"
+  echo "$_EVENT" | sed 's/.*\[\([^]]*\)\].*/\1/g' | xargs | awk -F. '{print $1}'
 }
 
 function get_current_date() {
   date '+%Y-%m-%d %H:%M:%S.%N' | cut -b1-23
 }
 
-function pipe_log() {
+pipe_log_debug() {
   _MESSAGE="$1"
-  _STATUS="$2"
-  echo "$(get_current_date): [$_STATUS] $_MESSAGE"
-  if [[ "$DEBUG" ]] || [[ "$_STATUS" != "$DEBUG_LOG_LEVEL" ]]
+  echo "$(get_current_date): [DEBUG] $_MESSAGE"
+  if [[ "$DEBUG" ]]
   then
-    pipe_api_log "$_MESSAGE" "$_STATUS"
+    pipe_log_warn "[DEBUG] $_MESSAGE" "$LOG_TASK"
   fi
-}
-
-function get_event_mark() {
-  _EVENT="$1"
-  echo "$_EVENT" | sed 's/.*\[\([^]]*\)\].*/\1/g' | xargs | awk -F. '{print $1}'
 }
 
 function log_oom_killer_events() {
@@ -101,7 +64,7 @@ function log_oom_killer_events() {
     if [[ "$OOM_KILLER_EVENT_MARK" -gt "$_LAST_SYNC_MARK" ]]
     then
       EVENT_MESSAGE=$(echo "$i" | sed -e 's/\[[^][]*\]//g' | xargs)
-      pipe_log_info "$EVENT_MESSAGE"
+      pipe_log_warn "[WARN] $EVENT_MESSAGE" "$LOG_TASK"
     fi
   done
 }
@@ -114,10 +77,6 @@ function get_current_run_id() {
     jq -r ".payload.labels.runid" |
     grep -v "^null$"
 }
-
-ERROR_LOG_LEVEL="ERROR"
-INFO_LOG_LEVEL="INFO"
-DEBUG_LOG_LEVEL="DEBUG"
 
 while [[ "$#" -gt "0" ]]
 do
@@ -160,11 +119,11 @@ done
 
 if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$NODE" ]] || [[ -z "$SYNC_FILE" ]]
 then
-  pipe_log_error "Some of the required arguments are missing."
+  pipe_log_error "Some of the required arguments are missing." "$LOG_TASK"
   exit 1
 fi
 
-LOG_TASK="${LOG_TASK:-InstanceMonitoring}"
+LOG_TASK="${LOG_TASK:-OOM Logs}"
 MONITORING_DELAY="${MONITORING_DELAY:-10}"
 
 LAST_SYNC_MARK=0
