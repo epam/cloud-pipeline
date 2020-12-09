@@ -13,16 +13,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool;
+package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 
-import com.epam.pipeline.entity.pipeline.RunInstance;
 import lombok.Data;
 
-import java.util.Set;
-
 @Data
-public class RunningInstance {
-    private RunInstance instance;
-    private NodePool pool;
-    private Set<String> prePulledImages;
+public class ConfigurationPoolInstanceFilter implements LongInstanceFilter {
+
+    private PoolInstanceFilterOperator operator;
+    private Long value;
+    private PoolInstanceFilterType type = PoolInstanceFilterType.CONFIGURATION_ID;
 }
