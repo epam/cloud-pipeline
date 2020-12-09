@@ -134,6 +134,8 @@ import org.springframework.security.acls.model.AclCache;
 import javax.sql.DataSource;
 import java.util.concurrent.Executor;
 
+import static org.mockito.Mockito.spy;
+
 @Configuration
 public class AclTestBeans {
 
@@ -490,6 +492,6 @@ public class AclTestBeans {
         grantPermissionManager.setNodesManager(mockNodesManager);
         grantPermissionManager.setPermissionEvaluator(permissionEvaluator);
         grantPermissionManager.setPermissionFactory(permissionFactory);
-        return grantPermissionManager;
+        return spy(grantPermissionManager);
     }
 }

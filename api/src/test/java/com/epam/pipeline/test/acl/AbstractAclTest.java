@@ -54,6 +54,7 @@ public abstract class AbstractAclTest {
     protected static final String ADMIN_ROLE = "ADMIN";
     protected static final String CONFIGURATION_MANAGER_ROLE = "CONFIGURATION_MANAGER";
     protected static final String ENTITIES_MANAGER_ROLE = "ENTITIES_MANAGER";
+    protected static final String PIPELINE_MANAGER_ROLE = "PIPELINE_MANAGER";
     protected static final String OWNER_USER = "OWNER";
     protected static final String GENERAL_USER_ROLE = "USER";
     protected static final String USER_READER_ROLE = "USER_READER";
