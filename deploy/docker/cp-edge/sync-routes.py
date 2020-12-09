@@ -550,11 +550,11 @@ def create_dns_record(service_spec):
                 raise ValueError("Hosted DNS zone is not configured or couldn't be retrieved")
 
 
-def create_dns_service_location(service_spec):
+def create_dns_service_location(service_spec, added_route):
         create_dns_record(service_spec)
-        create_service_location(service_spec)
+        create_service_location(service_spec, added_route)
 
-def create_service_location(service_spec):
+def create_service_location(service_spec, added_route):
         has_custom_domain = service_spec["custom_domain"] is not None
         service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip
         service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
@@ -742,27 +742,20 @@ service_url_dict = {}
 # loop through all routes that we need to create, if this route doesn't have option to create custom DNS record
 # we handle it it the main thread, if custom DNS record should be created, since it consume some time ~ 20 sec,
 # we put it to the async pool and store result future.
-async_operation_results = []
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
         need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] and not service_spec["custom_domain"] else False
         if need_to_create_dns_record:
-                async_operation_results.append(
-                        dns_services_pool.apply_async(create_dns_service_location, (service_spec, ))
-                )
+                dns_services_pool.apply_async(create_dns_service_location, (service_spec, added_route))
         else:
-                create_service_location(service_spec)
+                create_service_location(service_spec, added_route)
 
-# Here we check all future on completion, if any of it fail - just print it to the log
-for task_status in async_operation_results:
-        try:
-                code, content = task_status.get()
-                if code != 0:
-                        print("Something is wrong with creation of Service URL with custom DNS")
-        except ValueError as e:
-                print(e)
-
+# Here we check all future on completion
+print("Wait for all async jobs to complete")
+dns_services_pool.close()
+dns_services_pool.join()
+print("All async service location creations is completed")
 
 # Once all entries are added to the template - run "nginx -s reload"
 # TODO: Add error handling, if non-zero is returned - restore previous state
@@ -787,3 +780,5 @@ for run_id in service_url_dict:
                 print('Service url ({}) assigned to RunID: {}'.format(service_urls_json, run_id))
         else:
                 print('Service url was not assigned due to API errors')
+
+print("\n")

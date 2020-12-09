@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.manager.cluster.cleaner;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cloud.aws.Route53Helper;
@@ -22,14 +23,12 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -44,7 +43,6 @@ public class DNSRecordRunCleaner implements RunCleaner {
     private final PreferenceManager preferenceManager;
     private final UtilsManager utilsManager;
     private final Route53Helper route53Helper;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public DNSRecordRunCleaner(final PreferenceManager preferenceManager,
                                final UtilsManager utilsManager,
@@ -68,22 +66,18 @@ public class DNSRecordRunCleaner implements RunCleaner {
                 "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
         );
 
-        try {
-            final JsonNode serviceUrlsNode = mapper.readTree(serviceUrls);
-            serviceUrlsNode.iterator().forEachRemaining(jsonNode -> {
-                final Map<String, String> map = mapper.convertValue(
-                        jsonNode,
-                        new TypeReference<Map<String, String>>(){}
-                );
+        List<Map<String, String>> serviceUrlsList = JsonMapper.parseData(
+                serviceUrls,
+                new TypeReference<List<Map<String, String>>>(){}
+        );
 
-                final String url = map.get("url");
-                if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
-                    route53Helper.removeDNSRecord(hostZoneId, new InstanceDNSRecord(unify(url), utilsManager.getEdgeDomainNameOrIP(), null));
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        serviceUrlsList.forEach(serviceUrl -> {
+            final String url = serviceUrl.get("url");
+            if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
+                route53Helper.removeDNSRecord(hostZoneId,
+                        new InstanceDNSRecord(unify(url), utilsManager.getEdgeDomainNameOrIP(), null));
+            }
+        });
     }
 
     private static String unify(final String url) {
