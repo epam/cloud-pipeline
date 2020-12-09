@@ -39,8 +39,7 @@ function call_api() {
 }
 
 function get_event_mark() {
-  _EVENT="$1"
-  echo "$_EVENT" | sed 's/.*\[\([^]]*\)\].*/\1/g' | xargs | awk -F. '{print $1}'
+  date -d "$(echo $1 | sed 's/.*\[\([^]]*\)\].*/\1/g')" +%s
 }
 
 function get_current_date() {
@@ -56,9 +55,13 @@ pipe_log_debug() {
   fi
 }
 
+find_oom_killer_events() {
+  dmesg -T | grep -E -i 'killed process'
+}
+
 function log_oom_killer_events() {
   _LAST_SYNC_MARK="$1"
-  dmesg | grep -E -i 'killed process' | while read -r i
+  find_oom_killer_events | while read -r i
   do
     OOM_KILLER_EVENT_MARK=$(get_event_mark "$i")
     if [[ "$OOM_KILLER_EVENT_MARK" -gt "$_LAST_SYNC_MARK" ]]
@@ -142,7 +145,7 @@ do
     pipe_log_debug "No run is assigned to the node."
     continue
   fi
-  LAST_OOM_KILLER_EVENT=$(dmesg | grep -E -i 'killed process' | tail -1)
+  LAST_OOM_KILLER_EVENT=$(find_oom_killer_events | tail -1)
   if [[ -z "$LAST_OOM_KILLER_EVENT" ]]
   then
     # No OOM killer events found
