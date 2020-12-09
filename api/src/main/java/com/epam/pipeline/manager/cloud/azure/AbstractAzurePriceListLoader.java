@@ -55,7 +55,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.manager.cloud.CloudInstanceService.log;
+import static com.epam.pipeline.manager.cloud.CloudScalingService.log;
 
 public abstract class AbstractAzurePriceListLoader {
 

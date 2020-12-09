@@ -21,16 +21,18 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-public abstract class AbstractProviderInstanceService<T extends AbstractCloudRegion>
-    implements CloudInstanceService<T> {
+public abstract class AbstractProviderScalingService<T extends AbstractCloudRegion>
+    implements CloudScalingService<T> {
 
     protected final ClusterCommandService commandService;
     protected final CommonCloudInstanceService instanceService;
@@ -40,12 +42,12 @@ public abstract class AbstractProviderInstanceService<T extends AbstractCloudReg
     private final ParallelExecutorService executorService;
     private final String nodeReassignScript;
 
-    public AbstractProviderInstanceService(final ClusterCommandService commandService,
-                                           final CommonCloudInstanceService instanceService,
-                                           final ParallelExecutorService executorService,
-                                           final String nodeDownScript,
-                                           final String nodeReassignScript,
-                                           final String nodeTerminateScript) {
+    public AbstractProviderScalingService(final ClusterCommandService commandService,
+                                          final CommonCloudInstanceService instanceService,
+                                          final ParallelExecutorService executorService,
+                                          final String nodeDownScript,
+                                          final String nodeReassignScript,
+                                          final String nodeTerminateScript) {
         this.commandService = commandService;
         this.instanceService = instanceService;
         this.executorService=executorService;
@@ -106,6 +108,11 @@ public abstract class AbstractProviderInstanceService<T extends AbstractCloudReg
         runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, buildScriptEnvVars(region)));
     }
 
+    @Override
+    public LocalDateTime getNodeLaunchTime(final T region, final Long runId) {
+        return instanceService.getNodeLaunchTimeFromKube(runId);
+    }
+
     public CompletableFuture<Void> runAsync(final Runnable task) {
         if (executorService == null) {
             throw new UnsupportedOperationException(
@@ -118,4 +125,8 @@ public abstract class AbstractProviderInstanceService<T extends AbstractCloudReg
 
     protected abstract String buildNodeUpCommand(T region, String nodeLabel, RunInstance instance,
                                                  Map<String, String> labels);
+
+    private Map<String, String> getPoolLabels(final NodePool pool) {
+        return Collections.singletonMap(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(pool.getId()));
+    }
 }

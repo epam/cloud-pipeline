@@ -18,10 +18,16 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.exception.cloud.gcp.GCPException;
+import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.google.api.services.compute.model.Instance;
 import com.google.api.services.compute.model.Operation;
 import lombok.RequiredArgsConstructor;
@@ -33,11 +39,12 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GCPVMService {
+public class GCPVMService implements CloudInstanceService<GCPRegion> {
 
     private static final String RUN_ID_LABEL_NAME = "name";
     private static final String LABEL_FILTER = "labels.%s=\"%s\"";
@@ -56,6 +63,12 @@ public class GCPVMService {
     private final GCPClient gcpClient;
     private final MessageHelper messageHelper;
 
+    @Override
+    public CloudProvider getProvider() {
+        return CloudProvider.GCP;
+    }
+
+    @Override
     public CloudInstanceOperationResult startInstance(final GCPRegion region, final String instanceId) {
         try {
             gcpClient.buildComputeClient(region).instances()
@@ -69,6 +82,7 @@ public class GCPVMService {
         );
     }
 
+    @Override
     public void stopInstance(final GCPRegion region, final String instanceId) {
         try {
             gcpClient.buildComputeClient(region).instances()
@@ -79,25 +93,64 @@ public class GCPVMService {
         }
     }
 
-    public Instance getRunningInstanceByRunId(final GCPRegion region, final String runId) {
+    @Override
+    public RunInstance describeAliveInstance(final GCPRegion region, final String nodeLabel,
+                                             final RunInstance instance) {
         try {
-            final Instance instance = findInstanceByTag(region, RUN_ID_LABEL_NAME, runId);
-
-            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
-            if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
-                return instance;
-            } else {
-                throw new GCPException(
-                        messageHelper.getMessage(MessageConstants.ERROR_GCP_INSTANCE_NOT_RUNNING,
-                                runId, instanceStatus));
-            }
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new GCPException(e);
+            return fillRunInstanceFromGcpVm(instance, getAliveInstance(region, nodeLabel));
+        } catch (GCPException e) {
+            log.error("An error while getting instance description {}", nodeLabel);
+            return null;
         }
     }
 
-    public Optional<InstanceTerminationState> getTerminationState(final GCPRegion region, final String instanceId) {
+    @Override
+    public RunInstance describeInstance(final GCPRegion region, final String nodeLabel, final RunInstance instance) {
+        try {
+            return fillRunInstanceFromGcpVm(instance, getRunningInstanceByRunId(region, nodeLabel));
+        } catch (GCPException e) {
+            log.error("An error while getting instance description {}", nodeLabel);
+            return null;
+        }
+    }
+
+    @Override
+    public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request) {
+        throw new UnsupportedOperationException("Disk attaching doesn't work with GCP provider yet.");
+    }
+
+    @Override
+    public List<InstanceDisk> loadDisks(final GCPRegion region, final Long runId) {
+        return getAliveInstance(region, String.valueOf(runId)).getDisks().stream()
+            .map(disk -> disk.get("diskSizeGb"))
+            .filter(String.class::isInstance)
+            .map(String.class::cast)
+            .map(Long::valueOf)
+            .map(InstanceDisk::new)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final GCPRegion region, final String nodeLabel) {
+        try {
+            final Instance instance = findInstanceByTag(region, RUN_ID_LABEL_NAME, nodeLabel);
+            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
+            if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (GCPInstanceStatus.getStopStatuses().contains(instanceStatus)) {
+                return CloudInstanceState.STOPPED;
+            }
+            return CloudInstanceState.TERMINATED;
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            return CloudInstanceState.TERMINATED;
+        }
+    }
+
+    @Override
+    public Optional<InstanceTerminationState> getInstanceTerminationState(final GCPRegion region,
+                                                                          final String instanceId) {
         try {
             final List<Operation> operations = gcpClient.buildComputeClient(region)
                     .zoneOperations()
@@ -130,24 +183,7 @@ public class GCPVMService {
         }
     }
 
-    public Instance findInstanceByNameTag(final GCPRegion region, final String name) throws IOException {
-        return findInstanceByTag(region, RUN_ID_LABEL_NAME, name);
-    }
-
-    private Instance findInstanceByTag(final GCPRegion region,
-                                       final String key,
-                                       final String value) throws IOException {
-        return ListUtils.emptyIfNull(
-                gcpClient.buildComputeClient(region).instances()
-                        .list(region.getProject(), region.getRegionCode())
-                        .setFilter(String.format(LABEL_FILTER, key, value))
-                        .execute()
-                        .getItems())
-                .stream().findFirst()
-                .orElseThrow(() -> new GCPException(messageHelper.getMessage(
-                        MessageConstants.ERROR_GCP_INSTANCE_NOT_FOUND, key + ":" + value)));
-    }
-
+    @Override
     public void terminateInstance(final GCPRegion region, final String instanceId) {
         try {
             gcpClient.buildComputeClient(region)
@@ -159,6 +195,7 @@ public class GCPVMService {
         }
     }
 
+    @Override
     public boolean instanceExists(final GCPRegion region, final String instanceId) {
         try {
             return  null != gcpClient.buildComputeClient(region)
@@ -169,7 +206,39 @@ public class GCPVMService {
         }
     }
 
-    public Instance getAliveInstance(final GCPRegion region, final String runId) {
+    private Instance getRunningInstanceByRunId(final GCPRegion region, final String runId) {
+        try {
+            final Instance instance = findInstanceByTag(region, RUN_ID_LABEL_NAME, runId);
+
+            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
+            if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
+                return instance;
+            } else {
+                throw new GCPException(
+                    messageHelper.getMessage(MessageConstants.ERROR_GCP_INSTANCE_NOT_RUNNING,
+                                             runId, instanceStatus));
+            }
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new GCPException(e);
+        }
+    }
+
+    private Instance findInstanceByTag(final GCPRegion region,
+                                       final String key,
+                                       final String value) throws IOException {
+        return ListUtils.emptyIfNull(
+            gcpClient.buildComputeClient(region).instances()
+                .list(region.getProject(), region.getRegionCode())
+                .setFilter(String.format(LABEL_FILTER, key, value))
+                .execute()
+                .getItems())
+            .stream().findFirst()
+            .orElseThrow(() -> new GCPException(messageHelper.getMessage(
+                MessageConstants.ERROR_GCP_INSTANCE_NOT_FOUND, key + ":" + value)));
+    }
+
+    private Instance getAliveInstance(final GCPRegion region, final String runId) {
         try {
             return  ListUtils.emptyIfNull(
                     gcpClient.buildComputeClient(region).instances()
@@ -192,5 +261,15 @@ public class GCPVMService {
             log.error(e.getMessage(), e);
             throw new GCPException(e);
         }
+    }
+
+    private RunInstance fillRunInstanceFromGcpVm(final RunInstance instance, final Instance vm) {
+        instance.setNodeId(vm.getName());
+        // According to https://cloud.google.com/compute/docs/instances/custom-hostname-vm and
+        // https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
+        // gcloud create internal dns name with form: [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal
+        instance.setNodeName(vm.getName());
+        instance.setNodeIP(vm.getNetworkInterfaces().get(0).getNetworkIP());
+        return instance;
     }
 }

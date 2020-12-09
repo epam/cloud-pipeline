@@ -16,18 +16,12 @@
 
 package com.epam.pipeline.manager.cloud.azure;
 
-import com.epam.pipeline.entity.cloud.CloudInstanceState;
-import com.epam.pipeline.entity.cloud.InstanceTerminationState;
-import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
-import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
-import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.exception.cloud.azure.AzureException;
-import com.epam.pipeline.manager.cloud.AbstractProviderInstanceService;
+import com.epam.pipeline.manager.cloud.AbstractProviderScalingService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.AbstractClusterCommand;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
@@ -45,18 +39,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
 
 @Service
 @Slf4j
-public class AzureInstanceService extends AbstractProviderInstanceService<AzureRegion> {
+public class AzureScalingService extends AbstractProviderScalingService<AzureRegion> {
 
     private static final String AZURE_AUTH_LOCATION = "AZURE_AUTH_LOCATION";
     private static final String AZURE_RESOURCE_GROUP = "AZURE_RESOURCE_GROUP";
-    private final AzureVMService vmService;
     private final PreferenceManager preferenceManager;
     private final CloudRegionManager cloudRegionManager;
     private final String nodeUpScript;
@@ -64,23 +54,21 @@ public class AzureInstanceService extends AbstractProviderInstanceService<AzureR
     private final String kubeMasterIP;
     private final String kubeToken;
 
-    public AzureInstanceService(final CommonCloudInstanceService instanceService,
-                                final ClusterCommandService commandService,
-                                final PreferenceManager preferenceManager,
-                                final AzureVMService vmService,
-                                final CloudRegionManager regionManager,
-                                final ParallelExecutorService executorService,
-                                @Value("${cluster.azure.nodeup.script:}") final String nodeUpScript,
-                                @Value("${cluster.azure.nodedown.script:}") final String nodeDownScript,
-                                @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
-                                @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
-                                @Value("${kube.master.ip}") final String kubeMasterIP,
-                                @Value("${kube.kubeadm.token}") final String kubeToken) {
+    public AzureScalingService(final CommonCloudInstanceService instanceService,
+                               final ClusterCommandService commandService,
+                               final PreferenceManager preferenceManager,
+                               final CloudRegionManager regionManager,
+                               final ParallelExecutorService executorService,
+                               @Value("${cluster.azure.nodeup.script:}") final String nodeUpScript,
+                               @Value("${cluster.azure.nodedown.script:}") final String nodeDownScript,
+                               @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
+                               @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
+                               @Value("${kube.master.ip}") final String kubeMasterIP,
+                               @Value("${kube.kubeadm.token}") final String kubeToken) {
         super(commandService, instanceService, executorService, nodeDownScript, nodeReassignScript,
               nodeTerminateScript);
         this.cloudRegionManager = regionManager;
         this.preferenceManager = preferenceManager;
-        this.vmService = vmService;
         this.nodeUpScript = nodeUpScript;
         this.kubeMasterIP = kubeMasterIP;
         this.kubeToken = kubeToken;
@@ -98,49 +86,8 @@ public class AzureInstanceService extends AbstractProviderInstanceService<AzureR
     }
 
     @Override
-    public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
-        return vmService.startInstance(region, instanceId);
-    }
-
-    @Override
-    public void stopInstance(final AzureRegion region, final String instanceId) {
-        vmService.stopInstance(region, instanceId);
-    }
-
-    @Override
-    public void terminateInstance(final AzureRegion region, final String instanceId) {
-        vmService.terminateInstance(region, instanceId);
-    }
-
-    @Override
-    public boolean instanceExists(final AzureRegion region, final String instanceId) {
-        return vmService.searchVmResource(region, instanceId).isPresent();
-    }
-
-    @Override
-    public RunInstance describeInstance(final AzureRegion region, final String nodeLabel, final RunInstance instance) {
-        return describeInstance(nodeLabel, instance, () -> vmService.getRunningVMByRunId(region, nodeLabel));
-    }
-
-    @Override
-    public RunInstance describeAliveInstance(final AzureRegion region, final String nodeLabel,
-                                             final RunInstance instance) {
-        return describeInstance(nodeLabel, instance, () -> vmService.getAliveVMByRunId(region, nodeLabel));
-    }
-
-    private RunInstance describeInstance(final String nodeLabel,
-                                         final RunInstance instance,
-                                         final Supplier<AzureVirtualMachineStats> supplier) {
-        try {
-            final AzureVirtualMachineStats vm = supplier.get();
-            instance.setNodeId(vm.getName());
-            instance.setNodeName(vm.getName());
-            instance.setNodeIP(vm.getPrivateIP());
-            return instance;
-        } catch (AzureException e) {
-            log.error("An error while getting instance description {}", nodeLabel);
-            return null;
-        }
+    public CloudProvider getProvider() {
+        return CloudProvider.AZURE;
     }
 
     @Override
@@ -154,47 +101,6 @@ public class AzureInstanceService extends AbstractProviderInstanceService<AzureR
         return envVars;
     }
 
-    @Override
-    public Optional<InstanceTerminationState> getInstanceTerminationState(final AzureRegion region,
-                                                                          final String instanceId) {
-        return vmService.getFailingVMStatus(region, instanceId).map(status -> InstanceTerminationState.builder()
-                .instanceId(instanceId)
-                .stateCode(status.code())
-                .stateMessage(status.message())
-                .build());
-    }
-
-    @Override
-    public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request) {
-        throw new UnsupportedOperationException("Disk attaching doesn't work with Azure provider yet.");
-    }
-
-    @Override
-    public List<InstanceDisk> loadDisks(final AzureRegion region, final Long runId) {
-        return vmService.getAliveVMByRunId(region, String.valueOf(runId)).getDisks();
-    }
-
-    @Override
-    public CloudProvider getProvider() {
-        return CloudProvider.AZURE;
-    }
-
-    @Override
-    public CloudInstanceState getInstanceState(final AzureRegion region, final String nodeLabel) {
-        try {
-            final AzureVirtualMachineStats virtualMachine = vmService.getVMStatsByTag(region, nodeLabel);
-            if (virtualMachine.hasRunningState()) {
-                return CloudInstanceState.RUNNING;
-            }
-            if (virtualMachine.hasStopState()) {
-                return CloudInstanceState.STOPPED;
-            }
-            return CloudInstanceState.TERMINATED;
-        } catch (AzureException e) {
-            log.error(e.getMessage(), e);
-            return CloudInstanceState.TERMINATED;
-        }
-    }
 
     @Override
     protected Map<String, String> buildScriptEnvVars(final AzureRegion region) {

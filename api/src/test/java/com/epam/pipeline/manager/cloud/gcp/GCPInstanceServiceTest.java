@@ -47,7 +47,7 @@ public class GCPInstanceServiceTest {
 
     private GCPRegion region;
     private GCPRegion regionWithoutAuthFile;
-    private GCPInstanceService service = new GCPInstanceService(
+    private GCPScalingService service = new GCPScalingService(
             null, null, null, null, null, null, null, null);
 
     @Before
@@ -82,7 +82,7 @@ public class GCPInstanceServiceTest {
     @Test
     public void noCredFileInEnvVarsIfNoRegionAuthFile() {
         Map<String, String> envVars = service.buildContainerCloudEnvVars(regionWithoutAuthFile);
-        if (System.getenv(GCPInstanceService.GOOGLE_APPLICATION_CREDENTIALS) == null) {
+        if (System.getenv(GCPScalingService.GOOGLE_APPLICATION_CREDENTIALS) == null) {
             Assert.assertFalse(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX
                     + regionWithoutAuthFile.getId()));
         } else {
