@@ -114,6 +114,11 @@ function nginx_add_proxy_entry {
 
 mkdir -p /opt/tinyproxy/nginx/logs
 CP_TP_NGINX_CONFIG="${CP_TP_NGINX_CONFIG:-/etc/nginx/nginx.conf}"
+CP_TP_CLUSTER_RESOLVER="${CP_TP_CLUSTER_RESOLVER:-$CP_PREF_CLUSTER_PROXIES_DNS_POST}"
+if [ -z "$CP_TP_CLUSTER_RESOLVER" ]; then
+    export CP_TP_CLUSTER_RESOLVER="10.96.0.10"
+    echo "Cluster resolver is NOT set by CP_TP_CLUSTER_RESOLVER and CP_PREF_CLUSTER_PROXIES_DNS_POST, defaulting to $CP_TP_CLUSTER_RESOLVER"
+fi
 
 if [ "$CP_TP_TCP_DEST" ] || [ "$CP_TP_UDP_DEST" ]; then
 
@@ -131,6 +136,8 @@ events {
 }
 
 stream {
+    resolver $CP_TP_CLUSTER_RESOLVER;
+    resolver_timeout 5s;
 EOF
 
 echo "Adding nginx tcp/udp forward entries"
