@@ -17,7 +17,7 @@
 package com.epam.pipeline.controller.notification;
 
 import com.epam.pipeline.entity.notification.NotificationSettings;
-import com.epam.pipeline.manager.notification.NotificationSettingsApiService;
+import com.epam.pipeline.acl.notification.NotificationSettingsApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
