@@ -23,10 +23,8 @@ import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.AbstractProviderScalingService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
-import com.epam.pipeline.manager.cloud.commands.AbstractClusterCommand;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
-import com.epam.pipeline.manager.cloud.commands.RunIdArgCommand;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -67,7 +65,7 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
 
     @Override
     public void scaleDownPoolNode(final AzureRegion region, final String nodeLabel) {
-        final String command = buildNodeDownCommand(nodeLabel);
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, null);
         runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars(region)));
     }
 
@@ -108,14 +106,5 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
         if (BooleanUtils.isTrue(clusterSpotStrategy)) {
             commandBuilder.isSpot(true);
         }
-    }
-
-    private String buildNodeDownCommand(final String nodeLabel) {
-        return RunIdArgCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeDownScript)
-                .runId(nodeLabel)
-                .build()
-                .getCommand();
     }
 }
