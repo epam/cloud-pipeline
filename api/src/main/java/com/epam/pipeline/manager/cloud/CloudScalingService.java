@@ -23,17 +23,12 @@ import com.epam.pipeline.manager.cluster.autoscale.AutoscalerServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.Map;
 
 public interface CloudScalingService<T extends AbstractCloudRegion> extends CloudAwareService {
 
     Logger log = LoggerFactory.getLogger(AutoscalerServiceImpl.class);
-    int TIME_DELIMITER = 60;
-    int TIME_TO_SHUT_DOWN_NODE = 1;
 
     /**
      * Creates new instance using specified cloud and adds it to cluster
@@ -43,7 +38,6 @@ public interface CloudScalingService<T extends AbstractCloudRegion> extends Clou
      * @return
      */
     RunInstance scaleUpNode(T region, Long runId, RunInstance instance);
-
     RunInstance scaleUpPoolNode(T region, String nodeId, NodePool node);
 
     /**
@@ -69,7 +63,6 @@ public interface CloudScalingService<T extends AbstractCloudRegion> extends Clou
      */
     LocalDateTime getNodeLaunchTime(T region, Long runId);
 
-
     /**
      * Reassigns node from one run to a new one
      * @param oldId
@@ -84,30 +77,4 @@ public interface CloudScalingService<T extends AbstractCloudRegion> extends Clou
      * @param region
      */
     Map<String, String> buildContainerCloudEnvVars(T region);
-
-    // TODO: this logic is moved to NodeExpirationService class, remove this method
-    //  if it is not needed anymore
-    default boolean isNodeExpired(T region, Long runId, Integer keepAliveMinutes) {
-        if (keepAliveMinutes == null) {
-            return true;
-        }
-        try {
-            log.debug("Getting node launch time.");
-            LocalDateTime launchTime = getNodeLaunchTime(region, runId);
-            if (launchTime == null) {
-                return true;
-            }
-            log.debug("Node {} launch time {}.", runId, launchTime);
-            LocalDateTime now = LocalDateTime.now(Clock.systemUTC());
-            long aliveTime = Duration.between(launchTime, now).getSeconds() / TIME_DELIMITER;
-            log.debug("Node {} is alive for {} minutes.", runId, aliveTime);
-            long minutesToWholeHour = aliveTime % TIME_DELIMITER;
-            long minutesLeft = TIME_DELIMITER - minutesToWholeHour;
-            log.debug("Node {} has {} minutes left until next hour.", runId, minutesLeft);
-            return minutesLeft <= keepAliveMinutes && minutesLeft > TIME_TO_SHUT_DOWN_NODE;
-        } catch (DateTimeParseException e) {
-            log.error(e.getMessage(), e);
-            return true;
-        }
-    }
 }
