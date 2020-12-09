@@ -21,6 +21,8 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 public class ClusterCommandService {
 
@@ -37,7 +39,8 @@ public class ClusterCommandService {
                                                                  final AbstractCloudRegion region,
                                                                  final String nodeLabel,
                                                                  final RunInstance instance,
-                                                                 final String cloud) {
+                                                                 final String cloud,
+                                                                 final Map<String, String> labels) {
         return NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
@@ -48,7 +51,9 @@ public class ClusterCommandService {
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
                 .cloud(cloud)
-                .region(region.getRegionCode());
+                .region(region.getRegionCode())
+                .prePulledImages(instance.getPrePulledDockerImages())
+                .additionalLabels(labels);
     }
 
     public String buildNodeDownCommand(final String nodeDownScript,

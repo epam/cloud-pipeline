@@ -50,7 +50,6 @@ public class AWSScalingService extends AbstractProviderScalingService<AwsRegion>
     private final EC2Helper ec2Helper;
     private final PreferenceManager preferenceManager;
     private final InstanceOfferManager instanceOfferManager;
-    private final String nodeUpScript;
 
     // TODO: 25-10-2019 @Lazy annotation added to resolve issue with circular dependency.
     // It would be great fix this issue by actually removing this dependency:
@@ -64,11 +63,11 @@ public class AWSScalingService extends AbstractProviderScalingService<AwsRegion>
                              @Value("${cluster.nodedown.script}") final String nodeDownScript,
                              @Value("${cluster.reassign.script}") final String nodeReassignScript,
                              @Value("${cluster.node.terminate.script}") final String nodeTerminateScript) {
-        super(commandService, instanceService, null, nodeDownScript, nodeReassignScript, nodeTerminateScript);
+        super(commandService, instanceService, null, nodeUpScript, nodeDownScript, nodeReassignScript,
+              nodeTerminateScript);
         this.ec2Helper = ec2Helper;
         this.preferenceManager = preferenceManager;
         this.instanceOfferManager = instanceOfferManager;
-        this.nodeUpScript = nodeUpScript;
     }
 
     @Override
@@ -104,21 +103,13 @@ public class AWSScalingService extends AbstractProviderScalingService<AwsRegion>
     }
 
     @Override
-    protected String buildNodeUpCommand(final AwsRegion region,
-                                        final String nodeLabel,
-                                        final RunInstance instance,
-                                        final Map<String, String> labels) {
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
-                               .sshKey(region.getSshKeyName());
-
+    protected void extendNodeUpScript(final NodeUpCommand.NodeUpCommandBuilder commandBuilder, final AwsRegion region,
+                                      final RunInstance instance) {
+        commandBuilder.sshKey(region.getSshKeyName());
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
         }
         addSpotArguments(instance, commandBuilder, region.getId());
-        commandBuilder.prePulledImages(instance.getPrePulledDockerImages());
-        commandBuilder.additionalLabels(labels);
-        return commandBuilder.build().getCommand();
     }
 
     private void addSpotArguments(final RunInstance instance,

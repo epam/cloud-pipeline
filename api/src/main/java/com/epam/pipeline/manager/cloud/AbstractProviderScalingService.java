@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
+import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import org.springframework.stereotype.Service;
@@ -40,17 +41,20 @@ public abstract class AbstractProviderScalingService<T extends AbstractCloudRegi
     protected final String nodeDownScript;
     protected final CmdExecutor cmdExecutor = new CmdExecutor();
     private final ParallelExecutorService executorService;
+    private final String nodeUpScript;
     private final String nodeReassignScript;
 
     public AbstractProviderScalingService(final ClusterCommandService commandService,
                                           final CommonCloudInstanceService instanceService,
                                           final ParallelExecutorService executorService,
+                                          final String nodeUpScript,
                                           final String nodeDownScript,
                                           final String nodeReassignScript,
                                           final String nodeTerminateScript) {
         this.commandService = commandService;
         this.instanceService = instanceService;
         this.executorService=executorService;
+        this.nodeUpScript = nodeUpScript;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
         this.nodeTerminateScript = nodeTerminateScript;
@@ -115,9 +119,16 @@ public abstract class AbstractProviderScalingService<T extends AbstractCloudRegi
         return Collections.emptyMap();
     }
 
-    protected abstract String buildNodeUpCommand(T region, String nodeLabel, RunInstance instance,
-                                                 Map<String, String> labels);
+    protected abstract void extendNodeUpScript(NodeUpCommand.NodeUpCommandBuilder commandBuilder, T region,
+                                               RunInstance instance);
 
+    private String buildNodeUpCommand(final T region, final String nodeLabel, final RunInstance instance,
+                                      final Map<String, String> labels) {
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
+            commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), labels);
+        extendNodeUpScript(commandBuilder, region, instance);
+        return commandBuilder.build().getCommand();
+    }
 
     private RunInstance scaleUpNode(final T region, final RunInstance instance, final String nodeId,
                                     final Map<String, String> labels) {

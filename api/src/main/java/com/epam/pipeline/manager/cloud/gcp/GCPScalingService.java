@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.AbstractProviderScalingService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
+import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import lombok.extern.slf4j.Slf4j;
@@ -44,8 +45,6 @@ public class GCPScalingService extends AbstractProviderScalingService<GCPRegion>
     private static final String GOOGLE_PROJECT_ID = "GOOGLE_PROJECT_ID";
     protected static final String GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS";
 
-    private final String nodeUpScript;
-
     public GCPScalingService(final ClusterCommandService commandService,
                              final CommonCloudInstanceService instanceService,
                              final ParallelExecutorService executorService,
@@ -53,9 +52,8 @@ public class GCPScalingService extends AbstractProviderScalingService<GCPRegion>
                              @Value("${cluster.gcp.nodedown.script}") final String nodeDownScript,
                              @Value("${cluster.gcp.reassign.script}") final String nodeReassignScript,
                              @Value("${cluster.gcp.node.terminate.script}") final String nodeTerminateScript) {
-        super(commandService, instanceService, executorService, nodeDownScript, nodeReassignScript,
+        super(commandService, instanceService, executorService, nodeUpScript, nodeDownScript, nodeReassignScript,
               nodeTerminateScript);
-        this.nodeUpScript = nodeUpScript;
     }
 
     @Override
@@ -92,18 +90,12 @@ public class GCPScalingService extends AbstractProviderScalingService<GCPRegion>
     }
 
     @Override
-    protected String buildNodeUpCommand(final GCPRegion region, final String nodeLabel, final RunInstance instance,
-                                      final Map<String, String> labels) {
-        return commandService
-            .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
+    protected void extendNodeUpScript(final NodeUpCommand.NodeUpCommandBuilder commandBuilder, final GCPRegion region,
+                                      final RunInstance instance) {
+        commandBuilder
             .sshKey(region.getSshPublicKeyPath())
-            .isSpot(Optional.ofNullable(instance.getSpot())
-                        .orElse(false))
-            .bidPrice(StringUtils.EMPTY)
-            .additionalLabels(labels)
-            .prePulledImages(instance.getPrePulledDockerImages())
-            .build()
-            .getCommand();
+            .isSpot(Optional.ofNullable(instance.getSpot()).orElse(false))
+            .bidPrice(StringUtils.EMPTY);
     }
 
     private String getCredentialsFilePath(GCPRegion region) {

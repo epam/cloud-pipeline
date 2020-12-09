@@ -49,9 +49,6 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
     private static final String AZURE_RESOURCE_GROUP = "AZURE_RESOURCE_GROUP";
     private final PreferenceManager preferenceManager;
     private final CloudRegionManager cloudRegionManager;
-    private final String nodeUpScript;
-    private final String kubeMasterIP;
-    private final String kubeToken;
 
     public AzureScalingService(final CommonCloudInstanceService instanceService,
                                final ClusterCommandService commandService,
@@ -61,16 +58,11 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
                                @Value("${cluster.azure.nodeup.script:}") final String nodeUpScript,
                                @Value("${cluster.azure.nodedown.script:}") final String nodeDownScript,
                                @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
-                               @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
-                               @Value("${kube.master.ip}") final String kubeMasterIP,
-                               @Value("${kube.kubeadm.token}") final String kubeToken) {
-        super(commandService, instanceService, executorService, nodeDownScript, nodeReassignScript,
+                               @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript) {
+        super(commandService, instanceService, executorService, nodeUpScript, nodeDownScript, nodeReassignScript,
               nodeTerminateScript);
         this.cloudRegionManager = regionManager;
         this.preferenceManager = preferenceManager;
-        this.nodeUpScript = nodeUpScript;
-        this.kubeMasterIP = kubeMasterIP;
-        this.kubeToken = kubeToken;
     }
 
     @Override
@@ -107,30 +99,15 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
     }
 
     @Override
-    protected String buildNodeUpCommand(final AzureRegion region, final String nodeLabel, final RunInstance instance,
-                                        final Map<String, String> labels) {
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(nodeLabel)
-                .sshKey(region.getSshPublicKeyPath())
-                .instanceImage(instance.getNodeImage())
-                .instanceType(instance.getNodeType())
-                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .region(region.getRegionCode())
-                .prePulledImages(instance.getPrePulledDockerImages())
-                .additionalLabels(labels);
-
+    protected void extendNodeUpScript(final NodeUpCommand.NodeUpCommandBuilder commandBuilder, final AzureRegion region,
+                                      final RunInstance instance) {
+        commandBuilder.sshKey(region.getSshPublicKeyPath());
         final Boolean clusterSpotStrategy = instance.getSpot() == null
-                ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)
-                : instance.getSpot();
-
+                                            ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)
+                                            : instance.getSpot();
         if (BooleanUtils.isTrue(clusterSpotStrategy)) {
             commandBuilder.isSpot(true);
         }
-        return commandBuilder.build().getCommand();
     }
 
     private String buildNodeDownCommand(final String nodeLabel) {
