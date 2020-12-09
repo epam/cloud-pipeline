@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,11 +109,6 @@ public class GCPInstanceService extends AbstractProviderInstanceService<GCPRegio
             log.error("An error while getting instance description {}", nodeLabel);
             return null;
         }
-    }
-
-    @Override
-    public LocalDateTime getNodeLaunchTime(final GCPRegion region, final Long runId) {
-        return instanceService.getNodeLaunchTimeFromKube(runId);
     }
 
     @Override

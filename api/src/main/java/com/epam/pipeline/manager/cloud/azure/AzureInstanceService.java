@@ -44,7 +44,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,11 +115,6 @@ public class AzureInstanceService extends AbstractProviderInstanceService<AzureR
     @Override
     public boolean instanceExists(final AzureRegion region, final String instanceId) {
         return vmService.searchVmResource(region, instanceId).isPresent();
-    }
-
-    @Override
-    public LocalDateTime getNodeLaunchTime(final AzureRegion region, final Long runId) {
-        return instanceService.getNodeLaunchTimeFromKube(runId);
     }
 
     @Override
