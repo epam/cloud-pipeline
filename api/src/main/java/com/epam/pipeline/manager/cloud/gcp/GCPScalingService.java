@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
-import com.google.api.services.compute.model.Instance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;

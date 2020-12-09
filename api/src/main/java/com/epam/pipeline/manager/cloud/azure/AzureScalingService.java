@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
     private final PreferenceManager preferenceManager;
     private final CloudRegionManager cloudRegionManager;
     private final String nodeUpScript;
-
     private final String kubeMasterIP;
     private final String kubeToken;
 
@@ -72,11 +71,6 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
         this.nodeUpScript = nodeUpScript;
         this.kubeMasterIP = kubeMasterIP;
         this.kubeToken = kubeToken;
-    }
-
-    @Override
-    public void scaleDownNode(final AzureRegion region, final Long runId) {
-        scaleDownPoolNode(region, String.valueOf(runId));
     }
 
     @Override

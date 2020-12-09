@@ -58,25 +58,17 @@ public abstract class AbstractProviderScalingService<T extends AbstractCloudRegi
 
     @Override
     public RunInstance scaleUpNode(final T region, final Long runId, final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
-        final Map<String, String> envVars = buildScriptEnvVars(region);
-        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
+        return scaleUpNode(region, instance, String.valueOf(runId), Collections.emptyMap());
     }
 
     @Override
     public RunInstance scaleUpPoolNode(final T region, final String nodeId, final NodePool node) {
-        final RunInstance instance = node.toRunInstance();
-        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(node));
-        final Map<String, String> envVars = buildScriptEnvVars(region);
-        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, envVars);
+        return scaleUpNode(region, node.toRunInstance(), nodeId, getPoolLabels(node));
     }
 
     @Override
     public void scaleDownNode(final T region, final Long runId) {
-        final String command =
-            commandService.buildNodeDownCommand(nodeDownScript, String.valueOf(runId), getProviderName());
-        final Map<String, String> envVars = buildScriptEnvVars(region);
-        instanceService.runNodeDownScript(cmdExecutor, command, envVars);
+        scaleDownPoolNode(region, String.valueOf(runId));
     }
 
     @Override
@@ -88,9 +80,7 @@ public abstract class AbstractProviderScalingService<T extends AbstractCloudRegi
 
     @Override
     public boolean reassignNode(final T region, final Long oldId, final Long newId) {
-        final String command = commandService.buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId),
-                                                                       String.valueOf(newId), getProviderName());
-        return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId, buildScriptEnvVars(region));
+        return reassignPoolNode(region, String.valueOf(oldId), newId);
     }
 
     @Override
@@ -121,10 +111,20 @@ public abstract class AbstractProviderScalingService<T extends AbstractCloudRegi
         return CompletableFuture.runAsync(task, executorService.getExecutorService());
     }
 
-    protected abstract Map<String, String> buildScriptEnvVars(T region);
+    protected Map<String, String> buildScriptEnvVars(T region) {
+        return Collections.emptyMap();
+    }
 
     protected abstract String buildNodeUpCommand(T region, String nodeLabel, RunInstance instance,
                                                  Map<String, String> labels);
+
+
+    private RunInstance scaleUpNode(final T region, final RunInstance instance, final String nodeId,
+                                    final Map<String, String> labels) {
+        final String command = buildNodeUpCommand(region, nodeId, instance, labels);
+        final Map<String, String> envVars = buildScriptEnvVars(region);
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, envVars);
+    }
 
     private Map<String, String> getPoolLabels(final NodePool pool) {
         return Collections.singletonMap(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(pool.getId()));

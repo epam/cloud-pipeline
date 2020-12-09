@@ -36,7 +36,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -87,11 +86,6 @@ public class AWSScalingService extends AbstractProviderScalingService<AwsRegion>
     @Override
     public LocalDateTime getNodeLaunchTime(final AwsRegion region, final Long runId) {
         return ec2Helper.getInstanceLaunchTime(String.valueOf(runId), region.getRegionCode());
-    }
-
-    @Override
-    protected Map<String, String> buildScriptEnvVars(AwsRegion region) {
-        return Collections.emptyMap();
     }
 
     @Override
