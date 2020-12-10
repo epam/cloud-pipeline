@@ -20,7 +20,7 @@ import com.epam.pipeline.controller.vo.SystemNotificationFilterVO;
 import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmation;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmationRequest;
-import com.epam.pipeline.manager.notification.SystemNotificationApiService;
+import com.epam.pipeline.acl.notification.SystemNotificationApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
