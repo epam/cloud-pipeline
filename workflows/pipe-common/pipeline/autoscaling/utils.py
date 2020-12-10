@@ -30,6 +30,21 @@ api_token = None
 script_path = None
 
 
+def is_run_id_numerical(run_id):
+    try:
+        int(run_id)
+        return True
+    except ValueError:
+        return False
+
+
+def is_api_logging_enabled():
+    global api_token
+    global api_url
+    global current_run_id
+    return is_run_id_numerical(current_run_id) and api_url and api_token
+
+
 def pipe_log_init(run_id):
     global api_token
     global api_url
@@ -39,7 +54,7 @@ def pipe_log_init(run_id):
     api_url = os.environ["API"]
     api_token = os.environ["API_TOKEN"]
 
-    if not api_url or not api_token:
+    if not is_api_logging_enabled():
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
@@ -49,7 +64,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.log_task_event(NODEUP_TASK,
                               '[{}] {}'.format(current_run_id, message),
                               run_id=current_run_id,
@@ -69,7 +84,7 @@ def pipe_log_warn(message):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.warn('[{}] {}'.format(current_run_id, message),
                     task_name=NODEUP_TASK,
                     run_id=current_run_id,
