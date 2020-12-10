@@ -202,6 +202,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
                 -t "$CP_NODE_LOGGER_DIST_NAME"
 docker push "$CP_NODE_LOGGER_DIST_NAME"
 
+# Node Health Check
+CP_NODE_HEALTH_CHECK_DIST_NAME=${CP_NODE_HEALTH_CHECK_DIST_NAME:-"$CP_DIST_REPO_NAME:node-health-check-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-node-health-check \
+                -t "$CP_NODE_HEALTH_CHECK_DIST_NAME"
+docker push "$CP_NODE_HEALTH_CHECK_DIST_NAME"
+
 # Backups manager
 CP_BKP_WORKER_DIST_NAME=${CP_BKP_WORKER_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-bkp-worker-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-bkp-worker \

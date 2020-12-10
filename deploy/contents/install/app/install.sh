@@ -402,7 +402,7 @@ print_info "-> Deleting existing instance of Node Health Check daemonset"
 kubectl delete daemonset cp-node-health-check
 
 print_info "-> Deploying Node logger daemonset"
-create_kube_resource $K8S_SPECS_HOME/cp-node-logger/cp-node-health-check.yaml
+create_kube_resource $K8S_SPECS_HOME/cp-node-health-check/cp-node-health-check.yaml
 
 
 # Heapster (CPU Utilization monitoring)

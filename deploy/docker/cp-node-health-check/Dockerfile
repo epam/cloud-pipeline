@@ -16,7 +16,7 @@ FROM library/centos:7
 
 RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 
-RUN yum update && yum install -y jq curl wget
+RUN yum install -y jq curl wget
 
 ADD init /init
 ADD monitor_service.sh /monitor_service.sh
