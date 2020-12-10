@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,14 +83,6 @@ public class CommonCloudInstanceService {
                                   final Map<String, String> envVars) {
         log.debug("Scaling cluster down. Command: {}.", command);
         executeCmd(cmdExecutor, command, envVars);
-    }
-
-    public boolean runNodeReassignScript(final CmdExecutor cmdExecutor,
-                                         final String command,
-                                         final Long oldId,
-                                         final Long newId,
-                                         final Map<String, String> envVars) {
-        return runNodeReassignScript(cmdExecutor, command, String.valueOf(oldId), String.valueOf(newId), envVars);
     }
 
     public boolean runNodeReassignScript(final CmdExecutor cmdExecutor,

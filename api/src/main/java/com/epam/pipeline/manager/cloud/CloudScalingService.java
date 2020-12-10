@@ -19,22 +19,16 @@ package com.epam.pipeline.manager.cloud;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.autoscale.AutoscalerServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.Map;
 
 public interface CloudScalingService<T extends AbstractCloudRegion> extends CloudAwareService {
 
     Logger log = LoggerFactory.getLogger(AutoscalerServiceImpl.class);
-
-    default Map<String, String> getPoolLabels(final NodePool pool) {
-        return Collections.singletonMap(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(pool.getId()));
-    }
 
     /**
      * Creates new instance using specified cloud and adds it to cluster
