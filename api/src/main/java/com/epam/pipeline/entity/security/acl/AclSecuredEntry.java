@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,6 +28,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class AclSecuredEntry { // TODO: extends BaseEntity?
 
     private AbstractSecuredEntity entity;
