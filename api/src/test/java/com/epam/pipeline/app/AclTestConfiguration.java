@@ -49,6 +49,10 @@ import com.epam.pipeline.manager.metadata.MetadataDownloadManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.MetadataUploadManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.notification.NotificationSettingsManager;
+import com.epam.pipeline.manager.notification.NotificationTemplateManager;
+import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
@@ -257,6 +261,18 @@ public class AclTestConfiguration {
 
     @MockBean
     protected MetadataDownloadManager metadataDownloadManager;
+
+    @MockBean
+    protected NotificationManager notificationManager;
+
+    @MockBean
+    protected NotificationSettingsManager notificationSettingsManager;
+
+    @MockBean
+    protected NotificationTemplateManager notificationTemplateManager;
+
+    @MockBean
+    protected SystemNotificationManager systemNotificationManager;
 
     @Bean
     public PermissionFactory permissionFactory() {
