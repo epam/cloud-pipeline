@@ -277,7 +277,7 @@ def replace_docker_images(pre_pull_images, user_data_script):
         raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size, pre_pull_images=None):
+def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size, pre_pull_images=[]):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')

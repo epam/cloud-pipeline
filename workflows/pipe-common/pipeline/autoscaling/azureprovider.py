@@ -54,7 +54,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         self.resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token, pre_pull_images=None):
+                     num_rep, time_rep, kube_ip, kubeadm_token, pre_pull_images=[]):
         try:
             ins_key = utils.read_ssh_key(ins_key)
             swap_size = utils.get_swap_size(self.zone, ins_type, is_spot, "AZURE")
