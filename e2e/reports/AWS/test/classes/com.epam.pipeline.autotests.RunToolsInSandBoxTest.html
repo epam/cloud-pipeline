@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">32m35.10s</div>
+<div class="counter">27m13.93s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">90%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,50 +61,16 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
+<a href="#tab1">Standard output</a>
 </li>
 <li>
-<a href="#tab2">Standard output</a>
-</li>
-<li>
-<a href="#tab3">Standard error</a>
+<a href="#tab2">Standard error</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="validateNodeReusage - EPMCMBIBPC-503"></a>
-<h3 class="failures">validateNodeReusage - EPMCMBIBPC-503</h3>
-<span class="code">
-<pre>java.lang.AssertionError: expected [i-08c2ee823c5c9b784] but found [i-0ab9de60014bb4a49]
-	at org.testng.Assert.fail(Assert.java:93)
-	at org.testng.Assert.failNotEquals(Assert.java:512)
-	at org.testng.Assert.assertEqualsImpl(Assert.java:134)
-	at org.testng.Assert.assertEquals(Assert.java:115)
-	at org.testng.Assert.assertEquals(Assert.java:189)
-	at org.testng.Assert.assertEquals(Assert.java:199)
-	at com.epam.pipeline.autotests.RunToolsInSandBoxTest.validateNodeReusage(RunToolsInSandBoxTest.java:184)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -116,101 +82,101 @@
 </thead>
 <tr>
 <td class="success">checkToolAccessibilityForAnotherUser - EPMCMBIBPC-500</td>
-<td>48.738s</td>
+<td>48.103s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareForToolInSandbox - EPMCMBIBPC-526</td>
-<td>19.621s</td>
+<td>18.482s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateEndpointLink - EPMCMBIBPC-495</td>
-<td>8m11.64s</td>
+<td>8m11.80s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validateNodeReusage - EPMCMBIBPC-503</td>
-<td>3m17.38s</td>
-<td class="failures">failed</td>
+<td class="success">validateNodeReusage - EPMCMBIBPC-503</td>
+<td>38.036s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePipelineIsLaunchedForToolInSandbox - EPMCMBIBPC-494</td>
-<td>15.722s</td>
+<td>15.439s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateRunParameters - EPMCMBIBPC-493</td>
-<td>5.976s</td>
+<td>6.115s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopToolInSandbox - EPMCMBIBPC-501</td>
-<td>3m17.35s</td>
+<td>3m17.18s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopToolInSandboxWithTimeout - EPMCMBIBPC-504</td>
-<td>7m33.74s</td>
+<td>4m49.00s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateUsernameOnPipelinePage - EPMCMBIBPC-496</td>
-<td>2.665s</td>
+<td>2.670s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfDinDLaunchAndFunctionality - EPMCMBIBPC-3173</td>
-<td>2m35.12s</td>
+<td>2m39.79s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfSingularityLaunchAndFunctionality - EPMCMBIBPC-3175</td>
-<td>6m7.17s</td>
+<td>6m7.31s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 50129 from [50129]
-Returns latest run with runId 50130 from [50129, 50130]
-Returns latest run with runId 50131 from [50129, 50130, 50131]
-Returns latest run with runId 50132 from [50129, 50130, 50131, 50132]
-Returns latest run with runId 50132 from [50129, 50130, 50131, 50132]
-Returns latest run with runId 50132 from [50129, 50130, 50131, 50132]
-Returns latest run with runId 50132 from [50129, 50130, 50131, 50132]
-Returns latest run with runId 50132 from [50129, 50130, 50131, 50132]
-Returns latest run with runId 50132 from [50129, 50130, 50131, 50132]
-Returns latest run with runId 50132 from [50129, 50130, 50131, 50132]
-Returns latest run with runId 50132 from [50129, 50130, 50131, 50132]
-Returns latest run with runId 50133 from [50129, 50130, 50131, 50132, 50133]
-Returns latest run with runId 50133 from [50129, 50130, 50131, 50132, 50133]
+<pre>Returns latest run with runId 50302 from [50302]
+Returns latest run with runId 50303 from [50302, 50303]
+Returns latest run with runId 50304 from [50302, 50303, 50304]
+Returns latest run with runId 50305 from [50302, 50303, 50304, 50305]
+Returns latest run with runId 50305 from [50302, 50303, 50304, 50305]
+Returns latest run with runId 50305 from [50302, 50303, 50304, 50305]
+Returns latest run with runId 50305 from [50302, 50303, 50304, 50305]
+Returns latest run with runId 50305 from [50302, 50303, 50304, 50305]
+Returns latest run with runId 50305 from [50302, 50303, 50304, 50305]
+Returns latest run with runId 50305 from [50302, 50303, 50304, 50305]
+Returns latest run with runId 50305 from [50302, 50303, 50304, 50305]
+Returns latest run with runId 50306 from [50302, 50303, 50304, 50305, 50306]
+Returns latest run with runId 50306 from [50302, 50303, 50304, 50305, 50306]
 </pre>
 </span>
 </div>
-<div id="tab3" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Dec 09, 2020 1:11:56 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 12 -&gt; ChromeDriver: chrome on LINUX (70f210aa241fb88ea94550258ecf2589)
-Dec 09, 2020 1:11:56 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Dec 10, 2020 1:09:14 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 12 -&gt; ChromeDriver: chrome on LINUX (cc0c8d266d975aa7406dc9583fcec659)
+Dec 10, 2020 1:09:14 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Dec 09, 2020 1:11:56 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 91 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 13326
+Dec 10, 2020 1:09:14 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 105 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 26892
 Only local connections are allowed.
-Dec 09, 2020 1:11:57 AM org.openqa.selenium.remote.ProtocolHandshake createSession
+Dec 10, 2020 1:09:15 AM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Dec 09, 2020 1:11:57 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Dec 10, 2020 1:09:15 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Dec 09, 2020 1:11:57 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Dec 10, 2020 1:09:15 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Dec 09, 2020 1:11:57 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Dec 10, 2020 1:09:15 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Dec 09, 2020 1:11:57 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (4c8816fb7e2f35645450a666dd45c441)
+Dec 10, 2020 1:09:15 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (803f0c3f9cf89f156c9bd35dab8a908f)
 </pre>
 </span>
 </div>
@@ -222,7 +188,7 @@ INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: ch
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 9, 2020 5:18:46 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 10, 2020 6:06:56 PM</p>
 </div>
 </div>
 </body>

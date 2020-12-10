@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">17m4.29s</div>
+<div class="counter">39m44.99s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">85%</div>
+<div class="percent">66%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,13 +73,61 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
+<a name="runPipelineWithLimitMounts - EPMCMBIBPC-2682"></a>
+<h3 class="failures">runPipelineWithLimitMounts - EPMCMBIBPC-2682</h3>
+<span class="code">
+<pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607615248171.81.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607615248171.81.html
+Timeout: 1200 s.
+Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: exact text 'SSH'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:83)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.runPipelineWithLimitMounts(LaunchLimitMountsTest.java:171)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: exact text 'SSH'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
+</pre>
+</span>
+</div>
+<div class="test">
 <a name="runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178"></a>
 <h3 class="failures">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</h3>
 <span class="code">
-<pre>Element not found {with text: launchlimitmountsstorage4606792858099743682}
+<pre>Element not found {with text: launchlimitmountsstorage4600305780713745984}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1607529705647.116.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1607529705647.116.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607616189770.82.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607616189770.82.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -113,18 +161,18 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
 Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '	
- ', '    ')), &quot;launchlimitmountsstorage4606792858099743682&quot;)]/parent::*&quot;}
+ ', '    ')), &quot;launchlimitmountsstorage4600305780713745984&quot;)]/parent::*&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '898b7f5e372d', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'd1bdf753e9ff', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 6520c12b771081759cc9dfb10309ec7e
+Session ID: 741934d244017129af7774fd8816fd5a
 *** Element info: {Using=xpath, value=.//*/text()[contains(normalize-space(translate(string(.), '	
- ', '    ')), &quot;launchlimitmountsstorage4606792858099743682&quot;)]/parent::*}
+ ', '    ')), &quot;launchlimitmountsstorage4600305780713745984&quot;)]/parent::*}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -160,37 +208,37 @@ Session ID: 6520c12b771081759cc9dfb10309ec7e
 </thead>
 <tr>
 <td class="success">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
-<td>2m41.84s</td>
+<td>2m44.19s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
-<td>36.018s</td>
+<td>36.221s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareLimitMounts - EPMCMBIBPC-2681</td>
-<td>20.131s</td>
+<td>20.039s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
-<td>32.103s</td>
+<td>32.536s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
-<td>2m35.66s</td>
-<td class="success">passed</td>
+<td class="skipped">rerunPipelineWithoutLimitMounts</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
-<td>4m22.80s</td>
-<td class="success">passed</td>
+<td class="failures">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
+<td>20m25.69s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</td>
-<td>5m55.74s</td>
+<td>15m6.31s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -198,11 +246,9 @@ Session ID: 6520c12b771081759cc9dfb10309ec7e
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 50259 from [50259]
-Returns latest run with runId 50260 from [50259, 50260]
-Returns latest run with runId 50260 from [50259, 50260]
-Returns latest run with runId 50261 from [50259, 50260, 50261]
-Returns latest run with runId 50262 from [50259, 50260, 50261, 50262]
+<pre>Returns latest run with runId 50411 from [50411]
+Returns latest run with runId 50412 from [50411, 50412]
+Returns latest run with runId 50413 from [50411, 50412, 50413]
 </pre>
 </span>
 </div>
@@ -214,7 +260,7 @@ Returns latest run with runId 50262 from [50259, 50260, 50261, 50262]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 9, 2020 5:18:46 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 10, 2020 6:06:56 PM</p>
 </div>
 </div>
 </body>

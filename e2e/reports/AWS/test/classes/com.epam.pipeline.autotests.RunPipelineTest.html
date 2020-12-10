@@ -23,25 +23,25 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">14</div>
+<div class="counter">15</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">3</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">2</div>
+<div class="counter">5</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">16m37.02s</div>
+<div class="counter">6m47.54s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">83%</div>
+<div class="percent">70%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,38 +73,13 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="logShouldBeValid - EPMCMBIBPC-309"></a>
-<h3 class="failures">logShouldBeValid - EPMCMBIBPC-309</h3>
+<a name="instanceTabShouldBeValid - EPMCMBIBPC-307"></a>
+<h3 class="failures">instanceTabShouldBeValid - EPMCMBIBPC-307</h3>
 <span class="code">
-<pre>Element should contains messages {By.className: ReactVirtualized__List}
-Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;019:[2020-12-09 12:07:27] COMMON_REPO_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/CommonRepo
-020:[2020-12-09 12:07:27] Creating default common code directory at /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/CommonRepo
-021:[2020-12-09 12:07:27] LOG_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/logs
-022:[2020-12-09 12:07:27] Creating default logs directory at /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/logs
-023:[2020-12-09 12:07:27] TMP_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/tmp
-024:[2020-12-09 12:07:27] Creating default tmp directory at /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/tmp
-025:[2020-12-09 12:07:27] ANALYSIS_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/analysis
-026:[2020-12-09 12:07:27] Creating default analysis directory at /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/analysis
-027:[2020-12-09 12:07:27] INPUT_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/input
-028:[2020-12-09 12:07:27] Creating default input directory at /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/input
-029:[2020-12-09 12:07:27] CONFIG_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/config
-030:[2020-12-09 12:07:27] Creating default config directory at /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/config
-031:[2020-12-09 12:07:27] SCRIPTS_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/scripts
-032:[2020-12-09 12:07:27] Creating default scripts directory at /runs/ui-tests-epmcmbibpc-100-4583453937177497568-50222/scripts. Please use 'SCRIPTS_DIR' variable to run pipeline script
-033:[2020-12-09 12:07:27] SHARED_FOLDER is not defined, setting to /common
-034:[2020-12-09 12:07:27] SHARED_WORK_FOLDER is not defined, setting to /common/workdir
-035:[2020-12-09 12:07:27] PUBLISH_SHARED_FOLDER is not defined, setting to /to-be-shared
-036:[2020-12-09 12:07:27] DEFAULT_HOSTFILE is not defined, setting to /common/hostfile
-037:[2020-12-09 12:07:27] REPOSITORY_MOUNT is not defined, setting to /code-repository
-038:[2020-12-09 12:07:27] Cleaning any data in common repository mount point directory: /code-repository
-039:[2020-12-09 12:07:27] MAX_PROCS_LIMIT is not defined, setting to 65536
-040:[2020-12-09 12:07:27] MAX_NOPEN_LIMIT is not defined, setting to 65536
-041:[2020-12-09 12:07:27] CP_CAP_ENV_UMASK is not defined, setting to 0002
-042:[2020-12-09 12:07:27] CP_CAP_SUDO_ENABLE is not defined, setting to true&lt;/div&gt;'
-Actual value: Following messages wasn't found in log:
-COMMON_DIR is not defined, setting to /common
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1607515931322.96.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1607515931322.96.html
+<pre>Element should have text '20 Gb' {By.xpath: .//*[contains(@class, 'log__node-parameter-name') and text() = 'Disk']/following-sibling::*[contains(@class, 'log__node-parameter-value')]}
+Element: '&lt;span class=&quot;log__node-parameter-value&quot;&gt;200 Gb&lt;/span&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607603020532.64.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607603020532.64.html
 Timeout: 80 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -115,7 +90,9 @@ Timeout: 80 s.
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy13.should(Unknown Source)
 	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
-	at com.epam.pipeline.autotests.RunPipelineTest.logShouldBeValid(RunPipelineTest.java:190)
+	at com.epam.pipeline.autotests.RunPipelineTest.lambda$instanceTabShouldBeValid$0(RunPipelineTest.java:171)
+	at com.epam.pipeline.autotests.ao.LogAO.instanceParameters(LogAO.java:309)
+	at com.epam.pipeline.autotests.RunPipelineTest.instanceTabShouldBeValid(RunPipelineTest.java:169)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -133,15 +110,15 @@ Timeout: 80 s.
 </span>
 </div>
 <div class="test">
-<a name="nodePageShouldBeValid - EPMCMBIBPC-301"></a>
-<h3 class="failures">nodePageShouldBeValid - EPMCMBIBPC-301</h3>
+<a name="removePipelines"></a>
+<h3 class="failures">removePipelines</h3>
 <span class="code">
-<pre>Element not found {label with type RUNID}
+<pre>Element not found {By.id: navigation-button-pipelines}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1607516229227.97.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1607516229227.97.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607603107440.66.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607603107440.66.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using label with type RUNID
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-pipelines&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -151,9 +128,78 @@ Caused by: NoSuchElementException: Cannot locate an element using label with typ
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
-	at com.epam.pipeline.autotests.RunPipelineTest.nodePageShouldBeValid(RunPipelineTest.java:254)
+	at com.sun.proxy.$Proxy13.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
+	at com.epam.pipeline.autotests.RunPipelineTest.removePipelines(RunPipelineTest.java:64)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-pipelines&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'd1bdf753e9ff', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: e7a36666478a6b5af29aaba9839a92c9
+*** Element info: {Using=id, value=navigation-button-pipelines}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
+	at org.openqa.selenium.By$ById.findElement(By.java:218)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="runShouldNotAppearInActiveRuns - EPMCMBIBPC-312"></a>
+<h3 class="failures">runShouldNotAppearInActiveRuns - EPMCMBIBPC-312</h3>
+<span class="code">
+<pre>Element not found {By.xpath: //*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607603026078.65.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607603026078.65.html
+Timeout: 5 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.NavigationMenuAO.library(NavigationMenuAO.java:40)
+	at com.epam.pipeline.autotests.mixins.Navigation.library(Navigation.java:49)
+	at com.epam.pipeline.autotests.RunPipelineTest.runShouldNotAppearInActiveRuns(RunPipelineTest.java:220)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -167,17 +213,36 @@ Caused by: NoSuchElementException: Cannot locate an element using label with typ
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using label with type RUNID
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '898b7f5e372d', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+System info: host: 'd1bdf753e9ff', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: e7a36666478a6b5af29aaba9839a92c9
+*** Element info: {Using=xpath, value=//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
 	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
 	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
+	... 23 more
 </pre>
 </span>
 </div>
@@ -194,62 +259,67 @@ Driver info: driver.version: unknown
 </thead>
 <tr>
 <td class="success">activePipelineShouldBeOpenedFromNodeInfo - EPMCMBIBPC-302</td>
-<td>0.930s</td>
+<td>0.953s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">clusterNodePageShouldBeValid - EPMCMBIBPC-267</td>
-<td>8.227s</td>
-<td class="success">passed</td>
+<td class="skipped">clusterNodePageShouldBeValid</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">cmdTemplateShouldBeCorrect - EPMCMBIBPC-306</td>
-<td>19.006s</td>
+<td>17.000s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">instanceTabShouldBeValid - EPMCMBIBPC-307</td>
-<td>0.585s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="failures">logShouldBeValid - EPMCMBIBPC-309</td>
-<td>4m36.55s</td>
+<td class="failures">instanceTabShouldBeValid - EPMCMBIBPC-307</td>
+<td>1m20.80s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">nodePageShouldBeValid - EPMCMBIBPC-301</td>
-<td>1m23.65s</td>
-<td class="failures">failed</td>
+<td class="skipped">logShouldBeValid</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="skipped">nodePageShouldBeValid</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">pipelineLogPageShouldBeValid - EPMCMBIBPC-305</td>
-<td>2m53.72s</td>
+<td>2m33.30s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pipelineRunFormShouldBeValid - EPMCMBIBPC-299</td>
-<td>16.611s</td>
+<td>17.000s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">runShouldNotAppearInActiveRuns - EPMCMBIBPC-312</td>
-<td>3m26.00s</td>
-<td class="success">passed</td>
+<td class="failures">removePipelines</td>
+<td>1m21.39s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">runShouldNotAppearInActiveRuns - EPMCMBIBPC-312</td>
+<td>5.514s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">shouldContainCorrectNode - EPMCMBIBPC-304</td>
-<td>2m59.60s</td>
+<td>20.778s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldCreatePipelineFromPythonTemplate - EPMCMBIBPC-298</td>
-<td>10.526s</td>
+<td>10.268s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldLaunchPipeline - EPMCMBIBPC-100</td>
-<td>21.628s</td>
+<td>20.536s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -267,15 +337,10 @@ Driver info: driver.version: unknown
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 50222 from [50222]
-Returns latest run with runId 50222 from [50222]
-Returns latest run with runId 50222 from [50222]
-Returns latest run with runId 50222 from [50222]
-Returns latest run with runId 50222 from [50222]
-Returns latest run with runId 50222 from [50222]
-Returns latest run with runId 50223 from [50222, 50223]
-Returns latest run with runId 50223 from [50222, 50223]
-Returns latest run with runId 50223 from [50222, 50223]
+<pre>Returns latest run with runId 50387 from [50387]
+Returns latest run with runId 50387 from [50387]
+Returns latest run with runId 50387 from [50387]
+Returns latest run with runId 50387 from [50387]
 </pre>
 </span>
 </div>
@@ -287,7 +352,7 @@ Returns latest run with runId 50223 from [50222, 50223]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 9, 2020 5:18:46 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 10, 2020 6:06:56 PM</p>
 </div>
 </div>
 </body>
