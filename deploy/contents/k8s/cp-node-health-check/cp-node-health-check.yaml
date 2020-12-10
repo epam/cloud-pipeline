@@ -14,16 +14,22 @@ spec:
       labels:
         name: cp-node-health-check
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: runid
+                    operator: Exists
       containers:
       - name: cp-node-health-check
         image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-health-check-$CP_VERSION
         imagePullPolicy: "IfNotPresent"
         resources:
           limits:
-            memory: 100Mi
+            memory: 256Mi
           requests:
-            cpu: 100m
-            memory: 100Mi
+            memory: 128Mi
         volumeMounts:
         - name: node-health-check
           mountPath: /opt/node-health-check

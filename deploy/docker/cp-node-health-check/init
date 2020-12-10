@@ -29,9 +29,10 @@ function download_file {
 
 
 COMMON_REPO_DIR=/opt/PipeCommon
-cd $COMMON_REPO_DIR
+mkdir $COMMON_REPO_DIR && cd $COMMON_REPO_DIR
 # Fixed setuptools version to be compatible with the pipe-common package
-python2 -m pip install -I -q setuptools==44.1.1
+curl -s https://bootstrap.pypa.io/get-pip.py | python2 && \
+    python2 -m pip install -I -q setuptools==44.1.1
 
 download_file "https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/pipe-common.tar.gz"
 _DOWNLOAD_RESULT=$?
@@ -55,12 +56,11 @@ cd /
 # Init path for shell scripts from common repository
 if [ -d $COMMON_REPO_DIR/shell ]; then
       chmod +x $COMMON_REPO_DIR/shell/*
-      export PATH=$PATH:$COMMON_REPO_DIR/shell
+      ln -s $COMMON_REPO_DIR/shell/* /usr/bin/
 fi
-
-nohup bash /monitor_service.sh --api-url "https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/" \
-                               --api-token "$API_TOKEN" \
+chmod +x /opt/monitor-service/monitor_service.sh
+/opt/monitor-service/monitor_service.sh --api-url "https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/" \
+                               --api-token "$CP_API_JWT_ADMIN" \
                                --node-name $NODE_NAME \
-                               --monitoring-delay 60 \
                                --sync-file "$SYNC_FILE" \
-                               --debug &> /var/log/monitor_service.log &
+                               --debug &> /var/log/monitor_service.log

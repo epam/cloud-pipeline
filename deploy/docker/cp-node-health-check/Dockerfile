@@ -19,7 +19,8 @@ RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.n
 RUN yum install -y jq curl wget
 
 ADD init /init
-ADD monitor_service.sh /monitor_service.sh
-RUN chmod +x /init
-
+RUN mkdir /opt/monitor-service
+ADD monitor-service/monitor_service.sh /opt/monitor-service/monitor_service.sh
+RUN chmod +x /init && chmod +x /opt/monitor-service/monitor_service.sh
+ENV CP_PYTHON2_PATH=python2
 ENTRYPOINT [ "/init" ]
