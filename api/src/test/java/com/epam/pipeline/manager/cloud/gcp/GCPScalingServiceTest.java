@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import java.util.Map;
 
 import static com.epam.pipeline.manager.execution.SystemParams.*;
 
-public class GCPInstanceServiceTest {
+public class GCPScalingServiceTest {
 
     private static final String CRED_TEMPLATE = "{\n" +
             "  \"type\": \"service_account\",\n" +
@@ -47,8 +47,7 @@ public class GCPInstanceServiceTest {
 
     private GCPRegion region;
     private GCPRegion regionWithoutAuthFile;
-    private GCPInstanceService service = new GCPInstanceService(
-            null, null, null, null, null, null, null, null);
+    private GCPScalingService service = new GCPScalingService(null, null, null, null, null, null, null);
 
     @Before
     public void setup() throws IOException {
@@ -82,7 +81,7 @@ public class GCPInstanceServiceTest {
     @Test
     public void noCredFileInEnvVarsIfNoRegionAuthFile() {
         Map<String, String> envVars = service.buildContainerCloudEnvVars(regionWithoutAuthFile);
-        if (System.getenv(GCPInstanceService.GOOGLE_APPLICATION_CREDENTIALS) == null) {
+        if (System.getenv(GCPScalingService.GOOGLE_APPLICATION_CREDENTIALS) == null) {
             Assert.assertFalse(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX
                     + regionWithoutAuthFile.getId()));
         } else {

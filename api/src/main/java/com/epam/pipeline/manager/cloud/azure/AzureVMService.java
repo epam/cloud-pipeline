@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,16 @@ package com.epam.pipeline.manager.cloud.azure;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
+import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import com.microsoft.azure.CloudException;
@@ -47,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -54,7 +62,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Slf4j
 @Service
-public class AzureVMService {
+public class AzureVMService implements CloudInstanceService<AzureRegion> {
 
     private static final String VM_FAILED_STATE = "ProvisioningState/failed";
     private static final String TAG_NAME = "Name";
@@ -81,6 +89,12 @@ public class AzureVMService {
 
     private final KubernetesManager kubernetesManager;
 
+    @Override
+    public CloudProvider getProvider() {
+        return CloudProvider.AZURE;
+    }
+
+    @Override
     public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
         return CloudInstanceOperationResult.success(
@@ -88,8 +102,62 @@ public class AzureVMService {
         );
     }
 
+    @Override
     public void stopInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).powerOff();
+    }
+
+    @Override
+    public boolean instanceExists(final AzureRegion region, final String instanceId) {
+        return searchVmResource(region, instanceId).isPresent();
+    }
+
+    @Override
+    public RunInstance describeInstance(final AzureRegion region, final String nodeLabel, final RunInstance instance) {
+        return describeInstance(nodeLabel, instance, () -> getRunningVMByRunId(region, nodeLabel));
+    }
+
+    @Override
+    public RunInstance describeAliveInstance(final AzureRegion region, final String nodeLabel,
+                                             final RunInstance instance) {
+        return describeInstance(nodeLabel, instance, () -> getAliveVMByRunId(region, nodeLabel));
+    }
+
+    @Override
+    public Optional<InstanceTerminationState> getInstanceTerminationState(final AzureRegion region,
+                                                                          final String instanceId) {
+        return getFailingVMStatus(region, instanceId).map(status -> InstanceTerminationState.builder()
+            .instanceId(instanceId)
+            .stateCode(status.code())
+            .stateMessage(status.message())
+            .build());
+    }
+
+    @Override
+    public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request) {
+        throw new UnsupportedOperationException("Disk attaching doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public List<InstanceDisk> loadDisks(final AzureRegion region, final Long runId) {
+        return getAliveVMByRunId(region, String.valueOf(runId)).getDisks();
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final AzureRegion region, final String nodeLabel) {
+        try {
+            final AzureVirtualMachineStats virtualMachine = getVMStatsByTag(region, nodeLabel);
+            if (virtualMachine.hasRunningState()) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (virtualMachine.hasStopState()) {
+                return CloudInstanceState.STOPPED;
+            }
+            return CloudInstanceState.TERMINATED;
+        } catch (AzureException e) {
+            log.error(e.getMessage(), e);
+            return CloudInstanceState.TERMINATED;
+        }
     }
 
     public AzureVirtualMachineStats getRunningVMByRunId(final AzureRegion region, final String tagValue) {
@@ -109,6 +177,7 @@ public class AzureVMService {
         return findVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId);
     }
 
+    @Override
     public void terminateInstance(final AzureRegion region, final String instanceId) {
         final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final String instanceName = getInstanceResourceName(region, instanceId);
@@ -317,5 +386,20 @@ public class AzureVMService {
             }
         }
         return Stream.empty();
+    }
+
+    private RunInstance describeInstance(final String nodeLabel,
+                                         final RunInstance instance,
+                                         final Supplier<AzureVirtualMachineStats> supplier) {
+        try {
+            final AzureVirtualMachineStats vm = supplier.get();
+            instance.setNodeId(vm.getName());
+            instance.setNodeName(vm.getName());
+            instance.setNodeIP(vm.getPrivateIP());
+            return instance;
+        } catch (AzureException e) {
+            log.error("An error while getting instance description {}", nodeLabel);
+            return null;
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,16 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
-import com.epam.pipeline.entity.cloud.CloudInstanceState;
-import com.epam.pipeline.entity.cloud.InstanceTerminationState;
-import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
-import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
-import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.epam.pipeline.manager.CmdExecutor;
-import com.epam.pipeline.manager.cloud.CloudInstanceService;
+import com.epam.pipeline.manager.cloud.CloudScalingService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
-import com.google.api.services.compute.model.Instance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,22 +38,18 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
-
+public class GCPScalingService implements CloudScalingService<GCPRegion> {
     private static final String GOOGLE_PROJECT_ID = "GOOGLE_PROJECT_ID";
     protected static final String GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS";
 
     private final ClusterCommandService commandService;
     private final CommonCloudInstanceService instanceService;
-    private final GCPVMService vmService;
     private final String nodeUpScript;
     private final String nodeDownScript;
     private final String nodeReassignScript;
@@ -68,17 +57,15 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
-    public GCPInstanceService(final ClusterCommandService commandService,
-                              final CommonCloudInstanceService instanceService,
-                              final GCPVMService vmService,
-                              final ParallelExecutorService executorService,
-                              @Value("${cluster.gcp.nodeup.script}") final String nodeUpScript,
-                              @Value("${cluster.gcp.nodedown.script}") final String nodeDownScript,
-                              @Value("${cluster.gcp.reassign.script}") final String nodeReassignScript,
-                              @Value("${cluster.gcp.node.terminate.script}") final String nodeTerminateScript) {
+    public GCPScalingService(final ClusterCommandService commandService,
+                             final CommonCloudInstanceService instanceService,
+                             final ParallelExecutorService executorService,
+                             @Value("${cluster.gcp.nodeup.script}") final String nodeUpScript,
+                             @Value("${cluster.gcp.nodedown.script}") final String nodeDownScript,
+                             @Value("${cluster.gcp.reassign.script}") final String nodeReassignScript,
+                             @Value("${cluster.gcp.node.terminate.script}") final String nodeTerminateScript) {
         this.commandService = commandService;
         this.instanceService = instanceService;
-        this.vmService = vmService;
         this.nodeUpScript = nodeUpScript;
         this.executorService = executorService;
         this.nodeDownScript = nodeDownScript;
@@ -124,7 +111,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public boolean reassignPoolNode(final GCPRegion region, final String nodeLabel, final Long newId) {
         final String command = commandService
-            .buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProviderName());
+            .buildNodeReassignCommand(nodeReassignScript, nodeLabel, newId, getProviderName());
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel, String.valueOf(newId),
                                                      buildScriptGCPEnvVars(region));
     }
@@ -136,47 +123,6 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
                 executorService.getExecutorService());
-    }
-
-    @Override
-    public CloudInstanceOperationResult startInstance(final GCPRegion region, final String instanceId) {
-        return vmService.startInstance(region, instanceId);
-    }
-
-    @Override
-    public void stopInstance(final GCPRegion region, final String instanceId) {
-        vmService.stopInstance(region, instanceId);
-    }
-
-    @Override
-    public void terminateInstance(final GCPRegion region, final String instanceId) {
-        vmService.terminateInstance(region, instanceId);
-    }
-
-    @Override
-    public boolean instanceExists(final GCPRegion region, final String instanceId) {
-        return vmService.instanceExists(region, instanceId);
-    }
-
-    @Override
-    public RunInstance describeAliveInstance(final GCPRegion region, final String nodeLabel,
-                                             final RunInstance instance) {
-        try {
-            return fillRunInstanceFromGcpVm(instance, vmService.getAliveInstance(region, nodeLabel));
-        } catch (GCPException e) {
-            log.error("An error while getting instance description {}", nodeLabel);
-            return null;
-        }
-    }
-
-    @Override
-    public RunInstance describeInstance(final GCPRegion region, final String nodeLabel, final RunInstance instance) {
-        try {
-            return fillRunInstanceFromGcpVm(instance, vmService.getRunningInstanceByRunId(region, nodeLabel));
-        } catch (GCPException e) {
-            log.error("An error while getting instance description {}", nodeLabel);
-            return null;
-        }
     }
 
     @Override
@@ -203,60 +149,18 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public Optional<InstanceTerminationState> getInstanceTerminationState(final GCPRegion region,
-                                                                          final String instanceId) {
-        return vmService.getTerminationState(region, instanceId);
-    }
-
-    @Override
-    public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request) {
-        throw new UnsupportedOperationException("Disk attaching doesn't work with GCP provider yet.");
-    }
-
-    @Override
-    public List<InstanceDisk> loadDisks(final GCPRegion region, final Long runId) {
-        return vmService.getAliveInstance(region, String.valueOf(runId)).getDisks().stream()
-                .map(disk -> disk.get("diskSizeGb"))
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
-                .map(Long::valueOf)
-                .map(InstanceDisk::new)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public CloudProvider getProvider() {
         return CloudProvider.GCP;
-    }
-
-    @Override
-    public CloudInstanceState getInstanceState(final GCPRegion region, final String nodeLabel) {
-        try {
-            final Instance instance = vmService.findInstanceByNameTag(region, nodeLabel);
-            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
-            if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
-                return CloudInstanceState.RUNNING;
-            }
-            if (GCPInstanceStatus.getStopStatuses().contains(instanceStatus)) {
-                return CloudInstanceState.STOPPED;
-            }
-            return CloudInstanceState.TERMINATED;
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            return CloudInstanceState.TERMINATED;
-        }
     }
 
     private String buildNodeUpCommand(final GCPRegion region, final String nodeLabel, final RunInstance instance,
                                       final Map<String, String> labels) {
         return commandService
-            .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
+            .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), labels)
             .sshKey(region.getSshPublicKeyPath())
             .isSpot(Optional.ofNullable(instance.getSpot())
                         .orElse(false))
             .bidPrice(StringUtils.EMPTY)
-            .additionalLabels(labels)
-            .prePulledImages(instance.getPrePulledDockerImages())
             .build()
             .getCommand();
     }
@@ -265,16 +169,6 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         return StringUtils.isEmpty(region.getAuthFile())
                 ? System.getenv(GOOGLE_APPLICATION_CREDENTIALS)
                 : region.getAuthFile();
-    }
-
-    private RunInstance fillRunInstanceFromGcpVm(final RunInstance instance, final Instance vm) {
-        instance.setNodeId(vm.getName());
-        // According to https://cloud.google.com/compute/docs/instances/custom-hostname-vm and
-        // https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
-        // gcloud create internal dns name with form: [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal
-        instance.setNodeName(vm.getName());
-        instance.setNodeIP(vm.getNetworkInterfaces().get(0).getNetworkIP());
-        return instance;
     }
 
     private Map<String, String> buildScriptGCPEnvVars(final GCPRegion region) {

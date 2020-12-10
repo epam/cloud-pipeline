@@ -18,20 +18,12 @@ package com.epam.pipeline.manager.cloud.aws;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.InstanceStateName;
-import com.epam.pipeline.entity.cloud.CloudInstanceState;
-import com.epam.pipeline.entity.cloud.InstanceTerminationState;
-import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
-import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.CmdExecutor;
-import com.epam.pipeline.manager.cloud.CloudInstanceService;
+import com.epam.pipeline.manager.cloud.CloudScalingService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
@@ -48,15 +40,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 @Service
 @Slf4j
-public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
+public class AWSScalingService implements CloudScalingService<AwsRegion> {
 
     private static final String MANUAL = "manual";
     private static final String ON_DEMAND = "on_demand";
@@ -75,15 +64,15 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     // TODO: 25-10-2019 @Lazy annotation added to resolve issue with circular dependency.
     // It would be great fix this issue by actually removing this dependency:
     // CloudFacade  -> AWSInstanceService -> InstanceOfferManager -> CloudFacade
-    public AWSInstanceService(final EC2Helper ec2Helper,
-                              final PreferenceManager preferenceManager,
-                              final @Lazy InstanceOfferManager instanceOfferManager,
-                              final CommonCloudInstanceService instanceService,
-                              final ClusterCommandService commandService,
-                              @Value("${cluster.nodeup.script}") final String nodeUpScript,
-                              @Value("${cluster.nodedown.script}") final String nodeDownScript,
-                              @Value("${cluster.reassign.script}") final String nodeReassignScript,
-                              @Value("${cluster.node.terminate.script}") final String nodeTerminateScript) {
+    public AWSScalingService(final EC2Helper ec2Helper,
+                             final PreferenceManager preferenceManager,
+                             final @Lazy InstanceOfferManager instanceOfferManager,
+                             final CommonCloudInstanceService instanceService,
+                             final ClusterCommandService commandService,
+                             @Value("${cluster.nodeup.script}") final String nodeUpScript,
+                             @Value("${cluster.nodedown.script}") final String nodeDownScript,
+                             @Value("${cluster.reassign.script}") final String nodeReassignScript,
+                             @Value("${cluster.node.terminate.script}") final String nodeTerminateScript) {
         this.ec2Helper = ec2Helper;
         this.preferenceManager = preferenceManager;
         this.instanceOfferManager = instanceOfferManager;
@@ -134,7 +123,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public boolean reassignPoolNode(final AwsRegion region, final String nodeLabel, final Long newId) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+                nodeReassignScript, nodeLabel, newId, getProvider().name());
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
                 String.valueOf(newId), buildScriptEnvVars());
     }
@@ -147,30 +136,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public CloudInstanceOperationResult startInstance(final AwsRegion region, final String instanceId) {
-        log.debug("Starting AWS instance {}", instanceId);
-        return ec2Helper.startInstance(instanceId, region.getRegionCode());
-    }
-
-    @Override
-    public void stopInstance(final AwsRegion region, final String instanceId) {
-        log.debug("Stopping AWS instance {}", instanceId);
-        ec2Helper.stopInstance(instanceId, region.getRegionCode());
-    }
-
-    @Override
-    public void terminateInstance(final AwsRegion region, final String instanceId) {
-        log.debug("Terminating AWS instance {}", instanceId);
-        ec2Helper.terminateInstance(instanceId, region.getRegionCode());
-    }
-
-    @Override
-    public boolean instanceExists(final AwsRegion region, final String instanceId) {
-        log.debug("Checking if AWS instance {} exists", instanceId);
-        return ec2Helper.findInstance(instanceId, region.getRegionCode()).isPresent();
-    }
-
-    @Override
     public CloudProvider getProvider() {
         return CloudProvider.AWS;
     }
@@ -178,39 +143,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public LocalDateTime getNodeLaunchTime(final AwsRegion region, final Long runId) {
         return ec2Helper.getInstanceLaunchTime(String.valueOf(runId), region.getRegionCode());
-    }
-
-    @Override
-    public RunInstance describeInstance(final AwsRegion region,
-                                        final String nodeLabel,
-                                        final RunInstance instance) {
-        return describeInstance(nodeLabel, instance,
-            () -> ec2Helper.getActiveInstance(nodeLabel, region.getRegionCode()));
-    }
-
-    @Override
-    public RunInstance describeAliveInstance(final AwsRegion region,
-                                             final String nodeLabel,
-                                             final RunInstance instance) {
-        return describeInstance(nodeLabel, instance,
-            () -> ec2Helper.getAliveInstance(nodeLabel, region.getRegionCode()));
-    }
-
-    private RunInstance describeInstance(final String nodeLabel,
-                                         final RunInstance instance,
-                                         final Supplier<Instance> supplier) {
-        log.debug("Getting instance description for label {}.", nodeLabel);
-        try {
-            final Instance ec2Instance = supplier.get();
-            instance.setNodeId(ec2Instance.getInstanceId());
-            instance.setNodeIP(ec2Instance.getPrivateIpAddress());
-            instance.setNodeName(ec2Instance.getInstanceId());
-            return instance;
-        } catch (AwsEc2Exception e) {
-            log.debug("Instance for label {} not found", nodeLabel);
-            log.trace(e.getMessage(), e);
-            return null;
-        }
     }
 
     @Override
@@ -228,60 +160,18 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         return envVars;
     }
 
-    @Override
-    public Optional<InstanceTerminationState> getInstanceTerminationState(final AwsRegion region,
-                                                                          final String instanceId) {
-        return ec2Helper.getInstanceStateReason(instanceId, region.getRegionCode())
-                .map(state -> InstanceTerminationState.builder()
-                        .instanceId(instanceId)
-                        .stateCode(state.getCode())
-                        .stateMessage(state.getMessage())
-                        .build());
-    }
-
-    @Override
-    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request) {
-        ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region.getRegionCode(),
-                region.getKmsKeyArn());
-    }
-
-    @Override
-    public List<InstanceDisk> loadDisks(final AwsRegion region, final Long runId) {
-        return ec2Helper.loadAttachedVolumes(String.valueOf(runId), region.getRegionCode());
-    }
-
-    @Override
-    public CloudInstanceState getInstanceState(final AwsRegion region, final String nodeLabel) {
-        final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region.getRegionCode());
-        if (Objects.isNull(aliveInstance)) {
-            return CloudInstanceState.TERMINATED;
-        }
-        final String instanceStateName = aliveInstance.getState().getName();
-        if (InstanceStateName.Pending.toString().equals(instanceStateName)
-                || InstanceStateName.Running.toString().equals(instanceStateName)) {
-            return CloudInstanceState.RUNNING;
-        }
-        if (InstanceStateName.Stopping.toString().equals(instanceStateName)
-                || InstanceStateName.Stopped.toString().equals(instanceStateName)) {
-            return CloudInstanceState.STOPPED;
-        }
-        return null;
-    }
-
     private String buildNodeUpCommand(final AwsRegion region,
                                       final String nodeLabel,
                                       final RunInstance instance,
                                       final Map<String, String> labels) {
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
+                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), labels)
                                .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
         }
         addSpotArguments(instance, commandBuilder, region.getId());
-        commandBuilder.prePulledImages(instance.getPrePulledDockerImages());
-        commandBuilder.additionalLabels(labels);
         return commandBuilder.build().getCommand();
     }
 
@@ -328,5 +218,4 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     private Map<String, String> buildScriptEnvVars() {
         return Collections.emptyMap();
     }
-
 }

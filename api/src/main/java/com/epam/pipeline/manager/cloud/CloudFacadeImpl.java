@@ -60,6 +60,7 @@ public class CloudFacadeImpl implements CloudFacade {
     private final PreferenceManager preferenceManager;
     private final PipelineRunManager pipelineRunManager;
     private final KubernetesManager kubernetesManager;
+    private final Map<CloudProvider, CloudScalingService> scalingServices;
     private final Map<CloudProvider, CloudInstanceService> instanceServices;
     private final Map<CloudProvider, CloudInstancePriceService> instancePriceServices;
     private final Map<ClusterKeepAlivePolicy, NodeExpirationService> expirationServices;
@@ -69,6 +70,7 @@ public class CloudFacadeImpl implements CloudFacade {
                            final PreferenceManager preferenceManager,
                            final PipelineRunManager pipelineRunManager,
                            final KubernetesManager kubernetesManager,
+                           final List<CloudScalingService> scalingServices,
                            final List<CloudInstanceService> instanceServices,
                            final List<CloudInstancePriceService> instancePriceServices,
                            final List<NodeExpirationService> expirationServices) {
@@ -77,6 +79,7 @@ public class CloudFacadeImpl implements CloudFacade {
         this.preferenceManager = preferenceManager;
         this.pipelineRunManager = pipelineRunManager;
         this.kubernetesManager = kubernetesManager;
+        this.scalingServices = CommonUtils.groupByCloudProvider(scalingServices);
         this.instanceServices = CommonUtils.groupByCloudProvider(instanceServices);
         this.instancePriceServices = CommonUtils.groupByCloudProvider(instancePriceServices);
         this.expirationServices = CommonUtils.groupByKey(expirationServices, NodeExpirationService::policy);
@@ -85,30 +88,30 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public RunInstance scaleUpNode(final Long runId, final RunInstance instance) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
-        return getInstanceService(region).scaleUpNode(region, runId, instance);
+        return getScalingService(region).scaleUpNode(region, runId, instance);
     }
 
     @Override
     public RunInstance scaleUpPoolNode(final String nodeId, final NodePool node) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(node.getRegionId());
-        return getInstanceService(region).scaleUpPoolNode(region, nodeId, node);
+        return getScalingService(region).scaleUpPoolNode(region, nodeId, node);
     }
 
     @Override
     public void scaleDownNode(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
-        getInstanceService(region).scaleDownNode(region, runId);
+        getScalingService(region).scaleDownNode(region, runId);
     }
 
     @Override
     public void scaleDownPoolNode(final String nodeLabel) {
         final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
-        getInstanceService(region).scaleDownPoolNode(region, nodeLabel);
+        getScalingService(region).scaleDownPoolNode(region, nodeLabel);
     }
 
     @Override
     public void terminateNode(final AbstractCloudRegion region, final String internalIp, final String nodeName) {
-        getInstanceService(region).terminateNode(region, internalIp, nodeName);
+        getScalingService(region).terminateNode(region, internalIp, nodeName);
     }
 
     @Override
@@ -117,7 +120,7 @@ public class CloudFacadeImpl implements CloudFacade {
         final ClusterKeepAlivePolicy clusterKeepAlivePolicy = CommonUtils.getEnumValueOrDefault(
                 preference, ClusterKeepAlivePolicy.MINUTES_TILL_HOUR);
         final AbstractCloudRegion region = getRegionByRunId(runId);
-        final LocalDateTime nodeLaunchTime = getInstanceService(region).getNodeLaunchTime(region, runId);
+        final LocalDateTime nodeLaunchTime = getScalingService(region).getNodeLaunchTime(region, runId);
         return Optional.ofNullable(MapUtils.emptyIfNull(expirationServices)
                 .get(clusterKeepAlivePolicy))
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -129,20 +132,19 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public boolean reassignNode(final Long oldId, final Long newId) {
         final AbstractCloudRegion region = getRegionByRunId(oldId);
-        return getInstanceService(region).reassignNode(region, oldId, newId);
+        return getScalingService(region).reassignNode(region, oldId, newId);
     }
 
     @Override
     public boolean reassignPoolNode(final String nodeLabel, final Long newId) {
         final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
-        return getInstanceService(region).reassignPoolNode(region, nodeLabel, newId);
+        return getScalingService(region).reassignPoolNode(region, nodeLabel, newId);
     }
 
     @Override
     public RunInstance describeInstance(final Long runId, final RunInstance instance) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
-        return getInstanceService(region)
-                .describeInstance(region, String.valueOf(runId), instance);
+        return getInstanceService(region).describeInstance(region, String.valueOf(runId), instance);
     }
 
     @Override
@@ -185,7 +187,7 @@ public class CloudFacadeImpl implements CloudFacade {
     public Map<String, String> buildContainerCloudEnvVars(final Long regionId) {
         return regionManager.loadAll().stream()
                 .map(r -> {
-                    final Map<String, String> envVars = getInstanceService(r)
+                    final Map<String, String> envVars = getScalingService(r)
                             .buildContainerCloudEnvVars(r);
                     if (r.getId().equals(regionId)) {
                         envVars.put(SystemParams.CLOUD_PROVIDER.name(), r.getProvider().name());
@@ -284,17 +286,23 @@ public class CloudFacadeImpl implements CloudFacade {
                 .collect(Collectors.toList());
     }
 
+    private CloudScalingService getScalingService(final AbstractCloudRegion region) {
+        return getServiceForRegion(scalingServices, region);
+    }
+
     private CloudInstanceService getInstanceService(final AbstractCloudRegion region) {
-        return Optional.ofNullable(MapUtils.emptyIfNull(instanceServices).get(region.getProvider()))
-                .orElseThrow(() -> new IllegalArgumentException(
-                        messageHelper.getMessage(
-                                MessageConstants.ERROR_CLOUD_PROVIDER_NOT_SUPPORTED, region.getProvider())));
+        return getServiceForRegion(instanceServices, region);
     }
 
     private CloudInstancePriceService getInstancePriceService(final AbstractCloudRegion region) {
-        return Optional.ofNullable(MapUtils.emptyIfNull(instancePriceServices).get(region.getProvider()))
-                .orElseThrow(() -> new IllegalArgumentException(
-                        messageHelper.getMessage(
-                                MessageConstants.ERROR_CLOUD_PROVIDER_NOT_SUPPORTED, region.getProvider())));
+        return getServiceForRegion(instancePriceServices, region);
+    }
+
+    private <T extends CloudAwareService> T getServiceForRegion(final Map<CloudProvider, T> services,
+                                                                final AbstractCloudRegion region) {
+        return Optional.ofNullable(MapUtils.emptyIfNull(services).get(region.getProvider()))
+            .orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(
+                    MessageConstants.ERROR_CLOUD_PROVIDER_NOT_SUPPORTED, region.getProvider())));
     }
 }

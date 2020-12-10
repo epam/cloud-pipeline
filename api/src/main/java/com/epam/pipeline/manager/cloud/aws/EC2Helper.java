@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,14 +50,21 @@ import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
+import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -73,13 +80,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-public class EC2Helper {
+@Slf4j
+public class EC2Helper implements CloudInstanceService<AwsRegion> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EC2Helper.class);
     private static final int SPOT_REQUEST_INTERVAL = 3;
@@ -90,12 +100,16 @@ public class EC2Helper {
     private static final String RUNNING_STATE = "running";
     private static final String STOPPING_STATE = "stopping";
     private static final String STOPPED_STATE = "stopped";
-    private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String ALLOWED_DEVICE_PREFIX = "/dev/sd";
     private static final String ALLOWED_DEVICE_SUFFIXES = "defghijklmnopqrstuvwxyz";
 
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
+
+    @Override
+    public CloudProvider getProvider() {
+        return CloudProvider.AWS;
+    }
 
     public AmazonEC2 getEC2Client(String awsRegion) {
         AmazonEC2ClientBuilder builder = AmazonEC2ClientBuilder.standard();
@@ -129,16 +143,20 @@ public class EC2Helper {
                 .orElse(0.0);
     }
 
-    public void stopInstance(String instanceId, String awsRegion) {
-        AmazonEC2 client = getEC2Client(awsRegion);
+    @Override
+    public void stopInstance(final AwsRegion awsRegion, final String instanceId) {
+        log.debug("Stopping AWS instance {}", instanceId);
+        AmazonEC2 client = getEC2Client(awsRegion.getRegionCode());
         StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(instanceId);
         client.stopInstances(stopInstancesRequest);
         Waiter<DescribeInstancesRequest> waiter = client.waiters().instanceStopped();
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
-    public void terminateInstance(String instanceId, String awsRegion) {
-        AmazonEC2 client = getEC2Client(awsRegion);
+    @Override
+    public void terminateInstance(final AwsRegion awsRegion, final String instanceId) {
+        log.debug("Terminating AWS instance {}", instanceId);
+        AmazonEC2 client = getEC2Client(awsRegion.getRegionCode());
         TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest()
                 .withInstanceIds(instanceId);
         client.terminateInstances(terminateInstancesRequest);
@@ -146,9 +164,11 @@ public class EC2Helper {
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
-    public CloudInstanceOperationResult startInstance(String instanceId, String awsRegion) {
+    @Override
+    public CloudInstanceOperationResult startInstance(final AwsRegion awsRegion, final String instanceId) {
+        log.debug("Starting AWS instance {}", instanceId);
         try {
-            AmazonEC2 client = getEC2Client(awsRegion);
+            AmazonEC2 client = getEC2Client(awsRegion.getRegionCode());
             StartInstancesRequest startInstancesRequest = new StartInstancesRequest().withInstanceIds(instanceId);
             client.startInstances(startInstancesRequest);
             Waiter<DescribeInstancesRequest> waiter = client.waiters().instanceRunning();
@@ -244,6 +264,66 @@ public class EC2Helper {
                     reservation.getReservationId()));
         }
         return instances.get(0);
+    }
+
+    @Override
+    public boolean instanceExists(final AwsRegion region, final String instanceId) {
+        log.debug("Checking if AWS instance {} exists", instanceId);
+        return findInstance(instanceId, region.getRegionCode()).isPresent();
+    }
+
+    @Override
+    public RunInstance describeInstance(final AwsRegion region,
+                                        final String nodeLabel,
+                                        final RunInstance instance) {
+        return describeInstance(nodeLabel, instance, () -> getActiveInstance(nodeLabel, region.getRegionCode()));
+    }
+
+    @Override
+    public RunInstance describeAliveInstance(final AwsRegion region,
+                                             final String nodeLabel,
+                                             final RunInstance instance) {
+        return describeInstance(nodeLabel, instance, () -> getAliveInstance(nodeLabel, region.getRegionCode()));
+    }
+
+
+    @Override
+    public Optional<InstanceTerminationState> getInstanceTerminationState(final AwsRegion region,
+                                                                          final String instanceId) {
+        return getInstanceStateReason(instanceId, region.getRegionCode())
+            .map(state -> InstanceTerminationState.builder()
+                .instanceId(instanceId)
+                .stateCode(state.getCode())
+                .stateMessage(state.getMessage())
+                .build());
+    }
+
+    @Override
+    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request) {
+        createAndAttachVolume(String.valueOf(runId), request.getSize(), region.getRegionCode(), region.getKmsKeyArn());
+    }
+
+    @Override
+    public List<InstanceDisk> loadDisks(final AwsRegion region, final Long runId) {
+        return loadAttachedVolumes(String.valueOf(runId), region.getRegionCode());
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final AwsRegion region, final String nodeLabel) {
+        final Instance aliveInstance = getAliveInstance(nodeLabel, region.getRegionCode());
+        if (Objects.isNull(aliveInstance)) {
+            return CloudInstanceState.TERMINATED;
+        }
+        final String instanceStateName = aliveInstance.getState().getName();
+        if (InstanceStateName.Pending.toString().equals(instanceStateName)
+            || InstanceStateName.Running.toString().equals(instanceStateName)) {
+            return CloudInstanceState.RUNNING;
+        }
+        if (InstanceStateName.Stopping.toString().equals(instanceStateName)
+            || InstanceStateName.Stopped.toString().equals(instanceStateName)) {
+            return CloudInstanceState.STOPPED;
+        }
+        return null;
     }
 
     public Optional<Instance> findInstance(final String instanceId, final String awsRegion) {
@@ -421,5 +501,22 @@ public class EC2Helper {
                 .findFirst()
                 .map(region -> region.getAllowedNetworks().keySet())
                 .orElse(Collections.emptySet());
+    }
+
+    private RunInstance describeInstance(final String nodeLabel,
+                                         final RunInstance instance,
+                                         final Supplier<Instance> supplier) {
+        log.debug("Getting instance description for label {}.", nodeLabel);
+        try {
+            final Instance ec2Instance = supplier.get();
+            instance.setNodeId(ec2Instance.getInstanceId());
+            instance.setNodeIP(ec2Instance.getPrivateIpAddress());
+            instance.setNodeName(ec2Instance.getInstanceId());
+            return instance;
+        } catch (AwsEc2Exception e) {
+            log.debug("Instance for label {} not found", nodeLabel);
+            log.trace(e.getMessage(), e);
+            return null;
+        }
     }
 }
