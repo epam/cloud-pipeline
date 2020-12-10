@@ -21,7 +21,7 @@ from src.utilities import date_utilities
 from src.api.pipeline_run import PipelineRun
 
 
-OUTPUT_FILE_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
+OUTPUT_FILE_DATE_FORMAT = '%Y-%m-%d'
 
 
 class ClusterMonitoringManager:
@@ -48,12 +48,16 @@ class ClusterMonitoringManager:
                 sys.exit(1)
         if not interval:
             interval = '1m'
-        date_to = date_utilities.now() if not raw_to_date else date_utilities.format_date(raw_to_date)
+        date_to = date_utilities.now_utc() if not raw_to_date \
+            else date_utilities.parse_parameter_date_to_utc(raw_to_date)
         date_from = date_utilities.minus_day(date_to) if not raw_from_date \
-            else date_utilities.format_date(raw_from_date)
+            else date_utilities.parse_parameter_date_to_utc(raw_from_date)
         output_path = cls._build_output_path(output, run_id, instance_id, date_from, date_to, interval)
-        Cluster.download_usage_report(instance_id, date_from, date_to,
-                                      cls._convert_to_duration_format(interval), output_path)
+        Cluster.download_usage_report(instance_id,
+                                      date_utilities.format_date(date_from),
+                                      date_utilities.format_date(date_to),
+                                      cls._convert_to_duration_format(interval),
+                                      output_path)
         click.echo("Usage report downloaded to '%s'" % output_path)
 
     @staticmethod
@@ -80,8 +84,8 @@ class ClusterMonitoringManager:
         instance_indicator = str(run_id or instance_id)
         return "cluster_monitor_%s_%s_%s_%s.csv" % (
             instance_indicator,
-            date_utilities.format_date(date_from, OUTPUT_FILE_DATE_FORMAT),
-            date_utilities.format_date(date_to, OUTPUT_FILE_DATE_FORMAT),
+            date_utilities.format_date(date_utilities.to_local(date_from), OUTPUT_FILE_DATE_FORMAT),
+            date_utilities.format_date(date_utilities.to_local(date_to), OUTPUT_FILE_DATE_FORMAT),
             interval)
 
     @staticmethod
