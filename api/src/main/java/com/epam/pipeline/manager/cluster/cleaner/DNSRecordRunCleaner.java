@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cluster.cleaner;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.manager.cloud.aws.Route53Helper;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.UtilsManager;
@@ -42,14 +42,14 @@ public class DNSRecordRunCleaner implements RunCleaner {
 
     private final PreferenceManager preferenceManager;
     private final UtilsManager utilsManager;
-    private final Route53Helper route53Helper;
+    private final CloudFacade cloudFacade;
 
     public DNSRecordRunCleaner(final PreferenceManager preferenceManager,
                                final UtilsManager utilsManager,
-                               final Route53Helper route53Helper) {
+                               final CloudFacade cloudFacade) {
         this.preferenceManager = preferenceManager;
         this.utilsManager = utilsManager;
-        this.route53Helper = route53Helper;
+        this.cloudFacade = cloudFacade;
     }
 
     @Override
@@ -74,7 +74,7 @@ public class DNSRecordRunCleaner implements RunCleaner {
         serviceUrlsList.forEach(serviceUrl -> {
             final String url = serviceUrl.get("url");
             if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
-                route53Helper.removeDNSRecord(hostZoneId,
+                cloudFacade.removeDNSRecord(run.getInstance().getCloudRegionId(),
                         new InstanceDNSRecord(unify(url), utilsManager.getEdgeDomainNameOrIP(), null));
             }
         });

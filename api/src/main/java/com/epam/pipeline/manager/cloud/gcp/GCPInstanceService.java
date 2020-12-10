@@ -221,6 +221,11 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
+    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with GCP provider yet.");
+    }
+
+    @Override
     public List<InstanceDisk> loadDisks(final GCPRegion region, final Long runId) {
         return vmService.getAliveInstance(region, String.valueOf(runId)).getDisks().stream()
                 .map(disk -> disk.get("diskSizeGb"))

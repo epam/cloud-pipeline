@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
-import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -40,7 +39,9 @@ import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import static com.epam.pipeline.security.acl.AclExpressions.*;
+import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
+import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
+import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
 
 @Service
 @RequiredArgsConstructor
@@ -111,5 +112,4 @@ public class ClusterApiService {
     public List<NodeDisk> loadNodeDisks(final String name) {
         return nodeDiskManager.loadByNodeId(name);
     }
-
 }

@@ -293,6 +293,19 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         }
     }
 
+    @Override
+    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        if (dnsRecord.getDnsRecord().contains(
+                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
+            return route53Helper
+                    .removeDNSRecord(preferenceManager.getPreference(
+                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
+                    );
+        } else {
+            return NO_OP_INSTANCE_DNS_RECORD;
+        }
+    }
+
     private String buildNodeUpCommand(final AwsRegion region,
                                       final String nodeLabel,
                                       final RunInstance instance,

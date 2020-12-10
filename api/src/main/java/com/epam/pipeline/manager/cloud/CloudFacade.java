@@ -98,4 +98,6 @@ public interface CloudFacade {
 
     InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord dnsRecord);
 
+    InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord dnsRecord);
+
 }

@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
+import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -221,6 +222,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @MockBean
+    protected InfrastructureManager infrastructureManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

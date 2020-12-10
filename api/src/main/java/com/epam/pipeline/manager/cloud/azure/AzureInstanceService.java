@@ -262,6 +262,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
     }
 
+    @Override
+    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
+    }
+
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {
         final Map<String, String> envVars = new HashMap<>();
         if (StringUtils.isNotBlank(region.getAuthFile())) {
