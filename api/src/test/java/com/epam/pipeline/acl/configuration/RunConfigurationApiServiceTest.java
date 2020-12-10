@@ -283,8 +283,4 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
 
         assertThat(runConfigurationApiService.loadAll()).isEmpty();
     }
-
-    private void mockUser(String user) {
-        doReturn(user).when(mockAuthManager).getAuthorizedUser();
-    }
 }
