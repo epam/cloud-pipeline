@@ -33,18 +33,38 @@ import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Revision;
-import com.epam.pipeline.entity.pipeline.run.RunSchedule;
-import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
-import com.epam.pipeline.entity.pipeline.run.ScheduleType;
-import com.fasterxml.jackson.core.type.TypeReference;
-
-import java.util.Date;
-import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class PipelineCreatorUtils {
+
+    public static final TypeReference<Result<Pipeline>> PIPELINE_INSTANCE_TYPE =
+            new TypeReference<Result<Pipeline>>() {};
+    public static final TypeReference<Result<CheckRepositoryVO>> CHECK_REPOSITORY_INSTANCE_TYPE =
+            new TypeReference<Result<CheckRepositoryVO>>() {};
+    public static final TypeReference<Result<PipelinesWithPermissionsVO>> PIPELINE_WITH_PERMISSIONS_TYPE =
+            new TypeReference<Result<PipelinesWithPermissionsVO>>() {};
+    public static final TypeReference<Result<InstancePrice>> INSTANCE_PRICE_TYPE =
+            new TypeReference<Result<InstancePrice>>() {};
+    public static final TypeReference<Result<TaskGraphVO>> TASK_GRAPH_VO_TYPE =
+            new TypeReference<Result<TaskGraphVO>>() {};
+    public static final TypeReference<Result<Revision>> REVISION_INSTANCE_TYPE =
+            new TypeReference<Result<Revision>>() {};
+    public static final TypeReference<Result<DocumentGenerationProperty>> DOCUMENT_GENERATION_PROPERTY_TYPE =
+            new TypeReference<Result<DocumentGenerationProperty>>() {};
+
+    public static final TypeReference<Result<List<Pipeline>>> PIPELINE_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<Pipeline>>>() {};
+    public static final TypeReference<Result<List<PipelineRun>>> PIPELINE_RUN_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<PipelineRun>>>() {};
+    public static final TypeReference<Result<List<Revision>>> REVISION_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<Revision>>>() {};
+    public static final TypeReference<Result<List<UploadFileMetadata>>> UPLOAD_METADATA_LIST_TYPE =
+            new TypeReference<Result<List<UploadFileMetadata>>>() {};
+    public static final TypeReference<Result<List<DocumentGenerationProperty>>> DOCUMENT_GENERATION_PROPERTY_LIST_TYPE =
+            new TypeReference<Result<List<DocumentGenerationProperty>>>() {};
 
     public static final TypeReference<Result<List<RunSchedule>>> RUN_SCHEDULE_LIST_TYPE =
             new TypeReference<Result<List<RunSchedule>>>() { };
@@ -53,8 +73,12 @@ public final class PipelineCreatorUtils {
 
     }
 
+    public static Pipeline getPipeline() {
+        return new Pipeline();
+    }
+
     public static Pipeline getPipeline(final String owner) {
-        Pipeline pipeline = new Pipeline();
+        final Pipeline pipeline = new Pipeline();
         pipeline.setId(ID);
         pipeline.setOwner(owner);
         pipeline.setCurrentVersion(getRevision());
