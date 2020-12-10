@@ -61,12 +61,12 @@ public abstract class AbstractProviderScalingService<T extends AbstractCloudRegi
 
     @Override
     public RunInstance scaleUpNode(final T region, final Long runId, final RunInstance instance) {
-        return scaleUpNode(region, instance, String.valueOf(runId), Collections.emptyMap());
+        return scaleUpNode(region, instance, runId, String.valueOf(runId), Collections.emptyMap());
     }
 
     @Override
     public RunInstance scaleUpPoolNode(final T region, final String nodeId, final NodePool node) {
-        return scaleUpNode(region, node.toRunInstance(), nodeId, getPoolLabels(node));
+        return scaleUpNode(region, node.toRunInstance(), null, nodeId, getPoolLabels(node));
     }
 
     @Override
@@ -106,7 +106,7 @@ public abstract class AbstractProviderScalingService<T extends AbstractCloudRegi
         return instanceService.getNodeLaunchTimeFromKube(runId);
     }
 
-    public CompletableFuture<Void> runAsync(final Runnable task) {
+    protected CompletableFuture<Void> runAsync(final Runnable task) {
         if (executorService == null) {
             throw new UnsupportedOperationException(
                 "Selected ProviderInstance service doesn't require asynchronous task execution.");
@@ -129,11 +129,11 @@ public abstract class AbstractProviderScalingService<T extends AbstractCloudRegi
         return commandBuilder.build().getCommand();
     }
 
-    private RunInstance scaleUpNode(final T region, final RunInstance instance, final String nodeId,
+    private RunInstance scaleUpNode(final T region, final RunInstance instance, final Long runId, final String nodeId,
                                     final Map<String, String> labels) {
         final String command = buildNodeUpCommand(region, nodeId, instance, labels);
         final Map<String, String> envVars = buildScriptEnvVars(region);
-        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, envVars);
+        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
 
     private Map<String, String> getPoolLabels(final NodePool pool) {
