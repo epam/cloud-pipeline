@@ -1027,17 +1027,26 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
-        public String[] getAmisFromClusterNetworksConfigPreference() {
+        public String[] getAmisFromClusterNetworksConfigPreference(String region) {
             searchPreference("cluster.networks.config");
             String[] result = new String[2];
+            final int[] reg = {0, 0};
             String[] strings = context().$(byClassName("CodeMirror-code"))
-                            .findAll(byClassName("CodeMirror-line")).texts().stream()
-                            .toArray(String[]::new);
-            IntStream.range(0, strings.length).forEach((i) -> {
+                            .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
+            IntStream.range(0, strings.length).forEach(i -> {
+                if (strings[i].contains(region)) {
+                    reg[0] = i;
+                }});
+            IntStream.range(reg[0], strings.length).forEach(i -> {
+                reg[1] = (strings[i].contains("\"amis\":")) ? i : strings.length;
+                });
+            IntStream.range(reg[0], reg[1]).forEach((i) -> {
                 if (strings[i].contains("\"instance_mask\":")) {
                     if (strings[i].contains("\"*\"")) {
-                        result[0]=strings[i+1];
-                    } else {result[1]=strings[i+1];}
+                        result[0] = strings[i+1];
+                    } else {
+                        result[1] = strings[i+1];
+                    }
                 }
             });
             return result;

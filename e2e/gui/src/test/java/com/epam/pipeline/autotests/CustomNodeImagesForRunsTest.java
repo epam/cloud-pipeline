@@ -37,10 +37,9 @@ import static java.util.stream.Collectors.toSet;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 
-public class PipelineConfigurationNewTest extends AbstractSeveralPipelineRunningTest {
+public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningTest {
     private final String pipeline1 = "pipe-config-" + Utils.randomSuffix();
     private final String pipeline2 = "pipe-config-" + Utils.randomSuffix();
-    private String clusterNetworksConfig = "cluster.networks.config";
     private String runID1517_1 = "";
     private String testAmi = "";
 
@@ -70,8 +69,8 @@ public class PipelineConfigurationNewTest extends AbstractSeveralPipelineRunning
         String[] amis = navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .getAmisFromClusterNetworksConfigPreference();
-        assertNotEquals(amiValue(amis[0]), testAmi = amiValue(amis[1]));
+                .getAmisFromClusterNetworksConfigPreference(cloudRegion[0]);
+        assertNotEquals(amiValue(amis[0]), testAmi = amiValue(amis[1]), "Amis are the same for different instance_masks.");
         library()
                 .clickOnDraftVersion(pipeline1)
                 .codeTab()
@@ -99,7 +98,7 @@ public class PipelineConfigurationNewTest extends AbstractSeveralPipelineRunning
 
     @Test (dependsOnMethods = {"checkCustomNodeImageForThePipelineRun"})
     @TestCase("1517_2")
-    public void checkNodeReuseAfterTheCustomNodeImageRrun() {
+    public void checkNodeReuseAfterTheCustomNodeImageRun() {
         library()
                 .clickOnDraftVersion(pipeline2)
                 .runPipeline()

@@ -424,6 +424,12 @@
         </classes>
     </test>
 
+    <test name="CustomNodeImagesForRunsTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.CustomNodeImagesForRunsTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
