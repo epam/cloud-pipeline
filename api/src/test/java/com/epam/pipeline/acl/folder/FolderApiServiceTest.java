@@ -20,19 +20,14 @@ import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.metadata.FolderWithMetadata;
-import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
-import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -62,23 +57,31 @@ import static org.mockito.Mockito.doReturn;
 
 public class FolderApiServiceTest extends AbstractAclTest {
 
+    private static final long ID_4 = 4L;
+    private static final long ID_5 = 5L;
+    private static final long ID_6 = 6L;
     private static final String FOLDER_MANAGER = "FOLDER_MANAGER";
     private final Folder folder = getFolder(ID, ANOTHER_SIMPLE_USER);
     private final FolderWithMetadata folderWithMetadata = getFolderWithMetadata(ID, ANOTHER_SIMPLE_USER);
+    private final Folder emptyChildFolderWithoutPermission = getFolder(ID_3, ANOTHER_SIMPLE_USER);
     private final Pipeline pipelineRead1 = getPipeline(ID, ANOTHER_SIMPLE_USER);
     private final Pipeline pipelineRead2 = getPipeline(ID, ANOTHER_SIMPLE_USER);
     private final Pipeline pipelineWithoutPermission1 = getPipeline(ID_2, ANOTHER_SIMPLE_USER);
     private final Pipeline pipelineWithoutPermission2 = getPipeline(ID_2, ANOTHER_SIMPLE_USER);
-
-    private final S3bucketDataStorage storageRead1 = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
-    private final S3bucketDataStorage storageRead2 = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
-    private final S3bucketDataStorage storageWithoutPermission1 = getS3bucketDataStorage(ID_2, ANOTHER_SIMPLE_USER);
-    private final S3bucketDataStorage storageWithoutPermission2 = getS3bucketDataStorage(ID_2, ANOTHER_SIMPLE_USER);
-
-    private final RunConfiguration runConfigRead1 = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
-    private final RunConfiguration runConfigRead2 = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
-    private final RunConfiguration runConfigWithoutPermission1 = getRunConfiguration(ID_2, ANOTHER_SIMPLE_USER);
-    private final RunConfiguration runConfigWithoutPermission2 = getRunConfiguration(ID_2, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage storageRead1 = getS3bucketDataStorage(ID_3, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage storageRead2 = getS3bucketDataStorage(ID_3, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage storageWithoutPermission1 = getS3bucketDataStorage(ID_4, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage storageWithoutPermission2 = getS3bucketDataStorage(ID_4, ANOTHER_SIMPLE_USER);
+    private final RunConfiguration runConfigRead1 = getRunConfiguration(ID_5, ANOTHER_SIMPLE_USER);
+    private final RunConfiguration runConfigRead2 = getRunConfiguration(ID_5, ANOTHER_SIMPLE_USER);
+    private final RunConfiguration runConfigWithoutPermission1 = getRunConfiguration(ID_6, ANOTHER_SIMPLE_USER);
+    private final RunConfiguration runConfigWithoutPermission2 = getRunConfiguration(ID_6, ANOTHER_SIMPLE_USER);
+    private final List<AbstractSecuredEntity> entitiesWithPermission = Arrays.asList(pipelineRead2,
+                                                                                     storageRead2,
+                                                                                     runConfigRead2);
+    private final List<AbstractSecuredEntity> allEntities = Arrays.asList(pipelineRead1, pipelineWithoutPermission1,
+                                                                          storageRead1, storageWithoutPermission1,
+                                                                          runConfigRead1, runConfigWithoutPermission2);
 
     @Autowired
     private FolderManager mockFolderManager;
@@ -229,35 +232,30 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldGetProjectWithHierarchyWhenPermissionIsGranted() {
-        final FolderWithMetadata parentFolder = getFolderWithMetadata(ID_3, ANOTHER_SIMPLE_USER);
-        final FolderWithMetadata childFolderWithPermission = getFolderWithMetadata(ID, ANOTHER_SIMPLE_USER);
-        final FolderWithMetadata childFolderWithoutPermission = getFolderWithMetadata(ID_2, ANOTHER_SIMPLE_USER);
-        final FolderWithMetadata emptyChildFolderWithoutPermission = getFolderWithMetadata(ID_3, ANOTHER_SIMPLE_USER);
-        childFolderWithPermission.setPipelines(Arrays.asList(pipelineRead1, pipelineWithoutPermission1));
-        childFolderWithoutPermission.setPipelines(Arrays.asList(pipelineRead2, pipelineWithoutPermission2));
-        parentFolder.setChildFolders(Arrays.asList(childFolderWithPermission,
-                                                   childFolderWithoutPermission,
-                                                   emptyChildFolderWithoutPermission));
-
-        initAclEntity(parentFolder, AclPermission.READ);
-        initAclEntity(childFolderWithPermission, AclPermission.READ);
-        initAclEntity(childFolderWithoutPermission);
+        final FolderWithMetadata childFolderWithPermission = initFolderWithReadPermission();
+        final FolderWithMetadata childFolderWithoutPermission = initFolderWithoutReadPermission();
+        final List<Folder> folders = Arrays.asList(childFolderWithPermission,
+                childFolderWithoutPermission,
+                emptyChildFolderWithoutPermission);
+        final FolderWithMetadata parentFolder = initParentFolder(folders);
+        doReturn(parentFolder).when(mockEntityManager).load(AclClass.FOLDER, ID);
+        doReturn(parentFolder).when(mockFolderManager).getProject(ID, AclClass.FOLDER);
         initAclEntity(emptyChildFolderWithoutPermission);
-        initAclEntity(pipelineRead1, AclPermission.READ);
-        initAclEntity(pipelineRead2, AclPermission.READ);
-        initAclEntity(pipelineWithoutPermission1);
-        initAclEntity(pipelineWithoutPermission2);
+        initAclEntity(parentFolder, AclPermission.READ);
+        initEntities();
         mockSecurityContext();
 
-        doReturn(childFolderWithPermission).when(mockEntityManager).load(AclClass.FOLDER, ID);
-        doReturn(parentFolder).when(mockFolderManager).getProject(ID, AclClass.FOLDER);
-
         final FolderWithMetadata returnedFolder = folderApiService.getProject(ID, AclClass.FOLDER);
+        final Map<Long, AbstractHierarchicalEntity> childrenById = returnedFolder.getChildren().stream()
+                .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
 
         assertThat(returnedFolder).isEqualTo(parentFolder);
-        assertThat(returnedFolder.getChildren()).isEqualTo(Arrays.asList(childFolderWithPermission, childFolderWithoutPermission));
-        assertThat(returnedFolder.getChildren().get(0)).isEqualTo(childFolderWithPermission);
-        assertThat(returnedFolder.getChildren().get(1)).isEqualTo(childFolderWithoutPermission);
+        assertThat(childrenById.get(childFolderWithPermission.getId())).isEqualTo(childFolderWithPermission);
+        assertThat(childrenById.get(childFolderWithPermission.getId()).getLeaves()).isEqualTo(allEntities);
+        assertThat(childrenById.get(childFolderWithoutPermission.getId())).isEqualTo(childFolderWithoutPermission);
+        assertThat(childrenById.get(childFolderWithoutPermission.getId()).getLeaves()).isEqualTo(allEntities);
+        assertThat(childrenById.get(emptyChildFolderWithoutPermission.getId()))
+                .isEqualTo(emptyChildFolderWithoutPermission);
     }
 
     @Test
@@ -271,38 +269,24 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadTreeWithHierarchy() {
-        final Folder parentFolder = getFolder(ID_3, ANOTHER_SIMPLE_USER);
-        final Folder childFolderWithPermission = getFolder(ID, ANOTHER_SIMPLE_USER);
-        final Folder childFolderWithoutPermission = getFolder(ID_2, ANOTHER_SIMPLE_USER);
-        final Folder emptyChildFolderWithoutPermission = getFolder(ID_3, ANOTHER_SIMPLE_USER);
-        childFolderWithPermission.setPipelines(Arrays.asList(pipelineRead1, pipelineWithoutPermission1));
-        childFolderWithoutPermission.setPipelines(Arrays.asList(pipelineRead2, pipelineWithoutPermission2));
-        parentFolder.setChildFolders(Arrays.asList(childFolderWithPermission,
-                childFolderWithoutPermission,
-                emptyChildFolderWithoutPermission));
-
-        initAclEntity(parentFolder);
-        initAclEntity(childFolderWithPermission, AclPermission.READ);
-        initAclEntity(childFolderWithoutPermission);
+        final Folder childFolderWithPermission = initFolderWithReadPermission();
+        final Folder childFolderWithoutPermission = initFolderWithoutReadPermission();
+        final List<Folder> folders = Arrays.asList(childFolderWithPermission, childFolderWithoutPermission,
+                emptyChildFolderWithoutPermission);
+        final Folder parentFolder = initParentFolder(folders);
+        doReturn(parentFolder).when(mockFolderManager).loadTree();
         initAclEntity(emptyChildFolderWithoutPermission);
-        initAclEntity(pipelineRead1, AclPermission.READ);
-        initAclEntity(pipelineRead2, AclPermission.READ);
-        initAclEntity(pipelineWithoutPermission1);
-        initAclEntity(pipelineWithoutPermission2);
+        initEntities();
         mockSecurityContext();
 
-        doReturn(parentFolder).when(mockFolderManager).loadTree();
 
         final Folder returnedFolder = folderApiService.loadTree();
+        final Map<Long, AbstractHierarchicalEntity> childrenById = returnedFolder.getChildren().stream()
+                .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
 
         assertThat(returnedFolder).isEqualTo(parentFolder);
-        assertThat(returnedFolder.getChildren()).isEqualTo(Arrays.asList(childFolderWithPermission, childFolderWithoutPermission));
-        assertThat(returnedFolder.getChildren().get(0)).isEqualTo(childFolderWithPermission);
-        assertThat(returnedFolder.getChildren().get(1)).isEqualTo(childFolderWithoutPermission);
-        assertThat(returnedFolder.getChildren().get(0).getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(returnedFolder.getChildren().get(0).getLeaves().get(0).getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(returnedFolder.getChildren().get(0).getLeaves().get(1).getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(returnedFolder.getChildren().get(1).getLeaves().get(0).getMask()).isEqualTo(READ_PERMISSION);
+        assertTreeForFolderWithReadPermission(childrenById.get(childFolderWithPermission.getId()));
+        assertTreeForFolderWithoutPermission(childrenById.get(childFolderWithoutPermission.getId()));
     }
 
     @Test
@@ -316,38 +300,25 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadProjectsWithHierarchy() {
-        final Folder parentFolder = getFolder(ID_3, ANOTHER_SIMPLE_USER);
-        final Folder childFolderWithPermission = getFolder(ID, ANOTHER_SIMPLE_USER);
-        final Folder childFolderWithoutPermission = getFolder(ID_2, ANOTHER_SIMPLE_USER);
-        final Folder emptyChildFolderWithoutPermission = getFolder(ID_3, ANOTHER_SIMPLE_USER);
-        childFolderWithPermission.setStorages(Arrays.asList(storageRead1, storageWithoutPermission1));
-        childFolderWithoutPermission.setStorages(Arrays.asList(storageRead2, storageWithoutPermission2));
-        parentFolder.setChildFolders(Arrays.asList(childFolderWithPermission,
-                childFolderWithoutPermission,
-                emptyChildFolderWithoutPermission));
-
-        initAclEntity(parentFolder);
-        initAclEntity(childFolderWithPermission, AclPermission.READ);
-        initAclEntity(childFolderWithoutPermission);
+        final Folder childFolderWithPermission = initFolderWithReadPermission();
+        final Folder childFolderWithoutPermission = initFolderWithoutReadPermission();
+        final List<Folder> folders = Arrays.asList(childFolderWithPermission, childFolderWithoutPermission,
+                                                   emptyChildFolderWithoutPermission);
+        final Folder parentFolder = initParentFolder(folders);
+        doReturn(parentFolder).when(mockFolderManager).loadAllProjects();
         initAclEntity(emptyChildFolderWithoutPermission);
-        initAclEntity(storageRead1, AclPermission.READ);
-        initAclEntity(storageRead2, AclPermission.READ);
-        initAclEntity(storageWithoutPermission1);
-        initAclEntity(storageWithoutPermission2);
+        initEntities();
         mockSecurityContext();
 
         doReturn(parentFolder).when(mockFolderManager).loadAllProjects();
 
         final Folder returnedFolder = folderApiService.loadProjects();
+        final Map<Long, AbstractHierarchicalEntity> childrenById = returnedFolder.getChildren().stream()
+                .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
 
         assertThat(returnedFolder).isEqualTo(parentFolder);
-        assertThat(returnedFolder.getChildren()).isEqualTo(Arrays.asList(childFolderWithPermission, childFolderWithoutPermission));
-        assertThat(returnedFolder.getChildren().get(0)).isEqualTo(childFolderWithPermission);
-        assertThat(returnedFolder.getChildren().get(1)).isEqualTo(childFolderWithoutPermission);
-        assertThat(returnedFolder.getChildren().get(0).getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(returnedFolder.getChildren().get(0).getLeaves().get(0).getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(returnedFolder.getChildren().get(0).getLeaves().get(1).getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(returnedFolder.getChildren().get(1).getLeaves().get(0).getMask()).isEqualTo(READ_PERMISSION);
+        assertTreeForFolderWithReadPermission(childrenById.get(childFolderWithPermission.getId()));
+        assertTreeForFolderWithoutPermission(childrenById.get(childFolderWithoutPermission.getId()));
     }
 
     @Test
@@ -361,37 +332,24 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadWithHierarchy() {
-        final Folder parentFolder = getFolder(ID_3, ANOTHER_SIMPLE_USER);
-        final Folder childFolderWithPermission = getFolder(ID, ANOTHER_SIMPLE_USER);
-        final Folder childFolderWithoutPermission = getFolder(ID_2, ANOTHER_SIMPLE_USER);
-        final Folder emptyChildFolderWithoutPermission = getFolder(ID_3, ANOTHER_SIMPLE_USER);
-        final List<AbstractHierarchicalEntity> folders = Arrays.asList(childFolderWithPermission, childFolderWithoutPermission);
-        childFolderWithPermission.setConfigurations(Arrays.asList(runConfigRead1, runConfigWithoutPermission1));
-        childFolderWithoutPermission.setConfigurations(Arrays.asList(runConfigRead2, runConfigWithoutPermission2));
-        parentFolder.setChildFolders(Arrays.asList(childFolderWithPermission,
-                childFolderWithoutPermission,
-                emptyChildFolderWithoutPermission));
-
-        initAclEntity(parentFolder);
-        initAclEntity(childFolderWithPermission, AclPermission.READ);
-        initAclEntity(childFolderWithoutPermission);
+        final Folder childFolderWithPermission = initFolderWithReadPermission();
+        final Folder childFolderWithoutPermission = initFolderWithoutReadPermission();
+        final List<Folder> folders = Arrays.asList(childFolderWithPermission, childFolderWithoutPermission,
+                                                   emptyChildFolderWithoutPermission);
+        final Folder parentFolder = initParentFolder(folders);
+        doReturn(parentFolder).when(mockFolderManager).load(ID);
         initAclEntity(emptyChildFolderWithoutPermission);
-        initAclEntity(runConfigRead1, AclPermission.READ);
-        initAclEntity(runConfigRead2, AclPermission.READ);
-        initAclEntity(runConfigWithoutPermission1);
-        initAclEntity(runConfigWithoutPermission2);
+        initEntities();
         mockSecurityContext();
 
-        doReturn(parentFolder).when(mockFolderManager).loadAllProjects();
 
-        final Folder returnedFolder = folderApiService.loadProjects();
-
+        final Folder returnedFolder = folderApiService.load(ID);
         final Map<Long, AbstractHierarchicalEntity> childrenById = returnedFolder.getChildren().stream()
                 .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
 
         assertThat(returnedFolder).isEqualTo(parentFolder);
-        //assertFolderAclTree(folders, returnedFolder.getChildren());
         assertTreeForFolderWithReadPermission(childrenById.get(childFolderWithPermission.getId()));
+        assertTreeForFolderWithoutPermission(childrenById.get(childFolderWithoutPermission.getId()));
     }
 
     @Test
@@ -601,23 +559,62 @@ public class FolderApiServiceTest extends AbstractAclTest {
         assertThrows(AccessDeniedException.class, () -> folderApiService.unlockFolder(ID));
     }
 
-    private void assertFolderAclTree(final List<AbstractHierarchicalEntity> expectedFolders,
-                                     final List<AbstractHierarchicalEntity> actualFolders) {
-        assertThat(expectedFolders).isEqualTo(actualFolders);
-
-        final Map<Long, AbstractHierarchicalEntity> expectedFoldersById = expectedFolders.stream()
-                .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
-
-
-        assertThat(expectedFolders.get(1).getLeaves().get(0).getMask()).isEqualTo(READ_PERMISSION);
-    }
-
     private void assertTreeForFolderWithReadPermission(final AbstractHierarchicalEntity folderWithPermission) {
-        final Map<Long, AbstractSecuredEntity> leavesById = folderWithPermission.getLeaves().stream()
-                .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
+        final List<? extends AbstractSecuredEntity> leaves = folderWithPermission.getLeaves();
 
         assertThat(folderWithPermission.getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(leavesById.get(ID).getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(leavesById.get(ID_2).getMask()).isEqualTo(READ_PERMISSION);
+        assertThat(leaves).isEqualTo(allEntities);
+        assertAclMaskForLeaves(leaves);
+    }
+
+    private void assertTreeForFolderWithoutPermission(final AbstractHierarchicalEntity folderWithoutPermission) {
+        final List<? extends AbstractSecuredEntity> leaves = folderWithoutPermission.getLeaves();
+
+        assertThat(leaves).isEqualTo(entitiesWithPermission);
+        assertAclMaskForLeaves(leaves);
+    }
+
+    private void assertAclMaskForLeaves(final List<? extends AbstractSecuredEntity> leaves) {
+        leaves.forEach(entity -> assertThat(entity.getMask()).isEqualTo(READ_PERMISSION));
+    }
+
+    private FolderWithMetadata initFolderWithReadPermission() {
+        final FolderWithMetadata childFolderWithPermission = getFolderWithMetadata(ID, ANOTHER_SIMPLE_USER);
+        childFolderWithPermission.setConfigurations(Arrays.asList(runConfigRead1, runConfigWithoutPermission1));
+        childFolderWithPermission.setStorages(Arrays.asList(storageRead1, storageWithoutPermission1));
+        childFolderWithPermission.setPipelines(Arrays.asList(pipelineRead1, pipelineWithoutPermission1));
+        initAclEntity(childFolderWithPermission, AclPermission.READ);
+        return childFolderWithPermission;
+    }
+
+    private FolderWithMetadata initFolderWithoutReadPermission() {
+        final FolderWithMetadata childFolderWithoutPermission = getFolderWithMetadata(ID_2, ANOTHER_SIMPLE_USER);
+        childFolderWithoutPermission.setConfigurations(Arrays.asList(runConfigRead2, runConfigWithoutPermission2));
+        childFolderWithoutPermission.setStorages(Arrays.asList(storageRead2, storageWithoutPermission2));
+        childFolderWithoutPermission.setPipelines(Arrays.asList(pipelineRead2, pipelineWithoutPermission2));
+        initAclEntity(childFolderWithoutPermission);
+        return childFolderWithoutPermission;
+    }
+
+    private FolderWithMetadata initParentFolder(final List<Folder> folders) {
+        final FolderWithMetadata parentFolder = getFolderWithMetadata(ID_3, ANOTHER_SIMPLE_USER);
+        parentFolder.setChildFolders(folders);
+        initAclEntity(parentFolder);
+        return parentFolder;
+    }
+
+    private void initEntities() {
+        initAclEntity(pipelineRead1, AclPermission.READ);
+        initAclEntity(pipelineRead2, AclPermission.READ);
+        initAclEntity(pipelineWithoutPermission1);
+        initAclEntity(pipelineWithoutPermission2);
+        initAclEntity(storageRead1, AclPermission.READ);
+        initAclEntity(storageRead2, AclPermission.READ);
+        initAclEntity(storageWithoutPermission1);
+        initAclEntity(storageWithoutPermission2);
+        initAclEntity(runConfigRead1, AclPermission.READ);
+        initAclEntity(runConfigRead2, AclPermission.READ);
+        initAclEntity(runConfigWithoutPermission1);
+        initAclEntity(runConfigWithoutPermission2);
     }
 }
