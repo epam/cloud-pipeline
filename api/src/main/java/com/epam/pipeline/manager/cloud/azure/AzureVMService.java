@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,11 @@ public class AzureVMService implements CloudInstanceService<AzureRegion> {
     private final KubernetesManager kubernetesManager;
 
     @Override
+    public CloudProvider getProvider() {
+        return CloudProvider.AZURE;
+    }
+
+    @Override
     public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
         return CloudInstanceOperationResult.success(
@@ -100,12 +105,6 @@ public class AzureVMService implements CloudInstanceService<AzureRegion> {
     @Override
     public void stopInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).powerOff();
-    }
-
-
-    @Override
-    public CloudProvider getProvider() {
-        return CloudProvider.AZURE;
     }
 
     @Override

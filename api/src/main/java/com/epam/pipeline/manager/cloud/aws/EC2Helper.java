@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,6 @@ public class EC2Helper implements CloudInstanceService<AwsRegion> {
     private static final String RUNNING_STATE = "running";
     private static final String STOPPING_STATE = "stopping";
     private static final String STOPPED_STATE = "stopped";
-    private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String ALLOWED_DEVICE_PREFIX = "/dev/sd";
     private static final String ALLOWED_DEVICE_SUFFIXES = "defghijklmnopqrstuvwxyz";
 

@@ -57,6 +57,11 @@ public class GCPScalingService extends AbstractProviderScalingService<GCPRegion>
     }
 
     @Override
+    public CloudProvider getProvider() {
+        return CloudProvider.GCP;
+    }
+
+    @Override
     public Map<String, String> buildContainerCloudEnvVars(final GCPRegion region) {
         final Map<String, String> envVars = new HashMap<>();
         envVars.put(SystemParams.CLOUD_REGION_PREFIX + region.getId(), region.getRegionCode());
@@ -72,11 +77,6 @@ public class GCPScalingService extends AbstractProviderScalingService<GCPRegion>
             }
         }
         return envVars;
-    }
-
-    @Override
-    public CloudProvider getProvider() {
-        return CloudProvider.GCP;
     }
 
     @Override

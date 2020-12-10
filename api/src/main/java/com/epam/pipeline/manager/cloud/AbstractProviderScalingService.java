@@ -32,8 +32,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-public abstract class AbstractProviderScalingService<T extends AbstractCloudRegion>
-    implements CloudScalingService<T> {
+public abstract class AbstractProviderScalingService<T extends AbstractCloudRegion> implements CloudScalingService<T> {
 
     protected final ClusterCommandService commandService;
     protected final CommonCloudInstanceService instanceService;

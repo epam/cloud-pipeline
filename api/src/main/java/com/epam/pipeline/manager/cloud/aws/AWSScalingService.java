@@ -71,15 +71,15 @@ public class AWSScalingService extends AbstractProviderScalingService<AwsRegion>
     }
 
     @Override
+    public CloudProvider getProvider() {
+        return CloudProvider.AWS;
+    }
+
+    @Override
     public void terminateNode(final AwsRegion region, final String internalIp, final String nodeName) {
         final String command = commandService.buildTerminateNodeCommand(nodeTerminateScript, internalIp, nodeName,
                 getProviderName());
         instanceService.runTerminateNodeScript(command, cmdExecutor, buildScriptEnvVars(region));
-    }
-
-    @Override
-    public CloudProvider getProvider() {
-        return CloudProvider.AWS;
     }
 
     @Override

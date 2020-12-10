@@ -64,14 +64,14 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
     }
 
     @Override
-    public void scaleDownPoolNode(final AzureRegion region, final String nodeLabel) {
-        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, null);
-        runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars(region)));
+    public CloudProvider getProvider() {
+        return CloudProvider.AZURE;
     }
 
     @Override
-    public CloudProvider getProvider() {
-        return CloudProvider.AZURE;
+    public void scaleDownPoolNode(final AzureRegion region, final String nodeLabel) {
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, null);
+        runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars(region)));
     }
 
     @Override
@@ -84,7 +84,6 @@ public class AzureScalingService extends AbstractProviderScalingService<AzureReg
         envVars.put(SystemParams.CLOUD_PROVIDER_PREFIX + region.getId(), region.getProvider().name());
         return envVars;
     }
-
 
     @Override
     protected Map<String, String> buildScriptEnvVars(final AzureRegion region) {

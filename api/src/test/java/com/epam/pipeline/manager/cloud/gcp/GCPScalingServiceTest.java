@@ -30,7 +30,7 @@ import java.util.Map;
 
 import static com.epam.pipeline.manager.execution.SystemParams.*;
 
-public class GCPInstanceServiceTest {
+public class GCPScalingServiceTest {
 
     private static final String CRED_TEMPLATE = "{\n" +
             "  \"type\": \"service_account\",\n" +
