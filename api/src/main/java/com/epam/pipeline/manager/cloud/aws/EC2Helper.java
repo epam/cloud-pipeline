@@ -144,7 +144,7 @@ public class EC2Helper implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void stopInstance(AwsRegion awsRegion, String instanceId) {
+    public void stopInstance(final AwsRegion awsRegion, final String instanceId) {
         log.debug("Stopping AWS instance {}", instanceId);
         AmazonEC2 client = getEC2Client(awsRegion.getRegionCode());
         StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(instanceId);
@@ -154,7 +154,7 @@ public class EC2Helper implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void terminateInstance(AwsRegion awsRegion, String instanceId) {
+    public void terminateInstance(final AwsRegion awsRegion, final String instanceId) {
         log.debug("Terminating AWS instance {}", instanceId);
         AmazonEC2 client = getEC2Client(awsRegion.getRegionCode());
         TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest()
@@ -165,7 +165,7 @@ public class EC2Helper implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public CloudInstanceOperationResult startInstance(AwsRegion awsRegion, String instanceId) {
+    public CloudInstanceOperationResult startInstance(final AwsRegion awsRegion, final String instanceId) {
         log.debug("Starting AWS instance {}", instanceId);
         try {
             AmazonEC2 client = getEC2Client(awsRegion.getRegionCode());
@@ -267,7 +267,7 @@ public class EC2Helper implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public boolean instanceExists(AwsRegion region, String instanceId) {
+    public boolean instanceExists(final AwsRegion region, final String instanceId) {
         log.debug("Checking if AWS instance {} exists", instanceId);
         return findInstance(instanceId, region.getRegionCode()).isPresent();
     }

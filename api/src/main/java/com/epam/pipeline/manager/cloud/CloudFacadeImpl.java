@@ -305,5 +305,4 @@ public class CloudFacadeImpl implements CloudFacade {
                 messageHelper.getMessage(
                     MessageConstants.ERROR_CLOUD_PROVIDER_NOT_SUPPORTED, region.getProvider())));
     }
-
 }

@@ -52,8 +52,14 @@ public class ClusterCommandService {
                 .kubeToken(kubeToken)
                 .cloud(cloud)
                 .region(region.getRegionCode())
-                .prePulledImages(instance.getPrePulledDockerImages())
-                .additionalLabels(labels);
+                .additionalLabels(labels)
+                .prePulledImages(instance.getPrePulledDockerImages());
+    }
+
+    public String buildNodeDownCommand(final String nodeDownScript,
+                                       final Long runId,
+                                       final String cloud) {
+        return buildNodeDownCommand(nodeDownScript, String.valueOf(runId), cloud);
     }
 
     public String buildNodeDownCommand(final String nodeDownScript,
@@ -69,14 +75,21 @@ public class ClusterCommandService {
     }
 
     public String buildNodeReassignCommand(final String nodeReassignScript,
+                                           final Long oldId,
+                                           final Long newId,
+                                           final String cloud) {
+        return buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId), newId, cloud);
+    }
+
+    public String buildNodeReassignCommand(final String nodeReassignScript,
                                            final String oldId,
-                                           final String newId,
+                                           final Long newId,
                                            final String cloud) {
         return ReassignCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeReassignScript)
                 .oldRunId(oldId)
-                .newRunId(newId)
+                .newRunId(String.valueOf(newId))
                 .cloud(cloud)
                 .build()
                 .getCommand();
