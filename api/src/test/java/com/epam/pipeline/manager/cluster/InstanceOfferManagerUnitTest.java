@@ -27,7 +27,6 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
@@ -37,6 +36,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -102,10 +102,9 @@ public class InstanceOfferManagerUnitTest {
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final CloudRegionManager cloudRegionManager = mock(CloudRegionManager.class);
     private final ContextualPreferenceManager contextualPreferenceManager = mock(ContextualPreferenceManager.class);
-    private final CloudFacade cloudFacade = mock(CloudFacade.class);
-    private final InstanceOfferManager instanceOfferManager = new InstanceOfferManager(instanceOfferDao, versionManager,
-            pipelineRunManager, messageHelper, preferenceManager, cloudRegionManager,
-            contextualPreferenceManager, cloudFacade);
+    private final InstanceOfferManager instanceOfferManager = Mockito.spy(
+        new InstanceOfferManager(instanceOfferDao, versionManager, pipelineRunManager, messageHelper, preferenceManager,
+                                 cloudRegionManager, contextualPreferenceManager, Collections.emptyList()));
 
     @Before
     public void setUp() {
@@ -133,7 +132,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES)),
                 eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES, SPOT_AND_ON_DEMAND_TYPES));
-        when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
+        when(instanceOfferManager.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 instanceOfferManager.getAllowedInstanceAndPriceTypes(null, null, false);
@@ -160,7 +159,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES)),
                 eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES, SPOT_AND_ON_DEMAND_TYPES));
-        when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
+        when(instanceOfferManager.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 instanceOfferManager.getAllowedInstanceAndPriceTypes(TOOL_ID, null, false);
@@ -172,14 +171,14 @@ public class InstanceOfferManagerUnitTest {
 
     @Test
     public void getAllowedInstanceAndPriceTypesShouldLoadInstanceTypesForSingleRegionIfItIsSpecified() {
-        when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(Collections.emptyList());
+        when(instanceOfferManager.getAllInstanceTypes(any(), anyBoolean())).thenReturn(Collections.emptyList());
         when(contextualPreferenceManager.search(any(), any()))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
         instanceOfferManager.getAllowedInstanceAndPriceTypes(null, REGION_ID, false);
 
         ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
-        verify(cloudFacade).getAllInstanceTypes(argument.capture(), anyBoolean());
+        verify(instanceOfferManager).getAllInstanceTypes(argument.capture(), anyBoolean());
         final Long regionId = argument.getValue();
         assertThat(regionId, is(REGION_ID));
     }

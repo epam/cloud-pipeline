@@ -32,7 +32,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -51,12 +50,9 @@ public class AWSScalingService extends AbstractScalingService<AwsRegion> {
     private final PreferenceManager preferenceManager;
     private final InstanceOfferManager instanceOfferManager;
 
-    // TODO: 25-10-2019 @Lazy annotation added to resolve issue with circular dependency.
-    // It would be great fix this issue by actually removing this dependency:
-    // CloudFacade  -> AWSInstanceService -> InstanceOfferManager -> CloudFacade
     public AWSScalingService(final EC2Helper ec2Helper,
                              final PreferenceManager preferenceManager,
-                             final @Lazy InstanceOfferManager instanceOfferManager,
+                             final InstanceOfferManager instanceOfferManager,
                              final CommonCloudInstanceService instanceService,
                              final ClusterCommandService commandService,
                              @Value("${cluster.nodeup.script}") final String nodeUpScript,

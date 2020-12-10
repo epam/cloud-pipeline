@@ -23,8 +23,6 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.cluster.InstanceOffer;
-import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -62,7 +60,6 @@ public class CloudFacadeImpl implements CloudFacade {
     private final KubernetesManager kubernetesManager;
     private final Map<CloudProvider, CloudScalingService> scalingServices;
     private final Map<CloudProvider, CloudInstanceService> instanceServices;
-    private final Map<CloudProvider, CloudInstancePriceService> instancePriceServices;
     private final Map<ClusterKeepAlivePolicy, NodeExpirationService> expirationServices;
 
     public CloudFacadeImpl(final MessageHelper messageHelper,
@@ -72,7 +69,6 @@ public class CloudFacadeImpl implements CloudFacade {
                            final KubernetesManager kubernetesManager,
                            final List<CloudScalingService> scalingServices,
                            final List<CloudInstanceService> instanceServices,
-                           final List<CloudInstancePriceService> instancePriceServices,
                            final List<NodeExpirationService> expirationServices) {
         this.messageHelper = messageHelper;
         this.regionManager = regionManager;
@@ -81,7 +77,6 @@ public class CloudFacadeImpl implements CloudFacade {
         this.kubernetesManager = kubernetesManager;
         this.scalingServices = CommonUtils.groupByCloudProvider(scalingServices);
         this.instanceServices = CommonUtils.groupByCloudProvider(instanceServices);
-        this.instancePriceServices = CommonUtils.groupByCloudProvider(instancePriceServices);
         this.expirationServices = CommonUtils.groupByKey(expirationServices, NodeExpirationService::policy);
     }
 
@@ -154,12 +149,6 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public RunInstance describeDefaultInstance(final String nodeLabel, final RunInstance instance) {
-        final AbstractCloudRegion region = regionManager.loadDefaultRegion();
-        return getInstanceService(region).describeInstance(region, nodeLabel, instance);
-    }
-
-    @Override
     public void stopInstance(final Long regionId, final String instanceId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         getInstanceService(region).stopInstance(region, instanceId);
@@ -215,35 +204,6 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
-        if (regionId == null) {
-            return loadInstancesForAllRegions(spot);
-        } else {
-            final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-            return getInstancePriceService(region).getAllInstanceTypes(region.getId(), spot);
-        }
-    }
-
-    @Override
-    public List<InstanceOffer> refreshPriceListForRegion(final Long regionId) {
-        final AbstractCloudRegion region = regionManager.load(regionId);
-        return getInstancePriceService(region).refreshPriceListForRegion(region);
-    }
-
-    @Override
-    public double getPriceForDisk(final Long regionId, final List<InstanceOffer> diskOffers, final int instanceDisk,
-                                  final String instanceType, final boolean spot) {
-        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        return getInstancePriceService(region).getPriceForDisk(diskOffers, instanceDisk, instanceType, spot, region);
-    }
-
-    @Override
-    public double getSpotPrice(final Long regionId, final String instanceType) {
-        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        return getInstancePriceService(region).getSpotPrice(instanceType, region);
-    }
-
-    @Override
     public void attachDisk(final Long regionId, final Long runId, final DiskAttachRequest request) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         getInstanceService(region).attachDisk(region, runId, request);
@@ -278,31 +238,11 @@ public class CloudFacadeImpl implements CloudFacade {
         return regionManager.load(nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
     }
 
-    private List<InstanceType> loadInstancesForAllRegions(final Boolean spot) {
-        return (List<InstanceType>) instancePriceServices.values()
-                .stream()
-                .map(priceService -> priceService.getAllInstanceTypes(null, spot))
-                .flatMap(cloudInstanceTypes -> cloudInstanceTypes.stream())
-                .collect(Collectors.toList());
-    }
-
     private CloudScalingService getScalingService(final AbstractCloudRegion region) {
-        return getServiceForRegion(scalingServices, region);
+        return CommonUtils.getServiceForRegion(scalingServices, messageHelper, region);
     }
 
     private CloudInstanceService getInstanceService(final AbstractCloudRegion region) {
-        return getServiceForRegion(instanceServices, region);
-    }
-
-    private CloudInstancePriceService getInstancePriceService(final AbstractCloudRegion region) {
-        return getServiceForRegion(instancePriceServices, region);
-    }
-
-    private <T extends CloudAwareService> T getServiceForRegion(final Map<CloudProvider, T> services,
-                                                                final AbstractCloudRegion region) {
-        return Optional.ofNullable(MapUtils.emptyIfNull(services).get(region.getProvider()))
-            .orElseThrow(() -> new IllegalArgumentException(
-                messageHelper.getMessage(
-                    MessageConstants.ERROR_CLOUD_PROVIDER_NOT_SUPPORTED, region.getProvider())));
+        return CommonUtils.getServiceForRegion(instanceServices, messageHelper, region);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.cluster.InstanceOffer;
-import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -60,8 +58,6 @@ public interface CloudFacade {
      */
     RunInstance describeAliveInstance(Long runId, RunInstance instance);
 
-    RunInstance describeDefaultInstance(String nodeLabel, RunInstance instance);
-
     void stopInstance(Long regionId, String instanceId);
 
     CloudInstanceOperationResult startInstance(Long regionId, String instanceId);
@@ -72,16 +68,7 @@ public interface CloudFacade {
 
     Map<String, String> buildContainerCloudEnvVars(Long regionId);
 
-    List<InstanceOffer> refreshPriceListForRegion(Long regionId);
-
-    double getPriceForDisk(Long regionId, List<InstanceOffer> diskOffers, int instanceDisk, String instanceType,
-                           boolean spot);
-
-    double getSpotPrice(Long regionId, String instanceType);
-
     Optional<InstanceTerminationState> getInstanceTerminationState(Long regionId, String instanceId);
-
-    List<InstanceType> getAllInstanceTypes(Long regionId, boolean spot);
 
     /**
      * Creates and attaches new disk by the given request to an instance associated with run.

@@ -21,7 +21,12 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
-import com.epam.pipeline.entity.cluster.*;
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.cluster.InstancePrice;
+import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.PipelineRunPrice;
+import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
@@ -30,7 +35,6 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -39,10 +43,10 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.utils.CommonUtils;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
@@ -72,37 +76,39 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 @Service
-@AllArgsConstructor
 @NoArgsConstructor
 public class InstanceOfferManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceOfferManager.class);
-
     private static final String EMPTY = "";
 
-    @Autowired
     private InstanceOfferDao instanceOfferDao;
-
-    @Autowired
     private PipelineVersionManager versionManager;
-
-    @Autowired
     private PipelineRunManager pipelineRunManager;
-
-    @Autowired
     private MessageHelper messageHelper;
-
-    @Autowired
     private PreferenceManager preferenceManager;
-
-    @Autowired
     private CloudRegionManager cloudRegionManager;
-
-    @Autowired
     private ContextualPreferenceManager contextualPreferenceManager;
+    private Map<CloudProvider, CloudInstancePriceService> instancePriceServices;
 
     @Autowired
-    private CloudFacade cloudFacade;
+    public InstanceOfferManager(final InstanceOfferDao instanceOfferDao,
+                                final PipelineVersionManager versionManager,
+                                final PipelineRunManager pipelineRunManager,
+                                final MessageHelper messageHelper,
+                                final PreferenceManager preferenceManager,
+                                final CloudRegionManager cloudRegionManager,
+                                final ContextualPreferenceManager contextualPreferenceManager,
+                                final List<CloudInstancePriceService> instancePriceServices) {
+        this.instanceOfferDao = instanceOfferDao;
+        this.versionManager = versionManager;
+        this.pipelineRunManager = pipelineRunManager;
+        this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
+        this.cloudRegionManager = cloudRegionManager;
+        this.contextualPreferenceManager = contextualPreferenceManager;
+        this.instancePriceServices = CommonUtils.groupByCloudProvider(instancePriceServices);
+    }
 
     /**
      * Map under the reference collects instance types grouped by the region ids.
@@ -237,7 +243,7 @@ public class InstanceOfferManager {
         RunInstance runInstance = pipelineRun.getInstance();
         boolean spot = isSpotRequest(runInstance.getSpot());
         double computePricePerHour = getPricePerHourForInstance(runInstance.getNodeType(), spot, actualRegionId);
-        double initialDiskPricePerHour = getPriceForDisk(runInstance.getNodeDisk(), actualRegionId, 
+        double initialDiskPricePerHour = getPriceForDisk(runInstance.getNodeDisk(), actualRegionId,
                 runInstance.getNodeType(), spot);
         double pricePerHour = initialDiskPricePerHour + computePricePerHour;
 
@@ -460,7 +466,8 @@ public class InstanceOfferManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public List<InstanceOffer> updatePriceListForRegion(AbstractCloudRegion cloudRegion) {
         instanceOfferDao.removeInstanceOffersForRegion(cloudRegion.getId());
-        List<InstanceOffer> instanceOffers = cloudFacade.refreshPriceListForRegion(cloudRegion.getId());
+        final AbstractCloudRegion region = cloudRegionManager.load(cloudRegion.getId());
+        List<InstanceOffer> instanceOffers = getInstancePriceService(region).refreshPriceListForRegion(cloudRegion);
         instanceOfferDao.insertInstanceOffers(instanceOffers);
         return instanceOffers;
     }
@@ -475,7 +482,8 @@ public class InstanceOfferManager {
     }
 
     private double getSpotPricePerHour(String instanceType, Long regionId) {
-        return cloudFacade.getSpotPrice(regionId, instanceType);
+        final AbstractCloudRegion region = cloudRegionManager.loadOrDefault(regionId);
+        return getInstancePriceService(region).getSpotPrice(instanceType, region);
     }
 
     /**
@@ -491,7 +499,20 @@ public class InstanceOfferManager {
      * @param regionId If specified then instance types will be loaded only for the specified region.
      */
     public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
-        return cloudFacade.getAllInstanceTypes(regionId, spot);
+        if (regionId == null) {
+            return loadInstancesForAllRegions(spot);
+        } else {
+            final AbstractCloudRegion region = cloudRegionManager.loadOrDefault(regionId);
+            return getInstancePriceService(region).getAllInstanceTypes(region.getId(), spot);
+        }
+    }
+
+    private List<InstanceType> loadInstancesForAllRegions(final Boolean spot) {
+        return (List<InstanceType>) instancePriceServices.values()
+            .stream()
+            .map(priceService -> priceService.getAllInstanceTypes(null, spot))
+            .flatMap(cloudInstanceTypes -> cloudInstanceTypes.stream())
+            .collect(toList());
     }
 
     public Observable<List<InstanceType>> getAllInstanceTypesObservable() {
@@ -504,7 +525,8 @@ public class InstanceOfferManager {
         requestVO.setVolumeType(CloudInstancePriceService.GENERAL_PURPOSE_VOLUME_TYPE);
         requestVO.setRegionId(regionId);
         List<InstanceOffer> offers = instanceOfferDao.loadInstanceOffers(requestVO);
-        return cloudFacade.getPriceForDisk(regionId, offers, instanceDisk, instanceType, spot);
+        final AbstractCloudRegion region = cloudRegionManager.loadOrDefault(regionId);
+        return getInstancePriceService(region).getPriceForDisk(offers, instanceDisk, instanceType, spot, region);
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType) {
@@ -588,5 +610,9 @@ public class InstanceOfferManager {
     private List<String> getContextualPreferenceValueAsList(final ContextualPreferenceExternalResource resource,
                                                             final List<String> preferences) {
         return Arrays.asList(contextualPreferenceManager.search(preferences, resource).getValue().split(DELIMITER));
+    }
+
+    private CloudInstancePriceService getInstancePriceService(final AbstractCloudRegion region) {
+        return CommonUtils.getServiceForRegion(instancePriceServices, messageHelper, region);
     }
 }

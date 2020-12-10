@@ -16,6 +16,9 @@
 
 package com.epam.pipeline.utils;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
 import org.apache.commons.collections4.ListUtils;
@@ -48,6 +51,13 @@ public final class CommonUtils {
         return groupByKey(services, CloudAwareService::getProvider);
     }
 
+    public static <T extends CloudAwareService> T getServiceForRegion(final Map<CloudProvider, T> services,
+                                                                      final MessageHelper helper,
+                                                                      final AbstractCloudRegion region) {
+        return Optional.ofNullable(MapUtils.emptyIfNull(services).get(region.getProvider()))
+            .orElseThrow(() -> new IllegalArgumentException(
+                helper.getMessage(MessageConstants.ERROR_CLOUD_PROVIDER_NOT_SUPPORTED, region.getProvider())));
+    }
 
     public static <K, T> Map<K, T> groupByKey(final List<T> services,
                                               final Function<T, K> keyFunction) {
