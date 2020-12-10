@@ -42,13 +42,27 @@ def server_date_representation(date_string):
 
 def parse_date_parameter(date_string):
     # accepts string with date in local timezone and converts it to another string of UTC date
+    if not date_string:
+        return None
     date = _parse_date(date_string)
-    return _to_string_with_timezone(date)
+    utc_date = to_uts(date)
+    return _to_string(utc_date)
 
 
-def format_date(date_string, date_format=DATE_TIME_PARAMETER_FORMAT):
+def to_local(date):
+    return date.astimezone(Config.instance().timezone())
+
+
+def to_uts(date):
+    if not date:
+        return None
+    date_with_time_zone = Config.instance().timezone().localize(date, is_dst=None)
+    return date_with_time_zone.astimezone(pytz.utc)
+
+
+def parse_parameter_date_to_utc(date_string):
     date = _parse_date(date_string)
-    return _to_string_with_timezone(date, date_format)
+    return to_uts(date)
 
 
 def _parse_date(date_string):
@@ -70,15 +84,19 @@ def _parse_date(date_string):
     return date
 
 
-def _to_string_with_timezone(date, date_format=DATE_TIME_SERVER_FORMAT):
-    date_with_time_zone = Config.instance().timezone().localize(date, is_dst=None)
-    return date_with_time_zone.astimezone(pytz.utc).strftime(date_format)
+def _to_string(date, date_format=DATE_TIME_SERVER_FORMAT):
+    if not date:
+        return None
+    return date.strftime(date_format)
 
 
-def now():
-    return _to_string_with_timezone(datetime.datetime.now(), DATE_TIME_PARAMETER_FORMAT)
+def now_utc():
+    return to_uts(datetime.datetime.now())
 
 
-def minus_day(date_string):
-    date = datetime.datetime.strptime(date_string, DATE_TIME_PARAMETER_FORMAT)
-    return _to_string_with_timezone(date - datetime.timedelta(days=1), DATE_TIME_PARAMETER_FORMAT)
+def minus_day(date):
+    return date - datetime.timedelta(days=1)
+
+
+def format_date(date, date_format=DATE_TIME_PARAMETER_FORMAT):
+    return _to_string(date, date_format)
