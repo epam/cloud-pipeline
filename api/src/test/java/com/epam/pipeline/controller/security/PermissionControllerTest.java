@@ -20,7 +20,7 @@ import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
-import com.epam.pipeline.manager.security.AclPermissionApiService;
+import com.epam.pipeline.acl.security.AclPermissionApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
