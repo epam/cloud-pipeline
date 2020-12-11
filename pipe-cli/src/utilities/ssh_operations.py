@@ -24,7 +24,7 @@ import sys
 import time
 
 import paramiko
-from scp import SCPClient
+from scp import SCPClient, SCPException
 
 from src.config import is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
@@ -105,14 +105,16 @@ def get_conn_info(run_id):
     if not ssh_proxy_port:
         ssh_proxy_port = 80 if ssh_url_parts.scheme == "http" else 443
 
-    run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner')
+    run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner sensitive')
     return run_conn_info(ssh_proxy=(ssh_proxy_host, ssh_proxy_port),
                          ssh_endpoint=(run_model.pod_ip, DEFAULT_SSH_PORT),
                          ssh_pass=run_model.ssh_pass,
-                         owner=run_model.owner)
+                         owner=run_model.owner,
+                         sensitive=run_model.sensitive)
 
 
 def setup_paramiko_transport(conn_info, retries):
+    retries = retries or 0
     sock = None
     transport = None
     try:
@@ -175,7 +177,11 @@ def run_ssh_session(channel):
     interactive_shell(channel)
 
 
-def run_ssh(run_id, command, user=None, retries=10):
+def run_ssh(run_identifier, command, user=None, retries=10):
+    run_id = parse_run_identifier(run_identifier)
+    if not run_id:
+        raise RuntimeError('The specified run {} is not a valid run identifier.'.format(run_identifier))
+
     transport = None
     channel = None
     try:
@@ -199,16 +205,70 @@ def run_ssh(run_id, command, user=None, retries=10):
             transport.close()
 
 
+def parse_run_identifier(run_identifier):
+    if isinstance(run_identifier, int):
+        return run_identifier
+    import re
+    match = re.search('^(\d+)$', run_identifier)
+    if match:
+        return int(match.group(1))
+    match = re.search('^pipeline-(\d+)$', run_identifier)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def run_scp(source, destination, recursive, quiet, retries):
+    source_location, source_run_id = parse_scp_location(source)
+    destination_location, destination_run_id = parse_scp_location(destination)
+
+    if source_run_id and destination_run_id:
+        raise RuntimeError('Both source and destination are remote locations.')
+    if not source_run_id and not destination_run_id:
+        raise RuntimeError('Both source and destination are local locations.')
+
+    conn_info = get_conn_info(source_run_id if source_run_id else destination_run_id)
+    if conn_info.sensitive:
+        raise RuntimeError('Tunnel connections to sensitive runs are not allowed.')
+
+    if source_run_id:
+        try:
+            run_scp_download(source_run_id, source_location, destination_location,
+                             recursive=recursive, quiet=quiet, user=None, retries=retries)
+        except SCPException as e:
+            if not recursive and 'not a regular file' in str(e):
+                raise RuntimeError('Flag --recursive (-r) is required to copy directories.')
+            else:
+                raise e
+    else:
+        if not recursive and os.path.isdir(source_location):
+            raise RuntimeError('Flag --recursive (-r) is required to copy directories.')
+        run_scp_upload(destination_run_id, source_location, destination_location,
+                       recursive=recursive, quiet=quiet, user=None, retries=retries)
+
+
+def parse_scp_location(location):
+    location_parts = location.split(':', 1)
+    if len(location_parts) == 2:
+        run_id = parse_run_identifier(location_parts[0])
+        if run_id:
+            return location_parts[1], run_id
+    return location_parts[0], None
+
+
 def create_tunnel(run_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
                   timeout, foreground, retries):
+    conn_info = get_conn_info(run_id)
+    if conn_info.sensitive:
+        raise RuntimeError('Tunnel connections to sensitive runs are not allowed.')
     if foreground:
         remote_host = ssh_host or 'pipeline-{}'.format(run_id)
         if ssh:
-            create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout,
+            create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
                                               ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
         else:
-            create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+            create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                                      remote_host, log_level, retries)
     else:
         create_background_tunnel(log_file, timeout)
@@ -240,7 +300,7 @@ def create_background_tunnel(log_file, timeout):
             sys.exit(1)
 
 
-def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout,
+def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
                                       ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if is_windows():
@@ -254,7 +314,6 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connectio
     ssh_private_key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
     ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
     ssh_public_key_path = '{}.pub'.format(ssh_private_key_path)
-    conn_info = get_conn_info(run_id)
     owner_user = conn_info.owner.split('@')[0]
     ssh_config_user = DEFAULT_SSH_USER if is_ssh_default_root_user_enabled() else owner_user
     remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys',
@@ -272,7 +331,7 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connectio
         add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path, ssh_config_user)
         copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries,
                                                       ssh_known_hosts_path, remote_ssh_public_key_path)
-        create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+        create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                                  remote_host, log_level, retries)
     except:
         logging.exception('Error occurred while trying set up tunnel')
@@ -286,11 +345,10 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connectio
             remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
 
 
-def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                              remote_host, log_level, retries,
                              chunk_size=4096, server_delay=0.0001):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
-    conn_info = get_conn_info(run_id)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
                       int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
     target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
@@ -545,13 +603,13 @@ def find_tunnel_procs(run_id=None, local_port=None):
             yield proc
 
 
-def run_scp_upload(run_id, source, destination, user, retries):
+def run_scp_upload(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None):
     transport = None
     scp = None
     try:
         transport = setup_authenticated_paramiko_transport(run_id, user, retries)
-        scp = SCPClient(transport)
-        scp.put(source, destination)
+        scp = SCPClient(transport, progress=None if quiet else build_scp_progress())
+        scp.put(source, destination, recursive=recursive)
     finally:
         if scp:
             scp.close()
@@ -559,15 +617,29 @@ def run_scp_upload(run_id, source, destination, user, retries):
             transport.close()
 
 
-def run_scp_download(run_id, source, destination, user, retries):
+def run_scp_download(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None):
     transport = None
     scp = None
     try:
         transport = setup_authenticated_paramiko_transport(run_id, user, retries)
-        scp = SCPClient(transport)
-        scp.get(source, destination)
+        scp = SCPClient(transport, progress=None if quiet else build_scp_progress())
+        scp.get(source, destination, recursive=recursive)
     finally:
         if scp:
             scp.close()
         if transport:
             transport.close()
+
+
+def build_scp_progress():
+    from src.utilities.progress_bar import ProgressPercentage
+
+    progresses = {}
+
+    def scp_progress(filename, size, total):
+        progress = progresses.get(filename, None)
+        if not progress:
+            progress = progresses[filename] = ProgressPercentage(filename, size)
+        progress(total - progress._seen_so_far_in_bytes)
+
+    return scp_progress

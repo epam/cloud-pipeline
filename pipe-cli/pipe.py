@@ -37,7 +37,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh, create_tunnel, kill_tunnels
+from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_token_operations import UserTokenOperations
 from src.version import __version__
@@ -1207,7 +1207,7 @@ def chown(user_name, entity_class, entity_name):
 @cli.command(name='ssh', context_settings=dict(
     ignore_unknown_options=True,
     allow_extra_args=True))
-@click.argument('run-id', required=True, type=int)
+@click.argument('run-id', required=True, type=str)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
@@ -1217,10 +1217,76 @@ def ssh(ctx, run_id, retries, trace):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with
+
+    Examples:
+
+    I. Open an interactive SSH session for some run (12345):
+
+        pipe ssh pipeline-12345
+
+        pipe ssh 12345
+
+    II. Execute a single command via SSH for some run (12345):
+
+        pipe ssh pipeline-12345 echo \$HOSTNAME
+
+        pipe ssh 12345 echo \$HOSTNAME
     """
     try:
         ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries)
         sys.exit(ssh_exit_code)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if trace:
+            traceback.print_exc()
+        sys.exit(1)
+
+
+@cli.command(name='scp')
+@click.argument('source', required=True, type=str)
+@click.argument('destination', required=True, type=str)
+@click.option('-r', '--recursive', required=False, is_flag=True, default=False,
+              help='Recursive transferring (required for directories transferring)')
+@click.option('-q', '--quiet', help='Quiet mode', is_flag=True, default=False)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def scp(source, destination, recursive, quiet, retries, trace):
+    """
+    Transfers files or directories between local workstation and run instance.
+
+    It allows to copy file from a local worstation to a remote run instance
+    and from a remote run instance to a local workstation.
+
+    Examples:
+
+    I. Upload some local file (file.txt) to some run (12345):
+
+        pipe scp file.txt pipeline-12345:/common/workdir/file.txt
+
+        pipe scp file.txt 12345:/common/workdir/file.txt
+
+    II. Upload some local directory (dir) to some run (12345):
+
+        pipe scp -r dir pipeline-12345:/common/workdir/dir
+
+        pipe scp -r dir 12345:/common/workdir/dir
+
+    III. Download some remote file (/common/workdir/file.txt) from run (12345) to some local file (file.txt):
+
+        pipe scp pipeline-12345:/common/workdir/file.txt file.txt
+
+        pipe scp 12345:/common/workdir/file.txt file.txt
+
+    IV. Download some remote directory (/common/workdir/dir) from run (12345) to some local directory (dir):
+
+        pipe scp -r pipeline-12345:/common/workdir/dir dir
+
+        pipe scp -r 12345:/common/workdir/dir dir
+    """
+    try:
+        run_scp(source, destination, recursive, quiet, retries)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         if trace:
@@ -1246,6 +1312,7 @@ def tunnel():
 @click.option('-v', '--log-level', required=False, help='Explicit logging level: '
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@Config.validate_access_token
 def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
     """
     Stops background tunnel processes.
