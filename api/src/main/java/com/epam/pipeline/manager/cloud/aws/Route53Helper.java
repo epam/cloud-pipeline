@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,22 +38,21 @@ import com.amazonaws.waiters.PollingStrategy;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class Route53Helper {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Route53Helper.class);
     private static final long TTL_TIME = 60L;
     private static final int MAX_ATTEMPTS = 100;
     private static final int DELAY_IN_SECONDS = 1;
 
     public InstanceDNSRecord createDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        LOGGER.info("Creating DNS record for hostedZoneId: " + hostedZoneId + " record: "
-                + dnsRecord.getDnsRecord() + " and target: " + dnsRecord.getTarget());
+        log.info("Creating DNS record for hostedZoneId: {} record: {} and target: {}",
+                hostedZoneId, dnsRecord.getDnsRecord(), dnsRecord.getTarget());
         final AmazonRoute53 client = getRoute53Client();
         if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
             try {
@@ -63,9 +62,9 @@ public class Route53Helper {
                         result.getChangeInfo().getStatus());
             } catch (InvalidChangeBatchException e) {
                 final String message = e.getLocalizedMessage();
-                LOGGER.error("AWS 53 Route service responded with: " + message);
+                log.error("AWS 53 Route service responded with: {}", message);
                 if (message.matches(".*Tried to create resource record set.*but it already exists.*")) {
-                    LOGGER.info("DNS Record already exists, API will proceed with this record.");
+                    log.info("DNS Record already exists, API will proceed with this record.");
                 } else {
                     throw e;
                 }
@@ -76,13 +75,12 @@ public class Route53Helper {
     }
 
     public InstanceDNSRecord removeDNSRecord(final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        LOGGER.info("Removing DNS record: " + dnsRecord.getDnsRecord() + " for target: "
-                + dnsRecord.getTarget() + " in hostedZoneId: " + hostedZoneId);
+        log.info("Removing DNS record: {} for target: {} in hostedZoneId: {}",
+                dnsRecord.getDnsRecord(), dnsRecord.getTarget(), hostedZoneId);
         final AmazonRoute53 client = getRoute53Client();
         if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
-            LOGGER.info("DNS record: " + dnsRecord.getDnsRecord() + " type: "
-                    + getRRType(dnsRecord.getTarget()) + " for target: " + dnsRecord.getTarget()
-                    + " in hostedZoneId: " + hostedZoneId + " doesn't exists");
+            log.info("DNS record: {} type: {} for target: {} in hostedZoneId: {} doesn't exists",
+                    dnsRecord.getDnsRecord(), getRRType(dnsRecord.getTarget()), dnsRecord.getTarget(), hostedZoneId);
             return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
                     InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
         } else {

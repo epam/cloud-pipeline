@@ -61,12 +61,8 @@ public class DNSRecordRunCleaner implements RunCleaner {
 
         final String hostZoneId = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID);
         final String hostZoneUrlBase = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE);
-        Assert.isTrue(
-                !StringUtils.isEmpty(hostZoneId) && !StringUtils.isEmpty(hostZoneUrlBase),
-                "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
-        );
 
-        List<Map<String, String>> serviceUrlsList = JsonMapper.parseData(
+        final List<Map<String, String>> serviceUrlsList = JsonMapper.parseData(
                 serviceUrls,
                 new TypeReference<List<Map<String, String>>>(){}
         );
@@ -74,6 +70,10 @@ public class DNSRecordRunCleaner implements RunCleaner {
         serviceUrlsList.forEach(serviceUrl -> {
             final String url = serviceUrl.get("url");
             if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
+                Assert.isTrue(
+                        !StringUtils.isEmpty(hostZoneId) && !StringUtils.isEmpty(hostZoneUrlBase),
+                        "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
+                );
                 cloudFacade.removeDNSRecord(run.getInstance().getCloudRegionId(),
                         new InstanceDNSRecord(unify(url), utilsManager.getEdgeDomainNameOrIP(), null));
             }

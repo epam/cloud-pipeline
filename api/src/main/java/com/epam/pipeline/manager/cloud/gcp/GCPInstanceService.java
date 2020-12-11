@@ -217,7 +217,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
-        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with GCP provider yet.");
+        throw new UnsupportedOperationException("Creation of DNS record doesn't work with GCP provider yet.");
     }
 
     @Override

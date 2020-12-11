@@ -259,7 +259,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
-        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
+        throw new UnsupportedOperationException("Creation of DNS record doesn't work with Azure provider yet.");
     }
 
     @Override

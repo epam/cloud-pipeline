@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import static com.epam.pipeline.security.acl.AclExpressions.*;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 
 @Service
 @RequiredArgsConstructor

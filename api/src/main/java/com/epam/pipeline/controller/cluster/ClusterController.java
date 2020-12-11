@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.cluster;
 
+import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
@@ -28,7 +29,6 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
-import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -65,7 +65,7 @@ public class ClusterController extends AbstractRestController {
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final ClusterApiService clusterApiService;
-    private final InfrastructureManager infrastructureManager;
+    private final InfrastructureApiService infrastructureApiService;
 
     @GetMapping(value = "/cluster/master")
     @ResponseBody
@@ -250,6 +250,6 @@ public class ClusterController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<InstanceDNSRecord> requestDnsRecord(@RequestParam final Long regionId,
                                                       @RequestBody final InstanceDNSRecord dnsRecord) {
-        return Result.success(infrastructureManager.createInstanceDNSRecord(regionId, dnsRecord));
+        return Result.success(infrastructureApiService.createInstanceDNSRecord(regionId, dnsRecord));
     }
 }
