@@ -45,8 +45,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-
-import static com.epam.pipeline.acl.run.RunAclFactory.TEST_RUN_ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
@@ -96,7 +94,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     public void shouldDenyLoadToolRunForNonOwner() {
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
 
-        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(TEST_RUN_ID));
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID));
     }
 
     @Test
@@ -126,7 +124,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         initAclEntity(pipeline);
         mockSecurityContext();
 
-        assertThrows(AccessDeniedException.class, () ->runApiService.loadPipelineRun(TEST_RUN_ID));
+        assertThrows(AccessDeniedException.class, () ->runApiService.loadPipelineRun(ID));
     }
 
     @Test
