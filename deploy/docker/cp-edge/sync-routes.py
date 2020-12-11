@@ -553,6 +553,7 @@ def create_dns_record(service_spec):
 def create_dns_service_location(service_spec, added_route):
         create_dns_record(service_spec)
         create_service_location(service_spec, added_route)
+        update_svc_url_for_run(service_spec["run_id"])
 
 def create_service_location(service_spec, added_route):
         has_custom_domain = service_spec["custom_domain"] is not None
@@ -608,6 +609,21 @@ def create_service_location(service_spec, added_route):
         if run_id in service_url_dict:
                 service_url = service_url_dict[run_id] + ',' + service_url
         service_url_dict[run_id] = service_url
+
+
+# call API and set Service URL property for the run:
+# -- Get ServiceExternalIP from the EDGE-labeled service description
+# -- http://{ServiceExternalIP}/{PodID}-{svc-port-N}-{N}
+def update_svc_url_for_run(run_id):
+        service_urls_json = '[' + service_url_dict[run_id] + ']'
+        update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id))
+        print('Assigning service url ({}) to RunID: {}'.format(service_urls_json, run_id))
+        data = json.dumps({'serviceUrl': service_urls_json})
+        response_data = call_api(update_svc_method, data=data)
+        if response_data:
+                print('Service url ({}) assigned to RunID: {}'.format(service_urls_json, run_id))
+        else:
+                print('Service url was not assigned due to API errors')
 
 
 kube_api = HTTPClient(KubeConfig.from_service_account())
@@ -740,45 +756,37 @@ with open(nginx_sensitive_routes_config_path, 'r') as sensitive_routes_file:
 service_url_dict = {}
 
 # loop through all routes that we need to create, if this route doesn't have option to create custom DNS record
-# we handle it it the main thread, if custom DNS record should be created, since it consume some time ~ 20 sec,
-# we put it to the async pool and store result future.
+# we handle it in the main thread, if custom DNS record should be created, since it consume some time ~ 20 sec,
+# we put it to the async pool to complete in separate thread.
+is_async_tasks_exist = False
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
         need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] and not service_spec["custom_domain"] else False
         if need_to_create_dns_record:
+                is_async_tasks_exist = True
                 dns_services_pool.apply_async(create_dns_service_location, (service_spec, added_route))
         else:
                 create_service_location(service_spec, added_route)
+                update_svc_url_for_run(service_spec["run_id"])
 
-# Here we check all future on completion
-print("Wait for all async jobs to complete")
-dns_services_pool.close()
-dns_services_pool.join()
-print("All async service location creations is completed")
-
-# Once all entries are added to the template - run "nginx -s reload"
+# reload nginx first time to enable all urls with out custom dns with "nginx -s reload"
 # TODO: Add error handling, if non-zero is returned - restore previous state
 if len(routes_to_add) > 0 or len(routes_to_delete) or routes_were_updated:
-        print('Reloading nginx config')
+        print('Reloading nginx config to enable non custom DNS runs')
         check_output('nginx -s reload', shell=True)
 
+# Here we check all future on completion, only if at least one exist
+if is_async_tasks_exist:
+        print("Wait for all async jobs to complete")
+        dns_services_pool.close()
+        dns_services_pool.join()
+        print("All async service location creations is completed")
 
-# For all added entries - call API and set Service URL property for the run:
-# -- Get ServiceExternalIP from the EDGE-labeled service description
-# -- http://{ServiceExternalIP}/{PodID}-{svc-port-N}-{N}
-
-for run_id in service_url_dict:
-        # make array of json objects
-        service_urls_json = '[' + service_url_dict[run_id] + ']'
-        update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id))
-        print('Assigning service url ({}) to RunID: {}'.format(service_urls_json, run_id))
-
-        data = json.dumps({'serviceUrl': service_urls_json})
-        response_data = call_api(update_svc_method, data=data)
-        if response_data:
-                print('Service url ({}) assigned to RunID: {}'.format(service_urls_json, run_id))
-        else:
-                print('Service url was not assigned due to API errors')
+        # Once all entries are added to the template - run "nginx -s reload"
+        # TODO: Add error handling, if non-zero is returned - restore previous state
+        if len(routes_to_add) > 0 or len(routes_to_delete) or routes_were_updated:
+                print('Reloading nginx config to enable custom DNS runs')
+                check_output('nginx -s reload', shell=True)
 
 print("\n")
