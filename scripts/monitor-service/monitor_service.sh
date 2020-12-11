@@ -135,6 +135,11 @@ if [[ -s "$SYNC_FILE" ]]; then
 fi
 
 RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
+if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+then
+  echo "The run ID $RUN_ID is not a number. Processing will be skipped."
+  exit 1
+fi
 
 pipe_log_debug "Starting monitoring service process for run $RUN_ID..."
 while true
