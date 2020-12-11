@@ -534,16 +534,18 @@ class GridEngineScaleUpHandler:
     _POLL_TIMEOUT = 900
     _POLL_ATTEMPTS = 60
     _POLL_DELAY = 10
+    _GE_POLL_TIMEOUT = 60
+    _GE_POLL_ATTEMPTS = 6
 
-    def __init__(self, cmd_executor, pipe, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
+    def __init__(self, cmd_executor, api, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
                  instance_image, cmd_template, price_type, region_id, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 instance_family=None, shared_fs_type='lfs', limit_mounts=None):
+                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, shared_fs_type='lfs', limit_mounts=None):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
 
         :param cmd_executor: Cmd executor.
-        :param pipe: Cloud pipeline raw client.
+        :param api: Cloud pipeline client.
         :param grid_engine: Grid engine client.
         :param host_storage: Additional hosts storage.
         :param instance_helper: Object to get information from CloupPipeline about instance types.
@@ -556,13 +558,14 @@ class GridEngineScaleUpHandler:
         :param region_id: Additional nodes Cloud Region id.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         :param polling_delay: Polling delay - in seconds.
+        :param ge_polling_timeout: Grid Engine polling timeout - in seconds.
         :param instance_family: Instance family for launching additional instance,
                 e.g. c5 means that you can run instances like c5.large, c5.xlarge etc.
         :param shared_fs_type: Type of shared fs to initialize
         :param shared_fs_type: Storage ids to be mounted to workers
         """
         self.executor = cmd_executor
-        self.pipe = pipe
+        self.api = api
         self.grid_engine = grid_engine
         self.host_storage = host_storage
         self.instance_helper = instance_helper
@@ -575,6 +578,7 @@ class GridEngineScaleUpHandler:
         self.region_id = region_id
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
+        self.ge_polling_timeout = ge_polling_timeout
         self.instance_family = instance_family
         self.shared_fs_type = shared_fs_type
         self.limit_mounts = limit_mounts
@@ -600,7 +604,7 @@ class GridEngineScaleUpHandler:
         pod = self._await_pod_initialization(run_id)
         self._add_worker_to_master_hosts(pod)
         self._await_worker_initialization(run_id)
-        self.grid_engine.enable_host(pod.name)
+        self._enable_worker_in_grid_engine(pod)
         self._increase_parallel_environment_slots(instance_to_run.cpu)
         Logger.info('Additional worker with host=%s and instance type=%s has been created.' % (pod.name, instance_to_run.name), crucial=True)
 
@@ -645,7 +649,7 @@ class GridEngineScaleUpHandler:
 
     def _retrieve_pod_name(self, run_id):
         Logger.info('Retrieve pod name of additional worker with run_id=%s.' % run_id)
-        run = self.pipe.load_run(run_id)
+        run = self.api.load_run(run_id)
         if 'podId' in run:
             name = run['podId']
             Logger.info('Additional worker with run_id=%s and pod_name=%s has been retrieved.' % (run_id, name))
@@ -660,7 +664,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
-            run = self.pipe.load_run(run_id)
+            run = self.api.load_run(run_id)
             if 'podIP' in run:
                 pod = KubernetesPod(ip=run['podIP'], name=run['podId'])
                 Logger.info('Additional worker pod has started with ip=%s and name=%s.' % (pod.ip, pod.name))
@@ -680,16 +684,39 @@ class GridEngineScaleUpHandler:
         Logger.info('Waiting for additional worker with run_id=%s to initialize.' % run_id)
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
-        while attempts != 0:
-            run = self.pipe.load_run(run_id)
+        while attempts > 0:
+            run = self.api.load_run(run_id)
             if run['initialized']:
-                Logger.info('Additional worker with run_id=%s has initialized.' % run_id)
-                return
+                Logger.info('Additional worker with run_id=%s has been marked as initialized.' % run_id)
+                Logger.info('Checking additional worker with run_id=%s grid engine initialization status.' % run_id)
+                run_sge_tasks = self.api.load_task(run_id, 'SGEWorkerSetup')
+                if any(run_sge_task.get('status') == 'SUCCESS' for run_sge_task in run_sge_tasks):
+                    Logger.info('Additional worker with run_id=%s has been initialized.' % run_id)
+                    return
             Logger.info('Additional worker with run_id=%s hasn\'t been initialized yet. Only %s attempts remain left.'
                         % (run_id, attempts))
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' % self.polling_timeout
+        Logger.warn(error_msg, crucial=True)
+        raise ScalingError(error_msg)
+
+    def _enable_worker_in_grid_engine(self, pod):
+        Logger.info('Enabling additional worker with host=%s in grid engine.' % pod.name)
+        attempts = self.ge_polling_timeout / self.polling_delay if self.polling_delay \
+            else GridEngineScaleUpHandler._GE_POLL_ATTEMPTS
+        while attempts > 0:
+            try:
+                self.grid_engine.enable_host(pod.name)
+                Logger.info('Additional worker with host=%s has been enabled in grid engine.' % pod.name)
+                return
+            except Exception as e:
+                Logger.warn('Additional worker with host=%s enabling in grid engine has failed '
+                            'with only %s attempts remain left: %s.'
+                            % (pod.name, attempts, str(e)))
+                attempts -= 1
+                time.sleep(self.polling_delay)
+        error_msg = 'Additional worker hasn\'t been enabled in grid engine after %s seconds.' % self.ge_polling_timeout
         Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
 
@@ -1233,7 +1260,7 @@ class GridEngineAutoscalingDaemon:
                 Logger.warn('Manual stop of the autoscaler daemon.', crucial=True)
                 break
             except Exception as e:
-                Logger.warn('Scaling step has failed due to %s.' % e, crucial=True)
+                Logger.warn('Scaling step has failed due to %s.' % str(e), crucial=True)
 
 
 def make_dirs(path):
@@ -1272,6 +1299,10 @@ class CloudPipelineAPI:
     def load_run(self, run_id):
         result = self._execute_request(str(self.pipe.api_url) + self.pipe.GET_RUN_URL.format(run_id))
         return result or {}
+
+    def load_task(self, run_id, task):
+        result = self._execute_request(str(self.pipe.api_url) + self.pipe.GET_TASK_URL.format(run_id, task))
+        return result or []
 
     def _execute_request(self, url):
         count = 0
@@ -1368,12 +1399,14 @@ if __name__ == '__main__':
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
                                                            default_value=900))
-    scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
+    scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
+    scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                                 host_storage=host_storage, instance_helper=instance_helper,
                                                 parent_run_id=master_run_id, default_hostfile=default_hostfile,
                                                 instance_disk=instance_disk, instance_image=instance_image,
                                                 cmd_template=cmd_template,
                                                 price_type=price_type, region_id=region_id,
+                                                polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_family=instance_family,
                                                 shared_fs_type=shared_fs_type,
