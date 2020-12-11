@@ -382,9 +382,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                         pretty_url = parse_pretty_url(run_info["prettyUrl"])
                 sensitive = run_info.get("sensitive") or False
 
-                cloud_region_id = None
-                if "instance" in run_info:
-                        cloud_region_id = run_info["instance"].get("cloudRegionId")
+                cloud_region_id = run_info.get("instance", {}).get("cloudRegionId") or None
 
 
                 print('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
@@ -539,19 +537,23 @@ def create_dns_record(service_spec):
                                        service_spec["pod_id"],
                                        "FAILURE")
                         update_run_status(service_spec["run_id"], "FAILURE")
-                        raise ValueError("Couldn't create DNS record")
+                        raise ValueError("Couldn't create DNS record for: {}, bad response from API".format(service_spec["run_id"]))
         else:
                 log_task_event("CreateDNSRecord",
-                               "No hosted zone is configured for currect environment, will not create any DNS records",
+                               "No hosted zone is configured for current environment, will not create any DNS records",
                                service_spec["run_id"],
                                service_spec["pod_id"],
                                "FAILURE")
                 update_run_status(service_spec["run_id"], "FAILURE")
-                raise ValueError("Hosted DNS zone is not configured or couldn't be retrieved")
+                raise ValueError("Couldn't create DNS record for: {}, no hosted_zone_base_value".format(service_spec["run_id"]))
 
 
 def create_dns_service_location(service_spec, added_route):
-        create_dns_record(service_spec)
+        try:
+                create_dns_record(service_spec)
+        except ValueError as e:
+                print(e.message)
+                return
         create_service_location(service_spec, added_route)
         update_svc_url_for_run(service_spec["run_id"])
 
@@ -762,8 +764,7 @@ is_async_tasks_exist = False
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
-        need_to_create_dns_record = service_spec["create_dns_record"] if service_spec["create_dns_record"] and not service_spec["custom_domain"] else False
-        if need_to_create_dns_record:
+        if service_spec["create_dns_record"] and not service_spec["custom_domain"]:
                 is_async_tasks_exist = True
                 dns_services_pool.apply_async(create_dns_service_location, (service_spec, added_route))
         else:
