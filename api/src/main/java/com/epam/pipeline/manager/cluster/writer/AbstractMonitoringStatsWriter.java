@@ -17,13 +17,11 @@
 package com.epam.pipeline.manager.cluster.writer;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import com.opencsv.CSVWriter;
-import lombok.NoArgsConstructor;
 import lombok.Value;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.StringWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,10 +30,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@NoArgsConstructor
-public class MonitoringStatsWriter {
+public abstract class AbstractMonitoringStatsWriter {
 
-    private static final List<String> COMMON_STATS_HEADER =
+    protected static final List<String> COMMON_STATS_HEADER =
         Arrays.asList("Timestamp", "CPU_cores", "CPU_usage_avg[%]", "CPU_usage_max[%]",
                       "MEM_capacity[bytes]", "MEM_usage_avg[%]", "MEM_usage_max[%]");
     private static final String DISK_TOTAL_HEADER_TEMPLATE = "%s_total[bytes]";
@@ -44,18 +41,9 @@ public class MonitoringStatsWriter {
     private static final String NETWORK_USAGE_OUT_HEADER_TEMPLATE = "%s_out[bytes]";
     private static final double HUNDRED_PERCENTS = 100.0;
 
-    public String convertStatsToCsvString(final List<MonitoringStats> stats) {
-        if (CollectionUtils.isEmpty(stats)) {
-            return StringUtils.EMPTY;
-        }
-        final StringWriter stringWriter = new StringWriter();
-        final CSVWriter csvWriter = new CSVWriter(stringWriter);
-        final List<String[]> allLines = extractTable(stats);
-        csvWriter.writeAll(allLines);
-        return stringWriter.toString();
-    }
+    public abstract InputStream convertStatsToFile(List<MonitoringStats> stats) throws IOException;
 
-    private List<String[]> extractTable(final List<MonitoringStats> stats) {
+    protected List<String[]> extractTable(final List<MonitoringStats> stats) {
         final List<String[]> allLines = new ArrayList<>();
         final MonitoringStatsHeader header = extractHeader(stats);
         allLines.add(header.getColumnNames().toArray(new String[0]));

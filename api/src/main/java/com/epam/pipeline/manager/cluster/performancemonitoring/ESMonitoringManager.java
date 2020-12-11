@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
-import com.amazonaws.util.StringInputStream;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
@@ -26,8 +25,10 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.writer.MonitoringStatsWriter;
+import com.epam.pipeline.manager.cluster.writer.CsvMonitoringStatsWriter;
+import com.epam.pipeline.manager.cluster.writer.XlsMonitoringStatsWriter;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +66,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
+    private final XlsMonitoringStatsWriter xlsStatsWriter;
+    private CsvMonitoringStatsWriter csvStatsWriter = new CsvMonitoringStatsWriter();
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
@@ -83,7 +86,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     public InputStream getStatsForNodeAsInputStream(final String nodeName,
                                                     final LocalDateTime from,
                                                     final LocalDateTime to,
-                                                    final Duration interval) {
+                                                    final Duration interval,
+                                                    final MonitoringReportType type) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
         final LocalDateTime oldestMonitoring = oldestMonitoringDate();
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
@@ -93,12 +97,13 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                                           ? minDuration
                                           : interval;
         final List<MonitoringStats> monitoringStats = getStats(nodeName, start, end, adjustedDuration);
-        final MonitoringStatsWriter statsWriter = new MonitoringStatsWriter();
-        try {
-            return new StringInputStream(statsWriter.convertStatsToCsvString(monitoringStats));
-        } catch (IOException e) {
-            throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_BAD_STATS_FILE_ENCODING),
-                                            e);
+        switch (type) {
+            case CSV:
+                return convertStatsToCsv(monitoringStats);
+            case XLS:
+                return xlsStatsWriter.convertStatsToFile(monitoringStats);
+            default:
+                throw new IllegalArgumentException("Unsupported report type!");
         }
     }
 
@@ -248,5 +253,14 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         s3.setCapacity(s1.getCapacity() + s2.getCapacity());
         s3.setUsableSpace(s1.getUsableSpace() + s2.getUsableSpace());
         return s3;
+    }
+
+    private InputStream convertStatsToCsv(final List<MonitoringStats> monitoringStats) {
+        try {
+            return csvStatsWriter.convertStatsToFile(monitoringStats);
+        } catch (IOException e) {
+            throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_BAD_STATS_FILE_ENCODING),
+                                            e);
+        }
     }
 }

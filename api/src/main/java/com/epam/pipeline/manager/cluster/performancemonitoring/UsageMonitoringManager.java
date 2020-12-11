@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 
 import javax.annotation.Nullable;
 import java.io.InputStream;
@@ -63,7 +64,8 @@ public interface UsageMonitoringManager {
     InputStream getStatsForNodeAsInputStream(String nodeName,
                                              @Nullable LocalDateTime from,
                                              @Nullable LocalDateTime to,
-                                             Duration interval);
+                                             Duration interval,
+                                             MonitoringReportType type);
 
     /**
      * Retrieves number of bytes that available on a pod or node disk.

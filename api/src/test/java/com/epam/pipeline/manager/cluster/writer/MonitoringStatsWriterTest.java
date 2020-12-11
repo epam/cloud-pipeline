@@ -49,7 +49,7 @@ public class MonitoringStatsWriterTest {
     @Test
     public void testMonitoringStatsToCsvConversion() {
         final List<MonitoringStats> stats = createStatsList();
-        final MonitoringStatsWriter monitoringStatsWriter = new MonitoringStatsWriter();
+        final CsvMonitoringStatsWriter monitoringStatsWriter = new CsvMonitoringStatsWriter();
         final String csvInfo = monitoringStatsWriter.convertStatsToCsvString(stats);
         final String[] linesOfTables = csvInfo.split("\\n");
         Assert.assertEquals(3, linesOfTables.length);
@@ -98,7 +98,7 @@ public class MonitoringStatsWriterTest {
     @Test
     public void testEmptyStatsConversion() {
         final List<MonitoringStats> stats = Collections.emptyList();
-        final MonitoringStatsWriter monitoringStatsWriter = new MonitoringStatsWriter();
+        final CsvMonitoringStatsWriter monitoringStatsWriter = new CsvMonitoringStatsWriter();
         Assert.assertEquals(StringUtils.EMPTY, monitoringStatsWriter.convertStatsToCsvString(stats));
     }
 
