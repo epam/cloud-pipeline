@@ -48,10 +48,9 @@ function get_current_date() {
 
 pipe_log_debug() {
   _MESSAGE="$1"
-  echo "$(get_current_date): [DEBUG] $_MESSAGE"
   if [[ "$DEBUG" ]]
   then
-    pipe_log_warn "[DEBUG] $_MESSAGE" "$LOG_TASK"
+    echo "$(get_current_date): [DEBUG] $_MESSAGE"
   fi
 }
 
@@ -137,23 +136,24 @@ if [[ -s "$SYNC_FILE" ]]; then
     LAST_SYNC_MARK=$(cat "$SYNC_FILE")
 fi
 
-RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
-if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]
-then
-  echo "The run ID $RUN_ID is not a number. Processing will be skipped."
-  exit 1
-fi
-export RUN_ID
+pipe_log_debug "Starting monitoring service process for node $NODE..."
 
-pipe_log_debug "Starting monitoring service process for run $RUN_ID..."
 while true
 do
   sleep "$MONITORING_DELAY"
+  RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
   if [[ -z "$RUN_ID" ]]
   then
     pipe_log_debug "No run is assigned to the node."
     continue
   fi
+  if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+  then
+    pipe_log_debug "The run ID $RUN_ID is not a number. Processing will be skipped."
+    continue
+  fi
+  export RUN_ID
+
   LAST_OOM_KILLER_EVENT=$(find_oom_killer_events | tail -1)
   if [[ -z "$LAST_OOM_KILLER_EVENT" ]]
   then
@@ -163,6 +163,7 @@ do
   LAST_EVENT_MARK=$(get_event_mark "$LAST_OOM_KILLER_EVENT")
   if [[ "$LAST_SYNC_MARK" -gt "$LAST_EVENT_MARK" ]]
   then
+    # No new OOM killer events found
     continue
   fi
   log_oom_killer_events "$LAST_SYNC_MARK"
