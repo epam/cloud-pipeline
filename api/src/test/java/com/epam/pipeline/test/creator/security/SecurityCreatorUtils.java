@@ -35,7 +35,7 @@ public final class SecurityCreatorUtils {
     public static final TypeReference<Result<Map<AclClass, List<S3bucketDataStorage>>>> ACL_SECURED_ENTITY_MAP_TYPE =
             new TypeReference<Result<Map<AclClass, List<S3bucketDataStorage>>>>() {};
     public static final TypeReference<JwtRawToken> JWT_RAW_TOKEN_INSTANCE_TYPE = new TypeReference<JwtRawToken>() {};
-    public static final TypeReference<Result<JwtRawToken>>JWT_RAW_TOKEN_TYPE =
+    public static final TypeReference<Result<JwtRawToken>> JWT_RAW_TOKEN_TYPE =
             new TypeReference<Result<JwtRawToken>>() {};
 
     private SecurityCreatorUtils() {

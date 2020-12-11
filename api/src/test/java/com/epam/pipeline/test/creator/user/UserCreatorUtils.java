@@ -70,7 +70,7 @@ public final class UserCreatorUtils {
     }
 
     public static PipelineUser getPipelineUser() {
-        PipelineUser pipelineUser = new PipelineUser(TEST_STRING);
+        PipelineUser pipelineUser = getPipelineUser(TEST_STRING);
         pipelineUser.setRoles(Collections.singletonList(getRole()));
         pipelineUser.setGroups(TEST_STRING_LIST);
         pipelineUser.setAttributes(TEST_STRING_MAP);

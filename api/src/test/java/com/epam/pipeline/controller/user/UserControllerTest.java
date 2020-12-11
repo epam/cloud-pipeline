@@ -47,6 +47,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -98,6 +99,8 @@ public class UserControllerTest extends AbstractControllerTest {
             + "</body>\\n"
             + "</html>\"";
     private static final String TEXT_HTML_UTF8_CONTENT_TYPE = "text/html;charset=UTF-8";
+    private static final String FILE_NAME = "users.csv";
+    private static final String ROLE_ANONYMOUS_USER = "ANONYMOUS_USER";
 
     private final JwtRawToken token = SecurityCreatorUtils.getJwtRawToken();
     private final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser();
@@ -120,7 +123,7 @@ public class UserControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGetSettings() {
+    public void shouldGenerateToken() {
         doReturn(token).when(mockUserApiService).issueToken(TEST_STRING, ID);
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
@@ -133,7 +136,7 @@ public class UserControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGetSettingsForCurrentUser() {
+    public void shouldGenerateTokenForCurrentUser() {
         doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID);
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
@@ -145,7 +148,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetSettings() {
+    public void shouldFailGenerateTokenForUnauthorizedUser() {
         performUnauthorizedRequest(get(USER_TOKEN_URL));
     }
 
@@ -161,7 +164,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetCurrentUser() {
+    public void shouldFailGetCurrentUserForUnauthorizedUser() {
         performUnauthorizedRequest(get(WHOAMI_URL));
     }
 
@@ -190,8 +193,26 @@ public class UserControllerTest extends AbstractControllerTest {
                                         TEXT_HTML_UTF8_CONTENT_TYPE);
 
         verify(mockAuthManager).issueTokenForCurrentUser(null);
-
         assertThat(mvcResult.getResponse().getContentAsString()).contains(redirectForm);
+    }
+
+    @Test
+    @WithMockUser(roles = ROLE_ANONYMOUS_USER)
+    public void shouldRedirectForAnonymousUser() throws Exception {
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
+
+        final MvcResult mvcResultRedirectForm = performRequest(get(ROUTE_URL)
+                        .params(multiValueMapOf(URL, TEST_STRING,
+                                                TYPE, RouteType.FORM)),
+                                                TEXT_HTML_UTF8_CONTENT_TYPE);
+        final MvcResult mvcResultRedirectCookie = performRequest(get(ROUTE_URL)
+                        .params(multiValueMapOf(URL, TEST_STRING,
+                                                TYPE, RouteType.COOKIE)),
+                                                TEXT_HTML_UTF8_CONTENT_TYPE);
+
+        verify(mockAuthManager, times(2)).issueTokenForCurrentUser(null);
+        assertThat(mvcResultRedirectForm.getResponse().getContentAsString()).contains(redirectForm);
+        assertThat(mvcResultRedirectCookie.getResponse().getContentAsString()).contains(redirectCookie);
     }
 
     @Test
@@ -206,7 +227,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailFindUsers() {
+    public void shouldFailFindUsersForUnauthorizedUser() {
         performUnauthorizedRequest(get(USER_FIND_URL));
     }
 
@@ -223,7 +244,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCreateUser() {
+    public void shouldFailCreateUserForUnauthorizedUser() {
         performUnauthorizedRequest(post(USER_URL));
     }
 
@@ -239,7 +260,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadUser() {
+    public void shouldFailLoadUserForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(USER_ID_URL, ID)));
     }
 
@@ -255,7 +276,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadUserByName() {
+    public void shouldFailLoadUserByNameForUnauthorizedUser() {
         performUnauthorizedRequest(get(USER_ID_URL));
     }
 
@@ -272,7 +293,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateUser() {
+    public void shouldFailUpdateUserForUnauthorizedUser() {
         performUnauthorizedRequest(put(String.format(USER_ID_URL, ID)));
     }
 
@@ -286,7 +307,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteUser() {
+    public void shouldFailDeleteUserForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(USER_ID_URL, ID)));
     }
 
@@ -302,7 +323,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadUsers() {
+    public void shouldFailLoadUsersForUnauthorizedUser() {
         performUnauthorizedRequest(get(USERS_URL));
     }
 
@@ -318,7 +339,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadUsersInfo() {
+    public void shouldFailLoadUsersInfoForUnauthorizedUser() {
         performUnauthorizedRequest(get(USERS_URL));
     }
 
@@ -334,7 +355,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetUserControls() {
+    public void shouldFailGetUserControlsForUnauthorizedUser() {
         performUnauthorizedRequest(get(USER_CONTROLS_URL));
     }
 
@@ -351,7 +372,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateUserBlockingStatus() {
+    public void shouldFailUpdateUserBlockingStatusForUnauthorizedUser() {
         performUnauthorizedRequest(put(String.format(USER_ID_BLOCK_URL, ID)));
     }
 
@@ -368,7 +389,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateUserRoles() {
+    public void shouldFailUpdateUserRolesForUnauthorizedUser() {
         performUnauthorizedRequest(put(String.format(USER_ID_BLOCK_URL, ID)));
     }
 
@@ -386,7 +407,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCheckUserByGroup() {
+    public void shouldFailCheckUserByGroupForUnauthorizedUser() {
         performUnauthorizedRequest(get(USER_MEMBER_URL));
     }
 
@@ -400,11 +421,11 @@ public class UserControllerTest extends AbstractControllerTest {
                 EXPECTED_CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
         verify(mockUserApiService).exportUsers(userExportVO);
-        assertFileResponse(mvcResult, "users.csv", TEST_ARRAY);
+        assertFileResponse(mvcResult, FILE_NAME, TEST_ARRAY);
     }
 
     @Test
-    public void shouldFailExportUsers() {
+    public void shouldFailExportUsersForUnauthorizedUser() {
         performUnauthorizedRequest(post(USER_EXPORT_URL));
     }
 
@@ -420,7 +441,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadUsersByGroup() {
+    public void shouldFailLoadUsersByGroupForUnauthorizedUser() {
         performUnauthorizedRequest(get(GROUP_URL));
     }
 
@@ -442,30 +463,20 @@ public class UserControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldUpsertGroupBlockingStatusByPostRequest() {
+    public void shouldUpsertGroupBlockingStatus() {
         doReturn(groupStatus).when(mockUserApiService).upsertGroupBlockingStatus(TEST_STRING, true);
 
         final MvcResult mvcResult = performRequest(post(String.format(GROUP_NAME_BLOCK_URL, TEST_STRING))
                 .params(multiValueMapOf(BLOCK_STATUS, true)));
-
-        verify(mockUserApiService).upsertGroupBlockingStatus(TEST_STRING, true);
-        assertResponse(mvcResult, groupStatus, UserCreatorUtils.GROUP_STATUS_INSTANCE_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpsertGroupBlockingStatusByPutRequest() {
-        doReturn(groupStatus).when(mockUserApiService).upsertGroupBlockingStatus(TEST_STRING, true);
-
-        final MvcResult mvcResult = performRequest(put(String.format(GROUP_NAME_BLOCK_URL, TEST_STRING))
+        performRequest(put(String.format(GROUP_NAME_BLOCK_URL, TEST_STRING))
                 .params(multiValueMapOf(BLOCK_STATUS, true)));
 
-        verify(mockUserApiService).upsertGroupBlockingStatus(TEST_STRING, true);
+        verify(mockUserApiService, times(2)).upsertGroupBlockingStatus(TEST_STRING, true);
         assertResponse(mvcResult, groupStatus, UserCreatorUtils.GROUP_STATUS_INSTANCE_TYPE);
     }
 
     @Test
-    public void shouldFailUpsertGroupBlockingStatus() {
+    public void shouldFailUpsertGroupBlockingStatusForUnauthorizedUser() {
         performUnauthorizedRequest(put(String.format(GROUP_NAME_BLOCK_URL, TEST_STRING)));
     }
 
@@ -482,7 +493,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteGroupBlockingStatus() {
+    public void shouldFailDeleteGroupBlockingStatusForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(GROUP_NAME_BLOCK_URL, TEST_STRING)));
     }
 
@@ -498,7 +509,7 @@ public class UserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadGroupsBlockingStatuses() {
+    public void shouldFailLoadGroupsBlockingStatusesForUnauthorizedUser() {
         performUnauthorizedRequest(get(GROUPS_BLOCK_URL));
     }
 }

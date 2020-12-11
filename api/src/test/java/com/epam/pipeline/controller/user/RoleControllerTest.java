@@ -86,7 +86,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadRoles() {
+    public void shouldFailLoadRolesForUnauthorizedUser() {
         performUnauthorizedRequest(get(LOAD_ALL_URL));
     }
 
@@ -103,7 +103,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailAssignRole() {
+    public void shouldFailAssignRoleForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(ASSIGN_URL, ID)));
     }
 
@@ -120,7 +120,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailRemoveRole() {
+    public void shouldFailRemoveRoleForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(REMOVE_URL, ID)));
     }
 
@@ -139,7 +139,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCreateRole() {
+    public void shouldFailCreateRoleForUnauthorizedUser() {
         performUnauthorizedRequest(post(CREATE_URL));
     }
 
@@ -156,7 +156,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateRole() {
+    public void shouldFailUpdateRoleForUnauthorizedUser() {
         performUnauthorizedRequest(put(String.format(ROLE_ID_URL, ID)));
     }
 
@@ -172,7 +172,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetRole() {
+    public void shouldFailGetRoleForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(ROLE_ID_URL, ID)));
     }
 
@@ -188,7 +188,7 @@ public class RoleControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteRole() {
+    public void shouldFailDeleteRoleForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(ROLE_ID_URL, ID)));
     }
 }

@@ -39,6 +39,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -56,7 +58,7 @@ public abstract class AbstractControllerTest {
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String MULTIPART_CONTENT_FILE_NAME = "file.txt";
-    protected static final String  MULTIPART_CONTENT_FILE_CONTENT = "content of file.txt";
+    protected static final String MULTIPART_CONTENT_FILE_CONTENT = "content of file.txt";
     protected static final String MULTIPART_CONTENT_TYPE =
             "multipart/form-data; boundary=--------------------------boundary";
     protected static final String MULTIPART_CONTENT =
@@ -133,8 +135,8 @@ public abstract class AbstractControllerTest {
 
     @SneakyThrows
     public void assertRequestFile(final MultipartFile capturedValue,
-                                      final String expectedFileName,
-                                      final byte[] expectedContentAsBytes) {
+                                  final String expectedFileName,
+                                  final byte[] expectedContentAsBytes) {
         assertThat(capturedValue.getOriginalFilename()).isEqualTo(expectedFileName);
         assertThat(capturedValue.getContentType()).isEqualTo(MediaType.APPLICATION_OCTET_STREAM_VALUE);
         assertThat(capturedValue.getBytes()).isEqualTo(expectedContentAsBytes);
@@ -197,8 +199,11 @@ public abstract class AbstractControllerTest {
     public MultiValueMap<String, String> multiValueMapOf(Object... objects) {
         final MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         for (int i = 0; i < objects.length; i += 2) {
-            map.add(String.valueOf(objects[i]).replaceAll("[\\[\\]]", ""),
-                    String.valueOf(objects[i + 1]).replaceAll("[\\[\\]]", ""));
+            if (objects[i + 1] instanceof List) {
+                map.add(String.valueOf(objects[i]), String.valueOf(objects[i + 1]).replaceAll("[\\[\\]]", ""));
+            } else {
+                map.add(String.valueOf(objects[i]), String.valueOf(objects[i + 1]));
+            }
         }
         return map;
     }
