@@ -176,7 +176,7 @@ public class RunApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void filterShallIncludeOwnerAndPipelinesWithInheritedVisibility() {
+    public void shouldIncludeOwnerAndPipelinesWithInheritedVisibility() {
         final Pipeline pipeline = getPipeline(SIMPLE_USER);
         doReturn(mutableListOf(pipeline)).when(mockPipelineManager).loadAllPipelines(eq(false));
         initAclEntity(pipeline);
