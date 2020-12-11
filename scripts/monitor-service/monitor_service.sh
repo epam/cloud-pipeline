@@ -122,9 +122,12 @@ done
 
 if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$NODE" ]] || [[ -z "$SYNC_FILE" ]]
 then
-  pipe_log_error "Some of the required arguments are missing." "$LOG_TASK"
+  echo "Some of the required arguments are missing."
   exit 1
 fi
+
+export API
+export API_TOKEN
 
 LOG_TASK="${LOG_TASK:-OOM Logs}"
 MONITORING_DELAY="${MONITORING_DELAY:-10}"
@@ -140,6 +143,7 @@ then
   echo "The run ID $RUN_ID is not a number. Processing will be skipped."
   exit 1
 fi
+export RUN_ID
 
 pipe_log_debug "Starting monitoring service process for run $RUN_ID..."
 while true
