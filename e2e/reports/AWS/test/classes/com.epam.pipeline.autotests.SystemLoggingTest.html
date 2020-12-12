@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">13m30.30s</div>
+<div class="counter">12m29.87s</div>
 <p>duration</p>
 </div>
 </td>
@@ -78,8 +78,8 @@
 <span class="code">
 <pre>Element not found {[title='Next Page']}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1607707165987.183.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1607707165987.183.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1607791376264.80.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1607791376264.80.html
 Timeout: 80 s.
 Caused by: WebDriverException: unknown error: Element &lt;li title=&quot;Next Page&quot; tabindex=&quot;0&quot; class=&quot; ant-pagination-next&quot; aria-disabled=&quot;false&quot;&gt;...&lt;/li&gt; is not clickable at point (1240, 960). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -108,11 +108,11 @@ Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;li
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '6629578a0181', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'f186b8294a3e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: df45732819b20578619015ddfd72934d
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+Session ID: 5cc941c27a65285404fb4b5385b74c2c
+	at sun.reflect.GeneratedConstructorAccessor21.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -135,15 +135,15 @@ Session ID: df45732819b20578619015ddfd72934d
 </span>
 </div>
 <div class="test">
-<a name="interactiveEndpointsAccess - EPMCMBIBPC-3166"></a>
-<h3 class="failures">interactiveEndpointsAccess - EPMCMBIBPC-3166</h3>
+<a name="userProfileModifications - EPMCMBIBPC-3164"></a>
+<h3 class="failures">userProfileModifications - EPMCMBIBPC-3164</h3>
 <span class="code">
-<pre>java.util.NoSuchElementException: Supposed log info '.*\[SECURITY\] Application: /pipeline-50547-8081-0/; User: USER2; Status: Successfully authenticated message for USER2 with security type. Screenshot: SystemLogsForUSER2_4606814124137234818' is not found.
+<pre>java.util.NoSuchElementException: Supposed log info 'Assing role. RoleId=2 UserIds=4 message for USER1 with security type. Screenshot: SystemLogsForUSER1_4595374294858201132' is not found.
 	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.lambda$getInfoRow$1(SettingsPageAO.java:1311)
 	at java.util.Optional.orElseThrow(Optional.java:290)
 	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.getInfoRow(SettingsPageAO.java:1308)
 	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.validateRow(SettingsPageAO.java:1350)
-	at com.epam.pipeline.autotests.SystemLoggingTest.interactiveEndpointsAccess(SystemLoggingTest.java:258)
+	at com.epam.pipeline.autotests.SystemLoggingTest.userProfileModifications(SystemLoggingTest.java:194)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -173,43 +173,44 @@ Session ID: df45732819b20578619015ddfd72934d
 </thead>
 <tr>
 <td class="failures">createAndDeleteUser - EPMCMBIBPC-3167</td>
-<td>1m44.06s</td>
+<td>1m43.56s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">interactiveEndpointsAccess - EPMCMBIBPC-3166</td>
-<td>6m47.33s</td>
-<td class="failures">failed</td>
+<td class="success">interactiveEndpointsAccess - EPMCMBIBPC-3166</td>
+<td>5m47.74s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">permissionsManagement - EPMCMBIBPC-3165</td>
-<td>1m14.70s</td>
+<td>1m14.84s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">userAuthentication - EPMCMBIBPC-3162</td>
-<td>1m38.13s</td>
+<td>1m38.25s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163</td>
-<td>1m16.96s</td>
+<td>1m16.51s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">userProfileModifications - EPMCMBIBPC-3164</td>
-<td>49.125s</td>
-<td class="success">passed</td>
+<td class="failures">userProfileModifications - EPMCMBIBPC-3164</td>
+<td>48.970s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 50547 from [50547]
-Returns latest run with runId 50547 from [50547]
-Returns latest run with runId 50547 from [50547]
-Returns latest run with runId 50547 from [50547]
+<pre>Returns latest run with runId 50670 from [50670]
+Returns latest run with runId 50670 from [50670]
+Returns latest run with runId 50670 from [50670]
+Returns latest run with runId 50670 from [50670]
+Returns latest run with runId 50670 from [50670]
 </pre>
 </span>
 </div>
@@ -221,7 +222,7 @@ Returns latest run with runId 50547 from [50547]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 11, 2020 7:34:20 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 12, 2020 6:51:07 PM</p>
 </div>
 </div>
 </body>
