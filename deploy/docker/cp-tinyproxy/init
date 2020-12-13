@@ -105,6 +105,17 @@ function nginx_add_proxy_entry {
             echo "Invalid entry format, skipping"
             continue
         fi
+
+        if ! [[ $_dest_host =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Host $_dest_host is not an IP - adding it to a map"
+cat > "${CP_TP_NGINX_DNS_MAPS}/${_dest_host}_${_source_port}.conf" <<EOF
+map \$remote_addr \$backend$_source_port {
+    default $_dest_host;
+}
+EOF
+            _dest_host="\$backend$_source_port"
+        fi
+
         echo "server { listen $_source_port; proxy_pass ${_dest_host}:${_dest_port} ${_entry_protocol}; }" >> "$CP_TP_NGINX_CONFIG"
         echo "Entry added: ${_source_port}->${_dest_host}:${_dest_port}"
     done
@@ -112,8 +123,16 @@ function nginx_add_proxy_entry {
     echo "-"
 }
 
-mkdir -p /opt/tinyproxy/nginx/logs
 CP_TP_NGINX_CONFIG="${CP_TP_NGINX_CONFIG:-/etc/nginx/nginx.conf}"
+CP_TP_NGINX_DNS_MAPS="${CP_TP_NGINX_DNS_MAPS:-/etc/nginx/maps}"
+mkdir -p /opt/tinyproxy/nginx/logs
+mkdir -p $CP_TP_NGINX_DNS_MAPS
+
+CP_TP_CLUSTER_RESOLVER="${CP_TP_CLUSTER_RESOLVER:-$CP_PREF_CLUSTER_PROXIES_DNS_POST}"
+if [ -z "$CP_TP_CLUSTER_RESOLVER" ]; then
+    export CP_TP_CLUSTER_RESOLVER="10.96.0.10"
+    echo "Cluster resolver is NOT set by CP_TP_CLUSTER_RESOLVER and CP_PREF_CLUSTER_PROXIES_DNS_POST, defaulting to $CP_TP_CLUSTER_RESOLVER"
+fi
 
 if [ "$CP_TP_TCP_DEST" ] || [ "$CP_TP_UDP_DEST" ]; then
 
@@ -131,6 +150,9 @@ events {
 }
 
 stream {
+    resolver $CP_TP_CLUSTER_RESOLVER;
+    resolver_timeout 5s;
+    include $CP_TP_NGINX_DNS_MAPS/*.conf;
 EOF
 
 echo "Adding nginx tcp/udp forward entries"

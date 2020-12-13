@@ -18,6 +18,7 @@ package com.epam.pipeline.test.creator.issue;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.IssueCommentVO;
 import com.epam.pipeline.controller.vo.IssueVO;
 import com.epam.pipeline.entity.issue.Attachment;
@@ -51,12 +52,31 @@ public final class IssueCreatorUtils {
         return new Issue();
     }
 
+    public static Issue getIssue(final EntityVO entityVO, final String author) {
+        final Issue issue = new Issue();
+        issue.setEntity(entityVO);
+        issue.setAuthor(author);
+        return issue;
+    }
+
     public static IssueVO getIssueVO() {
         return new IssueVO();
     }
 
+    public static IssueVO getIssueVO(final EntityVO entityVO) {
+        final IssueVO issueVO = new IssueVO();
+        issueVO.setEntity(entityVO);
+        return issueVO;
+    }
+
     public static IssueComment getIssueComment() {
         return new IssueComment();
+    }
+
+    public static IssueComment getIssueComment(String author) {
+        final IssueComment issueComment = new IssueComment();
+        issueComment.setAuthor(author);
+        return issueComment;
     }
 
     public static IssueCommentVO getIssueCommentVO() {
@@ -67,7 +87,11 @@ public final class IssueCreatorUtils {
         return new Attachment();
     }
 
+    public static PagedResult<List<Issue>> getPagedListIssue() {
+        return new PagedResult<>();
+    }
+
     public static PagedResult<List<Issue>> getPagedResult() {
-        return new PagedResult(Collections.singletonList(getIssue()), TEST_INT);
+        return new PagedResult<>(Collections.singletonList(getIssue()), TEST_INT);
     }
 }

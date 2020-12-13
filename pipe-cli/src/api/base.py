@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import json
+import sys
+
+import click
 import requests
 import urllib3
 
@@ -68,6 +71,30 @@ class API(object):
             raise RuntimeError('{}. Server responded with message: {}'.format(message_text, response_data['message']))
         else:
             return response_data
+
+    def download(self, url_path, file_path):
+        url = '{}/{}'.format(self.__config__.api.strip('/'), url_path)
+        headers = {
+            'Accept': 'application/octet-stream',
+            'Authorization': 'Bearer {}'.format(self.__config__.get_token())
+        }
+        response = requests.get(url, headers=headers, verify=False, proxies=self.__proxies__)
+        self._validate_octet_stream_response(response)
+        self._write_response_to_file(file_path, response)
+
+    @classmethod
+    def _write_response_to_file(cls, file_path, response):
+        with open(file_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=16 * 1024):
+                if chunk:
+                    f.write(chunk)
+
+    @classmethod
+    def _validate_octet_stream_response(cls, response):
+        if response.status_code == 200:
+            return
+        click.echo('Server responded with status: {}. {}'.format(str(response.status_code), response.text), err=True)
+        sys.exit(1)
 
     @classmethod
     def instance(cls):

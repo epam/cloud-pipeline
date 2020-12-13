@@ -32,6 +32,7 @@
                         docker_image,
                         instance_image,
                         instance_count,
+                        filter,
                         schedule_id
                         )
                     VALUES (
@@ -44,6 +45,7 @@
                         :POOL_DOCKER_IMAGE,
                         :POOL_INSTANCE_IMAGE,
                         :POOL_INSTANCE_COUNT,
+                        :POOL_FILTER,
                         :SCHEDULE_ID)
                 ]]>
             </value>
@@ -55,6 +57,7 @@
                     UPDATE pipeline.node_pool SET
                         name = :POOL_NAME,
                         instance_count = :POOL_INSTANCE_COUNT,
+                        filter = :POOL_FILTER,
                         schedule_id = :SCHEDULE_ID
                     WHERE
                         id = :POOL_ID
@@ -85,6 +88,7 @@
                         n.docker_image as POOL_DOCKER_IMAGE,
                         n.instance_image as POOL_INSTANCE_IMAGE,
                         n.instance_count as POOL_INSTANCE_COUNT,
+                        n.filter as POOL_FILTER,
                         n.schedule_id as SCHEDULE_ID,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
@@ -116,6 +120,7 @@
                         n.docker_image as POOL_DOCKER_IMAGE,
                         n.instance_image as POOL_INSTANCE_IMAGE,
                         n.instance_count as POOL_INSTANCE_COUNT,
+                        n.filter as POOL_FILTER,
                         n.schedule_id as SCHEDULE_ID,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,

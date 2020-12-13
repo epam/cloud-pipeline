@@ -26,15 +26,24 @@ import java.util.Set;
 
 public final class CommonCreatorConstants {
 
-    public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
-    public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
-    public static final TypeReference<Result<String>> STRING_INSTANCE_TYPE = new TypeReference<Result<String>>() {};
-    public static final TypeReference<Result<Boolean>> BOOLEAN_INSTANCE_TYPE = new TypeReference<Result<Boolean>>() {};
-    public static final TypeReference<Result<Long>> LONG_INSTANCE_TYPE = new TypeReference<Result<Long>>() {};
+    public static final TypeReference<Result<String>> STRING_INSTANCE_TYPE =
+            new TypeReference<Result<String>>() {};
+    public static final TypeReference<Result<Boolean>> BOOLEAN_INSTANCE_TYPE =
+            new TypeReference<Result<Boolean>>() {};
+    public static final TypeReference<Result<Long>> LONG_INSTANCE_TYPE =
+            new TypeReference<Result<Long>>() {};
     public static final TypeReference<Result<Map<String, String>>> STRING_MAP_INSTANCE_TYPE =
             new TypeReference<Result<Map<String, String>>>() {};
+    public static final TypeReference<Result<Set<String>>> STRING_SET_INSTANCE_TYPE =
+            new TypeReference<Result<Set<String>>>() {};
+    public static final TypeReference<Result<Set<Long>>> LONG_SET_INSTANCE_TYPE =
+            new TypeReference<Result<Set<Long>>>() {};
+    public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
+    public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
+
     public static final long ID = 1L;
     public static final long ID_2 = 2L;
+    public static final long ID_3 = 3L;
     public static final int TEST_INT = 4;
     public static final int READ_PERMISSION = 1;
     public static final int WRITE_PERMISSION = 2;
@@ -44,6 +53,8 @@ public final class CommonCreatorConstants {
     public static final byte[] TEST_ARRAY = {1, 1, 1};
     public static final Map<String, String> TEST_STRING_MAP = Collections.singletonMap(TEST_STRING, TEST_STRING);
     public static final Set<String> TEST_STRING_SET = Collections.singleton(TEST_STRING);
+    public static final List<Long> TEST_LONG_LIST = Collections.singletonList(ID);
+    public static final Set<Long> TEST_LONG_SET = Collections.singleton(ID);
 
     private CommonCreatorConstants() {
 

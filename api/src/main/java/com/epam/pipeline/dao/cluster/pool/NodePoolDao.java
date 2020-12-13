@@ -15,12 +15,16 @@
 
 package com.epam.pipeline.dao.cluster.pool;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao.NodeScheduleParameters;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
 import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
+import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,6 +49,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @RequiredArgsConstructor
+@Slf4j
 public class NodePoolDao extends NamedParameterJdbcDaoSupport {
 
     private final String insertNodePoolQuery;
@@ -99,7 +104,8 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         POOL_PRICE_TYPE,
         POOL_DOCKER_IMAGE,
         POOL_INSTANCE_IMAGE,
-        POOL_INSTANCE_COUNT;
+        POOL_INSTANCE_COUNT,
+        POOL_FILTER;
 
         public static final String DOCKER_IMAGE_DELIMITER = ",";
 
@@ -116,6 +122,10 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                     SetUtils.emptyIfNull(pool.getDockerImages())));
             params.addValue(POOL_INSTANCE_IMAGE.name(), pool.getInstanceImage());
             params.addValue(POOL_INSTANCE_COUNT.name(), pool.getCount());
+            params.addValue(POOL_FILTER.name(),
+                    Optional.ofNullable(pool.getFilter())
+                            .map(JsonMapper::convertDataToJsonStringForQuery)
+                            .orElse(null));
             params.addValue(NodeScheduleParameters.SCHEDULE_ID.name(),
                     Optional.ofNullable(pool.getSchedule())
                             .map(NodeSchedule::getId)
@@ -161,7 +171,20 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
             pool.setDockerImages(parseDockerImages(rs.getString(POOL_DOCKER_IMAGE.name())));
             pool.setInstanceImage(rs.getString(POOL_INSTANCE_IMAGE.name()));
             pool.setCount(rs.getInt(POOL_INSTANCE_COUNT.name()));
+            Optional.ofNullable(rs.getString(POOL_FILTER.name()))
+                    .filter(StringUtils::isNotBlank)
+                    .map(NodePoolParameters::parseFilter)
+                    .ifPresent(pool::setFilter);
             return pool;
+        }
+
+        private static PoolFilter parseFilter(final String filter) {
+            try {
+                return JsonMapper.parseData(filter, new TypeReference<PoolFilter>() {});
+            } catch (IllegalArgumentException e) {
+                log.error(e.getMessage(), e);
+                return null;
+            }
         }
 
         private static Set<String> parseDockerImages(final String line) {

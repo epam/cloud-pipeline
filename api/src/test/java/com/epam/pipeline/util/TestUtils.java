@@ -55,6 +55,8 @@ public final class TestUtils {
     private static final String TEST_DIGEST = "digest";
     public static final String LATEST_TAG = "latest";
     public static final long DOCKER_SIZE = 123456L;
+    public static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
+    public static final String TEMPLATE_REPLACE_MARK = "@@";
 
     private TestUtils() {
         // no op

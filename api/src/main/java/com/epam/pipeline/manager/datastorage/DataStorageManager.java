@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
@@ -52,19 +53,25 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.templates.DataStorageTemplate;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -105,9 +112,12 @@ import java.util.stream.Collectors;
 
 @Service
 @AclSync
+@Slf4j
 public class DataStorageManager implements SecuredEntityManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStorageManager.class);
+    private static final String DEFAULT_USER_STORAGE_NAME_TEMPLATE = "@@-home";
+    private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -151,6 +161,9 @@ public class DataStorageManager implements SecuredEntityManager {
     @Autowired
     private DataStoragePathLoader pathLoader;
 
+    @Autowired
+    private GrantPermissionManager permissionManager;
+
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
 
@@ -180,6 +193,10 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.notNull(dbDataStorage, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, id));
         dbDataStorage.setHasMetadata(this.metadataManager.hasMetadata(new EntityVO(id, AclClass.DATA_STORAGE)));
         return dbDataStorage;
+    }
+
+    public boolean exists(final Long id) {
+        return dataStorageDao.loadDataStorage(id) != null;
     }
 
     public List<AbstractDataStorage> getDatastoragesByIds(final List<Long> ids) {
@@ -341,6 +358,55 @@ public class DataStorageManager implements SecuredEntityManager {
         dataStorageDao.createDataStorage(dataStorage);
 
         return createdStorage;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Optional<Long> tryInitUserDefaultStorage(final PipelineUser user) {
+        final boolean shouldCreateDefaultHome =
+            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
+        return shouldCreateDefaultHome
+               ? createDefaultStorageForUser(user.getUserName()).map(AbstractDataStorage::getId)
+               : Optional.empty();
+    }
+
+    public Optional<AbstractDataStorage> createDefaultStorageForUser(final String userName) {
+        final DataStorageTemplate dataStorageTemplate =
+            Optional
+                .ofNullable(preferenceManager.getSystemPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE))
+                .map(preference -> preference.get(Function.identity()))
+                .map(templateJson -> JsonMapper.<DataStorageTemplate>
+                    parseData(replaceInTemplate(templateJson, userName), new TypeReference<DataStorageTemplate>() {}))
+                .orElseGet(() -> {
+                    final DataStorageVO storageVO = new DataStorageVO();
+                    storageVO.setName(replaceInTemplate(DEFAULT_USER_STORAGE_NAME_TEMPLATE, userName));
+                    storageVO.setDescription(replaceInTemplate(DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE, userName));
+                    return new DataStorageTemplate(storageVO, Collections.emptyList(), Collections.emptyMap());
+                });
+        final DataStorageVO dataStorageDetails = dataStorageTemplate.getDatastorage();
+        if (dataStorageDetails.getPath() == null) {
+            dataStorageDetails.setPath(adjustStoragePath(dataStorageDetails.getName(), null));
+        }
+        final AbstractDataStorage correspondingExistingStorage =
+            dataStorageDao.loadDataStorageByNameOrPath(dataStorageDetails.getName(), dataStorageDetails.getPath());
+        if (correspondingExistingStorage != null) {
+            log.warn(messageHelper.getMessage(MessageConstants.DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS,
+                                              dataStorageDetails.getPath(),
+                                              userName,
+                                              correspondingExistingStorage.getId()));
+            return Optional.empty();
+        }
+        if (!folderManager.exists(dataStorageDetails.getParentFolderId())) {
+            dataStorageDetails.setParentFolderId(null);
+        }
+        if (dataStorageDetails.getServiceType() == null) {
+            dataStorageDetails.setServiceType(StorageServiceType.OBJECT_STORAGE);
+        }
+        final AbstractDataStorage dataStorage = create(dataStorageDetails, true, true, true).getEntity();
+        metadataManager
+            .updateEntityMetadata(dataStorageTemplate.getMetadata(), dataStorage.getId(), AclClass.DATA_STORAGE);
+        permissionManager
+            .setPermissionsToEntity(dataStorageTemplate.getPermissions(), dataStorage.getId(), AclClass.DATA_STORAGE);
+        return Optional.of(dataStorage);
     }
 
     private AbstractCloudRegion getDatastorageCloudRegionOrDefault(DataStorageVO dataStorageVO) {
@@ -986,5 +1052,9 @@ public class DataStorageManager implements SecuredEntityManager {
         } else {
             return dataStorageDao.loadDataStorageByNameOrPath(dataStorageName, dataStorageName);
         }
+    }
+
+    private String replaceInTemplate(final String template, final String replacement) {
+        return template.replaceAll(FolderTemplateManager.TEMPLATE_REPLACE_MARK, replacement);
     }
 }

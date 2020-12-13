@@ -1,0 +1,150 @@
+/*
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.controller.metadata;
+
+import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import com.epam.pipeline.test.creator.CommonCreatorConstants;
+import com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils;
+import com.epam.pipeline.test.web.AbstractControllerTest;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MvcResult;
+
+import java.util.Collections;
+import java.util.List;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+@WebMvcTest(controllers = CategoricalAttributeController.class)
+public class CategoricalAttributeControllerTest extends AbstractControllerTest {
+
+    private static final String CATEGORICAL_ATTRIBUTE_URL = SERVLET_PATH + "/categoricalAttribute";
+    private static final String CATEGORICAL_ATTRIBUTE_KEY_URL = CATEGORICAL_ATTRIBUTE_URL + "/%s";
+    private static final String CATEGORICAL_ATTRIBUTE_SYNC_URL = CATEGORICAL_ATTRIBUTE_URL + "/sync";
+
+    private static final String VALUE = "value";
+
+    private final CategoricalAttribute attribute = MetadataCreatorUtils.getCategoricalAttribute();
+    private final List<CategoricalAttribute> attributeList =
+            Collections.singletonList(MetadataCreatorUtils.getCategoricalAttribute());
+
+    @Autowired
+    private CategoricalAttributeApiService mockCategoricalAttributeApiService;
+
+    @Test
+    @WithMockUser
+    public void shouldUpdateAttributes() throws Exception {
+        final String content = getObjectMapper().writeValueAsString(attributeList);
+        doReturn(true).when(mockCategoricalAttributeApiService).updateCategoricalAttributes(attributeList);
+
+        final MvcResult mvcResult = performRequest(post(CATEGORICAL_ATTRIBUTE_URL).content(content));
+
+        verify(mockCategoricalAttributeApiService).updateCategoricalAttributes(attributeList);
+        assertResponse(mvcResult, true, CommonCreatorConstants.BOOLEAN_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailUpdateAttributes() {
+        performUnauthorizedRequest(post(CATEGORICAL_ATTRIBUTE_URL));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadAllAttributes() {
+        doReturn(attributeList).when(mockCategoricalAttributeApiService).loadAll();
+
+        final MvcResult mvcResult = performRequest(get(CATEGORICAL_ATTRIBUTE_URL));
+
+        verify(mockCategoricalAttributeApiService).loadAll();
+        assertResponse(mvcResult, attributeList, MetadataCreatorUtils.ATTRIBUTE_LIST_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailLoadAllAttributes() {
+        performUnauthorizedRequest(get(CATEGORICAL_ATTRIBUTE_URL));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadAttribute() {
+        doReturn(attribute).when(mockCategoricalAttributeApiService).loadAllValuesForKey(TEST_STRING);
+
+        final MvcResult mvcResult = performRequest(get(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, TEST_STRING)));
+
+        verify(mockCategoricalAttributeApiService).loadAllValuesForKey(TEST_STRING);
+        assertResponse(mvcResult, attribute, MetadataCreatorUtils.ATTRIBUTE_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailLoadAttribute() {
+        performUnauthorizedRequest(get(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, TEST_STRING)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDeleteAttributeWithValue() {
+        doReturn(true).when(mockCategoricalAttributeApiService)
+                .deleteAttributeValue(TEST_STRING, TEST_STRING);
+
+        final MvcResult mvcResult = performRequest(delete(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, TEST_STRING))
+                .params(multiValueMapOf(VALUE, TEST_STRING)));
+
+        verify(mockCategoricalAttributeApiService).deleteAttributeValue(TEST_STRING, TEST_STRING);
+        assertResponse(mvcResult, true, CommonCreatorConstants.BOOLEAN_INSTANCE_TYPE);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDeleteAttributeWithoutValue() {
+        doReturn(true).when(mockCategoricalAttributeApiService).deleteAttributeValues(TEST_STRING);
+
+        final MvcResult mvcResult = performRequest(delete(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, TEST_STRING)));
+
+        verify(mockCategoricalAttributeApiService).deleteAttributeValues(TEST_STRING);
+        assertResponse(mvcResult, true, CommonCreatorConstants.BOOLEAN_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailDeleteAttributeValue() {
+        performUnauthorizedRequest(delete(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, TEST_STRING)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldSyncAttributesWithMetadata() {
+        doNothing().when(mockCategoricalAttributeApiService).syncWithMetadata();
+
+        performRequestWithoutResponse(post(CATEGORICAL_ATTRIBUTE_SYNC_URL));
+
+        verify(mockCategoricalAttributeApiService).syncWithMetadata();
+    }
+
+    @Test
+    public void shouldFailSyncAttributesWithMetadata() {
+        performUnauthorizedRequest(post(CATEGORICAL_ATTRIBUTE_SYNC_URL));
+    }
+
+}

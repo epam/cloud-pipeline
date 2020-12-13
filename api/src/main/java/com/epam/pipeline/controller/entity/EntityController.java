@@ -21,7 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSid;
-import com.epam.pipeline.manager.entity.EntityApiService;
+import com.epam.pipeline.acl.entity.EntityApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

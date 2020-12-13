@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.creator.security;
 
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -55,5 +56,9 @@ public final class SecurityCreatorUtils {
 
     public static JwtRawToken getJwtRawToken() {
         return new JwtRawToken(TEST_STRING);
+    }
+
+    public static EntityVO getEntityVO(final Long id, final AclClass aclClass) {
+        return new EntityVO(id, aclClass);
     }
 }

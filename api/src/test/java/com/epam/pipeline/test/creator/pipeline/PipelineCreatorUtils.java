@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.creator.pipeline;
 
+import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
@@ -41,5 +42,9 @@ public final class PipelineCreatorUtils {
         pipelineRun.setOwner(owner);
         pipelineRun.setName(TEST_STRING);
         return pipelineRun;
+    }
+
+    public static PipelineUserVO getPipelineUserVO() {
+        return new PipelineUserVO();
     }
 }

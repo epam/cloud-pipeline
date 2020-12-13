@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.notification;
 
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode
 public class NotificationSettings {
 
     private static final long MISSING_TIME_THRESHOLD = -1L;

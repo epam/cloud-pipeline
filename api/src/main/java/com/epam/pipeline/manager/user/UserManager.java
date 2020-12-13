@@ -35,19 +35,24 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
+import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -96,26 +101,31 @@ public class UserManager {
     @Autowired
     private MetadataManager metadataManager;
 
+    @Autowired
+    private GrantPermissionManager permissionManager;
+
+    @Autowired
+    private DataStorageManager dataStorageManager;
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser createUser(String name, List<Long> roles,
                                    List<String> groups, Map<String, String> attributes,
                                    Long defaultStorageId) {
-        Assert.isTrue(StringUtils.isNotBlank(name),
-                messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
-        String userName = name.trim().toUpperCase();
-        PipelineUser loadedUser = userDao.loadUserByName(userName);
-        Assert.isNull(loadedUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_EXISTS, name));
-        PipelineUser user = new PipelineUser(userName);
-        List<Long> userRoles = getNewUserRoles(roles);
-        user.setRoles(roleDao.loadRolesList(userRoles));
-        user.setGroups(groups);
-        user.setAttributes(attributes);
-        user.setDefaultStorageId(defaultStorageId);
-        storageValidator.validate(user);
-        log.info(messageHelper.getMessage(MessageConstants.INFO_CREATE_USER, userName));
-        return userDao.createUser(user, userRoles);
+        final PipelineUser newUser = createUser(name, roles, groups, attributes);
+        if (defaultStorageId != null) {
+            storageValidator.validate(defaultStorageId);
+            assignDefaultStorageToUser(newUser, defaultStorageId);
+        } else {
+            try {
+                return initUserDefaultStorage(newUser);
+            } catch (RuntimeException e) {
+                log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
+                        name, e.getMessage()));
+            }
+        }
+        return newUser;
     }
-
 
     /**
      * Creates user with parameters defined in Cloud Pipeline (username and roles).
@@ -126,7 +136,8 @@ public class UserManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser createUser(PipelineUserVO userVO) {
-        return createUser(userVO.getUserName(), userVO.getRoleIds(), null, null, null);
+        return createUser(userVO.getUserName(), userVO.getRoleIds(), null, null,
+                userVO.getDefaultStorageId());
     }
 
     public UserContext loadUserContext(String name) {
@@ -278,7 +289,6 @@ public class UserManager {
         return loadUserById(id);
     }
 
-
     public PipelineUser loadUserByNameOrId(String identifier) {
         PipelineUser user;
         if (NumberUtils.isDigits(identifier)) {
@@ -402,6 +412,15 @@ public class UserManager {
         return new UserExporter().exportUsers(attr, filteredUsers, sensitiveKeys).getBytes(Charset.defaultCharset());
     }
 
+    private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
+        dataStorageManager.tryInitUserDefaultStorage(newUser)
+                .ifPresent(storageId -> {
+                    assignDefaultStorageToUser(newUser, storageId);
+                    grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
+                });
+        return newUser;
+    }
+
     private Collection<PipelineUserWithStoragePath> filterUsers(final Collection<PipelineUserWithStoragePath> users,
                                                                 final PipelineUserExportVO attr) {
         return users.stream()
@@ -416,6 +435,45 @@ public class UserManager {
                     return true;
                 })
                 .collect(Collectors.toList());
+    }
+
+    private PipelineUser assignDefaultStorageToUser(final PipelineUser newUser, final Long storageId) {
+        newUser.setDefaultStorageId(storageId);
+        return userDao.updateUser(newUser);
+    }
+
+    private PipelineUser createUser(final String name, final List<Long> roles, final List<String> groups,
+                                    final Map<String, String> attributes) {
+        Assert.isTrue(StringUtils.isNotBlank(name),
+                      messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
+        String userName = name.trim().toUpperCase();
+        PipelineUser loadedUser = userDao.loadUserByName(userName);
+        Assert.isNull(loadedUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_EXISTS, name));
+        PipelineUser user = new PipelineUser(userName);
+        List<Long> userRoles = getNewUserRoles(roles);
+        user.setRoles(roleDao.loadRolesList(userRoles));
+        user.setGroups(groups);
+        user.setAttributes(attributes);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_CREATE_USER, userName));
+        return userDao.createUser(user, userRoles);
+    }
+
+    private void grantOwnerPermissionsToUser(final String userName, final Long storageId) {
+        final Authentication originalAuth = authManager.getAuthentication();
+        if (originalAuth == null) {
+            setAuthAsUser(userName);
+        }
+        permissionManager.changeOwner(storageId, AclClass.DATA_STORAGE, userName);
+        if (originalAuth == null) {
+            SecurityContextHolder.getContext().setAuthentication(null);
+        }
+    }
+
+    private void setAuthAsUser(final String userName) {
+        final PipelineUser pipelineUser = loadUserByName(userName);
+        final UserContext userContext = new UserContext(pipelineUser);
+        final JwtAuthenticationToken userAuth = new JwtAuthenticationToken(userContext, userContext.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(userAuth);
     }
 
     private void checkAllRolesPresent(List<Long> roles) {
