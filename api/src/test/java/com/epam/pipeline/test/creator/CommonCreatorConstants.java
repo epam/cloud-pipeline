@@ -18,7 +18,6 @@ package com.epam.pipeline.test.creator;
 
 import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.springframework.http.ResponseEntity;
 
 import java.util.Collections;
 import java.util.List;
@@ -41,8 +40,6 @@ public final class CommonCreatorConstants {
             new TypeReference<Result<List<String>>>() {};
     public static final TypeReference<Result<Set<Long>>> LONG_SET_INSTANCE_TYPE =
             new TypeReference<Result<Set<Long>>>() {};
-    public static final TypeReference<ResponseEntity<byte[]>> BYTE_ARRAY_INSTANCE_TYPE =
-            new TypeReference<ResponseEntity<byte[]>>() {};
     public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
     public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
 

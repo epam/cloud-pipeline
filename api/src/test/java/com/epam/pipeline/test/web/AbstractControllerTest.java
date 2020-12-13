@@ -75,7 +75,7 @@ public abstract class AbstractControllerTest {
     private ObjectMapper deserializationMapper;
 
     @Autowired
-    private JsonMapper objectMapper;
+    protected JsonMapper objectMapper;
 
     @Autowired
     protected WebApplicationContext wac;
