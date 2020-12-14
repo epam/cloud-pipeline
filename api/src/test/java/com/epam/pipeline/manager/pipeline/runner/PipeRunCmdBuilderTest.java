@@ -32,6 +32,12 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class PipeRunCmdBuilderTest {
 
+    public static final String PARAM_WTH_TYPE_TEMPLATE = "%s? %s";
+    private static final String PARAM_INT_TYPE = "int";
+    private static final String PARAM_INPUT_TYPE = "input";
+    private static final String PARAM_OUTPUT_TYPE = "output";
+    private static final String PARAM_COMMON_TYPE = "common";
+    private static final String PARAM_PATH_TYPE = "path";
     private static final String TEST_VERSION = "draft";
     private static final String TEST_PARAM_NAME_1 = "--param1";
     private static final String TEST_PARAM_NAME_2 = "--param2";
@@ -49,26 +55,26 @@ public class PipeRunCmdBuilderTest {
     private static final String CMD_TEMPLATE_WITH_DOUBLE_QUOTES = "do \"command\"";
     private static final String FIRST_PARAMETER = "-- %s '%s'";
     private static final String QUOTED_PARAMETER = "%s '%s'";
-    private static final String NON_QUOTED_PARAMETER = "%s %s";
     private static final String LINUX_NEW_LINE_INDICATOR = "\\\n";
     private static final String WINDOWS_NEW_LINE_INDICATOR = "^\n";
+    private static final String PARAM_BOOLEAN_TYPE = "boolean";
 
     @Test
     public void shouldGenerateLaunchCommand() {
         final Map<String, PipeConfValueVO> runParameters = new HashMap<>();
         final PipeConfValueVO pipeConfValue1 = new PipeConfValueVO(TEST_PARAM_VALUE_1, "string");
         runParameters.put(TEST_PARAM_NAME_1, pipeConfValue1);
-        final PipeConfValueVO pipeConfValue2 = new PipeConfValueVO(TEST_PARAM_VALUE_2, "int");
+        final PipeConfValueVO pipeConfValue2 = new PipeConfValueVO(TEST_PARAM_VALUE_2, PARAM_INT_TYPE);
         runParameters.put(TEST_PARAM_NAME_2, pipeConfValue2);
-        final PipeConfValueVO pipeConfValue3 = new PipeConfValueVO(TEST_PARAM_VALUE_MULTIPLE_PATHS, "input");
+        final PipeConfValueVO pipeConfValue3 = new PipeConfValueVO(TEST_PARAM_VALUE_MULTIPLE_PATHS, PARAM_INPUT_TYPE);
         runParameters.put(TEST_PARAM_NAME_3, pipeConfValue3);
-        final PipeConfValueVO pipeConfValue4 = new PipeConfValueVO(TEST_PARAM_VALUE_MULTIPLE_PATHS, "output");
+        final PipeConfValueVO pipeConfValue4 = new PipeConfValueVO(TEST_PARAM_VALUE_MULTIPLE_PATHS, PARAM_OUTPUT_TYPE);
         runParameters.put(TEST_PARAM_NAME_4, pipeConfValue4);
-        final PipeConfValueVO pipeConfValue5 = new PipeConfValueVO(TEST_PARAM_VALUE_MULTIPLE_PATHS, "path");
+        final PipeConfValueVO pipeConfValue5 = new PipeConfValueVO(TEST_PARAM_VALUE_MULTIPLE_PATHS, PARAM_PATH_TYPE);
         runParameters.put(TEST_PARAM_NAME_5, pipeConfValue5);
-        final PipeConfValueVO pipeConfValue6 = new PipeConfValueVO(TEST_PARAM_VALUE_MULTIPLE_PATHS, "common");
+        final PipeConfValueVO pipeConfValue6 = new PipeConfValueVO(TEST_PARAM_VALUE_MULTIPLE_PATHS, PARAM_COMMON_TYPE);
         runParameters.put(TEST_PARAM_NAME_6, pipeConfValue6);
-        final PipeConfValueVO pipeConfValue7 = new PipeConfValueVO(Boolean.TRUE.toString(), "boolean");
+        final PipeConfValueVO pipeConfValue7 = new PipeConfValueVO(Boolean.TRUE.toString(), PARAM_BOOLEAN_TYPE);
         runParameters.put(TEST_PARAM_NAME_7, pipeConfValue7);
         final Map<String, PipeConfValueVO> sortedParameters = runParameters.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
@@ -81,21 +87,25 @@ public class PipeRunCmdBuilderTest {
                 "-id 10", "-it type", "-di image", "-cmd '%s'", "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1",
                 "-pn 1",
                 FIRST_PARAMETER,
-                NON_QUOTED_PARAMETER,
                 QUOTED_PARAMETER,
                 QUOTED_PARAMETER,
                 QUOTED_PARAMETER,
                 QUOTED_PARAMETER,
-                NON_QUOTED_PARAMETER,
+                QUOTED_PARAMETER,
+                QUOTED_PARAMETER,
                 "parent-id 1"),
                 TEST_VERSION, CMD_TEMPLATE,
                 TEST_PARAM_NAME_1, TEST_PARAM_VALUE_1,
-                TEST_PARAM_NAME_2, TEST_PARAM_VALUE_2,
-                TEST_PARAM_NAME_3, TEST_PARAM_VALUE_MULTIPLE_PATHS,
-                TEST_PARAM_NAME_4, TEST_PARAM_VALUE_MULTIPLE_PATHS,
-                TEST_PARAM_NAME_5, TEST_PARAM_VALUE_MULTIPLE_PATHS,
-                TEST_PARAM_NAME_6, TEST_PARAM_VALUE_MULTIPLE_PATHS,
-                TEST_PARAM_NAME_7, true);
+                TEST_PARAM_NAME_2, String.format(PARAM_WTH_TYPE_TEMPLATE, PARAM_INT_TYPE, TEST_PARAM_VALUE_2),
+                TEST_PARAM_NAME_3, String.format(PARAM_WTH_TYPE_TEMPLATE, PARAM_INPUT_TYPE,
+                        TEST_PARAM_VALUE_MULTIPLE_PATHS),
+                TEST_PARAM_NAME_4, String.format(PARAM_WTH_TYPE_TEMPLATE, PARAM_OUTPUT_TYPE,
+                        TEST_PARAM_VALUE_MULTIPLE_PATHS),
+                TEST_PARAM_NAME_5, String.format(PARAM_WTH_TYPE_TEMPLATE, PARAM_PATH_TYPE,
+                        TEST_PARAM_VALUE_MULTIPLE_PATHS),
+                TEST_PARAM_NAME_6, String.format(PARAM_WTH_TYPE_TEMPLATE, PARAM_COMMON_TYPE,
+                        TEST_PARAM_VALUE_MULTIPLE_PATHS),
+                TEST_PARAM_NAME_7, String.format(PARAM_WTH_TYPE_TEMPLATE, PARAM_BOOLEAN_TYPE, true));
         Assert.assertEquals(expectedResult, actualResult);
     }
 
