@@ -51,8 +51,7 @@ public final class PipelineCreatorUtils {
     }
 
     public static Pipeline getPipeline(final String owner) {
-        final Pipeline pipeline = getPipeline(ID, owner, ID);
-        return pipeline;
+        return getPipeline(ID, owner, ID);
     }
 
     public static PipelineRun getPipelineRun(final Long id, final String owner) {
@@ -123,5 +122,4 @@ public final class PipelineCreatorUtils {
         property.setPipelineId(ID);
         return property;
     }
-
 }

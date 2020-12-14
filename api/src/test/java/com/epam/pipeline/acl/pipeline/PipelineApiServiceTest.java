@@ -20,21 +20,17 @@ import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.GenerateFileVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
-import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
-import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -71,11 +67,8 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     private final PipelinesWithPermissionsVO pipelinesWithPermissions =
             PipelineCreatorUtils.getPipelinesWithPermissionsVO();
     private final PipelineRun pipelineRun = PipelineCreatorUtils.getPipelineRun(ID, ANOTHER_SIMPLE_USER);
-    private final Revision revision = PipelineCreatorUtils.getRevision();
     private final InstancePrice instancePrice = PipelineCreatorUtils.getInstancePrice();
-    private final TaskGraphVO taskGraphVO = PipelineCreatorUtils.getTaskGraphVO();
     private final GenerateFileVO fileVO = PipelineCreatorUtils.getGenerateFileVO();
-    private final RegisterPipelineVersionVO pipelineVersionVO = PipelineCreatorUtils.getRegisterPipelineVersionVO();
     private final DocumentGenerationProperty property = PipelineCreatorUtils.getDocumentGenerationProperty();
     private final List<PipelineRun> pipelineRunList = Collections.singletonList(pipelineRun);
     private final List<DocumentGenerationProperty> propertyList = Collections.singletonList(property);
@@ -86,8 +79,6 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     private PipelineManager mockPipelineManager;
     @Autowired
     private PipelineRunManager mockPipelineRunManager;
-    @Autowired
-    private PipelineVersionManager mockVersionManager;
     @Autowired
     private InstanceOfferManager mockInstanceOfferManager;
     @Autowired
@@ -482,32 +473,6 @@ public class PipelineApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldGetWorkflowGraphForAdmin() {
-        doReturn(taskGraphVO).when(mockVersionManager).getWorkflowGraph(ID, TEST_STRING);
-
-        assertThat(pipelineApiService.getWorkflowGraph(ID, TEST_STRING)).isEqualTo(taskGraphVO);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldGetWorkflowGraphWhenPermissionIsGranted() {
-        initAclEntity(pipeline, AclPermission.READ);
-        doReturn(taskGraphVO).when(mockVersionManager).getWorkflowGraph(ID, TEST_STRING);
-
-        assertThat(pipelineApiService.getWorkflowGraph(ID, TEST_STRING)).isEqualTo(taskGraphVO);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyGetWorkflowGraphWhenPermissionIsNotGranted() {
-        initAclEntity(pipeline);
-        doReturn(taskGraphVO).when(mockVersionManager).getWorkflowGraph(ID, TEST_STRING);
-
-        assertThrows(AccessDeniedException.class, () -> pipelineApiService.getWorkflowGraph(ID, TEST_STRING));
-    }
-
-    @Test
-    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldFillTemplateForPipelineVersionForAdmin() {
         doReturn(TEST_ARRAY).when(mockFileGenerationManager)
                 .fillTemplateForPipelineVersion(ID, TEST_STRING, TEST_STRING, fileVO);
@@ -536,33 +501,6 @@ public class PipelineApiServiceTest extends AbstractAclTest {
 
         assertThrows(AccessDeniedException.class, () ->
                 pipelineApiService.fillTemplateForPipelineVersion(ID, TEST_STRING, TEST_STRING, fileVO));
-    }
-
-    @Test
-    @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldRegisterPipelineVersionForAdmin() throws GitClientException {
-        doReturn(revision).when(mockVersionManager).registerPipelineVersion(pipelineVersionVO);
-
-        assertThat(pipelineApiService.registerPipelineVersion(pipelineVersionVO)).isEqualTo(revision);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldRegisterPipelineVersionWhenPermissionIsGranted() throws GitClientException {
-        initAclEntity(pipeline, AclPermission.WRITE);
-        doReturn(revision).when(mockVersionManager).registerPipelineVersion(pipelineVersionVO);
-
-        assertThat(pipelineApiService.registerPipelineVersion(pipelineVersionVO)).isEqualTo(revision);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyRegisterPipelineVersionWhenPermissionIsNotGranted() throws GitClientException {
-        initAclEntity(pipeline);
-        doReturn(revision).when(mockVersionManager).registerPipelineVersion(pipelineVersionVO);
-
-        assertThrowsChecked(AccessDeniedException.class, () ->
-                pipelineApiService.registerPipelineVersion(pipelineVersionVO));
     }
 
     @Test

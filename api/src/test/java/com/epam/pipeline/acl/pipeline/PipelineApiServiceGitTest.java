@@ -18,6 +18,8 @@ package com.epam.pipeline.acl.pipeline;
 
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
+import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
+import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
@@ -45,6 +47,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_ARRAY;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomAssertions.assertThrowsChecked;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
@@ -60,6 +63,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private final GitRepositoryEntry gitRepositoryEntry = GitCreatorUtils.getGitRepositoryEntry();
     private final UploadFileMetadata fileMetadata = PipelineCreatorUtils.getUploadFileMetadata();
     private final Revision revision = PipelineCreatorUtils.getRevision();
+    private final TaskGraphVO taskGraphVO = PipelineCreatorUtils.getTaskGraphVO();
+    private final RegisterPipelineVersionVO pipelineVersionVO = PipelineCreatorUtils.getRegisterPipelineVersionVO();
     private final List<GitRepositoryEntry> gitRepositoryEntries = Collections.singletonList(gitRepositoryEntry);
     private final List<UploadFileMetadata> files = Collections.singletonList(fileMetadata);
     private final List<Revision> revisionList = Collections.singletonList(revision);
@@ -193,7 +198,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(gitCommitEntry).when(mockGitManager).removeFolder(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
 
         assertThrowsChecked(AccessDeniedException.class, () ->
-            pipelineApiService.removeFolder(ID, TEST_STRING, TEST_STRING, TEST_STRING));
+                pipelineApiService.removeFolder(ID, TEST_STRING, TEST_STRING, TEST_STRING));
     }
 
     @Test
@@ -497,5 +502,58 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(revisionList).when(mockVersionManager).loadAllVersionFromGit(ID);
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.loadAllVersionFromGit(ID));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldGetWorkflowGraphForAdmin() {
+        doReturn(taskGraphVO).when(mockVersionManager).getWorkflowGraph(ID, TEST_STRING);
+
+        assertThat(pipelineApiService.getWorkflowGraph(ID, TEST_STRING)).isEqualTo(taskGraphVO);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldGetWorkflowGraphWhenPermissionIsGranted() {
+        initAclEntity(pipeline, AclPermission.READ);
+        doReturn(taskGraphVO).when(mockVersionManager).getWorkflowGraph(ID, TEST_STRING);
+
+        assertThat(pipelineApiService.getWorkflowGraph(ID, TEST_STRING)).isEqualTo(taskGraphVO);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyGetWorkflowGraphWhenPermissionIsNotGranted() {
+        initAclEntity(pipeline);
+        doReturn(taskGraphVO).when(mockVersionManager).getWorkflowGraph(ID, TEST_STRING);
+
+        assertThrows(AccessDeniedException.class, () -> pipelineApiService.getWorkflowGraph(ID, TEST_STRING));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldRegisterPipelineVersionForAdmin() throws GitClientException {
+        doReturn(revision).when(mockVersionManager).registerPipelineVersion(pipelineVersionVO);
+
+        assertThat(pipelineApiService.registerPipelineVersion(pipelineVersionVO)).isEqualTo(revision);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldRegisterPipelineVersionWhenPermissionIsGranted() throws GitClientException {
+        initAclEntity(pipeline, AclPermission.WRITE);
+        doReturn(revision).when(mockVersionManager).registerPipelineVersion(pipelineVersionVO);
+
+        assertThat(pipelineApiService.registerPipelineVersion(pipelineVersionVO)).isEqualTo(revision);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyRegisterPipelineVersionWhenPermissionIsNotGranted() throws GitClientException {
+        initAclEntity(pipeline);
+        doReturn(revision).when(mockVersionManager).registerPipelineVersion(pipelineVersionVO);
+
+        assertThrowsChecked(AccessDeniedException.class, () ->
+                pipelineApiService.registerPipelineVersion(pipelineVersionVO));
     }
 }
