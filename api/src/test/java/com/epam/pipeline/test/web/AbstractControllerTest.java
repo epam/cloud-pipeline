@@ -40,6 +40,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -200,7 +201,10 @@ public abstract class AbstractControllerTest {
         final MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         for (int i = 0; i < objects.length; i += 2) {
             if (objects[i + 1] instanceof List) {
-                map.add(String.valueOf(objects[i]), String.valueOf(objects[i + 1]).replaceAll("[\\[\\]]", ""));
+                final String listAsString = ((List<?>) objects[i + 1]).stream()
+                                                                      .map(String::valueOf)
+                                                                      .collect(Collectors.joining());
+                map.add(String.valueOf(objects[i]), listAsString);
             } else {
                 map.add(String.valueOf(objects[i]), String.valueOf(objects[i + 1]));
             }
