@@ -24,9 +24,11 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.git.GitCreatorUtils;
@@ -43,13 +45,13 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_ARRAY;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static com.epam.pipeline.util.CustomAssertions.assertThrowsChecked;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 public class PipelineApiServiceGitTest extends AbstractAclTest {
 
-    protected final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
+    private final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
     private final GitTagEntry gitTagEntry = GitCreatorUtils.getGitTagEntry();
     private final GitCommitEntry gitCommitEntry = GitCreatorUtils.getGitCommitEntry();
     private final PipelineSourceItemVO sourceItemVO = PipelineCreatorUtils.getPipelineSourceItemVO();
@@ -57,8 +59,10 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private final GitCredentials gitCredentials = GitCreatorUtils.getGitCredentials();
     private final GitRepositoryEntry gitRepositoryEntry = GitCreatorUtils.getGitRepositoryEntry();
     private final UploadFileMetadata fileMetadata = PipelineCreatorUtils.getUploadFileMetadata();
+    private final Revision revision = PipelineCreatorUtils.getRevision();
     private final List<GitRepositoryEntry> gitRepositoryEntries = Collections.singletonList(gitRepositoryEntry);
     private final List<UploadFileMetadata> files = Collections.singletonList(fileMetadata);
+    private final List<Revision> revisionList = Collections.singletonList(revision);
 
     @Autowired
     private PipelineApiService pipelineApiService;
@@ -66,6 +70,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private PipelineManager mockPipelineManager;
     @Autowired
     private GitManager mockGitManager;
+    @Autowired
+    private PipelineVersionManager mockVersionManager;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -93,13 +99,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(pipeline).when(mockPipelineManager).load(ID);
         doReturn(gitTagEntry).when(mockGitManager).loadRevision(pipeline, TEST_STRING);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.loadRevision(ID, TEST_STRING);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.loadRevision(ID, TEST_STRING));
     }
 
     @Test
@@ -125,13 +125,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         initAclEntity(pipeline);
         doReturn(gitRepositoryEntry).when(mockGitManager).addHookToPipelineRepository(ID);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.addHookToPipelineRepository(ID);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.addHookToPipelineRepository(ID));
     }
 
     @Test
@@ -140,13 +134,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(gitRepositoryEntry).when(mockGitManager).addHookToPipelineRepository(ID);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.addHookToPipelineRepository(ID);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.addHookToPipelineRepository(ID));
     }
 
     @Test
@@ -172,13 +160,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         initAclEntity(pipeline);
         doReturn(gitCommitEntry).when(mockGitManager).createOrRenameFolder(ID, sourceItemVO);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.createOrRenameFolder(ID, sourceItemVO);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () ->
+                pipelineApiService.createOrRenameFolder(ID, sourceItemVO));
     }
 
     @Test
@@ -209,13 +192,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
         doReturn(gitCommitEntry).when(mockGitManager).removeFolder(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.removeFolder(ID, TEST_STRING, TEST_STRING, TEST_STRING);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () ->
+            pipelineApiService.removeFolder(ID, TEST_STRING, TEST_STRING, TEST_STRING));
     }
 
     @Test
@@ -244,13 +222,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
         doReturn(gitCommitEntry).when(mockGitManager).modifyFile(pipeline, sourceItemVO);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.modifyFile(ID, sourceItemVO);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.modifyFile(ID, sourceItemVO));
     }
 
     @Test
@@ -279,13 +251,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
         doReturn(gitCommitEntry).when(mockGitManager).updateFiles(pipeline, sourceItemsVO);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.modifyFiles(ID, sourceItemsVO);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.modifyFiles(ID, sourceItemsVO));
     }
 
     @Test
@@ -314,13 +280,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
         doReturn(gitCommitEntry).when(mockGitManager).uploadFiles(pipeline, TEST_STRING, files, TEST_STRING, null);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.uploadFiles(ID, TEST_STRING, files);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.uploadFiles(ID, TEST_STRING, files));
     }
 
     @Test
@@ -349,13 +309,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
         doReturn(gitCommitEntry).when(mockGitManager).deleteFile(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.deleteFile(ID, TEST_STRING, TEST_STRING, TEST_STRING);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () ->
+                pipelineApiService.deleteFile(ID, TEST_STRING, TEST_STRING, TEST_STRING));
     }
 
     @Test
@@ -394,13 +349,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(gitRepositoryEntries).when(mockGitManager)
                 .getPipelineSources(ID, TEST_STRING, TEST_STRING, true, true);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.getPipelineSources(ID, TEST_STRING, TEST_STRING, true, true);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () ->
+                pipelineApiService.getPipelineSources(ID, TEST_STRING, TEST_STRING, true, true));
     }
 
     @Test
@@ -428,13 +378,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         initAclEntity(pipeline);
         doReturn(gitRepositoryEntries).when(mockGitManager).getRepositoryContents(ID, TEST_STRING, TEST_STRING);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.getPipelineRepositoryContents(ID, TEST_STRING, TEST_STRING);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () ->
+                pipelineApiService.getPipelineRepositoryContents(ID, TEST_STRING, TEST_STRING));
     }
 
     @Test
@@ -460,13 +405,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         initAclEntity(pipeline);
         doReturn(gitRepositoryEntries).when(mockGitManager).getPipelineDocs(ID, TEST_STRING);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.getPipelineDocs(ID, TEST_STRING);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.getPipelineDocs(ID, TEST_STRING));
     }
 
     @Test
@@ -495,13 +434,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(pipeline).when(mockPipelineManager).load(ID);
         doReturn(TEST_ARRAY).when(mockGitManager).getPipelineFileContents(pipeline, TEST_STRING, TEST_STRING);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.getPipelineFileContents(ID, TEST_STRING, TEST_STRING);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () ->
+                pipelineApiService.getPipelineFileContents(ID, TEST_STRING, TEST_STRING));
     }
 
     @Test
@@ -535,12 +469,33 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         doReturn(TEST_ARRAY).when(mockGitManager)
                 .getTruncatedPipelineFileContent(pipeline, TEST_STRING, TEST_STRING, TEST_INT);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.getTruncatedPipelineFileContent(ID, TEST_STRING, TEST_STRING, TEST_INT);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () ->
+                pipelineApiService.getTruncatedPipelineFileContent(ID, TEST_STRING, TEST_STRING, TEST_INT));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldLoadVersionFromGitForAdmin() throws GitClientException {
+        doReturn(revisionList).when(mockVersionManager).loadAllVersionFromGit(ID);
+
+        assertThat(pipelineApiService.loadAllVersionFromGit(ID)).isEqualTo(revisionList);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldLoadAllVersionFromGitWhenPermissionIsGranted() throws GitClientException {
+        initAclEntity(pipeline, AclPermission.READ);
+        doReturn(revisionList).when(mockVersionManager).loadAllVersionFromGit(ID);
+
+        assertThat(pipelineApiService.loadAllVersionFromGit(ID)).isEqualTo(revisionList);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyLoadAllVersionFromGitWhenPermissionIsNotGranted() throws GitClientException {
+        initAclEntity(pipeline);
+        doReturn(revisionList).when(mockVersionManager).loadAllVersionFromGit(ID);
+
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.loadAllVersionFromGit(ID));
     }
 }

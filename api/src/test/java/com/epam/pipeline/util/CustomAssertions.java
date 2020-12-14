@@ -61,4 +61,20 @@ public final class CustomAssertions {
         }
         fail("Exception was expected but nothing was thrown.");
     }
+
+    public static void assertThrowsChecked(final Class<? extends Throwable> expectedExceptionClass,
+                                           final CheckedRunnable runnable) {
+        try {
+            runnable.run();
+        } catch (Exception e) {
+            if (expectedExceptionClass.isInstance(e)) {
+                return;
+            } else {
+                throw new AssertionError(
+                        String.format("Expected exception %s was not thrown, but another exception was: %s.",
+                                expectedExceptionClass.getSimpleName(), e.getClass().getSimpleName()), e);
+            }
+        }
+        fail(String.format("Expected exception %s was not thrown.", expectedExceptionClass.getSimpleName()));
+    }
 }

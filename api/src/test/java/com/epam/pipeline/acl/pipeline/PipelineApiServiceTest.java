@@ -56,12 +56,14 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.WRITE_PERMISSION;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static com.epam.pipeline.util.CustomAssertions.assertThrowsChecked;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.reset;
 
 public class PipelineApiServiceTest extends AbstractAclTest {
 
-    protected final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
+    private final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
     private final Pipeline anotherPipeline = PipelineCreatorUtils.getPipeline(ID_2, ANOTHER_SIMPLE_USER, ID_2);
     private final PipelineVO pipelineVO = PipelineCreatorUtils.getPipelineVO(ID);
     private final Folder folder = FolderCreatorUtils.getFolder(ID, ANOTHER_SIMPLE_USER);
@@ -76,7 +78,6 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     private final RegisterPipelineVersionVO pipelineVersionVO = PipelineCreatorUtils.getRegisterPipelineVersionVO();
     private final DocumentGenerationProperty property = PipelineCreatorUtils.getDocumentGenerationProperty();
     private final List<PipelineRun> pipelineRunList = Collections.singletonList(pipelineRun);
-    private final List<Revision> revisionList = Collections.singletonList(revision);
     private final List<DocumentGenerationProperty> propertyList = Collections.singletonList(property);
 
     @Autowired
@@ -120,43 +121,25 @@ public class PipelineApiServiceTest extends AbstractAclTest {
         final PipelineVO pipelineVO = PipelineCreatorUtils.getPipelineVO(null);
         doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.create(pipelineVO);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(pipelineVO));
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyCreatePipelineForUserRole() throws GitClientException {
+    public void shouldDenyCreatePipelineWithoutPipelineManagerRole() throws GitClientException {
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.create(pipelineVO);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(pipelineVO));
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = PIPELINE_MANAGER_ROLE)
-    public void shouldDenyCreatePipelineWhenPermissionIsNotGranted() throws GitClientException {
+    public void shouldDenyCreatePipelineWhenPermissionForParentFolderIsNotGranted() throws GitClientException {
         initAclEntity(folder);
         doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.create(pipelineVO);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(pipelineVO));
     }
 
     @Test
@@ -274,6 +257,7 @@ public class PipelineApiServiceTest extends AbstractAclTest {
 
         assertThat(pipelineApiService.loadAllPipelinesWithPermissions(TEST_INT, TEST_INT))
                 .isEqualTo(pipelinesWithPermissions);
+        reset(spyGrantPermissionManager);
     }
 
     @Test
@@ -284,6 +268,7 @@ public class PipelineApiServiceTest extends AbstractAclTest {
 
         assertThrows(AccessDeniedException.class, () ->
                 pipelineApiService.loadAllPipelinesWithPermissions(TEST_INT, TEST_INT));
+        reset(spyGrantPermissionManager);
     }
 
     @Test
@@ -414,7 +399,7 @@ public class PipelineApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyDeletePipelineForUserRole() {
+    public void shouldDenyDeletePipelineWithoutPipelineManagerRole() {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).delete(ID, true);
 
@@ -453,38 +438,6 @@ public class PipelineApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldLoadVersionFromGitForAdmin() throws GitClientException {
-        doReturn(revisionList).when(mockVersionManager).loadAllVersionFromGit(ID);
-
-        assertThat(pipelineApiService.loadAllVersionFromGit(ID)).isEqualTo(revisionList);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldLoadAllVersionFromGitWhenPermissionIsGranted() throws GitClientException {
-        initAclEntity(pipeline, AclPermission.READ);
-        doReturn(revisionList).when(mockVersionManager).loadAllVersionFromGit(ID);
-
-        assertThat(pipelineApiService.loadAllVersionFromGit(ID)).isEqualTo(revisionList);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyLoadAllVersionFromGitWhenPermissionIsNotGranted() throws GitClientException {
-        initAclEntity(pipeline);
-        doReturn(revisionList).when(mockVersionManager).loadAllVersionFromGit(ID);
-
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.loadAllVersionFromGit(ID);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
-    @Test
-    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetInstanceEstimatedPriceForAdmin() throws GitClientException {
         doReturn(instancePrice).when(mockInstanceOfferManager)
                 .getInstanceEstimatedPrice(ID, TEST_STRING, TEST_STRING, TEST_STRING, TEST_INT, true, ID);
@@ -513,14 +466,9 @@ public class PipelineApiServiceTest extends AbstractAclTest {
         doReturn(instancePrice).when(mockInstanceOfferManager)
                 .getInstanceEstimatedPrice(ID, TEST_STRING, TEST_STRING, TEST_STRING, TEST_INT, true, ID);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
+        assertThrowsChecked(AccessDeniedException.class, () ->
                 pipelineApiService.getInstanceEstimatedPrice(ID, TEST_STRING, TEST_STRING,
-                        TEST_STRING, TEST_INT, true, ID);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+                        TEST_STRING, TEST_INT, true, ID));
     }
 
     @Test
@@ -613,13 +561,8 @@ public class PipelineApiServiceTest extends AbstractAclTest {
         initAclEntity(pipeline);
         doReturn(revision).when(mockVersionManager).registerPipelineVersion(pipelineVersionVO);
 
-        assertThrows(AccessDeniedException.class, () -> {
-            try {
-                pipelineApiService.registerPipelineVersion(pipelineVersionVO);
-            } catch (GitClientException e) {
-                e.printStackTrace();
-            }
-        });
+        assertThrowsChecked(AccessDeniedException.class, () ->
+                pipelineApiService.registerPipelineVersion(pipelineVersionVO));
     }
 
     @Test
@@ -821,7 +764,7 @@ public class PipelineApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyCopyPipelineForUserRole() {
+    public void shouldDenyCopyPipelineWithoutPipelineManagerRole() {
         initAclEntity(pipeline, AclPermission.READ);
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);

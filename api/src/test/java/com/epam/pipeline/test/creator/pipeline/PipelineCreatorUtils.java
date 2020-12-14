@@ -41,19 +41,17 @@ public final class PipelineCreatorUtils {
 
     }
 
-    public static Pipeline getPipeline(final String owner) {
-        final Pipeline pipeline = new Pipeline();
-        pipeline.setId(ID);
-        pipeline.setOwner(owner);
-        pipeline.setCurrentVersion(getRevision());
-        return pipeline;
-    }
-
     public static Pipeline getPipeline(final Long id, final String owner, final Long parentId) {
         final Pipeline pipeline = new Pipeline();
         pipeline.setId(id);
         pipeline.setOwner(owner);
         pipeline.setParentFolderId(parentId);
+        pipeline.setCurrentVersion(getRevision());
+        return pipeline;
+    }
+
+    public static Pipeline getPipeline(final String owner) {
+        final Pipeline pipeline = getPipeline(ID, owner, ID);
         return pipeline;
     }
 
