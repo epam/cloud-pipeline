@@ -29,6 +29,7 @@ spec:
           limits:
             memory: 256Mi
           requests:
+            cpu: 100m
             memory: 128Mi
         volumeMounts:
         - name: node-health-check
