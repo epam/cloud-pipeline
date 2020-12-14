@@ -47,6 +47,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_SET;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
@@ -61,7 +62,7 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     private static final FireCloudClass PARTICIPANT = FireCloudClass.PARTICIPANT;
     private final MetadataClass metadataClass = MetadataCreatorUtils.getMetadataClass();
     private final MetadataEntityVO metadataEntityVO = MetadataCreatorUtils.getMetadataEntityVO(ID);
-    private final Folder folder = FolderCreatorUtils.getFolder(ID, ANOTHER_SIMPLE_USER);
+    private final Folder folder = FolderCreatorUtils.getFolder(ID, ID_2, ANOTHER_SIMPLE_USER);
     private final MetadataEntity metadataEntity = MetadataCreatorUtils.getMetadataEntity(ID, folder);
     private final PagedResult<List<MetadataEntity>> pagedResult = MetadataCreatorUtils.getPagedResult();
     private final MetadataFilter metadataFilter = MetadataCreatorUtils.getMetadataFilter(ID);

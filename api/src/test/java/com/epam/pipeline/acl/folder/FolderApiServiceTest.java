@@ -60,28 +60,40 @@ public class FolderApiServiceTest extends AbstractAclTest {
     private static final long ID_4 = 4L;
     private static final long ID_5 = 5L;
     private static final long ID_6 = 6L;
+    private static final long ID_7 = 7L;
+    private static final long ID_8 = 8L;
+    private static final long ID_9 = 9L;
+    private static final long ID_10 = 10L;
+    private static final long ID_11 = 11L;
+    private static final long ID_12 = 12L;
+    private static final long ID_100 = 100L;
+    private static final long ID_110 = 110L;
     private static final String FOLDER_MANAGER = "FOLDER_MANAGER";
-    private final Folder folder = getFolder(ID, ANOTHER_SIMPLE_USER);
-    private final FolderWithMetadata folderWithMetadata = getFolderWithMetadata(ID, ANOTHER_SIMPLE_USER);
-    private final Folder emptyChildFolderWithoutPermission = getFolder(ID_3, ANOTHER_SIMPLE_USER);
+    private final Folder folder = getFolder(ID, ID_100, ANOTHER_SIMPLE_USER);
+    final Folder folder10 = getFolder(ID_100, ID_110, ANOTHER_SIMPLE_USER);
+    private final FolderWithMetadata folderWithMetadata = getFolderWithMetadata(ID, ID_110, ANOTHER_SIMPLE_USER);
+    private final Folder emptyChildFolderWithoutPermission = getFolder(ID_3, ID, ANOTHER_SIMPLE_USER);
     private final Pipeline pipelineRead1 = getPipeline(ID, ANOTHER_SIMPLE_USER);
-    private final Pipeline pipelineRead2 = getPipeline(ID, ANOTHER_SIMPLE_USER);
-    private final Pipeline pipelineWithoutPermission1 = getPipeline(ID_2, ANOTHER_SIMPLE_USER);
-    private final Pipeline pipelineWithoutPermission2 = getPipeline(ID_2, ANOTHER_SIMPLE_USER);
-    private final S3bucketDataStorage storageRead1 = getS3bucketDataStorage(ID_3, ANOTHER_SIMPLE_USER);
-    private final S3bucketDataStorage storageRead2 = getS3bucketDataStorage(ID_3, ANOTHER_SIMPLE_USER);
-    private final S3bucketDataStorage storageWithoutPermission1 = getS3bucketDataStorage(ID_4, ANOTHER_SIMPLE_USER);
-    private final S3bucketDataStorage storageWithoutPermission2 = getS3bucketDataStorage(ID_4, ANOTHER_SIMPLE_USER);
-    private final RunConfiguration runConfigRead1 = getRunConfiguration(ID_5, ANOTHER_SIMPLE_USER);
-    private final RunConfiguration runConfigRead2 = getRunConfiguration(ID_5, ANOTHER_SIMPLE_USER);
-    private final RunConfiguration runConfigWithoutPermission1 = getRunConfiguration(ID_6, ANOTHER_SIMPLE_USER);
-    private final RunConfiguration runConfigWithoutPermission2 = getRunConfiguration(ID_6, ANOTHER_SIMPLE_USER);
+    private final Pipeline pipelineRead2 = getPipeline(ID_2, ANOTHER_SIMPLE_USER);
+    private final Pipeline pipelineWithoutPermission1 = getPipeline(ID_3, ANOTHER_SIMPLE_USER);
+    private final Pipeline pipelineWithoutPermission2 = getPipeline(ID_4, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage storageRead1 = getS3bucketDataStorage(ID_5, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage storageRead2 = getS3bucketDataStorage(ID_6, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage storageWithoutPermission1 = getS3bucketDataStorage(ID_7, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage storageWithoutPermission2 = getS3bucketDataStorage(ID_8, ANOTHER_SIMPLE_USER);
+    private final RunConfiguration runConfigRead1 = getRunConfiguration(ID_9, ANOTHER_SIMPLE_USER);
+    private final RunConfiguration runConfigRead2 = getRunConfiguration(ID_10, ANOTHER_SIMPLE_USER);
+    private final RunConfiguration runConfigWithoutPermission1 = getRunConfiguration(ID_11, ANOTHER_SIMPLE_USER);
+    private final RunConfiguration runConfigWithoutPermission2 = getRunConfiguration(ID_12, ANOTHER_SIMPLE_USER);
     private final List<AbstractSecuredEntity> entitiesWithPermission = Arrays.asList(pipelineRead2,
                                                                                      storageRead2,
                                                                                      runConfigRead2);
     private final List<AbstractSecuredEntity> allEntities = Arrays.asList(pipelineRead1, pipelineWithoutPermission1,
                                                                           storageRead1, storageWithoutPermission1,
-                                                                          runConfigRead1, runConfigWithoutPermission2);
+                                                                          runConfigRead1, runConfigWithoutPermission1);
+    private final List<AbstractSecuredEntity> allEntities2 = Arrays.asList(pipelineRead2, pipelineWithoutPermission2,
+                                                                           storageRead2, storageWithoutPermission2,
+                                                                           runConfigRead2, runConfigWithoutPermission2);
 
     @Autowired
     private FolderManager mockFolderManager;
@@ -104,6 +116,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldCreateForManagerWhenPermissionIsGranted() {
         doReturn(folder).when(mockFolderManager).create(folder);
+        initAclEntity(folder10, AclPermission.WRITE);
         initAclEntity(folder, AclPermission.WRITE);
 
         assertThat(folderApiService.create(folder)).isEqualTo(folder);
@@ -118,6 +131,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCreateWhenPermissionIsNotGranted() {
+        initAclEntity(folder10);
         initAclEntity(folder);
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.create(folder));
@@ -126,8 +140,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCreateWhenParentIdIsNull() {
-        final Folder folder = getFolder(ID, ANOTHER_SIMPLE_USER);
-        folder.setParentId(null);
+        final Folder folder = getFolder(ID, null, ANOTHER_SIMPLE_USER);
         initAclEntity(folder, AclPermission.WRITE);
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.create(folder));
@@ -145,6 +158,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldCreateFromTemplateForManagerWhenPermissionIsGranted() {
         doReturn(folder).when(mockFolderManager).createFromTemplate(folder, TEST_STRING);
+        initAclEntity(folder10, AclPermission.WRITE);
         initAclEntity(folder, AclPermission.WRITE);
 
         assertThat(folderApiService.createFromTemplate(folder, TEST_STRING)).isEqualTo(folder);
@@ -159,6 +173,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCreateFromTemplateWhenPermissionIsNotGranted() {
+        initAclEntity(folder10);
         initAclEntity(folder);
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.createFromTemplate(folder, TEST_STRING));
@@ -167,8 +182,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCreateFromTemplateWhenParentIdIsNull() {
-        final Folder folder = getFolder(ID, ANOTHER_SIMPLE_USER);
-        folder.setParentId(null);
+        final Folder folder = getFolder(ID, null, ANOTHER_SIMPLE_USER);
         initAclEntity(folder, AclPermission.WRITE);
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.createFromTemplate(folder, TEST_STRING));
@@ -248,12 +262,13 @@ public class FolderApiServiceTest extends AbstractAclTest {
         final FolderWithMetadata returnedFolder = folderApiService.getProject(ID, AclClass.FOLDER);
         final Map<Long, AbstractHierarchicalEntity> childrenById = returnedFolder.getChildren().stream()
                 .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
+        final List<? extends AbstractSecuredEntity> withoutPermissionLeaves =
+                childrenById.get(childFolderWithoutPermission.getId()).getLeaves();
 
         assertThat(returnedFolder).isEqualTo(parentFolder);
-        assertThat(childrenById.get(childFolderWithPermission.getId())).isEqualTo(childFolderWithPermission);
-        assertThat(childrenById.get(childFolderWithPermission.getId()).getLeaves()).isEqualTo(allEntities);
-        assertThat(childrenById.get(childFolderWithoutPermission.getId())).isEqualTo(childFolderWithoutPermission);
-        assertThat(childrenById.get(childFolderWithoutPermission.getId()).getLeaves()).isEqualTo(allEntities);
+        assertTreeForFolderWithReadPermission(childrenById.get(childFolderWithPermission.getId()));
+        assertThat(withoutPermissionLeaves).isEqualTo(allEntities2);
+        assertAclMaskForLeaves(withoutPermissionLeaves);
         assertThat(childrenById.get(emptyChildFolderWithoutPermission.getId()))
                 .isEqualTo(emptyChildFolderWithoutPermission);
     }
@@ -278,7 +293,6 @@ public class FolderApiServiceTest extends AbstractAclTest {
         initAclEntity(emptyChildFolderWithoutPermission);
         initEntities();
         mockSecurityContext();
-
 
         final Folder returnedFolder = folderApiService.loadTree();
         final Map<Long, AbstractHierarchicalEntity> childrenById = returnedFolder.getChildren().stream()
@@ -341,7 +355,6 @@ public class FolderApiServiceTest extends AbstractAclTest {
         initAclEntity(emptyChildFolderWithoutPermission);
         initEntities();
         mockSecurityContext();
-
 
         final Folder returnedFolder = folderApiService.load(ID);
         final Map<Long, AbstractHierarchicalEntity> childrenById = returnedFolder.getChildren().stream()
@@ -423,8 +436,8 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDeleteForceForManagerWhenPermissionForChildIsGranted() {
-        final Folder folder = getFolder(ID, ANOTHER_SIMPLE_USER);
-        final Folder childFolder = getFolder(ID, ANOTHER_SIMPLE_USER);
+        final Folder folder = getFolder(ID, ID_100, ANOTHER_SIMPLE_USER);
+        final Folder childFolder = getFolder(ID_2, ID, ANOTHER_SIMPLE_USER);
         folder.setChildFolders(Collections.singletonList(childFolder));
         doReturn(childFolder).when(mockFolderManager).load(ID);
         doReturn(folder).when(mockFolderManager).deleteForce(ID);
@@ -443,8 +456,8 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyDeleteForceWhenPermissionForChildIsNotGranted() {
-        final Folder folder = getFolder(ID, ANOTHER_SIMPLE_USER);
-        final Folder childFolder = getFolder(ID, ANOTHER_SIMPLE_USER);
+        final Folder folder = getFolder(ID, ID_100, ANOTHER_SIMPLE_USER);
+        final Folder childFolder = getFolder(ID_2, ID, ANOTHER_SIMPLE_USER);
         folder.setChildFolders(Collections.singletonList(childFolder));
         doReturn(childFolder).when(mockFolderManager).load(ID);
         doReturn(folder).when(mockFolderManager).deleteForce(ID);
@@ -465,7 +478,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldCloneFolderForManagerWhenPermissionIsGranted() {
-        final Folder destinationFolder = getFolder(ID_2, ANOTHER_SIMPLE_USER);
+        final Folder destinationFolder = getFolder(ID_2, ID, ANOTHER_SIMPLE_USER);
         doReturn(folder).when(mockFolderManager).cloneFolder(ID, ID_2, TEST_STRING);
         initAclEntity(folder, AclPermission.READ);
         initAclEntity(destinationFolder, AclPermission.WRITE);
@@ -482,7 +495,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCloneFolderForManagerWhenDestinationFolderPermissionIsNotGranted() {
-        final Folder destinationFolder = getFolder(ID_2, ANOTHER_SIMPLE_USER);
+        final Folder destinationFolder = getFolder(ID_2, ID, ANOTHER_SIMPLE_USER);
         doReturn(folder).when(mockFolderManager).cloneFolder(ID, ID_2, TEST_STRING);
         initAclEntity(folder, AclPermission.READ);
         initAclEntity(destinationFolder);
@@ -493,7 +506,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCloneFolderForManagerWhenTargetFolderPermissionIsNotGranted() {
-        final Folder destinationFolder = getFolder(ID_2, ANOTHER_SIMPLE_USER);
+        final Folder destinationFolder = getFolder(ID_2, ID, ANOTHER_SIMPLE_USER);
         doReturn(folder).when(mockFolderManager).cloneFolder(ID, ID_2, TEST_STRING);
         initAclEntity(folder);
         initAclEntity(destinationFolder, AclPermission.WRITE);
@@ -579,7 +592,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     }
 
     private FolderWithMetadata initFolderWithReadPermission() {
-        final FolderWithMetadata childFolderWithPermission = getFolderWithMetadata(ID, ANOTHER_SIMPLE_USER);
+        final FolderWithMetadata childFolderWithPermission = getFolderWithMetadata(ID, ID_3, ANOTHER_SIMPLE_USER);
         childFolderWithPermission.setConfigurations(Arrays.asList(runConfigRead1, runConfigWithoutPermission1));
         childFolderWithPermission.setStorages(Arrays.asList(storageRead1, storageWithoutPermission1));
         childFolderWithPermission.setPipelines(Arrays.asList(pipelineRead1, pipelineWithoutPermission1));
@@ -588,7 +601,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     }
 
     private FolderWithMetadata initFolderWithoutReadPermission() {
-        final FolderWithMetadata childFolderWithoutPermission = getFolderWithMetadata(ID_2, ANOTHER_SIMPLE_USER);
+        final FolderWithMetadata childFolderWithoutPermission = getFolderWithMetadata(ID_2, ID_3, ANOTHER_SIMPLE_USER);
         childFolderWithoutPermission.setConfigurations(Arrays.asList(runConfigRead2, runConfigWithoutPermission2));
         childFolderWithoutPermission.setStorages(Arrays.asList(storageRead2, storageWithoutPermission2));
         childFolderWithoutPermission.setPipelines(Arrays.asList(pipelineRead2, pipelineWithoutPermission2));
@@ -597,9 +610,8 @@ public class FolderApiServiceTest extends AbstractAclTest {
     }
 
     private FolderWithMetadata initParentFolder(final List<Folder> folders) {
-        final FolderWithMetadata parentFolder = getFolderWithMetadata(ID_3, ANOTHER_SIMPLE_USER);
+        final FolderWithMetadata parentFolder = getFolderWithMetadata(ID_3, ID_110, ANOTHER_SIMPLE_USER);
         parentFolder.setChildFolders(folders);
-        initAclEntity(parentFolder);
         return parentFolder;
     }
 
