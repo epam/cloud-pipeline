@@ -103,7 +103,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
             case XLS:
                 return xlsStatsWriter.convertStatsToFile(monitoringStats);
             default:
-                throw new IllegalArgumentException("Unsupported report type!");
+                throw new IllegalArgumentException(
+                    messageHelper.getMessage(MessageConstants.ERROR_UNSUPPORTED_STATS_FILE_TYPE));
         }
     }
 

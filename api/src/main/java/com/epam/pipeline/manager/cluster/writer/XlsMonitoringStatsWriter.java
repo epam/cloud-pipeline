@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster.writer;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -63,8 +65,14 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
     private static final int DISK_PRECISION = 2;
     private static final String DISK_NAME_TEMPLATE = "%s[%.2fGb]";
 
-    @Value("${monitoring.stats.export.xls.template}")
-    private String templatePath;
+    private final String templatePath;
+    private final MessageHelper messageHelper;
+
+    public XlsMonitoringStatsWriter(final @Value("${monitoring.stats.export.xls.template}") String templatePath,
+                                    final MessageHelper messageHelper) {
+        this.templatePath = templatePath;
+        this.messageHelper = messageHelper;
+    }
 
     @Override
     public InputStream convertStatsToFile(final List<MonitoringStats> stats) {
@@ -77,7 +85,7 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
             wb.write(bos);
             return new ByteArrayInputStream(bos.toByteArray());
         } catch (IOException | InvalidFormatException e) {
-            throw new IllegalStateException();
+            throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_STATS_FILE_XLS_CONVERSION));
         }
     }
 
