@@ -20,11 +20,11 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
 import org.apache.poi.hssf.util.CellReference;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -38,13 +38,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,12 +53,13 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
     private static final String CPU_CONVERSION_FORMULA = "DATA!%c%d/100";
     private static final String MEM_CONVERSION_FORMULA = "DATA!E%d*DATA!%c%d/100/1073741824";
     private static final String NET_CONVERSION_FORMULA = "DATA!%s/1048576";
+    private static final String DISK_USED_FORMULA = "DATA!%s/1073741824*DATA!%s/100";
+    private static final String DISK_FREE_FORMULA = "DATA!%s/1073741824*(100-DATA!%s)/100";
     private static final Character CPU_AVG_COLUMN = 'C';
     private static final Character CPU_MAX_COLUMN = 'D';
     private static final Character MEM_AVG_COLUMN = 'F';
     private static final Character MEM_MAX_COLUMN = 'G';
     private static final long BYTES_IN_GB = 1L << 30;
-    private static final int DISK_PRECISION = 2;
     private static final String DISK_NAME_TEMPLATE = "%s[%.2fGb]";
 
     private final String templatePath;
@@ -81,6 +78,7 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
             fillInRawData(wb, stats);
             fillInScaledData(wb, stats);
             fillInDiskStats(wb, stats);
+            fillInEmptyCells(wb, stats);
             HSSFFormulaEvaluator.evaluateAllFormulaCells(wb);
             wb.write(bos);
             return new ByteArrayInputStream(bos.toByteArray());
@@ -125,6 +123,8 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
                     cell.setCellType(CellType.NUMERIC);
                     if (StringUtils.isNotEmpty(statsRow[j])) {
                         cell.setCellValue(Double.parseDouble(statsRow[j]));
+                    } else {
+                        cell.setCellValue(Double.NaN);
                     }
                 } else {
                     cell.setCellValue(statsRow[j]);
@@ -134,40 +134,52 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
     }
 
     private void fillInDiskStats(final Workbook wb, final List<MonitoringStats> stats) {
+        final Sheet rawDataSheet = wb.getSheet(RAW_DATA_SHEET);
         final Sheet diskSheet = wb.getSheet(DISK_DATA_SHEET);
-        final Map<String, MonitoringStats.DisksUsage.DiskStats> disksSummary = getLatestStatsForEachDisk(stats);
-        final AtomicInteger rowIndent = new AtomicInteger(0);
-        disksSummary.forEach((name, usageStats) -> {
-            final double capacityGb = usageStats.getCapacity() * 1.0 / BYTES_IN_GB;
-            final double usedGb = usageStats.getUsableSpace() * 1.0 / BYTES_IN_GB;
-            final double freeGb = capacityGb - usedGb;
-
-            final Row diskSummaryRow = diskSheet.createRow(1 + rowIndent.getAndAdd(1));
-            final Cell diskNameCell = diskSummaryRow.createCell(0);
-            diskNameCell.setCellValue(String.format(DISK_NAME_TEMPLATE, name, capacityGb));
-            final Cell diskUsedCell = diskSummaryRow.createCell(1);
-            diskUsedCell.setCellValue(scaleDiskValue(usedGb));
-            final Cell diskFreeCell = diskSummaryRow.createCell(2);
-            diskFreeCell.setCellValue(scaleDiskValue(freeGb));
-        });
+        final List<String> diskNames = getSortedDiskNamesStream(stats).collect(Collectors.toList());
+        final CellStyle doublePrecisionStyle = wb.createCellStyle();
+        doublePrecisionStyle.setDataFormat(wb.createDataFormat().getFormat("0.00"));
+        for (int i = 0; i < diskNames.size(); i++) {
+            for (int j = stats.size(); j > 0; j--) {
+                final Row row = rawDataSheet.getRow(j);
+                final Cell totalDiskCell = row.getCell(COMMON_STATS_HEADER.size() + i * 2);
+                if (!totalDiskCell.getCellTypeEnum().equals(CellType.ERROR)) {
+                    final double capacityBytes = totalDiskCell.getNumericCellValue();
+                    final int rowIndex = j + 1;
+                    final String totalDiskCellAddress =
+                        CellReference.convertNumToColString(totalDiskCell.getColumnIndex()) + rowIndex;
+                    final String usedDiskCellAddress =
+                        CellReference.convertNumToColString(totalDiskCell.getColumnIndex() + 1) + rowIndex;
+                    final double capacityGb = capacityBytes / BYTES_IN_GB;
+                    final Row diskSummaryRow = diskSheet.createRow(1 + i);
+                    final Cell diskNameCell = diskSummaryRow.createCell(0);
+                    diskNameCell.setCellValue(String.format(DISK_NAME_TEMPLATE, diskNames.get(i), capacityGb));
+                    final Cell diskUsedCell = diskSummaryRow.createCell(1);
+                    diskUsedCell
+                        .setCellFormula(String.format(DISK_USED_FORMULA, totalDiskCellAddress, usedDiskCellAddress));
+                    diskUsedCell.setCellStyle(doublePrecisionStyle);
+                    final Cell diskFreeCell = diskSummaryRow.createCell(2);
+                    diskFreeCell
+                        .setCellFormula(String.format(DISK_FREE_FORMULA, totalDiskCellAddress, usedDiskCellAddress));
+                    diskFreeCell.setCellStyle(doublePrecisionStyle);
+                    break;
+                }
+            }
+        }
     }
 
-    private Map<String, MonitoringStats.DisksUsage.DiskStats> getLatestStatsForEachDisk(
-        final List<MonitoringStats> stats) {
-        return stats.stream()
-            .flatMap(stat -> stat.getDisksUsage()
-                .getStatsByDevices()
-                .entrySet()
-                .stream()
-                .map(e -> Pair.of(stat.getStartTime(), e)))
-            .sorted(Map.Entry.comparingByKey(Comparator.nullsFirst(Comparator.naturalOrder())))
-            .collect(Collectors.toMap(pair -> pair.getValue().getKey(),
-                pair -> pair.getValue().getValue(),
-                (s1, s2) -> s2));
-    }
-
-    private double scaleDiskValue(final double valueGb) {
-        return BigDecimal.valueOf(valueGb).setScale(DISK_PRECISION, RoundingMode.HALF_UP).doubleValue();
+    private void fillInEmptyCells(final Workbook wb, final List<MonitoringStats> stats) {
+        final Sheet rawDataSheet = wb.getSheet(RAW_DATA_SHEET);
+        for (int i = 1; i <= stats.size(); i++) {
+            final Row row = rawDataSheet.getRow(i);
+            final short lastCellNum = row.getLastCellNum();
+            for (int j = 1; j < lastCellNum; j++) {
+                final Cell cell = row.getCell(j);
+                if (cell.getCellTypeEnum().equals(CellType.ERROR)) {
+                    cell.setCellValue(0);
+                }
+            }
+        }
     }
 
     private String getInterfaceConversionFormula(final String colChar, final int i) {

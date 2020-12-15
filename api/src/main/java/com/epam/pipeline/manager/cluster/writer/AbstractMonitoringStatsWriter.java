@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public abstract class AbstractMonitoringStatsWriter {
 
@@ -54,15 +55,19 @@ public abstract class AbstractMonitoringStatsWriter {
         return allLines;
     }
 
-    private MonitoringStatsHeader extractHeader(final List<MonitoringStats> stats) {
-        final List<String> headerColumns = new ArrayList<>(COMMON_STATS_HEADER);
-        final List<String> disks = stats.stream()
+    protected Stream<String> getSortedDiskNamesStream(final List<MonitoringStats> stats) {
+        return stats.stream()
             .map(MonitoringStats::getDisksUsage)
             .map(MonitoringStats.DisksUsage::getStatsByDevices)
             .map(Map::keySet)
             .flatMap(Set::stream)
             .distinct()
-            .sorted()
+            .sorted();
+    }
+
+    private MonitoringStatsHeader extractHeader(final List<MonitoringStats> stats) {
+        final List<String> headerColumns = new ArrayList<>(COMMON_STATS_HEADER);
+        final List<String> disks = getSortedDiskNamesStream(stats)
             .peek(disk -> {
                 headerColumns.add(String.format(DISK_TOTAL_HEADER_TEMPLATE, disk));
                 headerColumns.add(String.format(DISK_USAGE_HEADER_TEMPLATE, disk));
