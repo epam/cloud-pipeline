@@ -61,7 +61,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     private static final long ID_4 = 4L;
     private static final String FOLDER_MANAGER = "FOLDER_MANAGER";
     private final Folder folder = getFolder(ID, ID_3, ANOTHER_SIMPLE_USER);
-    final Folder folder10 = getFolder(ID_3, ID_4, ANOTHER_SIMPLE_USER);
+    private final Folder anotherFolder = getFolder(ID_3, ID_4, ANOTHER_SIMPLE_USER);
     private final FolderWithMetadata folderWithMetadata = getFolderWithMetadata(ID, ID_4, ANOTHER_SIMPLE_USER);
     private final Folder emptyChildFolderWithoutPermission = getFolder(ID_3, ID, ANOTHER_SIMPLE_USER);
     private final Pipeline pipelineRead1 = getPipeline(ID, ANOTHER_SIMPLE_USER);
@@ -107,7 +107,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldCreateForManagerWhenPermissionIsGranted() {
         doReturn(folder).when(mockFolderManager).create(folder);
-        initAclEntity(folder10, AclPermission.WRITE);
+        initAclEntity(anotherFolder, AclPermission.WRITE);
         initAclEntity(folder, AclPermission.WRITE);
 
         assertThat(folderApiService.create(folder)).isEqualTo(folder);
@@ -122,7 +122,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCreateWhenPermissionIsNotGranted() {
-        initAclEntity(folder10);
+        initAclEntity(anotherFolder);
         initAclEntity(folder);
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.create(folder));
@@ -149,7 +149,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldCreateFromTemplateForManagerWhenPermissionIsGranted() {
         doReturn(folder).when(mockFolderManager).createFromTemplate(folder, TEST_STRING);
-        initAclEntity(folder10, AclPermission.WRITE);
+        initAclEntity(anotherFolder, AclPermission.WRITE);
         initAclEntity(folder, AclPermission.WRITE);
 
         assertThat(folderApiService.createFromTemplate(folder, TEST_STRING)).isEqualTo(folder);
@@ -164,7 +164,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = FOLDER_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCreateFromTemplateWhenPermissionIsNotGranted() {
-        initAclEntity(folder10);
+        initAclEntity(anotherFolder);
         initAclEntity(folder);
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.createFromTemplate(folder, TEST_STRING));
