@@ -47,6 +47,7 @@ public final class CommonCreatorConstants {
     public static final long ID_2 = 2L;
     public static final long ID_3 = 3L;
     public static final int TEST_INT = 4;
+    public static final int NO_PERMISSION = 0;
     public static final int READ_PERMISSION = 1;
     public static final int WRITE_PERMISSION = 2;
     public static final int EXECUTE_PERMISSION = 4;
