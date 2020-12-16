@@ -42,6 +42,7 @@ import com.epam.pipeline.test.creator.git.GitCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -55,7 +56,6 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_ARRAY;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -117,7 +117,6 @@ public class PipelineControllerTest extends AbstractControllerTest {
     private static final String URL = "url";
     private static final String PARENT_ID = "parentId";
     private static final String NAME = "name";
-    private static final String FILE_SIZE = "0 Kb";
     private static final String BYTE_LIMIT = "byteLimit";
 
     private final Pipeline pipeline = PipelineCreatorUtils.getPipeline();
@@ -156,10 +155,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldRegisterPipeline() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(pipelineVO);
         doReturn(pipeline).when(mockPipelineApiService).create(pipelineVO);
 
-        final MvcResult mvcResult = performRequest(post(PIPELINE_REGISTER_URL).content(content));
+        final MvcResult mvcResult = performRequest(post(PIPELINE_REGISTER_URL).content(stringOf(pipelineVO)));
 
         verify(mockPipelineApiService).create(pipelineVO);
         assertResponse(mvcResult, pipeline, PipelineCreatorUtils.PIPELINE_INSTANCE_TYPE);
@@ -173,10 +171,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldCheckPipelineRepository() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(repositoryVO);
         doReturn(repositoryVO).when(mockPipelineApiService).check(repositoryVO);
 
-        final MvcResult mvcResult = performRequest(post(PIPELINE_CHECK_URL).content(content));
+        final MvcResult mvcResult = performRequest(post(PIPELINE_CHECK_URL).content(stringOf(repositoryVO)));
 
         verify(mockPipelineApiService).check(repositoryVO);
         assertResponse(mvcResult, repositoryVO, PipelineCreatorUtils.CHECK_REPOSITORY_INSTANCE_TYPE);
@@ -189,11 +186,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldUpdatePipeline() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(pipelineVO);
+    public void shouldUpdatePipeline() {
         doReturn(pipeline).when(mockPipelineApiService).update(pipelineVO);
 
-        final MvcResult mvcResult = performRequest(post(PIPELINE_UPDATE_URL).content(content));
+        final MvcResult mvcResult = performRequest(post(PIPELINE_UPDATE_URL).content(stringOf(pipelineVO)));
 
         verify(mockPipelineApiService).update(pipelineVO);
         assertResponse(mvcResult, pipeline, PipelineCreatorUtils.PIPELINE_INSTANCE_TYPE);
@@ -206,11 +202,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldUpdatePipelineToken() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(pipelineVO);
+    public void shouldUpdatePipelineToken() {
         doReturn(pipeline).when(mockPipelineApiService).updateToken(pipelineVO);
 
-        final MvcResult mvcResult = performRequest(post(PIPELINE_UPDATE_TOKEN_URL).content(content));
+        final MvcResult mvcResult = performRequest(post(PIPELINE_UPDATE_TOKEN_URL).content(stringOf(pipelineVO)));
 
         verify(mockPipelineApiService).updateToken(pipelineVO);
         assertResponse(mvcResult, pipeline, PipelineCreatorUtils.PIPELINE_INSTANCE_TYPE);
@@ -392,13 +387,12 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGetPipelineEstimatedPrice() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(instance);
         doReturn(instancePrice).when(mockPipelineApiService)
                 .getInstanceEstimatedPrice(ID, TEST_STRING, TEST_STRING, TEST_STRING, TEST_INT, true, ID);
 
-        final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_PRICE_URL, ID)).content(content)
-                .params(multiValueMapOf(VERSION, TEST_STRING,
-                                        CONFIG, TEST_STRING)));
+        final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_PRICE_URL, ID))
+                .content(stringOf(instance)).params(multiValueMapOf(VERSION, TEST_STRING,
+                                                                    CONFIG, TEST_STRING)));
 
         verify(mockPipelineApiService)
                 .getInstanceEstimatedPrice(ID, TEST_STRING, TEST_STRING, TEST_STRING, TEST_INT, true, ID);
@@ -412,12 +406,11 @@ public class PipelineControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGetEstimatedPrice() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(instance);
+    public void shouldGetEstimatedPrice() {
         doReturn(instancePrice).when(mockPipelineApiService)
                 .getInstanceEstimatedPrice(TEST_STRING, TEST_INT, true, ID);
 
-        final MvcResult mvcResult = performRequest(post(PIPELINE_PRICE_URL).content(content));
+        final MvcResult mvcResult = performRequest(post(PIPELINE_PRICE_URL).content(stringOf(instance)));
 
         verify(mockPipelineApiService).getInstanceEstimatedPrice(TEST_STRING, TEST_INT, true, ID);
         assertResponse(mvcResult, instancePrice, PipelineCreatorUtils.INSTANCE_PRICE_TYPE);
@@ -468,10 +461,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldCreateOrRenamePipelineFolder() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(sourceItemVO);
         doReturn(gitCommitEntry).when(mockPipelineApiService).createOrRenameFolder(ID, sourceItemVO);
 
-        final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FOLDER_URL, ID)).content(content));
+        final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FOLDER_URL, ID))
+                .content(stringOf(sourceItemVO)));
 
         verify(mockPipelineApiService).createOrRenameFolder(ID, sourceItemVO);
         assertResponse(mvcResult, gitCommitEntry, GitCreatorUtils.GIT_COMMIT_ENTRY_TYPE);
@@ -485,10 +478,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldRemovePipelineFolder() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(sourceItemVO);
         doReturn(gitCommitEntry).when(mockPipelineApiService).removeFolder(ID, TEST_STRING, TEST_STRING, TEST_STRING);
 
-        final MvcResult mvcResult = performRequest(delete(String.format(PIPELINE_ID_FOLDER_URL, ID)).content(content));
+        final MvcResult mvcResult = performRequest(delete(String.format(PIPELINE_ID_FOLDER_URL, ID))
+                .content(stringOf(sourceItemVO)));
 
         verify(mockPipelineApiService).removeFolder(ID, TEST_STRING, TEST_STRING, TEST_STRING);
         assertResponse(mvcResult, gitCommitEntry, GitCreatorUtils.GIT_COMMIT_ENTRY_TYPE);
@@ -524,11 +517,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(String.format(PIPELINE_ID_FILE_URL, ID))
                 .params(multiValueMapOf(VERSION, TEST_STRING,
                                         PATH, TEST_STRING)));
-        final String contentAsString = mvcResult.getResponse().getContentAsString();
-        final byte[] returnedEntityBody = objectMapper.readValue(contentAsString, byte[].class);
 
         verify(mockPipelineApiService).getPipelineFileContents(ID, TEST_STRING, TEST_STRING);
-        assertThat(returnedEntityBody).isEqualTo(TEST_ARRAY);
+        assertResponseAsBytes(mvcResult, TEST_ARRAY);
     }
 
     @Test
@@ -546,11 +537,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
                 .params(multiValueMapOf(VERSION, TEST_STRING,
                                         PATH, TEST_STRING,
                                         BYTE_LIMIT, TEST_INT)));
-        final String contentAsString = mvcResult.getResponse().getContentAsString();
-        final byte[] returnedEntityBody = objectMapper.readValue(contentAsString, byte[].class);
 
         verify(mockPipelineApiService).getTruncatedPipelineFileContent(ID, TEST_STRING, TEST_STRING, TEST_INT);
-        assertThat(returnedEntityBody).isEqualTo(TEST_ARRAY);
+        assertResponseAsBytes(mvcResult, TEST_ARRAY);
     }
 
     @Test
@@ -561,10 +550,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldModifyPipelineFile() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(sourceItemVO);
         doReturn(gitCommitEntry).when(mockPipelineApiService).modifyFile(ID, sourceItemVO);
 
-        final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FILE_URL, ID)).content(content));
+        final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FILE_URL, ID))
+                .content(stringOf(sourceItemVO)));
 
         verify(mockPipelineApiService).modifyFile(ID, sourceItemVO);
         assertResponse(mvcResult, gitCommitEntry, GitCreatorUtils.GIT_COMMIT_ENTRY_TYPE);
@@ -578,10 +567,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldModifyPipelineFiles() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(sourceItemsVO);
         doReturn(gitCommitEntry).when(mockPipelineApiService).modifyFiles(ID, sourceItemsVO);
 
-        final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FILES_URL, ID)).content(content));
+        final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FILES_URL, ID))
+                .content(stringOf(sourceItemsVO)));
 
         verify(mockPipelineApiService).modifyFiles(ID, sourceItemsVO);
         assertResponse(mvcResult, gitCommitEntry, GitCreatorUtils.GIT_COMMIT_ENTRY_TYPE);
@@ -600,12 +589,11 @@ public class PipelineControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FILE_UPLOAD_URL, ID))
                         .params(multiValueMapOf(PATH, TEST_STRING)).content(MULTIPART_CONTENT),
                 MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
+        final ArgumentCaptor<UploadFileMetadata> captor = ArgumentCaptor.forClass(UploadFileMetadata.class);
 
-        verify(mockPipelineApiService).uploadFiles(eq(ID), eq(TEST_STRING), anyListOf(UploadFileMetadata.class));
-        final String expectedResult = mvcResult.getResponse().getContentAsString();
-        assertThat(expectedResult).contains(MULTIPART_CONTENT_FILE_NAME)
-                .contains(FILE_SIZE)
-                .contains(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        verify(mockPipelineApiService).uploadFiles(eq(ID), eq(TEST_STRING),
+                Collections.singletonList(captor.capture()));
+        assertResponse(mvcResult, "[{fileName=file.txt, fileSize=0 Kb, fileType=application/octet-stream}]");
     }
 
     @Test
@@ -616,10 +604,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldDeletePipelineFile() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(sourceItemVO);
         doReturn(gitCommitEntry).when(mockPipelineApiService).deleteFile(ID, TEST_STRING, TEST_STRING, TEST_STRING);
 
-        final MvcResult mvcResult = performRequest(delete(String.format(PIPELINE_ID_FILE_URL, ID)).content(content));
+        final MvcResult mvcResult = performRequest(delete(String.format(PIPELINE_ID_FILE_URL, ID))
+                .content(stringOf(sourceItemVO)));
 
         verify(mockPipelineApiService).deleteFile(ID, TEST_STRING, TEST_STRING, TEST_STRING);
         assertResponse(mvcResult, gitCommitEntry, GitCreatorUtils.GIT_COMMIT_ENTRY_TYPE);
@@ -651,15 +639,14 @@ public class PipelineControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGenerateFileByTemplate() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(generateFileVO);
+    public void shouldGenerateFileByTemplate() {
         doReturn(TEST_ARRAY).when(mockPipelineApiService)
                 .fillTemplateForPipelineVersion(ID, TEST_STRING, TEST_STRING, generateFileVO);
 
         final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FILE_GENERATE_URL, ID))
-                        .content(content).params(multiValueMapOf(VERSION, TEST_STRING,
-                                                                 PATH, TEST_STRING)),
-                                                                 EXPECTED_CONTENT_TYPE,
+                        .content(stringOf(generateFileVO)).params(multiValueMapOf(VERSION, TEST_STRING,
+                                                                                  PATH, TEST_STRING)),
+                                                                                  EXPECTED_CONTENT_TYPE,
                                                                  MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
         verify(mockPipelineApiService).fillTemplateForPipelineVersion(ID, TEST_STRING, TEST_STRING, generateFileVO);
@@ -674,10 +661,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldRegisterPipelineVersion() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(pipelineVersionVO);
         doReturn(revision).when(mockPipelineApiService).registerPipelineVersion(pipelineVersionVO);
 
-        final MvcResult mvcResult = performRequest(post(PIPELINE_VERSION_REGISTER_URL).content(content));
+        final MvcResult mvcResult = performRequest(post(PIPELINE_VERSION_REGISTER_URL)
+                .content(stringOf(pipelineVersionVO)));
 
         verify(mockPipelineApiService).registerPipelineVersion(pipelineVersionVO);
         assertResponse(mvcResult, revision, PipelineCreatorUtils.REVISION_INSTANCE_TYPE);
@@ -723,11 +710,11 @@ public class PipelineControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldSavePipelineDocumentGenerationProperty() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(documentGenerationProperty);
+    public void shouldSavePipelineDocumentGenerationProperty() {
         doReturn(documentGenerationProperty).when(mockPipelineApiService).saveProperty(documentGenerationProperty);
 
-        final MvcResult mvcResult = performRequest(post(PIPELINE_TEMPLATE_PROPERTIES_URL).content(content));
+        final MvcResult mvcResult = performRequest(post(PIPELINE_TEMPLATE_PROPERTIES_URL)
+                .content(stringOf(documentGenerationProperty)));
 
         verify(mockPipelineApiService).saveProperty(documentGenerationProperty);
         assertResponse(mvcResult, documentGenerationProperty, PipelineCreatorUtils.DOCUMENT_GENERATION_PROPERTY_TYPE);
@@ -740,11 +727,11 @@ public class PipelineControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldDeletePipelineDocumentGenerationProperty() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(documentGenerationProperty);
+    public void shouldDeletePipelineDocumentGenerationProperty() {
         doReturn(documentGenerationProperty).when(mockPipelineApiService).deleteProperty(TEST_STRING, ID);
 
-        final MvcResult mvcResult = performRequest(delete(PIPELINE_TEMPLATE_PROPERTIES_URL).content(content));
+        final MvcResult mvcResult = performRequest(delete(PIPELINE_TEMPLATE_PROPERTIES_URL)
+                .content(stringOf(documentGenerationProperty)));
 
         verify(mockPipelineApiService).deleteProperty(TEST_STRING, ID);
         assertResponse(mvcResult, documentGenerationProperty, PipelineCreatorUtils.DOCUMENT_GENERATION_PROPERTY_TYPE);
@@ -823,5 +810,21 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailCopyPipelineForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(PIPELINE_ID_COPY_URL, ID)));
+    }
+
+    private void assertResponseAsBytes(MvcResult mvcResult, byte[] bytes) throws Exception {
+        final String contentAsString = mvcResult.getResponse().getContentAsString();
+        final byte[] returnedEntityBody = getObjectMapper().readValue(contentAsString, byte[].class);
+
+        assertThat(returnedEntityBody).isEqualTo(bytes);
+    }
+
+
+    private void assertResponse(MvcResult mvcResult, String expected) throws Exception {
+        final String expectedResult = mvcResult.getResponse().getContentAsString();
+
+        final List returnedEntityBody = getObjectMapper().readValue(expectedResult, List.class);
+
+        assertThat(returnedEntityBody.toString()).isEqualTo(expected);
     }
 }

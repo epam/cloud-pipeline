@@ -75,7 +75,7 @@ public abstract class AbstractControllerTest {
     private ObjectMapper deserializationMapper;
 
     @Autowired
-    protected JsonMapper objectMapper;
+    private JsonMapper objectMapper;
 
     @Autowired
     protected WebApplicationContext wac;
@@ -210,5 +210,10 @@ public abstract class AbstractControllerTest {
             }
         }
         return map;
+    }
+
+    @SneakyThrows
+    public String stringOf(Object object) {
+        return objectMapper.writeValueAsString(object);
     }
 }
