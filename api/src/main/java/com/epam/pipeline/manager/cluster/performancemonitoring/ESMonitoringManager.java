@@ -36,7 +36,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -67,7 +66,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
     private final XlsMonitoringStatsWriter xlsStatsWriter;
-    private CsvMonitoringStatsWriter csvStatsWriter = new CsvMonitoringStatsWriter();
+    private final CsvMonitoringStatsWriter csvStatsWriter;
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
@@ -99,7 +98,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final List<MonitoringStats> monitoringStats = getStats(nodeName, start, end, adjustedDuration);
         switch (type) {
             case CSV:
-                return convertStatsToCsv(monitoringStats);
+                return csvStatsWriter.convertStatsToFile(monitoringStats);
             case XLS:
                 return xlsStatsWriter.convertStatsToFile(monitoringStats);
             default:
@@ -254,14 +253,5 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         s3.setCapacity(s1.getCapacity() + s2.getCapacity());
         s3.setUsableSpace(s1.getUsableSpace() + s2.getUsableSpace());
         return s3;
-    }
-
-    private InputStream convertStatsToCsv(final List<MonitoringStats> monitoringStats) {
-        try {
-            return csvStatsWriter.convertStatsToFile(monitoringStats);
-        } catch (IOException e) {
-            throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_BAD_STATS_FILE_ENCODING),
-                                            e);
-        }
     }
 }

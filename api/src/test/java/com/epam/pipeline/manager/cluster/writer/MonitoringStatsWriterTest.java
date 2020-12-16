@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.manager.cluster.writer;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,10 +48,12 @@ public class MonitoringStatsWriterTest {
     private static final double HUNDRED_PERCENTS = 100.0;
     private static final int COMMON_INFO_SIZE = 7;
 
+    private final MessageHelper messageHelper = Mockito.mock(MessageHelper.class);
+    private final CsvMonitoringStatsWriter monitoringStatsWriter = new CsvMonitoringStatsWriter(messageHelper);
+
     @Test
     public void testMonitoringStatsToCsvConversion() {
         final List<MonitoringStats> stats = createStatsList();
-        final CsvMonitoringStatsWriter monitoringStatsWriter = new CsvMonitoringStatsWriter();
         final String csvInfo = monitoringStatsWriter.convertStatsToCsvString(stats);
         final String[] linesOfTables = csvInfo.split("\\n");
         Assert.assertEquals(3, linesOfTables.length);
@@ -98,7 +102,6 @@ public class MonitoringStatsWriterTest {
     @Test
     public void testEmptyStatsConversion() {
         final List<MonitoringStats> stats = Collections.emptyList();
-        final CsvMonitoringStatsWriter monitoringStatsWriter = new CsvMonitoringStatsWriter();
         Assert.assertEquals(StringUtils.EMPTY, monitoringStatsWriter.convertStatsToCsvString(stats));
     }
 

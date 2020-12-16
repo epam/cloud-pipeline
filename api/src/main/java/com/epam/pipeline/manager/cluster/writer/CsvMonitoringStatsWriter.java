@@ -17,23 +17,34 @@
 package com.epam.pipeline.manager.cluster.writer;
 
 import com.amazonaws.util.StringInputStream;
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.opencsv.CSVWriter;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
-@NoArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class CsvMonitoringStatsWriter extends AbstractMonitoringStatsWriter{
 
+    private final MessageHelper messageHelper;
+
     @Override
-    public InputStream convertStatsToFile(final List<MonitoringStats> stats) throws IOException {
-        return new StringInputStream(convertStatsToCsvString(stats));
+    public InputStream convertStatsToFile(final List<MonitoringStats> stats) {
+        try {
+            return new StringInputStream(convertStatsToCsvString(stats));
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_BAD_STATS_FILE_ENCODING),
+                                            e);
+        }
     }
 
     public String convertStatsToCsvString(final List<MonitoringStats> stats) {

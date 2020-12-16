@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +41,7 @@ public abstract class AbstractMonitoringStatsWriter {
     private static final String NETWORK_USAGE_OUT_HEADER_TEMPLATE = "%s_out[bytes]";
     private static final double HUNDRED_PERCENTS = 100.0;
 
-    public abstract InputStream convertStatsToFile(List<MonitoringStats> stats) throws IOException;
+    public abstract InputStream convertStatsToFile(List<MonitoringStats> stats);
 
     protected List<String[]> extractTable(final List<MonitoringStats> stats) {
         final List<String[]> allLines = new ArrayList<>();
