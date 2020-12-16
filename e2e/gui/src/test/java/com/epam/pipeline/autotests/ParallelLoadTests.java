@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Configuration;
-import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -32,7 +31,6 @@ import org.testng.annotations.Test;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.stream.IntStream;
@@ -112,7 +110,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         Configuration.startMaximized = true;
         setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
-        Selenide.open(C.ROOT_ADDRESS);
+        open(C.ROOT_ADDRESS);
     }
 
     @AfterClass(alwaysRun=true)
@@ -147,6 +145,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
             startTime = currentTimeMillis();
             tools()
                     .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings)
+                    .setTimeOut("3")
                     .launch(this)
                     .showLog(runId = getLastRunId())
                     .shouldHaveRunningStatus();
