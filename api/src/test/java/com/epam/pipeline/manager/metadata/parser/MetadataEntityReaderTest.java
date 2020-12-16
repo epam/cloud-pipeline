@@ -43,6 +43,16 @@ public class MetadataEntityReaderTest {
             "${d}Sample2\n",
             "${d}Sample3\n");
 
+    private static final List<String> DATA_WITH_OMITTED_CLASS_COLUMN = Arrays.asList(
+            "name\n",
+            "Sample1\n",
+            "Sample2\n",
+            "Sample3\n");
+    private static final String NAME_FIELD_NAME = "name";
+    private static final String TYPE_FIELD_NAME = "type";
+    private static final String PAIRS_FIELD_NAME = "pairs";
+    private static final String PATIENT_FIELD_NAME = "patient";
+
     private Folder parent = new Folder(1L);
     private MetadataClass metadataClass = new MetadataClass(1L, MetadataFileBuilder.SAMPLE_CLASS_NAME);
 
@@ -53,22 +63,22 @@ public class MetadataEntityReaderTest {
         InputStream tabData = prepareInputData(MetadataParsingUtils.TAB_DELIMITER);
         MetadataParsingResult tabEntities =
                 new MetadataEntityReader(MetadataParsingUtils.TAB_DELIMITER, parent, metadataClass)
-                        .readData(tabData, fields);
+                        .readData(tabData, fields, true);
         compareResults(expectedResult, tabEntities);
 
         InputStream csvData = prepareInputData(MetadataParsingUtils.CSV_DELIMITER);
         MetadataParsingResult csvEntities =
                 new MetadataEntityReader(MetadataParsingUtils.CSV_DELIMITER, parent, metadataClass)
-                        .readData(csvData, fields);
+                        .readData(csvData, fields, true);
         compareResults(expectedResult, csvEntities);
     }
 
     @Test
     public void readDataWithMissingIds() throws IOException {
         final InputStream data = prepareInputData(MetadataParsingUtils.TAB_DELIMITER, DATA_WITH_MISSING_IDS);
-        MetadataParsingResult entities =
+        final MetadataParsingResult entities =
                 new MetadataEntityReader(MetadataParsingUtils.TAB_DELIMITER, parent, metadataClass)
-                        .readData(data, getNameField());
+                        .readData(data, getNameField(), true);
 
         final Map<String, MetadataEntity> parsedEntitiesMap = entities.getEntities();
         final List<String> parsedEntityGeneratedIds = parsedEntitiesMap.keySet().stream()
@@ -80,6 +90,24 @@ public class MetadataEntityReaderTest {
             final MetadataEntity parsedEntity = parsedEntitiesMap.get(parsedEntityGeneratedId);
             assertTrue(StringUtils.isNotBlank(parsedEntityGeneratedId));
             assertEquals(parsedEntityGeneratedId, parsedEntity.getExternalId());
+        }
+    }
+
+    @Test
+    public void readDataWithOmittedClassColumn() throws IOException {
+        final InputStream data = prepareInputData(MetadataParsingUtils.TAB_DELIMITER, DATA_WITH_OMITTED_CLASS_COLUMN);
+        final MetadataParsingResult entities =
+                new MetadataEntityReader(MetadataParsingUtils.TAB_DELIMITER, parent, metadataClass)
+                        .readData(data, getNameFieldWithoutClassColumn(), false);
+
+        assertEquals(metadataClass, entities.getMetadataClass());
+        final Map<String, MetadataEntity> parsedEntitiesMap = entities.getEntities();
+        assertEquals(3, parsedEntitiesMap.size());
+        for (final String parsedEntityGeneratedId : parsedEntitiesMap.keySet()) {
+            final MetadataEntity parsedEntity = parsedEntitiesMap.get(parsedEntityGeneratedId);
+            assertTrue(StringUtils.isNotBlank(parsedEntityGeneratedId));
+            assertEquals(parsedEntityGeneratedId, parsedEntity.getExternalId());
+            assertTrue(StringUtils.isNotBlank(parsedEntity.getData().get(NAME_FIELD_NAME).getValue()));
         }
     }
 
@@ -97,17 +125,27 @@ public class MetadataEntityReaderTest {
     }
 
     private Map<Integer, EntityTypeField> getNameField() {
-        MetadataHeader fields = new MetadataHeader(MetadataFileBuilder.SAMPLE_CLASS_NAME);
-        fields.addField(1, new EntityTypeField("name", EntityTypeField.DEFAULT_TYPE, false, false));
+        MetadataHeader fields = new MetadataHeader(MetadataFileBuilder.SAMPLE_CLASS_NAME, true);
+        fields.addField(1, new EntityTypeField(NAME_FIELD_NAME, EntityTypeField.DEFAULT_TYPE, false, false));
+        return fields.getFields();
+    }
+
+    private Map<Integer, EntityTypeField> getNameFieldWithoutClassColumn() {
+        MetadataHeader fields = new MetadataHeader(MetadataFileBuilder.SAMPLE_CLASS_NAME, true);
+        fields.addField(0, new EntityTypeField(NAME_FIELD_NAME, EntityTypeField.DEFAULT_TYPE, false, false));
         return fields.getFields();
     }
 
     private Map<Integer, EntityTypeField> getFields() {
-        MetadataHeader fields = new MetadataHeader(MetadataFileBuilder.SAMPLE_CLASS_NAME);
-        fields.addField(1, new EntityTypeField("name", EntityTypeField.DEFAULT_TYPE, false, false));
-        fields.addField(2, new EntityTypeField("type", EntityTypeField.DEFAULT_TYPE, false, false));
-        fields.addField(3, new EntityTypeField("patient", MetadataFileBuilder.PARTICIPANT_CLASS_NAME, true, false));
-        fields.addField(4, new EntityTypeField("pairs", MetadataFileBuilder.PAIR_CLASS_NAME, true, true));
+        MetadataHeader fields = new MetadataHeader(MetadataFileBuilder.SAMPLE_CLASS_NAME, true);
+        fields.addField(1, 
+                new EntityTypeField(NAME_FIELD_NAME, EntityTypeField.DEFAULT_TYPE, false, false));
+        fields.addField(2, 
+                new EntityTypeField(TYPE_FIELD_NAME, EntityTypeField.DEFAULT_TYPE, false, false));
+        fields.addField(3, 
+                new EntityTypeField(PATIENT_FIELD_NAME, MetadataFileBuilder.PARTICIPANT_CLASS_NAME, true, false));
+        fields.addField(4, 
+                new EntityTypeField(PAIRS_FIELD_NAME, MetadataFileBuilder.PAIR_CLASS_NAME, true, true));
         return fields.getFields();
     }
 
@@ -133,10 +171,10 @@ public class MetadataEntityReaderTest {
         sample.setParent(parent);
         sample.setExternalId(id);
         Map<String, PipeConfValue> data = new HashMap<>();
-        data.put("name", new PipeConfValue(EntityTypeField.DEFAULT_TYPE, name));
-        data.put("type", new PipeConfValue(EntityTypeField.DEFAULT_TYPE, type));
-        data.put("patient", new PipeConfValue("Participant:ID", patient));
-        data.put("pairs", new PipeConfValue("Array[Pair]", pairs));
+        data.put(NAME_FIELD_NAME, new PipeConfValue(EntityTypeField.DEFAULT_TYPE, name));
+        data.put(TYPE_FIELD_NAME, new PipeConfValue(EntityTypeField.DEFAULT_TYPE, type));
+        data.put(PATIENT_FIELD_NAME, new PipeConfValue("Participant:ID", patient));
+        data.put(PAIRS_FIELD_NAME, new PipeConfValue("Array[Pair]", pairs));
         sample.setData(data);
         return sample;
     }
