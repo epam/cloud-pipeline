@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.metadata.parser;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,36 +31,26 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.exception.MetadataReadingException;
 import com.google.common.io.LineProcessor;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.StringUtils;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EntityLineProcessor implements LineProcessor<MetadataParsingResult> {
 
-    private String delimiter;
-    private Folder parent;
-    private MetadataClass metadataClass;
-    private Map<Integer, EntityTypeField> fields;
-    private boolean headerProcessed = false;
-    private Map<String, MetadataEntity> currentResults;
-    private Map<String, Set<String>> referenceTypes;
-
+    private final String delimiter;
+    private final Folder parent;
+    private final MetadataClass metadataClass;
+    private final Map<Integer, EntityTypeField> fields;
+    private final boolean classColumnPresent;
+    private final Map<String, MetadataEntity> currentResults = new HashMap<>();
+    private final Map<String, Set<String>> referenceTypes = new HashMap<>();
     //externalId - field - array values
-    private Map<String, Map<String, Set<String>>> arrayValues;
+    private final Map<String, Map<String, Set<String>>> arrayValues = new HashMap<>();
 
-    public EntityLineProcessor(String delimiter, Folder parent, MetadataClass metadataClass,
-            Map<Integer, EntityTypeField> fields) {
-        this.delimiter = delimiter;
-        this.parent = parent;
-        this.metadataClass = metadataClass;
-        this.fields = fields;
-        this.currentResults = new HashMap<>();
-        this.referenceTypes = new HashMap<>();
-        this.arrayValues = new HashMap<>();
-    }
+    private boolean headerProcessed = false;
 
     @Override
-    public boolean processLine(String line) throws IOException {
+    public boolean processLine(String line) {
         if (StringUtils.isBlank(line)) {
             return false;
         }
@@ -70,10 +59,10 @@ public class EntityLineProcessor implements LineProcessor<MetadataParsingResult>
             return true;
         }
         String[] chunks = StringUtils.splitPreserveAllTokens(line, delimiter);
-        if (chunks.length != fields.size() + 1) {
+        if (chunks.length != fields.size() + (classColumnPresent ? 1 : 0)) {
             throw new MetadataReadingException("Size of line doesn't match header");
         }
-        MetadataEntity entity = getOrCreateEntity(chunks[0]);
+        MetadataEntity entity = getOrCreateEntity(classColumnPresent ? chunks[0] : null);
         fields.forEach((index, field) -> {
             String value = chunks[index];
             if (StringUtils.isNotBlank(value)) {
@@ -126,8 +115,7 @@ public class EntityLineProcessor implements LineProcessor<MetadataParsingResult>
     }
 
     private MetadataEntity createEntity(String id) {
-        MetadataEntity entity;
-        entity = new MetadataEntity();
+        MetadataEntity entity = new MetadataEntity();
         entity.setExternalId(id);
         entity.setParent(parent);
         entity.setClassEntity(metadataClass);

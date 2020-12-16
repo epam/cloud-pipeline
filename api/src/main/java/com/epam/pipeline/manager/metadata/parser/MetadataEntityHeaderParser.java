@@ -20,30 +20,30 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Optional;
 
 import com.epam.pipeline.exception.MetadataReadingException;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
+@RequiredArgsConstructor
 public class MetadataEntityHeaderParser {
-    private String delimiter;
-    private ColumnHeaderParser headerParser = new ColumnHeaderParser();
-
-    public MetadataEntityHeaderParser(String delimiter) {
-        this.delimiter = delimiter;
-    }
+    private final String delimiter;
+    private final String fallbackMetadataClass;
+    private final ColumnHeaderParser headerParser = new ColumnHeaderParser();
 
     public MetadataHeader readHeader(InputStream stream) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
             String line = reader.readLine();
             if (StringUtils.isBlank(line)) {
-                throw new MetadataReadingException("Input file doesn't have expected header.");
+                throw new MetadataReadingException("Input file header should have at least one column.");
             }
             String[] columns = line.split(delimiter);
-            if (columns.length < 1) {
-                throw new MetadataReadingException("At least one column should be present.");
-            }
-            MetadataHeader header = new MetadataHeader(headerParser.readClassColumn(columns[0]));
-            for (int i = 1; i < columns.length; i++) {
+            Optional<String> columnMetadataClass = headerParser.readClassColumn(columns[0]);
+            MetadataHeader header = columnMetadataClass
+                    .map(metadataClass -> new MetadataHeader(metadataClass, true))
+                    .orElseGet(() -> new MetadataHeader(fallbackMetadataClass, false));
+            for (int i = header.isClassColumnPresent() ? 1 : 0; i < columns.length; i++) {
                 header.addField(i, headerParser.readFieldColumn(columns[i]));
             }
             return header;
