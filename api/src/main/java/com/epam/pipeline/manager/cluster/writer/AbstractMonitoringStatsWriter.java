@@ -55,14 +55,17 @@ public abstract class AbstractMonitoringStatsWriter {
         return allLines;
     }
 
-    protected Stream<String> getSortedDiskNamesStream(final List<MonitoringStats> stats) {
+    protected Stream<String> getDiskNamesStream(final List<MonitoringStats> stats) {
         return stats.stream()
             .map(MonitoringStats::getDisksUsage)
             .map(MonitoringStats.DisksUsage::getStatsByDevices)
             .map(Map::keySet)
             .flatMap(Set::stream)
-            .distinct()
-            .sorted();
+            .distinct();
+    }
+
+    protected Stream<String> getSortedDiskNamesStream(final List<MonitoringStats> stats) {
+        return getDiskNamesStream(stats).sorted();
     }
 
     private MonitoringStatsHeader extractHeader(final List<MonitoringStats> stats) {

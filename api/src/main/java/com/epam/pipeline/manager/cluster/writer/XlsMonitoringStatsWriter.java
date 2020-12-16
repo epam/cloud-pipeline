@@ -38,9 +38,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,6 +59,7 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
     private static final Character MEM_MAX_COLUMN = 'G';
     private static final long BYTES_IN_GB = 1L << 30;
     private static final String DISK_NAME_TEMPLATE = "%s[%.2fGb]";
+    private static final String NUMERIC_CELL_PRECISION_FORMAT = "0.00";
 
     private final String templatePath;
     private final MessageHelper messageHelper;
@@ -88,26 +87,20 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
     }
 
     private void fillInScaledData(final Workbook wb, final List<MonitoringStats> stats) {
-        final long disksCount = stats.stream()
-            .map(MonitoringStats::getDisksUsage)
-            .map(MonitoringStats.DisksUsage::getStatsByDevices)
-            .map(Map::keySet)
-            .flatMap(Collection::stream)
-            .distinct()
-            .count();
-        final int rxColPos = (int) (7 + disksCount * 2);
+        final int disksCount = (int) getDiskNamesStream(stats).count();
+        final int rxColPos = COMMON_STATS_HEADER.size() + disksCount * 2;
         final int txColPos = rxColPos + 1;
         final String rxColChar = CellReference.convertNumToColString(rxColPos);
         final String txColChar = CellReference.convertNumToColString(txColPos);
         final Sheet scaledDataSheet = wb.getSheet(SCALED_DATA_SHEET);
-        for (int i = 0; i < stats.size(); i++) {
-            final Row scaledDataRow = scaledDataSheet.createRow(i + 1);
-            scaledDataRow.createCell(0).setCellFormula(getCpuConversionFormula(CPU_AVG_COLUMN, i));
-            scaledDataRow.createCell(1).setCellFormula(getCpuConversionFormula(CPU_MAX_COLUMN, i));
-            scaledDataRow.createCell(2).setCellFormula(getMemConversionFormula(MEM_AVG_COLUMN, i));
-            scaledDataRow.createCell(3).setCellFormula(getMemConversionFormula(MEM_MAX_COLUMN, i));
-            scaledDataRow.createCell(4).setCellFormula(getInterfaceConversionFormula(rxColChar, i));
-            scaledDataRow.createCell(5).setCellFormula(getInterfaceConversionFormula(txColChar, i));
+        for (int i = 1; i <= stats.size(); i++) {
+            final Row scaledDataRow = scaledDataSheet.createRow(i);
+            scaledDataRow.createCell(0).setCellFormula(getCpuConversionFormula(CPU_AVG_COLUMN, i + 1));
+            scaledDataRow.createCell(1).setCellFormula(getCpuConversionFormula(CPU_MAX_COLUMN, i + 1));
+            scaledDataRow.createCell(2).setCellFormula(getMemConversionFormula(MEM_AVG_COLUMN, i + 1));
+            scaledDataRow.createCell(3).setCellFormula(getMemConversionFormula(MEM_MAX_COLUMN, i + 1));
+            scaledDataRow.createCell(4).setCellFormula(getInterfaceConversionFormula(rxColChar, i + 1));
+            scaledDataRow.createCell(5).setCellFormula(getInterfaceConversionFormula(txColChar, i + 1));
         }
     }
 
@@ -121,11 +114,9 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
                 final Cell cell = row.createCell(j);
                 if (i != 0 && j != 0) {
                     cell.setCellType(CellType.NUMERIC);
-                    if (StringUtils.isNotEmpty(statsRow[j])) {
-                        cell.setCellValue(Double.parseDouble(statsRow[j]));
-                    } else {
-                        cell.setCellValue(Double.NaN);
-                    }
+                    cell.setCellValue(StringUtils.isNotEmpty(statsRow[j])
+                                      ? Double.parseDouble(statsRow[j])
+                                      : Double.NaN);
                 } else {
                     cell.setCellValue(statsRow[j]);
                 }
@@ -138,7 +129,7 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
         final Sheet diskSheet = wb.getSheet(DISK_DATA_SHEET);
         final List<String> diskNames = getSortedDiskNamesStream(stats).collect(Collectors.toList());
         final CellStyle doublePrecisionStyle = wb.createCellStyle();
-        doublePrecisionStyle.setDataFormat(wb.createDataFormat().getFormat("0.00"));
+        doublePrecisionStyle.setDataFormat(wb.createDataFormat().getFormat(NUMERIC_CELL_PRECISION_FORMAT));
         for (int i = 0; i < diskNames.size(); i++) {
             for (int j = stats.size(); j > 0; j--) {
                 final Row row = rawDataSheet.getRow(j);
@@ -151,7 +142,7 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
                     final String usedDiskCellAddress =
                         CellReference.convertNumToColString(totalDiskCell.getColumnIndex() + 1) + rowIndex;
                     final double capacityGb = capacityBytes / BYTES_IN_GB;
-                    final Row diskSummaryRow = diskSheet.createRow(1 + i);
+                    final Row diskSummaryRow = diskSheet.createRow(i + 1);
                     final Cell diskNameCell = diskSummaryRow.createCell(0);
                     diskNameCell.setCellValue(String.format(DISK_NAME_TEMPLATE, diskNames.get(i), capacityGb));
                     final Cell diskUsedCell = diskSummaryRow.createCell(1);
@@ -183,14 +174,14 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
     }
 
     private String getInterfaceConversionFormula(final String colChar, final int i) {
-        return String.format(NET_CONVERSION_FORMULA, colChar + (i + 2));
+        return String.format(NET_CONVERSION_FORMULA, colChar + i);
     }
 
     private String getMemConversionFormula(final Character memAvgColumn, final int i) {
-        return String.format(MEM_CONVERSION_FORMULA, i + 2, memAvgColumn, i + 2);
+        return String.format(MEM_CONVERSION_FORMULA, i, memAvgColumn, i);
     }
 
     private String getCpuConversionFormula(final Character cpuAvgColumn, final int i) {
-        return String.format(CPU_CONVERSION_FORMULA, cpuAvgColumn, i + 2);
+        return String.format(CPU_CONVERSION_FORMULA, cpuAvgColumn, i);
     }
 }
