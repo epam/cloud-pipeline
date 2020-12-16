@@ -71,8 +71,8 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
     }
 
     @Override
-    public InputStream convertStatsToFile(final List<MonitoringStats> stats) {
-        try (Workbook wb = WorkbookFactory.create(new File(templatePath));
+    public synchronized InputStream convertStatsToFile(final List<MonitoringStats> stats) {
+        try (Workbook wb = WorkbookFactory.create(new File(templatePath), null, true);
              ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             fillInRawData(wb, stats);
             fillInScaledData(wb, stats);
