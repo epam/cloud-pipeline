@@ -46,7 +46,7 @@ function get_current_date() {
   date '+%Y-%m-%d %H:%M:%S.%N' | cut -b1-23
 }
 
-pipe_log_debug() {
+function pipe_log_debug() {
   _MESSAGE="$1"
   if [[ "$DEBUG" ]]
   then
@@ -54,7 +54,7 @@ pipe_log_debug() {
   fi
 }
 
-find_oom_killer_events() {
+function find_oom_killer_events() {
   dmesg -T | grep -E -i 'killed process'
 }
 

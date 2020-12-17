@@ -24,6 +24,8 @@ RUN if [ -z "$CP_API_DIST_URL" ]; then \
         exit 1; \
     fi
 
+RUN yum install unzip -y
+
 # Install pip
 RUN curl -s https://bootstrap.pypa.io/get-pip.py | python2 && \
     python2 -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
@@ -49,8 +51,7 @@ RUN curl -sL "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6
     chmod +x /usr/bin/jq
 
 ADD init /init
-RUN mkdir /opt/monitor-service
-ADD monitor-service/monitor_service.sh /opt/monitor-service/monitor_service.sh
-RUN chmod +x /init && chmod +x /opt/monitor-service/monitor_service.sh
+ADD monitor-service/monitor_service.sh /monitor_service.sh
+RUN chmod +x /init && chmod +x /monitor_service.sh
 ENV CP_PYTHON2_PATH=python2
-ENTRYPOINT [ "/init" ]
+CMD [ "/init" ]
