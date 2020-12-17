@@ -19,19 +19,21 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -1028,28 +1030,27 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public String[] getAmisFromClusterNetworksConfigPreference(String region) {
-            searchPreference("cluster.networks.config");
-            String[] result = new String[2];
-            final int[] reg = {0, 0};
-            String[] strings = context().$(byClassName("CodeMirror-code"))
-                            .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
-            IntStream.range(0, strings.length).forEach(i -> {
-                if (strings[i].contains(region)) {
-                    reg[0] = i;
-                }});
-            IntStream.range(reg[0], strings.length).forEach(i -> {
-                reg[1] = (strings[i].contains("\"amis\":")) ? i : strings.length;
-                });
-            IntStream.range(reg[0], reg[1]).forEach((i) -> {
-                if (strings[i].contains("\"instance_mask\":")) {
-                    if (strings[i].contains("\"*\"")) {
-                        result[0] = strings[i+1];
-                    } else {
-                        result[1] = strings[i+1];
+            String[] ami = new String[2];
+            try {
+                searchPreference("cluster.networks.config");
+                String[] strings = context().$(byClassName("CodeMirror-code"))
+                        .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
+                JsonNode instance = new ObjectMapper().readTree(String.join("", strings)).get("regions");
+                for (JsonNode node1 : instance) {
+                    if (node1.get("name").asText().equals(region)) {
+                        for (JsonNode node : node1.get("amis")) {
+                            if (node.path("instance_mask").asText().equals("*")) {
+                                ami[0] = node.path("ami").asText();
+                            } else {
+                                ami[1] = node.path("ami").asText();
+                            }
+                        }
                     }
                 }
-            });
-            return result;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return ami;
         }
 
         public PreferencesAO save() {
