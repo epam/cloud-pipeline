@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class MonitoringStatsWriterTest {
+public class CsvMonitoringStatsWriterTest {
 
     private static final int NUM_CORES = 2;
     private static final long MAX_MEM = 1024;
