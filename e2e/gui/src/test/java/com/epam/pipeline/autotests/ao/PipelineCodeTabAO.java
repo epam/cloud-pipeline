@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
@@ -265,7 +266,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
 
         public FileEditingPopupAO shouldContainInCode(final String expectedCode) {
             final Function<String, SelenideElement> lineWithText =
-                    text -> $x(String.format("//pre[contains(@class, 'CodeMirror-line') and contains(., '%s')]", text));
+                    text -> $x(format("//pre[contains(@class, 'CodeMirror-line') and contains(., '%s')]", text));
             Arrays.stream(expectedCode.split("\n"))
                     .map(String::trim)
                     .map(lineWithText)

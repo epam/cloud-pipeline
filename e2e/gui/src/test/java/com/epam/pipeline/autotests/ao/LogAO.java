@@ -508,7 +508,8 @@ public class LogAO implements AccessObject<LogAO> {
                 entry(DEFAULT_COMMAND, context().find(parameterWithName("Cmd template"))),
                 entry(TIMEOUT, context().find(parameterWithName("Timeout"))),
                 entry(PRICE_TYPE, context().find(parameterWithName("Price type"))),
-                entry(IP, context().find(parameterWithName("IP")))
+                entry(IP, context().find(parameterWithName("IP"))),
+                entry(NODE_IMAGE, context().find(parameterWithName("Node image")))
         );
 
         public static By parameterWithName(final String name) {
