@@ -128,7 +128,8 @@ function sign_and_publish_pipe_win_distribution() {
 
 function unpack_monitoring_template() {
     local jar_path="$1"
-    unzip -p "$jar_path" static/monitoring_report_template.xls > "$CP_API_MONITORING_XLS_TEMPLATE_PATH"
+    mkdir -p $(dirname $CP_API_MONITORING_XLS_TEMPLATE_PATH)
+    unzip -p "$jar_path" BOOT-INF/classes/static/monitoring_report_template.xls > "$CP_API_MONITORING_XLS_TEMPLATE_PATH"
 }
 
 # Validate SSO and SSL certificates
