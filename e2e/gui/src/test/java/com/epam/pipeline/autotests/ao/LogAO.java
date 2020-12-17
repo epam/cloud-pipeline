@@ -27,7 +27,6 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.*;
@@ -494,7 +493,7 @@ public class LogAO implements AccessObject<LogAO> {
 
             @Override
             public String actualValue(final WebElement logElement) {
-                final String allMissingMessages = missingMessages.stream().collect(Collectors.joining("\n"));
+                final String allMissingMessages = String.join("\n", missingMessages);
                 return format("Following messages wasn't found in log:%n%s", allMissingMessages);
             }
         };

@@ -22,7 +22,6 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
-import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -319,9 +318,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRunIfPresent(String id) {
         activeRuns();
-        final SelenideElement run = $(tagName("tbody")).findAll(tagName("tr")).findBy(text(id));
         sleep(10, SECONDS);
-        if (run.is(exist)) {
+        if ($(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist)) {
             stopRun(id);
             System.out.printf("Run with id %s has been stopped.%n", id);
         }

@@ -586,7 +586,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             private UsersTabAO confirmUserDeletion(final String name) {
                 new ConfirmationPopupAO(this.parentAO)
-                        .ensureTitleIs(String.format("Are you sure you want to delete user %s?", name.toUpperCase()))
+                        .ensureTitleIs(format("Are you sure you want to delete user %s?", name.toUpperCase()))
                         .sleep(1, SECONDS)
                         .click(OK);
                 return this;
