@@ -192,6 +192,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
                 -t "$CP_NODE_LOGGER_DIST_NAME"
 docker push "$CP_NODE_LOGGER_DIST_NAME"
 
+# Node Health Check
+CP_OOM_REPORTER_DIST_NAME=${CP_OOM_REPORTER_DIST_NAME:-"$CP_DIST_REPO_NAME:oom-reporter-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-oom-reporter \
+                -t "$CP_OOM_REPORTER_DIST_NAME"
+docker push "$CP_OOM_REPORTER_DIST_NAME"
+
 # Backups manager
 CP_BKP_WORKER_DIST_NAME=${CP_BKP_WORKER_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-bkp-worker-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-bkp-worker \

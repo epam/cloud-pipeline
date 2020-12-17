@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -389,6 +389,15 @@ kubectl delete daemonset cp-node-logger
 
 print_info "-> Deploying Node logger daemonset"
 create_kube_resource $K8S_SPECS_HOME/cp-node-logger/cp-node-logger-ds.yaml
+
+# OOM reporter - monitor and report OOM related events for each pipeline run
+print_ok "[Starting OOM reporter daemonset deployment]"
+
+print_info "-> Deleting existing instance of OOM reporter daemonset"
+kubectl delete daemonset cp-oom-reporter
+
+print_info "-> Deploying OOM reporter daemonset"
+create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
 
 
 # Heapster (CPU Utilization monitoring)
