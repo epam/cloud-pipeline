@@ -55,7 +55,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
     @Test
     @TestCase("1517_1")
     public void checkCustomNodeImageForThePipelineRun() {
-        final String[] cloudRegion = {""};
+        final String[] cloudRegion = new String[1];
         library()
                 .createPipeline(pipeline1)
                 .createPipeline(pipeline2)
