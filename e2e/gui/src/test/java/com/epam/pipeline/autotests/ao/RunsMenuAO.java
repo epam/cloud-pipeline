@@ -318,9 +318,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRunIfPresent(String id) {
         activeRuns();
-        final SelenideElement run = $(tagName("tbody")).findAll(tagName("tr")).findBy(text(id));
         sleep(10, SECONDS);
-        if (run.is(exist)) {
+        if ($(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist)) {
             stopRun(id);
             System.out.printf("Run with id %s has been stopped.%n", id);
         }
