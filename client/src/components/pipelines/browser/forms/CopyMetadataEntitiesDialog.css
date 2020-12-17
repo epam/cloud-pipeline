@@ -50,3 +50,7 @@
 .table .name {
   text-align: left;
 }
+
+.search-result {
+  background-color: yellow;
+}
