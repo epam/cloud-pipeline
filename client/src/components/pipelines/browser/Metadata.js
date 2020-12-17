@@ -41,6 +41,7 @@ import AddInstanceForm from './forms/AddInstanceForm';
 import UploadToDatastorageForm from './forms/UploadToDatastorageForm';
 import 'react-table/react-table.css';
 import ReactTable from 'react-table';
+import CopyMetadataEntitiesDialog from './forms/CopyMetadataEntitiesDialog';
 import roleModel from '../../../utils/roleModel';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import PropTypes from 'prop-types';
@@ -96,6 +97,7 @@ function getColumnTitle (key) {
     componentParameters = params.params;
   }
   return {
+    folders,
     folder: componentParameters.id ? folders.load(componentParameters.id) : pipelinesLibrary,
     folderId: componentParameters.id,
     metadataClass: componentParameters.class,
@@ -150,7 +152,8 @@ export default class Metadata extends React.Component {
     configurationBrowserVisible: false,
     currentProjectId: null,
     currentMetadataEntityForCurrentProject: [],
-    uploadToBucketVisible: false
+    uploadToBucketVisible: false,
+    copyEntitiesDialogVisible: false
   };
 
   @computed
@@ -532,6 +535,25 @@ export default class Metadata extends React.Component {
   onClearSelectionItems = () => {
     this.setState({selectedItems: []});
   };
+  onCopySelectionItems = () => {
+    this.setState({
+      copyEntitiesDialogVisible: true
+    });
+  };
+  onCloseCopySelectionItemsDialog = (destinationFolder) => {
+    this.setState({
+      copyEntitiesDialogVisible: false
+    }, () => {
+      if (destinationFolder) {
+        this.loadData(this.state.filterModel);
+      }
+      this.props.folders.invalidateFolder(this.props.folderId);
+      this.props.folders.invalidateFolder(destinationFolder);
+      if (this.props.onReloadTree) {
+        this.props.onReloadTree(true);
+      }
+    });
+  };
   onSelectConfigurationConfirm = async (selectedConfiguration, expansionExpression) => {
     this.selectedConfiguration = selectedConfiguration;
     this.expansionExpression = expansionExpression;
@@ -721,6 +743,19 @@ export default class Metadata extends React.Component {
       ) : null;
     };
 
+    const renderCopyEntitiesDialog = () => {
+      return (
+        <CopyMetadataEntitiesDialog
+          entities={this.state.selectedItems}
+          visible={this.state.copyEntitiesDialogVisible}
+          onCancel={this.onCloseCopySelectionItemsDialog}
+          onCopy={this.onCloseCopySelectionItemsDialog}
+          metadataClass={this.props.metadataClass}
+          folderId={this.props.folderId}
+        />
+      );
+    };
+
     const onPanelClose = (key) => {
       switch (key) {
         case METADATA_PANEL_KEY:
@@ -744,6 +779,7 @@ export default class Metadata extends React.Component {
         <div key={CONTENT_PANEL_KEY}>
           {renderTable()}
           {renderConfigurationBrowser()}
+          {renderCopyEntitiesDialog()}
         </div>
         {
           this.state.metadata &&
@@ -948,6 +984,14 @@ export default class Metadata extends React.Component {
                   onClick={this.onClearSelectionItems}>
                   CLEAR SELECTION
                 </Button>
+                <Button
+                  key="copy_selection"
+                  size="small"
+                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
+                  onClick={this.onCopySelectionItems}
+                >
+                  COPY
+                </Button>
                 {
                   this.transferJobId && this.transferJobVersion && this.currentClassEntityPathFields.length > 0 &&
                   <Button
@@ -1081,7 +1125,7 @@ export default class Metadata extends React.Component {
                 id={parseInt(this.props.folderId)}
                 type={ItemTypes.metadata}
                 textEditableField={this.props.metadataClass}
-                readOnlyEditableField={true}
+                readOnlyEditableField
                 icon="appstore-o"
                 iconClassName={styles.editableControl}
                 subject={this.props.folder.value}
@@ -1120,13 +1164,15 @@ export default class Metadata extends React.Component {
           onCreate={this.operationWrapper(this.addInstance)}
           onCancel={this.closeAddInstanceForm}
           entityType={this.currentMetadataClassId}
-          entityTypes={this.entityTypes} />
+          entityTypes={this.entityTypes}
+        />
         <UploadToDatastorageForm
           visible={this.state.uploadToBucketVisible}
           fields={this.currentClassEntityFields.filter(f => f.type.toLowerCase() !== 'path').map(f => f.name)}
           pathFields={this.currentClassEntityPathFields.map(f => f.name)}
           onTransfer={this.onStartUploadToBucket}
-          onClose={this.onCloseUploadToBucketDialog} />
+          onClose={this.onCloseUploadToBucketDialog}
+        />
       </div>
     );
   };
