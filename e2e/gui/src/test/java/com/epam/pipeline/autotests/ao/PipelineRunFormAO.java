@@ -285,10 +285,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return byClassName("launch-pipeline-form__layout-header");
     }
 
-    private void launch() {
+    public PipelineRunFormAO launch() {
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
+        return this;
     }
 
     public PipelineRunFormAO validateThereIsParameterOfType(String name, String value, ParameterType type, boolean required) {
