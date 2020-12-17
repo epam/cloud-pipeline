@@ -73,6 +73,10 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
 
     @Override
     public InputStream convertStatsToFile(final List<MonitoringStats> stats) {
+        if (StringUtils.isBlank(templatePath)) {
+            throw new IllegalStateException(
+                messageHelper.getMessage(MessageConstants.ERROR_STATS_EMPTY_XLS_TEMPLATE_PATH));
+        }
         try (Workbook wb = WorkbookFactory.create(new File(templatePath), null, true);
              ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             fillInRawData(wb, stats);

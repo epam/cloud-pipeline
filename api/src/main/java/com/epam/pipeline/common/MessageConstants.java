@@ -158,6 +158,7 @@ public final class MessageConstants {
     public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
     public static final String ERROR_UNSUPPORTED_STATS_FILE_TYPE = "error.run.stats.file.unsupported.type";
     public static final String ERROR_STATS_FILE_XLS_CONVERSION = "error.run.stats.file.xls";
+    public static final String ERROR_STATS_EMPTY_XLS_TEMPLATE_PATH = "error.run.stats.xls.template.empty.path";
     public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
     public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
