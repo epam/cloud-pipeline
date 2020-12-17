@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">8</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">8m40.56s</div>
+<div class="counter">3m37.54s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">80%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,10 +61,45 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validateRestoreFile - EPMCMBIBPC-816"></a>
+<h3 class="failures">validateRestoreFile - EPMCMBIBPC-816</h3>
+<span class="code">
+<pre>java.lang.AssertionError: expected [#000000] but found [#fff2ef]
+	at org.testng.Assert.fail(Assert.java:93)
+	at org.testng.Assert.failNotEquals(Assert.java:512)
+	at org.testng.Assert.assertEqualsImpl(Assert.java:134)
+	at org.testng.Assert.assertEquals(Assert.java:115)
+	at org.testng.Assert.assertEquals(Assert.java:189)
+	at org.testng.Assert.assertEquals(Assert.java:199)
+	at com.epam.pipeline.autotests.ao.StorageContentAO$FileAO.validateFileHasBackgroundColor(StorageContentAO.java:529)
+	at com.epam.pipeline.autotests.VersionControlTest.validateRestoreFile(VersionControlTest.java:157)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -75,68 +110,68 @@
 </tr>
 </thead>
 <tr>
-<td class="success">checkFilesVersionsAfterUpdate - EPMCMBIBPC-820</td>
-<td>44.599s</td>
-<td class="success">passed</td>
+<td class="skipped">checkFilesVersionsAfterUpdate</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">deleteFileByNonAdminUser - EPMCMBIBPC-815</td>
-<td>1m17.73s</td>
+<td>1m18.45s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">deleteFileThatHasDeleteMarker - EPMCMBIBPC-841</td>
-<td>41.806s</td>
-<td class="success">passed</td>
+<td class="skipped">deleteFileThatHasDeleteMarker</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">deleteOneOfSiblingsFiles - EPMCMBIBPC-1540</td>
-<td>52.869s</td>
+<td>53.718s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">deletingBucketAfterDisablingOfVersioning - EPMCMBIBPC-1502</td>
-<td>45.677s</td>
+<td>46.068s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">editPermissionTestForBucketWithVersions - EPMCMBIBPC-855</td>
-<td>1m14.13s</td>
-<td class="success">passed</td>
+<td class="skipped">editPermissionTestForBucketWithVersions</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">markToDeleteNotEmptyFolder - EPMCMBIBPC-844</td>
-<td>21.776s</td>
-<td class="success">passed</td>
+<td class="skipped">markToDeleteNotEmptyFolder</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">readPermissionTestForBucketWithVersions - EPMCMBIBPC-854</td>
-<td>52.671s</td>
-<td class="success">passed</td>
+<td class="skipped">readPermissionTestForBucketWithVersions</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateDeleteEmptyFolder - EPMCMBIBPC-842</td>
-<td>42.810s</td>
-<td class="success">passed</td>
+<td class="skipped">validateDeleteEmptyFolder</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateDeleteNotEmptyFolder - EPMCMBIBPC-845</td>
-<td>19.637s</td>
-<td class="success">passed</td>
+<td class="skipped">validateDeleteNotEmptyFolder</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateRestoreFile - EPMCMBIBPC-816</td>
-<td>6.635s</td>
-<td class="success">passed</td>
+<td class="failures">validateRestoreFile - EPMCMBIBPC-816</td>
+<td>4.362s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">validateRestoreSpecifiedFileVersion - EPMCMBIBPC-888</td>
-<td>5.291s</td>
-<td class="success">passed</td>
+<td class="skipped">validateRestoreSpecifiedFileVersion</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">validateShowFilesVersions - EPMCMBIBPC-813</td>
-<td>34.917s</td>
+<td>34.940s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -149,7 +184,7 @@
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 16, 2020 3:58:42 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 17, 2020 3:37:18 PM</p>
 </div>
 </div>
 </body>
