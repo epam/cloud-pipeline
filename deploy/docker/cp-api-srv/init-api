@@ -128,7 +128,6 @@ function sign_and_publish_pipe_win_distribution() {
 
 function unpack_monitoring_template() {
     local jar_path="$1"
-    mkdir -p $(dirname $CP_API_MONITORING_XLS_TEMPLATE_PATH)
     unzip -p "$jar_path" BOOT-INF/classes/static/monitoring_report_template.xls > "$CP_API_MONITORING_XLS_TEMPLATE_PATH"
 }
 
@@ -233,6 +232,8 @@ if [ -f "$win_code_sign_cert_path" ]; then
         "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
 fi
 
+export CP_API_MONITORING_XLS_TEMPLATE_PATH="${CP_API_MONITORING_XLS_TEMPLATE_PATH:-$CP_API_HOME/report-templates/monitoring_report_template.xls}"
+mkdir -p $(dirname $CP_API_MONITORING_XLS_TEMPLATE_PATH)
 unpack_monitoring_template "$path_to_jar"
 
 echo "Importing API SSL cert into global java keystore"
