@@ -35,6 +35,11 @@ task copyCommitRunScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/commit-run-scripts"
 }
 
+task copyMonitoringTemplate(type: Copy) {
+    from "$rootDir/deploy/contents/install/report-templates/monitoring_report_template.xls"
+    into "$rootDir/api/src/main/resources/static/"
+}
+
 jar {
     archiveName "pipeline.jar"
     manifest {
@@ -225,4 +230,4 @@ dependencies {
 }
 
 // >>>>> processes profiles
-processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts])
+processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyMonitoringTemplate])
