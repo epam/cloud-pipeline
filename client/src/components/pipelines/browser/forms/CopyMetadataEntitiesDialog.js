@@ -21,6 +21,7 @@ import {
   Alert,
   Button,
   Icon,
+  Input,
   message,
   Modal,
   Spin,
@@ -29,8 +30,10 @@ import {
 } from 'antd';
 import {
   generateTreeData,
+  getExpandedKeys,
   getTreeItemByKey,
-  ItemTypes
+  ItemTypes,
+  search
 } from '../../model/treeStructureFunctions';
 import {SplitPanel} from '../../../special/splitPanel';
 import LoadingView from '../../../special/LoadingView';
@@ -56,7 +59,8 @@ class CopyMetadataEntitiesDialog extends React.Component {
     pending: false,
     selectedFolder: undefined,
     selectedKeys: [],
-    tree: []
+    tree: [],
+    search: undefined
   }
 
   componentDidMount () {
@@ -92,6 +96,25 @@ class CopyMetadataEntitiesDialog extends React.Component {
     });
     this.setState({
       selectedFolder: undefined
+    });
+  };
+
+  onSearchChanged = e => {
+    const {tree} = this.state;
+    const searchCriteria = e.target.value;
+    this.setState({
+      search: searchCriteria
+    }, () => {
+      search(searchCriteria, tree)
+        .then(() => {
+          if (searchCriteria === this.state.search) {
+            const expandedKeys = getExpandedKeys(tree);
+            this.setState({
+              tree,
+              expandedKeys
+            });
+          }
+        });
     });
   };
 
@@ -183,6 +206,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
       expandedKeys = [],
       pending,
       selectedKeys = [],
+      search: searchValue,
       tree
     } = this.state;
     if (pipelinesLibrary.pending && !pipelinesLibrary.loaded) {
@@ -277,53 +301,62 @@ class CopyMetadataEntitiesDialog extends React.Component {
         </span>
       );
     };
-    const generateTreeItems = (items) => items.map(item => {
-      if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={styles.treeItem}
-            title={renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}
-          />
-        );
-      } else {
-        return (
-          <Tree.TreeNode
-            className={styles.treeItem}
-            title={renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}
-          >
-            {generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
-      }
-    });
+    const generateTreeItems = (items) => items
+      .filter(item => item.searchHit)
+      .map(item => {
+        if (item.isLeaf) {
+          return (
+            <Tree.TreeNode
+              className={styles.treeItem}
+              title={renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}
+            />
+          );
+        } else {
+          return (
+            <Tree.TreeNode
+              className={styles.treeItem}
+              title={renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}
+            >
+              {generateTreeItems(item.children)}
+            </Tree.TreeNode>
+          );
+        }
+      });
     return (
       <SplitPanel
         contentInfo={[{
           key: 'library',
           size: {
-            pxDefault: 200
+            pxDefault: 300
           }
         }]}
       >
         <div
           key="library"
-          className={styles.treeContainer}
         >
-          <Spin spinning={pending}>
-            <Tree
-              disabled={disabled}
-              onSelect={onSelect}
-              onExpand={onExpand}
-              checkStrictly
-              expandedKeys={expandedKeys}
-              selectedKeys={selectedKeys} >
-              {generateTreeItems(tree)}
-            </Tree>
-          </Spin>
+          <div>
+            <Input.Search
+              value={searchValue}
+              onChange={this.onSearchChanged}
+            />
+          </div>
+          <div className={styles.treeContainer}>
+            <Spin spinning={pending}>
+              <Tree
+                disabled={disabled}
+                onSelect={onSelect}
+                onExpand={onExpand}
+                checkStrictly
+                expandedKeys={expandedKeys}
+                selectedKeys={selectedKeys} >
+                {generateTreeItems(tree)}
+              </Tree>
+            </Spin>
+          </div>
         </div>
         <div
           key="content"
