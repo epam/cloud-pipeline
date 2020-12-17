@@ -208,6 +208,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new RunsMenuAO();
     }
 
+    public PipelineRunFormAO launchWithError(final AbstractSinglePipelineRunningTest test, String errorMessage) {
+        launch();
+        messageShouldAppear(errorMessage);
+        return this;
+    }
+
     /**
      * Launch pipeline and add runId to the given test.
      */

@@ -82,8 +82,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setValue(FRIENDLY_URL, friendlyURL)
-                .launch(this)
-                .messageShouldAppear(format(errorMessage,
+                .launchWithError(this, format(errorMessage,
                         friendlyURL, format("%,d", Integer.parseInt(runID))));
     }
 
