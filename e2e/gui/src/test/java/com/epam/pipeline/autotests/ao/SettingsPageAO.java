@@ -1031,10 +1031,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public String[] getAmisFromClusterNetworksConfigPreference(String region) {
             String[] ami = new String[2];
+            searchPreference("cluster.networks.config");
+            String[] strings = context().$(byClassName("CodeMirror-code"))
+                    .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
             try {
-                searchPreference("cluster.networks.config");
-                String[] strings = context().$(byClassName("CodeMirror-code"))
-                        .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
                 JsonNode instance = new ObjectMapper().readTree(String.join("", strings)).get("regions");
                 for (JsonNode node1 : instance) {
                     if (node1.get("name").asText().equals(region)) {
@@ -1048,7 +1048,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException(format("Could not deserialize JSON content %s, cause: %s",
+                        String.join("", strings), e.getMessage()), e);
             }
             return ami;
         }

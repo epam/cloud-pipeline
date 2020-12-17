@@ -61,16 +61,16 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .createPipeline(pipeline2)
                 .clickOnDraftVersion(pipeline1)
                 .configurationTab()
-                .editConfiguration("default", profile -> {
-                    cloudRegion[0] = profile
-                            .expandTab(EXEC_ENVIRONMENT)
-                            .getCloudRegion();});
+                .editConfiguration("default", profile -> cloudRegion[0] = profile
+                        .expandTab(EXEC_ENVIRONMENT)
+                        .getCloudRegion());
 
         String[] amis = navigationMenu()
                 .settings()
                 .switchToPreferences()
                 .getAmisFromClusterNetworksConfigPreference(cloudRegion[0]);
-        assertNotEquals(amiValue(amis[0]), testAmi = amiValue(amis[1]), "Amis are the same for different instance_masks.");
+        assertNotEquals(amiValue(amis[0]), testAmi = amiValue(amis[1]),
+                "Amis are the same for different instance_masks.");
         library()
                 .clickOnDraftVersion(pipeline1)
                 .codeTab()
@@ -125,11 +125,11 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
     }
 
     private String addInstanceImageToConfig(String code, String image) {
-        if (!code.contains("\"instance_image\"")) {
-            return code.replace("\"configuration\" : {",
-                    format("\"configuration\" : {\n\"instance_image\" : \"%s\",", image));
+        if (code.contains("\"instance_image\"")) {
+            return code;
         }
-        return code;
+        return code.replace("\"configuration\" : {",
+                format("\"configuration\" : {\n\"instance_image\" : \"%s\",", image));
     }
 
     private String amiValue(String value) {
