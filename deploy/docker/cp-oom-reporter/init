@@ -26,5 +26,5 @@ mkdir -p $(dirname $OOM_REPORTER_LOG_FILE)
 /monitor_service.sh --api-url "https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/" \
                     --api-token "$CP_API_JWT_ADMIN" \
                     --node-name $NODE_NAME \
-                    --sync-file "$SYNC_FILE" \
+                    --sync-file "$OOM_REPORTER_SYNC_FILE" \
                     --debug &> $OOM_REPORTER_LOG_FILE
