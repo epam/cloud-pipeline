@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cluster.writer;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 
@@ -42,6 +43,8 @@ public abstract class AbstractMonitoringStatsWriter {
     private static final double HUNDRED_PERCENTS = 100.0;
 
     public abstract InputStream convertStatsToFile(List<MonitoringStats> stats);
+
+    public abstract MonitoringReportType getReportType();
 
     protected List<String[]> extractTable(final List<MonitoringStats> stats) {
         final List<String[]> allLines = new ArrayList<>();

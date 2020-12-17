@@ -27,10 +27,10 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.writer.CsvMonitoringStatsWriter;
-import com.epam.pipeline.manager.cluster.writer.XlsMonitoringStatsWriter;
+import com.epam.pipeline.manager.cluster.writer.AbstractMonitoringStatsWriter;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -65,8 +65,21 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
-    private final XlsMonitoringStatsWriter xlsStatsWriter;
-    private final CsvMonitoringStatsWriter csvStatsWriter;
+    private final Map<MonitoringReportType, AbstractMonitoringStatsWriter> statsWriters;
+
+    public ESMonitoringManager(final RestHighLevelClient client,
+                               final MonitoringESDao monitoringDao,
+                               final MessageHelper messageHelper,
+                               final PreferenceManager preferenceManager,
+                               final NodesManager nodesManager,
+                               final List<AbstractMonitoringStatsWriter> writers) {
+        this.client = client;
+        this.monitoringDao = monitoringDao;
+        this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
+        this.nodesManager = nodesManager;
+        this.statsWriters = CommonUtils.groupByKey(writers, AbstractMonitoringStatsWriter::getReportType);
+    }
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
@@ -95,16 +108,10 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final Duration adjustedDuration = interval.compareTo(minDuration) < 0
                                           ? minDuration
                                           : interval;
-        final List<MonitoringStats> monitoringStats = getStats(nodeName, start, end, adjustedDuration);
-        switch (type) {
-            case CSV:
-                return csvStatsWriter.convertStatsToFile(monitoringStats);
-            case XLS:
-                return xlsStatsWriter.convertStatsToFile(monitoringStats);
-            default:
-                throw new IllegalArgumentException(
-                    messageHelper.getMessage(MessageConstants.ERROR_UNSUPPORTED_STATS_FILE_TYPE));
-        }
+        final AbstractMonitoringStatsWriter statsWriter = Optional.ofNullable(statsWriters.get(type))
+            .orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_UNSUPPORTED_STATS_FILE_TYPE)));
+        return statsWriter.convertStatsToFile(getStats(nodeName, start, end, adjustedDuration));
     }
 
     @Override

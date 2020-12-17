@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cluster.writer;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
 import org.apache.poi.hssf.util.CellReference;
@@ -84,6 +85,11 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
         } catch (IOException | InvalidFormatException e) {
             throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_STATS_FILE_XLS_CONVERSION));
         }
+    }
+
+    @Override
+    public MonitoringReportType getReportType() {
+        return MonitoringReportType.XLS;
     }
 
     private void fillInScaledData(final Workbook wb, final List<MonitoringStats> stats) {

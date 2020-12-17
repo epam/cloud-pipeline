@@ -20,6 +20,7 @@ import com.amazonaws.util.StringInputStream;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.opencsv.CSVWriter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
@@ -36,6 +37,11 @@ import java.util.List;
 public class CsvMonitoringStatsWriter extends AbstractMonitoringStatsWriter{
 
     private final MessageHelper messageHelper;
+
+    @Override
+    public MonitoringReportType getReportType() {
+        return MonitoringReportType.CSV;
+    }
 
     @Override
     public InputStream convertStatsToFile(final List<MonitoringStats> stats) {
