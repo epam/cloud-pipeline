@@ -82,3 +82,17 @@ class User(API):
             raise RuntimeError(response_data['message'])
         else:
             raise RuntimeError("Failed to generate user token.")
+
+    @classmethod
+    def import_users(cls, file_path, create_user, create_group, create_metadata):
+        api = cls.instance()
+        query = '/users/import?createUser=%s&createGroup=%s' % (create_user, create_group)
+        if create_metadata:
+            query = '%s&dictionaries=%s' % (query, ",".join(create_metadata))
+        response_data = api.upload(query, file_path)
+        if 'payload' in response_data:
+            return response_data['payload']
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            return []

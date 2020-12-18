@@ -62,15 +62,7 @@ class API(object):
                     response = requests.post(url, data, headers=self.__headers__, verify=False, proxies=self.__proxies__)
                 else:
                     response = requests.get(url, headers=self.__headers__, verify=False, proxies=self.__proxies__)
-        response_data = json.loads(response.text)
-        message_text = error_message if error_message else 'Failed to fetch data from server'
-        if 'status' not in response_data:
-            raise RuntimeError('{}. Server responded with status: {}.'
-                               .format(message_text, str(response_data.status_code)))
-        if response_data['status'] != 'OK':
-            raise RuntimeError('{}. Server responded with message: {}'.format(message_text, response_data['message']))
-        else:
-            return response_data
+        return self._build_response_data(response, error_message)
 
     def download(self, url_path, file_path):
         url = '{}/{}'.format(self.__config__.api.strip('/'), url_path)
@@ -81,6 +73,18 @@ class API(object):
         response = requests.get(url, headers=headers, verify=False, proxies=self.__proxies__)
         self._validate_octet_stream_response(response)
         self._write_response_to_file(file_path, response)
+
+    def upload(self, url_path, file_path):
+        url = '{}/{}'.format(self.__config__.api.strip('/'), url_path)
+        headers = {
+            'Authorization': 'Bearer {}'.format(self.__config__.get_token())
+        }
+        multipart_form_data = {
+            'file': (None, open(file_path, 'rb')),
+        }
+        response = requests.post(url, headers=headers, verify=False, proxies=self.__proxies__,
+                                 files=multipart_form_data)
+        return self._build_response_data(response)
 
     @classmethod
     def _write_response_to_file(cls, file_path, response):
@@ -95,6 +99,18 @@ class API(object):
             return
         click.echo('Server responded with status: {}. {}'.format(str(response.status_code), response.text), err=True)
         sys.exit(1)
+
+    @classmethod
+    def _build_response_data(cls, response, error_message=None):
+        response_data = json.loads(response.text)
+        message_text = error_message if error_message else 'Failed to fetch data from server'
+        if 'status' not in response_data:
+            raise RuntimeError('{}. Server responded with status: {}.'
+                               .format(message_text, str(response_data.status_code)))
+        if response_data['status'] != 'OK':
+            raise RuntimeError('{}. Server responded with message: {}'.format(message_text, response_data['message']))
+        else:
+            return response_data
 
     @classmethod
     def instance(cls):
