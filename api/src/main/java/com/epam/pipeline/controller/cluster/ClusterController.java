@@ -226,7 +226,7 @@ public class ClusterController extends AbstractRestController {
         final HttpServletResponse response) throws IOException {
         final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval, type);
         final String reportName = String.format("%s_%s-%s-%s", name, from, to, interval);
-        writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, "csv"));
+        writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, type.name().toLowerCase()));
     }
 
     @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.GET)
