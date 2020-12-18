@@ -548,14 +548,13 @@ def create_dns_record(service_spec):
                 raise ValueError("Couldn't create DNS record for: {}, no hosted_zone_base_value".format(service_spec["run_id"]))
 
 
-def create_dns_service_location(service_spec, added_route, service_url_dict):
+def create_service_dns_record(service_spec, added_route):
         try:
                 create_dns_record(service_spec)
+                return added_route, True
         except ValueError as e:
                 print(e.message)
-                return
-        create_service_location(service_spec, added_route, service_url_dict)
-
+                return added_route, False
 
 def create_service_location(service_spec, added_route, service_url_dict):
         has_custom_domain = service_spec["custom_domain"] is not None
@@ -764,14 +763,14 @@ with open(nginx_sensitive_routes_config_path, 'r') as sensitive_routes_file:
 # we handle it in the main thread, if custom DNS record should be created, since it consume some time ~ 20 sec,
 # we put it to the separate collection to handle it at the end.
 service_url_dict = {}
-routes_with_custom_dns = set()
 runs_with_custom_dns = set()
+dns_route_results = []
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
         if service_spec["create_dns_record"] and not service_spec["custom_domain"]:
                 runs_with_custom_dns.add(service_spec["run_id"])
-                routes_with_custom_dns.add(added_route)
+                dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record, (service_spec, added_route)))
         else:
                 create_service_location(service_spec, added_route, service_url_dict)
 
@@ -789,10 +788,6 @@ for run_id in service_url_dict:
         if run_id not in runs_with_custom_dns:
                 update_svc_url_for_run(run_id)
 
-#Now handle all routes with custom DNS
-for added_route in routes_with_custom_dns:
-        service_spec = services_list[added_route]
-        dns_services_pool.apply_async(create_dns_service_location, (service_spec, added_route, service_url_dict))
 
 # Here we check all future on completion, only if at least one exist
 if len(runs_with_custom_dns) > 0:
@@ -800,6 +795,14 @@ if len(runs_with_custom_dns) > 0:
         dns_services_pool.close()
         dns_services_pool.join()
         print("All async service location creations is completed")
+
+        #after all async tasks are done - merge results in order to update svc_url for such runs
+        for dns_result in dns_route_results:
+                route, success = dns_result.get()
+                print("for dns route {} success status is {}".format(route, success))
+                if success:
+                        service_spec = services_list[route]
+                        create_service_location(service_spec, route, service_url_dict)
 
         # reload nginx second time for custom dns services
         # TODO: Add error handling, if non-zero is returned - restore previous state
