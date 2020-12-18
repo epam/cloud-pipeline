@@ -383,9 +383,9 @@ public class UserController extends AbstractRestController {
     public Result<List<PipelineUserEvent>> importUsersFromCsv(
             @RequestParam(defaultValue = "false") final boolean createUser,
             @RequestParam(defaultValue = "false") final boolean createGroup,
-            @RequestParam(required = false) final List<String> dictionaries,
+            @RequestParam(required = false) final List<String> createMetadata,
             final HttpServletRequest request) throws FileUploadException {
         final MultipartFile file = consumeMultipartFile(request);
-        return Result.success(userApiService.importUsersFromCsv(createUser, createGroup, dictionaries, file));
+        return Result.success(userApiService.importUsersFromCsv(createUser, createGroup, createMetadata, file));
     }
 }

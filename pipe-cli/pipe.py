@@ -1644,7 +1644,7 @@ def users():
 @click.option('-cu', '--create-user', required=False, is_flag=True, default=False, help='Allow new user creation')
 @click.option('-cg', '--create-group', required=False, is_flag=True, default=False, help='Allow new group creation')
 @click.option('-cm', '--create-metadata', required=False, multiple=True,
-              help='Allow to create a new metadata with specified key')
+              help='Allow to create a new metadata with specified key. Multiple options supported.')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def import_users(file_path, create_user, create_group, create_metadata):

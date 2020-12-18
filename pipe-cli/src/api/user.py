@@ -88,7 +88,7 @@ class User(API):
         api = cls.instance()
         query = '/users/import?createUser=%s&createGroup=%s' % (create_user, create_group)
         if create_metadata:
-            query = '%s&dictionaries=%s' % (query, ",".join(create_metadata))
+            query = '%s&createMetadata=%s' % (query, ",".join(create_metadata))
         response_data = api.upload(query, file_path)
         if 'payload' in response_data:
             return response_data['payload']
