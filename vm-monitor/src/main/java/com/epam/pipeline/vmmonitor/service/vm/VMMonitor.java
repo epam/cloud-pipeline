@@ -18,6 +18,7 @@
 package com.epam.pipeline.vmmonitor.service.vm;
 
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
 @Service
 public class VMMonitor {
 
+    private static final String POOL_ID_LABEL = "poolid";
     private final CloudPipelineAPIClient apiClient;
     private final VMNotifier notifier;
     private final Map<CloudProvider, VMMonitorService> services;
@@ -102,7 +104,7 @@ public class VMMonitor {
                 checkMatchingNodes(nodes, vm);
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
-                if (!matchingRunExists(vm)) {
+                if (!matchingRunExists(vm) && !poolIdExists(vm)) {
                     notifier.notifyMissingNode(vm);
                 }
             }
@@ -122,6 +124,23 @@ public class VMMonitor {
             return isRunActive(vm, runId);
         }
         return false;
+    }
+
+    private boolean poolIdExists(final VirtualMachine vm) {
+        log.debug("Checking whether a node pool with corresponding pool id exists.");
+        final String poolIdValue = MapUtils.emptyIfNull(vm.getTags()).get(POOL_ID_LABEL);
+        if (StringUtils.isNotBlank(poolIdValue) && NumberUtils.isDigits(poolIdValue)) {
+            final long poolId = Long.parseLong(poolIdValue);
+            log.debug("VM {} {} is associated with pool id {}. Checking node pool existence.",
+                    vm.getInstanceId(), vm.getCloudProvider(), poolId);
+            return isNodePoolExists(poolId);
+        }
+        return false;
+    }
+
+    private boolean isNodePoolExists(final long poolId) {
+        final List<NodePool> nodePools = apiClient.loadNodePools();
+        return nodePools.stream().map(NodePool::getId).collect(Collectors.toList()).contains(poolId);
     }
 
     private boolean isRunActive(final VirtualMachine vm, final long runId) {
@@ -145,7 +164,7 @@ public class VMMonitor {
 
     private void checkLabels(final NodeInstance node, final VirtualMachine vm) {
         log.debug("Checking status of node {} for VM {} {}", node.getName(), vm.getInstanceId(), vm.getCloudProvider());
-        if (matchingRunExists(vm)) {
+        if (matchingRunExists(vm) || poolIdExists(vm)) {
             return;
         }
         log.debug("Checking whether node {} is labeled with required tags.", node.getName());
