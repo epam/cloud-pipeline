@@ -59,11 +59,13 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -94,7 +96,7 @@ public class NodesManager {
 
     @Autowired
     private KubernetesManager kubernetesManager;
-    
+
     @Autowired
     private NodeDiskManager nodeDiskManager;
 
@@ -141,7 +143,7 @@ public class NodesManager {
     public List<NodeInstance> filterNodes(FilterNodesVO filterNodesVO) {
         List<NodeInstance> result;
         Config config = new Config();
-        try (KubernetesClient client = new DefaultKubernetesClient(config)) {
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient(config)) {
             Map<String, String> labelsMap = new HashedMap<>();
             if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
                 labelsMap.put(KubernetesConstants.RUN_ID_LABEL, filterNodesVO.getRunId());
@@ -153,8 +155,14 @@ public class NodesManager {
                         address.getAddress().equalsIgnoreCase(filterNodesVO.getAddress());
                 addressFilter = node ->
                         node.getAddresses() != null && node.getAddresses()
-                                .stream()
-                                .filter(addressEqualsPredicate).count() > 0;
+                                .stream().anyMatch(addressEqualsPredicate);
+            }
+            Predicate<NodeInstance> labelsFilter = node -> true;
+            if (filterNodesVO.getLabels() != null && !filterNodesVO.getLabels().isEmpty()) {
+                labelsFilter = labels ->
+                        !labels.getLabels().isEmpty() &&
+                                labels.getLabels().entrySet().stream()
+                                        .anyMatch(m -> m.getValue().equals(filterNodesVO.getLabels().get(m.getKey())));
             }
             result = client.nodes()
                     .withLabels(labelsMap)
@@ -163,6 +171,7 @@ public class NodesManager {
                     .stream()
                     .map(NodeInstance::new)
                     .filter(addressFilter)
+                    .filter(labelsFilter)
                     .collect(Collectors.toList());
             this.attachRunsInfo(result);
         }
