@@ -110,6 +110,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.manager.user.RoleManager;
+import com.epam.pipeline.manager.user.UserImportManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.JsonService;
 import com.epam.pipeline.manager.utils.UtilsManager;
@@ -455,6 +456,9 @@ public class AclTestBeans {
 
     @MockBean
     protected MetadataDownloadManager mockMetadataDownloadManager;
+
+    @MockBean
+    protected UserImportManager userImportManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

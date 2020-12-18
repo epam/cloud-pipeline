@@ -74,7 +74,7 @@ public class UserImporterTest {
             assertAttributeValue(attribute, KEY1, VALUE1);
             assertAttributeValue(attribute, KEY2, VALUE2);
         });
-        assertThat(events).hasSize(3);
+        assertThat(events).hasSize(2);
     }
 
     @Test

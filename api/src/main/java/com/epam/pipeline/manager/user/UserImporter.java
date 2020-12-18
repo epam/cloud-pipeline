@@ -63,12 +63,18 @@ public class UserImporter {
      * @return the list of users specified in the input file
      */
     public List<PipelineUserWithStoragePath> importUsers(final MultipartFile file) {
+        final List<String> initialKeys = ListUtils.emptyIfNull(currentAttributes).stream()
+                .map(CategoricalAttribute::getKey)
+                .collect(Collectors.toList());
         try (CSVParser csvParser = buildCsvParser(file)) {
             final List<String> metadataHeaders = getMetadataHeader(csvParser.getHeaderMap());
-            return StreamSupport.stream(csvParser.spliterator(), false)
+            final List<String> metadataKeysToCreate = getMetadataKeysToCreate(metadataHeaders, initialKeys);
+            final List<PipelineUserWithStoragePath> users = StreamSupport.stream(csvParser.spliterator(), false)
                     .map(record -> parseRecord(record, metadataHeaders))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
+            logMetadataEvents(metadataKeysToCreate, initialKeys, metadataHeaders);
+            return users;
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to parse users from CSV file", e);
         }
@@ -114,10 +120,7 @@ public class UserImporter {
             final List<CategoricalAttributeValue> attributeValues = new ArrayList<>();
             attributeValues.add(new CategoricalAttributeValue(key, value));
             currentAttributes.add(new CategoricalAttribute(key, attributeValues));
-            events.add(PipelineUserEvent.info(String.format("A new metadata '%s' will be created.", key)));
         } else {
-            events.add(PipelineUserEvent.info(String.format(
-                    "Metadata '%s' doesn't exist and cannot be created.", key)));
             return;
         }
         userMetadata.put(key, new PipeConfValue(null, value));
@@ -158,5 +161,29 @@ public class UserImporter {
 
     private String prepareRoleName(final String rawName) {
         return rawName.startsWith(Role.ROLE_PREFIX) ? rawName : Role.ROLE_PREFIX + rawName;
+    }
+
+    private List<String> getMetadataKeysToCreate(final List<String> metadataHeaders, final List<String> initialKeys) {
+        return metadataHeaders.stream()
+                .filter(header -> initialKeys.stream().noneMatch(key -> Objects.equals(key, header)))
+                .collect(Collectors.toList());
+    }
+
+    private void logMetadataEvents(final List<String> metadataKeysToCreate, final List<String> alreadyExistKeys,
+                                   final List<String> headers) {
+        final List<String> attributeKeys = currentAttributes.stream()
+                .map(CategoricalAttribute::getKey)
+                .collect(Collectors.toList());
+
+        headers.forEach(header -> logMetadataEvent(header, attributeKeys, alreadyExistKeys, metadataKeysToCreate));
+    }
+
+    private void logMetadataEvent(final String header, final List<String> attributeKeys,
+                                  final List<String> alreadyExistKeys,
+                                  final List<String> metadataKeysToCreate) {
+        if (metadataKeysToCreate.contains(header) && attributeKeys.contains(header)
+                && !alreadyExistKeys.contains(header)) {
+            events.add(PipelineUserEvent.info(String.format("A new metadata '%s' will be created.", header)));
+        }
     }
 }
