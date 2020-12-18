@@ -39,6 +39,39 @@ DEFAULT_SSH_USER = 'root'
 DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
 
 
+class PasswordlessConfig:
+
+    def __init__(self, run_id, conn_info, ssh_path=None):
+        self.owner_user = conn_info.owner.split('@')[0]
+        self.user = DEFAULT_SSH_USER if is_ssh_default_root_user_enabled() else self.owner_user
+        self.key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
+
+        self.remote_keys_path = '/root/.pipe/.ssh/'
+        self.remote_private_key_path = os.path.join(self.remote_keys_path, self.key_name)
+        self.remote_public_key_path = '{}.pub'.format(self.remote_private_key_path)
+        self.remote_ppk_key_path = '{}.ppk'.format(self.remote_private_key_path)
+        self.remote_host_rsa_public_key_path = '/etc/ssh/ssh_host_rsa_key.pub'
+        self.remote_host_ed25519_public_key_path = '/etc/ssh/ssh_host_ed25519_key.pub'
+        self.remote_authorized_keys_paths = ['/root/.ssh/authorized_keys',
+                                             '/home/{}/.ssh/authorized_keys'.format(self.owner_user)]
+
+        self.local_keys_path = os.path.expanduser('~/.pipe/.keys')
+        self.local_private_key_path = os.path.join(self.local_keys_path, self.key_name)
+        self.local_public_key_path = '{}.pub'.format(self.local_private_key_path)
+        self.local_ppk_key_path = '{}.ppk'.format(self.local_private_key_path)
+        self.local_host_ed25519_public_key_path = os.path.join(self.local_keys_path,
+                                                               '{}_{}'.format(self.key_name,
+                                                                              'ssh_host_ed25519_key.pub'))
+
+        self.local_openssh_path = ssh_path or os.path.expanduser('~/.ssh')
+        self.local_openssh_config_path = os.path.join(self.local_openssh_path, 'config')
+        self.local_openssh_known_hosts_path = os.path.join(self.local_openssh_path, 'known_hosts')
+
+        self.local_putty_registry_path = r'Software\SimonTatham\PuTTY'
+        self.local_putty_sessions_registry_path = r'{}\{}'.format(self.local_putty_registry_path, 'Sessions')
+        self.local_putty_ssh_host_keys_registry_path = r'{}\{}'.format(self.local_putty_registry_path, 'SshHostKeys')
+
+
 def setup_paramiko_logging():
     # Log to "null" file by default
     paramiko_log_file = os.getenv("PARAMIKO_LOG_FILE", os.devnull)
@@ -306,42 +339,24 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connectio
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if is_windows():
         create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                     ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
+                                                     ssh_keep, remote_host, log_level, retries)
     else:
         create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
                                                    ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
 
 
 def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                 ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
+                                                 ssh_keep, remote_host, log_level, retries):
     logging.info('Configuring putty passwordless ssh...')
-    ssh_keys_path = os.path.expanduser('~/.pipe/.ssh')
-    ssh_private_key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
-    ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
-    ssh_public_key_path = '{}.pub'.format(ssh_private_key_path)
-    ssh_ppk_key_path = '{}.ppk'.format(ssh_private_key_path)
-    ssh_host_public_key_path = '{}.host.pub'.format(ssh_private_key_path)
-    owner_user = conn_info.owner.split('@')[0]
-    ssh_config_user = DEFAULT_SSH_USER if is_ssh_default_root_user_enabled() else owner_user
-    remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys',
-                                        '/home/{}/.ssh/authorized_keys'.format(owner_user)]
-    remote_ssh_keys_path = '/root/.pipe/.ssh/'
-    remote_ssh_private_key_path = os.path.join(remote_ssh_keys_path, ssh_private_key_name)
-    remote_ssh_public_key_path = '{}.pub'.format(remote_ssh_private_key_path)
-    remote_ssh_ppk_key_path = '{}.ppk'.format(remote_ssh_private_key_path)
-    remote_ssh_host_public_key_path = '/etc/ssh/ssh_host_ed25519_key.pub'
-    known_host_name = 'ssh-ed25519@{}:127.0.0.1'.format(local_port)
-
-    if not os.path.exists(ssh_keys_path):
-        os.makedirs(ssh_keys_path, mode=stat.S_IRWXU)
+    passwordless_config = PasswordlessConfig(run_id, conn_info)
+    if not os.path.exists(passwordless_config.local_keys_path):
+        os.makedirs(passwordless_config.local_keys_path, mode=stat.S_IRWXU)
     try:
         logging.info('Initializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
-        generate_remote_ssh_keys(run_id, retries, remote_ssh_public_key_path, remote_ssh_private_key_path,
-                                 remote_ssh_ppk_key_path, remote_ssh_authorized_keys_paths)
-        copy_remote_ssh_ppk_key(run_id, retries, remote_ssh_ppk_key_path, ssh_ppk_key_path)
-        add_record_to_putty_config(local_port, remote_host, ssh_ppk_key_path, ssh_config_user)
-        copy_remote_ssh_host_public_key_to_putty_known_hosts(run_id, remote_host, retries, known_host_name,
-                                                             remote_ssh_host_public_key_path, ssh_host_public_key_path)
+        generate_remote_ssh_keys(run_id, retries, passwordless_config)
+        copy_remote_ssh_ppk_key(run_id, retries, passwordless_config)
+        add_record_to_putty_config(local_port, remote_host, passwordless_config)
+        copy_remote_ssh_host_public_key_to_putty_known_hosts(run_id, local_port, retries, passwordless_config)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                                  remote_host, log_level, retries)
     except:
@@ -350,29 +365,30 @@ def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port
     finally:
         if not ssh_keep:
             logging.info('Deinitializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
-            remove_remote_ssh_keys(run_id, retries, remote_ssh_public_key_path, remote_ssh_private_key_path,
-                                   remote_ssh_ppk_key_path, remote_ssh_authorized_keys_paths)
-            remove_remote_ssh_host_public_key_from_putty_known_hosts(known_host_name)
-            remove_record_from_putty_config(remote_host)
-            remove_ssh_keys(ssh_ppk_key_path)
+            remove_remote_ssh_keys(run_id, retries, passwordless_config)
+            remove_remote_ssh_host_public_key_from_putty_known_hosts(local_port, passwordless_config)
+            remove_record_from_putty_config(remote_host, passwordless_config)
+            remove_ssh_keys(passwordless_config.local_ppk_key_path, passwordless_config.local_host_ed25519_public_key_path)
 
 
-def remove_record_from_putty_config(remote_host):
+def remove_record_from_putty_config(remote_host, passworless_config):
     import winreg
 
     logging.info('Removing host record from putty sessions...')
-    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r'Software\SimonTatham\PuTTY\Sessions') as key:
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, passworless_config.local_putty_sessions_registry_path) as key:
         if winreg_subkey_exists(key, remote_host):
-            winreg.DeleteKey(winreg.HKEY_CURRENT_USER, r'Software\SimonTatham\PuTTY\Sessions\{}'.format(remote_host))
+            winreg.DeleteKey(winreg.HKEY_CURRENT_USER,
+                             r'{}\{}'.format(passworless_config.local_putty_sessions_registry_path, remote_host))
 
 
-def remove_remote_ssh_host_public_key_from_putty_known_hosts(known_host_name):
+def remove_remote_ssh_host_public_key_from_putty_known_hosts(local_port, passwordless_config):
     import winreg
 
     logging.info('Removing host record from putty known hosts...')
-    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r'Software\SimonTatham\PuTTY\SshHostKeys') as key:
-        if winreg_value_exists(key, known_host_name):
-            winreg.DeleteValue(key, known_host_name)
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, passwordless_config.local_putty_ssh_host_keys_registry_path) as key:
+        putty_ssh_host_key_name = 'ssh-ed25519@{}:127.0.0.1'.format(local_port)
+        if winreg_value_exists(key, putty_ssh_host_key_name):
+            winreg.DeleteValue(key, putty_ssh_host_key_name)
 
 
 def winreg_subkey_exists(key, expected_subkey_name):
@@ -403,46 +419,46 @@ def winreg_value_exists(key, expected_value_name):
     return False
 
 
-def add_record_to_putty_config(local_port, remote_host, ssh_ppk_key_path, ssh_config_user):
+def add_record_to_putty_config(local_port, remote_host, passwordless_config):
     import winreg
     logging.info('Appending host record to putty sessions...')
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER,
-                          r'Software\SimonTatham\PuTTY\Sessions\{}'.format(remote_host)) as key:
-        winreg.SetValueEx(key, 'HostName', 0, winreg.REG_SZ, '{}@127.0.0.1'.format(ssh_config_user))
+                          r'{}\{}'.format(passwordless_config.local_putty_sessions_registry_path, remote_host)) as key:
+        winreg.SetValueEx(key, 'HostName', 0, winreg.REG_SZ, '{}@127.0.0.1'.format(passwordless_config.user))
         winreg.SetValueEx(key, 'PortNumber', 0, winreg.REG_DWORD, local_port)
         winreg.SetValueEx(key, 'Protocol', 0, winreg.REG_SZ, 'ssh')
-        winreg.SetValueEx(key, 'PublicKeyFile', 0, winreg.REG_SZ, ssh_ppk_key_path)
+        winreg.SetValueEx(key, 'PublicKeyFile', 0, winreg.REG_SZ, passwordless_config.local_ppk_key_path)
 
 
-def copy_remote_ssh_host_public_key_to_putty_known_hosts(run_id, remote_host, retries, known_host_name,
-                                                         remote_ssh_host_public_key_path, ssh_host_public_key_path):
+def copy_remote_ssh_host_public_key_to_putty_known_hosts(run_id, local_port, retries, passwordless_config):
     import winreg
     from src.utilities.putty import get_putty_fingerprint
     logging.info('Copying remote host public key...')
-    run_scp_download(run_id, remote_ssh_host_public_key_path, ssh_host_public_key_path,
+    run_scp_download(run_id, passwordless_config.remote_host_ed25519_public_key_path, passwordless_config.local_host_ed25519_public_key_path,
                      user=DEFAULT_SSH_USER, retries=retries)
 
     logging.info('Calculating putty host hash...')
-    with open(ssh_host_public_key_path, 'r') as f:
+    with open(passwordless_config.local_host_ed25519_public_key_path, 'r') as f:
         ssh_host_public_key = f.read().strip()
 
     remote_host_fingerprint = get_putty_fingerprint(ssh_host_public_key)
     if not remote_host_fingerprint:
         raise RuntimeError('Putty host hash calculation has failed for host public key')
 
+    os.remove(passwordless_config.local_host_ed25519_public_key_path)
+
     logging.info('Appending host record to putty known hosts...')
-    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r'Software\SimonTatham\PuTTY\SshHostKeys') as key:
-        winreg.SetValueEx(key, known_host_name, 0, winreg.REG_SZ, remote_host_fingerprint)
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, passwordless_config.local_putty_ssh_host_keys_registry_path) as key:
+        winreg.SetValueEx(key, 'ssh-ed25519@{}:127.0.0.1'.format(local_port), 0, winreg.REG_SZ, remote_host_fingerprint)
 
 
-def copy_remote_ssh_ppk_key(run_id, retries, remote_ssh_ppk_key_path, ssh_ppk_key_path):
+def copy_remote_ssh_ppk_key(run_id, retries, passwordless_config):
     logging.info('Copying remote ppk key...')
-    run_scp_download(run_id, remote_ssh_ppk_key_path, ssh_ppk_key_path,
+    run_scp_download(run_id, passwordless_config.remote_ppk_key_path, passwordless_config.local_ppk_key_path,
                      user=DEFAULT_SSH_USER, retries=retries)
 
 
-def generate_remote_ssh_keys(run_id, retries, remote_ssh_public_key_path, remote_ssh_private_key_path,
-                             remote_ssh_ppk_key_path, remote_ssh_authorized_keys_paths):
+def generate_remote_ssh_keys(run_id, retries, passwordless_config):
     logging.info('Generating tunnel remote ssh keys and copying ssh public key to authorized keys...')
     exit_code = run_ssh(run_id,
                         'ssh-keygen -t rsa -f {remote_ssh_private_key_path} -N "" -q;'
@@ -450,10 +466,10 @@ def generate_remote_ssh_keys(run_id, retries, remote_ssh_public_key_path, remote
                         'apt-get install putty-tools;'
                         'yum install putty;'
                         'puttygen {remote_ssh_private_key_path} -o {remote_ssh_ppk_key_path} -O private;'
-                        .format(remote_ssh_private_key_path=remote_ssh_private_key_path,
-                                remote_ssh_public_key_path=remote_ssh_public_key_path,
-                                remote_ssh_authorized_keys_paths=' '.join(remote_ssh_authorized_keys_paths),
-                                remote_ssh_ppk_key_path=remote_ssh_ppk_key_path),
+                        .format(remote_ssh_private_key_path=passwordless_config.remote_private_key_path,
+                                remote_ssh_public_key_path=passwordless_config.remote_public_key_path,
+                                remote_ssh_authorized_keys_paths=' '.join(passwordless_config.remote_authorized_keys_paths),
+                                remote_ssh_ppk_key_path=passwordless_config.remote_ppk_key_path),
                         user=DEFAULT_SSH_USER, retries=retries)
     if exit_code:
         raise RuntimeError(
@@ -461,62 +477,47 @@ def generate_remote_ssh_keys(run_id, retries, remote_ssh_public_key_path, remote
                 exit_code))
 
 
-def remove_remote_ssh_keys(run_id, retries, remote_ssh_public_key_path, remote_ssh_private_key_path,
-                           remote_ssh_ppk_key_path, remote_ssh_authorized_keys_paths):
+def remove_remote_ssh_keys(run_id, retries, passwordless_config):
     logging.info('Deleting remote ssh keys...')
-    if os.path.exists(remote_ssh_public_key_path) and remote_ssh_authorized_keys_paths:
-        remove_ssh_keys_from_run_command = ''
-        for remote_ssh_authorized_keys_path in remote_ssh_authorized_keys_paths:
-            remote_ssh_authorized_keys_temp_path = '{}_{}'.format(remote_ssh_authorized_keys_path,
-                                                                  random.randint(0, sys.maxsize))
-            remove_ssh_keys_from_run_command += \
-                'cat {public_key_path} | xargs -I {{}} grep -v "{{}}" {authorized_keys_path} > {authorized_keys_temp_path};' \
-                'cp {authorized_keys_temp_path} {authorized_keys_path};' \
-                'chmod 600 {authorized_keys_path};' \
-                'rm {authorized_keys_temp_path};' \
-                    .format(public_key_path=remote_ssh_public_key_path,
-                            private_key_path=remote_ssh_private_key_path,
-                            ppk_key_path=remote_ssh_ppk_key_path,
-                            authorized_keys_path=remote_ssh_authorized_keys_path,
-                            authorized_keys_temp_path=remote_ssh_authorized_keys_temp_path)
-        remove_ssh_keys_from_run_command += 'rm {public_key_path} {private_key_path} {ppk_key_path};' \
-            .format(public_key_path=remote_ssh_public_key_path,
-                    private_key_path=remote_ssh_private_key_path,
-                    ppk_key_path=remote_ssh_ppk_key_path)
-        exit_code = run_ssh(run_id, remove_ssh_keys_from_run_command.rstrip(';'),
-                            user=DEFAULT_SSH_USER, retries=retries)
-        if exit_code:
-            raise RuntimeError('Deleting remote ssh keys has failed with {} exit code'
-                               .format(exit_code))
+    remove_ssh_keys_from_run_command = ''
+    for remote_authorized_keys_path in passwordless_config.remote_authorized_keys_paths:
+        remote_authorized_keys_temp_path = '{}_{}'.format(remote_authorized_keys_path,
+                                                          random.randint(0, sys.maxsize))
+        remove_ssh_keys_from_run_command += \
+            'cat {public_key_path} | xargs -I {{}} grep -v "{{}}" {authorized_keys_path} > {authorized_keys_temp_path};' \
+            'cp {authorized_keys_temp_path} {authorized_keys_path};' \
+            'chmod 600 {authorized_keys_path};' \
+            'rm {authorized_keys_temp_path};' \
+                .format(public_key_path=passwordless_config.remote_public_key_path,
+                        private_key_path=passwordless_config.remote_private_key_path,
+                        ppk_key_path=passwordless_config.remote_ppk_key_path,
+                        authorized_keys_path=remote_authorized_keys_path,
+                        authorized_keys_temp_path=remote_authorized_keys_temp_path)
+    for key_path in [passwordless_config.remote_public_key_path,
+                     passwordless_config.remote_private_key_path,
+                     passwordless_config.remote_ppk_key_path]:
+        remove_ssh_keys_from_run_command += '[ -f {key_path} ] && rm {key_path};'.format(key_path=key_path)
+    exit_code = run_ssh(run_id, remove_ssh_keys_from_run_command.rstrip(';'),
+                        user=DEFAULT_SSH_USER, retries=retries)
+    if exit_code:
+        raise RuntimeError('Deleting remote ssh keys has failed with {} exit code'
+                           .format(exit_code))
 
 
 def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
                                                ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
     logging.info('Configuring openssh passwordless ssh...')
-    ssh_path = ssh_path or os.path.expanduser('~/.ssh')
-    ssh_config_path = '{}/config'.format(ssh_path)
-    ssh_known_hosts_path = '{}/known_hosts'.format(ssh_path)
-    ssh_keys_path = os.path.expanduser('~/.pipe/.ssh')
-    ssh_private_key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
-    ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
-    ssh_public_key_path = '{}.pub'.format(ssh_private_key_path)
-    owner_user = conn_info.owner.split('@')[0]
-    ssh_config_user = DEFAULT_SSH_USER if is_ssh_default_root_user_enabled() else owner_user
-    remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys',
-                                        '/home/{}/.ssh/authorized_keys'.format(owner_user)]
-    remote_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
-    if not os.path.exists(ssh_path):
-        os.makedirs(ssh_path, mode=stat.S_IRWXU)
-    if not os.path.exists(ssh_keys_path):
-        os.makedirs(ssh_keys_path, mode=stat.S_IRWXU)
+    passwordless_config = PasswordlessConfig(run_id, conn_info, ssh_path)
+    if not os.path.exists(passwordless_config.local_openssh_path):
+        os.makedirs(passwordless_config.local_openssh_path, mode=stat.S_IRWXU)
+    if not os.path.exists(passwordless_config.local_keys_path):
+        os.makedirs(passwordless_config.local_keys_path, mode=stat.S_IRWXU)
     try:
         logging.info('Initializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
-        generate_ssh_keys(log_file, ssh_private_key_path)
-        copy_ssh_public_key_to_remote_authorized_hosts(run_id, ssh_public_key_path, retries,
-                                                       remote_ssh_authorized_keys_paths)
-        add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path, ssh_config_user)
-        copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries,
-                                                      ssh_known_hosts_path, remote_ssh_public_key_path)
+        generate_ssh_keys(log_file, passwordless_config)
+        copy_ssh_public_key_to_remote_authorized_hosts(run_id, retries, passwordless_config)
+        add_record_to_ssh_config(local_port, remote_host, passwordless_config)
+        copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries, passwordless_config)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                                  remote_host, log_level, retries)
     except:
@@ -525,11 +526,10 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
     finally:
         if not ssh_keep:
             logging.info('Deinitializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
-            remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_path, retries,
-                                                               remote_ssh_authorized_keys_paths)
-            remove_remote_ssh_public_key_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
-            remove_record_from_ssh_config(ssh_config_path, remote_host)
-            remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
+            remove_ssh_public_key_from_remote_authorized_hosts(run_id, retries, passwordless_config)
+            remove_remote_ssh_public_key_from_ssh_known_hosts(local_port, log_file, passwordless_config)
+            remove_record_from_ssh_config(remote_host, passwordless_config)
+            remove_ssh_keys(passwordless_config.local_public_key_path, passwordless_config.local_private_key_path)
 
 
 def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
@@ -630,9 +630,9 @@ def configure_graceful_exiting():
     signal.signal(signal.SIGTERM, throw_keyboard_interrupt)
 
 
-def generate_ssh_keys(log_file, ssh_private_key_path):
+def generate_ssh_keys(log_file, passwordless_config):
     logging.info('Generating tunnel ssh keys...')
-    perform_command(['ssh-keygen', '-t', 'rsa', '-f', ssh_private_key_path, '-N', '', '-q'], log_file)
+    perform_command(['ssh-keygen', '-t', 'rsa', '-f', passwordless_config.local_private_key_path, '-N', '', '-q'], log_file)
 
 
 def remove_ssh_keys(*key_paths):
@@ -642,25 +642,25 @@ def remove_ssh_keys(*key_paths):
             os.remove(key_path)
 
 
-def copy_ssh_public_key_to_remote_authorized_hosts(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+def copy_ssh_public_key_to_remote_authorized_hosts(run_id, retries, passwordless_config):
     logging.info('Copying ssh public key to remote authorized keys...')
-    with open(ssh_public_key_path, 'r') as f:
+    with open(passwordless_config.local_public_key_path, 'r') as f:
         ssh_public_key = f.read().strip()
     exit_code = run_ssh(run_id,
                         'echo "{}" | tee -a {} > /dev/null'
-                        .format(ssh_public_key, ' '.join(remote_ssh_authorized_keys_paths)),
+                        .format(ssh_public_key, ' '.join(passwordless_config.remote_authorized_keys_paths)),
                         user=DEFAULT_SSH_USER, retries=retries)
     if exit_code:
         raise RuntimeError('Copying ssh public key to remote authorized keys has failed with {} exit code'.format(exit_code))
 
 
-def remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+def remove_ssh_public_key_from_remote_authorized_hosts(run_id, retries, passwordless_config):
     logging.info('Removing ssh public keys from remote authorized hosts...')
-    if os.path.exists(ssh_public_key_path) and remote_ssh_authorized_keys_paths:
-        with open(ssh_public_key_path, 'r') as f:
+    if os.path.exists(passwordless_config.local_public_key_path):
+        with open(passwordless_config.local_public_key_path, 'r') as f:
             ssh_public_key = f.read().strip()
         remove_ssh_public_keys_from_run_command = ''
-        for remote_ssh_authorized_keys_path in remote_ssh_authorized_keys_paths:
+        for remote_ssh_authorized_keys_path in passwordless_config.remote_authorized_keys_paths:
             remote_ssh_authorized_keys_temp_path = '{}_{}'.format(remote_ssh_authorized_keys_path,
                                                                   random.randint(0, sys.maxsize))
             remove_ssh_public_keys_from_run_command += \
@@ -677,25 +677,26 @@ def remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_pa
             raise RuntimeError('Removing ssh public keys from remote authorized hosts has failed with {} exit code'.format(exit_code))
 
 
-def add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path, user):
-    remove_record_from_ssh_config(ssh_config_path, remote_host)
+def add_record_to_ssh_config(local_port, remote_host, passwordless_config):
+    remove_record_from_ssh_config(remote_host, passwordless_config)
     logging.info('Appending host record to ssh config...')
-    ssh_config_path_existed = os.path.exists(ssh_config_path)
-    with open(ssh_config_path, 'a') as f:
+    ssh_config_path_existed = os.path.exists(passwordless_config.local_openssh_config_path)
+    with open(passwordless_config.local_openssh_config_path, 'a') as f:
         f.write('Host {}\n'
                 '    Hostname 127.0.0.1\n'
                 '    Port {}\n'
                 '    IdentityFile {}\n'
                 '    User {}\n'
-                .format(remote_host, local_port, ssh_private_key_path, user))
+                .format(remote_host, local_port,
+                        passwordless_config.local_private_key_path, passwordless_config.user))
     if not ssh_config_path_existed:
-        os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
+        os.chmod(passwordless_config.local_openssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
-def remove_record_from_ssh_config(ssh_config_path, remote_host):
+def remove_record_from_ssh_config(remote_host, passwordless_config):
     logging.info('Removing host record from ssh config...')
-    if os.path.exists(ssh_config_path):
-        with open(ssh_config_path, 'r') as f:
+    if os.path.exists(passwordless_config.local_openssh_config_path):
+        with open(passwordless_config.local_openssh_config_path, 'r') as f:
             ssh_config_lines = f.readlines()
         updated_ssh_config_lines = []
         skip_host = False
@@ -707,31 +708,31 @@ def remove_record_from_ssh_config(ssh_config_path, remote_host):
                     skip_host = False
             if not skip_host:
                 updated_ssh_config_lines.append(line)
-        with open(ssh_config_path, 'w') as f:
+        with open(passwordless_config.local_openssh_config_path, 'w') as f:
             f.writelines(updated_ssh_config_lines)
-        os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
+        os.chmod(passwordless_config.local_openssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
-def copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path):
+def copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries, passwordless_config):
     logging.info('Copying remote public key to known hosts...')
-    ssh_known_hosts_temp_path = ssh_known_hosts_path + '_{}'.format(random.randint(0, sys.maxsize))
-    run_scp_download(run_id, remote_ssh_public_key_path, ssh_known_hosts_temp_path,
+    ssh_known_hosts_temp_path = passwordless_config.local_openssh_known_hosts_path + '_{}'.format(random.randint(0, sys.maxsize))
+    run_scp_download(run_id, passwordless_config.remote_host_rsa_public_key_path, ssh_known_hosts_temp_path,
                      user=DEFAULT_SSH_USER, retries=retries)
     with open(ssh_known_hosts_temp_path, 'r') as f:
         public_key = f.read().strip()
     os.remove(ssh_known_hosts_temp_path)
-    ssh_known_hosts_path_existed = os.path.exists(ssh_known_hosts_path)
-    with open(ssh_known_hosts_path, 'a') as f:
+    ssh_known_hosts_path_existed = os.path.exists(passwordless_config.local_openssh_known_hosts_path)
+    with open(passwordless_config.local_openssh_known_hosts_path, 'a') as f:
         f.write('[127.0.0.1]:{} {}\n'.format(local_port, public_key))
     if not ssh_known_hosts_path_existed:
-        os.chmod(ssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
-    perform_command(['ssh-keygen', '-H', '-f', ssh_known_hosts_path], log_file)
+        os.chmod(passwordless_config.local_openssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
+    perform_command(['ssh-keygen', '-H', '-f', passwordless_config.local_openssh_known_hosts_path], log_file)
 
 
-def remove_remote_ssh_public_key_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file):
+def remove_remote_ssh_public_key_from_ssh_known_hosts(local_port, log_file, passwordless_config):
     logging.info('Removing remote public key from known hosts...')
-    if os.path.exists(ssh_known_hosts_path):
-        perform_command(['ssh-keygen', '-R', '[127.0.0.1]:{}'.format(local_port), '-f', ssh_known_hosts_path], log_file)
+    if os.path.exists(passwordless_config.local_openssh_known_hosts_path):
+        perform_command(['ssh-keygen', '-R', '[127.0.0.1]:{}'.format(local_port), '-f', passwordless_config.local_openssh_known_hosts_path], log_file)
 
 
 def perform_command(executable, log_file=None, collect_output=True):
