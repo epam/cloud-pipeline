@@ -26,3 +26,16 @@
 # FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
 # CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+def get_putty_fingerprint(ssh_public_key):
+    from .kh2reg import handle_line
+
+    class _PuttyFingerprintsDict(dict):
+        def key(self, key, value):
+            self[key] = value
+
+    putty_fingerprints = _PuttyFingerprintsDict()
+    known_host_line = '{} {}'.format('cloud-pipeline', ssh_public_key)
+    handle_line(known_host_line, putty_fingerprints, [])
+    return next(iter(putty_fingerprints.values())) if putty_fingerprints else None
