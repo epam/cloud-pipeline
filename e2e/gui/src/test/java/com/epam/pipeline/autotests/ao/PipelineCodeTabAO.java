@@ -169,6 +169,15 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         return new EditFilePopupAO();
     }
 
+    public PipelineCodeTabAO deleteFile(final String fileName) {
+        $$(tagName("tr"))
+                .find(text(fileName))
+                .find(button("Delete"))
+                .click();
+        click(button("OK"));
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;

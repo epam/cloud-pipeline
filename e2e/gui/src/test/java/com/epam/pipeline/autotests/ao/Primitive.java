@@ -278,5 +278,6 @@ public enum Primitive {
     CLOUD_REGION,
     FRIENDLY_URL,
     SERVICES,
-    NODE_IMAGE
+    NODE_IMAGE,
+    GIT_REPOSITORY
 }
