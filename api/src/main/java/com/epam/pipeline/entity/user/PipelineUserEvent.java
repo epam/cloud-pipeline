@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.user;
 
-import com.epam.pipeline.controller.ResultStatus;
 import lombok.Builder;
 import lombok.Data;
 
@@ -27,7 +26,7 @@ import java.time.LocalDateTime;
 public class PipelineUserEvent {
     private String userName;
     private String message;
-    private ResultStatus status;
+    private PipelineUserEventStatus status;
     private LocalDateTime created;
 
     public static PipelineUserEvent error(final String userName, final String message) {
@@ -35,7 +34,7 @@ public class PipelineUserEvent {
                 .created(LocalDateTime.now())
                 .userName(userName)
                 .message(message)
-                .status(ResultStatus.ERROR)
+                .status(PipelineUserEventStatus.ERROR)
                 .build();
     }
 
@@ -43,7 +42,7 @@ public class PipelineUserEvent {
         return PipelineUserEvent.builder()
                 .created(LocalDateTime.now())
                 .message(message)
-                .status(ResultStatus.INFO)
+                .status(PipelineUserEventStatus.INFO)
                 .build();
     }
 }

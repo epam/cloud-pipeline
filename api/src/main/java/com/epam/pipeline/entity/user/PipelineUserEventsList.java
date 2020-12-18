@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.user;
 
-import com.epam.pipeline.controller.ResultStatus;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -37,7 +36,7 @@ public class PipelineUserEventsList {
         events.add(PipelineUserEvent.builder()
                 .userName(userName)
                 .message(message)
-                .status(ResultStatus.ERROR)
+                .status(PipelineUserEventStatus.ERROR)
                 .created(LocalDateTime.now())
                 .build());
     }
@@ -46,7 +45,7 @@ public class PipelineUserEventsList {
         events.add(PipelineUserEvent.builder()
                 .userName(userName)
                 .message(message)
-                .status(ResultStatus.INFO)
+                .status(PipelineUserEventStatus.INFO)
                 .created(LocalDateTime.now())
                 .build());
     }

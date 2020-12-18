@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import lombok.SneakyThrows;
 import java.util.function.Predicate;
 
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public final class CustomAssertions {
@@ -72,5 +74,9 @@ public final class CustomAssertions {
     @SneakyThrows
     private static void sneakyThrowing(final CheckedRunnable runnable) {
         runnable.run();
+    }
+
+    public static <T> T notInvoked(T mock) {
+        return verify(mock, times(0));
     }
 }

@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.user;
 
-import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -45,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,8 +56,16 @@ public class UserImportManager {
     private final CategoricalAttributeManager categoricalAttributeManager;
     private final MetadataManager metadataManager;
     private final RoleManager roleManager;
-    private final RoleDao roleDao;
 
+    /**
+     * Registers a new {@link PipelineUser}, {@link Role}, {@link MetadataEntry} for users
+     * and {@link CategoricalAttribute} if allowed. Otherwise, log event and skip action.
+     * @param createUser true if user shall be created if not exists
+     * @param createGroup true if role shall be created if not exists
+     * @param attributesToCreate the list of metadata keys that shall be created if not exists
+     * @param file the input file with users
+     * @return the list of events that happened during user processing
+     */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public List<PipelineUserEvent> importUsersFromFile(final boolean createUser, final boolean createGroup,
                                                        final List<String> attributesToCreate,
@@ -137,7 +145,7 @@ public class UserImportManager {
     }
 
     private Role getOrCreateRole(final Role role, final boolean createRoles, final PipelineUserEventsList events) {
-        return roleDao.loadRoleByName(role.getName())
+        return roleManager.findRoleByName(role.getName())
                 .orElseGet(() -> createRoleIfAllowed(role, createRoles, events));
     }
 
@@ -178,11 +186,11 @@ public class UserImportManager {
                               final String keyToAdd, final PipeConfValue valueToAdd) {
         categoricalAttributes.computeIfPresent(keyToAdd, (attributeKey, attribute) -> {
             ListUtils.emptyIfNull(attribute.getValues()).stream()
-                    .filter(attributeValue -> attributeValue.getValue().equals(valueToAdd.getValue()))
+                    .filter(attributeValue -> Objects.equals(attributeValue.getValue(), valueToAdd.getValue()))
                     .findFirst()
                     .ifPresent(attributeValue -> {
                         addDataToMetadata(metadata, events, keyToAdd, valueToAdd);
-                        addLinksToMetadata(attributeValue.getLinks(), metadata, events);
+                        addLinksToMetadata(attributeValue.getLinks(), metadata, events, categoricalAttributes);
                     });
             return attribute;
         });
@@ -191,7 +199,7 @@ public class UserImportManager {
     private void addDataToMetadata(final Map<String, PipeConfValue> metadata,
                                    final PipelineUserEventsList events,
                                    final String keyToAdd, final PipeConfValue valueToAdd) {
-        if (metadata.containsKey(keyToAdd) && metadata.get(keyToAdd).getValue().equals(valueToAdd.getValue())) {
+        if (pairAlreadyExists(metadata, keyToAdd, valueToAdd)) {
             return;
         }
         metadata.put(keyToAdd, valueToAdd);
@@ -201,13 +209,33 @@ public class UserImportManager {
 
     private void addLinksToMetadata(final List<CategoricalAttributeValue> links,
                                     final Map<String, PipeConfValue> metadata,
-                                    final PipelineUserEventsList events) {
+                                    final PipelineUserEventsList events,
+                                    final Map<String, CategoricalAttribute> categoricalAttributes) {
         if (CollectionUtils.isEmpty(links)) {
             return;
         }
         links.forEach(link -> {
-            addDataToMetadata(metadata, events, link.getKey(), new PipeConfValue("string", link.getValue()));
-            addLinksToMetadata(link.getLinks(), metadata, events);
+            final String targetKey = link.getKey();
+            final String targetValue = link.getValue();
+
+            addDataToMetadata(metadata, events, targetKey, new PipeConfValue(null, targetValue));
+            categoricalAttributes.computeIfPresent(targetKey, (attributeKey, attribute) -> {
+                findLink(attribute, targetValue).ifPresent(attributeValue ->
+                        addLinksToMetadata(attributeValue.getLinks(), metadata, events, categoricalAttributes));
+                return attribute;
+            });
         });
+    }
+
+    private Optional<CategoricalAttributeValue> findLink(final CategoricalAttribute attribute,
+                                                         final String targetValue) {
+        return ListUtils.emptyIfNull(attribute.getValues()).stream()
+                .filter(attributeValue -> Objects.equals(attributeValue.getValue(), targetValue))
+                .findFirst();
+    }
+
+    private boolean pairAlreadyExists(final Map<String, PipeConfValue> metadata, final String key,
+                                      final PipeConfValue value) {
+        return metadata.containsKey(key) && Objects.equals(metadata.get(key).getValue(), value.getValue());
     }
 }

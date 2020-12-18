@@ -24,7 +24,6 @@ import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.csv.CSVFormat;
@@ -46,15 +45,23 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * Generates users structure according to the given scv file
+ * Generates users structure according to the given csv file
  */
-@Slf4j
 @RequiredArgsConstructor
 public class UserImporter {
     private final List<PipelineUserEvent> events;
     private final List<CategoricalAttribute> currentAttributes;
     private final List<String> attributesToCreate;
 
+    /**
+     * Returns List of {@link PipelineUserWithStoragePath}
+     * @param file the input csv file. The header should have the following format:
+     *             1 column - the user name
+     *             2 column - the list of roles that shall be assigned to user (separated by '|' symbol)
+     *             remains - the metadata keys
+     *             The header example: UserName,Groups,MetadataItem1,MetadataItem2,MetadataItemN
+     * @return the list of users specified in the input file
+     */
     public List<PipelineUserWithStoragePath> importUsers(final MultipartFile file) {
         try (CSVParser csvParser = buildCsvParser(file)) {
             final List<String> metadataHeaders = getMetadataHeader(csvParser.getHeaderMap());
@@ -113,7 +120,7 @@ public class UserImporter {
                     "Metadata '%s' doesn't exist and cannot be created.", key)));
             return;
         }
-        userMetadata.put(key, new PipeConfValue("string", value));
+        userMetadata.put(key, new PipeConfValue(null, value));
     }
 
     private CSVParser buildCsvParser(final MultipartFile file) throws IOException {
