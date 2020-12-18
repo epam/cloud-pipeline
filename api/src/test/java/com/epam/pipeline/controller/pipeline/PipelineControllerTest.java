@@ -391,8 +391,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
                 .getInstanceEstimatedPrice(ID, TEST_STRING, TEST_STRING, TEST_STRING, TEST_INT, true, ID);
 
         final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_PRICE_URL, ID))
-                .content(stringOf(instance)).params(multiValueMapOf(VERSION, TEST_STRING,
-                                                                    CONFIG, TEST_STRING)));
+                .content(stringOf(instance))
+                .params(multiValueMapOf(VERSION, TEST_STRING,
+                                        CONFIG, TEST_STRING)));
 
         verify(mockPipelineApiService)
                 .getInstanceEstimatedPrice(ID, TEST_STRING, TEST_STRING, TEST_STRING, TEST_INT, true, ID);
@@ -587,13 +588,14 @@ public class PipelineControllerTest extends AbstractControllerTest {
         doReturn(gitCommitEntry).when(mockPipelineApiService).uploadFiles(ID, TEST_STRING, fileMetadataList);
 
         final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_FILE_UPLOAD_URL, ID))
-                        .params(multiValueMapOf(PATH, TEST_STRING)).content(MULTIPART_CONTENT),
-                MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
+                        .params(multiValueMapOf(PATH, TEST_STRING))
+                        .content(MULTIPART_CONTENT),
+                        MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
         final ArgumentCaptor<UploadFileMetadata> captor = ArgumentCaptor.forClass(UploadFileMetadata.class);
 
         verify(mockPipelineApiService).uploadFiles(eq(ID), eq(TEST_STRING),
                 Collections.singletonList(captor.capture()));
-        assertResponse(mvcResult, "[{fileName=file.txt, fileSize=0 Kb, fileType=application/octet-stream}]");
+        assertResponseAsList(mvcResult);
     }
 
     @Test
@@ -626,7 +628,7 @@ public class PipelineControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(String.format(PIPELINE_ID_FILE_DOWNLOAD_URL, ID))
                         .params(multiValueMapOf(VERSION, TEST_STRING,
                                                 PATH, TEST_STRING)),
-                MediaType.APPLICATION_OCTET_STREAM_VALUE);
+                                                MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
         verify(mockPipelineApiService).getPipelineFileContents(ID, TEST_STRING, TEST_STRING);
         assertFileResponse(mvcResult, TEST_STRING, TEST_ARRAY);
@@ -819,12 +821,11 @@ public class PipelineControllerTest extends AbstractControllerTest {
         assertThat(returnedEntityBody).isEqualTo(bytes);
     }
 
-
-    private void assertResponse(MvcResult mvcResult, String expected) throws Exception {
+    private void assertResponseAsList(MvcResult mvcResult) throws Exception{
         final String expectedResult = mvcResult.getResponse().getContentAsString();
+        final List<UploadFileMetadata> expectedList = getObjectMapper().readValue(expectedResult, List.class);
+        final List<UploadFileMetadata> actualList = getObjectMapper().readValue(stringOf(fileMetadataList), List.class);
 
-        final List returnedEntityBody = getObjectMapper().readValue(expectedResult, List.class);
-
-        assertThat(returnedEntityBody.toString()).isEqualTo(expected);
+        assertThat(actualList).isEqualTo(expectedList);
     }
 }

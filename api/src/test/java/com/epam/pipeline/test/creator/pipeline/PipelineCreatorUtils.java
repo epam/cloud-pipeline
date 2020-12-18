@@ -147,7 +147,11 @@ public final class PipelineCreatorUtils {
     }
 
     public static UploadFileMetadata getUploadFileMetadata() {
-        return new UploadFileMetadata();
+        final UploadFileMetadata uploadFileMetadata = new UploadFileMetadata();
+        uploadFileMetadata.setFileName("file.txt");
+        uploadFileMetadata.setFileSize("0 Kb");
+        uploadFileMetadata.setFileType("application/octet-stream");
+        return uploadFileMetadata;
     }
 
     public static GenerateFileVO getGenerateFileVO() {
