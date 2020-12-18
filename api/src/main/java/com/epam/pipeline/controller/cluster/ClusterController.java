@@ -222,7 +222,7 @@ public class ClusterController extends AbstractRestController {
         @DateTimeFormat(pattern = DATE_TIME_FORMAT)
         @RequestParam(value = TO, required = false) final LocalDateTime to,
         @RequestParam(value = INTERVAL, required = false, defaultValue = "PT1M") final Duration interval,
-        @RequestParam(value = REPORT_TYPE, required = false, defaultValue = "XLS") final MonitoringReportType type,
+        @RequestParam(value = REPORT_TYPE, required = false, defaultValue = "CSV") final MonitoringReportType type,
         final HttpServletResponse response) throws IOException {
         final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval, type);
         final String reportName = String.format("%s_%s-%s-%s", name, from, to, interval);
