@@ -126,11 +126,6 @@ function sign_and_publish_pipe_win_distribution() {
     rm -rf pipe
 }
 
-function unpack_monitoring_template() {
-    local jar_path="$1"
-    unzip -p "$jar_path" BOOT-INF/classes/static/monitoring_report_template.xls > "$CP_API_MONITORING_XLS_TEMPLATE_PATH"
-}
-
 # Validate SSO and SSL certificates
 if [ -z "$CP_API_SRV_CERT_DIR" ]; then
     export CP_API_SRV_CERT_DIR="/opt/api/pki"
@@ -225,16 +220,11 @@ export CP_WIN_CODE_SIGN_CERT_DESC="${CP_WIN_CODE_SIGN_CERT_DESC:-Cloud Pipeline}
 export CP_WIN_CODE_SIGN_CERT_URL="${CP_WIN_CODE_SIGN_CERT_URL:-https://www.epam.com/}"
 
 win_code_sign_cert_path="$CP_API_SRV_CERT_DIR/win-code-sign-cert.pfx"
-path_to_jar="$CP_API_HOME/pipeline.jar"
 if [ -f "$win_code_sign_cert_path" ]; then
     echo "Signing Windows CLI with Code Signing Certificate"
-    sign_and_publish_pipe_win_distribution "$path_to_jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
+    sign_and_publish_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
         "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
 fi
-
-export CP_API_MONITORING_XLS_TEMPLATE_PATH="${CP_API_MONITORING_XLS_TEMPLATE_PATH:-$CP_API_HOME/report-templates/monitoring_report_template.xls}"
-mkdir -p $(dirname $CP_API_MONITORING_XLS_TEMPLATE_PATH)
-unpack_monitoring_template "$path_to_jar"
 
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"

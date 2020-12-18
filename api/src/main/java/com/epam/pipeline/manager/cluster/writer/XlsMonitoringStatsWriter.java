@@ -33,10 +33,10 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -77,7 +77,7 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
             throw new IllegalStateException(
                 messageHelper.getMessage(MessageConstants.ERROR_STATS_EMPTY_XLS_TEMPLATE_PATH));
         }
-        try (Workbook wb = WorkbookFactory.create(new File(templatePath), null, true);
+        try (Workbook wb = WorkbookFactory.create(ResourceUtils.getFile(templatePath), null, true);
              ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             fillInRawData(wb, stats);
             fillInScaledData(wb, stats);
