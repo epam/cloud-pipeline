@@ -40,7 +40,7 @@ public class VMMonitorTest {
 
     private static final String TEST_STRING = "TEST";
     private static final String RUN_ID_LABEL = "runid";
-    private static final String POOL_ID_LABEL = "poolid";
+    private static final String POOL_ID_LABEL = "pool_id";
     private static final String RUN_ID_VALUE = "p-123";
     private static final String POOL_ID_VALUE = "123";
     private static final Long POOL_ID = 123L;
@@ -54,7 +54,6 @@ public class VMMonitorTest {
     private final VMMonitorService mockService = mock(AWSMonitorService.class);
     private final VMNotifier notifier = mock(VMNotifier.class);
 
-
     @BeforeEach
     public void setUp() {
         reqLabels.put(RUN_ID_LABEL, RUN_ID_VALUE);
@@ -62,7 +61,7 @@ public class VMMonitorTest {
         doReturn(CloudProvider.AWS).when(mockService).provider();
         vm = VirtualMachine.builder().tags(reqLabels).build();
         monitor = new VMMonitor(mockApiClient, notifier, Collections.singletonList(mockService),
-                RUN_ID_LABEL, RUN_ID_LABEL);
+                RUN_ID_LABEL, RUN_ID_LABEL, POOL_ID_LABEL);
 
     }
 

@@ -48,24 +48,26 @@ import java.util.stream.Collectors;
 @Service
 public class VMMonitor {
 
-    private static final String POOL_ID_LABEL = "poolid";
     private final CloudPipelineAPIClient apiClient;
     private final VMNotifier notifier;
     private final Map<CloudProvider, VMMonitorService> services;
     private final List<String> requiredLabels;
     private final String runIdLabel;
+    private final String poolIdLabel;
 
     public VMMonitor(final CloudPipelineAPIClient apiClient,
                      final VMNotifier notifier,
                      final List<VMMonitorService> services,
                      @Value("${monitor.required.labels:}") final String requiredLabels,
-                     @Value("${monitor.runid.label:}") final String runIdLabel) {
+                     @Value("${monitor.runid.label:}") final String runIdLabel,
+                     @Value("${monitor.poolid.label:}") final String poolIdLabel) {
         this.apiClient = apiClient;
         this.notifier = notifier;
         this.services = ListUtils.emptyIfNull(services).stream()
                 .collect(Collectors.toMap(VMMonitorService::provider, Function.identity()));
         this.requiredLabels = Arrays.asList(requiredLabels.split(","));
         this.runIdLabel = runIdLabel;
+        this.poolIdLabel = poolIdLabel;
     }
 
     public void monitor() {
@@ -128,7 +130,7 @@ public class VMMonitor {
 
     private boolean poolIdExists(final VirtualMachine vm) {
         log.debug("Checking whether a node pool with corresponding pool id exists.");
-        final String poolIdValue = MapUtils.emptyIfNull(vm.getTags()).get(POOL_ID_LABEL);
+        final String poolIdValue = MapUtils.emptyIfNull(vm.getTags()).get(poolIdLabel);
         if (StringUtils.isNotBlank(poolIdValue) && NumberUtils.isDigits(poolIdValue)) {
             final long poolId = Long.parseLong(poolIdValue);
             log.debug("VM {} {} is associated with pool id {}. Checking node pool existence.",
