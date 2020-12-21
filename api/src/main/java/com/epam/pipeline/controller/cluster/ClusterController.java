@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -59,6 +60,7 @@ public class ClusterController extends AbstractRestController {
     private static final String FROM = "from";
     private static final String TO = "to";
     private static final String INTERVAL = "interval";
+    private static final String REPORT_TYPE = "type";
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final ClusterApiService clusterApiService;
@@ -220,10 +222,11 @@ public class ClusterController extends AbstractRestController {
         @DateTimeFormat(pattern = DATE_TIME_FORMAT)
         @RequestParam(value = TO, required = false) final LocalDateTime to,
         @RequestParam(value = INTERVAL, required = false, defaultValue = "PT1M") final Duration interval,
+        @RequestParam(value = REPORT_TYPE, required = false, defaultValue = "CSV") final MonitoringReportType type,
         final HttpServletResponse response) throws IOException {
-        final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval);
+        final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval, type);
         final String reportName = String.format("%s_%s-%s-%s", name, from, to, interval);
-        writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, "csv"));
+        writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, type.name().toLowerCase()));
     }
 
     @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.GET)

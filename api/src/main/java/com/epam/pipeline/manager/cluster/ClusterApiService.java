@@ -29,6 +29,10 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
+import com.epam.pipeline.manager.cluster.NodeDiskManager;
+import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import lombok.RequiredArgsConstructor;
@@ -84,8 +88,8 @@ public class ClusterApiService {
 
     @PreAuthorize(NODE_READ)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
-        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval);
+                                              final Duration interval, final MonitoringReportType type) {
+        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {

@@ -663,7 +663,7 @@ public class ResourceMonitoringManagerTest {
         verifyZeroInteractionWithTagsMethods(spyIdledRun, UTILIZATION_LEVEL_LOW);
         verifyZeroInteractionWithTagsMethods(spyPressuredRun, UTILIZATION_LEVEL_HIGH);
     }
-    
+
     private void setTagsAndLastNotificationTimeOfRun(final PipelineRun run, final Map<String, String> tags,
                                                      final LocalDateTime lastNotificationTime) {
         run.setTags(new HashMap<>(tags));

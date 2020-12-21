@@ -155,6 +155,7 @@ dependencies {
     compile group: "org.apache.commons", name: "commons-math3", version: "3.6.1"
 
     // https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml
+    compile group: "org.apache.poi", name: "poi", version: "3.16"
     compile group: "org.apache.poi", name: "poi-ooxml", version: "3.16"
 
     // https://mvnrepository.com/artifact/com.opencsv/opencsv
