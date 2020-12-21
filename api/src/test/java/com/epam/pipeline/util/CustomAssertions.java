@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.util;
 
+import lombok.SneakyThrows;
+
 import java.util.function.Predicate;
 
 import static org.junit.Assert.fail;
@@ -60,5 +62,15 @@ public final class CustomAssertions {
             return;
         }
         fail("Exception was expected but nothing was thrown.");
+    }
+
+    public static void assertThrowsChecked(final Class<? extends Throwable> expectedExceptionClass,
+                                           final CheckedRunnable runnable) {
+        assertThrows(expectedExceptionClass, () -> sneakyThrowing(runnable));
+    }
+
+    @SneakyThrows
+    private static void sneakyThrowing(final CheckedRunnable runnable) {
+        runnable.run();
     }
 }
