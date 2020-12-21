@@ -266,6 +266,13 @@ def read_system_endpoints():
         return system_endpoints
 
 SYSTEM_ENDPOINTS = read_system_endpoints()
+SYSTEM_ENDPOINTS_NAMES = [endpoint['friendly_name'] for endpoint in SYSTEM_ENDPOINTS.values()]
+
+def is_system_endpoint_name(endpoint):
+        if endpoint and "name" in endpoint and endpoint["name"]:
+                return endpoint["name"] in SYSTEM_ENDPOINTS_NAMES
+        else:
+                return False
 
 def append_system_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
@@ -393,7 +400,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
-                                        if not pretty_url or has_explicit_endpoint_num:
+                                        if not pretty_url or (has_explicit_endpoint_num and not is_system_endpoint_name(endpoint)):
                                                 edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
                                         else:
                                                 pretty_url_path = pretty_url["path"]
