@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.util;
 
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +40,7 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.Getter;
+import java.util.Map;
 
 /**
  * A test utils class, that simplifies mocking Kubernetes response entities
@@ -74,6 +76,12 @@ public class KubernetesTestUtils {
         public MockFilter<MockNodes, Node, NodeList> mockWithLabel(Matcher<String> matcher) {
             MockFilter<MockNodes, Node, NodeList> mockFilter = new MockFilter<>(this);
             when(nodes.withLabel(Mockito.argThat(matcher))).thenReturn(mockFilter.getFilter());
+            return mockFilter;
+        }
+
+        public MockFilter<MockNodes, Node, NodeList> mockWithLabels(Map<String, String> matcher) {
+            MockFilter<MockNodes, Node, NodeList> mockFilter = new MockFilter<>(this);
+            when(nodes.withLabels(anyMap())).thenReturn(mockFilter.getFilter());
             return mockFilter;
         }
 
