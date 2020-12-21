@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class PipeRunCmdBuilderTest {
 
-    public static final String PARAM_WTH_TYPE_TEMPLATE = "%s? %s";
+    public static final String PARAM_WTH_TYPE_TEMPLATE = "%s?%s";
     private static final String PARAM_INT_TYPE = "int";
     private static final String PARAM_INPUT_TYPE = "input";
     private static final String PARAM_OUTPUT_TYPE = "output";
