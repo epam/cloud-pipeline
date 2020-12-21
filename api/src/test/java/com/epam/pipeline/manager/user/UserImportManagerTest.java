@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.user;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
@@ -26,7 +27,6 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
-import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
@@ -65,11 +65,11 @@ public class UserImportManagerTest {
     private static final String LINKED_VALUE_2 = "value2";
 
     private final UserManager userManager = mock(UserManager.class);
-    private final CategoricalAttributeManager categoricalAttributeManager = mock(CategoricalAttributeManager.class);
+    private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final MetadataManager metadataManager = mock(MetadataManager.class);
     private final RoleManager roleManager = mock(RoleManager.class);
     private final UserImportManager userImportManager = new UserImportManager(userManager,
-            categoricalAttributeManager, metadataManager, roleManager);
+            messageHelper, metadataManager, roleManager);
 
     @Test
     public void shouldCreateUserAndRolesAndMetadataIfAllowed() {
@@ -124,7 +124,7 @@ public class UserImportManagerTest {
         final PipelineUser pipelineUser = getPipelineUser(USER_NAME);
         final Role role = new Role(ROLE_NAME);
         pipelineUser.setRoles(Collections.singletonList(role));
-        final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, buildMetadata());
+        final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, new HashMap<>());
 
         when(userManager.loadUserByName(USER_NAME)).thenReturn(getPipelineUser(USER_NAME));
         when(roleManager.findRoleByName(ROLE_NAME)).thenReturn(Optional.empty());
@@ -149,32 +149,6 @@ public class UserImportManagerTest {
 
         notInvoked(userManager).createUser(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
         assertThat(resultEvents).hasSize(1);
-    }
-
-    @Test
-    public void shouldNotUpdateMetadataIfNotAllowed() {
-        final PipelineUser pipelineUser = getPipelineUser(USER_NAME);
-        final Map<String, PipeConfValue> metadata = buildMetadata();
-        metadata.put(LINKED_KEY, new PipeConfValue(null, LINKED_VALUE));
-        metadata.put(LINKED_KEY_2, new PipeConfValue(null, LINKED_VALUE_2));
-        final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, metadata);
-
-        when(userManager.loadUserByName(USER_NAME)).thenReturn(pipelineUser);
-        when(metadataManager.loadMetadataItem(pipelineUser.getId(), AclClass.PIPELINE_USER))
-                .thenReturn(userMetadata(pipelineUser.getId(), buildMetadata()));
-
-        final List<PipelineUserEvent> resultEvents = userImportManager
-                .processUser(userWithMetadata, true, true, Collections.emptyList());
-
-        final ArgumentCaptor<Map<String, PipeConfValue>> dataCaptor = getCaptor();
-        verify(metadataManager).updateEntityMetadata(dataCaptor.capture(), any(), any());
-        final Map<String, PipeConfValue> capturedData = dataCaptor.getValue();
-        assertThat(capturedData)
-                .hasSize(1)
-                .containsKey(KEY);
-        assertThat(capturedData.get(KEY).getValue()).isEqualTo(VALUE);
-
-        assertThat(CollectionUtils.isEmpty(resultEvents)).isTrue();
     }
 
     @Test

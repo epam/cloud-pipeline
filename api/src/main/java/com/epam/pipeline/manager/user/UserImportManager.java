@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.user;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -26,7 +28,6 @@ import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.PipelineUserEventsList;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
-import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +37,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -53,40 +52,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserImportManager {
     private final UserManager userManager;
-    private final CategoricalAttributeManager categoricalAttributeManager;
+    private final MessageHelper messageHelper;
     private final MetadataManager metadataManager;
     private final RoleManager roleManager;
-
-    /**
-     * Registers a new {@link PipelineUser}, {@link Role}, {@link MetadataEntry} for users
-     * and {@link CategoricalAttribute} if allowed. Otherwise, log event and skip action.
-     * @param createUser true if user shall be created if not exists
-     * @param createGroup true if role shall be created if not exists
-     * @param attributesToCreate the list of metadata keys that shall be created if not exists
-     * @param file the input file with users
-     * @return the list of events that happened during user processing
-     */
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    public List<PipelineUserEvent> importUsersFromFile(final boolean createUser, final boolean createGroup,
-                                                       final List<String> attributesToCreate,
-                                                       final MultipartFile file) {
-        final List<PipelineUserEvent> events = new ArrayList<>();
-        final List<CategoricalAttribute> categoricalAttributes = ListUtils
-                .emptyIfNull(categoricalAttributeManager.loadAll());
-        final List<PipelineUserWithStoragePath> users =
-                new UserImporter(events, categoricalAttributes, attributesToCreate).importUsers(file);
-        categoricalAttributeManager.updateCategoricalAttributes(categoricalAttributes);
-
-        users.forEach(user -> {
-            try {
-                events.addAll(ListUtils.emptyIfNull(processUser(user, createUser, createGroup, categoricalAttributes)));
-            } catch (Exception e) {
-                log.error(String.format("Failed to process user '%s'", user.getUserName()), e);
-                events.add(PipelineUserEvent.error(user.getUserName(), e.getMessage()));
-            }
-        });
-        return events;
-    }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public List<PipelineUserEvent> processUser(final PipelineUserWithStoragePath pipelineUserWithMetadata,
@@ -116,13 +84,13 @@ public class UserImportManager {
         final String userName = pipelineUser.getUserName();
         final PipelineUser loadedUser = userManager.loadUserByName(userName);
         if (!createUser && Objects.isNull(loadedUser)) {
-            events.info(String.format("Pipeline user '%s' doesn't exist and cannot be created.", userName));
+            events.info(messageHelper.getMessage(MessageConstants.EVENT_USER_CREATION_NOT_ALLOWED, userName));
             return null;
         }
         if (Objects.isNull(loadedUser)) {
             final PipelineUser user = userManager.createUser(userName, Collections.emptyList(), Collections.emptyList(),
                     pipelineUser.getAttributes(), null);
-            events.info(String.format("User '%s' successfully created.", userName));
+            events.info(messageHelper.getMessage(MessageConstants.EVENT_USER_CREATED, userName));
             return user;
         }
         return loadedUser;
@@ -135,12 +103,12 @@ public class UserImportManager {
 
     private Role createRoleIfAllowed(final Role role, final boolean createRole, final PipelineUserEventsList events) {
         if (!createRole) {
-            events.info(String.format("Role '%s' doesn't exist and cannot be created.", role.getName()));
+            events.info(messageHelper.getMessage(MessageConstants.EVENT_ROLE_CREATION_NOT_ALLOWED, role.getName()));
             return null;
         }
         final Role createdRole = roleManager.createRole(role.getName(), role.isPredefined(), role.isUserDefault(),
                 role.getDefaultStorageId());
-        events.info(String.format("Role '%s' successfully created.", role.getName()));
+        events.info(messageHelper.getMessage(MessageConstants.EVENT_ROLE_CREATED, role.getName()));
         return createdRole;
     }
 
@@ -159,7 +127,7 @@ public class UserImportManager {
             return;
         }
         roleManager.assignRole(role.getId(), Collections.singletonList(user.getId()));
-        events.info(String.format("Role '%s' successfully assigned to user '%s'",
+        events.info(messageHelper.getMessage(MessageConstants.EVENT_ROLE_ASSIGNED,
                 role.getName(), user.getUserName()));
     }
 
@@ -184,14 +152,13 @@ public class UserImportManager {
                               final Map<String, PipeConfValue> metadata,
                               final PipelineUserEventsList events,
                               final String keyToAdd, final PipeConfValue valueToAdd) {
+        addDataToMetadata(metadata, events, keyToAdd, valueToAdd);
         categoricalAttributes.computeIfPresent(keyToAdd, (attributeKey, attribute) -> {
             ListUtils.emptyIfNull(attribute.getValues()).stream()
                     .filter(attributeValue -> Objects.equals(attributeValue.getValue(), valueToAdd.getValue()))
                     .findFirst()
-                    .ifPresent(attributeValue -> {
-                        addDataToMetadata(metadata, events, keyToAdd, valueToAdd);
-                        addLinksToMetadata(attributeValue.getLinks(), metadata, events, categoricalAttributes);
-                    });
+                    .ifPresent(attributeValue -> addLinksToMetadata(attributeValue.getLinks(),
+                            metadata, events, categoricalAttributes));
             return attribute;
         });
     }
@@ -203,7 +170,7 @@ public class UserImportManager {
             return;
         }
         metadata.put(keyToAdd, valueToAdd);
-        events.info(String.format("A new metadata '%s'='%s' added to user '%s'", keyToAdd, valueToAdd.getValue(),
+        events.info(messageHelper.getMessage(MessageConstants.EVENT_METADATA_ASSIGNED, keyToAdd, valueToAdd.getValue(),
                 events.getUserName()));
     }
 

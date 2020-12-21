@@ -23,7 +23,9 @@ import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
@@ -66,6 +68,9 @@ public class UserApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private UserManager mockUserManager;
+
+    @Autowired
+    private UsersFileImportManager mockUsersFileImportManager;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -389,5 +394,29 @@ public class UserApiServiceTest extends AbstractAclTest {
         doReturn(token).when(mockUserManager).issueToken(TEST_STRING, ID);
 
         assertThrows(AccessDeniedException.class, () -> userApiService.issueToken(TEST_STRING, ID));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldImportUsersForAdmin() {
+        final List<PipelineUserEvent> usersEvents = Collections.singletonList(UserCreatorUtils
+                .getPipelineUserEvent(SIMPLE_USER));
+        doReturn(usersEvents).when(mockUsersFileImportManager)
+                .importUsersFromFile(true, true, TEST_STRING_LIST, null);
+
+        assertThat(userApiService.importUsersFromCsv(true, true, TEST_STRING_LIST, null))
+                .isEqualTo(usersEvents);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyImportUsersForNotAdmin() {
+        final List<PipelineUserEvent> usersEvents = Collections.singletonList(UserCreatorUtils
+                .getPipelineUserEvent(SIMPLE_USER));
+        doReturn(usersEvents).when(mockUsersFileImportManager)
+                .importUsersFromFile(true, true, TEST_STRING_LIST, null);
+
+        assertThrows(AccessDeniedException.class, () -> userApiService
+                .importUsersFromCsv(true, true, TEST_STRING_LIST, null));
     }
 }

@@ -24,8 +24,8 @@ import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
-import com.epam.pipeline.manager.user.UserImportManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.manager.user.UsersFileImportManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -45,7 +45,7 @@ public class UserApiService {
     private UserManager userManager;
 
     @Autowired
-    private UserImportManager userImportManager;
+    private UsersFileImportManager usersFileImportManager;
 
     /**
      * Registers a new user
@@ -200,6 +200,6 @@ public class UserApiService {
     public List<PipelineUserEvent> importUsersFromCsv(final boolean createUser, final boolean createGroup,
                                                       final List<String> systemDictionariesToCreate,
                                                       final MultipartFile file) {
-        return userImportManager.importUsersFromFile(createUser, createGroup, systemDictionariesToCreate, file);
+        return usersFileImportManager.importUsersFromFile(createUser, createGroup, systemDictionariesToCreate, file);
     }
 }

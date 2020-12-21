@@ -70,8 +70,8 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.user.RoleManager;
-import com.epam.pipeline.manager.user.UserImportManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.security.acl.AclPermissionFactory;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -276,7 +276,7 @@ public class AclTestConfiguration {
     protected SystemNotificationManager systemNotificationManager;
 
     @MockBean
-    protected UserImportManager userImportManager;
+    protected UsersFileImportManager usersFileImportManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

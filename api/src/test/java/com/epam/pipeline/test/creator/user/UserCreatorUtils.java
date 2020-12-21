@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -119,5 +120,12 @@ public final class UserCreatorUtils {
 
     public static ExtendedRole getExtendedRole() {
         return new ExtendedRole();
+    }
+
+    public static PipelineUserEvent getPipelineUserEvent(final String name) {
+        return PipelineUserEvent.builder()
+                .message(TEST_STRING)
+                .userName(name)
+                .build();
     }
 }
