@@ -16,18 +16,55 @@
 
 package com.epam.pipeline.test.creator.folder;
 
+import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.entity.configuration.RunConfiguration;
+import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import java.util.Collections;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class FolderCreatorUtils {
+
+    public static final TypeReference<Result<Folder>> FOLDER_TYPE = new TypeReference<Result<Folder>>() { };
+    public static final TypeReference<Result<FolderWithMetadata>> FOLDER_WITH_METADATA_TYPE =
+            new TypeReference<Result<FolderWithMetadata>>() { };
 
     private FolderCreatorUtils() {
 
     }
 
+    public static Folder getFolder() {
+        return getFolder(ID, TEST_STRING);
+    }
+
     public static Folder getFolder(final Long id, final String owner) {
-        Folder folder = new Folder();
+        final Folder folder = new Folder();
         folder.setId(id);
         folder.setOwner(owner);
+        folder.setMetadata(Collections.singletonMap(TEST_STRING, TEST_INT));
+        folder.setHasMetadata(true);
+        folder.setPipelines(Collections.singletonList(new Pipeline()));
         return folder;
+    }
+
+    public static FolderWithMetadata getFolderWithMetadata() {
+        return getFolderWithMetadata(ID, TEST_STRING);
+    }
+
+    public static FolderWithMetadata getFolderWithMetadata(final Long id, final String owner) {
+        final FolderWithMetadata folderWithMetadata = new FolderWithMetadata();
+        folderWithMetadata.setId(id);
+        folderWithMetadata.setOwner(owner);
+        folderWithMetadata.setMetadata(Collections.singletonMap(TEST_STRING, TEST_INT));
+        folderWithMetadata.setHasMetadata(true);
+        folderWithMetadata.setConfigurations(Collections.singletonList(new RunConfiguration()));
+        folderWithMetadata.setPipelines(Collections.singletonList(new Pipeline()));
+        return folderWithMetadata;
     }
 }
