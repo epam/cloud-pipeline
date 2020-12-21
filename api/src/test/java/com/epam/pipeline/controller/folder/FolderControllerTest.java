@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
-import com.epam.pipeline.manager.pipeline.FolderApiService;
+import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
