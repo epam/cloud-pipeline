@@ -53,6 +53,14 @@ public final class FolderCreatorUtils {
         return folder;
     }
 
+    public static Folder getFolder(final Long id, final Long parentId, final String owner) {
+        final Folder folder = new Folder();
+        folder.setId(id);
+        folder.setOwner(owner);
+        folder.setParentId(parentId);
+        return folder;
+    }
+
     public static FolderWithMetadata getFolderWithMetadata() {
         return getFolderWithMetadata(ID, TEST_STRING);
     }
@@ -65,6 +73,14 @@ public final class FolderCreatorUtils {
         folderWithMetadata.setHasMetadata(true);
         folderWithMetadata.setConfigurations(Collections.singletonList(new RunConfiguration()));
         folderWithMetadata.setPipelines(Collections.singletonList(new Pipeline()));
+        return folderWithMetadata;
+    }
+
+    public static FolderWithMetadata getFolderWithMetadata(final Long id, final Long parentId, final String owner) {
+        final FolderWithMetadata folderWithMetadata = new FolderWithMetadata();
+        folderWithMetadata.setId(id);
+        folderWithMetadata.setOwner(owner);
+        folderWithMetadata.setParentId(parentId);
         return folderWithMetadata;
     }
 }

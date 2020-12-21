@@ -50,6 +50,13 @@ public final class PipelineCreatorUtils {
         return pipeline;
     }
 
+    public static Pipeline getPipeline(final Long id, final String owner) {
+        final Pipeline pipeline = new Pipeline();
+        pipeline.setId(id);
+        pipeline.setOwner(owner);
+        return pipeline;
+    }
+
     public static Pipeline getPipeline(final String owner) {
         return getPipeline(ID, owner, ID);
     }
