@@ -118,6 +118,7 @@ public class PipelineControllerTest extends AbstractControllerTest {
     private static final String PARENT_ID = "parentId";
     private static final String NAME = "name";
     private static final String BYTE_LIMIT = "byteLimit";
+    private static final String FILE_SIZE = "0 Kb";
 
     private final Pipeline pipeline = PipelineCreatorUtils.getPipeline();
     private final PipelineVO pipelineVO = PipelineCreatorUtils.getPipelineVO();
@@ -135,7 +136,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
     private final PipelineSourceItemVO sourceItemVO = PipelineCreatorUtils.getPipelineSourceItemVO();
     private final PipelineSourceItemsVO sourceItemsVO = PipelineCreatorUtils.getPipelineSourceItemsVO();
     private final GitCommitEntry gitCommitEntry = GitCreatorUtils.getGitCommitEntry();
-    private final UploadFileMetadata fileMetadata = PipelineCreatorUtils.getUploadFileMetadata();
+    private final UploadFileMetadata fileMetadata =
+            PipelineCreatorUtils.getUploadFileMetadata(
+                    MULTIPART_CONTENT_FILE_NAME, FILE_SIZE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
     private final GenerateFileVO generateFileVO = PipelineCreatorUtils.getGenerateFileVO();
     private final RegisterPipelineVersionVO pipelineVersionVO = PipelineCreatorUtils.getRegisterPipelineVersionVO();
     private final DocumentGenerationProperty documentGenerationProperty =
@@ -595,7 +598,7 @@ public class PipelineControllerTest extends AbstractControllerTest {
 
         verify(mockPipelineApiService).uploadFiles(eq(ID), eq(TEST_STRING),
                 Collections.singletonList(captor.capture()));
-        assertResponseAsList(mvcResult);
+        assertUnwrappedResponse(mvcResult, fileMetadataList);
     }
 
     @Test
@@ -814,18 +817,19 @@ public class PipelineControllerTest extends AbstractControllerTest {
         performUnauthorizedRequest(post(String.format(PIPELINE_ID_COPY_URL, ID)));
     }
 
-    private void assertResponseAsBytes(MvcResult mvcResult, byte[] bytes) throws Exception {
+    private void assertResponseAsBytes(final MvcResult mvcResult, final byte[] bytes) throws Exception {
         final String contentAsString = mvcResult.getResponse().getContentAsString();
         final byte[] returnedEntityBody = getObjectMapper().readValue(contentAsString, byte[].class);
 
         assertThat(returnedEntityBody).isEqualTo(bytes);
     }
 
-    private void assertResponseAsList(MvcResult mvcResult) throws Exception{
+    private void assertUnwrappedResponse(final MvcResult mvcResult, final List<UploadFileMetadata> list)
+                                                                                      throws Exception {
         final String expectedResult = mvcResult.getResponse().getContentAsString();
-        final List<UploadFileMetadata> expectedList = getObjectMapper().readValue(expectedResult, List.class);
-        final List<UploadFileMetadata> actualList = getObjectMapper().readValue(stringOf(fileMetadataList), List.class);
+        final List<UploadFileMetadata> returnedList =
+                getObjectMapper().readValue(expectedResult, PipelineCreatorUtils.UPLOAD_METADATA_LIST_TYPE);
 
-        assertThat(actualList).isEqualTo(expectedList);
+        assertThat(returnedList).isEqualTo(list);
     }
 }

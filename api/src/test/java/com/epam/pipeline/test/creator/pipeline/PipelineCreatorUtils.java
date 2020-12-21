@@ -65,6 +65,8 @@ public final class PipelineCreatorUtils {
             new TypeReference<Result<List<UploadFileMetadata>>>() {};
     public static final TypeReference<Result<List<DocumentGenerationProperty>>> DOCUMENT_GENERATION_PROPERTY_LIST_TYPE =
             new TypeReference<Result<List<DocumentGenerationProperty>>>() {};
+    public static final TypeReference<List<UploadFileMetadata>> UPLOAD_METADATA_LIST_TYPE =
+            new TypeReference<List<UploadFileMetadata>>() {};
 
     public static final TypeReference<Result<List<RunSchedule>>> RUN_SCHEDULE_LIST_TYPE =
             new TypeReference<Result<List<RunSchedule>>>() { };
@@ -147,10 +149,16 @@ public final class PipelineCreatorUtils {
     }
 
     public static UploadFileMetadata getUploadFileMetadata() {
+        return new UploadFileMetadata();
+    }
+
+    public static UploadFileMetadata getUploadFileMetadata(final String fileName,
+                                                           final String fileSize,
+                                                           final String fileType) {
         final UploadFileMetadata uploadFileMetadata = new UploadFileMetadata();
-        uploadFileMetadata.setFileName("file.txt");
-        uploadFileMetadata.setFileSize("0 Kb");
-        uploadFileMetadata.setFileType("application/octet-stream");
+        uploadFileMetadata.setFileName(fileName);
+        uploadFileMetadata.setFileSize(fileSize);
+        uploadFileMetadata.setFileType(fileType);
         return uploadFileMetadata;
     }
 
