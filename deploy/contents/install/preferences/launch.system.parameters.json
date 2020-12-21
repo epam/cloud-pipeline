@@ -242,6 +242,12 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_DIND_VERSION",
+        "type": "boolean",
+        "description": "Allows to select docker version, used for DIND setup. Default: 18.09.6",
+        "defaultValue": "true"
+    },
+    {
         "name": "CP_CAP_SYSTEMD_CONTAINER",
         "type": "boolean",
         "description": "Enable systemd for a current run (supported for Centos only)",
