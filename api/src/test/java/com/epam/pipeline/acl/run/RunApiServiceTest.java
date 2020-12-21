@@ -109,11 +109,10 @@ public class RunApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldLoadPipelineRunForOwner() {
         final PipelineRun pipelineRun = getPipelineRun(ID, SIMPLE_USER);
-        pipelineRun.setPipelineId(pipelineRun.getId());
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         mockAuthUser(SIMPLE_USER);
 
-        assertThat(runApiService.loadPipelineRun(ID).getId()).isEqualTo(pipeline.getId());
+        assertThat(runApiService.loadPipelineRun(ID).getId()).isEqualTo(ID);
     }
 
     @Test
@@ -124,7 +123,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         initAclEntity(pipeline);
         mockSecurityContext();
 
-        assertThrows(AccessDeniedException.class, () ->runApiService.loadPipelineRun(ID));
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID));
     }
 
     @Test
