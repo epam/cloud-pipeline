@@ -49,6 +49,7 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.security.acl.AclPermissionFactory;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -182,6 +183,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @MockBean
+    protected UsersFileImportManager usersFileImportManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

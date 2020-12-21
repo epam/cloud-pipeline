@@ -562,6 +562,14 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";
     public static final String ERROR_NODE_POOL_INVALID_COUNT = "error.node.pool.invalid.count";
 
+    // Users import events
+    public static final String EVENT_USER_CREATED = "user.import.event.user.created";
+    public static final String EVENT_USER_CREATION_NOT_ALLOWED = "user.import.event.user.creation.not.allowed";
+    public static final String EVENT_ROLE_CREATED = "user.import.event.role.created";
+    public static final String EVENT_ROLE_CREATION_NOT_ALLOWED = "user.import.event.role.creation.not.allowed";
+    public static final String EVENT_ROLE_ASSIGNED = "user.import.event.role.assigned";
+    public static final String EVENT_METADATA_ASSIGNED = "user.import.event.metadata.assigned";
+
     private MessageConstants() {
         // no-op
     }

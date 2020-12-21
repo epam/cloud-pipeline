@@ -106,6 +106,7 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.manager.utils.JsonService;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
@@ -433,6 +434,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+
+    @MockBean
+    protected UsersFileImportManager usersFileImportManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

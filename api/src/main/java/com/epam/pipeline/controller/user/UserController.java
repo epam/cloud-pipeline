@@ -26,27 +26,32 @@ import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
@@ -366,5 +371,21 @@ public class UserController extends AbstractRestController {
         })
     public Result<List<GroupStatus>> loadGroupsBlockingStatuses() {
         return Result.success(userApiService.loadAllGroupsBlockingStatuses());
+    }
+
+    @PostMapping("/users/import")
+    @ResponseBody
+    @ApiOperation(
+            value = "Imports users from csv file.",
+            notes = "Imports users from csv file.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineUserEvent>> importUsersFromCsv(
+            @RequestParam(defaultValue = "false") final boolean createUser,
+            @RequestParam(defaultValue = "false") final boolean createGroup,
+            @RequestParam(required = false) final List<String> createMetadata,
+            final HttpServletRequest request) throws FileUploadException {
+        final MultipartFile file = consumeMultipartFile(request);
+        return Result.success(userApiService.importUsersFromCsv(createUser, createGroup, createMetadata, file));
     }
 }

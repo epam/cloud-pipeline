@@ -23,9 +23,11 @@ import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +41,9 @@ public class UserApiService {
 
     @Autowired
     private UserManager userManager;
+
+    @Autowired
+    private UsersFileImportManager usersFileImportManager;
 
     /**
      * Registers a new user
@@ -187,5 +192,12 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY)
     public JwtRawToken issueToken(final String userName, final Long expiration) {
         return userManager.issueToken(userName, expiration);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PipelineUserEvent> importUsersFromCsv(final boolean createUser, final boolean createGroup,
+                                                      final List<String> systemDictionariesToCreate,
+                                                      final MultipartFile file) {
+        return usersFileImportManager.importUsersFromFile(createUser, createGroup, systemDictionariesToCreate, file);
     }
 }
