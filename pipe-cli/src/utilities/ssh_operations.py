@@ -503,8 +503,8 @@ def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
                         'mkdir -p $(dirname {remote_private_key_path});'
                         'ssh-keygen -t rsa -f {remote_private_key_path} -N "" -q;'
                         'cat {remote_public_key_path} | tee -a {remote_authorized_keys_paths} > /dev/null;'
-                        'apt-get install putty-tools;'
-                        'yum install putty;'
+                        'command -v puttygen || apt-get -y install putty-tools;'
+                        'command -v puttygen || yum -y install putty;'
                         'puttygen {remote_private_key_path} -o {remote_ppk_key_path} -O private;'
                         .format(remote_public_key_path=passwordless_config.remote_public_key_path,
                                 remote_private_key_path=passwordless_config.remote_private_key_path,
