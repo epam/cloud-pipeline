@@ -21,16 +21,21 @@ import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.user.RoleVO;
 import com.epam.pipeline.entity.info.UserInfo;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserEvent;
+import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -67,6 +72,14 @@ public final class UserCreatorUtils {
         pipelineUser.setId(ID);
         pipelineUser.setUserName(name);
         return pipelineUser;
+    }
+
+    public static PipelineUserWithStoragePath getUserWithMetadata(final PipelineUser user,
+                                                                  final Map<String, PipeConfValue> metadata) {
+        return PipelineUserWithStoragePath.builder()
+                .pipelineUser(user)
+                .metadata(metadata)
+                .build();
     }
 
     public static PipelineUser getPipelineUser() {
@@ -107,5 +120,12 @@ public final class UserCreatorUtils {
 
     public static ExtendedRole getExtendedRole() {
         return new ExtendedRole();
+    }
+
+    public static PipelineUserEvent getPipelineUserEvent(final String name) {
+        return PipelineUserEvent.builder()
+                .message(TEST_STRING)
+                .userName(name)
+                .build();
     }
 }

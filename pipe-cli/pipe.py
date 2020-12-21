@@ -39,6 +39,7 @@ from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
+from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
 from src.version import __version__
 
@@ -1629,6 +1630,28 @@ def monitor(instance_id, run_id, output, date_from, date_to, interval):
     Downloads node utilization report
     """
     ClusterMonitoringManager().generate_report(instance_id, run_id, output, date_from, date_to, interval)
+
+
+@cli.group()
+def users():
+    """ Users commands
+    """
+    pass
+
+
+@users.command(name='import')
+@click.argument('file-path', required=True)
+@click.option('-cu', '--create-user', required=False, is_flag=True, default=False, help='Allow new user creation')
+@click.option('-cg', '--create-group', required=False, is_flag=True, default=False, help='Allow new group creation')
+@click.option('-cm', '--create-metadata', required=False, multiple=True,
+              help='Allow to create a new metadata with specified key. Multiple options supported.')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def import_users(file_path, create_user, create_group, create_metadata):
+    """
+    Registers a new users, roles and metadata specified in input file
+    """
+    UserOperationsManager().import_users(file_path, create_user, create_group, create_metadata)
 
 
 # Used to run a PyInstaller "freezed" version

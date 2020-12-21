@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,15 @@
 package com.epam.pipeline.util;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.anyMapOf;
 
 public final class CustomMatchers {
 
@@ -38,5 +44,17 @@ public final class CustomMatchers {
                 description.appendText("collection is empty");
             }
         };
+    }
+
+    public static List<Long> anyLongList() {
+        return anyListOf(Long.class);
+    }
+
+    public static List<String> anyStringList() {
+        return anyListOf(String.class);
+    }
+
+    public static Map<String, String> anyStringMap() {
+        return anyMapOf(String.class, String.class);
     }
 }
