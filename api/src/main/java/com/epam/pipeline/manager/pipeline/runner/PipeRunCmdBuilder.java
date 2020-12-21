@@ -191,7 +191,7 @@ public class PipeRunCmdBuilder {
                 PipeConfValueVO.DEFAULT_TYPE.equals(type)) {
             return value;
         }
-        return type + "? " + value;
+        return type + "?" + value;
     }
 
     private void buildObjectCmdArg(final String argumentName, final Object argumentValue) {
