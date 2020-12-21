@@ -36,6 +36,8 @@ public final class CommonCreatorConstants {
             new TypeReference<Result<Map<String, String>>>() {};
     public static final TypeReference<Result<Set<String>>> STRING_SET_INSTANCE_TYPE =
             new TypeReference<Result<Set<String>>>() {};
+    public static final TypeReference<Result<List<String>>> STRING_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<String>>>() {};
     public static final TypeReference<Result<Set<Long>>> LONG_SET_INSTANCE_TYPE =
             new TypeReference<Result<Set<Long>>>() {};
     public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};

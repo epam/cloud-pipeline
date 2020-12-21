@@ -17,11 +17,13 @@
 package com.epam.pipeline.entity.info;
 
 import com.epam.pipeline.entity.user.PipelineUser;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 
 import java.util.Map;
 
 @Value
+@NoArgsConstructor(force = true)
 public class UserInfo {
 
     private final Long id;
