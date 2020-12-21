@@ -135,7 +135,7 @@ def parse_pretty_url(pretty):
 
         pretty_domain = None
         pretty_path = None
-        if 'domain' in pretty_obj:
+        if 'domain' in pretty_obj and pretty_obj['domain']:
                 pretty_domain = pretty_obj['domain']
         if 'path' in pretty_obj:
                 pretty_path = pretty_obj['path']
@@ -433,7 +433,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                                         "is_ssl_backend": is_ssl_backend,
                                                                         "edge_num": i,
                                                                         "edge_location": edge_location,
-                                                                        "custom_domain": pretty_url['domain'] if pretty_url else None,
+                                                                        "custom_domain": pretty_url['domain'] if pretty_url and 'domain' in pretty_url and pretty_url['domain'] else None,
                                                                         "edge_target": edge_target,
                                                                         "run_id": pod_run_id,
                                                                         "additional" : additional,
