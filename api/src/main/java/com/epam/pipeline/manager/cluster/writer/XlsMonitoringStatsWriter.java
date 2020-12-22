@@ -77,7 +77,7 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
             throw new IllegalStateException(
                 messageHelper.getMessage(MessageConstants.ERROR_STATS_EMPTY_XLS_TEMPLATE_PATH));
         }
-        try (Workbook wb = WorkbookFactory.create(ResourceUtils.getFile(templatePath), null, true);
+        try (Workbook wb = getTemplateWorkbook();
              ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             fillInRawData(wb, stats);
             fillInScaledData(wb, stats);
@@ -94,6 +94,17 @@ public class XlsMonitoringStatsWriter extends AbstractMonitoringStatsWriter {
     @Override
     public MonitoringReportType getReportType() {
         return MonitoringReportType.XLS;
+    }
+
+    private Workbook getTemplateWorkbook() throws IOException, InvalidFormatException {
+        if (templatePath.startsWith(ResourceUtils.CLASSPATH_URL_PREFIX)) {
+            try (InputStream classPathResource = getClass()
+                .getResourceAsStream(templatePath.substring(ResourceUtils.CLASSPATH_URL_PREFIX.length()))) {
+                return WorkbookFactory.create(classPathResource);
+            }
+        } else {
+            return WorkbookFactory.create(ResourceUtils.getFile(templatePath), null, true);
+        }
     }
 
     private void fillInScaledData(final Workbook wb, final List<MonitoringStats> stats) {
