@@ -18,6 +18,7 @@ package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
+import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
 import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
@@ -41,7 +42,6 @@ import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
-import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
@@ -221,5 +221,5 @@ public class ControllerTestBeans {
     protected NodeScheduleApiService nodeScheduleApiService;
 
     @MockBean
-    protected InfrastructureManager infrastructureManager;
+    protected InfrastructureApiService infrastructureApiService;
 }
