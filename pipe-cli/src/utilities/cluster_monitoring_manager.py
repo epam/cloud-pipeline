@@ -53,9 +53,7 @@ class ClusterMonitoringManager:
             else date_utilities.parse_parameter_date_to_utc(raw_to_date)
         date_from = date_utilities.minus_day(date_to) if not raw_from_date \
             else date_utilities.parse_parameter_date_to_utc(raw_from_date)
-        if not report_type:
-            report_type = 'xls'
-        elif str.lower(report_type) not in SUPPORTED_REPORT_TYPES:
+        if str.lower(report_type) not in SUPPORTED_REPORT_TYPES:
             click.echo("Given report type '%s' is not supported" % report_type, err=True)
             sys.exit(1)
         output_path = cls._build_output_path(output, run_id, instance_id, date_from, date_to, interval, report_type)

@@ -1623,8 +1623,8 @@ def cluster():
 @click.option('-p', '--interval', required=False, help='The time interval. This option shall have the following format:'
                                                        ' <N>m for minutes or <N>h for hours, where <N> is the required '
                                                        'number of minutes/hours. Default: 1m.')
-@click.option('-rt', '--report-type', required=False, help='Exported report type (case insensitive).'
-                                                           'Currently `CSV` and `XLS` are supported. Default: XLS')
+@click.option('-rt', '--report-type', required=False, default='CSV',
+              help='Exported report type (case insensitive). Currently `CSV` and `XLS` are supported. Default: CSV')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def monitor(instance_id, run_id, output, date_from, date_to, interval, report_type):
