@@ -61,5 +61,5 @@ class Cluster(API):
     def download_usage_report(cls, instance_id, date_from, date_to, interval, file_path, report_type):
         api = cls.instance()
         url_path = 'cluster/node/%s/usage/report?interval=%s&from=%s&to=%s&type=%s' \
-                   % (instance_id, interval, date_from, date_to, str.upper(report_type))
+                   % (instance_id, interval, date_from, date_to, report_type.upper())
         api.download(url_path, file_path)
