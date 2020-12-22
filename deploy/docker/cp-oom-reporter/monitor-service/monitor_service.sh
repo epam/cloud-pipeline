@@ -121,7 +121,18 @@ done
 
 if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$NODE" ]] || [[ -z "$SYNC_FILE" ]]
 then
-  echo "Some of the required arguments are missing."
+  if [[ -z "$API" ]]; then
+    echo "Missing required argument --api-url"
+  fi
+  if [ -z "$API_TOKEN" ]; then
+      echo "Missing required argument --api-token"
+  fi
+  if [ -z "$NODE" ]; then
+      echo "Missing required argument --node-name"
+  fi
+  if [ -z "$SYNC_FILE" ]; then
+      echo "Missing required argument --sync-file"
+  fi
   exit 1
 fi
 
