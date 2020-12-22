@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
+import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.assertj.core.api.Assertions;
@@ -83,6 +84,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
     private static final String TRUE_AS_STRING = String.valueOf(true);
     private static final String FALSE_AS_STRING = String.valueOf(false);
     private static final String INTERVAL = "interval";
+    private static final String REPORT_TYPE = "type";
     private static final String DURATION_AS_STRING = Duration.ofHours(1).toString();
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     private static final DateTimeFormatter REQUEST_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -294,14 +296,16 @@ public class ClusterControllerTest extends AbstractControllerTest {
         params.add(FROM, from.format(REQUEST_FORMATTER));
         params.add(TO, to.format(REQUEST_FORMATTER));
         params.add(INTERVAL, DURATION_AS_STRING);
+        params.add(REPORT_TYPE, MonitoringReportType.CSV.toString());
         Mockito.doReturn(inputStream).when(mockClusterApiService)
-                .getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
+                .getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1), MonitoringReportType.CSV);
 
         final MvcResult mvcResult = performRequest(
                 get(String.format(NODE_STATISTICS_URL, NAME)).params(params), OCTET_STREAM_CONTENT_TYPE
         );
 
-        Mockito.verify(mockClusterApiService).getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
+        Mockito.verify(mockClusterApiService).getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1),
+                                                                     MonitoringReportType.CSV);
         final String actualResponseData = mvcResult.getResponse().getContentAsString();
         final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
         Assert.assertEquals(TEST_DATA, actualResponseData);

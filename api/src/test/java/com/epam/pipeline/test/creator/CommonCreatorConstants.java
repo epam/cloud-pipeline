@@ -36,6 +36,8 @@ public final class CommonCreatorConstants {
             new TypeReference<Result<Map<String, String>>>() {};
     public static final TypeReference<Result<Set<String>>> STRING_SET_INSTANCE_TYPE =
             new TypeReference<Result<Set<String>>>() {};
+    public static final TypeReference<Result<List<String>>> STRING_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<String>>>() {};
     public static final TypeReference<Result<Set<Long>>> LONG_SET_INSTANCE_TYPE =
             new TypeReference<Result<Set<Long>>>() {};
     public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
@@ -45,9 +47,11 @@ public final class CommonCreatorConstants {
     public static final long ID_2 = 2L;
     public static final long ID_3 = 3L;
     public static final int TEST_INT = 4;
+    public static final int NO_PERMISSION = 0;
     public static final int READ_PERMISSION = 1;
     public static final int WRITE_PERMISSION = 2;
     public static final int EXECUTE_PERMISSION = 4;
+    public static final int ALL_PERMISSIONS = 15;
     public static final String TEST_STRING = "TEST";
     public static final List<String> TEST_STRING_LIST = Collections.singletonList(TEST_STRING);
     public static final byte[] TEST_ARRAY = {1, 1, 1};

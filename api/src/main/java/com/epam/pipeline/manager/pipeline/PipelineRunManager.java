@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.acl.docker.ToolApiService;
+import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;

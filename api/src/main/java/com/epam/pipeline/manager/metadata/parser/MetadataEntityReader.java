@@ -27,19 +27,20 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class MetadataEntityReader {
 
-    private String delimiter;
-    private Folder parent;
-    private MetadataClass metadataClass;
+    private final String delimiter;
+    private final Folder parent;
+    private final MetadataClass metadataClass;
 
-    public MetadataParsingResult readData(InputStream inputStream, Map<Integer, EntityTypeField> fields)
+    public MetadataParsingResult readData(InputStream inputStream, Map<Integer, EntityTypeField> fields,
+                                          boolean classColumnPresent)
             throws IOException {
         LineProcessor<MetadataParsingResult> processor =
-                new EntityLineProcessor(delimiter, parent, metadataClass, fields);
+                new EntityLineProcessor(delimiter, parent, metadataClass, fields, classColumnPresent);
         try (Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
             return CharStreams.readLines(reader, processor);
         }

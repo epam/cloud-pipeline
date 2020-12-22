@@ -462,6 +462,9 @@ export function generateTreeData (
     parent.isProject = !!(objectMetadata && objectMetadata.type && objectMetadata.type.value &&
       objectMetadata.type.value.toLowerCase() === 'project');
   }
+  for (let i = 0; i < children.length; i++) {
+    children[i].searchHit = true;
+  }
   return children;
 }
 
@@ -514,12 +517,13 @@ export function expandItem (item, expand) {
   }
 }
 
-export async function search (value, items) {
+export async function search (value, items, parentFound = false) {
   if (!value || value === '' || !items) {
     if (items) {
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         item.searchResult = undefined;
+        item.searchHit = true;
         await search(value, item.children);
       }
     }
@@ -531,6 +535,7 @@ export async function search (value, items) {
       continue;
     }
     const index = item.name.toLowerCase().indexOf(value.toLowerCase());
+    item.searchHit = parentFound || index >= 0;
     if (index >= 0) {
       item.searchResult = {
         index: index,
@@ -545,7 +550,8 @@ export async function search (value, items) {
       item.searchResult = undefined;
       expandItem(item, false);
     }
-    await search(value, item.children);
+    await search(value, item.children, item.searchHit);
+    item.searchHit = item.searchHit || !!(item.children || []).find(e => e.searchHit);
   }
 }
 

@@ -242,6 +242,12 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_DIND_VERSION",
+        "type": "boolean",
+        "description": "Allows to select docker version, used for DIND setup. Default: 18.09.6",
+        "defaultValue": "true"
+    },
+    {
         "name": "CP_CAP_SYSTEMD_CONTAINER",
         "type": "boolean",
         "description": "Enable systemd for a current run (supported for Centos only)",
@@ -301,5 +307,11 @@
         "description": "If defined - will terminate job when specified duration in minutes is elapsed",
         "defaultValue": "",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_LIMIT_MOUNTS",
+        "type": "string",
+        "description": "If defined - will limit mounts for the run",
+        "passToWorkers": true
     }
 ]

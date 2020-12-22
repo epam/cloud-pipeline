@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+NOMACHINE_INSTALL_TASK="NoMachineInitialization"
+NM_TARGET_VERSION="${CP_CAP_DESKTOP_NM_VERSION:-6.5.6-9}"
+export CP_NM_NOMACHINE_PORT="${CP_NM_NOMACHINE_PORT:-4000}"
+export CP_NM_LOCAL_PORT="${CP_NM_LOCAL_PORT:-8089}"
+
+# Check if required proxy settings are correct
+export CP_NM_PROXY_HOST="${CP_NM_PROXY_HOST:-$(echo $CP_CAP_NM_PROXY_HOST)}"
+if [ -z $CP_NM_PROXY_HOST ]; then
+    pipe_log_fail "NoMachine proxy host is not set (CP_NM_PROXY_HOST). Exiting..." "$NOMACHINE_INSTALL_TASK"
+    exit 1
+fi
+
+export CP_NM_PROXY_PORT="${CP_NM_PROXY_PORT:-$(echo $CP_CAP_NM_PROXY_PORT)}"
+if [ -z $CP_NM_PROXY_PORT ]; then
+    pipe_log_fail "NoMachine proxy port is not set (CP_NM_PROXY_PORT). Exiting..." "$NOMACHINE_INSTALL_TASK"
+    exit 1
+fi
+
+function install_prerequisites {
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    yum install -y -q lsof wget
+  else
+    apt-get install -yq --no-upgrade lsof wget
+  fi
+}
+
+function check_nm_installation {
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    rpm -qa | grep nomachine
+  else
+    dpkg -l | grep nomachine
+  fi
+}
+
+function get_installed_nm_version {
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    echo $(rpm -qa nomachine | sed 's/^\(nomachine-\)*//' | sed 's/.x86_64$//')
+  else
+    echo $(apt-cache show nomachine | grep ^Version | sed 's/^\(Version: \)*//')
+  fi
+}
+
+function update_nm {
+  nm_version=$1
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
+    yum downgrade -y nomachine.rpm && \
+    yum install -y nomachine.rpm && \
+    rm -f nomachine.rpm
+  else
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
+    dpkg -i nomachine.deb && \
+    rm -f nomachine.deb
+  fi
+}
+
+function remove_nm {
+  is_rpm=$1
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    yum remove -y nomachine
+  else
+    apt-get remove -y nomachine
+  fi
+}
+
+function install_nm {
+  nm_version=$1
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    os_ver=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/xfce4-$os_ver.tar.gz" -O xfcedesktop.tar.gz && \
+    mkdir -p xfcedesktop && \
+    tar -xzvf xfcedesktop.tar.gz -C xfcedesktop && \
+    yum install -y --nogpgcheck xfcedesktop/*.rpm && \
+    rm -rf xfcedesktop* && \
+    rm -f /etc/xdg/autostart/xfce-polkit* && \
+    /bin/dbus-uuidgen > /etc/machine-id && \
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
+    yum install -y nomachine.rpm && \
+    rm -f nomachine.rpm && \
+    sed -i '/DefaultDesktopCommand/c\DefaultDesktopCommand "/usr/bin/startxfce4"' /usr/NX/etc/node.cfg
+  else
+    apt-get install -y --no-upgrade locales && \
+    locale-gen en_US.UTF-8 && \
+    locale-gen en_US && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=$LANG && \
+    apt-get install -yq --no-upgrade \
+                        xfce4 \
+                        xfce4-xkb-plugin && \
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
+    dpkg -i nomachine.deb && \
+    rm -f nomachine.deb
+  fi
+}
+
+function config_nm {
+  curl https://bootstrap.pypa.io/get-pip.py | python - && \
+  wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
+  mkdir -p nomachine-common/ /etc/nomachine/ && \
+  tar -C nomachine-common/ -zxvf nomachine-common.tar.gz && \
+  mv nomachine-common/create_chrome_launcher.sh /tmp/ && \
+  mv nomachine-common/scramble /usr/local/bin/ && \
+  cp -r nomachine-common/* /etc/nomachine/ && \
+  rm -f /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
+  mv /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin.rc /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
+  rm -rf nomachine-common* && \
+  cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.template
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    XKB_PLUGIN_ID=6
+    sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml && \
+    sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+  else
+    XKB_PLUGIN_ID=9
+    if [[ "$(. /etc/os-release;echo $VERSION_ID)" == *"18."* ]]; then
+        sed -i 's@_XKB_PLUGIN_NAME_@xkb@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml ;
+    else
+        sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml;
+    fi
+    sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+  fi
+}
+
+function install_nm_extras {
+  if [[ "$IS_RPM_BASED" = 0 ]]; then
+    wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm" -O /opt/google-chrome-stable_current_x86_64.rpm && \
+    yum install -y /opt/google-chrome-stable_current_*.rpm && \
+    rm -f /opt/google-chrome-stable_current_*.rpm
+  else
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update -y && \
+    apt-get install --no-upgrade -y google-chrome-stable
+  fi
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+  mkdir -p /home/${OWNER}/Desktop/ && \
+  bash /tmp/create_chrome_launcher.sh && \
+  rm -f /tmp/create_chrome_launcher.sh
+}
+
+/usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
+IS_RPM_BASED=$?
+
+export LANG="en_US.UTF-8"
+export LANGUAGE=en_US
+if [[ "$IS_RPM_BASED" -ne 0 ]]; then
+    export DEBIAN_FRONTEND=noninteractive
+fi
+
+install_prerequisites >/dev/null 2>&1
+if [[ $? -ne 0 ]]; then
+    pipe_log_fail "Unable to install prerequisites" "$NOMACHINE_INSTALL_TASK"
+    exit 1
+fi
+
+check_nm_installation
+IS_NM_INSTALLED=$?
+if [ $IS_NM_INSTALLED -eq 0 ]; then
+    NOMACHINE_REPAIR_LOG="/var/log/nomachine_repair.log"
+    NM_CURRENT_VERSION=$(get_installed_nm_version)
+    if [ "$NM_CURRENT_VERSION" == "$NM_TARGET_VERSION" ]; then
+        pipe_log_info "--> NoMachine installed already" "$NOMACHINE_INSTALL_TASK"
+    else
+        pipe_log_info "--> NoMachine installed, but version found [$NM_CURRENT_VERSION] differs from the target one [$NM_TARGET_VERSION]" "$NOMACHINE_INSTALL_TASK"
+        pipe_log_info "--> Trying to configure required version" "$NOMACHINE_INSTALL_TASK"
+        update_nm $NM_TARGET_VERSION > $NOMACHINE_REPAIR_LOG 2>&1
+        if [ $? -ne 0 ]; then
+            pipe_log_warn "Failed to repair NoMachine version, details are available in $NOMACHINE_REPAIR_LOG, try removing current NM version" "$NOMACHINE_INSTALL_TASK"
+            remove_nm >> $NOMACHINE_REPAIR_LOG 2>&1
+            if [ $? -ne 0 ]; then
+                pipe_log_fail "Failed to remove installed NoMachine, details are available in $NOMACHINE_REPAIR_LOG" "$NOMACHINE_INSTALL_TASK"
+                exit 1
+            else
+                pipe_log_info "--> NoMachine removed successfully" "$NOMACHINE_INSTALL_TASK"
+            fi
+            IS_NM_INSTALLED=1
+        else
+            pipe_log_info "--> NoMachine version changed successfully" "$NOMACHINE_INSTALL_TASK"
+        fi
+    fi
+fi
+
+NOMACHINE_INSTALLATION_LOG="/var/log/nomachine_installation.log"
+if [ $IS_NM_INSTALLED -ne 0 ]; then
+    pipe_log_info "--> NoMachine is not detected, proceeding with the full installation" "$NOMACHINE_INSTALL_TASK"
+    install_nm $NM_TARGET_VERSION > $NOMACHINE_INSTALLATION_LOG 2>&1
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Failed to install NoMachine, details are available in $NOMACHINE_INSTALLATION_LOG" "$NOMACHINE_INSTALL_TASK"
+        exit 1
+    else
+        pipe_log_info "--> NoMachine installed successfully" "$NOMACHINE_INSTALL_TASK"
+    fi
+fi
+
+NOMACHINE_CONFIGURATION_LOG="/var/log/nomachine_configuration.log"
+config_nm > $NOMACHINE_CONFIGURATION_LOG 2>&1
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Failed to configure NoMachine, details are available in $NOMACHINE_CONFIGURATION_LOG" "$NOMACHINE_INSTALL_TASK"
+    exit 1
+else
+    pipe_log_info "--> NoMachine configured successfully" "$NOMACHINE_INSTALL_TASK"
+fi
+
+NOMACHINE_EXTRAS_CONFIGURATION_LOG="/var/log/nomachine_extras_configuration.log"
+install_nm_extras > $NOMACHINE_EXTRAS_CONFIGURATION_LOG 2>&1
+if [ $? -ne 0 ]; then
+    pipe_log_warn "Error during NoMachine extras configuration, details are available in $NOMACHINE_EXTRAS_CONFIGURATION_LOG" "$NOMACHINE_INSTALL_TASK"
+else
+    pipe_log_info "--> NoMachine extras configured successfully" "$NOMACHINE_INSTALL_TASK"
+fi
+
+NOMACHINE_EXECUTION_LOG="/var/log/nomachine_execution.log"
+bash /etc/nomachine/nomachine_launcher.sh > $NOMACHINE_EXECUTION_LOG 2>&1 &
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Failed to start NoMachine, details are available in $NOMACHINE_EXECUTION_LOG" "$NOMACHINE_INSTALL_TASK"
+    exit 1
+else
+    sleep 5
+    lsof -i:${CP_NM_NOMACHINE_PORT} | grep LISTEN > /dev/null
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "NM service is not active on port $CP_NM_NOMACHINE_PORT" "$NOMACHINE_INSTALL_TASK"
+        exit 1
+    fi
+    lsof -i:${CP_NM_LOCAL_PORT} | grep LISTEN > /dev/null
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "NM service is not available on port $CP_NM_LOCAL_PORT" "$NOMACHINE_INSTALL_TASK"
+        exit 1
+    fi
+    pipe_log_info "--> NoMachine enabled" "$NOMACHINE_INSTALL_TASK"
+fi
+pipe_log_success "Finished NoMachine initialization" "$NOMACHINE_INSTALL_TASK"

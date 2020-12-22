@@ -15,41 +15,35 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
+import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
-import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
-import static com.codeborne.selenide.Condition.*;
-import static com.codeborne.selenide.Selectors.*;
-import static com.codeborne.selenide.Selenide.*;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.openqa.selenium.By.cssSelector;
-import static org.openqa.selenium.By.tagName;
 
 public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navigation {
 
-    private static String FOLDER_NAME = "seleniumTestFolder-" + Double.doubleToLongBits(Math.random());
-    private static String PIPELINE_NAME = "seleniumTestPipe-" + Double.doubleToLongBits(Math.random());
-    private static final String NEW_FILE_NAME = "seleniumTestFile-" + Double.doubleToLongBits(Math.random());
-    private static final String RENAMED_FILE_NAME = "renamedSeleniumTestFile-" + Double.doubleToLongBits(Math.random());
-    private static final String RENAMED_PIPELINE_NAME = "renamedSeleniumTestPipe-" + Double.doubleToLongBits(Math.random());
-
-    private String currentPipelineName = PIPELINE_NAME;
-    private SelenideElement OKButton = $(button("OK"));
+    private static final String FOLDER_NAME = "pipelineEditingFolder-" + Utils.randomSuffix();
+    private static final String PIPELINE_NAME = "pipelineEditingPipe" + Utils.randomSuffix();
+    private static final String NEW_FILE_NAME = "pipelineEditingFile-" + Utils.randomSuffix();
+    private static final String RENAMED_FILE_NAME = "renamedPipelineEditingFile-" + Utils.randomSuffix();
+    private static final String RENAMED_PIPELINE_NAME = "renamedPipelineEditingPipe-" + Utils.randomSuffix();
 
     @AfterClass(alwaysRun = true)
     @TestCase(value = {"EPMCMBIBPC-287", "EPMCMBIBPC-288"})
     public void cleanUp() {
         library()
-                .cd(FOLDER_NAME)
-                .removePipeline(currentPipelineName)
-                .removeFolder(FOLDER_NAME);
+                .removeNotEmptyFolder(FOLDER_NAME);
     }
 
     @Test(priority = 0)
@@ -64,61 +58,67 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
     public void createPipelineFromPythonTemplateTest() {
         library()
                 .cd(FOLDER_NAME)
-                .createPipeline(Template.PYTHON, currentPipelineName)
-                .validatePipeline(currentPipelineName);
+                .createPipeline(Template.PYTHON, PIPELINE_NAME)
+                .validatePipeline(PIPELINE_NAME);
     }
 
     @Test(dependsOnMethods = {"createPipelineFromPythonTemplateTest"})
     @TestCase(value = {"EPMCMBIBPC-286"})
     public void pythonPipelineValidationTest() {
-        $(byText(currentPipelineName)).shouldBe(visible).click();
-        $(byCssSelector("td.browser__tree-item-name")).shouldBe(visible).click();
+        new PipelinesLibraryAO()
+                .clickOnPipeline(PIPELINE_NAME)
+                .ensureVisible(SETTINGS, GIT_REPOSITORY)
+                .firstVersion()
+                .ensureVisible(DOCUMENTS_TAB, CODE_TAB, CONFIGURATION_TAB, HISTORY_TAB, STORAGE_RULES_TAB, RUN)
+                .codeTab()
+                .ensureVisible(CREATE_FOLDER, NEW_FILE, UPLOAD, RENAME, DELETE)
+                .ensure(byText(PIPELINE_NAME.toLowerCase() + ".py"), visible)
+                .ensure(byText("config.json"), visible);
     }
 
     @Test(dependsOnMethods = {"pythonPipelineValidationTest"})
     @TestCase(value = {"EPMCMBIBPC-295"})
     public void createPipelineFileTest() {
-        clickCodeTab();
-        $(button("NEW FILE")).click();
-        sleep(1, SECONDS);
-        $(cssSelector("input#name.ant-input.ant-input-lg")).setValue(NEW_FILE_NAME);
-        OKButton.click();
-        sleep(15, SECONDS);
+        library()
+                .cd(FOLDER_NAME)
+                .clickOnPipeline(PIPELINE_NAME)
+                .firstVersion()
+                .codeTab()
+                .createFile(NEW_FILE_NAME)
+                .ensure(byText(NEW_FILE_NAME), visible);
     }
 
     @Test(dependsOnMethods = {"createPipelineFileTest"})
     @TestCase(value = {"EPMCMBIBPC-290"})
     public void editPipelineFileNameTest() {
-        renameButton(NEW_FILE_NAME).shouldBe(visible, enabled).click();
-        sleep(2,SECONDS);
-        $$(byId("name")).findBy(visible).clear();
-        $$(byId("name")).findBy(visible).setValue(RENAMED_FILE_NAME);
-        OKButton.click();
+        new PipelineCodeTabAO(PIPELINE_NAME)
+                .clickOnRenameFileButton(NEW_FILE_NAME)
+                .typeInField(RENAMED_FILE_NAME)
+                .ok()
+                .ensure(byText(RENAMED_FILE_NAME), visible);
     }
 
     @Test(dependsOnMethods = {"editPipelineFileNameTest"})
     @TestCase(value = {"EPMCMBIBPC-289"})
     public void editPipelineFileTest() {
-        sleep(5, SECONDS);
-        $(byText(RENAMED_FILE_NAME)).shouldBe(visible).click();
-
-        sleep(3, SECONDS);
-        $(byCssSelector("button.ant-btn.pipeline-code-form__button")).shouldBe(visible, enabled).click();
-        $(byClassName(" CodeMirror-line ")).shouldBe(visible,enabled);
-        actions().moveToElement($(byClassName(" CodeMirror-line ")).shouldBe(visible))
-                .click()
-                .sendKeys("Some pretty code")
-                .perform();
-        $(button("Save")).click();
-        $(byId("message")).shouldBe(visible).sendKeys("Cool code");
-        $(button("Commit")).click();
+        final String editedCode = "Edited code";
+        new PipelineCodeTabAO(PIPELINE_NAME)
+                .clickOnFile(RENAMED_FILE_NAME)
+                .clickEdit()
+                .clear()
+                .fillWith(editedCode)
+                .saveAndCommitWithMessage("Edited")
+                .clickOnFile(RENAMED_FILE_NAME)
+                .shouldContainInCode(editedCode)
+                .close();
     }
 
     @Test(dependsOnMethods = {"editPipelineFileTest"})
     @TestCase(value = {"EPMCMBIBPC-291"})
     public void deletePipelineFileTest() {
-        deleteButton(RENAMED_FILE_NAME).shouldBe(visible, enabled).click();
-        OKButton.shouldBe(visible).click();
+        new PipelineCodeTabAO(PIPELINE_NAME)
+                .deleteFile(RENAMED_FILE_NAME)
+                .ensure(byText(RENAMED_FILE_NAME.toLowerCase() + ".py"), not(exist));
     }
 
     @Test(dependsOnMethods = {"deletePipelineFileTest"})
@@ -129,39 +129,8 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
                 .clickOnPipeline(PIPELINE_NAME)
                 .sleep(2, SECONDS)
                 .clickEditButton()
-                .rename(currentPipelineName = RENAMED_PIPELINE_NAME)
-                .save();
-    }
-
-    public void setFolderName(String folderName) {
-        FOLDER_NAME = folderName;
-    }
-
-    public void setPipelineName(String pipelineName) {
-        PIPELINE_NAME = pipelineName;
-        currentPipelineName = pipelineName;
-    }
-
-    private SelenideElement renameButton(String filename) {
-        return file(filename)
-                .findAll("button")
-                .findBy(text("Rename"));
-    }
-
-    private SelenideElement deleteButton(String filename) {
-        return file(filename)
-                .findAll("button")
-                .findBy(text("Delete"));
-    }
-
-    private SelenideElement file(final String filename) {
-        return SelenideElements.of(tagName("tr"), $(byClassName("pipeline-details__full-height-container")))
-                .findBy(text(filename));
-    }
-
-    private void clickCodeTab() {
-        sleep(1, SECONDS);
-        $(".pipeline-details__tabs-menu").findAll("li").findBy(text("CODE")).click();
-        sleep(1, SECONDS);
+                .rename(RENAMED_PIPELINE_NAME)
+                .save()
+                .ensure(byText(RENAMED_PIPELINE_NAME), visible);
     }
 }

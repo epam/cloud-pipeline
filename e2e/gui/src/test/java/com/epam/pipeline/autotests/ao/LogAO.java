@@ -27,7 +27,6 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.*;
@@ -494,7 +493,7 @@ public class LogAO implements AccessObject<LogAO> {
 
             @Override
             public String actualValue(final WebElement logElement) {
-                final String allMissingMessages = missingMessages.stream().collect(Collectors.joining("\n"));
+                final String allMissingMessages = String.join("\n", missingMessages);
                 return format("Following messages wasn't found in log:%n%s", allMissingMessages);
             }
         };
@@ -508,7 +507,8 @@ public class LogAO implements AccessObject<LogAO> {
                 entry(DEFAULT_COMMAND, context().find(parameterWithName("Cmd template"))),
                 entry(TIMEOUT, context().find(parameterWithName("Timeout"))),
                 entry(PRICE_TYPE, context().find(parameterWithName("Price type"))),
-                entry(IP, context().find(parameterWithName("IP")))
+                entry(IP, context().find(parameterWithName("IP"))),
+                entry(NODE_IMAGE, context().find(parameterWithName("Node image")))
         );
 
         public static By parameterWithName(final String name) {

@@ -24,12 +24,9 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -38,8 +35,6 @@ import java.util.stream.Collectors;
 public class PipeRunCmdBuilder {
 
     private static final String WHITESPACE = " ";
-    private static final Set<String> QUOTABLE_PARAMETER_TYPES =
-        new HashSet<>(Arrays.asList("string", "input", "output", "path", "common"));
     private static final String CMD_OPTIONS_DELIMITER = "--";
 
     private final PipelineStart runVO;
@@ -186,13 +181,17 @@ public class PipeRunCmdBuilder {
     }
 
     private String prepareParams(final Map.Entry<String, PipeConfValueVO> entry) {
-        final String value = entry.getValue().getValue();
-        final String proceededValue = QUOTABLE_PARAMETER_TYPES.stream()
-            .filter(entry.getValue().getType()::equalsIgnoreCase)
-            .findAny()
-            .map(type -> quoteArgumentValue(value))
-            .orElse(value);
-        return entry.getKey() + WHITESPACE + proceededValue;
+        return entry.getKey() + WHITESPACE + quoteArgumentValue(getValueWithType(entry.getValue()));
+    }
+
+    private String getValueWithType(final PipeConfValueVO entry) {
+        final String value = entry.getValue();
+        final String type = entry.getType();
+        if (StringUtils.isBlank(value) || StringUtils.isBlank(type) ||
+                PipeConfValueVO.DEFAULT_TYPE.equals(type)) {
+            return value;
+        }
+        return type + "?" + value;
     }
 
     private void buildObjectCmdArg(final String argumentName, final Object argumentValue) {

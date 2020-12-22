@@ -24,9 +24,11 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.appears;
@@ -60,10 +62,10 @@ import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@Listeners(value = ConditionalTestAnalyzer.class)
 public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         implements Navigation, Authorization {
 

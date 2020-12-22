@@ -51,7 +51,7 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     private final RunConfigurationVO runConfigurationVO =
             ConfigurationCreatorUtils.getRunConfigurationVO(ID, ID);
     private final RunConfigurationEntry runConfigurationEntry = ConfigurationCreatorUtils.getRunConfigurationEntry();
-    private final Folder folder = FolderCreatorUtils.getFolder(ID, SIMPLE_USER);
+    private final Folder folder = FolderCreatorUtils.getFolder(ID, ID_2, SIMPLE_USER);
     private final Authentication authentication = new TestingAuthenticationToken(new Object(), new Object());
 
     @Autowired
@@ -115,7 +115,7 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = CONFIGURATION_MANAGER_ROLE)
     public void shouldDenySavingRunConfigurationWhenParentPermissionIsNotGranted() {
-        final Folder folder = FolderCreatorUtils.getFolder(ID, ANOTHER_SIMPLE_USER);
+        final Folder folder = FolderCreatorUtils.getFolder(ID, ID_2, ANOTHER_SIMPLE_USER);
         initAclEntity(folder);
         mockUser(SIMPLE_USER);
         doReturn(runConfiguration).when(mockRunConfigurationManager).create(runConfigurationVO);
