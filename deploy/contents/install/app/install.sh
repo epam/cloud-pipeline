@@ -395,15 +395,6 @@ kubectl delete daemonset cp-node-logger
 print_info "-> Deploying Node logger daemonset"
 create_kube_resource $K8S_SPECS_HOME/cp-node-logger/cp-node-logger-ds.yaml
 
-# OOM reporter - monitor and report OOM related events for each pipeline run
-print_ok "[Starting OOM reporter daemonset deployment]"
-
-print_info "-> Deleting existing instance of OOM reporter daemonset"
-kubectl delete daemonset cp-oom-reporter
-
-print_info "-> Deploying OOM reporter daemonset"
-create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
-
 
 # Heapster (CPU Utilization monitoring)
 if is_service_requested cp-heapster; then
@@ -1188,6 +1179,16 @@ if is_service_requested cp-billing-srv; then
     fi
     echo
 fi
+
+
+# OOM reporter - monitor and report OOM related events for each pipeline run
+print_ok "[Starting OOM reporter daemonset deployment]"
+
+print_info "-> Deleting existing instance of OOM reporter daemonset"
+kubectl delete daemonset cp-oom-reporter
+
+print_info "-> Deploying OOM reporter daemonset"
+create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
 
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY
