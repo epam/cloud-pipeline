@@ -62,6 +62,9 @@ public class ClusterController extends AbstractRestController {
     private static final String INTERVAL = "interval";
     private static final String REPORT_TYPE = "type";
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    private static final String REPORT_NAME_TEMPLATE = "%s_%s-%s-%s.%s";
+    private static final char TIME_SEPARATION_CHAR = ':';
+    private static final char UNDERSCORE = '_';
 
     private final ClusterApiService clusterApiService;
 
@@ -225,8 +228,10 @@ public class ClusterController extends AbstractRestController {
         @RequestParam(value = REPORT_TYPE, required = false, defaultValue = "CSV") final MonitoringReportType type,
         final HttpServletResponse response) throws IOException {
         final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval, type);
-        final String reportName = String.format("%s_%s-%s-%s", name, from, to, interval);
-        writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, type.name().toLowerCase()));
+        final String reportName =
+            String.format(REPORT_NAME_TEMPLATE, name, from, to, interval, type.name().toLowerCase())
+                .replace(TIME_SEPARATION_CHAR, UNDERSCORE);
+        writeStreamToResponse(response, inputStream, reportName);
     }
 
     @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.GET)
