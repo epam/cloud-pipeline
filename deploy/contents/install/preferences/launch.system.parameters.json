@@ -307,5 +307,11 @@
         "description": "If defined - will terminate job when specified duration in minutes is elapsed",
         "defaultValue": "",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_LIMIT_MOUNTS",
+        "type": "string",
+        "description": "If defined - will limit mounts for the run",
+        "passToWorkers": true
     }
 ]
