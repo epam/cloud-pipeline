@@ -53,7 +53,7 @@ class ClusterMonitoringManager:
             else date_utilities.parse_parameter_date_to_utc(raw_to_date)
         date_from = date_utilities.minus_day(date_to) if not raw_from_date \
             else date_utilities.parse_parameter_date_to_utc(raw_from_date)
-        if str.lower(report_type) not in SUPPORTED_REPORT_TYPES:
+        if report_type.lower() not in SUPPORTED_REPORT_TYPES:
             click.echo("Given report type '%s' is not supported" % report_type, err=True)
             sys.exit(1)
         output_path = cls._build_output_path(output, run_id, instance_id, date_from, date_to, interval, report_type)
@@ -92,7 +92,7 @@ class ClusterMonitoringManager:
             date_utilities.format_date(date_utilities.to_local(date_from), OUTPUT_FILE_DATE_FORMAT),
             date_utilities.format_date(date_utilities.to_local(date_to), OUTPUT_FILE_DATE_FORMAT),
             interval,
-            str.lower(report_type))
+            report_type.lower())
 
     @staticmethod
     def _convert_to_duration_format(raw_interval):
