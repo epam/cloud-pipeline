@@ -109,7 +109,7 @@ function install_nm {
 }
 
 function config_nm {
-  curl https://bootstrap.pypa.io/get-pip.py | python - && \
+  $CP_PYTHON2_PATH -m pip install -I $CP_PIP_EXTRA_ARGS flask && \
   wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
   mkdir -p nomachine-common/ /etc/nomachine/ && \
   tar -C nomachine-common/ -zxvf nomachine-common.tar.gz && \
