@@ -826,9 +826,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
 
     private void assertUnwrappedResponse(final MvcResult mvcResult, final List<UploadFileMetadata> list)
                                                                                       throws Exception {
-        final String expectedResult = mvcResult.getResponse().getContentAsString();
+        final String actualResult = mvcResult.getResponse().getContentAsString();
         final List<UploadFileMetadata> returnedList =
-                getObjectMapper().readValue(expectedResult, PipelineCreatorUtils.UPLOAD_METADATA_LIST_TYPE);
+                getObjectMapper().readValue(actualResult, PipelineCreatorUtils.UPLOAD_METADATA_LIST_TYPE);
 
         assertThat(returnedList).isEqualTo(list);
     }
