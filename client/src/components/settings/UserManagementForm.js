@@ -45,6 +45,7 @@ import ExportUserForm, {doExport, DefaultValues} from './forms/ExportUserForm';
 import CreateUserForm from './forms/CreateUserForm';
 import EditRoleDialog from './forms/EditRoleDialog';
 import LoadingView from '../special/LoadingView';
+import ImportUsersButton from './components/import-users';
 import styles from './UserManagementForm.css';
 import roleModel from '../../utils/roleModel';
 
@@ -352,6 +353,15 @@ export default class UserManagementForm extends React.Component {
             >
               <Icon type="plus" />Create user
             </Button>
+          )
+        }
+        {
+          this.isAdmin && (
+            <ImportUsersButton
+              size="small"
+              style={{marginLeft: 5}}
+              onImportDone={this.reload}
+            />
           )
         }
         {
