@@ -49,7 +49,7 @@ class ImportUsersButton extends React.Component {
       const fileReader = new FileReader();
       const onError = (e) => {
         hide();
-        message.error(e ||'Error reading file', 5);
+        message.error(e || 'Error reading file', 5);
         this.setState({
           file: undefined,
           pending: false,
@@ -178,6 +178,8 @@ class ImportUsersButton extends React.Component {
             const json = JSON.parse(request.responseText);
             if (json.status === 'ERROR') {
               resolve(json.message);
+            } else {
+              resolve();
             }
           } catch (_) {
             resolve();
