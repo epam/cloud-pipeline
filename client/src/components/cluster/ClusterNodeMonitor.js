@@ -41,6 +41,7 @@ import {
 import {ResponsiveContainer} from './charts/utilities';
 import ClusterNodeUsageReport, * as usageUtilities
   from '../../models/cluster/ClusterNodeUsageReport';
+import ClusterUsageExportSettingsDialog from './ClusterUsageExportSettingsDialog';
 
 const MIN_CHART_SIZE = {width: 500, height: 350};
 const CHART_MARGIN = 2;
@@ -66,6 +67,7 @@ function ChartContainer (
     containerSize,
     data,
     title,
+    disableTooltips,
     ...other
   }
 ) {
@@ -99,6 +101,7 @@ function ChartContainer (
           data={data}
           width={chartWidth}
           height={chartHeight}
+          disableTooltips={disableTooltips}
           {...other}
         />
       </div>
@@ -116,19 +119,20 @@ class ClusterNodeMonitor extends React.Component {
     end: undefined,
     liveUpdate: true,
     rangeInitialized: false,
-    exporting: false
+    exporting: false,
+    exportWindowVisible: false
   };
 
   liveUpdateTimer;
 
   @computed
-  get wholeRangeEnabled () {
+  get wholeRangeEnabled() {
     const {chartsData} = this.props;
     return !!chartsData.instanceFrom;
   }
 
   @computed
-  get lastWeekEnabled () {
+  get lastWeekEnabled() {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -138,7 +142,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get lastDayEnabled () {
+  get lastDayEnabled() {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -148,7 +152,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get lastHourEnabled () {
+  get lastHourEnabled() {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -158,7 +162,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get retentionPeriodExceeded () {
+  get retentionPeriodExceeded() {
     const {preferences, chartsData} = this.props;
     const {end} = this.state;
     if (end && preferences.loaded) {
@@ -177,7 +181,7 @@ class ClusterNodeMonitor extends React.Component {
     return false;
   }
 
-  componentDidMount () {
+  componentDidMount() {
     this.liveUpdateTimer = setInterval(
       this.invokeLiveUpdate,
       LIVE_UPDATE_INTERVAL
@@ -185,11 +189,11 @@ class ClusterNodeMonitor extends React.Component {
     this.initializeRange();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     this.initializeRange();
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     if (this.liveUpdateTimer) {
       clearInterval(this.liveUpdateTimer);
       delete this.liveUpdateTimer;
@@ -397,21 +401,47 @@ class ClusterNodeMonitor extends React.Component {
   };
 
   onExportClicked = (opts) => {
-    let {key: tick} = opts || {};
+    const {key: mode} = opts || {};
+    this.onExport(mode);
+  }
+
+  openExportSettingsWindow = () => {
+    this.setState({
+      exportWindowVisible: true
+    });
+  };
+
+  closeExportSettingsWindow = () => {
+    this.setState({
+      exportWindowVisible: false
+    });
+  };
+
+  onExport = (mode, tick) => {
+    if (mode && /^custom$/i.test(mode)) {
+      this.openExportSettingsWindow();
+      return;
+    }
     this.setState({exporting: true}, async () => {
       const {chartsData} = this.props;
       const {start, end} = this.state;
       const hide = message.loading('Fetching usage report...', 0);
       try {
         const format = 'YYYY-MM-DD HH:mm:ss';
-        if (!tick) {
-          tick = usageUtilities.autoDetectTickInterval(start, end);
+        let modeValue = mode;
+        if (!modeValue) {
+          modeValue = 'XLS';
+        }
+        let tickValue = tick;
+        if (!tickValue) {
+          tickValue = usageUtilities.autoDetectTickInterval(start, end);
         }
         const pipelineFile = new ClusterNodeUsageReport(
           chartsData.nodeName,
           start ? moment.unix(start).utc().format(format) : undefined,
           end ? moment.unix(end).utc().format(format) : undefined,
-          tick
+          tickValue,
+          modeValue
         );
         let res;
         await pipelineFile.fetch();
@@ -430,16 +460,16 @@ class ClusterNodeMonitor extends React.Component {
           checkForBlobErrors(res)
             .then(error => error
               ? message.error('Error downloading file', 5)
-              : FileSaver.saveAs(res, 'report.csv')
+              : FileSaver.saveAs(res, `report.${/^xls$/i.test(modeValue) ? 'xls' : 'csv'}`)
             );
         } else if (res) {
-          FileSaver.saveAs(res, 'report.csv');
+          FileSaver.saveAs(res, `report.${/^xls$/i.test(modeValue) ? 'xls' : 'csv'}`);
         }
       } catch (e) {
         message.error('Failed to download file', 5);
       } finally {
         hide();
-        this.setState({exporting: false});
+        this.setState({exporting: false, exportWindowVisible: false});
       }
     });
   };
@@ -450,7 +480,7 @@ class ClusterNodeMonitor extends React.Component {
     } = this.props;
     if (chartsData.error) {
       return (
-        <Alert type={'error'} message={chartsData.error} />
+        <Alert type={'error'} message={chartsData.error}/>
       );
     }
     if (!chartsData.initialized) {
@@ -474,6 +504,7 @@ class ClusterNodeMonitor extends React.Component {
       padding: 5,
       onRangeChanged: this.onRangeChanged
     };
+    const availableExportIntervals = usageUtilities.getAvailableTickIntervals(start, end);
     return (
       <div
         className={styles.fullHeightContainer}
@@ -486,7 +517,7 @@ class ClusterNodeMonitor extends React.Component {
           >
             Common range for all charts
           </Checkbox>
-          <Divider />
+          <Divider/>
           <Checkbox
             checked={liveUpdate}
             disabled={chartsData.rangeEndIsFixed}
@@ -494,7 +525,7 @@ class ClusterNodeMonitor extends React.Component {
           >
             Live update
           </Checkbox>
-          <Divider />
+          <Divider/>
           <Dropdown
             overlay={(
               <Menu onClick={this.setRange}>
@@ -525,10 +556,10 @@ class ClusterNodeMonitor extends React.Component {
               </Menu>
             )}>
             <Button>
-              Set range <Icon type="down" />
+              Set range <Icon type="down"/>
             </Button>
           </Dropdown>
-          <Divider />
+          <Divider/>
           <DatePicker
             format="YYYY-MM-DD HH:mm"
             placeholder="Start"
@@ -546,21 +577,28 @@ class ClusterNodeMonitor extends React.Component {
             disabledDate={this.disabledDate}
           />
           {
-            !this.retentionPeriodExceeded && <Divider />
+            !this.retentionPeriodExceeded && <Divider/>
           }
           {
             !this.retentionPeriodExceeded && (
               <Dropdown
                 overlay={(
                   <Menu onClick={this.onExportClicked}>
+                    <Menu.Item key="XLS" value="XLS">
+                      Excel
+                    </Menu.Item>
+                    <Menu.Item key="CSV" value="CSV">
+                      CSV
+                    </Menu.Item>
                     {
-                      usageUtilities
-                        .getAvailableTickIntervals(start, end)
-                        .map((unit) => (
-                          <Menu.Item key={unit.value}>
-                            Interval: {unit.name}
-                          </Menu.Item>
-                        ))
+                      availableExportIntervals.length > 1 && (<Menu.Divider/>)
+                    }
+                    {
+                      availableExportIntervals.length > 1 && (
+                        <Menu.Item key="custom" value="custom">
+                          Configure export
+                        </Menu.Item>
+                      )
                     }
                   </Menu>
                 )}>
@@ -583,18 +621,21 @@ class ClusterNodeMonitor extends React.Component {
             title="CPU Usage"
             data={chartsData.cpuUsage}
             chart={CPUUsageChart}
+            disableTooltips={this.state.exportWindowVisible}
             {...commonChartProps}
           />
           <ChartContainer
             title="Memory Usage"
             data={chartsData.memoryUsage}
             chart={MemoryUsageChart}
+            disableTooltips={this.state.exportWindowVisible}
             {...commonChartProps}
           />
           <ChartContainer
             title="Network Usage"
             data={chartsData.networkUsage}
             chart={NetworkUsageChart}
+            disableTooltips={this.state.exportWindowVisible}
             {...commonChartProps}
           />
           <ChartContainer
@@ -602,9 +643,17 @@ class ClusterNodeMonitor extends React.Component {
             data={chartsData.fileSystemUsage}
             chart={FileSystemUsageChart}
             rangeChangeEnabled={false}
+            disableTooltips={this.state.exportWindowVisible}
             {...commonChartProps}
           />
         </ResponsiveContainer>
+        <ClusterUsageExportSettingsDialog
+          disabled={this.state.exporting}
+          visible={this.state.exportWindowVisible}
+          onCancel={this.closeExportSettingsWindow}
+          onExport={this.onExport}
+          availableIntervals={availableExportIntervals}
+        />
       </div>
     );
   }

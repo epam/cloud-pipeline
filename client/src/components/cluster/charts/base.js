@@ -29,6 +29,7 @@ class Chart extends React.Component {
   static propTypes = {
     className: PropTypes.string,
     data: PropTypes.object,
+    disableTooltips: PropTypes.bool,
     title: PropTypes.string,
     width: PropTypes.number.isRequired,
     height: PropTypes.number.isRequired,
@@ -226,7 +227,7 @@ class Chart extends React.Component {
     );
   }
 
-  renderPlot (data, width, height) {
+  renderPlot (data, width, height, disableTooltips) {
     return null;
   }
 
@@ -234,6 +235,7 @@ class Chart extends React.Component {
     const {
       className,
       data,
+      disableTooltips,
       width,
       height,
       rangeChangeEnabled
@@ -257,7 +259,8 @@ class Chart extends React.Component {
           this.renderPlot(
             data,
             width,
-            height - TITLE_HEIGHT - this.constructor.controlsHeight
+            height - TITLE_HEIGHT - this.constructor.controlsHeight,
+            disableTooltips
           )
         }
         {rangeChangeEnabled && this.renderZoomControls()}
