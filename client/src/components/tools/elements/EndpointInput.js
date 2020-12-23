@@ -19,9 +19,11 @@ import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Checkbox,
   Col,
+  Dropdown,
+  Icon,
   Input,
+  Menu,
   Row
 } from 'antd';
 import classNames from 'classnames';
@@ -131,6 +133,16 @@ export default class EndpointInput extends React.Component {
     return false;
   }
 
+  get customDNS () {
+    if (this.state.value) {
+      try {
+        const json = JSON.parse(this.state.value || '');
+        return `${json.customDNS}` === 'true';
+      } catch (__) {}
+    }
+    return false;
+  }
+
   get additional () {
     if (this.state.value) {
       try {
@@ -144,7 +156,7 @@ export default class EndpointInput extends React.Component {
     return undefined;
   }
 
-  composeValue = (name, port, additional, isDefault, sslBackend) => {
+  composeValue = (name, port, additional, isDefault, sslBackend, customDNS) => {
     if (name === undefined || name === null) {
       name = this.name;
     }
@@ -160,6 +172,9 @@ export default class EndpointInput extends React.Component {
     if (sslBackend === undefined || sslBackend === null) {
       sslBackend = this.sslBackend;
     }
+    if (customDNS === undefined || customDNS === null) {
+      customDNS = this.customDNS;
+    }
     const value = {
       name,
       nginx: {
@@ -167,7 +182,8 @@ export default class EndpointInput extends React.Component {
         additional
       },
       isDefault,
-      sslBackend
+      sslBackend,
+      customDNS
     };
     let result = '';
     try {
@@ -179,7 +195,7 @@ export default class EndpointInput extends React.Component {
 
   onChangeName = (e) => {
     const name = e.target.value;
-    const value = this.composeValue(name, null, null, null, null);
+    const value = this.composeValue(name, null, null, null, null, null);
     this.setState({
       value
     }, () => {
@@ -190,7 +206,7 @@ export default class EndpointInput extends React.Component {
 
   onChangePort = (e) => {
     const port = e.target.value;
-    const value = this.composeValue(null, port, null, null, null);
+    const value = this.composeValue(null, port, null, null, null, null);
     this.setState({
       value
     }, () => {
@@ -199,9 +215,8 @@ export default class EndpointInput extends React.Component {
     });
   };
 
-  onChangeDefault = (e) => {
-    const checked = e.target.checked;
-    const value = this.composeValue(null, null, null, checked, null);
+  onChangeDefault = (isDefault) => {
+    const value = this.composeValue(null, null, null, isDefault, null, null);
     this.setState({
       value
     }, () => {
@@ -210,9 +225,32 @@ export default class EndpointInput extends React.Component {
     });
   };
 
-  onChangeSSLBackend = (e) => {
-    const checked = e.target.checked;
-    const value = this.composeValue(null, null, null, null, checked);
+  onChangeSSLBackend = (sslBackend) => {
+    const value = this.composeValue(
+      null,
+      null,
+      null,
+      null,
+      sslBackend,
+      null
+    );
+    this.setState({
+      value
+    }, () => {
+      this.props.onChange && this.props.onChange(value);
+      this.validate();
+    });
+  };
+
+  onChangeCustomDNS = (customDNS) => {
+    const value = this.composeValue(
+      null,
+      null,
+      null,
+      null,
+      null,
+      customDNS
+    );
     this.setState({
       value
     }, () => {
@@ -222,7 +260,7 @@ export default class EndpointInput extends React.Component {
   };
 
   onChangeAdditional = (additional) => {
-    const value = this.composeValue(null, null, additional, null, null);
+    const value = this.composeValue(null, null, additional, null, null, null);
     this.setState({
       value
     }, () => {
@@ -236,6 +274,53 @@ export default class EndpointInput extends React.Component {
   };
 
   render () {
+    const options = [];
+    if (this.isDefault) {
+      options.push('Default');
+    }
+    if (this.sslBackend) {
+      options.push('SSL');
+    }
+    if (this.customDNS) {
+      options.push('Sub-Domain');
+    }
+    if (options.length === 0) {
+      options.push('Configure');
+    }
+    const onChange = (opts) => {
+      const {key} = opts;
+      switch (key) {
+        case 'isDefault':
+          this.onChangeDefault(!this.isDefault);
+          break;
+        case 'sslBackend':
+          this.onChangeSSLBackend(!this.sslBackend);
+          break;
+        case 'customDNS':
+          this.onChangeCustomDNS(!this.customDNS);
+          break;
+        default:
+          break;
+      }
+    };
+    const overlay = (
+      <Menu
+        onClick={onChange}
+      >
+        <Menu.Item key="isDefault">
+          {this.isDefault ? (<Icon type="check" />) : undefined}
+          <span style={{marginLeft: 5}}>Default</span>
+        </Menu.Item>
+        <Menu.Item key="sslBackend">
+          {this.sslBackend ? (<Icon type="check" />) : undefined}
+          <span style={{marginLeft: 5}}>SSL backend</span>
+        </Menu.Item>
+        <Menu.Item key="customDNS">
+          {this.customDNS ? (<Icon type="check" />) : undefined}
+          <span style={{marginLeft: 5}}>Use sub-domain</span>
+        </Menu.Item>
+      </Menu>
+    );
     return (
       <div
         className={classNames({'cp-tool-add-endpoint': this.props.even})}
@@ -282,9 +367,9 @@ export default class EndpointInput extends React.Component {
               </Row>
             }
           </Col>
-          <Col style={{flex: 1}}>
+          <Col style={{width: 190}}>
             <Row type="flex" align="middle">
-              <span>Name:</span>
+              <span style={{fontWeight: 'bold'}}>Name:</span>
               <Input
                 disabled={this.props.disabled}
                 value={this.name}
@@ -320,23 +405,16 @@ export default class EndpointInput extends React.Component {
               </Row>
             }
           </Col>
-          <Col style={{paddingLeft: 5}}>
-            <Checkbox
-              disabled={this.props.disabled}
-              checked={this.isDefault}
-              onChange={this.onChangeDefault}
+          <Col style={{paddingLeft: 5, flex: 1, textAlign: 'right'}}>
+            <Dropdown
+              overlay={overlay}
+              trigger={['click']}
             >
-              Is default
-            </Checkbox>
-          </Col>
-          <Col style={{paddingLeft: 5}}>
-            <Checkbox
-              disabled={this.props.disabled}
-              checked={this.sslBackend}
-              onChange={this.onChangeSSLBackend}
-            >
-              SSL Backend
-            </Checkbox>
+              <a>
+                {options.join(', ')}
+                <Icon type="setting" style={{marginLeft: 2}} />
+              </a>
+            </Dropdown>
           </Col>
           <Col style={{paddingLeft: 5}}>
             <Row type="flex" align="middle" style={{height: 31}}>

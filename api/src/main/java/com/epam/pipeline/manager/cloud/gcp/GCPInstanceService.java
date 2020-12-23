@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -212,6 +213,16 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request) {
         throw new UnsupportedOperationException("Disk attaching doesn't work with GCP provider yet.");
+    }
+
+    @Override
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Creation of DNS record doesn't work with GCP provider yet.");
+    }
+
+    @Override
+    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with GCP provider yet.");
     }
 
     @Override
