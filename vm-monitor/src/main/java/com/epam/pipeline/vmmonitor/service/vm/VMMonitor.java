@@ -106,7 +106,7 @@ public class VMMonitor {
                 checkMatchingNodes(nodes, vm);
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
-                if (!matchingRunExists(vm) && !poolIdExists(vm)) {
+                if (!matchingRunExists(vm)) {
                     notifier.notifyMissingNode(vm);
                 }
             }
