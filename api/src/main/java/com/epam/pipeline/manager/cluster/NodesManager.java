@@ -403,4 +403,5 @@ public class NodesManager {
     public Long getNextFreeNodeId() {
         return clusterDao.createNextFreeNodeId();
     }
+
 }

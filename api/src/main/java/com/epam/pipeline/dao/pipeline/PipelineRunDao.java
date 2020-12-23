@@ -88,6 +88,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String pipelineRunSequence;
     private String createPipelineRunQuery;
     private String loadAllRunsByVersionIdQuery;
+    private String loadAllRunsByServiceURL;
     private String loadRunByIdQuery;
     private String loadSshPasswordQuery;
     private String updateRunStatusQuery;
@@ -725,232 +726,18 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return runs;
     }
 
+    public List<PipelineRun> loadAllRunsWithServiceURL(final String serviceUrl) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.SERVICE_URL.name(),
+                DaoHelper.POSTGRES_LIKE_CHARACTER + serviceUrl + DaoHelper.POSTGRES_LIKE_CHARACTER);
+        return getNamedParameterJdbcTemplate().query(loadAllRunsByServiceURL, params,
+                PipelineRunParameters.getRowMapper());
+    }
+
     private MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
         return runs.stream()
                 .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
                 .toArray(MapSqlParameterSource[]::new);
-    }
-
-    @Required
-    public void setUpdateClusterPriceQuery(final String updateClusterPriceQuery) {
-        this.updateClusterPriceQuery = updateClusterPriceQuery;
-    }
-    private static Array mapListToSqlArray(List<Long> list, Connection connection) {
-        Long[] emptyArray = new Long[0];
-        Long[] javaArray = list != null ? list.toArray(emptyArray) : emptyArray;
-        Array sqlArray;
-        try {
-            sqlArray = connection.createArrayOf(POSTGRE_TYPE_BIGINT, javaArray);
-        } catch (SQLException e) {
-            throw new IllegalArgumentException("Cannot convert data to SQL Array");
-        }
-        return sqlArray;
-    }
-
-    private static Comparator<BaseEntity> getPipelineRunComparator() {
-        return Comparator.comparing(BaseEntity::getId).reversed();
-    }
-
-    @Required
-    public void setPipelineRunSequence(String pipelineRunSequence) {
-        this.pipelineRunSequence = pipelineRunSequence;
-    }
-
-    @Required
-    public void setCreatePipelineRunQuery(String createPipelineRunQuery) {
-        this.createPipelineRunQuery = createPipelineRunQuery;
-    }
-
-    @Required
-    public void setLoadAllRunsByVersionIdQuery(String loadAllRunsByVersionIdQuery) {
-        this.loadAllRunsByVersionIdQuery = loadAllRunsByVersionIdQuery;
-    }
-
-    @Required
-    public void setUpdateRunStatusQuery(String updateRunStatusQuery) {
-        this.updateRunStatusQuery = updateRunStatusQuery;
-    }
-
-    @Required
-    public void setUpdateRunCommitStatusQuery(String updateRunCommitStatusQuery) {
-        this.updateRunCommitStatusQuery = updateRunCommitStatusQuery;
-    }
-
-    @Required
-    public void setLoadRunByIdQuery(String loadRunByIdQuery) {
-        this.loadRunByIdQuery = loadRunByIdQuery;
-    }
-
-    @Required
-    public void setLoadPipelineRunsWithPipelineByIdsQuery(String loadPipelineRunsWithPipelineByIdsQuery) {
-        this.loadPipelineRunsWithPipelineByIdsQuery = loadPipelineRunsWithPipelineByIdsQuery;
-    }
-
-    @Required
-    public void setLoadAllRunsByPipelineIdQuery(String loadAllRunsByPipelineIdQuery) {
-        this.loadAllRunsByPipelineIdQuery = loadAllRunsByPipelineIdQuery;
-    }
-
-    @Required
-    public void setLoadAllRunsByPipelineIdAndVersionQuery(String loadAllRunsByPipelineIdAndVersionQuery) {
-        this.loadAllRunsByPipelineIdAndVersionQuery = loadAllRunsByPipelineIdAndVersionQuery;
-    }
-
-    @Required
-    public void setLoadRunningAndTerminatedPipelineRunsQuery(String loadRunningAndTerminatedPipelineRunsQuery) {
-        this.loadRunningAndTerminatedPipelineRunsQuery = loadRunningAndTerminatedPipelineRunsQuery;
-    }
-
-    @Required
-    public void setLoadActiveServicesQuery(String loadActiveServicesQuery) {
-        this.loadActiveServicesQuery = loadActiveServicesQuery;
-    }
-
-    @Required
-    public void setCountActiveServicesQuery(String countActiveServicesQuery) {
-        this.countActiveServicesQuery = countActiveServicesQuery;
-    }
-
-    @Required
-    public void setLoadTerminatingPipelineRunsQuery(String loadTerminatingPipelineRunsQuery) {
-        this.loadTerminatingPipelineRunsQuery = loadTerminatingPipelineRunsQuery;
-    }
-
-    @Required
-    public void setSearchPipelineRunsBaseQuery(String searchPipelineRunsBaseQuery) {
-        this.searchPipelineRunsBaseQuery = searchPipelineRunsBaseQuery;
-    }
-
-    @Required
-    public void setCountFilteredPipelineRunsBaseQuery(String countFilteredPipelineRunsBaseQuery) {
-        this.countFilteredPipelineRunsBaseQuery = countFilteredPipelineRunsBaseQuery;
-    }
-
-    @Required
-    public void setUpdateRunInstanceQuery(String updateRunInstanceQuery) {
-        this.updateRunInstanceQuery = updateRunInstanceQuery;
-    }
-
-    @Required
-    public void setUpdateServiceUrlQuery(String updateServiceUrlQuery) {
-        this.updateServiceUrlQuery = updateServiceUrlQuery;
-    }
-
-    @Required
-    public void setUpdatePodIPQuery(String updatePodIPQuery) {
-        this.updatePodIPQuery = updatePodIPQuery;
-    }
-
-    @Required
-    public void setLoadSshPasswordQuery(String loadSshPasswordQuery) {
-        this.loadSshPasswordQuery = loadSshPasswordQuery;
-    }
-
-    @Required
-    public void setLoadRunsGroupingQuery(String loadRunsGroupingQuery) {
-        this.loadRunsGroupingQuery = loadRunsGroupingQuery;
-    }
-
-    @Required
-    public void setCreatePipelineRunSidsQuery(String createPipelineRunSidsQuery) {
-        this.createPipelineRunSidsQuery = createPipelineRunSidsQuery;
-    }
-
-    @Required
-    public void setDeleteRunSidsByRunIdQuery(String deleteRunSidsByRunIdQuery) {
-        this.deleteRunSidsByRunIdQuery = deleteRunSidsByRunIdQuery;
-    }
-
-    @Required
-    public void setLoadRunSidsQuery(String loadRunSidsQuery) {
-        this.loadRunSidsQuery = loadRunSidsQuery;
-    }
-
-    @Required
-    public void setCountRunGroupsQuery(String countRunGroupsQuery) {
-        this.countRunGroupsQuery = countRunGroupsQuery;
-    }
-
-    @Required
-    public void setUpdatePodStatusQuery(String updatePodStatusQuery) {
-        this.updatePodStatusQuery = updatePodStatusQuery;
-    }
-
-    @Required
-    public void setUpdateProlongedAtTimeAndLastIdleNotificationTimeQuery(
-            String updateProlongedAtTimeAndLastIdleNotificationTimeQuery) {
-        this.updateProlongedAtTimeAndLastIdleNotificationTimeQuery =
-                updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
-    }
-
-    @Required
-    public void setLoadEnvVarsQuery(String loadEnvVarsQuery) {
-        this.loadEnvVarsQuery = loadEnvVarsQuery;
-    }
-
-    @Required
-    public void setUpdateLastNotificationQuery(String updateLastNotificationQuery) {
-        this.updateLastNotificationQuery = updateLastNotificationQuery;
-    }
-
-    @Required
-    public void setUpdateRunQuery(String updateRunQuery) {
-        this.updateRunQuery = updateRunQuery;
-    }
-
-    @Required
-    public void setLoadRunByPrettyUrlQuery(String loadRunByPrettyUrlQuery) {
-        this.loadRunByPrettyUrlQuery = loadRunByPrettyUrlQuery;
-    }
-
-    @Required
-    public void setLoadRunningPipelineRunsQuery(String loadRunningPipelineRunsQuery) {
-        this.loadRunningPipelineRunsQuery = loadRunningPipelineRunsQuery;
-    }
-
-    @Required
-    public void setLoadRunSidsQueryForList(final String loadRunSidsQueryForList) {
-        this.loadRunSidsQueryForList = loadRunSidsQueryForList;
-    }
-
-    @Required
-    public void setUpdateTagsQuery(final String updateTagsQuery) {
-        this.updateTagsQuery = updateTagsQuery;
-    }
-
-    @Required
-    public void setLoadAllRunsPossiblyActiveInPeriodQuery(final String loadAllRunsPossiblyActiveInPeriodQuery) {
-        this.loadAllRunsPossiblyActiveInPeriodQuery = loadAllRunsPossiblyActiveInPeriodQuery;
-    }
-
-    @Required
-    public void setLoadAllRunsByStatusQuery(final String loadAllRunsByStatusQuery) {
-        this.loadAllRunsByStatusQuery = loadAllRunsByStatusQuery;
-    }
-
-    @Required
-    public void setLoadAllRunsByIdsQuery(final String loadAllRunsByIdsQuery) {
-        this.loadAllRunsByIdsQuery = loadAllRunsByIdsQuery;
-    }
-
-    @Required
-    public void setLoadRunByPodIPQuery(final String loadRunByPodIPQuery) {
-        this.loadRunByPodIPQuery = loadRunByPodIPQuery;
-    }
-
-    @Required
-    public void setLoadRunsByNodeNameQuery(final String loadRunsByNodeNameQuery) {
-        this.loadRunsByNodeNameQuery = loadRunsByNodeNameQuery;
-    }
-
-    @Required
-    public void setLoadRunsByParentRunsIdsQuery(final String loadRunsByParentRunsIdsQuery) {
-        this.loadRunsByParentRunsIdsQuery = loadRunsByParentRunsIdsQuery;
-    }
-
-    @Required
-    public void setLoadRunsByPoolIdQuery(final String loadRunsByPoolIdQuery) {
-        this.loadRunsByPoolIdQuery = loadRunsByPoolIdQuery;
     }
 
     public enum PipelineRunParameters {
@@ -1285,4 +1072,233 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     new TypeReference<Map<String, String>>() {});
         }
     }
+
+    private static Array mapListToSqlArray(List<Long> list, Connection connection) {
+        Long[] emptyArray = new Long[0];
+        Long[] javaArray = list != null ? list.toArray(emptyArray) : emptyArray;
+        Array sqlArray;
+        try {
+            sqlArray = connection.createArrayOf(POSTGRE_TYPE_BIGINT, javaArray);
+        } catch (SQLException e) {
+            throw new IllegalArgumentException("Cannot convert data to SQL Array");
+        }
+        return sqlArray;
+    }
+
+    private static Comparator<BaseEntity> getPipelineRunComparator() {
+        return Comparator.comparing(BaseEntity::getId).reversed();
+    }
+
+    @Required
+    public void setPipelineRunSequence(String pipelineRunSequence) {
+        this.pipelineRunSequence = pipelineRunSequence;
+    }
+
+    @Required
+    public void setCreatePipelineRunQuery(String createPipelineRunQuery) {
+        this.createPipelineRunQuery = createPipelineRunQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsByVersionIdQuery(String loadAllRunsByVersionIdQuery) {
+        this.loadAllRunsByVersionIdQuery = loadAllRunsByVersionIdQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsByServiceURL(String loadAllRunsByServiceURL) {
+        this.loadAllRunsByServiceURL = loadAllRunsByServiceURL;
+    }
+
+    @Required
+    public void setUpdateRunStatusQuery(String updateRunStatusQuery) {
+        this.updateRunStatusQuery = updateRunStatusQuery;
+    }
+
+    @Required
+    public void setUpdateRunCommitStatusQuery(String updateRunCommitStatusQuery) {
+        this.updateRunCommitStatusQuery = updateRunCommitStatusQuery;
+    }
+
+    @Required
+    public void setLoadRunByIdQuery(String loadRunByIdQuery) {
+        this.loadRunByIdQuery = loadRunByIdQuery;
+    }
+
+    @Required
+    public void setLoadPipelineRunsWithPipelineByIdsQuery(String loadPipelineRunsWithPipelineByIdsQuery) {
+        this.loadPipelineRunsWithPipelineByIdsQuery = loadPipelineRunsWithPipelineByIdsQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsByPipelineIdQuery(String loadAllRunsByPipelineIdQuery) {
+        this.loadAllRunsByPipelineIdQuery = loadAllRunsByPipelineIdQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsByPipelineIdAndVersionQuery(String loadAllRunsByPipelineIdAndVersionQuery) {
+        this.loadAllRunsByPipelineIdAndVersionQuery = loadAllRunsByPipelineIdAndVersionQuery;
+    }
+
+    @Required
+    public void setLoadRunningAndTerminatedPipelineRunsQuery(String loadRunningAndTerminatedPipelineRunsQuery) {
+        this.loadRunningAndTerminatedPipelineRunsQuery = loadRunningAndTerminatedPipelineRunsQuery;
+    }
+
+    @Required
+    public void setLoadActiveServicesQuery(String loadActiveServicesQuery) {
+        this.loadActiveServicesQuery = loadActiveServicesQuery;
+    }
+
+    @Required
+    public void setCountActiveServicesQuery(String countActiveServicesQuery) {
+        this.countActiveServicesQuery = countActiveServicesQuery;
+    }
+
+    @Required
+    public void setLoadTerminatingPipelineRunsQuery(String loadTerminatingPipelineRunsQuery) {
+        this.loadTerminatingPipelineRunsQuery = loadTerminatingPipelineRunsQuery;
+    }
+
+    @Required
+    public void setSearchPipelineRunsBaseQuery(String searchPipelineRunsBaseQuery) {
+        this.searchPipelineRunsBaseQuery = searchPipelineRunsBaseQuery;
+    }
+
+    @Required
+    public void setCountFilteredPipelineRunsBaseQuery(String countFilteredPipelineRunsBaseQuery) {
+        this.countFilteredPipelineRunsBaseQuery = countFilteredPipelineRunsBaseQuery;
+    }
+
+    @Required
+    public void setUpdateRunInstanceQuery(String updateRunInstanceQuery) {
+        this.updateRunInstanceQuery = updateRunInstanceQuery;
+    }
+
+    @Required
+    public void setUpdateServiceUrlQuery(String updateServiceUrlQuery) {
+        this.updateServiceUrlQuery = updateServiceUrlQuery;
+    }
+
+    @Required
+    public void setUpdatePodIPQuery(String updatePodIPQuery) {
+        this.updatePodIPQuery = updatePodIPQuery;
+    }
+
+    @Required
+    public void setLoadSshPasswordQuery(String loadSshPasswordQuery) {
+        this.loadSshPasswordQuery = loadSshPasswordQuery;
+    }
+
+    @Required
+    public void setLoadRunsGroupingQuery(String loadRunsGroupingQuery) {
+        this.loadRunsGroupingQuery = loadRunsGroupingQuery;
+    }
+
+    @Required
+    public void setCreatePipelineRunSidsQuery(String createPipelineRunSidsQuery) {
+        this.createPipelineRunSidsQuery = createPipelineRunSidsQuery;
+    }
+
+    @Required
+    public void setDeleteRunSidsByRunIdQuery(String deleteRunSidsByRunIdQuery) {
+        this.deleteRunSidsByRunIdQuery = deleteRunSidsByRunIdQuery;
+    }
+
+    @Required
+    public void setLoadRunSidsQuery(String loadRunSidsQuery) {
+        this.loadRunSidsQuery = loadRunSidsQuery;
+    }
+
+    @Required
+    public void setCountRunGroupsQuery(String countRunGroupsQuery) {
+        this.countRunGroupsQuery = countRunGroupsQuery;
+    }
+
+    @Required
+    public void setUpdatePodStatusQuery(String updatePodStatusQuery) {
+        this.updatePodStatusQuery = updatePodStatusQuery;
+    }
+
+    @Required
+    public void setUpdateProlongedAtTimeAndLastIdleNotificationTimeQuery(
+            String updateProlongedAtTimeAndLastIdleNotificationTimeQuery) {
+        this.updateProlongedAtTimeAndLastIdleNotificationTimeQuery =
+                updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
+    }
+
+    @Required
+    public void setLoadEnvVarsQuery(String loadEnvVarsQuery) {
+        this.loadEnvVarsQuery = loadEnvVarsQuery;
+    }
+
+    @Required
+    public void setUpdateLastNotificationQuery(String updateLastNotificationQuery) {
+        this.updateLastNotificationQuery = updateLastNotificationQuery;
+    }
+
+    @Required
+    public void setUpdateRunQuery(String updateRunQuery) {
+        this.updateRunQuery = updateRunQuery;
+    }
+
+    @Required
+    public void setLoadRunByPrettyUrlQuery(String loadRunByPrettyUrlQuery) {
+        this.loadRunByPrettyUrlQuery = loadRunByPrettyUrlQuery;
+    }
+
+    @Required
+    public void setLoadRunningPipelineRunsQuery(String loadRunningPipelineRunsQuery) {
+        this.loadRunningPipelineRunsQuery = loadRunningPipelineRunsQuery;
+    }
+
+    @Required
+    public void setLoadRunSidsQueryForList(final String loadRunSidsQueryForList) {
+        this.loadRunSidsQueryForList = loadRunSidsQueryForList;
+    }
+
+    @Required
+    public void setUpdateTagsQuery(final String updateTagsQuery) {
+        this.updateTagsQuery = updateTagsQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsPossiblyActiveInPeriodQuery(final String loadAllRunsPossiblyActiveInPeriodQuery) {
+        this.loadAllRunsPossiblyActiveInPeriodQuery = loadAllRunsPossiblyActiveInPeriodQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsByStatusQuery(final String loadAllRunsByStatusQuery) {
+        this.loadAllRunsByStatusQuery = loadAllRunsByStatusQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsByIdsQuery(final String loadAllRunsByIdsQuery) {
+        this.loadAllRunsByIdsQuery = loadAllRunsByIdsQuery;
+    }
+
+    @Required
+    public void setLoadRunByPodIPQuery(final String loadRunByPodIPQuery) {
+        this.loadRunByPodIPQuery = loadRunByPodIPQuery;
+    }
+
+    @Required
+    public void setLoadRunsByNodeNameQuery(final String loadRunsByNodeNameQuery) {
+        this.loadRunsByNodeNameQuery = loadRunsByNodeNameQuery;
+    }
+
+    @Required
+    public void setUpdateClusterPriceQuery(final String updateClusterPriceQuery) {
+        this.updateClusterPriceQuery = updateClusterPriceQuery;
+    }
+
+    @Required
+    public void setLoadRunsByParentRunsIdsQuery(final String loadRunsByParentRunsIdsQuery) {
+        this.loadRunsByParentRunsIdsQuery = loadRunsByParentRunsIdsQuery;
+    }
+
+    @Required
+    public void setLoadRunsByPoolIdQuery(final String loadRunsByPoolIdQuery) {
+        this.loadRunsByPoolIdQuery = loadRunsByPoolIdQuery;
+    }
+
 }

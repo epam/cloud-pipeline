@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
@@ -257,6 +258,17 @@ public class CloudFacadeImpl implements CloudFacade {
     public CloudInstanceState getInstanceState(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
         return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
+    }
+
+    public InstanceDNSRecord createDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
+        final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
+        return getInstanceService(cloudRegion).getOrCreateInstanceDNSRecord(dnsRecord);
+    }
+
+    @Override
+    public InstanceDNSRecord removeDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
+        final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
+        return getInstanceService(cloudRegion).deleteInstanceDNSRecord(dnsRecord);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

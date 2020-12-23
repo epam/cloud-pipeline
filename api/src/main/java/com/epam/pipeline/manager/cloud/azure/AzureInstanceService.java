@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
@@ -255,6 +256,15 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
             log.error(e.getMessage(), e);
             return CloudInstanceState.TERMINATED;
         }
+    }
+
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Creation of DNS record doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {
