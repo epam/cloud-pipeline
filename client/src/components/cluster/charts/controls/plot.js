@@ -37,6 +37,7 @@ class Plot extends React.PureComponent {
       data,
       dataGroup = 'default',
       dataType,
+      disableTooltips,
       children,
       from,
       height,
@@ -106,7 +107,7 @@ class Plot extends React.PureComponent {
                 </ValueAxis>
               ))
             }
-            <Tooltip />
+            <Tooltip disabled={disableTooltips} />
           </Timeline>
           <Legend />
         </svg>
@@ -125,6 +126,7 @@ Plot.propTypes = {
     AxisDataType.mBytes,
     AxisDataType.networkUsage
   ]),
+  disableTooltips: PropTypes.bool,
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   instanceFrom: PropTypes.number,
@@ -154,6 +156,7 @@ Plot.propTypes = {
 Plot.defaultProps = {
   dataGroup: 'default',
   dataType: AxisDataType.number,
+  disableTooltips: false,
   chartArea: {
     left: 100,
     top: 30,

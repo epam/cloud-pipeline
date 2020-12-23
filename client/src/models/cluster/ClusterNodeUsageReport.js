@@ -117,7 +117,7 @@ function autoDetectTickInterval (fromUnix, toUnix) {
 export {autoDetectTickInterval, getAvailableTickIntervals};
 
 export default class ClusterNodeUsageReport extends Remote {
-  constructor (name, from, to, tick) {
+  constructor (name, from, to, tick, type = 'XLS') {
     super();
     this.constructor.isJson = false;
     this.name = name;
@@ -131,7 +131,8 @@ export default class ClusterNodeUsageReport extends Remote {
     const parts = [
       from && `from=${encodeURIComponent(from)}`,
       to && `to=${encodeURIComponent(to)}`,
-      tick && `interval=${tick}`
+      tick && `interval=${tick}`,
+      type && `type=${type}`
     ].filter(Boolean);
     const query = parts.length > 0 ? `?${parts.join('&')}` : '';
     this.url = `/cluster/node/${this.name}/usage/report${query}`;

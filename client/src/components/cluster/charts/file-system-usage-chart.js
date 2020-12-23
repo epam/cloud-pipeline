@@ -19,7 +19,7 @@ import Base from './base';
 import {UsagePlot, formatters} from './controls';
 
 class FileSystemUsageChart extends Base {
-  renderPlot (data, width, height) {
+  renderPlot (data, width, height, disableTooltips) {
     if (!data || !data.groups || !data.groups.length) {
       return null;
     }
@@ -28,6 +28,7 @@ class FileSystemUsageChart extends Base {
         width={width}
         height={height}
         data={data}
+        disableTooltips={disableTooltips}
         config={data.groups.map(group => ({
           group,
           title: group,
