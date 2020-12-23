@@ -93,7 +93,7 @@ public class UtilsManager {
         }
         return service;
     }
-    
+
     public List<DefaultSystemParameter> getSystemParameters() {
         List<DefaultSystemParameter> defaultSystemParameterList = preferenceManager.getPreference(
             SystemPreferences.LAUNCH_SYSTEM_PARAMETERS);
