@@ -3,5 +3,5 @@
     "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "disk_size": "50",
     "default_command": "/init",
-    "endpoints": [ "{ \"name\": \"Orchest\", \"nginx\": { \"port\": \"8000\" }, \"isDefault\": false }" ]
+    "endpoints": [ "{ \"name\": \"Orchest\", \"nginx\": { \"port\": \"8000\" }, \"isDefault\": false }" ],
 }
