@@ -16,9 +16,11 @@
 
 package com.epam.pipeline.controller.cluster;
 
+import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -38,6 +40,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -67,6 +70,7 @@ public class ClusterController extends AbstractRestController {
     private static final char UNDERSCORE = '_';
 
     private final ClusterApiService clusterApiService;
+    private final InfrastructureApiService infrastructureApiService;
 
     @GetMapping(value = "/cluster/master")
     @ResponseBody
@@ -243,5 +247,17 @@ public class ClusterController extends AbstractRestController {
     @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
     public Result<List<NodeDisk>> loadNodeDisks(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.loadNodeDisks(name));
+    }
+
+    @PostMapping("/cluster/dnsrecord")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates dns record.",
+            notes = "Creates dns record.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<InstanceDNSRecord> requestDnsRecord(@RequestParam final Long regionId,
+                                                      @RequestBody final InstanceDNSRecord dnsRecord) {
+        return Result.success(infrastructureApiService.createInstanceDNSRecord(regionId, dnsRecord));
     }
 }

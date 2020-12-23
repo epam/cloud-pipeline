@@ -384,6 +384,11 @@ public class SystemPreferences {
     public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
             "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<Set<String>>() {}));
+    public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_ID = new StringPreference(
+            "instance.dns.hosted.zone.id", null, CLUSTER_GROUP, pass);
+    public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_BASE = new StringPreference(
+            "instance.dns.hosted.zone.base", null, CLUSTER_GROUP, pass);
+
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",

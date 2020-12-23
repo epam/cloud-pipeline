@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -191,4 +192,9 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     List<InstanceDisk> loadDisks(T region, Long runId);
 
     CloudInstanceState getInstanceState(T region, String nodeLabel);
+
+    InstanceDNSRecord getOrCreateInstanceDNSRecord(InstanceDNSRecord dnsRecord);
+
+    InstanceDNSRecord deleteInstanceDNSRecord(InstanceDNSRecord dnsRecord);
+
 }

@@ -18,6 +18,7 @@ package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
+import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
 import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
@@ -218,4 +219,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected NodeScheduleApiService nodeScheduleApiService;
+
+    @MockBean
+    protected InfrastructureApiService infrastructureApiService;
 }
