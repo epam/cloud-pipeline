@@ -29,6 +29,7 @@ import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.acls.model.Permission;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.Collections;
@@ -85,10 +86,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     public void shouldCreateRunSchedulesWhenPermissionIsGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager)
                 .createSchedules(ID, PIPELINE_RUN, pipelineRunScheduleVOList);
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun, AclPermission.EXECUTE);
-        mockSecurityContext();
+        mockPipelineRunPermission(AclPermission.EXECUTE);
 
         assertThat(runScheduleApiService.createRunSchedules(ID, pipelineRunScheduleVOList)).isEqualTo(runScheduleList);
     }
@@ -96,10 +94,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyCreateRunSchedulesWhenPermissionIsNotGranted() {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun);
-        mockSecurityContext();
+        mockPipelineRunWithoutPermission();
 
         assertThrows(AccessDeniedException.class,
             () -> runScheduleApiService.createRunSchedules(ID, pipelineRunScheduleVOList));
@@ -120,9 +115,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     public void shouldCreateRunConfigurationSchedulesWhenPermissionIsGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager)
                 .createSchedules(ID, RUN_CONFIGURATION, pipelineRunScheduleVOList);
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration, AclPermission.EXECUTE);
-        mockSecurityContext();
+        mockRunConfigurationPermission(AclPermission.EXECUTE);
 
         assertThat(runScheduleApiService.createRunConfigurationSchedules(ID, pipelineRunScheduleVOList))
                 .isEqualTo(runScheduleList);
@@ -133,9 +126,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     public void shouldDenyCreateRunConfigurationSchedulesWhenPermissionIsNotGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager)
                 .createSchedules(ID, RUN_CONFIGURATION, pipelineRunScheduleVOList);
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration);
-        mockSecurityContext();
+        mockRunConfigurationWithoutPermission();
 
         assertThrows(AccessDeniedException.class,
             () -> runScheduleApiService.createRunConfigurationSchedules(ID, pipelineRunScheduleVOList));
@@ -155,10 +146,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     public void shouldUpdateRunSchedulesWhenPermissionIsGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager)
                 .updateSchedules(ID, PIPELINE_RUN, pipelineRunScheduleVOList);
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun, AclPermission.EXECUTE);
-        mockSecurityContext();
+        mockPipelineRunPermission(AclPermission.EXECUTE);
 
         assertThat(runScheduleApiService.updateRunSchedules(ID, pipelineRunScheduleVOList)).isEqualTo(runScheduleList);
     }
@@ -166,10 +154,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUpdateRunSchedulesWhenPermissionIsNotGranted() {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun);
-        mockSecurityContext();
+        mockPipelineRunWithoutPermission();
 
         assertThrows(AccessDeniedException.class,
             () -> runScheduleApiService.updateRunSchedules(ID, pipelineRunScheduleVOList));
@@ -190,9 +175,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     public void shouldUpdateRunConfigurationSchedulesWhenPermissionIsGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager)
                 .updateSchedules(ID, RUN_CONFIGURATION, pipelineRunScheduleVOList);
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration, AclPermission.EXECUTE);
-        mockSecurityContext();
+        mockRunConfigurationPermission(AclPermission.EXECUTE);
 
         assertThat(runScheduleApiService.updateRunConfigurationSchedules(ID, pipelineRunScheduleVOList))
                 .isEqualTo(runScheduleList);
@@ -203,9 +186,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     public void shouldDenyUpdateRunConfigurationSchedulesWhenPermissionIsNotGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager)
                 .updateSchedules(ID, RUN_CONFIGURATION, pipelineRunScheduleVOList);
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration);
-        mockSecurityContext();
+        mockRunConfigurationWithoutPermission();
 
         assertThrows(AccessDeniedException.class,
             () -> runScheduleApiService.updateRunConfigurationSchedules(ID, pipelineRunScheduleVOList));
@@ -225,10 +206,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     public void shouldDeleteRunSchedulesWhenPermissionIsGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager)
                 .deleteSchedules(ID, PIPELINE_RUN, TEST_LONG_LIST);
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun, AclPermission.EXECUTE);
-        mockSecurityContext();
+        mockPipelineRunPermission(AclPermission.EXECUTE);
 
         assertThat(runScheduleApiService.deleteRunSchedule(ID, pipelineRunScheduleVOList)).isEqualTo(runScheduleList);
     }
@@ -236,10 +214,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyDeleteRunSchedulesWhenPermissionIsNotGranted() {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun);
-        mockSecurityContext();
+        mockPipelineRunWithoutPermission();
 
         assertThrows(AccessDeniedException.class,
             () -> runScheduleApiService.deleteRunSchedule(ID, pipelineRunScheduleVOList));
@@ -260,9 +235,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     public void shouldDeleteRunConfigurationSchedulesWhenPermissionIsGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager)
                 .deleteSchedules(ID, RUN_CONFIGURATION, TEST_LONG_LIST);
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration, AclPermission.EXECUTE);
-        mockSecurityContext();
+        mockRunConfigurationPermission(AclPermission.EXECUTE);
 
         assertThat(runScheduleApiService.deleteRunConfigurationSchedule(ID, pipelineRunScheduleVOList))
                 .isEqualTo(runScheduleList);
@@ -271,11 +244,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyDeleteRunConfigurationSchedulesWhenPermissionIsNotGranted() {
-        doReturn(runScheduleList).when(mockRunScheduleManager)
-                .deleteSchedules(ID, RUN_CONFIGURATION, TEST_LONG_LIST);
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration);
-        mockSecurityContext();
+        mockRunConfigurationWithoutPermission();
 
         assertThrows(AccessDeniedException.class,
             () -> runScheduleApiService.deleteRunConfigurationSchedule(ID, pipelineRunScheduleVOList));
@@ -292,10 +261,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDeleteAllRunSchedulesWhenPermissionIsGranted() {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun, AclPermission.EXECUTE);
-        mockSecurityContext();
+        mockPipelineRunPermission(AclPermission.EXECUTE);
 
         runScheduleApiService.deleteAllRunSchedules(ID);
 
@@ -305,10 +271,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyDeleteAllRunSchedulesWhenPermissionIsNotGranted() {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun);
-        mockSecurityContext();
+        mockPipelineRunWithoutPermission();
 
         assertThrows(AccessDeniedException.class, () -> runScheduleApiService.deleteAllRunSchedules(ID));
     }
@@ -324,9 +287,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDeleteAllRunConfigurationSchedulesWhenPermissionIsGranted() {
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration, AclPermission.EXECUTE);
-        mockSecurityContext();
+        mockRunConfigurationPermission(AclPermission.EXECUTE);
 
         runScheduleApiService.deleteAllRunConfigurationSchedules(ID);
 
@@ -336,9 +297,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyDeleteAllRunConfigurationSchedulesWhenPermissionIsNotGranted() {
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration);
-        mockSecurityContext();
+        mockRunConfigurationWithoutPermission();
 
         assertThrows(AccessDeniedException.class, () -> runScheduleApiService.deleteAllRunConfigurationSchedules(ID));
     }
@@ -355,10 +314,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadAllRunSchedulesByRunIdWhenPermissionIsGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager).loadAllSchedulesBySchedulableId(ID, PIPELINE_RUN);
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun, AclPermission.READ);
-        mockSecurityContext();
+        mockPipelineRunPermission(AclPermission.READ);
 
         assertThat(runScheduleApiService.loadAllRunSchedulesByRunId(ID)).isEqualTo(runScheduleList);
     }
@@ -366,10 +322,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadAllRunSchedulesByRunIdWhenPermissionIsGranted() {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun);
-        mockSecurityContext();
+        mockPipelineRunWithoutPermission();
 
         assertThrows(AccessDeniedException.class, () -> runScheduleApiService.loadAllRunSchedulesByRunId(ID));
     }
@@ -387,9 +340,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadAllRunConfigurationSchedulesByRunIdWhenPermissionIsGranted() {
         doReturn(runScheduleList).when(mockRunScheduleManager).loadAllSchedulesBySchedulableId(ID, RUN_CONFIGURATION);
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration, AclPermission.READ);
-        mockSecurityContext();
+        mockRunConfigurationPermission(AclPermission.READ);
 
         assertThat(runScheduleApiService
                 .loadAllRunConfigurationSchedulesByConfigurationId(ID)).isEqualTo(runScheduleList);
@@ -398,11 +349,35 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadAllRunConfigurationSchedulesByRunIdWhenPermissionIsGranted() {
-        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
-        initAclEntity(runConfiguration);
-        mockSecurityContext();
+        mockRunConfigurationWithoutPermission();
 
         assertThrows(AccessDeniedException.class,
             () -> runScheduleApiService.loadAllRunConfigurationSchedulesByConfigurationId(ID));
+    }
+
+    private void mockPipelineRunPermission(final Permission permission) {
+        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
+        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
+        initAclEntity(parentPipelineRun, permission);
+        mockSecurityContext();
+    }
+
+    private void mockPipelineRunWithoutPermission() {
+        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
+        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
+        initAclEntity(parentPipelineRun);
+        mockSecurityContext();
+    }
+
+    private void mockRunConfigurationPermission(final Permission permission) {
+        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
+        initAclEntity(runConfiguration, permission);
+        mockSecurityContext();
+    }
+
+    private void mockRunConfigurationWithoutPermission() {
+        doReturn(runConfiguration).when(mockRunConfigurationManager).load(ID);
+        initAclEntity(runConfiguration);
+        mockSecurityContext();
     }
 }
