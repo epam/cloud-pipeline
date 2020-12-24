@@ -262,6 +262,7 @@ class AddDockerRegistryControl extends React.Component {
       className,
       dockerRegistries,
       showError,
+      showDelete,
       style,
       onRemove
     } = this.props;
@@ -319,15 +320,19 @@ class AddDockerRegistryControl extends React.Component {
             }
           </Select>
           {this.renderVersionsSelector()}
-          <Button
-            disabled={disabled}
-            size="small"
-            type="danger"
-            onClick={onRemove}
-            className={styles.action}
-          >
-            <Icon type="delete" />
-          </Button>
+          {
+            showDelete && (
+              <Button
+                disabled={disabled}
+                size="small"
+                type="danger"
+                onClick={onRemove}
+                className={styles.action}
+              >
+                <Icon type="delete" />
+              </Button>
+            )
+          }
         </div>
       </div>
     );
@@ -340,9 +345,14 @@ AddDockerRegistryControl.propTypes = {
   className: PropTypes.string,
   docker: PropTypes.string,
   showError: PropTypes.bool,
+  showDelete: PropTypes.bool,
   style: PropTypes.object,
   onChange: PropTypes.func,
   onRemove: PropTypes.func
 };
+
+AddDockerRegistryControl.defaultProps = {
+  showDelete: true
+}
 
 export default AddDockerRegistryControl;

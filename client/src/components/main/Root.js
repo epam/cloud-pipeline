@@ -27,6 +27,7 @@ import projects from '../../models/folders/FolderProjects';
 import FireCloudMethods from '../../models/firecloud/FireCloudMethods';
 import runDefaultParameters from '../../models/pipelines/PipelineRunDefaultParameters';
 import configurations from '../../models/configuration/Configurations';
+import AllConfigurations from '../../models/configuration/ConfigurationsLoadAll';
 import pipelinesLibrary from '../../models/folders/FolderLoadTree';
 import folders from '../../models/folders/Folders';
 import dataStorages from '../../models/dataStorage/DataStorages';
@@ -79,6 +80,8 @@ const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
 const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
+const allConfigurations = new AllConfigurations();
+
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
 (() => { return allowedInstanceTypes.fetchIfNeededOrWait(); })();
@@ -102,6 +105,7 @@ const Root = () =>
       runDefaultParameters,
       counter,
       configurations,
+      allConfigurations,
       pipelinesLibrary,
       dataStorages,
       awsRegions,
