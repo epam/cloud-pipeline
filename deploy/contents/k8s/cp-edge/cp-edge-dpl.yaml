@@ -57,7 +57,6 @@ spec:
               readOnly: true
             - mountPath: /etc/nginx/external-apps
               name: edge-external-apps
-              readOnly: true
       volumes:
         - name: edge-logs
           hostPath:
