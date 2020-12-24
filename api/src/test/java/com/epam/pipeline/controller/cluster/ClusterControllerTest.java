@@ -292,7 +292,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldDownloadNodeUsageStatisticsReport() throws Exception {
         final InputStream inputStream = new ByteArrayInputStream(TEST_DATA.getBytes());
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        final String expectedFileName = "testName_2019-04-01T09:08:07-2020-05-02T12:11:10-PT1H.csv";
+        final String expectedFileName = "testName_2019-04-01T09_08_07-2020-05-02T12_11_10-PT1H.csv";
         params.add(FROM, from.format(REQUEST_FORMATTER));
         params.add(TO, to.format(REQUEST_FORMATTER));
         params.add(INTERVAL, DURATION_AS_STRING);
