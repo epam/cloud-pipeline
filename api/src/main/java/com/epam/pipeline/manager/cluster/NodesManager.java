@@ -146,6 +146,9 @@ public class NodesManager {
             if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
                 labelsMap.put(KubernetesConstants.RUN_ID_LABEL, filterNodesVO.getRunId());
             }
+            if (MapUtils.isNotEmpty(filterNodesVO.getLabels())) {
+                labelsMap.putAll(filterNodesVO.getLabels());
+            }
             Predicate<NodeInstance> addressFilter = node -> true;
             if (StringUtils.isNotBlank(filterNodesVO.getAddress())) {
                 Predicate<NodeInstanceAddress> addressEqualsPredicate =
@@ -155,13 +158,6 @@ public class NodesManager {
                         node.getAddresses() != null && node.getAddresses()
                                 .stream().anyMatch(addressEqualsPredicate);
             }
-            Predicate<NodeInstance> labelsFilter = node -> true;
-            if (filterNodesVO.getLabels() != null && !filterNodesVO.getLabels().isEmpty()) {
-                labelsFilter = labels ->
-                        !labels.getLabels().isEmpty() &&
-                                labels.getLabels().entrySet().stream()
-                                        .anyMatch(m -> m.getValue().equals(filterNodesVO.getLabels().get(m.getKey())));
-            }
             result = client.nodes()
                     .withLabels(labelsMap)
                     .list()
@@ -169,7 +165,6 @@ public class NodesManager {
                     .stream()
                     .map(NodeInstance::new)
                     .filter(addressFilter)
-                    .filter(labelsFilter)
                     .collect(Collectors.toList());
             this.attachRunsInfo(result);
         }

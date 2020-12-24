@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
@@ -15,6 +31,7 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import org.apache.commons.collections4.map.HashedMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -23,7 +40,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,23 +53,19 @@ public class NodesManagerTest {
     private static final String TEST_ADDRESS = "111";
     private static final String ANOTHER_TEST_ADDRESS = "222";
     private static final String TEST_STRING = "TEST";
-    private static final String ANOTHER_TEST_STRING = "TEST2";
-    private static final String CLOUD_PROVIDER = "AWS";
     private static final String TEST_UUID = "0cd07fdc-4364-11eb-b378-0242ac130002";
 
-    private final Node node = new Node();
-    private final FilterNodesVO filterNodesVO = new FilterNodesVO();
-    private final PipelineRun pipelineRun = new PipelineRun();
-    private final Map<String, String> labels = new HashMap<>();
+    private FilterNodesVO filterNodesVO;
+    private Map<String, String> labels;
 
     @Mock
-    private KubernetesManager kubernetesManager;
+    private KubernetesManager mockKubernetesManager;
 
     @Mock
-    private PipelineRunManager pipelineRunManager;
+    private PipelineRunManager mockPipelineRunManager;
 
     @Mock
-    private DefaultKubernetesClient kubernetesClient;
+    private DefaultKubernetesClient mockKubernetesClient;
 
     @InjectMocks
     @Autowired
@@ -63,22 +75,22 @@ public class NodesManagerTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
 
-        final NonNamespaceOperation<Node, NodeList, DoneableNode, Resource<Node, DoneableNode>> mockNodes =
-                new KubernetesTestUtils.MockNodes()
-                        .mockWithLabels(Collections.singletonMap(KubernetesConstants.RUN_ID_LABEL, TEST_ID))
-                        .mockNodeList(Collections.singletonList(node))
-                        .and()
-                        .getMockedEntity();
-
+        labels = new HashedMap<>();
         labels.put(KubernetesConstants.RUN_ID_LABEL, TEST_ID);
-        labels.put(KubernetesConstants.CLOUD_PROVIDER_LABEL, CLOUD_PROVIDER);
+        labels.put(TEST_STRING, TEST_STRING);
+
+        filterNodesVO = new FilterNodesVO();
+        filterNodesVO.setRunId(TEST_ID);
+
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(1L);
 
         final ObjectMeta objectMeta = new ObjectMeta();
-        objectMeta.setLabels(labels);
         objectMeta.setUid(TEST_UUID);
         objectMeta.setName(TEST_STRING);
         objectMeta.setCreationTimestamp(TEST_STRING);
         objectMeta.setClusterName(TEST_STRING);
+        objectMeta.setLabels(labels);
 
         final NodeAddress nodeAddress = new NodeAddress();
         nodeAddress.setAddress(TEST_ADDRESS);
@@ -86,21 +98,24 @@ public class NodesManagerTest {
         final NodeStatus nodeStatus = new NodeStatus();
         nodeStatus.setAddresses(Collections.singletonList(nodeAddress));
 
+        final Node node = new Node();
         node.setStatus(nodeStatus);
         node.setMetadata(objectMeta);
 
-        filterNodesVO.setRunId(TEST_ID);
-        pipelineRun.setId(1L);
+        final NonNamespaceOperation<Node, NodeList, DoneableNode, Resource<Node, DoneableNode>> mockNodes =
+                new KubernetesTestUtils.MockNodes()
+                        .mockWithLabels(labels)
+                        .mockNodeList(Collections.singletonList(node))
+                        .and()
+                        .getMockedEntity();
 
-        doReturn(kubernetesClient).when(kubernetesManager).getKubernetesClient(any(Config.class));
-        doReturn(mockNodes).when(kubernetesClient).nodes();
-        doReturn(Collections.singletonList(pipelineRun)).when(pipelineRunManager).loadPipelineRuns(any());
+        doReturn(mockKubernetesClient).when(mockKubernetesManager).getKubernetesClient(any(Config.class));
+        doReturn(mockNodes).when(mockKubernetesClient).nodes();
+        doReturn(Collections.singletonList(pipelineRun)).when(mockPipelineRunManager).loadPipelineRuns(any());
     }
-
 
     @Test
     public void shouldReturnListNodeWhenFiltersArePassed() {
-        labels.put(TEST_STRING, TEST_STRING);
         filterNodesVO.setAddress(TEST_ADDRESS);
         filterNodesVO.setLabels(Collections.singletonMap(TEST_STRING, TEST_STRING));
 
@@ -115,17 +130,7 @@ public class NodesManagerTest {
 
     @Test
     public void shouldReturnEmptyListNodeWhenAddressFilterIsNotPassed() {
-        labels.put(TEST_STRING, TEST_STRING);
         filterNodesVO.setAddress(ANOTHER_TEST_ADDRESS);
-        filterNodesVO.setLabels(Collections.singletonMap(TEST_STRING, TEST_STRING));
-
-        assertThat(nodesManager.filterNodes(filterNodesVO)).isEmpty();
-    }
-
-    @Test
-    public void shouldReturnEmptyListNodeWhenLabelsFilterIsNotPassed() {
-        labels.put(ANOTHER_TEST_STRING, ANOTHER_TEST_STRING);
-        filterNodesVO.setAddress(TEST_ADDRESS);
         filterNodesVO.setLabels(Collections.singletonMap(TEST_STRING, TEST_STRING));
 
         assertThat(nodesManager.filterNodes(filterNodesVO)).isEmpty();

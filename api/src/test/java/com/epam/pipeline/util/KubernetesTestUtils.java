@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,6 @@
 
 package com.epam.pipeline.util;
 
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
-
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
-import org.mockito.Mockito;
-
 import io.fabric8.kubernetes.api.model.DoneableNode;
 import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Node;
@@ -40,7 +30,15 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.Getter;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
+import org.mockito.Mockito;
+
+import java.util.List;
 import java.util.Map;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * A test utils class, that simplifies mocking Kubernetes response entities
@@ -79,9 +77,13 @@ public class KubernetesTestUtils {
             return mockFilter;
         }
 
-        public MockFilter<MockNodes, Node, NodeList> mockWithLabels(Map<String, String> matcher) {
+        public MockFilter<MockNodes, Node, NodeList> mockWithLabels(Map<String, String> labelsMap) {
+            return mockWithLabels(Matchers.is(labelsMap));
+        }
+
+        public MockFilter<MockNodes, Node, NodeList> mockWithLabels(Matcher<Map<String, String>> matcher) {
             MockFilter<MockNodes, Node, NodeList> mockFilter = new MockFilter<>(this);
-            when(nodes.withLabels(anyMap())).thenReturn(mockFilter.getFilter());
+            when(nodes.withLabels(Mockito.argThat(matcher))).thenReturn(mockFilter.getFilter());
             return mockFilter;
         }
 
