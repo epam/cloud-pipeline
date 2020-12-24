@@ -21,6 +21,7 @@
         "ownerFriendlyName": { "type": "text" },
         "ownerGroups": { "type": "keyword" },
         "metadata": { "type": "text" },
+        "ontology": { "type": "keyword" },
         "allowed_users": { "type": "keyword" },
         "denied_users": { "type": "keyword" },
         "allowed_groups": { "type": "keyword" },

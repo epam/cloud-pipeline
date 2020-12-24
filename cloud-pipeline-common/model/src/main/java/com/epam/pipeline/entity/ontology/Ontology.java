@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.pipeline.elasticsearchagent.model;
 
-import com.epam.pipeline.entity.user.PipelineUser;
+package com.epam.pipeline.entity.ontology;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-@Data
+@Getter
+@Setter
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class EntityContainer<T> {
-
-    private T entity;
-    private PipelineUser owner;
-    private Map<String, String> metadata;
-    private Set<String> ontologies;
-    private PermissionsContainer permissions;
+public class Ontology {
+    private Long id;
+    private String name;
+    private Map<String, String> attributes;
+    private String externalId;
+    private Ontology parent;
+    private LocalDateTime created;
+    private LocalDateTime modified;
+    private List<Ontology> children;
+    private OntologyType type;
 }

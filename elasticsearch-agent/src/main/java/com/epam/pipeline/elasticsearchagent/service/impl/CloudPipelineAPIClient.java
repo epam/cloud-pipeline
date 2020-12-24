@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.ontology.Ontology;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -169,5 +170,13 @@ public class CloudPipelineAPIClient {
 
     public Pipeline loadPipelineByRepositoryUrl(final String repositoryUrl) {
         return QueryUtils.execute(cloudPipelineAPI.loadPipelineByUrl(repositoryUrl));
+    }
+
+    public Ontology findOntology(final String ontologyId) {
+        return QueryUtils.execute(cloudPipelineAPI.findOntology(ontologyId));
+    }
+
+    public List<Ontology> findOntologiesByExternalId(final List<String> externalIds) {
+        return QueryUtils.execute(cloudPipelineAPI.findOntologiesByExternalId(externalIds));
     }
 }

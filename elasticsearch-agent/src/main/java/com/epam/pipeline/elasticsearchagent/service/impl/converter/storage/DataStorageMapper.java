@@ -63,6 +63,7 @@ public class DataStorageMapper implements EntityMapper<DataStorageDoc> {
 
             buildUserContent(doc.getOwner(), jsonBuilder);
             buildMetadata(doc.getMetadata(), jsonBuilder);
+            buildOntologies(doc.getOntologies(), jsonBuilder);
             buildPermissions(doc.getPermissions(), jsonBuilder);
 
             jsonBuilder.endObject();
