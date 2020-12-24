@@ -1616,10 +1616,10 @@ def cluster():
                                                      'in conjunction with the --instance-id option')
 @click.option('-o', '--output', help='The output file for monitoring report. If not specified the report file will '
                                      'be generated in the current folder.')
-@click.option('-df', '--date-from', required=False, help='The start date for monitoring data collection. '
-                                                         'If not specified the current date and time will be used.')
-@click.option('-dt', '--date-to', required=False, help='The end date for monitoring data collection. If not '
-                                                       'specified a --date-from option value minus 1 day will be used.')
+@click.option('-df', '--date-from', required=False, help='The start date for monitoring data collection. If not '
+                                                         'specified a --date-to option value minus 1 day will be used.')
+@click.option('-dt', '--date-to', required=False, help='The end date for monitoring data collection. '
+                                                       'If not specified the current date and time will be used.')
 @click.option('-p', '--interval', required=False, help='The time interval. This option shall have the following format:'
                                                        ' <N>m for minutes or <N>h for hours, where <N> is the required '
                                                        'number of minutes/hours. Default: 1m.')
