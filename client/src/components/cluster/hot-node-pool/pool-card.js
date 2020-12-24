@@ -26,6 +26,7 @@ import classNames from 'classnames';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DockerImageDetails from './docker-image-details';
+import {parseDay} from './schedule-control';
 import styles from './pool-card.css';
 
 function capitalized (string) {
@@ -74,8 +75,8 @@ function scheduleEntryString (scheduleEntry) {
   if (!from || !fromTime || !to || !toTime) {
     return null;
   }
-  const fromString = `${capitalized(from)}, ${displayTime(fromTime)}`;
-  const toString = `${capitalized(to)}, ${displayTime(toTime)}`;
+  const fromString = `${capitalized(parseDay(from, fromTime))}, ${displayTime(fromTime)}`;
+  const toString = `${capitalized(parseDay(to, toTime))}, ${displayTime(toTime)}`;
   return `${fromString} - ${toString}`;
 }
 

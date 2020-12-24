@@ -93,6 +93,26 @@ function parse (date) {
   return moment(localTime);
 }
 
+function getDayIndex (day) {
+  return Dates.map(d => d.toUpperCase()).indexOf((day || '').toUpperCase());
+}
+
+function getDay (index) {
+  if (index >= 0 && index < Dates.length) {
+    return (Dates[index] || '').toUpperCase();
+  }
+  return undefined;
+}
+
+function parseDay (day, date) {
+  if (date && day) {
+    const curr = moment.utc(date, 'HH:mm:ss').get('d');
+    const act = moment.utc(date, 'HH:mm:ss').add(moment().utcOffset(), 'm').get('d');
+    return getDay((getDayIndex(day) + (act - curr) + Dates.length) % Dates.length);
+  }
+  return undefined;
+}
+
 function formatTime (date) {
   if (!date) {
     return undefined;
@@ -100,6 +120,15 @@ function formatTime (date) {
   const localTime = moment.utc(date, 'HH:mm:ss').toDate();
   localTime.setSeconds(0);
   return moment(localTime);
+}
+
+function formatDay (day, date) {
+  if (date && day) {
+    const curr = moment.utc(date).get('d');
+    const act = moment.utc(date).add(moment().utcOffset(), 'm').get('d');
+    return getDay((getDayIndex(day) + (curr - act) + Dates.length) % Dates.length);
+  }
+  return undefined;
 }
 
 class ScheduleControl extends React.Component {
@@ -130,9 +159,9 @@ class ScheduleControl extends React.Component {
         toTime
       } = schedule;
       this.setState({
-        from,
+        from: parseDay(from, fromTime),
         fromTime: parse(fromTime),
-        to,
+        to: parseDay(to, toTime),
         toTime: parse(toTime)
       });
     } else {
@@ -153,7 +182,7 @@ class ScheduleControl extends React.Component {
 
   onChangeFromTime = (time) => {
     this.setState({
-      fromTime: time
+      fromTime: formatTime(time)
     }, this.handleChange);
   };
 
@@ -174,9 +203,9 @@ class ScheduleControl extends React.Component {
     const {onChange} = this.props;
     if (onChange) {
       onChange({
-        from,
+        from: formatDay(from, fromTime),
         fromTime: fromTime ? moment.utc(fromTime).format('HH:mm:ss') : undefined,
-        to,
+        to: formatDay(to, toTime),
         toTime: toTime ? moment.utc(toTime).format('HH:mm:ss') : undefined
       });
     }
@@ -280,5 +309,5 @@ ScheduleControl.propTypes = {
   invalid: PropTypes.bool
 };
 
-export {compareSchedulesArray, scheduleIsValid};
+export {compareSchedulesArray, scheduleIsValid, parseDay};
 export default ScheduleControl;
