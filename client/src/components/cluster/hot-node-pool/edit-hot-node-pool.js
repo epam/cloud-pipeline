@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {inject, observer, Provider} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Button,
@@ -29,10 +29,12 @@ import {
 import classNames from 'classnames';
 import InstanceDetails from './instance-details';
 import AddDockerRegistryControl from './add-docker-registry-control';
+import FiltersControl, {getFiltersError, filtersAreEqual, mapFilters} from './filters-control';
 import ScheduleControl, {compareSchedulesArray, scheduleIsValid} from './schedule-control';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import AllowedInstanceTypes from '../../../models/utils/AllowedInstanceTypes';
+import Roles from '../../../models/user/Roles';
 import styles from './edit-hot-node-pool.css';
 
 function arraysAreEqual (a, b) {
@@ -58,7 +60,7 @@ function arraysAreEqual (a, b) {
 const DISK_MIN_SIZE = 15;
 const DISK_MAX_SIZE = 15360;
 
-const COUNT_MIN_SIZE = 1;
+const COUNT_MIN_SIZE = 0;
 
 @inject('awsRegions')
 @observer
@@ -86,6 +88,8 @@ class EditHotNodePool extends React.Component {
     region: undefined,
     initialRegion: undefined,
     prevRegion: undefined,
+    filters: undefined,
+    initialFilters: undefined,
     allowedInstanceTypes: [],
     allowedPriceTypes: ['SPOT', 'ON_DEMAND'],
     allowedInstanceTypesPending: false,
@@ -96,7 +100,8 @@ class EditHotNodePool extends React.Component {
       schedule: undefined,
       count: undefined,
       name: undefined,
-      region: undefined
+      region: undefined,
+      filters: undefined
     },
     touched: {
       disk: false,
@@ -105,9 +110,12 @@ class EditHotNodePool extends React.Component {
       schedule: false,
       count: false,
       name: false,
-      region: false
+      region: false,
+      filters: false
     }
   };
+
+  roles = new Roles();
 
   componentDidMount () {
     this.updateFromProps();
@@ -115,6 +123,7 @@ class EditHotNodePool extends React.Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.visible !== this.props.visible && this.props.visible) {
+      this.roles.fetch();
       this.updateFromProps();
     }
     this.updateInstanceTypes();
@@ -170,7 +179,8 @@ class EditHotNodePool extends React.Component {
         priceType,
         instanceImage,
         name,
-        regionId
+        regionId,
+        filter: filters
       } = pool;
       const {
         scheduleEntries: schedule = []
@@ -194,6 +204,8 @@ class EditHotNodePool extends React.Component {
         initialName: name,
         region: regionId,
         initialRegion: regionId,
+        filters: mapFilters(filters),
+        initialFilters: mapFilters(filters),
         prevRegion: -1,
         prevSpot: -1,
         allowedInstanceTypes: [],
@@ -228,6 +240,8 @@ class EditHotNodePool extends React.Component {
         initialName: undefined,
         region: undefined,
         initialRegion: undefined,
+        filters: undefined,
+        initialFilters: undefined,
         prevRegion: -1,
         prevSpot: -1,
         allowedInstanceTypes: [],
@@ -239,7 +253,8 @@ class EditHotNodePool extends React.Component {
           schedule: false,
           count: false,
           name: false,
-          region: false
+          region: false,
+          filters: false
         }
       }, this.onChange);
     }
@@ -309,7 +324,8 @@ class EditHotNodePool extends React.Component {
       schedule,
       count,
       name,
-      region
+      region,
+      filters
     } = this.state;
     let diskError,
       instanceTypeError,
@@ -317,7 +333,8 @@ class EditHotNodePool extends React.Component {
       scheduleError,
       countError,
       nameError,
-      regionError;
+      regionError,
+      filtersError;
     if (
       Number.isNaN(Number(disk)) ||
       Number(disk) < DISK_MIN_SIZE ||
@@ -329,7 +346,7 @@ class EditHotNodePool extends React.Component {
       Number.isNaN(Number(count)) ||
       Number(count) < COUNT_MIN_SIZE
     ) {
-      countError = `Count should be at least ${COUNT_MIN_SIZE}`;
+      countError = `Count should be a positive value or zero (pool is disabled)`;
     }
     if (!instanceType) {
       instanceTypeError = 'Instance type is required';
@@ -354,13 +371,15 @@ class EditHotNodePool extends React.Component {
     if (!region) {
       regionError = 'Region is required';
     }
+    filtersError = getFiltersError(filters);
     const valid = !diskError &&
       !instanceTypeError &&
       !dockerImagesError &&
       !scheduleError &&
       !countError &&
       !nameError &&
-      !regionError;
+      !regionError &&
+      !filtersError;
     return {
       valid,
       errors: {
@@ -370,7 +389,8 @@ class EditHotNodePool extends React.Component {
         schedule: scheduleError,
         count: countError,
         name: nameError,
-        region: regionError
+        region: regionError,
+        filters: filtersError
       }
     };
   };
@@ -394,7 +414,9 @@ class EditHotNodePool extends React.Component {
       name,
       initialName,
       region,
-      initialRegion
+      initialRegion,
+      filters,
+      initialFilters
     } = this.state;
     return Number(disk) !== Number(initialDisk) ||
       Number(count) !== Number(initialCount) ||
@@ -407,7 +429,8 @@ class EditHotNodePool extends React.Component {
       spot !== initialSpot ||
       instanceImage !== initialInstanceImage ||
       name !== initialName ||
-      region !== initialRegion;
+      region !== initialRegion ||
+      !filtersAreEqual(filters, initialFilters);
   };
 
   onChange = () => {
@@ -432,7 +455,8 @@ class EditHotNodePool extends React.Component {
           schedule: true,
           count: true,
           name: true,
-          region: true
+          region: true,
+          filters: true
         }
       });
     } else if (onSave) {
@@ -446,7 +470,8 @@ class EditHotNodePool extends React.Component {
         name,
         spot: priceType,
         region: regionId,
-        instanceImage
+        instanceImage,
+        filters
       } = this.state;
       const payload = {
         count,
@@ -458,7 +483,8 @@ class EditHotNodePool extends React.Component {
         name,
         priceType,
         regionId,
-        instanceImage
+        instanceImage,
+        filter: filters
       };
       const scheduleModified = !compareSchedulesArray(schedule, initialSchedule);
       onSave(
@@ -526,6 +552,15 @@ class EditHotNodePool extends React.Component {
     touched.region = true;
     this.setState({
       region: e,
+      touched
+    }, this.onChange);
+  };
+
+  onChangeFilters = (o) => {
+    const {touched} = this.state;
+    touched.filters = true;
+    this.setState({
+      filters: o,
       touched
     }, this.onChange);
   };
@@ -1025,6 +1060,37 @@ class EditHotNodePool extends React.Component {
     );
   };
 
+  renderFiltersControl = () => {
+    const {
+      disabled
+    } = this.props;
+    const {
+      validation,
+      filters,
+      touched
+    } = this.state;
+    return (
+      <Provider roles={this.roles}>
+        <div style={{marginTop: 5}}>
+          <div>
+            <FiltersControl
+              disabled={disabled}
+              filters={filters}
+              onChange={this.onChangeFilters}
+            />
+          </div>
+          {
+            validation.filters && touched.filters && (
+              <div className={classNames(styles.formRow, styles.error)}>
+                {validation.filters}
+              </div>
+            )
+          }
+        </div>
+      </Provider>
+    );
+  };
+
   render () {
     const {
       onCancel,
@@ -1074,6 +1140,10 @@ class EditHotNodePool extends React.Component {
         {this.renderInstanceImageControl(!isNew)}
         {this.renderDiskControl(!isNew)}
         {this.renderDockerImagesControl(!isNew)}
+        <div className={styles.sectionHeader}>
+          <h2>Filters</h2>
+        </div>
+        {this.renderFiltersControl()}
       </Modal>
     );
   }
