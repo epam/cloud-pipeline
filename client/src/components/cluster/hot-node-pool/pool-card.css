@@ -27,6 +27,10 @@
   transition: box-shadow 250ms ease-in-out, border-color 250ms ease-in-out;
 }
 
+.container.pool-disabled {
+  color: #999;
+}
+
 .container:hover {
   box-shadow: 0 0 2px 2px #ddd;
   border-color: #aaa;
@@ -54,6 +58,10 @@
   font-weight: bold;
   line-height: 8pt;
   word-break: break-word;
+}
+
+.container.pool-disabled .header-container .info-block {
+  display: none;
 }
 
 .header-container .info-block.has-runs {
@@ -88,6 +96,11 @@
 .header .title .main {
   font-weight: bold;
   margin-right: 5px;
+}
+
+.header .title .disabled-label {
+  font-size: smaller;
+  font-weight: normal;
 }
 
 .header .title .sub {

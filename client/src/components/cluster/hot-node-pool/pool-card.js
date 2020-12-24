@@ -149,7 +149,7 @@ function PoolCard ({
   const fontSize = total >= 100 ? 10 : 12;
   return (
     <div
-      className={styles.container}
+      className={classNames(styles.container, {[styles.poolDisabled]: nodeCount === 0})}
       onClick={onClick}
     >
       <div className={styles.headerContainer}>
@@ -186,6 +186,11 @@ function PoolCard ({
           <div className={styles.header}>
             <div className={styles.title}>
               <span className={styles.main}>{name}</span>
+              {
+                nodeCount === 0 && (
+                  <span className={styles.disabledLabel}>(disabled)</span>
+                )
+              }
             </div>
             <div className={styles.actions}>
               <Button
@@ -207,9 +212,15 @@ function PoolCard ({
           </div>
           <div className={styles.instance}>
             <AWSRegionTag regionId={regionId} />
-            <span className={styles.count}>
-              {nodeCount} node{nodeCount > 1 ? 's' : ''}
-            </span>
+            {
+              nodeCount > 0
+                ? (
+                  <span className={styles.count}>
+                    {nodeCount} node{nodeCount === 1 ? '' : 's'}
+                  </span>
+                )
+                : undefined
+            }
             <span className={styles.type}>
               {instanceType}
             </span>

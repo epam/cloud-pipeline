@@ -60,7 +60,7 @@ function arraysAreEqual (a, b) {
 const DISK_MIN_SIZE = 15;
 const DISK_MAX_SIZE = 15360;
 
-const COUNT_MIN_SIZE = 1;
+const COUNT_MIN_SIZE = 0;
 
 @inject('awsRegions')
 @observer
@@ -346,7 +346,7 @@ class EditHotNodePool extends React.Component {
       Number.isNaN(Number(count)) ||
       Number(count) < COUNT_MIN_SIZE
     ) {
-      countError = `Count should be at least ${COUNT_MIN_SIZE}`;
+      countError = `Count should be a positive value or zero (pool is disabled)`;
     }
     if (!instanceType) {
       instanceTypeError = 'Instance type is required';
