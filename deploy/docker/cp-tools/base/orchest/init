@@ -13,6 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cd /orchest-images
+
+tar -cC 'rabbitmq' . | docker load && \
+tar -cC 'jupyter-server' . | docker load && \
+tar -cC 'base-kernel-py' . | docker load && \
+tar -cC 'auth-server' . | docker load && \
+tar -cC 'jupyter-enterprise-gateway' . | docker load && \
+tar -cC 'orchest-webserver' . | docker load && \
+tar -cC 'memory-server' . | docker load && \
+tar -cC 'celery-worker' . | docker load && \
+tar -cC 'orchest-ctl' . | docker load && \
+tar -cC 'orchest-api' . | docker load && \
+tar -cC 'nginx-proxy' . | docker load && \
+tar -cC 'update-server' . | docker load && \
+tar -cC 'file-manager ' . | docker load
+
+cd /
 
 ${ORCHEST_HOME}/orchest install \
  && ${ORCHEST_HOME}/orchest start \
