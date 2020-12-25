@@ -88,7 +88,7 @@ public interface EntityMapper<T> {
         if (CollectionUtils.isEmpty(ontologies)) {
             return jsonBuilder;
         }
-        jsonBuilder.array("ontology", ontologies.toArray());
+        jsonBuilder.array("ontologies", ontologies.toArray());
         return jsonBuilder;
     }
 
