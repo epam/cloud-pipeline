@@ -53,7 +53,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class OntologyEntityLoader {
+class LoadOntologyTest {
     private static final String EXTERNAL = "Q1";
     private static final String NAME_BY_EXTERNAL = "nameByExternal";
     private static final String QUALIFIER_NAME = "qualifierName";
@@ -64,6 +64,7 @@ class OntologyEntityLoader {
     private static final String DESCRIPTOR_TERM2 = "descriptorTerm2";
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
+    private static final String KEY3 = "key3";
     private static final String ONTOLOGY_ID1 = "1";
     private static final String ONTOLOGY_ID2 = "3";
     private final Folder folder = new Folder(1L);
@@ -95,6 +96,7 @@ class OntologyEntityLoader {
         final Map<String, PipeConfValue> metadata = new HashMap<>();
         metadata.put(KEY1, new PipeConfValue("ontologyId", ONTOLOGY_ID1));
         metadata.put(KEY2, new PipeConfValue("ontologyId", ONTOLOGY_ID2));
+        metadata.put(KEY3, null);
         final MetadataEntry metadataEntry = new MetadataEntry(folderEntityVO, metadata);
         doReturn(Collections.singletonList(metadataEntry)).when(apiClient).loadMetadataEntry(any());
         doReturn(qualifier).when(apiClient).findOntology(ONTOLOGY_ID1);
@@ -109,6 +111,10 @@ class OntologyEntityLoader {
         assertThat(container.getOntologies())
                 .hasSize(expectedOntologies.size())
                 .containsExactlyInAnyOrderElementsOf(expectedOntologies);
+        assertThat(container.getMetadata())
+                .hasSize(3)
+                .containsKeys(KEY1, KEY2, KEY3);
+        assertThat(container.getMetadata().values()).containsOnlyNulls();
     }
 
     private Ontology ontology(final Ontology parent,

@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -67,7 +68,7 @@ public interface EntityMapper<T> {
         if (MapUtils.isNotEmpty(data)) {
             jsonBuilder.array(fieldName,
                     data.entrySet().stream()
-                            .map(entry -> entry.getKey() + " " + entry.getValue())
+                            .map(this::convertMapEntryToString)
                             .toArray(String[]::new));
         }
         return jsonBuilder;
@@ -89,5 +90,12 @@ public interface EntityMapper<T> {
         }
         jsonBuilder.array("ontology", ontologies.toArray());
         return jsonBuilder;
+    }
+
+    default String convertMapEntryToString(final Map.Entry<String, String> entry) {
+        if (StringUtils.isBlank(entry.getValue())) {
+            return entry.getKey();
+        }
+        return entry.getKey() + " " + entry.getValue();
     }
 }

@@ -97,8 +97,10 @@ public abstract class AbstractCloudPipelineEntityLoader<T> implements EntityLoad
             return Collections.emptyList();
         }
         return MapUtils.emptyIfNull(metadataEntries.get(0).getData()).values().stream()
+                .filter(Objects::nonNull)
                 .filter(pipeConfValue -> ONTOLOGY_TYPE.equalsIgnoreCase(pipeConfValue.getType()))
-                .map(pipeConfValue -> apiClient.findOntology(pipeConfValue.getValue()))
+                .map(pipeConfValue -> findOntology(pipeConfValue.getValue()))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -140,7 +142,7 @@ public abstract class AbstractCloudPipelineEntityLoader<T> implements EntityLoad
                     .collect(HashMap::new,
                         (map, entry) -> {
                             final String value = Optional.ofNullable(entry.getValue())
-                                .map(PipeConfValue::getValue)
+                                .flatMap(this::buildMetadataValue)
                                 .orElse(null);
                             map.put(entry.getKey(), value);
                         },
@@ -205,5 +207,21 @@ public abstract class AbstractCloudPipelineEntityLoader<T> implements EntityLoad
             ontologies.addAll(parseArray(attributes.get(ENTRY_TERMS)));
         }
         return addNamesAndTerms(ontology.getParent(), ontologies);
+    }
+
+    private Ontology findOntology(final String value) {
+        try {
+            return apiClient.findOntology(value);
+        } catch (PipelineResponseException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private Optional<String> buildMetadataValue(final PipeConfValue metadataValue) {
+        if (ONTOLOGY_TYPE.equalsIgnoreCase(metadataValue.getType())) {
+            return Optional.empty();
+        }
+        return Optional.of(metadataValue.getValue());
     }
 }
