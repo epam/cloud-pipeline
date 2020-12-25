@@ -356,6 +356,15 @@ export default class UserManagementForm extends React.Component {
           )
         }
         {
+          this.isAdmin && (
+            <ImportUsersButton
+              size="small"
+              style={{marginLeft: 5}}
+              onImportDone={this.reload}
+            />
+          )
+        }
+        {
           (this.isReader || this.isAdmin) && (
             <Dropdown.Button
               size="small"
@@ -366,15 +375,6 @@ export default class UserManagementForm extends React.Component {
             >
               Export users
             </Dropdown.Button>
-          )
-        }
-        {
-          this.isAdmin && (
-            <ImportUsersButton
-              size="small"
-              style={{marginLeft: 5}}
-              onImportDone={this.reload}
-            />
           )
         }
       </Row>
