@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+RUN_POLICY_MANAGER_LOG_FILE="/policy-manager/logs/policy-manager.log"
+mkdir -p $(dirname $RUN_POLICY_MANAGER_LOG_FILE)
+python3 -u /policy-manager/policy_manager.py >> "$RUN_POLICY_MANAGER_LOG_FILE" 2>&1 &
+MANAGER_PID="$!"
+
+function stop_pid {
+    local pid="$1"
+    if [ $pid -ne 0 ]; then
+        kill -SIGTERM "$pid"
+        wait "$pid"
+    fi
+}
+
+function sigterm_handler {
+    echo "Got SIGTERM, stopping service ($MANAGER_PID)"
+    stop_pid $MANAGER_PID
+    exit 143
+}
+
+trap 'kill $! ; sigterm_handler' SIGTERM
