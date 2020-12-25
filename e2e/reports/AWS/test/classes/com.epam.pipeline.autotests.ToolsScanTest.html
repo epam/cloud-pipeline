@@ -23,25 +23,25 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">10</div>
+<div class="counter">7</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">3</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">7</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">7m14.80s</div>
+<div class="counter">10m53.81s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="percent">71%</div>
 <p>successful</p>
 </div>
 </td>
@@ -70,57 +70,52 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="fallBackPreferences"></a>
-<h3 class="failures">fallBackPreferences</h3>
+<a name="uncheckedDenyNotScannedToolOptionValidation - EPMCMBIBPC-2630"></a>
+<h3 class="failures">uncheckedDenyNotScannedToolOptionValidation - EPMCMBIBPC-2630</h3>
 <span class="code">
-<pre>Element not found {.ant-input-sm}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1608822672162.103.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1608822672162.103.html
+<pre>Element not found {By.id: navigation-button-tools}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1608902811932.68.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1608902811932.68.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: keys should be a string
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-tools&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.sendKeys(Unknown Source)
-	at sun.reflect.GeneratedMethodAccessor7.invoke(Unknown Source)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.sendKeys(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.setValue(AccessObject.java:165)
-	at com.epam.pipeline.autotests.ao.AccessObject.setValue(AccessObject.java:156)
-	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO$DockerSecurityAO.setGraceHours(SettingsPageAO.java:1244)
-	at com.epam.pipeline.autotests.ToolsScanTest.lambda$fallBackPreferences$1(ToolsScanTest.java:90)
-	at com.epam.pipeline.autotests.mixins.Authorization.lambda$loginAsAdminAndPerform$2(Authorization.java:89)
-	at com.epam.pipeline.autotests.mixins.Authorization.logoutIfNeededAndPerform(Authorization.java:82)
-	at com.epam.pipeline.autotests.mixins.Authorization.loginAsAdminAndPerform(Authorization.java:87)
-	at com.epam.pipeline.autotests.ToolsScanTest.fallBackPreferences(ToolsScanTest.java:85)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.tools(Navigation.java:54)
+	at com.epam.pipeline.autotests.ToolsScanTest.uncheckedDenyNotScannedToolOptionValidation(ToolsScanTest.java:259)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: keys should be a string
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-tools&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8499d2915e92', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '0ccd71a8cfb4', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 45090d2294191b4d834d616b34ceab58
-	at sun.reflect.GeneratedConstructorAccessor21.newInstance(Unknown Source)
+Session ID: 1f0ef324701a66f548ca03469a167082
+*** Element info: {Using=id, value=navigation-button-tools}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -131,24 +126,25 @@ Session ID: 45090d2294191b4d834d616b34ceab58
 	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
 	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
 	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.sendKeys(RemoteWebElement.java:100)
-	at sun.reflect.GeneratedMethodAccessor7.invoke(Unknown Source)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
-	... 29 more
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
+	at org.openqa.selenium.By$ById.findElement(By.java:218)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
 </pre>
 </span>
 </div>
 <div class="test">
-<a name="getDefaultPreferences"></a>
-<h3 class="failures">getDefaultPreferences</h3>
+<a name="whiteListFlagValidation - EPMCMBIBPC-2631"></a>
+<h3 class="failures">whiteListFlagValidation - EPMCMBIBPC-2631</h3>
 <span class="code">
 <pre>Element not found {By.id: userName}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1608822490346.100.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1608822490346.100.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1608902984736.70.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1608902984736.70.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -166,17 +162,17 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.epam.pipeline.autotests.mixins.Authorization.lambda$loginAsAdminAndPerform$2(Authorization.java:88)
 	at com.epam.pipeline.autotests.mixins.Authorization.logoutIfNeededAndPerform(Authorization.java:82)
 	at com.epam.pipeline.autotests.mixins.Authorization.loginAsAdminAndPerform(Authorization.java:87)
-	at com.epam.pipeline.autotests.ToolsScanTest.getDefaultPreferences(ToolsScanTest.java:67)
+	at com.epam.pipeline.autotests.ToolsScanTest.whiteListFlagValidation(ToolsScanTest.java:277)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
@@ -186,10 +182,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8499d2915e92', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '0ccd71a8cfb4', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 45090d2294191b4d834d616b34ceab58
+Session ID: 1f0ef324701a66f548ca03469a167082
 *** Element info: {Using=id, value=userName}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -213,73 +209,6 @@ Session ID: 45090d2294191b4d834d616b34ceab58
 </pre>
 </span>
 </div>
-<div class="test">
-<a name="setUp"></a>
-<h3 class="failures">setUp</h3>
-<span class="code">
-<pre>Element not found {By.id: userName}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1608822318645.98.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1608822318645.98.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AuthenticationPageAO.login(AuthenticationPageAO.java:26)
-	at com.epam.pipeline.autotests.AbstractBfxPipelineTest.setUp(AbstractBfxPipelineTest.java:69)
-	at sun.reflect.GeneratedMethodAccessor21.invoke(Unknown Source)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8499d2915e92', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 45090d2294191b4d834d616b34ceab58
-*** Element info: {Using=id, value=userName}
-	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
-	at org.openqa.selenium.By$ById.findElement(By.java:218)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 21 more
-</pre>
-</span>
-</div>
 </div>
 <div id="tab1" class="tab">
 <h2>Tests</h2>
@@ -292,54 +221,39 @@ Session ID: 45090d2294191b4d834d616b34ceab58
 </tr>
 </thead>
 <tr>
-<td class="skipped">denyNotScannedToolOptionValidation - EPMCMBIBPC-2004</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">denyNotScannedToolOptionValidation - EPMCMBIBPC-2004</td>
+<td>1m10.08s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">fallBackPreferences</td>
-<td>3m1.79s</td>
+<td class="success">gracePeriodOptionValidation - EPMCMBIBPC-2629</td>
+<td>1m6.29s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">runUnscannedToolValidation - EPMCMBIBPC-1994</td>
+<td>45.071s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">toolScanResultsValidation - EPMCMBIBPC-1996</td>
+<td>22.195s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">toolScanningValidation - EPMCMBIBPC-1995</td>
+<td>2m18.81s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">uncheckedDenyNotScannedToolOptionValidation - EPMCMBIBPC-2630</td>
+<td>2m18.57s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">getDefaultPreferences</td>
-<td>2m51.70s</td>
+<td class="failures">whiteListFlagValidation - EPMCMBIBPC-2631</td>
+<td>2m52.80s</td>
 <td class="failures">failed</td>
-</tr>
-<tr>
-<td class="skipped">gracePeriodOptionValidation - EPMCMBIBPC-2629</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">runUnscannedToolValidation - EPMCMBIBPC-1994</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="failures">setUp</td>
-<td>1m21.31s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="skipped">toolScanResultsValidation</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">toolScanningValidation</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">uncheckedDenyNotScannedToolOptionValidation - EPMCMBIBPC-2630</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">whiteListFlagValidation - EPMCMBIBPC-2631</td>
-<td>-</td>
-<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
@@ -351,7 +265,7 @@ Session ID: 45090d2294191b4d834d616b34ceab58
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 24, 2020 6:34:51 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 25, 2020 5:03:58 PM</p>
 </div>
 </div>
 </body>
