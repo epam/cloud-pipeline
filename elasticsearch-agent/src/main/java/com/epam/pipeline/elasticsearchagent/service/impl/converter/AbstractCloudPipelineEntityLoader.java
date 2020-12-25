@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 @Slf4j
 @RequiredArgsConstructor
 public abstract class AbstractCloudPipelineEntityLoader<T> implements EntityLoader<T> {
-    private static final String ONTOLOGY_TYPE = "OntologyId";
+    private static final String ONTOLOGY_TYPE = "ontologyId";
     private static final String ENTRY_TERMS = "Entry Term(s)";
     private static final String SEE_ALSO = "See Also";
 

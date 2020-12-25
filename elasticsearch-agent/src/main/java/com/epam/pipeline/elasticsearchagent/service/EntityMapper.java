@@ -84,10 +84,10 @@ public interface EntityMapper<T> {
 
     default XContentBuilder buildOntologies(final Set<String> ontologies, final XContentBuilder jsonBuilder)
             throws IOException {
-        if (CollectionUtils.isEmpty(ontologies)){
+        if (CollectionUtils.isEmpty(ontologies)) {
             return jsonBuilder;
         }
-        jsonBuilder.array("ontologies", ontologies.toArray());
+        jsonBuilder.array("ontology", ontologies.toArray());
         return jsonBuilder;
     }
 }
