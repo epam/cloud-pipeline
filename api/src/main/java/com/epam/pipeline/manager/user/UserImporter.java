@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,7 @@ import java.util.stream.StreamSupport;
 public class UserImporter {
     private final List<CategoricalAttribute> currentAttributes;
     private final List<String> attributesToCreate;
+    private final List<PipelineUserEvent> events;
 
     /**
      * Returns List of {@link PipelineUserWithStoragePath}
@@ -118,7 +120,13 @@ public class UserImporter {
             attributeValue.setKey(key);
             attributes.get(key).getValues().add(attributeValue);
             userMetadata.put(key, new PipeConfValue(null, value));
+            events.add(PipelineUserEvent.info(String.format(
+                    "A new value '%s' created for system dictionary '%s'.", value, key)));
+            return;
         }
+
+        events.add(PipelineUserEvent.info(String.format(
+                "The value '%s' doesn't exist in system dictionary '%s' and cannot be created.", value, key)));
     }
 
     private boolean hasAttributeValue(final List<CategoricalAttributeValue> attributeValues,
