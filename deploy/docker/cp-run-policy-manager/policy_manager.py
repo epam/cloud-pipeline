@@ -67,14 +67,14 @@ def create_policy(owner, is_sensitive):
     policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER, sanitized_owner_name)
     while True:
         try:
-            api.get_namespaced_custom_object_status(group=CALICO_RESOURCES_GROUP,
-                                                    version=CALICO_RESOURCES_VERSION,
-                                                    namespace=NAMESPACE,
-                                                    plural=CALICO_NETPOL_PLURAL,
-                                                    name=policy_name_candidate)
+            api.get_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
+                                             version=CALICO_RESOURCES_VERSION,
+                                             namespace=NAMESPACE,
+                                             plural=CALICO_NETPOL_PLURAL,
+                                             name=policy_name_candidate)
             log_message("Policy named [{}] exists already: generating suffix for the current one.")
             policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER,
-                                                                 sanitized_owner_name + uuid.uuid4().get_hex()[:8])
+                                                                 sanitized_owner_name + '-' + str(uuid.uuid4())[:8])
         except client.exceptions.ApiException as e:
             if e.status == 404:
                 policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY] = policy_name_candidate
