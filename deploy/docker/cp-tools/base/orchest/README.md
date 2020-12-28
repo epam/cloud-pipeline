@@ -15,3 +15,5 @@ Orchest lets you:
 - Integrate commonly used data-sources.
 - Easily define your custom runtime environment.
 - Version your pipelines through Git.
+
+Documentation and tutorial could be found here: https://github.com/orchest/orchest
