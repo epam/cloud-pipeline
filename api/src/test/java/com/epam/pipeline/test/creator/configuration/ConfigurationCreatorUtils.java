@@ -19,6 +19,8 @@ package com.epam.pipeline.test.creator.configuration;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
+import com.epam.pipeline.entity.configuration.ConfigurationEntry;
+import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -86,5 +88,13 @@ public final class ConfigurationCreatorUtils {
         final RunConfigurationEntry runConfigurationEntry = new RunConfigurationEntry();
         runConfigurationEntry.setPipelineId(ID);
         return runConfigurationEntry;
+    }
+
+    public static ConfigurationEntry getConfigurationEntry() {
+        return new ConfigurationEntry();
+    }
+
+    public static PipelineConfiguration getPipelineConfiguration() {
+        return new PipelineConfiguration();
     }
 }
