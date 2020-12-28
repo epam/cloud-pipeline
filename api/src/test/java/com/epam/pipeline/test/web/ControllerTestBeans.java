@@ -17,6 +17,12 @@
 package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
+import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
+import com.epam.pipeline.acl.log.LogApiService;
+import com.epam.pipeline.acl.ontology.OntologyApiService;
+import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.acl.run.RunApiService;
+import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
 import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
@@ -26,7 +32,6 @@ import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
-import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.docker.DockerRegistryApiService;
 import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.acl.docker.ToolGroupApiService;
@@ -34,14 +39,10 @@ import com.epam.pipeline.acl.dts.DtsOperationsApiService;
 import com.epam.pipeline.acl.dts.DtsRegistryApiService;
 import com.epam.pipeline.acl.entity.EntityApiService;
 import com.epam.pipeline.acl.issue.IssueApiService;
-import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
-import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
-import com.epam.pipeline.acl.run.RunApiService;
-import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
@@ -222,4 +223,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected InfrastructureApiService infrastructureApiService;
+
+    @MockBean
+    protected OntologyApiService ontologyApiService;
 }

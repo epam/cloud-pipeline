@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.acl;
 
+import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -32,7 +33,6 @@ import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.log.LogPagination;
-import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
@@ -402,9 +402,6 @@ public class AclTestBeans {
     protected NotificationManager mockNotificationManager;
 
     @MockBean
-    protected Pipeline mockPipeline;
-
-    @MockBean
     protected PipelineManager mockPipelineManager;
 
     @MockBean
@@ -463,6 +460,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UsersFileImportManager usersFileImportManager;
+
+    @MockBean
+    protected OntologyApiService ontologyApiService;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

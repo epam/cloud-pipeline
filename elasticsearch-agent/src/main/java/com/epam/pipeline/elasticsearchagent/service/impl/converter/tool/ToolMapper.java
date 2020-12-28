@@ -62,6 +62,7 @@ public class ToolMapper implements EntityMapper<ToolWithDescription> {
 
             buildUserContent(doc.getOwner(), jsonBuilder);
             buildMetadata(doc.getMetadata(), jsonBuilder);
+            buildOntologies(doc.getOntologies(), jsonBuilder);
             buildPermissions(doc.getPermissions(), jsonBuilder);
 
             jsonBuilder.endObject();

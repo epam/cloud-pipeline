@@ -18,13 +18,16 @@ package com.epam.pipeline.elasticsearchagent.service;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.entity.user.PipelineUser;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 
 public interface EntityMapper<T> {
 
@@ -65,7 +68,7 @@ public interface EntityMapper<T> {
         if (MapUtils.isNotEmpty(data)) {
             jsonBuilder.array(fieldName,
                     data.entrySet().stream()
-                            .map(entry -> entry.getKey() + " " + entry.getValue())
+                            .map(this::convertMapEntryToString)
                             .toArray(String[]::new));
         }
         return jsonBuilder;
@@ -78,5 +81,21 @@ public interface EntityMapper<T> {
         jsonBuilder.array("allowed_groups", permissions.getAllowedGroups().toArray());
         jsonBuilder.array("denied_groups", permissions.getDeniedGroups().toArray());
         return jsonBuilder;
+    }
+
+    default XContentBuilder buildOntologies(final Set<String> ontologies, final XContentBuilder jsonBuilder)
+            throws IOException {
+        if (CollectionUtils.isEmpty(ontologies)) {
+            return jsonBuilder;
+        }
+        jsonBuilder.array("ontologies", ontologies.toArray());
+        return jsonBuilder;
+    }
+
+    default String convertMapEntryToString(final Map.Entry<String, String> entry) {
+        if (StringUtils.isBlank(entry.getValue())) {
+            return entry.getKey();
+        }
+        return entry.getKey() + " " + entry.getValue();
     }
 }

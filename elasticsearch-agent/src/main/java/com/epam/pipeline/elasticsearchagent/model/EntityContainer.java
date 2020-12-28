@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Map;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -32,5 +33,6 @@ public class EntityContainer<T> {
     private T entity;
     private PipelineUser owner;
     private Map<String, String> metadata;
+    private Set<String> ontologies;
     private PermissionsContainer permissions;
 }

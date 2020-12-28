@@ -46,6 +46,7 @@ public class ToolGroupMapper implements EntityMapper<ToolGroup> {
 
             buildUserContent(container.getOwner(), jsonBuilder);
             buildMetadata(container.getMetadata(), jsonBuilder);
+            buildOntologies(container.getOntologies(), jsonBuilder);
             buildPermissions(container.getPermissions(), jsonBuilder);
 
             jsonBuilder.endObject();

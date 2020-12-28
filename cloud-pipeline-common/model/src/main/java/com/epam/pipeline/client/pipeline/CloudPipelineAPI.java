@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.notification.NotificationMessage;
+import com.epam.pipeline.entity.ontology.Ontology;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -219,4 +220,10 @@ public interface CloudPipelineAPI {
 
     @GET("cluster/node/{id}/disks")
     Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);
+
+    @GET("ontologies/{id}")
+    Call<Result<Ontology>> findOntology(@Path(ID) String ontology);
+
+    @GET("ontologies/externals")
+    Call<Result<List<Ontology>>> findOntologiesByExternalId(@Query("externalIds") List<String> externalIds);
 }

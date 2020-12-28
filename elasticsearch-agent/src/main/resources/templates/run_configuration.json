@@ -26,6 +26,7 @@
         "methodConfigurationName": { "type": "text" },
         "methodConfigurationSnapshot": { "type": "text" },
         "metadata": { "type": "text" },
+        "ontologies": { "type": "keyword" },
         "allowed_users": { "type": "keyword" },
         "denied_users": { "type": "keyword" },
         "allowed_groups": { "type": "keyword" },
