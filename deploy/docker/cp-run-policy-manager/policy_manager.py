@@ -19,15 +19,17 @@ import time
 import yaml
 from kubernetes import client, config
 
-PIPELINE_POD_SELECTOR = 'type=pipeline'
-
 NAMESPACE = "default"
 CALICO_NETPOL_PLURAL = "networkpolicies"
 CALICO_RESOURCES_VERSION = "v1"
 CALICO_RESOURCES_GROUP = "crd.projectcalico.org"
+K8S_OBJ_NAME_KEY = 'name'
+K8S_LABELS_KEY = 'labels'
+K8S_METADATA_KEY = 'metadata'
 NETPOL_OWNER_PLACEHOLDER = '<OWNER>'
 NETPOL_NAME_PREFIX_PLACEHOLDER = '<POLICY_NAME_PREFIX>'
 OWNER_LABEL = 'owner'
+PIPELINE_POD_SELECTOR = 'type=pipeline'
 SENSITIVE_LABEL = 'sensitive'
 COMMON_NETPOL_TEMPLATE_PATH = '/policy-manager/common-run-policy-template.yaml'
 SENSITIVE_NETPOL_TEMPLATE_PATH = '/policy-manager/sensitive-run-policy-template.yaml'
@@ -91,7 +93,7 @@ def load_all_pipeline_pods():
 
 
 def is_sensitive_policy(policy):
-    return SENSITIVE_LABEL in policy['metadata']['labels']
+    return SENSITIVE_LABEL in policy[K8S_METADATA_KEY][K8S_LABELS_KEY]
 
 
 def is_sensitive_pod(pod):
@@ -108,7 +110,7 @@ def get_pods_owners_set(pods):
 def get_policies_owners_set(policies):
     owners = set()
     for policy in policies:
-        owners.add(policy['metadata']['labels'][OWNER_LABEL])
+        owners.add(policy[K8S_METADATA_KEY][K8S_LABELS_KEY][OWNER_LABEL])
     return owners
 
 
@@ -123,9 +125,10 @@ def create_missed_policies(active_pods, active_policies, is_sensitive):
 def drop_excess_policies(active_pods, active_policies):
     pods_owners = get_pods_owners_set(active_pods)
     for policy in active_policies:
-        user_affected_by_policy = policy['metadata']['labels'][OWNER_LABEL]
+        policy_metadata = policy[K8S_METADATA_KEY]
+        user_affected_by_policy = policy_metadata[K8S_LABELS_KEY][OWNER_LABEL]
         if user_affected_by_policy not in pods_owners:
-            delete_policy(policy['metadata']['name'])
+            delete_policy(policy_metadata[K8S_OBJ_NAME_KEY])
 
 
 def main():
