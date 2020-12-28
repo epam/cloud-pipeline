@@ -68,9 +68,6 @@ public final class PipelineCreatorUtils {
     public static final TypeReference<List<UploadFileMetadata>> UPLOAD_METADATA_LIST_TYPE =
             new TypeReference<List<UploadFileMetadata>>() {};
 
-    public static final TypeReference<Result<List<RunSchedule>>> RUN_SCHEDULE_LIST_TYPE =
-            new TypeReference<Result<List<RunSchedule>>>() { };
-
     private PipelineCreatorUtils() {
 
     }
@@ -95,8 +92,8 @@ public final class PipelineCreatorUtils {
         return pipeline;
     }
 
-    public static Pipeline getPipeline(final String owner) {
-        return getPipeline(ID, owner, ID);
+    public static PipelineRun getPipelineRun() {
+        return new PipelineRun();
     }
 
     public static PipelineRun getPipelineRun(final Long id, final String owner) {
@@ -109,6 +106,10 @@ public final class PipelineCreatorUtils {
 
     public static PipelineUserVO getPipelineUserVO() {
         return new PipelineUserVO();
+    }
+
+    public static PipelineVO getPipelineVO() {
+        return new PipelineVO();
     }
 
     public static PipelineVO getPipelineVO(final Long id) {
@@ -141,7 +142,11 @@ public final class PipelineCreatorUtils {
     }
 
     public static PipelineSourceItemVO getPipelineSourceItemVO() {
-        return new PipelineSourceItemVO();
+        final PipelineSourceItemVO sourceItemVO = new PipelineSourceItemVO();
+        sourceItemVO.setComment(TEST_STRING);
+        sourceItemVO.setLastCommitId(TEST_STRING);
+        sourceItemVO.setPath(TEST_STRING);
+        return sourceItemVO;
     }
 
     public static PipelineSourceItemsVO getPipelineSourceItemsVO() {
@@ -175,7 +180,16 @@ public final class PipelineCreatorUtils {
     public static DocumentGenerationProperty getDocumentGenerationProperty() {
         final DocumentGenerationProperty property = new DocumentGenerationProperty();
         property.setPipelineId(ID);
+        property.setPropertyName(TEST_STRING);
         return property;
     }
 
+    public static InstanceOfferParametersVO getInstanceOfferParametersVO() {
+        final InstanceOfferParametersVO instance = new InstanceOfferParametersVO();
+        instance.setInstanceType(TEST_STRING);
+        instance.setInstanceDisk(TEST_INT);
+        instance.setSpot(true);
+        instance.setRegionId(ID);
+        return instance;
+    }
 }

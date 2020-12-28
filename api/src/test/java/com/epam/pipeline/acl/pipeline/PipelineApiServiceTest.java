@@ -20,21 +20,17 @@ import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.GenerateFileVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
-import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
-import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -71,12 +67,10 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     private final PipelinesWithPermissionsVO pipelinesWithPermissions =
             PipelineCreatorUtils.getPipelinesWithPermissionsVO();
     private final PipelineRun pipelineRun = PipelineCreatorUtils.getPipelineRun(ID, ANOTHER_SIMPLE_USER);
-    private final Revision revision = PipelineCreatorUtils.getRevision();
     private final InstancePrice instancePrice = PipelineCreatorUtils.getInstancePrice();
     private final GenerateFileVO fileVO = PipelineCreatorUtils.getGenerateFileVO();
     private final DocumentGenerationProperty property = PipelineCreatorUtils.getDocumentGenerationProperty();
     private final List<PipelineRun> pipelineRunList = Collections.singletonList(pipelineRun);
-    private final List<Revision> revisionList = Collections.singletonList(revision);
     private final List<DocumentGenerationProperty> propertyList = Collections.singletonList(property);
 
     @Autowired
