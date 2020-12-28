@@ -14,7 +14,7 @@
 
 import datetime as dt
 from common_utils.entity_managers import PipelineManager
-from utils.pipeline_utils import *
+from e2e.cli.utils.pipeline_utils import *
 
 MAX_REP_COUNT = 600
 DATA_TIME_FORMAT = "%H:%M:%S"

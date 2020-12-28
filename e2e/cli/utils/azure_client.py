@@ -18,7 +18,7 @@ from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource import ResourceManagementClient
 
-from autoscaling.utils.cloud_client import CloudClient
+from e2e.cli.utils.cloud_client import CloudClient
 
 
 class AzureClient(CloudClient):

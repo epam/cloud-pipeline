@@ -18,13 +18,14 @@ import re
 import os
 import pytest
 import requests
+import json
 
 from time import sleep
 
-from autoscaling.utils.aws_client import Ec2Client
-from autoscaling.utils.azure_client import AzureClient
-from autoscaling.utils.gcp_client import GCPClient
-from common_utils.entity_managers import UtilsManager
+from e2e.cli.utils.aws_client import Ec2Client
+from e2e.cli.utils.azure_client import AzureClient
+from e2e.cli.utils.gcp_client import GCPClient
+from e2e.cli.common_utils.entity_managers import UtilsManager
 
 IP_PATTERN = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
@@ -177,6 +178,12 @@ def wait_for_node_termination(node_name, max_rep_count):
         rep = rep + 1
 
 
+def check_for_number_of_enpoints(urls, number_of_endpoints):
+    if len(urls) != number_of_endpoints:
+        raise RuntimeError("Number of endpoints is not correct. Required: {}, actual: {}"
+                           .format(number_of_endpoints, len(urls)))
+
+
 def wait_for_required_status(required_status, run_id, max_rep_count, validation=True):
     status = get_pipe_status(run_id)
     rep = 0
@@ -197,6 +204,25 @@ def get_node_name(run_id):
         return None
     if "Name" in cluster_state[0]:
         return cluster_state[0]["Name"]
+
+
+def get_endpoint_urls(run_id):
+    pipe_info = view_runs(run_id)
+    result = {}
+    if "serviceUrl" in pipe_info:
+        service_urls = json.loads(pipe_info["serviceUrl"])
+        if service_urls:
+            for service_url in service_urls:
+                result[service_url['name']] = service_urls['url']
+    return result
+
+
+def follow_service_url(url, check=lambda x: "HTTP/1.1 200 OK" in x):
+    command = ['curl', '-k', '-L','-s', '-o', '/dev/null', '-I', url]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process.wait()
+    result = process.stdout.readline()
+    return check(result)
 
 
 def get_runid_label(node_name):
