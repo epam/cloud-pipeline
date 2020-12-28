@@ -22,7 +22,6 @@ import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.jwt.TokenVerificationException;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +34,6 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-@NoArgsConstructor(force = true)
 public class UserAccessService {
 
     private final UserManager userManager;

@@ -32,8 +32,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 import org.opensaml.saml2.core.NameID;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -85,43 +85,43 @@ public class SAMLUserDetailsServiceImplTest {
     private Map<String, String> expectedAttributes = new HashMap<>();
 
     @Mock
-    private GrantPermissionManager grantPermissionManager;
+    private GrantPermissionManager mockPermissionManager;
 
     @Mock
-    private SAMLCredential credential;
+    private SAMLCredential mockCredential;
 
     @Mock
-    private NameID nameID;
+    private NameID mockNameID;
 
     @Mock
-    private UserManager userManager;
+    private UserManager mockUserManager;
 
     @Mock
-    private MessageHelper messageHelper;
+    private MessageHelper mockMessageHelper;
 
     @Mock
-    private RoleManager roleManager;
-
-    @Spy
-    private UserAccessService accessService;
+    private RoleManager mockRoleManager;
 
     @InjectMocks
     private SAMLUserDetailsServiceImpl userDetailsService;
 
+    private UserAccessService spyAccessService;
+
     @Before
     public void setUp() {
+        spyAccessService = Mockito.spy(new UserAccessService(mockUserManager, true));
         expectedAttributes = initAttributes();
         user.setAttributes(expectedAttributes);
         user.setGroups(groups);
         expectedUserContext.setGroups(groups);
 
         MockitoAnnotations.initMocks(this);
-        when(nameID.getValue()).thenReturn(USER_NAME);
-        when(credential.getNameID()).thenReturn(nameID);
-        String[] mockAttributesArray = {SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2};
-        when(credential.getAttributeAsStringArray(anyString())).thenReturn(mockAttributesArray);
-        when(credential.getAttributeAsString(anyString())).thenReturn(SAML_ATTRIBUTES_STRING);
-        when(messageHelper.getMessage(anyString(), any())).thenReturn(TEST_STRING);
+        when(mockNameID.getValue()).thenReturn(USER_NAME);
+        when(mockCredential.getNameID()).thenReturn(mockNameID);
+        final String[] mockAttributesArray = {SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2};
+        when(mockCredential.getAttributeAsStringArray(anyString())).thenReturn(mockAttributesArray);
+        when(mockCredential.getAttributeAsString(anyString())).thenReturn(SAML_ATTRIBUTES_STRING);
+        when(mockMessageHelper.getMessage(anyString(), any())).thenReturn(TEST_STRING);
     }
 
     @Test
@@ -129,38 +129,31 @@ public class SAMLUserDetailsServiceImplTest {
         switchRegisterStrategyTo(AUTO);
         mockUserDoesNotExistSituation();
         user.setUserName(USER_NAME);
-        when(roleManager.getDefaultRolesIds()).thenReturn(Collections.singletonList(1L));
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        when(mockRoleManager.getDefaultRolesIds()).thenReturn(Collections.singletonList(1L));
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
 
-        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
-
-        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
-        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+        assertUserNameAndGroups(userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void testLoadUserBySAMLWithExistingUser() {
-        switchRegisterStrategyTo(AUTO);
         user.setUserName(OLD_USER_NAME);
         user.setGroups(Stream.of(SAML_ATTRIBUTE_1).collect(Collectors.toList()));
         user.setGroups(Stream.of(SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2).collect(Collectors.toList()));
-        when(userManager.loadUserByName(anyString())).thenReturn(user);
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
-        when(userManager.updateUserSAMLInfo(anyLong(), anyString(),
-                anyListOf(Long.class), anyListOf(String.class),
-                anyMapOf(String.class, String.class))).thenReturn(user);
+        when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
+        when(mockUserManager.updateUserSAMLInfo(anyLong(), anyString(),
+                                                anyListOf(Long.class), anyListOf(String.class),
+                                                anyMapOf(String.class, String.class))).thenReturn(user);
 
-        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
-
-        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
-        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+        assertUserNameAndGroups(userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void testReadAuthorities() {
         setAuthorities();
 
-        final List<String> actualAuthorities = userDetailsService.readAuthorities(credential);
+        final List<String> actualAuthorities = userDetailsService.readAuthorities(mockCredential);
 
         Assert.assertTrue(CollectionUtils.isEqualCollection(groups, actualAuthorities));
     }
@@ -169,7 +162,7 @@ public class SAMLUserDetailsServiceImplTest {
     public void testReadAttributes() {
         setSamlAttributes();
 
-        final Map<String, String> readAttributes = userDetailsService.readAttributes(credential);
+        final Map<String, String> readAttributes = userDetailsService.readAttributes(mockCredential);
 
         Assert.assertTrue(CollectionUtils.isEqualCollection(expectedAttributes.entrySet(), readAttributes.entrySet()));
     }
@@ -181,36 +174,27 @@ public class SAMLUserDetailsServiceImplTest {
         setAuthorities();
         setSamlAttributes();
         user.setUserName(USER_NAME);
-        when(grantPermissionManager.isGroupRegistered(any())).thenReturn(true);
-        when(roleManager.getDefaultRolesIds()).thenReturn(Collections.singletonList(1L));
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        when(mockPermissionManager.isGroupRegistered(any())).thenReturn(true);
+        when(mockRoleManager.getDefaultRolesIds()).thenReturn(Collections.singletonList(1L));
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
 
-        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
-
-        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
-        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+        assertUserNameAndGroups(userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void shouldAuthorizeRegisteredUserIfHisGroupsHaveValidGroupStatus() {
         setValidGroupsStatusForUser();
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
 
-        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
-
-        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
-        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+        assertUserNameAndGroups(userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void shouldAuthorizeRegisteredUserIfHisGroupsAreNotAtGroupStatus() {
         setEmptyGroupsStatusListForUser();
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
 
-        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
-
-        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
-        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+        assertUserNameAndGroups(userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
@@ -220,7 +204,7 @@ public class SAMLUserDetailsServiceImplTest {
         setAuthorities();
         setSamlAttributes();
 
-        assertThrows(UsernameNotFoundException.class, () -> userDetailsService.loadUserBySAML(credential));
+        assertThrows(UsernameNotFoundException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
@@ -228,9 +212,9 @@ public class SAMLUserDetailsServiceImplTest {
         switchRegisterStrategyTo(EXPLICIT_GROUP);
         mockUserDoesNotExistSituation();
         final String[] mockAttributesArray = {"unknown"};
-        when(credential.getAttributeAsStringArray(anyString())).thenReturn(mockAttributesArray);
+        when(mockCredential.getAttributeAsStringArray(anyString())).thenReturn(mockAttributesArray);
 
-        assertThrows(UsernameNotFoundException.class, () -> userDetailsService.loadUserBySAML(credential));
+        assertThrows(UsernameNotFoundException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
@@ -238,54 +222,46 @@ public class SAMLUserDetailsServiceImplTest {
         switchRegisterStrategyTo(EXPLICIT);
         mockUserDoesNotExistSituation();
 
-        assertThrows(UsernameNotFoundException.class, () -> userDetailsService.loadUserBySAML(credential));
-    }
-
-    private void mockUserDoesNotExistSituation() {
-        when(userManager.loadUserByName(anyString())).thenReturn(null);
-        when(userManager.createUser(anyString(),
-                anyListOf(Long.class), anyListOf(String.class),
-                anyMapOf(String.class, String.class), any()))
-                .thenReturn(user);
+        assertThrows(UsernameNotFoundException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void shouldThrowAuthorizationExceptionForBlockedUser() {
         blockCurrentUser();
 
-        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(credential));
+        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty1() {
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
         setBlockedAttributeValue(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_1);
 
-        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(credential));
+        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty2() {
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
         setBlockedAttributeValue(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_2);
 
-        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(credential));
+        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty3() {
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
         setBlockedAttributeValue(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_3);
 
-        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(credential));
+        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
     public void shouldAcceptUserWithValidNotBlockedApplicationProperty() {
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
         setBlockedAttributeValue(SAML_ATTRIBUTE_NOT_BLOCKED_USER_VALUE);
 
-        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(mockCredential);
 
         Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
     }
@@ -293,9 +269,9 @@ public class SAMLUserDetailsServiceImplTest {
     @Test
     public void shouldAcceptUserWithValidEmptyApplicationProperty() {
         setBlockedAttributeValue(StringUtils.EMPTY);
-        doNothing().when(accessService).validateUserGroupsBlockStatus(any());
+        doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
 
-        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(mockCredential);
 
         Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
     }
@@ -304,7 +280,7 @@ public class SAMLUserDetailsServiceImplTest {
     public void shouldThrowAuthorizationExceptionForUserFromBlockedGroup() {
         blockOneGroupForCurrentUser();
 
-        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(credential));
+        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
     }
 
     @Test
@@ -315,7 +291,15 @@ public class SAMLUserDetailsServiceImplTest {
         user.setRoles(Collections.singletonList(role));
         blockOneGroupForCurrentUser();
 
-        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(credential));
+        assertThrows(LockedException.class, () -> userDetailsService.loadUserBySAML(mockCredential));
+    }
+
+    private void mockUserDoesNotExistSituation() {
+        when(mockUserManager.loadUserByName(anyString())).thenReturn(null);
+        when(mockUserManager.createUser(anyString(),
+                anyListOf(Long.class), anyListOf(String.class),
+                anyMapOf(String.class, String.class), any()))
+                .thenReturn(user);
     }
 
     private void setBlockedAttributeValue(final String value) {
@@ -323,36 +307,36 @@ public class SAMLUserDetailsServiceImplTest {
         ReflectionTestUtils.setField(userDetailsService, "blockedAttributeTrueValue",
                                      SAML_ATTRIBUTE_BLOCKED_USER_VALUE_4);
         user.setUserName(USER_NAME);
-        when(userManager.loadUserByName(eq(USER_NAME))).thenReturn(user);
-        when(credential.getAttributeAsString(value)).thenReturn(value);
+        when(mockUserManager.loadUserByName(eq(USER_NAME))).thenReturn(user);
+        when(mockCredential.getAttributeAsString(value)).thenReturn(value);
     }
 
     private void blockOneGroupForCurrentUser() {
-        ReflectionTestUtils.setField(accessService, "userManager", userManager);
+        ReflectionTestUtils.setField(spyAccessService, "userManager", mockUserManager);
         user.setUserName(USER_NAME);
-        when(userManager.loadUserByName(anyString())).thenReturn(user);
+        when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
         final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true);
-        doReturn(Collections.singletonList(blockedGroupStatus)).when(userManager).loadGroupBlockingStatus(groups);
+        doReturn(Collections.singletonList(blockedGroupStatus)).when(mockUserManager).loadGroupBlockingStatus(groups);
     }
 
     private void blockCurrentUser() {
         user.setUserName(USER_NAME);
         user.setBlocked(true);
-        when(userManager.loadUserByName(anyString())).thenReturn(user);
+        when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
     }
 
     private void setValidGroupsStatusForUser() {
         user.setUserName(USER_NAME);
-        when(userManager.loadUserByName(anyString())).thenReturn(user);
+        when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
         final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false);
-        when(userManager.loadGroupBlockingStatus(groups))
+        when(mockUserManager.loadGroupBlockingStatus(groups))
                 .thenReturn(Collections.singletonList(validGroupStatus));
     }
 
     private void setEmptyGroupsStatusListForUser() {
         user.setUserName(USER_NAME);
-        when(userManager.loadUserByName(anyString())).thenReturn(user);
-        when(userManager.loadGroupBlockingStatus(groups))
+        when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
+        when(mockUserManager.loadGroupBlockingStatus(groups))
                 .thenReturn(Collections.emptyList());
     }
 
@@ -375,5 +359,10 @@ public class SAMLUserDetailsServiceImplTest {
         attributes.put(ATTRIBUTES_KEY_1, SAML_ATTRIBUTES_STRING);
         attributes.put(ATTRIBUTES_KEY_2, SAML_ATTRIBUTES_STRING);
         return attributes;
+    }
+
+    private void assertUserNameAndGroups(final UserContext actualUserContext) {
+        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
     }
 }
