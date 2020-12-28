@@ -1,8 +1,5 @@
-import pytest
-
-from utils import MB, execute, as_size, as_literal, assert_content
-from pyio import write, write_with_gaps
-from pyfs import truncate, fallocate, rm, touch
+from ..utils import as_size, as_literal, assert_content
+from pyfs import truncate, rm, touch
 
 
 def test_truncate_from_empty_to_size(size, local_file, mounted_file, source_path):

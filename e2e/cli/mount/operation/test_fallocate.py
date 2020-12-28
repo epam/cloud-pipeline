@@ -1,8 +1,15 @@
-import pytest
+import os
 
-from utils import MB, execute, as_size, as_literal, assert_content
-from pyio import write, write_with_gaps
-from pyfs import truncate, fallocate
+from ..utils import as_size, as_literal, assert_content
+from pyfs import truncate, fallocate, rm
+
+files = []
+
+
+def teardown_module():
+    for file in files:
+        if os.path.isfile(file):
+            rm(file)
 
 
 def test_fallocate_from_empty_to_size(size, local_file, mounted_file, source_path):
@@ -11,6 +18,7 @@ def test_fallocate_from_empty_to_size(size, local_file, mounted_file, source_pat
     fallocate(local_file, size)
     fallocate(mounted_file, size)
     assert_content(local_file, mounted_file)
+    files.extend([local_file, mounted_file])
 
 
 def test_fallocate_from_size_to_half_size(size, local_file, mounted_file, source_path):

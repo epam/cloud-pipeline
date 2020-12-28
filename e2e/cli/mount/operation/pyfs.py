@@ -1,4 +1,4 @@
-from utils import MB, execute, assert_content
+from ..utils import execute
 
 
 def mkdir(folder_path, recursive=False):

@@ -56,7 +56,7 @@ def as_size(literal):
     units = {'KB': KB, 'MB': MB, 'GB': GB}
     for unit, unit_multiplier in units.items():
         if literal.endswith(unit):
-            size_without_units = literal[:-len(unit)]
+            size_without_units = literal[:-len(unit)].strip()
             if size_without_units.isdigit():
                 return int(size_without_units) * unit_multiplier
     raise RuntimeError('Unsupported size %s is provided.' % literal)

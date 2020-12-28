@@ -1,10 +1,6 @@
 import os
 
-import pytest
-
-from utils import MB, execute, as_size, as_literal, assert_content
-from pyio import write, write_with_gaps
-from pyfs import truncate, fallocate, touch, rm
+from pyfs import fallocate, touch, rm
 
 files = []
 
