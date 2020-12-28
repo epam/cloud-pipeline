@@ -91,7 +91,7 @@ def create_policy(owner, is_sensitive):
 
 
 def sanitize_name(name: str):
-    return re.sub("[^A-a0-9]+", "-", name).lower()
+    return re.sub("[^A-Za-z0-9]+", "-", name).lower()
 
 
 def create_policy_yaml_object(owner, is_sensitive):
