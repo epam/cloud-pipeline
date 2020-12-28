@@ -17,11 +17,13 @@
 package com.epam.pipeline.controller.vo;
 
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class PipelineRunScheduleVO {
     private Long scheduleId;
     private RunScheduledAction action;

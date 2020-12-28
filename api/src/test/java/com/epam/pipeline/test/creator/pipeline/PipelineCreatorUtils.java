@@ -16,8 +16,10 @@
 
 package com.epam.pipeline.test.creator.pipeline;
 
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.GenerateFileVO;
+import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
@@ -31,11 +33,21 @@ import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Revision;
+import com.epam.pipeline.entity.pipeline.run.RunSchedule;
+import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
+import com.epam.pipeline.entity.pipeline.run.ScheduleType;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import java.util.Date;
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class PipelineCreatorUtils {
+
+    public static final TypeReference<Result<List<RunSchedule>>> RUN_SCHEDULE_LIST_TYPE =
+            new TypeReference<Result<List<RunSchedule>>>() { };
 
     private PipelineCreatorUtils() {
 
@@ -128,5 +140,23 @@ public final class PipelineCreatorUtils {
         final DocumentGenerationProperty property = new DocumentGenerationProperty();
         property.setPipelineId(ID);
         return property;
+    }
+
+    public static RunSchedule getRunSchedule() {
+        final RunSchedule runSchedule = new RunSchedule();
+        runSchedule.setAction(RunScheduledAction.RUN);
+        runSchedule.setCreatedDate(new Date());
+        runSchedule.setCronExpression(TEST_STRING);
+        runSchedule.setType(ScheduleType.PIPELINE_RUN);
+        return runSchedule;
+    }
+
+    public static PipelineRunScheduleVO getPipelineRunScheduleVO() {
+        final PipelineRunScheduleVO pipelineRunScheduleVO = new PipelineRunScheduleVO();
+        pipelineRunScheduleVO.setAction(RunScheduledAction.RUN);
+        pipelineRunScheduleVO.setCronExpression(TEST_STRING);
+        pipelineRunScheduleVO.setScheduleId(ID);
+        pipelineRunScheduleVO.setTimeZone(TEST_STRING);
+        return pipelineRunScheduleVO;
     }
 }
