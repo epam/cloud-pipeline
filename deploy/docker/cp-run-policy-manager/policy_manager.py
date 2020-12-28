@@ -20,10 +20,10 @@ import uuid
 import yaml
 from kubernetes import client, config
 
-NAMESPACE = "default"
-CALICO_NETPOL_PLURAL = "networkpolicies"
-CALICO_RESOURCES_VERSION = "v1"
-CALICO_RESOURCES_GROUP = "crd.projectcalico.org"
+NAMESPACE = 'default'
+CALICO_NETPOL_PLURAL = 'networkpolicies'
+CALICO_RESOURCES_VERSION = 'v1'
+CALICO_RESOURCES_GROUP = 'crd.projectcalico.org'
 K8S_OBJ_NAME_KEY = 'name'
 K8S_LABELS_KEY = 'labels'
 K8S_METADATA_KEY = 'metadata'
@@ -41,7 +41,7 @@ MONITORING_PERIOD_SEC = int(os.getenv('RUN_OWNER_POLICY_POLL_PERIOD_SEC', 5))
 
 
 def log_message(message):
-    print('[{}] {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), message))
+    print('[{}] {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), message))
 
 
 def get_custom_resource_api():
@@ -72,7 +72,8 @@ def create_policy(owner, is_sensitive):
                                              namespace=NAMESPACE,
                                              plural=CALICO_NETPOL_PLURAL,
                                              name=policy_name_candidate)
-            log_message("Policy named [{}] exists already: generating suffix for the current one.")
+            log_message('Policy with name [{}] exists already: generating suffix for the current one.'
+                        .format(policy_name_candidate))
             policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER,
                                                                  sanitized_owner_name + '-' + str(uuid.uuid4())[:8])
         except client.exceptions.ApiException as e:
@@ -83,15 +84,15 @@ def create_policy(owner, is_sensitive):
                                                     namespace=NAMESPACE,
                                                     plural=CALICO_NETPOL_PLURAL,
                                                     body=policy_yaml)
-                log_message("Policy [{}] created successfully".format(policy_name_candidate))
+                log_message('Policy [{}] created successfully'.format(policy_name_candidate))
             else:
-                log_message("Unexpected error occurred during creation of the policy for [{}]: {}".format(owner,
+                log_message('Unexpected error occurred during creation of the policy for [{}]: {}'.format(owner,
                                                                                                           e.reason))
             break
 
 
 def sanitize_name(name: str):
-    return re.sub("[^A-Za-z0-9]+", "-", name).lower()
+    return re.sub('[^A-Za-z0-9]+', '-', name).lower()
 
 
 def create_policy_yaml_object(owner, is_sensitive):
