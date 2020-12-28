@@ -16,6 +16,7 @@ import datetime
 import os
 import re
 import time
+import uuid
 import yaml
 from kubernetes import client, config
 
@@ -60,11 +61,33 @@ def load_all_active_policies():
 def create_policy(owner, is_sensitive):
     log_message('Creating policy for [{}{}]'.format(owner, '-sensitive' if is_sensitive else ''))
     api = get_custom_resource_api()
-    api.create_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
-                                        version=CALICO_RESOURCES_VERSION,
-                                        namespace=NAMESPACE,
-                                        plural=CALICO_NETPOL_PLURAL,
-                                        body=create_policy_yaml_object(owner, is_sensitive))
+    policy_yaml = create_policy_yaml_object(owner, is_sensitive)
+    policy_name_template = policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY]
+    sanitized_owner_name = sanitize_name(owner)
+    policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER, sanitized_owner_name)
+    while True:
+        try:
+            api.get_namespaced_custom_object_status(group=CALICO_RESOURCES_GROUP,
+                                                    version=CALICO_RESOURCES_VERSION,
+                                                    namespace=NAMESPACE,
+                                                    plural=CALICO_NETPOL_PLURAL,
+                                                    name=policy_name_candidate)
+            log_message("Policy named [{}] exists already: generating suffix for the current one.")
+            policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER,
+                                                                 sanitized_owner_name + uuid.uuid4().get_hex()[:8])
+        except client.exceptions.ApiException as e:
+            if e.status == 404:
+                policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY] = policy_name_candidate
+                api.create_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
+                                                    version=CALICO_RESOURCES_VERSION,
+                                                    namespace=NAMESPACE,
+                                                    plural=CALICO_NETPOL_PLURAL,
+                                                    body=policy_yaml)
+                log_message("Policy [{}] created successfully".format(policy_name_candidate))
+            else:
+                log_message("Unexpected error occurred during creation of the policy for [{}]: {}".format(owner,
+                                                                                                          e.reason))
+            break
 
 
 def sanitize_name(name: str):
@@ -75,7 +98,6 @@ def create_policy_yaml_object(owner, is_sensitive):
     with open(SENSITIVE_NETPOL_TEMPLATE_PATH if is_sensitive else COMMON_NETPOL_TEMPLATE_PATH, 'r') as file:
         new_policy_as_string = file.read()
         new_policy_as_string = new_policy_as_string.replace(NETPOL_OWNER_PLACEHOLDER, owner)
-        new_policy_as_string = new_policy_as_string.replace(NETPOL_NAME_PREFIX_PLACEHOLDER, sanitize_name(owner))
     return yaml.load(new_policy_as_string, Loader=yaml.FullLoader) if new_policy_as_string else None
 
 
