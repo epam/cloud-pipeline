@@ -29,8 +29,10 @@ K8S_METADATA_KEY = 'metadata'
 NETPOL_OWNER_PLACEHOLDER = '<OWNER>'
 NETPOL_NAME_PREFIX_PLACEHOLDER = '<POLICY_NAME_PREFIX>'
 OWNER_LABEL = 'owner'
-PIPELINE_POD_SELECTOR = 'type=pipeline'
+PIPELINE_POD_LABEL_SELECTOR = 'type=pipeline'
+PIPELINE_POD_PHASE_SELECTOR = 'status.phase={}'
 SENSITIVE_LABEL = 'sensitive'
+TRACKED_POD_PHASES = ['Pending', 'Running']
 COMMON_NETPOL_TEMPLATE_PATH = '/policy-manager/common-run-policy-template.yaml'
 SENSITIVE_NETPOL_TEMPLATE_PATH = '/policy-manager/sensitive-run-policy-template.yaml'
 
@@ -89,8 +91,13 @@ def delete_policy(policy_name):
 
 def load_all_pipeline_pods():
     config.load_kube_config()
-    pods_response = client.CoreV1Api().list_namespaced_pod(namespace=NAMESPACE, label_selector=PIPELINE_POD_SELECTOR)
-    return pods_response.items
+    active_tracked_pods = []
+    for phase in TRACKED_POD_PHASES:
+        pods_response = client.CoreV1Api().list_namespaced_pod(namespace=NAMESPACE,
+                                                               label_selector=PIPELINE_POD_LABEL_SELECTOR,
+                                                               field_selector=PIPELINE_POD_PHASE_SELECTOR.format(phase))
+        active_tracked_pods.extend(pods_response.items)
+    return active_tracked_pods
 
 
 def is_sensitive_policy(policy):
