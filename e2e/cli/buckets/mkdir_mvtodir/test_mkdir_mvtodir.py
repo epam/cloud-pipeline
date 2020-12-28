@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ import pytest
 from buckets.utils.listing import *
 from common_utils.entity_managers import EntityManager
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 
 ERROR_MESSAGE = "An error occurred in case "
 
@@ -25,7 +26,7 @@ class TestMkdirMvtodir(object):
     test_folder = "mkdir-test-folder"
     test_folder_1 = "test-folder1"
     test_folder_2 = "test-folder2"
-    bucket = 'epmcmbibpc-mkdir-mvtodir-it{}'.format(get_test_prefix())
+    bucket = format_name('epmcmbibpc-mkdir-mvtodir-it{}'.format(get_test_prefix()))
     path_to_bucket = 'cp://{}'.format(bucket)
     negative_test_case = "epmcmbibpc-1022"
 
