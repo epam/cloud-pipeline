@@ -88,6 +88,7 @@ def delete_policy(policy_name):
 
 
 def load_all_pipeline_pods():
+    config.load_kube_config()
     pods_response = client.CoreV1Api().list_namespaced_pod(namespace=NAMESPACE, label_selector=PIPELINE_POD_SELECTOR)
     return pods_response.items
 
