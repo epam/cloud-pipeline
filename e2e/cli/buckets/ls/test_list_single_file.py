@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ from buckets.utils.cloud.utilities import get_modification_date
 from buckets.utils.listing import *
 from buckets.utils.file_utils import *
 from buckets.utils.utilities_for_test import *
+from common_utils.test_utils import format_name
+
 
 # TODO: disable test until the GCP support is merged
 @pytest.mark.skip()
@@ -25,7 +27,7 @@ class TestLsSingleFile(object):
     epam_test_case = "EPMCMBIBPC-617"
     resources_root = "resources-{}/".format(epam_test_case)
     relative_path = os.path.join(resources_root, "test_file.txt")
-    bucket_name = "epmcmbibpc-it-{}{}".format(epam_test_case, get_test_prefix()).lower()
+    bucket_name = format_name("epmcmbibpc-it-{}{}".format(epam_test_case, get_test_prefix()).lower())
     another_bucket_alias = "{}-alias".format(bucket_name)
     another_bucket_path = "{}-path".format(bucket_name)
 

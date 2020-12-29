@@ -19,6 +19,7 @@ from buckets.utils.cloud.utilities import object_exists, get_versions
 from buckets.utils.listing import *
 from buckets.utils.file_utils import *
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 
 ERROR_MESSAGE = "An error occurred in case "
 
@@ -33,7 +34,7 @@ class TestDataStorageVersioning(object):
     test_folder_1 = "test_folder1"
     test_folder_2 = "test_folder2"
     test_folder_3 = "test_folder3"
-    bucket = 'epmcmbibpc-versioning-it{}'.format(get_test_prefix())
+    bucket = format_name('epmcmbibpc-versioning-it{}'.format(get_test_prefix()))
     path_to_bucket = 'cp://{}'.format(bucket)
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']

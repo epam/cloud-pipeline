@@ -17,6 +17,7 @@ import pytest
 from assertion_utils import *
 from common_utils.entity_managers import EntityManager
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 
 ERROR_MESSAGE = "An error occurred in case "
 PIPELINE = 'pipeline'
@@ -46,7 +47,7 @@ class TestMetadataOperations(object):
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_crud)
     def test_crud_metadata(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = "".join([test_case, get_test_prefix()])
+        object_name = format_name("".join([test_case, get_test_prefix()]))
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:
@@ -76,7 +77,7 @@ class TestMetadataOperations(object):
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_permissions)
     def test_metadata_permissions(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = "".join([get_test_prefix(), "-", test_case])
+        object_name = format_name("".join([get_test_prefix(), "-", test_case]))
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:
@@ -141,7 +142,7 @@ class TestMetadataOperations(object):
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_non_existing_class)
     def test_metadata_non_existing_class(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = "".join([test_case, get_test_prefix()])
+        object_name = format_name("".join([test_case, get_test_prefix()]))
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         non_existing = 'non-existing'
@@ -184,7 +185,7 @@ class TestMetadataOperations(object):
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
     def test_metadata_set_incorrect_key_value_pair(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = "".join([test_case, get_test_prefix()])
+        object_name = format_name("".join([test_case, get_test_prefix()]))
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:
@@ -215,7 +216,7 @@ class TestMetadataOperations(object):
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
     def test_delete_keys_from_empty_metadata(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = "".join([test_case, get_test_prefix()])
+        object_name = format_name("".join([test_case, get_test_prefix()]))
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:
@@ -253,7 +254,7 @@ class TestMetadataOperations(object):
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
     def test_delete_non_existing_key(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = "".join([test_case, get_test_prefix()])
+        object_name = format_name("".join([test_case, get_test_prefix()]))
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         non_existing = 'non-existing'

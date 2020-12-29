@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 from ..utils.assertions_utils import *
 from ..utils.utilities_for_test import *
 
@@ -20,7 +21,7 @@ from ..utils.utilities_for_test import *
 class TestRmWithPatterns(object):
     epam_test_case = "EPMCMBIBPC-615"
     resources_root = "resources-{}/".format(epam_test_case).lower()
-    bucket_name = "epmcmbibpc-it-rm-{}{}".format(epam_test_case, get_test_prefix()).lower()
+    bucket_name = format_name("epmcmbibpc-it-rm-{}{}".format(epam_test_case, get_test_prefix()).lower())
     json_file = "test.json"
     text_file = "test.txt"
     json_file_in_folder = "folder.json"

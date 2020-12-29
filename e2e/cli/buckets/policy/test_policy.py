@@ -23,12 +23,14 @@ from common_utils.entity_managers import UtilsManager
 from common_utils.pipe_cli import pipe_storage_policy
 from time import sleep
 
+from common_utils.test_utils import format_name
+
 ERROR_MESSAGE = "An error occurred in case "
 
 
 @pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name, reason="Storage policy is not supported for AZURE provider")
 class TestPolicy(object):
-    bucket_name = "epmcmbibpc-it-policy{}".format(get_test_prefix())
+    bucket_name = format_name("epmcmbibpc-it-policy{}".format(get_test_prefix()))
 
     @classmethod
     def setup_class(cls):
