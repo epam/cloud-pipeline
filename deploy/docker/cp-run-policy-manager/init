@@ -34,3 +34,5 @@ function sigterm_handler {
 }
 
 trap 'kill $! ; sigterm_handler' SIGTERM
+tail -F $RUN_POLICY_MANAGER_LOG_FILE &
+wait "$!"
