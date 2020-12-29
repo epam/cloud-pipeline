@@ -51,12 +51,15 @@ $PIPE_CLI_DOWNLOAD_URL - path to download Cloud Pipeline CLI. If this envvar is 
 $GIT_BRANCH - git branch with source code
 $WORKSPACE - path to Cloud Pipeline project source code
 $CP_TEST_REGION_ID - the created Cloud Pipeline region ID
+$CP_TEST_SHARE_ID - the created Cloud Pipeline share ID
 ```
 
 Launch command examples:
 ```
 $RUN_TESTS_CMD="pytest --html=/home/results/report.html -s -vv --tx 4*popen//python=python2.7 --dist=loadscope /home/cloud-pipeline/e2e/cli/buckets"
 $RUN_METADATA_TESTS_CMD="pytest --html=/home/results/metadata-report.html -s -vv /home/cloud-pipeline/e2e/cli/tag"
+$RUN_MOUNT_OBJECT_TESTS_CMD="pytest --html=/home/results/mount-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object"
+$RUN_MOUNT_WEBDAV_TESTS_CMD="pytest --html=/home/results/mount-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --webdav"
 ```
 
 #### Aws

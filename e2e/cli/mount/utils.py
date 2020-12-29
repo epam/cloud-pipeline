@@ -1,5 +1,5 @@
+import errno
 import os
-import random
 import subprocess
 
 from pytest import fail
@@ -20,6 +20,7 @@ class CmdExecutor:
         exit_code = process.wait()
         if log_path:
             with open(log_path, 'w') as log_file:
+                log_file.write('Executing the following command: %s' % command)
                 log_file.write(out)
                 log_file.write(err)
         if exit_code != 0:
@@ -67,3 +68,14 @@ def assert_content(local_file, mounted_file):
     mounted_sha = execute('shasum %s | awk \'{ print $1 }\'' % mounted_file)
     if local_sha != mounted_sha:
         fail('Local and mounted file shas do not matches: %s %s' % (local_sha, mounted_sha))
+
+
+def mkdir(*paths):
+    for path in paths:
+        try:
+            os.makedirs(path)
+        except OSError as exc:
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else:
+                raise
