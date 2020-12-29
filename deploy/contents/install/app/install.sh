@@ -1184,24 +1184,30 @@ if is_service_requested cp-billing-srv; then
     echo
 fi
 
-
 # OOM reporter - monitor and report OOM related events for each pipeline run
-print_ok "[Starting OOM reporter daemonset deployment]"
+if is_service_requested cp-oom-reporter; then
+  print_ok "[Starting OOM reporter daemonset deployment]"
 
-print_info "-> Deleting existing instance of OOM reporter daemonset"
-kubectl delete daemonset cp-oom-reporter
-
-print_info "-> Deploying OOM reporter daemonset"
-create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
-
+  print_info "-> Deleting existing instance of OOM reporter daemonset"
+  kubectl delete daemonset cp-oom-reporter
+  if is_install_requested; then
+    print_info "-> Deploying OOM reporter daemonset"
+    create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
+  fi
+fi
 
 # Run-policy manager - monitor and manage network policies to implement restrictions on inter-run connections
-print_ok "[Starting run-policy manager deployment]"
-print_info "-> Deleting existing instance of run-policy manager"
-delete_deployment_and_service "cp-run-policy-manager" \
-                                "/opt/run-policy-manager"
-print_info "-> Deploying run-policy manager"
-create_kube_resource $K8S_SPECS_HOME/cp-run-policy-manager/cp-run-policy-manager-dpl.yaml
+if is_service_requested cp-run-policy-manager; then
+  print_ok "[Starting run-policy manager deployment]"
+  print_info "-> Deleting existing instance of run-policy manager"
+  delete_deployment_and_service "cp-run-policy-manager" \
+                                  "/opt/run-policy-manager"
+  if is_install_requested; then
+    print_info "-> Deploying run-policy manager"
+    create_kube_resource $K8S_SPECS_HOME/cp-run-policy-manager/cp-run-policy-manager-dpl.yaml
+    wait_for_deployment "cp-run-policy-manager"
+  fi
+fi
 
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY
