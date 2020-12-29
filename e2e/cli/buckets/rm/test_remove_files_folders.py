@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 from ..utils.listing import get_pipe_listing, compare_listing, f
 from ..utils.assertions_utils import *
 from ..utils.utilities_for_test import *
@@ -29,8 +30,8 @@ class TestRmFileFolder(object):
 
     suffix = "EPMCMBIBPC-611-612-648-644-645"
     resources_root = "resources-{}/".format(suffix).lower()
-    bucket_name = "epmcmbibpc-it-rm-{}{}".format(suffix, get_test_prefix()).lower()
-    empty_bucket_name = "cmbi-pipe-integration-tests-rm-empty"
+    bucket_name = format_name("epmcmbibpc-it-rm-{}{}".format(suffix, get_test_prefix()).lower())
+    empty_bucket_name = format_name("cmbi-pipe-integration-tests-rm-empty")
     file_in_root = "file_in_root.txt"
     root_file_path = os.path.abspath(os.path.join(resources_root, file_in_root))
 

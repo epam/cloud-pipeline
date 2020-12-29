@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 from ..utils.assertions_utils import *
 from ..utils.cloud.utilities import *
 from ..utils.file_utils import *
@@ -21,9 +22,10 @@ from ..utils.utilities_for_test import *
 
 class TestMoveWithFiles(object):
 
-    bucket_name = "epmcmbibpc-it-mv-files{}".format(get_test_prefix())
-    other_bucket_name = "{}-other".format(bucket_name)
-    empty_bucket_name = "{}-empty".format(bucket_name)
+    raw_bucket_name = "epmcmbibpc-it-mv-files{}".format(get_test_prefix())
+    bucket_name = format_name(raw_bucket_name)
+    other_bucket_name = format_name("{}-other".format(raw_bucket_name))
+    empty_bucket_name = format_name("{}-empty".format(raw_bucket_name))
     current_directory = os.getcwd()
     home_dir = "test_mv_home_dir-670%s/" % get_test_prefix()
     test_prefix = "mv-files-"

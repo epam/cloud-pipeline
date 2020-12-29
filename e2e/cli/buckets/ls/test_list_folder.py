@@ -15,6 +15,7 @@
 from buckets.utils.listing import *
 from buckets.utils.assertions_utils import *
 from buckets.utils.utilities_for_test import *
+from common_utils.test_utils import format_name
 
 
 class TestLsFolder(object):
@@ -25,7 +26,7 @@ class TestLsFolder(object):
     epam_test_case_ls_wrong_scheme = "EPMCMBIBPC-654"
     suffix = "EPMCMBIBPC-633-634"
     resources_root = "resources-{}/".format(suffix).lower()
-    bucket_name = "epmcmbibpc-it-{}{}".format(suffix, get_test_prefix()).lower()
+    bucket_name = format_name("epmcmbibpc-it-{}{}".format(suffix, get_test_prefix()).lower())
 
     @classmethod
     def setup_class(cls):
