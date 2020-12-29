@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.Mockito.doReturn;
@@ -44,7 +43,8 @@ public class VMMonitorTest {
     private static final String RUN_ID_VALUE = "p-123";
     private static final String POOL_ID_VALUE = "123";
     private static final Long POOL_ID = 123L;
-    private final Map<String, String> reqLabels = new HashMap<>();
+    private final Map<String, String> vmTags = Collections.singletonMap(RUN_ID_LABEL, RUN_ID_VALUE);
+    private final Map<String, String> nodeLabels = Collections.singletonMap(POOL_ID_LABEL, POOL_ID_VALUE);
     private final AwsRegion region = new AwsRegion(CloudProvider.AWS, TEST_STRING, TEST_STRING, TEST_STRING,
             TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, 0, true);
     private VirtualMachine vm;
@@ -56,10 +56,8 @@ public class VMMonitorTest {
 
     @BeforeEach
     public void setUp() {
-        reqLabels.put(RUN_ID_LABEL, RUN_ID_VALUE);
-        reqLabels.put(POOL_ID_LABEL, POOL_ID_VALUE);
         doReturn(CloudProvider.AWS).when(mockService).provider();
-        vm = VirtualMachine.builder().tags(reqLabels).build();
+        vm = VirtualMachine.builder().tags(vmTags).build();
         monitor = new VMMonitor(mockApiClient, notifier, Collections.singletonList(mockService),
                 RUN_ID_LABEL, RUN_ID_LABEL, POOL_ID_LABEL);
 
@@ -69,7 +67,7 @@ public class VMMonitorTest {
     public void shouldNotNotifyMissingNodeWhenRunIdIsNotNumericAndPoolIdExists() {
         final NodeInstance nodeInstance = new NodeInstance();
         nodeInstance.setRunId(RUN_ID_VALUE);
-        nodeInstance.setLabels(reqLabels);
+        nodeInstance.setLabels(nodeLabels);
         final PipelineRun pipelineRun = new PipelineRun();
         pipelineRun.setStatus(TaskStatus.RUNNING);
         final NodePool nodePool = new NodePool();

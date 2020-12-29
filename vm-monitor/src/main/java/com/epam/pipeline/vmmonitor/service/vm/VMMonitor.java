@@ -128,13 +128,13 @@ public class VMMonitor {
         return false;
     }
 
-    private boolean poolIdExists(final VirtualMachine vm) {
+    private boolean poolIdExists(final NodeInstance node) {
         log.debug("Checking whether a node pool with corresponding pool id exists.");
-        final String poolIdValue = MapUtils.emptyIfNull(vm.getTags()).get(poolIdLabel);
+        final String poolIdValue = MapUtils.emptyIfNull(node.getLabels()).get(poolIdLabel);
         if (StringUtils.isNotBlank(poolIdValue) && NumberUtils.isDigits(poolIdValue)) {
             final long poolId = Long.parseLong(poolIdValue);
-            log.debug("VM {} {} is associated with pool id {}. Checking node pool existence.",
-                    vm.getInstanceId(), vm.getCloudProvider(), poolId);
+            log.debug("NodeInstance {} {} is associated with pool id {}. Checking node pool existence.",
+                    node.getUid(), node.getClusterName(), poolId);
             return isNodePoolExists(poolId);
         }
         return false;
@@ -166,7 +166,7 @@ public class VMMonitor {
 
     private void checkLabels(final NodeInstance node, final VirtualMachine vm) {
         log.debug("Checking status of node {} for VM {} {}", node.getName(), vm.getInstanceId(), vm.getCloudProvider());
-        if (matchingRunExists(vm) || poolIdExists(vm)) {
+        if (matchingRunExists(vm) || poolIdExists(node)) {
             return;
         }
         log.debug("Checking whether node {} is labeled with required tags.", node.getName());
