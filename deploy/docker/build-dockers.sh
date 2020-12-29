@@ -256,6 +256,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-leader-elector \
                 -t "$CP_ELECTOR_DIST_NAME"
 docker push "$CP_ELECTOR_DIST_NAME"
 
+# Run owner's policy manager
+CP_RUN_POLICY_MANAGER_DIST_NAME=${CP_RUN_POLICY_MANAGER_DIST_NAME:-"$CP_DIST_REPO_NAME:run-policy-manager-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-run-policy-manager \
+                -t "$CP_RUN_POLICY_MANAGER_DIST_NAME"
+docker push "$CP_RUN_POLICY_MANAGER_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################

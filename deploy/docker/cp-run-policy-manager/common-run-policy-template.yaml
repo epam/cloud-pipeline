@@ -1,0 +1,15 @@
+apiVersion: crd.projectcalico.org/v1
+kind: NetworkPolicy
+metadata:
+  name: <POLICY_NAME_PREFIX>-runs-policy-non-sensitive
+  namespace: default
+  labels:
+    owner: <OWNER>
+spec:
+  selector: owner == '<OWNER>' && sensitive != 'true'
+  types:
+    - Ingress
+  ingress:
+    - action: Allow
+      source:
+        selector: (!has(owner) || (sensitive != 'true' && owner == '<OWNER>'))

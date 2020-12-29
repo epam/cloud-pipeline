@@ -258,6 +258,10 @@ CP_TP_KUBE_NODE_NAME=${CP_TP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-tinyproxy to $CP_TP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_TP_KUBE_NODE_NAME" cloud-pipeline/cp-tinyproxy="true" --overwrite
 
+# Allow to schedule policy-manager service to the master
+CP_POLICY_MANAGER_KUBE_NODE_NAME=${CP_POLICY_MANAGER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-run-policy-manager to $CP_POLICY_MANAGER_KUBE_NODE_NAME"
+kubectl label nodes "$CP_POLICY_MANAGER_KUBE_NODE_NAME" cloud-pipeline/cp-run-policy-manager="true" --overwrite
 
 echo
 
@@ -1189,6 +1193,15 @@ kubectl delete daemonset cp-oom-reporter
 
 print_info "-> Deploying OOM reporter daemonset"
 create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
+
+
+# Run-policy manager - monitor and manage network policies to implement restrictions on inter-run connections
+print_ok "[Starting run-policy manager deployment]"
+print_info "-> Deleting existing instance of run-policy manager"
+delete_deployment_and_service "cp-run-policy-manager" \
+                                "/opt/run-policy-manager"
+print_info "-> Deploying run-policy manager"
+create_kube_resource $K8S_SPECS_HOME/cp-run-policy-manager/cp-run-policy-manager-dpl.yaml
 
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY
