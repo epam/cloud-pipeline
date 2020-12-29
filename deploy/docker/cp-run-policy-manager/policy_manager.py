@@ -27,6 +27,7 @@ CALICO_RESOURCES_GROUP = 'crd.projectcalico.org'
 K8S_OBJ_NAME_KEY = 'name'
 K8S_LABELS_KEY = 'labels'
 K8S_METADATA_KEY = 'metadata'
+K8S_METADATA_NAME_FIELD_SELECTOR = 'metadata.name={}'
 NETPOL_OWNER_PLACEHOLDER = '<OWNER>'
 NETPOL_NAME_PREFIX_PLACEHOLDER = '<POLICY_NAME_PREFIX>'
 OWNER_LABEL = 'owner'
@@ -66,28 +67,25 @@ def create_policy(owner, is_sensitive):
     sanitized_owner_name = sanitize_name(owner)
     policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER, sanitized_owner_name)
     while True:
-        try:
-            api.get_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
-                                             version=CALICO_RESOURCES_VERSION,
-                                             namespace=NAMESPACE,
-                                             plural=CALICO_NETPOL_PLURAL,
-                                             name=policy_name_candidate)
+        existing_policy_response = api.list_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
+                                                                     version=CALICO_RESOURCES_VERSION,
+                                                                     namespace=NAMESPACE,
+                                                                     plural=CALICO_NETPOL_PLURAL,
+                                                                     field_selector=K8S_METADATA_NAME_FIELD_SELECTOR
+                                                                     .format(policy_name_candidate))
+        if len(existing_policy_response.get('items')) > 0:
             log_message('Policy with name [{}] exists already: generating suffix for the current one.'
                         .format(policy_name_candidate))
             policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER,
                                                                  sanitized_owner_name + '-' + str(uuid.uuid4())[:8])
-        except client.exceptions.ApiException as e:
-            if e.status == 404:
-                policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY] = policy_name_candidate
-                api.create_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
-                                                    version=CALICO_RESOURCES_VERSION,
-                                                    namespace=NAMESPACE,
-                                                    plural=CALICO_NETPOL_PLURAL,
-                                                    body=policy_yaml)
-                log_message('Policy [{}] created successfully'.format(policy_name_candidate))
-            else:
-                log_message('Unexpected error occurred during creation of the policy for [{}]: {}'.format(owner,
-                                                                                                          e.reason))
+        else:
+            policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY] = policy_name_candidate
+            api.create_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
+                                                version=CALICO_RESOURCES_VERSION,
+                                                namespace=NAMESPACE,
+                                                plural=CALICO_NETPOL_PLURAL,
+                                                body=policy_yaml)
+            log_message('Policy [{}] created successfully'.format(policy_name_candidate))
             break
 
 
