@@ -18,11 +18,13 @@ package com.epam.pipeline.controller.vo;
 
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class PipelineVO {
     private Long id;
     private String name;

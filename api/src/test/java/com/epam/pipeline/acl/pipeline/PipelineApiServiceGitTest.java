@@ -54,7 +54,7 @@ import static org.mockito.Mockito.doReturn;
 
 public class PipelineApiServiceGitTest extends AbstractAclTest {
 
-    private final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
+    protected final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
     private final GitTagEntry gitTagEntry = GitCreatorUtils.getGitTagEntry();
     private final GitCommitEntry gitCommitEntry = GitCreatorUtils.getGitCommitEntry();
     private final PipelineSourceItemVO sourceItemVO = PipelineCreatorUtils.getPipelineSourceItemVO();
@@ -62,11 +62,11 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private final GitCredentials gitCredentials = GitCreatorUtils.getGitCredentials();
     private final GitRepositoryEntry gitRepositoryEntry = GitCreatorUtils.getGitRepositoryEntry();
     private final UploadFileMetadata fileMetadata = PipelineCreatorUtils.getUploadFileMetadata();
+    private final List<GitRepositoryEntry> gitRepositoryEntries = Collections.singletonList(gitRepositoryEntry);
+    private final List<UploadFileMetadata> files = Collections.singletonList(fileMetadata);
     private final Revision revision = PipelineCreatorUtils.getRevision();
     private final TaskGraphVO taskGraphVO = PipelineCreatorUtils.getTaskGraphVO();
     private final RegisterPipelineVersionVO pipelineVersionVO = PipelineCreatorUtils.getRegisterPipelineVersionVO();
-    private final List<GitRepositoryEntry> gitRepositoryEntries = Collections.singletonList(gitRepositoryEntry);
-    private final List<UploadFileMetadata> files = Collections.singletonList(fileMetadata);
     private final List<Revision> revisionList = Collections.singletonList(revision);
 
     @Autowired
@@ -103,6 +103,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
         initAclEntity(pipeline);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
         doReturn(gitTagEntry).when(mockGitManager).loadRevision(pipeline, TEST_STRING);
+
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.loadRevision(ID, TEST_STRING));
     }
