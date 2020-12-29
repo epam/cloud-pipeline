@@ -35,10 +35,12 @@ PIPELINE_POD_LABEL_SELECTOR = 'type=pipeline'
 PIPELINE_POD_PHASE_SELECTOR = 'status.phase={}'
 SENSITIVE_LABEL = 'sensitive'
 TRACKED_POD_PHASES = ['Pending', 'Running']
-COMMON_NETPOL_TEMPLATE_PATH = '/policy-manager/common-run-policy-template.yaml'
-SENSITIVE_NETPOL_TEMPLATE_PATH = '/policy-manager/sensitive-run-policy-template.yaml'
 
-MONITORING_PERIOD_SEC = int(os.getenv('RUN_OWNER_POLICY_POLL_PERIOD_SEC', 5))
+COMMON_NETPOL_TEMPLATE_PATH = os.getenv('CP_RUN_POLICY_MANAGER_COMMON_POLICY_PATH',
+                                        '/policy-manager/common-run-policy-template.yaml')
+SENSITIVE_NETPOL_TEMPLATE_PATH = os.getenv('CP_RUN_POLICY_MANAGER_SENSITIVE_POLICY_PATH',
+                                           '/policy-manager/sensitive-run-policy-template.yaml')
+MONITORING_PERIOD_SEC = int(os.getenv('CP_RUN_POLICY_MANAGER_POLL_PERIOD_SEC', 5))
 
 
 def log_message(message):

@@ -21,7 +21,7 @@ spec:
             privileged: true
           command: [ "/policy-manager/init" ]
           env:
-            - name: RUN_OWNER_POLICY_POLL_PERIOD_SEC
+            - name: CP_RUN_POLICY_MANAGER_POLL_PERIOD_SEC
               value: "5"
           envFrom:
             - configMapRef:
