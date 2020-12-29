@@ -13,6 +13,9 @@ spec:
     spec:
       nodeSelector:
         cloud-pipeline/cp-run-policy-manager: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
       containers:
         - name: cp-run-policy-manager
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:run-policy-manager-$CP_VERSION
