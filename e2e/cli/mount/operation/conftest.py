@@ -64,7 +64,7 @@ def pytest_sessionstart(session):
 
     mkdir(local_path, mount_path, logs_path)
 
-    if storage_type in ['S3', 'AZ', 'GCS']:
+    if storage_type in ['S3', 'AZ', 'GS']:
         session.config.storage_mount_path = mount_path
         execute(log_path=start_log_path, command="""
         head -c '{source_size}' /dev/urandom > '{source_path}'
@@ -199,12 +199,12 @@ def _get_storage_type(config, storage_provider):
     else:
         storage_kind = default_storage_kind
     storage_type_dict = {
-        'AWS': {
+        'S3': {
             'webdav': 'NFS',
             'object': 'S3'
         },
         'GS': {
-            'object': 'GCS'
+            'object': 'GS'
         }
     }
     return storage_type_dict.get(storage_provider, {}).get(storage_kind) or 'S3'

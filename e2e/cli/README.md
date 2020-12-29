@@ -58,8 +58,8 @@ Launch command examples:
 ```
 $RUN_TESTS_CMD="pytest --html=/home/results/report.html -s -vv --tx 4*popen//python=python2.7 --dist=loadscope /home/cloud-pipeline/e2e/cli/buckets"
 $RUN_METADATA_TESTS_CMD="pytest --html=/home/results/metadata-report.html -s -vv /home/cloud-pipeline/e2e/cli/tag"
-$RUN_MOUNT_OBJECT_TESTS_CMD="pytest --html=/home/results/mount-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object"
-$RUN_MOUNT_WEBDAV_TESTS_CMD="pytest --html=/home/results/mount-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --webdav"
+$RUN_MOUNT_OBJECT_TESTS_CMD="pytest --html=/home/results/mount-object-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object"
+$RUN_MOUNT_WEBDAV_TESTS_CMD="pytest --html=/home/results/mount-webdav-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --webdav"
 ```
 
 #### Aws
@@ -80,6 +80,7 @@ docker run --rm --env API=$API \
 --env TEST_PREFIX=$TEST_PREFIX \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
+--env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
@@ -107,6 +108,7 @@ docker run --rm --env API=$API \
 --env TEST_PREFIX=$TEST_PREFIX \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
+--env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
@@ -135,6 +137,7 @@ docker run --rm --env API=$API \
 --env TEST_PREFIX=$TEST_PREFIX \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
+--env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
