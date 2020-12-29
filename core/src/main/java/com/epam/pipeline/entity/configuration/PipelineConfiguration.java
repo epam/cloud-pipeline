@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -37,6 +38,7 @@ import java.util.Optional;
 @Setter
 @Getter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class PipelineConfiguration {
 
     private static final String MAIN_FILE = "main_file";
