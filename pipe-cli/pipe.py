@@ -1357,10 +1357,9 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @click.option('-ct', '--connection-timeout', required=False, type=float, default=0,
               help='Socket connection timeout in seconds')
 @click.option('-s', '--ssh', required=False, is_flag=True, default=False,
-              help='Configures passwordless ssh to specified run instance. '
-                   'Supported on Linux only.')
+              help='Configures passwordless ssh to specified run instance')
 @click.option('-sp', '--ssh-path', required=False, type=str,
-              help='Path to .ssh directory for passwordless ssh configuration')
+              help='Path to .ssh directory for passwordless ssh configuration on Linux')
 @click.option('-sh', '--ssh-host', required=False, type=str,
               help='Host name for passwordless ssh configuration')
 @click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
@@ -1386,7 +1385,10 @@ def start_tunnel(run_id, local_port, remote_port, connection_timeout,
 
     Additionally it enables passwordless ssh connections if the corresponding option is specified.
     Once specified ssh is configured both locally and remotely to support passwordless connections.
-    Passwordless ssh configuration is supported only for openssh client on Linux.
+    For Linux workstations openssh library is configured to allow passwordless access
+    using ssh and scp command line clients usage.
+    For Windows workstations putty utils are configured to allow passwordless access
+    using putty application as well as plink and pscp command line clients.
 
     Examples:
 
@@ -1402,13 +1404,21 @@ def start_tunnel(run_id, local_port, remote_port, connection_timeout,
 
         pipe tunnel start -lp 4567 -rp 22 --ssh 12345
 
-    Then connect to run instance using regular ssh client.
+    [Linux] Then connect to run instance using regular ssh client.
 
-        ssh root@pipeline-12345
+        ssh pipeline-12345
 
-    Or transfer some files to and from run instance using regular scp client.
+    [Linux] Or transfer some files to and from run instance using regular scp client.
 
-        scp file.txt root@pipeline-12345:/common/workdir/file.txt
+        scp file.txt pipeline-12345:/common/workdir/file.txt
+
+    [Windows] Or connect to run instance using regular plink client.
+
+        plink pipeline-12345
+
+    [Windows] Or transfer some files to and from run instance using regular pscp client.
+
+        pscp file.txt pipeline-12345:/common/workdir/file.txt
 
     Advanced tunnel configuration environment variables:
 

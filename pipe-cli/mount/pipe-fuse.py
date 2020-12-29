@@ -17,6 +17,8 @@ import errno
 import logging
 import os
 import sys
+import traceback
+
 import future.utils
 
 is_frozen = getattr(sys, 'frozen', False)
@@ -236,4 +238,5 @@ if __name__ == '__main__':
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
     except BaseException as e:
         logging.error('Unhandled error: %s' % str(e))
+        traceback.print_exc()
         sys.exit(1)
