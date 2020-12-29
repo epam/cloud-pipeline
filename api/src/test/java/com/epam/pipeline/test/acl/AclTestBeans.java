@@ -164,9 +164,6 @@ public class AclTestBeans {
     protected EntityManager mockEntityManager;
 
     @MockBean
-    protected HierarchicalEntityManager mockHierarchicalEntityManager;
-
-    @MockBean
     protected IssueManager mockIssueManager;
 
     @MockBean
@@ -493,6 +490,11 @@ public class AclTestBeans {
     }
 
     @Bean
+    protected HierarchicalEntityManager spyHierarchicalEntityManager() {
+        return spy(HierarchicalEntityManager.class);
+    }
+
+    @Bean
     public GrantPermissionManager grantPermissionManager() {
         GrantPermissionManager grantPermissionManager = new GrantPermissionManager();
         grantPermissionManager.setAclService(mockAclService);
@@ -506,5 +508,4 @@ public class AclTestBeans {
         grantPermissionManager.setPermissionFactory(permissionFactory);
         return spy(grantPermissionManager);
     }
-
 }

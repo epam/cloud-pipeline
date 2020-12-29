@@ -181,6 +181,14 @@ public final class DockerCreatorUtils {
         return new DockerRegistryList(Collections.singletonList(dockerRegistry));
     }
 
+    public static DockerRegistryList getDockerRegistryList(final Long id, final String owner,
+                                                           final DockerRegistry dockerRegistry) {
+        final DockerRegistryList dockerRegistryList = getDockerRegistryList(dockerRegistry);
+        dockerRegistryList.setId(id);
+        dockerRegistryList.setOwner(owner);
+        return dockerRegistryList;
+    }
+
     public static DockerRegistryEventEnvelope getDockerRegistryEventEnvelope() {
         return new DockerRegistryEventEnvelope();
     }

@@ -49,7 +49,6 @@ public final class FolderCreatorUtils {
         folder.setOwner(owner);
         folder.setMetadata(Collections.singletonMap(TEST_STRING, TEST_INT));
         folder.setHasMetadata(true);
-        folder.setPipelines(Collections.singletonList(new Pipeline()));
         return folder;
     }
 
