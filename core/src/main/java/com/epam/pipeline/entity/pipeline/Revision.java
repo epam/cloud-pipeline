@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.pipeline;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,6 +24,7 @@ import java.util.Date;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class Revision {
 
     private Long id;

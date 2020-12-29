@@ -19,6 +19,7 @@ package com.epam.pipeline.test.creator.pipeline;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.GenerateFileVO;
+import com.epam.pipeline.controller.vo.InstanceOfferParametersVO;
 import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
@@ -42,10 +43,36 @@ import java.util.Date;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class PipelineCreatorUtils {
 
+    public static final TypeReference<Result<Pipeline>> PIPELINE_INSTANCE_TYPE =
+            new TypeReference<Result<Pipeline>>() {};
+    public static final TypeReference<Result<CheckRepositoryVO>> CHECK_REPOSITORY_INSTANCE_TYPE =
+            new TypeReference<Result<CheckRepositoryVO>>() {};
+    public static final TypeReference<Result<PipelinesWithPermissionsVO>> PIPELINE_WITH_PERMISSIONS_TYPE =
+            new TypeReference<Result<PipelinesWithPermissionsVO>>() {};
+    public static final TypeReference<Result<InstancePrice>> INSTANCE_PRICE_TYPE =
+            new TypeReference<Result<InstancePrice>>() {};
+    public static final TypeReference<Result<TaskGraphVO>> TASK_GRAPH_VO_TYPE =
+            new TypeReference<Result<TaskGraphVO>>() {};
+    public static final TypeReference<Result<Revision>> REVISION_INSTANCE_TYPE =
+            new TypeReference<Result<Revision>>() {};
+    public static final TypeReference<Result<DocumentGenerationProperty>> DOCUMENT_GENERATION_PROPERTY_TYPE =
+            new TypeReference<Result<DocumentGenerationProperty>>() {};
+
+    public static final TypeReference<Result<List<Pipeline>>> PIPELINE_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<Pipeline>>>() {};
+    public static final TypeReference<Result<List<PipelineRun>>> PIPELINE_RUN_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<PipelineRun>>>() {};
+    public static final TypeReference<Result<List<Revision>>> REVISION_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<Revision>>>() {};
+    public static final TypeReference<Result<List<DocumentGenerationProperty>>> DOCUMENT_GENERATION_PROPERTY_LIST_TYPE =
+            new TypeReference<Result<List<DocumentGenerationProperty>>>() {};
+    public static final TypeReference<List<UploadFileMetadata>> UPLOAD_METADATA_LIST_TYPE =
+            new TypeReference<List<UploadFileMetadata>>() {};
     public static final TypeReference<Result<List<RunSchedule>>> RUN_SCHEDULE_LIST_TYPE =
             new TypeReference<Result<List<RunSchedule>>>() { };
 
@@ -53,8 +80,12 @@ public final class PipelineCreatorUtils {
 
     }
 
+    public static Pipeline getPipeline() {
+        return new Pipeline();
+    }
+
     public static Pipeline getPipeline(final Long id, final String owner, final Long parentId) {
-        final Pipeline pipeline = new Pipeline();
+        final Pipeline pipeline = getPipeline();
         pipeline.setId(id);
         pipeline.setOwner(owner);
         pipeline.setParentFolderId(parentId);
@@ -63,7 +94,7 @@ public final class PipelineCreatorUtils {
     }
 
     public static Pipeline getPipeline(final Long id, final String owner) {
-        final Pipeline pipeline = new Pipeline();
+        final Pipeline pipeline = getPipeline();
         pipeline.setId(id);
         pipeline.setOwner(owner);
         return pipeline;
@@ -73,8 +104,12 @@ public final class PipelineCreatorUtils {
         return getPipeline(ID, owner, ID);
     }
 
+    public static PipelineRun getPipelineRun() {
+        return new PipelineRun();
+    }
+
     public static PipelineRun getPipelineRun(final Long id, final String owner) {
-        final PipelineRun pipelineRun = new PipelineRun();
+        final PipelineRun pipelineRun = getPipelineRun();
         pipelineRun.setId(id);
         pipelineRun.setOwner(owner);
         pipelineRun.setName(TEST_STRING);
@@ -85,8 +120,12 @@ public final class PipelineCreatorUtils {
         return new PipelineUserVO();
     }
 
+    public static PipelineVO getPipelineVO() {
+        return new PipelineVO();
+    }
+
     public static PipelineVO getPipelineVO(final Long id) {
-        final PipelineVO pipelineVO = new PipelineVO();
+        final PipelineVO pipelineVO = getPipelineVO();
         pipelineVO.setId(ID);
         pipelineVO.setParentFolderId(id);
         return pipelineVO;
@@ -115,7 +154,11 @@ public final class PipelineCreatorUtils {
     }
 
     public static PipelineSourceItemVO getPipelineSourceItemVO() {
-        return new PipelineSourceItemVO();
+        final PipelineSourceItemVO sourceItemVO = new PipelineSourceItemVO();
+        sourceItemVO.setComment(TEST_STRING);
+        sourceItemVO.setLastCommitId(TEST_STRING);
+        sourceItemVO.setPath(TEST_STRING);
+        return sourceItemVO;
     }
 
     public static PipelineSourceItemsVO getPipelineSourceItemsVO() {
@@ -124,6 +167,16 @@ public final class PipelineCreatorUtils {
 
     public static UploadFileMetadata getUploadFileMetadata() {
         return new UploadFileMetadata();
+    }
+
+    public static UploadFileMetadata getUploadFileMetadata(final String fileName,
+                                                           final String fileSize,
+                                                           final String fileType) {
+        final UploadFileMetadata uploadFileMetadata = getUploadFileMetadata();
+        uploadFileMetadata.setFileName(fileName);
+        uploadFileMetadata.setFileSize(fileSize);
+        uploadFileMetadata.setFileType(fileType);
+        return uploadFileMetadata;
     }
 
     public static GenerateFileVO getGenerateFileVO() {
@@ -139,7 +192,17 @@ public final class PipelineCreatorUtils {
     public static DocumentGenerationProperty getDocumentGenerationProperty() {
         final DocumentGenerationProperty property = new DocumentGenerationProperty();
         property.setPipelineId(ID);
+        property.setPropertyName(TEST_STRING);
         return property;
+    }
+
+    public static InstanceOfferParametersVO getInstanceOfferParametersVO() {
+        final InstanceOfferParametersVO instance = new InstanceOfferParametersVO();
+        instance.setInstanceType(TEST_STRING);
+        instance.setInstanceDisk(TEST_INT);
+        instance.setSpot(true);
+        instance.setRegionId(ID);
+        return instance;
     }
 
     public static RunSchedule getRunSchedule() {
