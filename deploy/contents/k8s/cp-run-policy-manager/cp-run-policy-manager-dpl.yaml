@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-run-policy-manager
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-run-policy-manager: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-run-policy-manager: "true"
+      containers:
+        - name: cp-run-policy-manager
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:run-policy-manager-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: [ "/policy-manager/init" ]
+          env:
+            - name: CP_RUN_POLICY_MANAGER_POLL_PERIOD_SEC
+              value: "5"
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          volumeMounts:
+            - mountPath: /root/.kube
+              name: kube-config
+              readOnly: true
+            - mountPath: /policy-manager/logs
+              name: run-policy-manager-logs
+      volumes:
+        - name: kube-config
+          hostPath:
+            path: /root/.kube
+        - name: run-policy-manager-logs
+          hostPath:
+            path: /opt/run-policy-manager/logs
