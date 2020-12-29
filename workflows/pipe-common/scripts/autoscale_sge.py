@@ -1416,7 +1416,6 @@ if __name__ == '__main__':
                 'Logging directory: {logging_directory}\n'
                 'Working directory: {working_directory}\n'
                 'Default hostfile: {default_hostfile}\n'
-                'Shared fs type: {shared_fs_type}\n'
                 '##################################################'
                 .format(pipeline_api=pipeline_api,
                         cloud_provider=cloud_provider,
@@ -1444,8 +1443,7 @@ if __name__ == '__main__':
                         log_verbose=log_verbose,
                         logging_directory=logging_directory,
                         working_directory=working_directory,
-                        default_hostfile=default_hostfile,
-                        shared_fs_type=shared_fs_type))
+                        default_hostfile=default_hostfile))
 
     cmd_executor = CmdExecutor()
 
