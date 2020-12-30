@@ -87,6 +87,7 @@ docker run --rm --env API=$API \
 -v $AWS_CREDS_PATH:/root/.aws \
 -v $WORKSPACE/results:/home/results \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
+--privileged \
 python:2.7-stretch bash -c /home/run_tests.sh
 ```
 
@@ -116,6 +117,7 @@ docker run --rm --env API=$API \
 --env AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
 -v $WORKSPACE/results:/home/results \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
+--privileged \
 python:2.7-stretch bash -c /home/run_tests.sh
 ```
 
@@ -145,5 +147,6 @@ docker run --rm --env API=$API \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/root/gcp-creds.json \
 -v $WORKSPACE/results:/home/results \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
+--privileged \
 python:2.7-stretch bash -c /home/run_tests.sh
 ```
