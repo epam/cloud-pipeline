@@ -145,24 +145,6 @@ function setup_nfs_if_required {
 
 }
 
-function check_cp_cap {
-      _CAP="$1"
-      if [ -z "$_CAP" ]; then
-            return 1
-      fi
-
-      _CAP_VALUE=${!_CAP}
-      if [ -z "$_CAP_VALUE" ]; then
-            return 1
-      fi
-
-      if [ ${_CAP_VALUE,,} == 'true' ] || [ ${_CAP_VALUE,,} == 'yes' ]; then
-            return 0
-      else
-            return 1
-      fi
-}
-
 function cp_cap_publish {
       if [ -z "$cluster_role" ]; then
             return 0
@@ -287,11 +269,6 @@ function cp_cap_init {
                   # Reload env vars, in case they were updated within cap init scripts
                   source "$CP_ENV_FILE_TO_SOURCE"
                   echo "--> Done $_CAP_INIT_SCRIPT"
-            fi
-
-            if [ "$cluster_role" = "master" ] && check_cp_cap "CP_CAP_AUTOSCALE" && check_cp_cap "CP_CAP_SGE"
-            then
-                  nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge.py 1>/dev/null 2>$LOG_DIR/.nohup.sge.autoscale.log &
             fi
       fi
 }

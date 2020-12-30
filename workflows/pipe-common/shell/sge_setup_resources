@@ -70,14 +70,9 @@ fi
 # Setup GPU, RAM, CPU consumable resources for a current node
 #
 _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
+_NODE_GPUS_COUNT="${_NODE_GPUS_COUNT:-0}"
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}
-
-if (( _NODE_GPUS_COUNT > 0 ))
-then
-    pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
-else
-    pipe_log_info "No GPUs found... GridEngine GPU configuration will be skipped" "$_SGE_RESOURCES_SETUP_TASK"
-fi
+pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
 _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / (1024 * 1024)) "G"}')
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM:-ram}
@@ -102,11 +97,7 @@ pipe_log_info "$_NODE_CPU_COUNT CPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
 pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_SETUP_TASK"
 
-if (( _NODE_GPUS_COUNT > 0 ))
-then
-    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT"
-fi
-
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT"
 configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT"
 configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT"
 
