@@ -25,9 +25,7 @@ except ImportError:
 
 import click
 import collections
-import jwt
 import os
-import re
 from boto3 import Session
 from botocore.config import Config as AwsConfig
 from botocore.credentials import RefreshableCredentials
@@ -274,10 +272,12 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 
 
 class RestoreManager(StorageItemManager, AbstractRestoreManager):
+    VERSION_NOT_EXISTS_ERROR = 'Version "%s" doesn\'t exist.'
 
     def __init__(self, bucket, session, region_name=None):
         super(RestoreManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
+        self.listing_manager = bucket.get_list_manager(True)
 
     def restore_version(self, version, exclude=[], include=[], recursive=False):
         client = self._get_client()
@@ -306,17 +306,17 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
 
     def restore_file_version(self, version, bucket, client):
         current_item = self.load_item(bucket, client)
-        if current_item['VersionId'] == version:
-            raise RuntimeError('Version "{}" is already the latest version'.format(version))
+        relative_path = self.bucket.path
+        self._validate_version(current_item, version, relative_path)
         try:
-            client.copy_object(Bucket=bucket, Key=self.bucket.path,
-                               CopySource=dict(Bucket=bucket, Key=self.bucket.path, VersionId=version))
+            client.copy_object(Bucket=bucket, Key=relative_path,
+                               CopySource=dict(Bucket=bucket, Key=relative_path, VersionId=version))
         except ClientError as e:
             error_message = str(e)
             if 'delete marker' in error_message:
                 text = "Cannot restore a delete marker"
             elif 'Invalid version' in error_message:
-                text = 'Version "{}" doesn\'t exist.'.format(version)
+                text = self.VERSION_NOT_EXISTS_ERROR % version
             else:
                 text = error_message
             raise RuntimeError(text)
@@ -376,6 +376,18 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         # flush rest
         if len(restore_us['Objects']):
             client.delete_objects(Bucket=bucket, Delete=restore_us)
+
+    def _validate_version(self, current_item, version, relative_path):
+        if current_item['VersionId'] == version:
+            raise RuntimeError('Version "{}" is already the latest version'.format(version))
+        all_items = self.listing_manager.list_items(relative_path, show_all=True)
+        item_name = relative_path.split(S3BucketOperations.S3_PATH_SEPARATOR)[-1]
+        file_items = [item for item in all_items if item.type == 'File' and item.name == item_name]
+        if not file_items:
+            raise RuntimeError(self.VERSION_NOT_EXISTS_ERROR % version)
+        item = file_items[0]
+        if not any(item.version == version for item in item.versions):
+            raise RuntimeError(self.VERSION_NOT_EXISTS_ERROR % version)
 
 
 class DeleteManager(StorageItemManager, AbstractDeleteManager):
