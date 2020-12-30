@@ -138,7 +138,6 @@ public class SAMLUserDetailsServiceImplTest {
     @Test
     public void testLoadUserBySAMLWithExistingUser() {
         user.setUserName(OLD_USER_NAME);
-        user.setGroups(Stream.of(SAML_ATTRIBUTE_1).collect(Collectors.toList()));
         user.setGroups(Stream.of(SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2).collect(Collectors.toList()));
         when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
         doNothing().when(spyAccessService).validateUserGroupsBlockStatus(any());
