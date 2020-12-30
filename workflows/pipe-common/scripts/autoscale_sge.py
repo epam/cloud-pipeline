@@ -513,7 +513,7 @@ class GridEngineScaleUpHandler:
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
                  instance_image, cmd_template, price_type, region_id, queue, hostlist, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params=''):
+                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, instance_launch_params=None):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -537,6 +537,7 @@ class GridEngineScaleUpHandler:
         :param ge_polling_timeout: Grid Engine polling timeout - in seconds.
         :param instance_family: Instance family for launching additional instance,
                 e.g. c5 means that you can run instances like c5.large, c5.xlarge etc.
+        :param instance_launch_params: Instance launch params dictionary.
         """
         self.executor = cmd_executor
         self.api = api
@@ -556,7 +557,7 @@ class GridEngineScaleUpHandler:
         self.polling_delay = polling_delay
         self.ge_polling_timeout = ge_polling_timeout
         self.instance_family = instance_family
-        self.worker_launch_system_params = worker_launch_system_params
+        self.instance_launch_params = instance_launch_params or {}
 
     def scale_up(self, resource):
         """
@@ -591,7 +592,6 @@ class GridEngineScaleUpHandler:
 
     def _launch_additional_worker(self, instance):
         Logger.info('Launch additional worker.')
-        Logger.info('Pass to worker the next parameters: {}'.format(self.worker_launch_system_params))
         pipe_run_command = 'pipe run --yes --quiet ' \
                            '--instance-disk %s ' \
                            '--instance-type %s ' \
@@ -600,15 +600,16 @@ class GridEngineScaleUpHandler:
                            '--parent-id %s ' \
                            '--price-type %s ' \
                            '--region-id %s ' \
-                           'cluster_role worker ' \
-                           'cluster_role_type additional ' \
                            '%s' \
                            % (self.instance_disk, instance, self.instance_image, self.cmd_template, self.parent_run_id,
-                              self._pipe_cli_price_type(self.price_type), self.region_id, self.worker_launch_system_params)
+                              self._pipe_cli_price_type(self.price_type), self.region_id,
+                              self._parameters_str(self.instance_launch_params))
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker run id is %s.' % run_id)
         return run_id
 
+    def _parameters_str(self, instance_launch_params):
+        return ' '.join('{} {}'.format(key, value) for key, value in instance_launch_params.items())
 
     def _pipe_cli_price_type(self, price_type):
         """
@@ -1301,23 +1302,27 @@ class CloudPipelineAPI:
         raise exceptions[-1]
 
 
-def fetch_worker_launch_system_params(api, master_run_id, queue, hostlist):
+def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     parent_run = api.load_run(master_run_id)
     master_system_params = {param.get('name'): param.get('resolvedValue') for param in parent_run.get('pipelineRunParameters', [])}
     system_launch_params_string = api.retrieve_preference('launch.system.parameters', default_value='[]')
     system_launch_params = json.loads(system_launch_params_string)
-    worker_launch_system_params = 'CP_CAP_SGE false ' \
-                                  'CP_CAP_AUTOSCALE false ' \
-                                  'CP_CAP_AUTOSCALE_WORKERS 0 ' \
-                                  'CP_DISABLE_RUN_ENDPOINTS true ' \
-                                  'CP_CAP_SGE_QUEUE_NAME {queue} ' \
-                                  'CP_CAP_SGE_HOSTLIST_NAME {hostlist}' \
-                                  .format(queue=queue, hostlist=hostlist)
+    launch_params = {}
     for launch_param in system_launch_params:
         param_name = launch_param.get('name')
         if launch_param.get('passToWorkers', False) and param_name in master_system_params:
-            worker_launch_system_params += ' {} {}'.format(param_name, master_system_params.get(param_name))
-    return worker_launch_system_params
+            launch_params[param_name] = str(master_system_params.get(param_name))
+    launch_params.update({
+        'CP_CAP_SGE': 'false',
+        'CP_CAP_AUTOSCALE': 'false',
+        'CP_CAP_AUTOSCALE_WORKERS': '0',
+        'CP_DISABLE_RUN_ENDPOINTS': 'true',
+        'CP_CAP_SGE_QUEUE_NAME': queue,
+        'CP_CAP_SGE_HOSTLIST_NAME': hostlist,
+        'cluster_role': 'worker',
+        'cluster_role_type': 'additional'
+    })
+    return launch_params
 
 
 if __name__ == '__main__':
@@ -1367,7 +1372,7 @@ if __name__ == '__main__':
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(logging_directory, '.autoscaler.%s.pipe.log' % queue))
     api = CloudPipelineAPI(pipe=pipe)
 
-    worker_launch_system_params = fetch_worker_launch_system_params(api, master_run_id, queue, hostlist)
+    instance_launch_params = fetch_instance_launch_params(api, master_run_id, queue, hostlist)
 
     instance_helper = CloudPipelineInstanceHelper(cloud_provider=cloud_provider, region_id=region_id,
                                                   instance_family=instance_family, instance_type=instance_type,
@@ -1394,6 +1399,7 @@ if __name__ == '__main__':
                 'Instance price type: {price_type}\n'
                 'Instance cores: {instance_cores}\n'
                 'Instance free cores: {free_cores}\n'
+                'Instance parameters: {instance_parameters}\n'
                 'Max instance cores: {max_instance_cores}\n'
                 'Max cluster cores: {max_cluster_cores}\n'
                 'Max additional hosts: {additional_hosts}\n'
@@ -1422,6 +1428,7 @@ if __name__ == '__main__':
                         price_type=price_type,
                         instance_cores=instance_cores,
                         free_cores=free_cores,
+                        instance_parameters=instance_launch_params,
                         max_instance_cores=max_instance_cores,
                         max_cluster_cores=max_cluster_cores,
                         additional_hosts=additional_hosts,
@@ -1457,7 +1464,7 @@ if __name__ == '__main__':
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_family=instance_family,
-                                                worker_launch_system_params=worker_launch_system_params)
+                                                instance_launch_params=instance_launch_params)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
