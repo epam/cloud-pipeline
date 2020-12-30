@@ -18,6 +18,7 @@ import logging
 import json
 import math
 from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents
+import jwt
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
@@ -29,6 +30,21 @@ api_token = None
 script_path = None
 
 
+def is_run_id_numerical(run_id):
+    try:
+        int(run_id)
+        return True
+    except ValueError:
+        return False
+
+
+def is_api_logging_enabled():
+    global api_token
+    global api_url
+    global current_run_id
+    return is_run_id_numerical(current_run_id) and api_url and api_token
+
+
 def pipe_log_init(run_id):
     global api_token
     global api_url
@@ -38,7 +54,7 @@ def pipe_log_init(run_id):
     api_url = os.environ["API"]
     api_token = os.environ["API_TOKEN"]
 
-    if not api_url or not api_token:
+    if not is_api_logging_enabled():
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
@@ -48,7 +64,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.log_task_event(NODEUP_TASK,
                               '[{}] {}'.format(current_run_id, message),
                               run_id=current_run_id,
@@ -68,7 +84,7 @@ def pipe_log_warn(message):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.warn('[{}] {}'.format(current_run_id, message),
                     task_name=NODEUP_TASK,
                     run_id=current_run_id,
@@ -248,7 +264,20 @@ def replace_swap(swap_size, init_script):
     return init_script
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
+def replace_docker_images(pre_pull_images, user_data_script):
+    global api_token
+    payload = jwt.decode(api_token, verify=False)
+    if 'sub' in payload:
+        subject = payload['sub']
+        user_data_script = user_data_script \
+            .replace("@PRE_PULL_DOCKERS@", ",".join(pre_pull_images)) \
+            .replace("@API_USER@", subject)
+        return user_data_script
+    else:
+        raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
+
+
+def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size, pre_pull_images=[]):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -258,6 +287,8 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
+        if pre_pull_images:
+            user_data_script = replace_docker_images(pre_pull_images, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string)\
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string)\
                                             .replace('@KUBE_IP@', kube_ip)\
