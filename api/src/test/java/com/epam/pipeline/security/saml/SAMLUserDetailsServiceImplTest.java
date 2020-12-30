@@ -96,6 +96,7 @@ public class SAMLUserDetailsServiceImplTest {
     @Mock
     private UserManager mockUserManager;
 
+    @SuppressWarnings("PMD.UnusedPrivateField")
     @Mock
     private MessageHelper mockMessageHelper;
 
