@@ -32,8 +32,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.opensaml.saml2.core.NameID;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -102,14 +102,14 @@ public class SAMLUserDetailsServiceImplTest {
     @Mock
     private RoleManager mockRoleManager;
 
+    @Spy
+    private final UserAccessService spyAccessService = new UserAccessService(mockUserManager, true);
+
     @InjectMocks
     private SAMLUserDetailsServiceImpl userDetailsService;
 
-    private UserAccessService spyAccessService;
-
     @Before
     public void setUp() {
-        spyAccessService = Mockito.spy(new UserAccessService(mockUserManager, true));
         expectedAttributes = initAttributes();
         user.setAttributes(expectedAttributes);
         user.setGroups(groups);
