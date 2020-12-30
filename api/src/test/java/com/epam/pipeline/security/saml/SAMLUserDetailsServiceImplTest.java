@@ -121,7 +121,6 @@ public class SAMLUserDetailsServiceImplTest {
         final String[] mockAttributesArray = {SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2};
         when(mockCredential.getAttributeAsStringArray(anyString())).thenReturn(mockAttributesArray);
         when(mockCredential.getAttributeAsString(anyString())).thenReturn(SAML_ATTRIBUTES_STRING);
-        when(mockMessageHelper.getMessage(anyString(), any())).thenReturn(TEST_STRING);
     }
 
     @Test
@@ -328,15 +327,13 @@ public class SAMLUserDetailsServiceImplTest {
         user.setUserName(USER_NAME);
         when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
         final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false);
-        when(mockUserManager.loadGroupBlockingStatus(groups))
-                .thenReturn(Collections.singletonList(validGroupStatus));
+        when(mockUserManager.loadGroupBlockingStatus(groups)).thenReturn(Collections.singletonList(validGroupStatus));
     }
 
     private void setEmptyGroupsStatusListForUser() {
         user.setUserName(USER_NAME);
         when(mockUserManager.loadUserByName(anyString())).thenReturn(user);
-        when(mockUserManager.loadGroupBlockingStatus(groups))
-                .thenReturn(Collections.emptyList());
+        when(mockUserManager.loadGroupBlockingStatus(groups)).thenReturn(Collections.emptyList());
     }
 
     private void switchRegisterStrategyTo(final SamlUserRegisterStrategy samlUserRegisterStrategy) {
