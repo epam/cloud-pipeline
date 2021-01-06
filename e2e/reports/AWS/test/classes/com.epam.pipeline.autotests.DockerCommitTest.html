@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">35m4.89s</div>
+<div class="counter">44m51.59s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">91%</div>
+<div class="percent">90%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,15 +73,15 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="validateLaunchSpecificVersion - EPMCMBIBPC-1409"></a>
-<h3 class="failures">validateLaunchSpecificVersion - EPMCMBIBPC-1409</h3>
+<a name="validateCommitDockerImageWithTag - EPMCMBIBPC-1408"></a>
+<h3 class="failures">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</h3>
 <span class="code">
-<pre>Element not found {e2e-endpoints:test_tag run id}
+<pre>Element not found {e2e-endpoints:latest run id}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1609819840088.28.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1609819840088.28.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1609904104948.21.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1609904104948.21.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using e2e-endpoints:test_tag run id
+Caused by: NoSuchElementException: Cannot locate an element using e2e-endpoints:latest run id
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -93,16 +93,16 @@ Caused by: NoSuchElementException: Cannot locate an element using e2e-endpoints:
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.should(Unknown Source)
 	at com.epam.pipeline.autotests.utils.Utils.findRunId(Utils.java:231)
-	at com.epam.pipeline.autotests.utils.Utils.getToolRunId(Utils.java:209)
-	at com.epam.pipeline.autotests.ao.ToolVersions.runVersionWithDefaultSettings(ToolVersions.java:181)
-	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateLaunchSpecificVersion$27(DockerCommitTest.java:369)
+	at com.epam.pipeline.autotests.utils.Utils.getToolRunId(Utils.java:185)
+	at com.epam.pipeline.autotests.ao.ToolTab.run(ToolTab.java:76)
+	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateCommitDockerImageWithTag$23(DockerCommitTest.java:334)
 	at com.epam.pipeline.autotests.ao.ToolGroup.tool(ToolGroup.java:61)
 	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$3(ToolsPage.java:111)
 	at com.epam.pipeline.autotests.ao.Registry.group(Registry.java:55)
 	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$perform$4(ToolsPage.java:110)
 	at com.epam.pipeline.autotests.ao.ToolsPage.registry(ToolsPage.java:133)
 	at com.epam.pipeline.autotests.ao.ToolsPage.perform(ToolsPage.java:109)
-	at com.epam.pipeline.autotests.DockerCommitTest.validateLaunchSpecificVersion(DockerCommitTest.java:366)
+	at com.epam.pipeline.autotests.DockerCommitTest.validateCommitDockerImageWithTag(DockerCommitTest.java:327)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -116,10 +116,10 @@ Caused by: NoSuchElementException: Cannot locate an element using e2e-endpoints:
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using e2e-endpoints:test_tag run id
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using e2e-endpoints:latest run id
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '049bb8dff425', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a646bdf33964', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: driver.version: RemoteWebDriver
 	at org.openqa.selenium.By.findElement(By.java:162)
 	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
@@ -143,62 +143,62 @@ Driver info: driver.version: RemoteWebDriver
 </thead>
 <tr>
 <td class="success">checkListOfRegistry - EPMCMBIBPC-693</td>
-<td>2.887s</td>
+<td>2.885s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">commitDockerValidation - EPMCMBIBPC-694</td>
-<td>2m2.72s</td>
+<td>1m52.98s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">listOfGroupInRegistry - EPMCMBIBPC-1350</td>
-<td>2.887s</td>
+<td>2.842s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pushDockerFormValidation - EPMCMBIBPC-692</td>
-<td>5m43.88s</td>
+<td>6m13.48s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
-<td>2m13.23s</td>
-<td class="success">passed</td>
+<td class="failures">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
+<td>1m29.62s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDocker - EPMCMBIBPC-695</td>
-<td>6m45.72s</td>
+<td>6m55.53s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerInGroup - EPMCMBIBPC-1353</td>
-<td>1m59.18s</td>
+<td>7m43.15s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352</td>
-<td>8m26.69s</td>
+<td>9m17.19s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</td>
-<td>23.525s</td>
+<td>23.561s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
-<td>2m51.71s</td>
+<td>8m2.35s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validateLaunchSpecificVersion - EPMCMBIBPC-1409</td>
-<td>1m29.25s</td>
-<td class="failures">failed</td>
+<td class="skipped">validateLaunchSpecificVersion</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
-<td>3m3.22s</td>
+<td>2m48.01s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -206,23 +206,21 @@ Driver info: driver.version: RemoteWebDriver
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 53319 from [53319]
-Returns latest run with runId 53319 from [53319]
-Returns latest run with runId 53319 from [53319]
-Returns latest run with runId 53319 from [53319]
-Returns latest run with runId 53320 from [53319, 53320]
-Returns latest run with runId 53320 from [53319, 53320]
-Returns latest run with runId 53321 from [53319, 53320, 53321]
-Returns latest run with runId 53322 from [53319, 53320, 53321, 53322]
-Returns latest run with runId 53323 from [53319, 53320, 53321, 53322, 53323]
-Returns latest run with runId 53323 from [53319, 53320, 53321, 53322, 53323]
-Returns latest run with runId 53324 from [53319, 53320, 53321, 53322, 53323, 53324]
-Returns latest run with runId 53324 from [53319, 53320, 53321, 53322, 53323, 53324]
-Returns latest run with runId 53324 from [53319, 53320, 53321, 53322, 53323, 53324]
-Returns latest run with runId 53325 from [53319, 53320, 53321, 53322, 53323, 53324, 53325]
-Returns latest run with runId 53325 from [53319, 53320, 53321, 53322, 53323, 53324, 53325]
-Returns latest run with runId 53326 from [53319, 53320, 53321, 53322, 53323, 53324, 53325, 53326]
-Returns latest run with runId 53326 from [53319, 53320, 53321, 53322, 53323, 53324, 53325, 53326]
+<pre>Returns latest run with runId 53436 from [53436]
+Returns latest run with runId 53436 from [53436]
+Returns latest run with runId 53436 from [53436]
+Returns latest run with runId 53436 from [53436]
+Returns latest run with runId 53437 from [53436, 53437]
+Returns latest run with runId 53437 from [53436, 53437]
+Returns latest run with runId 53438 from [53436, 53437, 53438]
+Returns latest run with runId 53439 from [53436, 53437, 53438, 53439]
+Returns latest run with runId 53440 from [53436, 53437, 53438, 53439, 53440]
+Returns latest run with runId 53440 from [53436, 53437, 53438, 53439, 53440]
+Returns latest run with runId 53441 from [53436, 53437, 53438, 53439, 53440, 53441]
+Returns latest run with runId 53441 from [53436, 53437, 53438, 53439, 53440, 53441]
+Returns latest run with runId 53441 from [53436, 53437, 53438, 53439, 53440, 53441]
+Returns latest run with runId 53442 from [53436, 53437, 53438, 53439, 53440, 53441, 53442]
+Returns latest run with runId 53442 from [53436, 53437, 53438, 53439, 53440, 53441, 53442]
 </pre>
 </span>
 </div>
@@ -234,7 +232,7 @@ Returns latest run with runId 53326 from [53319, 53320, 53321, 53322, 53323, 533
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 5, 2021 5:52:21 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 6, 2021 3:24:59 PM</p>
 </div>
 </div>
 </body>
