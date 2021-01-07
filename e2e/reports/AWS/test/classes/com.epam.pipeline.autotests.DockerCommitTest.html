@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">44m51.59s</div>
+<div class="counter">41m21.43s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">90%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,77 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="validateCommitDockerImageWithTag - EPMCMBIBPC-1408"></a>
-<h3 class="failures">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</h3>
-<span class="code">
-<pre>Element not found {e2e-endpoints:latest run id}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1609904104948.21.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1609904104948.21.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using e2e-endpoints:latest run id
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.utils.Utils.findRunId(Utils.java:231)
-	at com.epam.pipeline.autotests.utils.Utils.getToolRunId(Utils.java:185)
-	at com.epam.pipeline.autotests.ao.ToolTab.run(ToolTab.java:76)
-	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateCommitDockerImageWithTag$23(DockerCommitTest.java:334)
-	at com.epam.pipeline.autotests.ao.ToolGroup.tool(ToolGroup.java:61)
-	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$3(ToolsPage.java:111)
-	at com.epam.pipeline.autotests.ao.Registry.group(Registry.java:55)
-	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$perform$4(ToolsPage.java:110)
-	at com.epam.pipeline.autotests.ao.ToolsPage.registry(ToolsPage.java:133)
-	at com.epam.pipeline.autotests.ao.ToolsPage.perform(ToolsPage.java:109)
-	at com.epam.pipeline.autotests.DockerCommitTest.validateCommitDockerImageWithTag(DockerCommitTest.java:327)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using e2e-endpoints:latest run id
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'a646bdf33964', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: RemoteWebDriver
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 31 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -143,84 +79,88 @@ Driver info: driver.version: RemoteWebDriver
 </thead>
 <tr>
 <td class="success">checkListOfRegistry - EPMCMBIBPC-693</td>
-<td>2.885s</td>
+<td>2.863s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">commitDockerValidation - EPMCMBIBPC-694</td>
-<td>1m52.98s</td>
+<td>2m2.58s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">listOfGroupInRegistry - EPMCMBIBPC-1350</td>
-<td>2.842s</td>
+<td>2.914s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pushDockerFormValidation - EPMCMBIBPC-692</td>
-<td>6m13.48s</td>
+<td>7m13.93s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
-<td>1m29.62s</td>
-<td class="failures">failed</td>
+<td class="success">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
+<td>2m23.38s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDocker - EPMCMBIBPC-695</td>
-<td>6m55.53s</td>
+<td>7m10.48s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerInGroup - EPMCMBIBPC-1353</td>
-<td>7m43.15s</td>
+<td>7m28.22s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352</td>
-<td>9m17.19s</td>
+<td>8m56.61s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</td>
-<td>23.561s</td>
+<td>24.106s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
-<td>8m2.35s</td>
+<td>2m37.47s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateLaunchSpecificVersion</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateLaunchSpecificVersion - EPMCMBIBPC-1409</td>
+<td>25.937s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
-<td>2m48.01s</td>
+<td>2m32.95s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 53436 from [53436]
-Returns latest run with runId 53436 from [53436]
-Returns latest run with runId 53436 from [53436]
-Returns latest run with runId 53436 from [53436]
-Returns latest run with runId 53437 from [53436, 53437]
-Returns latest run with runId 53437 from [53436, 53437]
-Returns latest run with runId 53438 from [53436, 53437, 53438]
-Returns latest run with runId 53439 from [53436, 53437, 53438, 53439]
-Returns latest run with runId 53440 from [53436, 53437, 53438, 53439, 53440]
-Returns latest run with runId 53440 from [53436, 53437, 53438, 53439, 53440]
-Returns latest run with runId 53441 from [53436, 53437, 53438, 53439, 53440, 53441]
-Returns latest run with runId 53441 from [53436, 53437, 53438, 53439, 53440, 53441]
-Returns latest run with runId 53441 from [53436, 53437, 53438, 53439, 53440, 53441]
-Returns latest run with runId 53442 from [53436, 53437, 53438, 53439, 53440, 53441, 53442]
-Returns latest run with runId 53442 from [53436, 53437, 53438, 53439, 53440, 53441, 53442]
+<pre>Returns latest run with runId 53541 from [53541]
+Returns latest run with runId 53541 from [53541]
+Returns latest run with runId 53541 from [53541]
+Returns latest run with runId 53541 from [53541]
+Returns latest run with runId 53542 from [53541, 53542]
+Returns latest run with runId 53542 from [53541, 53542]
+Returns latest run with runId 53543 from [53541, 53542, 53543]
+Returns latest run with runId 53544 from [53541, 53542, 53543, 53544]
+Returns latest run with runId 53545 from [53541, 53542, 53543, 53544, 53545]
+Returns latest run with runId 53545 from [53541, 53542, 53543, 53544, 53545]
+Returns latest run with runId 53546 from [53541, 53542, 53543, 53544, 53545, 53546]
+Returns latest run with runId 53546 from [53541, 53542, 53543, 53544, 53545, 53546]
+Returns latest run with runId 53546 from [53541, 53542, 53543, 53544, 53545, 53546]
+Returns latest run with runId 53547 from [53541, 53542, 53543, 53544, 53545, 53546, 53547]
+Returns latest run with runId 53547 from [53541, 53542, 53543, 53544, 53545, 53546, 53547]
+Returns latest run with runId 53548 from [53541, 53542, 53543, 53544, 53545, 53546, 53547, 53548]
+Returns latest run with runId 53548 from [53541, 53542, 53543, 53544, 53545, 53546, 53547, 53548]
+Returns latest run with runId 53549 from [53541, 53542, 53543, 53544, 53545, 53546, 53547, 53548, 53549]
+Returns latest run with runId 53549 from [53541, 53542, 53543, 53544, 53545, 53546, 53547, 53548, 53549]
 </pre>
 </span>
 </div>
@@ -232,7 +172,7 @@ Returns latest run with runId 53442 from [53436, 53437, 53438, 53439, 53440, 534
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 6, 2021 3:24:59 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 7, 2021 3:20:37 PM</p>
 </div>
 </div>
 </body>
