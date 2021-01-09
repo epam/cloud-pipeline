@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">6</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">43m6.28s</div>
+<div class="counter">18m39.53s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">83%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,46 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696"></a>
+<h3 class="failures">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</h3>
+<span class="code">
+<pre>java.lang.StringIndexOutOfBoundsException: String index out of range: 10
+	at java.lang.String.charAt(String.java:658)
+	at com.epam.pipeline.autotests.utils.Utils.sendKeysByChars(Utils.java:155)
+	at com.epam.pipeline.autotests.ao.CommitPopup.setName(CommitPopup.java:92)
+	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateStopPipelineFlagWorksProperly$12(DockerCommitTest.java:214)
+	at com.epam.pipeline.autotests.ao.LogAO.commit(LogAO.java:130)
+	at com.epam.pipeline.autotests.DockerCommitTest.validateStopPipelineFlagWorksProperly(DockerCommitTest.java:211)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,88 +112,76 @@
 </thead>
 <tr>
 <td class="success">checkListOfRegistry - EPMCMBIBPC-693</td>
-<td>2.897s</td>
+<td>2.972s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">commitDockerValidation - EPMCMBIBPC-694</td>
-<td>2m12.71s</td>
+<td>2m12.45s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">listOfGroupInRegistry - EPMCMBIBPC-1350</td>
-<td>2.949s</td>
+<td>2.874s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pushDockerFormValidation - EPMCMBIBPC-692</td>
-<td>7m18.92s</td>
+<td>6m33.72s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
-<td>2m18.63s</td>
-<td class="success">passed</td>
+<td class="skipped">validateCommitDockerImageWithTag</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDocker - EPMCMBIBPC-695</td>
-<td>8m20.37s</td>
+<td>8m26.72s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateCommittedDockerInGroup - EPMCMBIBPC-1353</td>
-<td>7m48.81s</td>
-<td class="success">passed</td>
+<td class="skipped">validateCommittedDockerInGroup</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352</td>
-<td>8m56.72s</td>
-<td class="success">passed</td>
+<td class="skipped">validateCommittedDockerInPersonalGroup</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</td>
-<td>23.624s</td>
-<td class="success">passed</td>
+<td class="skipped">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
-<td>2m21.86s</td>
-<td class="success">passed</td>
+<td class="skipped">validateDeleteRuntimeFilesFlagWorksProperly</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateLaunchSpecificVersion - EPMCMBIBPC-1409</td>
-<td>25.931s</td>
-<td class="success">passed</td>
+<td class="skipped">validateLaunchSpecificVersion</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
-<td>2m52.86s</td>
-<td class="success">passed</td>
+<td class="failures">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
+<td>1m20.80s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 53648 from [53648]
-Returns latest run with runId 53648 from [53648]
-Returns latest run with runId 53648 from [53648]
-Returns latest run with runId 53648 from [53648]
-Returns latest run with runId 53649 from [53648, 53649]
-Returns latest run with runId 53649 from [53648, 53649]
-Returns latest run with runId 53650 from [53648, 53649, 53650]
-Returns latest run with runId 53651 from [53648, 53649, 53650, 53651]
-Returns latest run with runId 53652 from [53648, 53649, 53650, 53651, 53652]
-Returns latest run with runId 53652 from [53648, 53649, 53650, 53651, 53652]
-Returns latest run with runId 53653 from [53648, 53649, 53650, 53651, 53652, 53653]
-Returns latest run with runId 53653 from [53648, 53649, 53650, 53651, 53652, 53653]
-Returns latest run with runId 53653 from [53648, 53649, 53650, 53651, 53652, 53653]
-Returns latest run with runId 53654 from [53648, 53649, 53650, 53651, 53652, 53653, 53654]
-Returns latest run with runId 53654 from [53648, 53649, 53650, 53651, 53652, 53653, 53654]
-Returns latest run with runId 53655 from [53648, 53649, 53650, 53651, 53652, 53653, 53654, 53655]
-Returns latest run with runId 53655 from [53648, 53649, 53650, 53651, 53652, 53653, 53654, 53655]
-Returns latest run with runId 53656 from [53648, 53649, 53650, 53651, 53652, 53653, 53654, 53655, 53656]
-Returns latest run with runId 53656 from [53648, 53649, 53650, 53651, 53652, 53653, 53654, 53655, 53656]
+<pre>Returns latest run with runId 53776 from [53776]
+Returns latest run with runId 53776 from [53776]
+Returns latest run with runId 53776 from [53776]
+Returns latest run with runId 53776 from [53776]
+Returns latest run with runId 53777 from [53776, 53777]
+Returns latest run with runId 53777 from [53776, 53777]
+Returns latest run with runId 53778 from [53776, 53777, 53778]
 </pre>
 </span>
 </div>
@@ -172,7 +193,7 @@ Returns latest run with runId 53656 from [53648, 53649, 53650, 53651, 53652, 536
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 8, 2021 7:39:58 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 9, 2021 6:27:09 PM</p>
 </div>
 </div>
 </body>
