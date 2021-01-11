@@ -1,6 +1,8 @@
 import os
 from datetime import datetime
 
+import pytest
+
 from ..utils import as_literal, as_size, execute, mkdir
 
 root_path = os.getcwd()
@@ -19,6 +21,26 @@ def pytest_addoption(parser):
     parser.addoption('--local', help='Local testing directory path.')
     parser.addoption('--mount', help='Mount testing directory path.')
     parser.addoption('--sizes', help='File sizes to perform tests for.')
+
+
+@pytest.fixture(scope='session')
+def session_mount_path(request):
+    session = request.node
+    return _get_mount_path(config=session.config)
+
+
+@pytest.fixture(scope='session')
+def session_local_path(request):
+    session = request.node
+    return _get_local_path(config=session.config)
+
+
+@pytest.fixture(scope='module', autouse=True)
+def teardown_module(session_mount_path, session_local_path):
+    yield
+    from pyfs import rm
+    rm(session_mount_path, under=True, recursive=True, force=True)
+    rm(session_local_path, under=True, recursive=True, force=True)
 
 
 def pytest_generate_tests(metafunc):
@@ -44,8 +66,8 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_sessionstart(session):
-    local_path = _get_local_path(config=session.config)
-    mount_path = _get_mount_path(config=session.config)
+    session.config.local_path = local_path = _get_local_path(config=session.config)
+    session.config.mount_path = mount_path = _get_mount_path(config=session.config)
     sizes = _get_sizes(config=session.config)
 
     api = os.environ['API']
@@ -181,8 +203,8 @@ def pytest_sessionfinish(session, exitstatus):
     logs_path = os.path.join(root_logs_path, session.config.storage_name)
     finish_log_path = os.path.join(logs_path, 'finish.log')
     execute(log_path=finish_log_path, command="""
-    if [ -d "{local_path}" ]; then rm -r '{local_path}'/*; fi
-    if [ -f "{source_path}" ]; then rm {source_path}; fi
+    if [ -d "{local_path}" ]; then rm -rf '{local_path}'/*; fi
+    if [ -f "{source_path}" ]; then rm -f {source_path}; fi
     pipe storage umount '{mount_path}'
     pipe storage delete -y -c -n '{storage_name}'
     """.format(storage_name=session.config.storage_name,

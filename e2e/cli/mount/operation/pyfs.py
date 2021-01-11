@@ -2,17 +2,16 @@ from ..utils import execute
 
 
 def mkdir(folder_path, recursive=False):
-    if recursive:
-        execute('mkdir -p "%s"' % folder_path)
-    else:
-        execute('mkdir "%s"' % folder_path)
+    execute('mkdir ' +
+            ('-p ' if recursive else ' ') +
+            ('"%s"' % folder_path))
 
 
-def rm(item_path, recursive=False):
-    if recursive:
-        execute('rm -r "%s"' % item_path)
-    else:
-        execute('rm "%s"' % item_path)
+def rm(item_path, recursive=False, force=False, under=False):
+    execute('rm ' +
+            ('-r ' if recursive else ' ') +
+            ('-f ' if force else ' ') +
+            (('"%s"' % item_path) if not under else ('"%s"/*' % item_path)))
 
 
 def touch(file_path):

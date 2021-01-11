@@ -5,9 +5,9 @@ import pytest
 from pyfs import mkdir, rm, touch, mv
 
 
-mv_test_data = [
+operation_config = [
     {
-        'name': 'file',
+        'name': 'mv file',
         'from': 'file-old',
         'to': 'file-new',
         'before': {
@@ -18,7 +18,7 @@ mv_test_data = [
         }
     },
     {
-        'name': 'file from folder to root',
+        'name': 'mv file from folder to root',
         'from': 'folder/file-old',
         'to': 'file-new',
         'before': {
@@ -32,7 +32,7 @@ mv_test_data = [
         }
     },
     {
-        'name': 'file from root to folder',
+        'name': 'mv file from root to folder',
         'from': 'file-old',
         'to': 'folder/file-new',
         'before': {
@@ -46,7 +46,7 @@ mv_test_data = [
         }
     },
     {
-        'name': 'file from folder to folder',
+        'name': 'mv file from folder to folder',
         'from': 'folder-old/file-old',
         'to': 'folder-new/file-new',
         'before': {
@@ -63,7 +63,7 @@ mv_test_data = [
         }
     },
     {
-        'name': 'file from folder to subfolder',
+        'name': 'mv file from folder to subfolder',
         'from': 'folder/file-old',
         'to': 'folder/subfolder/file-new',
         'before': {
@@ -81,7 +81,7 @@ mv_test_data = [
         }
     },
     {
-        'name': 'file from subfolder to folder',
+        'name': 'mv file from subfolder to folder',
         'from': 'folder/subfolder/file-old',
         'to': 'folder/file-new',
         'before': {
@@ -97,30 +97,12 @@ mv_test_data = [
                 'file-new': ''
             }
         }
-    },
-    {
-        'name': 'subfolder with files from folder to root',
-        'from': 'folder/subfolder-old',
-        'to': 'subfolder-new',
-        'before': {
-            'folder': {
-                'subfolder-old': {
-                    'file': ''
-                }
-            }
-        },
-        'after': {
-            'folder': {},
-            'subfolder-new': {
-                'file': ''
-            }
-        }
     }, {
-        'name': 'subfolder with files from root to folder',
-        'from': 'subfolder-old',
+        'name': 'mv folder with files from root to folder',
+        'from': 'folder-old',
         'to': 'folder/subfolder-new',
         'before': {
-            'subfolder-old': {
+            'folder-old': {
                 'file': ''
             },
             'folder': {}
@@ -132,21 +114,55 @@ mv_test_data = [
                 }
             },
         }
-    }, {
-        'name': 'subfolder with files from folder to folder',
-        'from': 'folder-old/subfolder-old',
-        'to': 'folder-new/subfolder-new',
+    },
+    {
+        'name': 'mv folder with files from folder to root',
+        'from': 'folder/subfolder-old',
+        'to': 'folder-new',
         'before': {
-            'folder-old': {
+            'folder': {
+                'subfolder-old': {
+                    'file': ''
+                }
+            }
+        },
+        'after': {
+            'folder': {},
+            'folder-new': {
+                'file': ''
+            }
+        }
+    }, {
+        'name': 'mv subfolder from folder to folder',
+        'from': 'folder-1/subfolder-old',
+        'to': 'folder-2/subfolder-new',
+        'before': {
+            'folder-1': {
+                'subfolder-old': {}
+            },
+            'folder-2': {}
+        },
+        'after': {
+            'folder-1': {},
+            'folder-2': {
+                'subfolder-new': {}
+            }
+        }
+    }, {
+        'name': 'mv subfolder with files from folder to folder',
+        'from': 'folder-1/subfolder-old',
+        'to': 'folder-2/subfolder-new',
+        'before': {
+            'folder-1': {
                 'subfolder-old': {
                     'file': ''
                 }
             },
-            'folder-new': {}
+            'folder-2': {}
         },
         'after': {
-            'folder-old': {},
-            'folder-new': {
+            'folder-1': {},
+            'folder-2': {
                 'subfolder-new': {
                     'file': ''
                 }
@@ -156,12 +172,17 @@ mv_test_data = [
 ]
 
 
-@pytest.mark.parametrize('config', mv_test_data, ids=lambda a: a['name'])
+@pytest.fixture(scope='function', autouse=True)
+def teardown_function(session_mount_path):
+    yield
+    rm(session_mount_path, under=True, recursive=True, force=True)
+
+
+@pytest.mark.parametrize('config', operation_config, ids=lambda config: config['name'])
 def test_mv(mount_path, config):
     create_dirs(mount_path, config['before'])
     move(mount_path, config['from'], config['to'])
     assert collect_dirs(mount_path) == config['after']
-    clean_dirs(mount_path, config['after'])
 
 
 def create_dirs(path, dirs):
@@ -187,8 +208,3 @@ def collect_dirs(path):
         if os.path.isdir(item_path):
             dirs[item] = collect_dirs(item_path)
     return dirs
-
-
-def clean_dirs(path, dirs):
-    for k, v in dirs.items():
-        rm(os.path.join(path, k), recursive=True)

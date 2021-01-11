@@ -22,6 +22,7 @@ class CmdExecutor:
             with open(log_path, 'w') as log_file:
                 log_file.write('Executing the following command: %s' % command)
                 log_file.write(out)
+                log_file.write('\n')
                 log_file.write(err)
         if exit_code != 0:
             raise RuntimeError('Command \'%s\' execution has failed. '
@@ -35,11 +36,8 @@ class CmdExecutor:
         return [element for element in elements if element.strip()]
 
 
-def execute(command, container=None, log_path=None):
-    if container:
-        return execute('docker exec %s bash -c "%s"' % (container, command), log_path=log_path)
-    else:
-        return CmdExecutor().execute(command, log_path=log_path).strip()
+def execute(command, log_path=None):
+    return CmdExecutor().execute(command, log_path=log_path).strip()
 
 
 def as_literal(size, units=None):
