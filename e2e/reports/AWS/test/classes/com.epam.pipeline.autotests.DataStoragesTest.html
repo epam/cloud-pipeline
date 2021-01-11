@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">15</div>
+<div class="counter">16</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">19</div>
+<div class="counter">20</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">20m49.55s</div>
+<div class="counter">21m31.42s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">11%</div>
+<div class="percent">0%</div>
 <p>successful</p>
 </div>
 </td>
@@ -70,15 +70,15 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="createDataStorageAndValidate - EPMCMBIBPC-448"></a>
-<h3 class="failures">createDataStorageAndValidate - EPMCMBIBPC-448</h3>
+<a name="clickOnRefreshButton - EPMCMBIBPC-475"></a>
+<h3 class="failures">clickOnRefreshButton - EPMCMBIBPC-475</h3>
 <span class="code">
-<pre>Element not found {by text: epmcmbi-test-storage-4606528940702194383}
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'refreshing-test-storage-4604997862382742739')]]}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159059593.10.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159059593.10.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610331810279.15.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610331810279.15.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '
+Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'refreshing-test-storage-4604997862382742739')]]
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -88,10 +88,10 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.validateStorage(PipelinesLibraryAO.java:243)
-	at com.epam.pipeline.autotests.DataStoragesTest.createDataStorageAndValidate(DataStoragesTest.java:117)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:238)
+	at com.epam.pipeline.autotests.DataStoragesTest.clickOnRefreshButton(DataStoragesTest.java:96)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -105,20 +105,61 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '	
- ', '    ')) = &quot;epmcmbi-test-storage-4606528940702194383&quot;]/parent::*&quot;}
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'refreshing-test-storage-4604997862382742739')]]
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: driver.version: unknown
+	at org.openqa.selenium.By.findElement(By.java:162)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 23 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="createAndUnregisterBucket - EPMCMBIBPC-476"></a>
+<h3 class="failures">createAndUnregisterBucket - EPMCMBIBPC-476</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-pipelines}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610331890628.16.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610331890628.16.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
+	at com.epam.pipeline.autotests.DataStoragesTest.navigateToLibrary(DataStoragesTest.java:591)
+	at com.epam.pipeline.autotests.DataStoragesTest.createAndUnregisterBucket(DataStoragesTest.java:405)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
-*** Element info: {Using=xpath, value=.//*/text()[normalize-space(translate(string(.), '	
- ', '    ')) = &quot;epmcmbi-test-storage-4606528940702194383&quot;]/parent::*}
-	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -130,14 +171,75 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
 	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
 	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
-	at org.openqa.selenium.remote.RemoteWebElement.findElementByXPath(RemoteWebElement.java:255)
-	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 23 more
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="createDataStorageAndValidate - EPMCMBIBPC-448"></a>
+<h3 class="failures">createDataStorageAndValidate - EPMCMBIBPC-448</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-pipelines}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610331971020.17.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610331971020.17.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
+	at com.epam.pipeline.autotests.DataStoragesTest.navigateToLibrary(DataStoragesTest.java:591)
+	at com.epam.pipeline.autotests.DataStoragesTest.createDataStorageAndValidate(DataStoragesTest.java:115)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
 </pre>
 </span>
 </div>
@@ -147,10 +249,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159139980.11.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159139980.11.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332051305.18.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332051305.18.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -172,15 +274,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -209,10 +311,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159220342.12.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159220342.12.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332131648.19.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332131648.19.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -234,15 +336,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -271,10 +373,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159300765.13.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159300765.13.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332212051.20.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332212051.20.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -296,15 +398,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -333,10 +435,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159381081.14.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159381081.14.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332292404.21.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332292404.21.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -358,15 +460,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -395,10 +497,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159461459.15.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159461459.15.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332372822.22.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332372822.22.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -420,15 +522,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -457,10 +559,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159541711.16.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159541711.16.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332453091.23.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332453091.23.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -482,77 +584,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 18 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validateCancelButtonForCreateExistingBucketPopUp - EPMCMBIBPC-488"></a>
-<h3 class="failures">validateCancelButtonForCreateExistingBucketPopUp - EPMCMBIBPC-488</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-pipelines}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610160184436.24.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610160184436.24.html
-Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
-	at com.epam.pipeline.autotests.DataStoragesTest.navigateToLibrary(DataStoragesTest.java:591)
-	at com.epam.pipeline.autotests.DataStoragesTest.validateCancelButtonForCreateExistingBucketPopUp(DataStoragesTest.java:532)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -581,10 +621,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159621979.17.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159621979.17.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332533429.24.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332533429.24.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -606,15 +646,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -643,10 +683,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159702243.18.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159702243.18.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332613714.25.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332613714.25.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -668,15 +708,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -705,10 +745,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159782634.19.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159782634.19.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332694003.26.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332694003.26.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -730,15 +770,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -767,10 +807,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159863016.20.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159863016.20.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332774360.27.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332774360.27.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -792,15 +832,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -829,10 +869,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610159943403.21.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610159943403.21.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332854673.28.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332854673.28.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -854,15 +894,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -891,10 +931,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610160023803.22.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610160023803.22.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610332935094.29.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610332935094.29.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -916,15 +956,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -953,10 +993,10 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610160104119.23.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610160104119.23.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610333015452.30.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610333015452.30.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -978,15 +1018,15 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle8&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle3&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '56d82fa6b090', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a15d8911af0a', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0ec629718b05793ea3eaf23f5021381e
+Session ID: ff956fc21fce14cd88170cd3ebc9b277
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -1051,18 +1091,18 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">clickOnRefreshButton - EPMCMBIBPC-475</td>
-<td>24.831s</td>
-<td class="success">passed</td>
+<td class="failures">clickOnRefreshButton - EPMCMBIBPC-475</td>
+<td>1m26.31s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">createAndUnregisterBucket - EPMCMBIBPC-476</td>
-<td>14.291s</td>
-<td class="success">passed</td>
+<td class="failures">createAndUnregisterBucket - EPMCMBIBPC-476</td>
+<td>1m20.33s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">createDataStorageAndValidate - EPMCMBIBPC-448</td>
-<td>1m25.61s</td>
+<td>1m20.40s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -1097,17 +1137,17 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 </tr>
 <tr>
 <td class="failures">deleteSeveralFiles - EPMCMBIBPC-462</td>
-<td>1m20.40s</td>
+<td>1m20.27s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">deleteSeveralFolders - EPMCMBIBPC-461</td>
-<td>1m20.36s</td>
+<td>1m20.35s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">downloadFileAndValidate - EPMCMBIBPC-457</td>
-<td>1m20.41s</td>
+<td>1m20.42s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -1117,7 +1157,7 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 </tr>
 <tr>
 <td class="failures">editFolderName - EPMCMBIBPC-458</td>
-<td>1m20.36s</td>
+<td>1m20.43s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -1142,42 +1182,42 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 </tr>
 <tr>
 <td class="failures">validateCancelButtonForCreateBucketPopUp - EPMCMBIBPC-487</td>
-<td>1m20.23s</td>
+<td>1m20.27s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">validateCancelButtonForCreateExistingBucketPopUp - EPMCMBIBPC-488</td>
-<td>1m20.32s</td>
-<td class="failures">failed</td>
+<td class="skipped">validateCancelButtonForCreateExistingBucketPopUp</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="failures">validateCancelButtonForCreateFolderPopUp - EPMCMBIBPC-486</td>
-<td>1m20.30s</td>
+<td>1m20.35s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">validateCancelButtonForDeleteBucketPopUp - EPMCMBIBPC-489</td>
-<td>1m20.25s</td>
+<td>1m20.26s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">validateCancelButtonForDeleteFilePopUp - EPMCMBIBPC-485</td>
-<td>1m20.42s</td>
+<td>1m20.30s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">validateCancelButtonForDeleteFolderPopUp - EPMCMBIBPC-484</td>
-<td>1m20.37s</td>
+<td>1m20.35s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">validateCancelButtonForEditFilePopUp - EPMCMBIBPC-482</td>
-<td>1m20.36s</td>
+<td>1m20.32s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">validateCancelButtonForEditFolderPopUp - EPMCMBIBPC-483</td>
-<td>1m20.39s</td>
+<td>1m20.41s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -1197,7 +1237,7 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 </tr>
 <tr>
 <td class="failures">validateSelectPageButton - EPMCMBIBPC-467</td>
-<td>1m20.32s</td>
+<td>1m20.34s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -1210,7 +1250,7 @@ Session ID: 0ec629718b05793ea3eaf23f5021381e
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 9, 2021 6:27:09 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 11, 2021 7:38:43 PM</p>
 </div>
 </div>
 </body>

@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">13m16.82s</div>
+<div class="counter">15m25.16s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">33%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,102 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="platformUsagePipelines - EPMCMBIBPC-3170"></a>
+<h3 class="failures">platformUsagePipelines - EPMCMBIBPC-3170</h3>
+<span class="code">
+<pre>Element should have match text 'user2' {By.className: run-54021}
+Element: '&lt;tr class=&quot;ant-table-row run-table__run run-54021 ant-table-row-level-0&quot;&gt;runstest-4602931556899928495-54021
+aws/eu
+runsTest-4602931556899928495
+draft-7f15be49
+centos:7 2021-01-11 17:11:29 2021-01-11 17:16:57
+5.47 min
+Cost: 0.01$
+USER2
+RERUN LOG&lt;/tr&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610385912126.142.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610385912126.142.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldHave(Unknown Source)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.validatePipelineOwner(RunsMenuAO.java:275)
+	at com.epam.pipeline.autotests.RunsTest.platformUsagePipelines(RunsTest.java:124)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="platformUsageTools - EPMCMBIBPC-3171"></a>
+<h3 class="failures">platformUsageTools - EPMCMBIBPC-3171</h3>
+<span class="code">
+<pre>Element should have match text 'user2' {By.className: run-54023}
+Element: '&lt;tr class=&quot;ant-table-row run-table__run run-54023 ant-table-row-level-0&quot;&gt;pipeline-54023
+aws/eu e2e-endpoints:latest 2021-01-11 17:17:17 2021-01-11 17:20:39
+3.38 min
+Cost: 0.01$
+USER2
+RERUN LOG&lt;/tr&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610385996716.143.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610385996716.143.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldHave(Unknown Source)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.validatePipelineOwner(RunsMenuAO.java:275)
+	at com.epam.pipeline.autotests.RunsTest.platformUsageTools(RunsTest.java:137)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,27 +168,27 @@
 </thead>
 <tr>
 <td class="success">platformUsageInfo - EPMCMBIBPC-103</td>
-<td>13m2.49s</td>
+<td>12m32.71s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">platformUsagePipelines - EPMCMBIBPC-3170</td>
-<td>7.387s</td>
-<td class="success">passed</td>
+<td class="failures">platformUsagePipelines - EPMCMBIBPC-3170</td>
+<td>1m27.83s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">platformUsageTools - EPMCMBIBPC-3171</td>
-<td>6.942s</td>
-<td class="success">passed</td>
+<td class="failures">platformUsageTools - EPMCMBIBPC-3171</td>
+<td>1m24.62s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 53856 from [53856]
-Returns latest run with runId 53857 from [53856, 53857]
-Returns latest run with runId 53858 from [53856, 53857, 53858]
+<pre>Returns latest run with runId 54021 from [54021]
+Returns latest run with runId 54023 from [54021, 54023]
+Returns latest run with runId 54024 from [54021, 54023, 54024]
 </pre>
 </span>
 </div>
@@ -111,7 +200,7 @@ Returns latest run with runId 53858 from [53856, 53857, 53858]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 9, 2021 6:27:09 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 11, 2021 7:38:43 PM</p>
 </div>
 </div>
 </body>
