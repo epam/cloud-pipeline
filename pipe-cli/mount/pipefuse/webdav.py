@@ -21,8 +21,10 @@ import xml.etree.cElementTree as xml
 from numbers import Number
 
 import easywebdav
+import pytz
 import requests
 import urllib3
+from dateutil.tz import tzlocal
 from requests import cookies
 
 import fuseutils
@@ -109,7 +111,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             return
         try:
             time_value = datetime.datetime.strptime(value, date_format)
-            return time.mktime(time_value.timetuple())
+            return time.mktime(time_value.replace(tzinfo=pytz.UTC).astimezone(tzlocal()).timetuple())
         except ValueError as e:
             logging.error(
                 'Failed to parse date: %s. Expected format: "%s". Error: "%s"' % (value, date_format, str(e)))

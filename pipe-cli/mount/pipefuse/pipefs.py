@@ -22,6 +22,7 @@ import stat
 import time
 
 import easywebdav
+from dateutil.tz import tzlocal
 from fuse import FuseOSError, Operations
 from threading import RLock
 
@@ -139,7 +140,7 @@ class PipeFS(Operations):
                 'st_mode': mode | self.mode,
                 'st_gid': os.getgid(),
                 'st_uid': os.getuid(),
-                'st_atime': time.mktime(datetime.datetime.now().timetuple())
+                'st_atime': time.mktime(datetime.datetime.now(tz=tzlocal()).timetuple())
             }
             if props.mtime:
                 attrs['st_mtime'] = props.mtime
