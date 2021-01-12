@@ -429,9 +429,13 @@ def pipe_test(instance_method):
         try:
             instance_method(self)
         except BaseException as e:
-            self.__class__.state.failure = True
-            logging.info("Case %s failed!" % self.test_case)
-            pytest.fail("Test case %s failed.\n%s" % (self.test_case, e.message))
+            from _pytest.outcomes import Skipped
+            if type(e) is Skipped:
+                pytest.skip(e.message)
+            else:
+                self.__class__.state.failure = True
+                logging.info("Case %s failed!" % self.test_case)
+                pytest.fail("Test case %s failed.\n%s" % (self.test_case, e.message))
 
     return test_method_wrapper
 

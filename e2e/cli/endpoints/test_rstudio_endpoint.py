@@ -92,36 +92,38 @@ class TestRStudioEndpoints(object):
         if not result:
             raise RuntimeError(message)
 
-    # @pipe_test
-    # def test_rstudio_endpoint_friendly_domain_url(self):
-    #     self.test_case = 'TC-EDGE-8'
-    #     run_id, node_name, result, message = run_test("library/rstudio",
-    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
-    #                                               friendly_url="friendly.com",
-    #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
-    #                                               endpoints_structure = {
-    #                                                   "RStudio": "https://friendly.com:\\d*",
-    #                                               })
-    #     self.run_ids.append(run_id)
-    #     self.nodes.add(node_name)
-    #     if not result:
-    #         raise RuntimeError(message)
-    #
-    # @pipe_test
-    # def test_rstudio_and_no_machine_endpoint_friendly_domain_url(self):
-    #     self.test_case = 'TC-EDGE-9'
-    #     run_id, node_name, result, message = run_test("library/rstudio",
-    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
-    #                                               friendly_url="friendly.com",
-    #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
-    #                                               endpoints_structure = {
-    #                                                   "RStudio": "https://friendly.com.*/RStudio",
-    #                                                   "NoMachine": "https://friendly.com.*/NoMachine"
-    #                                               }, no_machine=True)
-    #     self.run_ids.append(run_id)
-    #     self.nodes.add(node_name)
-    #     if not result:
-    #         raise RuntimeError(message)
+    @pipe_test
+    def test_rstudio_endpoint_friendly_domain_url(self):
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+        self.test_case = 'TC-EDGE-8'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                  "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                  friendly_url="friendly.com",
+                                                  url_checker = lambda u, p: bool(re.compile(p).match(u)),
+                                                  endpoints_structure = {
+                                                      "RStudio": "https://friendly.com:\\d*",
+                                                  })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_and_no_machine_endpoint_friendly_domain_url(self):
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+        self.test_case = 'TC-EDGE-9'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                  "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                  friendly_url="friendly.com",
+                                                  url_checker = lambda u, p: bool(re.compile(p).match(u)),
+                                                  endpoints_structure = {
+                                                      "RStudio": "https://friendly.com.*/RStudio",
+                                                      "NoMachine": "https://friendly.com.*/NoMachine"
+                                                  }, no_machine=True)
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     @pipe_test
     def test_rstudio_endpoint_friendly_domain_and_endpoint_url(self):
@@ -224,39 +226,42 @@ class TestRStudioEndpoints(object):
         if not result:
             raise RuntimeError(message)
 
-    # @pipe_test
-    # def test_rstudio_spark_endpoints_friendly_domain_url(self):
-    #     self.test_case = 'TC-EDGE-21'
-    # run_id, node_name, result, message = run_test("library/rstudio",
-    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
-    #                                               spark=True,
-    #                                               friendly_url="friendly.com",
-    #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
-    #                                               endpoints_structure={
-    #                                                   "RStudio": "https://friendly.com.*/RStudio",
-    #                                                   "SparkUI": "https://friendly.com.*/SparkUI",
-    #                                               })
-    # self.run_ids.append(run_id)
-    # self.nodes.add(node_name)
-    # if not result:
-    #     raise RuntimeError(message)
-    #
-    # @pipe_test
-    # def test_rstudio_spark_no_machine_endpoint_friendly_domain_url(self):
-    #     self.test_case = 'TC-EDGE-22'
-    # run_id, node_name, result, message = run_test("library/rstudio",
-    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
-    #                                               spark=True,
-    #                                               friendly_url="friendly.com",
-    #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
-    #                                               endpoints_structure={
-    #                                                   "RStudio": "https://friendly.com.*/RStudio",
-    #                                                   "NoMachine": "https://friendly.com.*/NoMachine",
-    #                                                   "SparkUI": "https://friendly.com.*/SparkUI",
-    # self.run_ids.append(run_id)
-    # self.nodes.add(node_name)
-    # if not result:
-    #     raise RuntimeError(message)
+    @pipe_test
+    def test_rstudio_spark_endpoints_friendly_domain_url(self):
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+        self.test_case = 'TC-EDGE-21'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      spark=True,
+                                                      friendly_url="friendly.com",
+                                                      url_checker = lambda u, p: bool(re.compile(p).match(u)),
+                                                      endpoints_structure={
+                                                          "RStudio": "https://friendly.com.*/RStudio",
+                                                          "SparkUI": "https://friendly.com.*/SparkUI",
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_spark_no_machine_endpoint_friendly_domain_url(self):
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+        self.test_case = 'TC-EDGE-22'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                  "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                  spark=True,
+                                                  friendly_url="friendly.com",
+                                                  url_checker = lambda u, p: bool(re.compile(p).match(u)),
+                                                  endpoints_structure={
+                                                      "RStudio": "https://friendly.com.*/RStudio",
+                                                      "NoMachine": "https://friendly.com.*/NoMachine",
+                                                      "SparkUI": "https://friendly.com.*/SparkUI"
+                                                  })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     @pipe_test
     def test_rstudio_spark_endpoints_friendly_domain_and_url(self):

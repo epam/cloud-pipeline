@@ -79,21 +79,21 @@ class TestRStudioEndpoints(object):
             raise RuntimeError(message)
 
 
-    # @pipe_test
-    # def test_custom_domain_rstudio_endpoint_friendly_domain(self):
-    #     self.test_case = 'TC-EDGE-27'
-    #     run_id, node_name, result, message = run_test("library/rstudio",
-    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
-    #                                               friendly_url="friendly.com",
-    #                                               url_checker=lambda u, p: u.startswith(p),
-    #                                               endpoints_structure={
-    #                                                   "RStudio": "https://friendly.com"
-    #                                               })
-    #     self.run_ids.append(run_id)
-    #     self.nodes.add(node_name)
-    #     if not result:
-    #         raise RuntimeError(message)
-    #
+    def test_custom_domain_rstudio_endpoint_friendly_domain(self):
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+        self.test_case = 'TC-EDGE-27'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                  "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                  friendly_url="friendly.com",
+                                                  url_checker=lambda u, p: u == p,
+                                                  endpoints_structure={
+                                                      "RStudio": "https://friendly.com"
+                                                  })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
     @pipe_test
     def test_custom_domain_rstudio_friendly_domain_with_path(self):
         self.test_case = 'TC-EDGE-28'
