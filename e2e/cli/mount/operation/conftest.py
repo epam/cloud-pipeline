@@ -3,20 +3,27 @@ from datetime import datetime
 
 import pytest
 
-from ..utils import as_literal, as_size, execute, mkdir, KB, MB, MiB
+from ..utils import as_literal, execute, mkdir, KB, MB, MiB
+from pyfs import rm
 
 root_path = os.getcwd()
 
 default_storage_kind = 'object'
 default_local_path = os.path.join(root_path, 'e2e-local')
-default_mount_path = os.path.join(root_path, 'e2e-mount')
+default_root_mount_path = os.path.join(root_path, 'e2e-mount')
 default_logs_path = os.path.join(root_path, 'e2e-logs')
 default_source_path = os.path.join(root_path, 'e2e-random')
 default_chunk_size = 10 * MB
 default_buffer_size = 512 * MB
+default_small_sizes = {
+    'cli.mount.operation.test_fallocate': [1],
+    'cli.mount.operation.test_truncate': [1],
+    'cli.mount.operation.test_read': [1],
+    'cli.mount.operation.test_write': [1]
+}
 default_sizes = {
-    'cli.mount.operation.test_fallocate': [2, 11 * MB],
-    'cli.mount.operation.test_truncate': [2, 11 * MB],
+    'cli.mount.operation.test_fallocate': [1, 11, 11 * MB],
+    'cli.mount.operation.test_truncate': [1, 11, 11 * MB],
     'cli.mount.operation.test_read': [0, 1, 11 * MB, 600 * MB],
     'cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
                                        default_chunk_size,
@@ -29,64 +36,57 @@ default_sizes = {
 def pytest_addoption(parser):
     parser.addoption('--webdav', help='Executes tests against a webdav data storage.', action='store_true')
     parser.addoption('--object', help='Executes tests against an object data storage.', action='store_true')
-    parser.addoption('--local', help='Local testing directory path.')
-    parser.addoption('--mount', help='Mount testing directory path.')
-    parser.addoption('--sizes', help='File sizes to perform tests for.')
+    parser.addoption('--small', help='Executes tests for only small subset of file sizes.', action='store_true')
 
 
 @pytest.fixture(scope='module', autouse=True)
 def cleanup_before_module(request):
-    from pyfs import rm
-    session = request.node
-    rm(_get_local_path(config=session.config), under=True, recursive=True, force=True)
-    rm(session.config.storage_mount_path, under=True, recursive=True, force=True)
+    rm(request.node.config.local_path, under=True, recursive=True, force=True)
+    rm(request.node.config.mount_path, under=True, recursive=True, force=True)
 
 
 @pytest.fixture(scope='function')
 def mount_path(request):
-    session = request.node
-    return session.config.storage_mount_path
+    return request.node.config.mount_path
 
 
 @pytest.fixture(scope='function')
 def local_path(request):
-    session = request.node
-    return _get_local_path(config=session.config)
+    return request.node.config.local_path
 
 
 @pytest.fixture(scope='function')
-def source_path():
-    return default_source_path
+def source_path(request):
+    return request.node.config.source_path
 
 
 @pytest.fixture(scope='function')
-def chunk_size():
-    return default_chunk_size
+def chunk_size(request):
+    return request.node.config.chunk_size
 
 
 def pytest_generate_tests(metafunc):
-    local_path = _get_local_path(config=metafunc.config)
-    mount_path = metafunc.config.storage_mount_path
-
+    sizes = metafunc.config.sizes.get(metafunc.module.__name__, [])
     if all(fixture in metafunc.fixturenames for fixture in ['size', 'local_file', 'mount_file']):
-        function_sizes = default_sizes.get(metafunc.module.__name__, [])
         metafunc.parametrize('size,local_file,mount_file',
-                             zip(function_sizes,
-                                 map(lambda size: os.path.join(local_path, as_literal(size)), function_sizes),
-                                 map(lambda size: os.path.join(mount_path, as_literal(size)), function_sizes)),
-                             ids=map(as_literal, function_sizes))
+                             zip(sizes,
+                                 map(lambda size: os.path.join(metafunc.config.local_path, as_literal(size)), sizes),
+                                 map(lambda size: os.path.join(metafunc.config.mount_path, as_literal(size)), sizes)),
+                             ids=map(as_literal, sizes))
     elif all(fixture in metafunc.fixturenames for fixture in ['local_file', 'mount_file']):
-        function_sizes = default_sizes.get(metafunc.module.__name__, [])
         metafunc.parametrize('local_file,mount_file',
-                             zip(map(lambda size: os.path.join(local_path, as_literal(size)), function_sizes),
-                                 map(lambda size: os.path.join(mount_path, as_literal(size)), function_sizes)),
-                             ids=map(as_literal, function_sizes))
+                             zip(map(lambda size: os.path.join(metafunc.config.local_path, as_literal(size)), sizes),
+                                 map(lambda size: os.path.join(metafunc.config.mount_path, as_literal(size)), sizes)),
+                             ids=map(as_literal, sizes))
 
 
 def pytest_sessionstart(session):
-    session.config.local_path = local_path = _get_local_path(config=session.config)
-    session.config.mount_path = mount_path = _get_mount_path(config=session.config)
-    source_size = _get_source_size()
+    session.config.local_path = default_local_path
+    session.config.root_mount_path = default_root_mount_path
+    session.config.source_path = default_source_path
+    session.config.chunk_size = default_chunk_size
+    session.config.sizes = default_sizes if not session.config.option.small else default_small_sizes
+    session.config.source_size = max(map(max, session.config.sizes.values()))
 
     api = os.environ['API']
     api = api if not api.endswith('/') else api[:-1]
@@ -98,15 +98,13 @@ def pytest_sessionstart(session):
     storage_name = _generate_storage_name(storage_type=storage_type, storage_region=storage_region)
     storage_path = storage_name
     session.config.storage_name = storage_name
+    session.config.logs_path = os.path.join(default_logs_path, session.config.storage_name)
 
-    logs_path = os.path.join(default_logs_path, storage_name)
-    start_log_path = os.path.join(logs_path, 'start.log')
-
-    mkdir(local_path, mount_path, logs_path)
+    mkdir(session.config.local_path, session.config.root_mount_path, session.config.logs_path)
 
     if storage_type in ['S3', 'AZ', 'GS']:
-        session.config.storage_mount_path = mount_path
-        execute(log_path=start_log_path, command="""
+        session.config.mount_path = session.config.root_mount_path
+        execute(log_path=os.path.join(session.config.logs_path, 'start.log'), command="""
         head -c '{source_size}' /dev/urandom > '{source_path}'
         
         pipe storage create -c \
@@ -138,17 +136,16 @@ def pytest_sessionstart(session):
                    storage_type=storage_type,
                    region=storage_region,
                    folder=storage_folder or '',
-                   logs_path=logs_path,
-                   source_size=source_size,
+                   logs_path=session.config.logs_path,
+                   source_size=session.config.source_size,
                    source_path=default_source_path,
                    local_path=local_path,
-                   mount_path=mount_path))
+                   mount_path=session.config.root_mount_path))
     else:
         storage_share = os.getenv('CP_TEST_SHARE_ID')
-        storage_mount_path = os.path.join(mount_path, storage_name.replace('-', '_'))
-        session.config.storage_mount_path = storage_mount_path
+        session.config.mount_path = os.path.join(session.config.root_mount_path, storage_name.replace('-', '_'))
 
-        execute(log_path=start_log_path, command="""
+        execute(log_path=os.path.join(session.config.logs_path, 'start.log'), command="""
         head -c '{source_size}' /dev/urandom > '{source_path}'
         
         wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O jq
@@ -190,45 +187,42 @@ def pytest_sessionstart(session):
         fi
         
         counter=0
-        while [ ! -d "{storage_mount_path}" ] && [ "$counter" -lt "70" ]; do
+        while [ ! -d "{root_mount_path}" ] && [ "$counter" -lt "70" ]; do
             counter=$((counter+1))
             sleep 1
         done
-        if [ ! -d "{storage_mount_path}" ]
+        if [ ! -d "{root_mount_path}" ]
         then
-            echo "Mount directory at {storage_mount_path} is not accessible"
+            echo "Mount directory at {root_mount_path} is not accessible"
             exit 1
         fi
         """.format(api=api,
                    api_token=api_token,
                    storage_name=storage_name,
                    storage_path=storage_path,
-                   storage_mount_path=storage_mount_path,
                    storage_type=storage_type,
                    region=storage_region,
                    share=storage_share,
                    folder=storage_folder or '',
-                   logs_path=logs_path,
-                   source_size=source_size,
+                   logs_path=session.config.logs_path,
+                   source_size=session.config.source_size,
                    source_path=default_source_path,
-                   local_path=local_path,
-                   mount_path=mount_path))
+                   local_path=session.config.local_path,
+                   mount_path=session.config.mount_path,
+                   root_mount_path=session.config.root_mount_path))
 
 
 def pytest_sessionfinish(session, exitstatus):
-    local_path = _get_local_path(config=session.config)
-    mount_path = _get_mount_path(config=session.config)
-    logs_path = os.path.join(default_logs_path, session.config.storage_name)
-    finish_log_path = os.path.join(logs_path, 'finish.log')
-    execute(log_path=finish_log_path, command="""
-    if [ -d "{local_path}" ]; then rm -rf '{local_path}'/*; fi
-    if [ -f "{source_path}" ]; then rm -f {source_path}; fi
-    pipe storage umount '{mount_path}'
+    execute(log_path=os.path.join(session.config.logs_path, 'finish.log'), command="""
+    pipe storage umount '{root_mount_path}'
     pipe storage delete -y -c -n '{storage_name}'
+    if [ -f "{source_path}" ]; then rm -f "{source_path}"; fi
+    if [ -d "{local_path}" ]; then rm -rf "{local_path}"; fi
+    if [ -d "{root_mount_path}" ]; then rm -rf "{root_mount_path}"; fi
     """.format(storage_name=session.config.storage_name,
-               local_path=local_path,
-               mount_path=mount_path,
-               source_path=default_source_path))
+               source_path=session.config.source_path,
+               local_path=session.config.local_path,
+               root_mount_path=session.config.root_mount_path))
 
 
 def _get_storage_type(config, storage_provider):
@@ -248,25 +242,6 @@ def _get_storage_type(config, storage_provider):
         }
     }
     return storage_type_dict.get(storage_provider, {}).get(storage_kind) or 'S3'
-
-
-def _get_local_path(config):
-    return config.option.local or default_local_path
-
-
-def _get_mount_path(config):
-    return config.option.mount or default_mount_path
-
-
-def _get_source_size():
-    return max(map(max, default_sizes.values()))
-
-
-def _get_sizes(config):
-    raw_sizes_string = config.option.sizes or default_sizes
-    return sorted(as_size(raw_size.strip())
-                  for raw_size in raw_sizes_string.split(',')
-                  if raw_size.strip())
 
 
 def _generate_storage_name(storage_type, storage_region):

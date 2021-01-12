@@ -1,3 +1,5 @@
+import pytest
+
 from ..utils import assert_content
 from pyfs import truncate, fallocate
 
@@ -25,12 +27,16 @@ def test_fallocate_file_to_its_size(size, local_file, mount_file):
 
 
 def test_fallocate_file_to_half_size(size, local_file, mount_file):
+    if size < 2:
+        pytest.skip()
     fallocate(local_file, size / 2)
     fallocate(mount_file, size / 2)
     assert_content(local_file, mount_file)
 
 
 def test_fallocate_file_to_double_its_size(size, local_file, mount_file):
+    if size < 2:
+        pytest.skip()
     fallocate(local_file, size)
     fallocate(mount_file, size)
     assert_content(local_file, mount_file)
