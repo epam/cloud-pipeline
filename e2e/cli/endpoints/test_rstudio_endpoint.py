@@ -67,9 +67,9 @@ class TestRStudioEndpoints(object):
         self.test_case = 'TC-EDGE-6'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url="friendly1",
+                                                      friendly_url="friendly",
                                                       endpoints_structure={
-                                                          "RStudio": "friendly1"
+                                                          "RStudio": "friendly"
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
@@ -81,11 +81,11 @@ class TestRStudioEndpoints(object):
         self.test_case = 'TC-EDGE-7'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url="friendly2",
+                                                      friendly_url="friendly",
                                                       no_machine=True,
                                                       endpoints_structure={
-                                                          "RStudio": "friendly2-RStudio",
-                                                          "NoMachine": "friendly2-NoMachine"
+                                                          "RStudio": "friendly-RStudio",
+                                                          "NoMachine": "friendly-NoMachine"
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
@@ -97,10 +97,10 @@ class TestRStudioEndpoints(object):
     #     self.test_case = 'TC-EDGE-8'
     #     run_id, node_name, result, message = run_test("library/rstudio",
     #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
-    #                                               friendly_url="friendly1.com",
+    #                                               friendly_url="friendly.com",
     #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
     #                                               endpoints_structure = {
-    #                                                   "RStudio": "https://friendly1.com:\\d*",
+    #                                                   "RStudio": "https://friendly.com:\\d*",
     #                                               })
     #     self.run_ids.append(run_id)
     #     self.nodes.add(node_name)
@@ -112,11 +112,11 @@ class TestRStudioEndpoints(object):
     #     self.test_case = 'TC-EDGE-9'
     #     run_id, node_name, result, message = run_test("library/rstudio",
     #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
-    #                                               friendly_url="friendly2.com",
+    #                                               friendly_url="friendly.com",
     #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
     #                                               endpoints_structure = {
-    #                                                   "RStudio": "https://friendly2.com.*/RStudio",
-    #                                                   "NoMachine": "https://friendly2.com.*/NoMachine"
+    #                                                   "RStudio": "https://friendly.com.*/RStudio",
+    #                                                   "NoMachine": "https://friendly.com.*/NoMachine"
     #                                               }, no_machine=True)
     #     self.run_ids.append(run_id)
     #     self.nodes.add(node_name)
@@ -128,11 +128,11 @@ class TestRStudioEndpoints(object):
         self.test_case = 'TC-EDGE-10'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url="friendly4.com/friendly",
+                                                      friendly_url="friendly.com/friendly",
                                                       check_access=False,
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                          "RStudio": "https://friendly4.com.*/friendly",
+                                                          "RStudio": "https://friendly.com.*/friendly",
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
@@ -144,13 +144,13 @@ class TestRStudioEndpoints(object):
         self.test_case = 'TC-EDGE-11'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url="friendly3.com/friendly",
+                                                      friendly_url="friendly.com/friendly",
                                                       check_access=False,
                                                       no_machine=True,
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                          "RStudio": "https://friendly3.com.*/friendly-RStudio",
-                                                          "NoMachine": "https://friendly3.com.*/friendly-NoMachine"
+                                                          "RStudio": "https://friendly.com.*/friendly-RStudio",
+                                                          "NoMachine": "https://friendly.com.*/friendly-NoMachine"
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
@@ -196,10 +196,10 @@ class TestRStudioEndpoints(object):
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       spark=True,
-                                                      friendly_url="asdf",
+                                                      friendly_url="friendly",
                                                       endpoints_structure={
-                                                          "RStudio": "asdf-RStudio",
-                                                          "SparkUI": "asdf-SparkUI",
+                                                          "RStudio": "friendly-RStudio",
+                                                          "SparkUI": "friendly-SparkUI",
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
@@ -213,11 +213,11 @@ class TestRStudioEndpoints(object):
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       spark=True,
                                                       no_machine=True,
-                                                      friendly_url="asdf",
+                                                      friendly_url="friendly",
                                                       endpoints_structure={
-                                                          "RStudio": "asdf-RStudio",
-                                                          "SparkUI": "asdf-SparkUI",
-                                                          "NoMachine": "asdf-NoMachine"
+                                                          "RStudio": "friendly-RStudio",
+                                                          "SparkUI": "friendly-SparkUI",
+                                                          "NoMachine": "friendly-NoMachine"
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
@@ -230,11 +230,11 @@ class TestRStudioEndpoints(object):
     # run_id, node_name, result, message = run_test("library/rstudio",
     #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
     #                                               spark=True,
-    #                                               friendly_url="friendly1.com",
+    #                                               friendly_url="friendly.com",
     #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
     #                                               endpoints_structure={
-    #                                                   "RStudio": "https://friendly1.com.*/RStudio",
-    #                                                   "SparkUI": "https://friendly1.com.*/SparkUI",
+    #                                                   "RStudio": "https://friendly.com.*/RStudio",
+    #                                                   "SparkUI": "https://friendly.com.*/SparkUI",
     #                                               })
     # self.run_ids.append(run_id)
     # self.nodes.add(node_name)
@@ -247,12 +247,12 @@ class TestRStudioEndpoints(object):
     # run_id, node_name, result, message = run_test("library/rstudio",
     #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
     #                                               spark=True,
-    #                                               friendly_url="friendly2.com",
+    #                                               friendly_url="friendly.com",
     #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
     #                                               endpoints_structure={
-    #                                                   "RStudio": "https://friendly2.com.*/RStudio",
-    #                                                   "NoMachine": "https://friendly2.com.*/NoMachine",
-    #                                                   "SparkUI": "https://friendly2.com.*/SparkUI",
+    #                                                   "RStudio": "https://friendly.com.*/RStudio",
+    #                                                   "NoMachine": "https://friendly.com.*/NoMachine",
+    #                                                   "SparkUI": "https://friendly.com.*/SparkUI",
     # self.run_ids.append(run_id)
     # self.nodes.add(node_name)
     # if not result:
@@ -263,13 +263,13 @@ class TestRStudioEndpoints(object):
         self.test_case = 'TC-EDGE-23'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url="friendly1.com/asdf",
+                                                      friendly_url="friendly.com/friendly",
                                                       check_access=False,
                                                       spark=True,
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                          "RStudio": "https://friendly1.com.*/asdf-RStudio",
-                                                          "SparkUI": "https://friendly1.com.*/asdf-SparkUI",
+                                                          "RStudio": "https://friendly.com.*/friendly-RStudio",
+                                                          "SparkUI": "https://friendly.com.*/friendly-SparkUI",
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
@@ -281,15 +281,15 @@ class TestRStudioEndpoints(object):
         self.test_case = 'TC-EDGE-24'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url="friendly2.com/asdf",
+                                                      friendly_url="friendly.com/friendly",
                                                       check_access=False,
                                                       spark=True,
                                                       no_machine=True,
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                          "RStudio": "https://friendly2.com.*/asdf-RStudio",
-                                                          "NoMachine": "https://friendly2.com.*/asdf-NoMachine",
-                                                          "SparkUI": "https://friendly2.com.*/asdf-SparkUI",
+                                                          "RStudio": "https://friendly.com.*/friendly-RStudio",
+                                                          "NoMachine": "https://friendly.com.*/friendly-NoMachine",
+                                                          "SparkUI": "https://friendly.com.*/friendly-SparkUI",
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)

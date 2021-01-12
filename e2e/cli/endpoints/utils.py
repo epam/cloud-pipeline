@@ -13,8 +13,51 @@
 # limitations under the License.
 
 from e2e.cli.utils.pipeline_utils import *
+import os
 
 MAX_REPETITIONS = 200
+
+def get_tool_info(tool, max_retry=100):
+
+    def curl_tool_api():
+        api = os.environ['API']
+        token = os.environ['API_TOKEN']
+        command = [
+            'curl', '-H', 'Authorization: Bearer {}'.format(token), '-k', '-L', '{}/{}'.format(api.strip("/"), "tool/load?image={}".format(tool))
+        ]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        return process.wait(), ''.join(process.stdout.readlines())
+
+    rep_count = 1
+    code, result = curl_tool_api()
+    while rep_count < max_retry and code != 0:
+        code, result = curl_tool_api()
+
+    if code == 0:
+        if 'payload' in result:
+            return json.loads(result)['payload']
+    raise RuntimeError("Can't load tool info from API")
+
+
+def update_tool_info(tool, max_retry=100):
+
+    def curl_tool_update_api():
+        api = os.environ['API']
+        token = os.environ['API_TOKEN']
+        command = [
+            'curl', '-H', "Content-Type: application/json", '-X', 'POST', '-H', 'Authorization: Bearer {}'.format(token),
+            '-k', '-L', '{}/{}'.format(api.strip("/"), "tool/update"), '--data', json.dumps(tool)
+        ]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        return process.wait(), process.stdout.readlines()
+
+    rep_count = 1
+    code, result = curl_tool_update_api()
+    while rep_count < max_retry and code != 0:
+        code = curl_tool_update_api()
+
+    if code != 0:
+        raise RuntimeError("Can't update tool info from API")
 
 
 def run_test(tool, command, endpoints_structure, url_checker=None, check_access=True, friendly_url=None,
