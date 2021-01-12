@@ -243,6 +243,7 @@ class DataStorage(API):
             operation = {'id': source_bucket, 'list': True}
             if versioning:
                 operation['listVersion'] = True
+                operation['readVersion'] = True
             operations.append(operation)
         if source_bucket and command == 'cp':
             operation = {'id': source_bucket, 'read': True, 'write': False}
