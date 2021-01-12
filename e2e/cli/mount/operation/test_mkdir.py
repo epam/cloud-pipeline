@@ -2,7 +2,8 @@ import os
 
 import pytest
 
-from pyfs import mkdir, rm, touch
+from pyfs import mkdir, rm
+from pyio import write_dirs, read_dirs
 
 operation_config = [
     {
@@ -62,32 +63,7 @@ def teardown_function(mount_path):
 
 @pytest.mark.parametrize('config', operation_config, ids=lambda config: config['name'])
 def test_mkdir(mount_path, config):
-    create_dirs(mount_path, config['before'])
-    makedir(mount_path, config['target'])
-    assert collect_dirs(mount_path) == config['after']
-
-
-def create_dirs(path, dirs):
-    for k, v in dirs.items():
-        curr_path = os.path.join(path, k)
-        if isinstance(v, str):
-            touch(curr_path)
-        else:
-            mkdir(curr_path)
-            create_dirs(curr_path, v)
-
-
-def makedir(mount_path, target):
-    target_path = os.path.join(mount_path, target)
+    write_dirs(mount_path, config['before'])
+    target_path = os.path.join(mount_path, config['target'])
     mkdir(target_path, recursive=not os.path.exists(os.path.dirname(target_path)))
-
-
-def collect_dirs(path):
-    dirs = {}
-    for item in os.listdir(path):
-        item_path = os.path.join(path, item)
-        if os.path.isfile(item_path):
-            dirs[item] = ''
-        if os.path.isdir(item_path):
-            dirs[item] = collect_dirs(item_path)
-    return dirs
+    assert read_dirs(mount_path) == config['after']

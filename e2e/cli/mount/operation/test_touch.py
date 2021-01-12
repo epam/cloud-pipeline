@@ -1,48 +1,78 @@
 import os
 
-from pyfs import touch, rm, mkdir, truncate
+import pytest
+
+from pyfs import touch, rm
+from pyio import write_dirs, read_dirs
+
+operation_config = [
+    {
+        'name': 'test touch non existing file',
+        'target': 'file',
+        'before': {},
+        'after': {
+            'file': ''
+        }
+    },
+    {
+        'name': 'test touch non existing file in folder',
+        'target': 'folder/file',
+        'before': {
+            'folder': {}
+        },
+        'after': {
+            'folder': {
+                'file': ''
+            }
+        }
+    },
+    {
+        'name': 'test touch non existing file in subfolder',
+        'target': 'folder/subfolder/file',
+        'before': {
+            'folder': {
+                'subfolder': {}
+            }
+        },
+        'after': {
+            'folder': {
+                'subfolder': {
+                    'file': ''
+                }
+            }
+        }
+    },
+    {
+        'name': 'test touch empty file',
+        'target': 'file',
+        'before': {
+            'file': ''
+        },
+        'after': {
+            'file': ''
+        }
+    },
+    {
+        'name': 'test touch non empty file',
+        'target': 'file',
+        'before': {
+            'file': 'content'
+        },
+        'after': {
+            'file': 'content'
+        }
+    }
+]
 
 
-def test_touch_non_existing_file(mount_path):
-    file_path = os.path.join(mount_path, 'file')
-    rm(file_path, force=True)
-    touch(file_path)
-    assert os.path.isfile(file_path)
-    assert os.path.getsize(file_path) == 0
+@pytest.fixture(scope='function', autouse=True)
+def teardown_function(mount_path):
+    yield
+    rm(mount_path, under=True, recursive=True, force=True)
 
 
-def test_touch_non_existing_file_in_folder(mount_path):
-    folder_path = os.path.join(mount_path, 'folder')
-    file_path = os.path.join(folder_path, 'file')
-    rm(folder_path, recursive=True, force=True)
-    mkdir(folder_path)
-    touch(file_path)
-    assert os.path.isfile(file_path)
-    assert os.path.getsize(file_path) == 0
-
-
-def test_touch_non_existing_file_in_subfolder(mount_path):
-    folder_path = os.path.join(mount_path, 'folder')
-    subfolder_path = os.path.join(folder_path, 'subfolder')
-    file_path = os.path.join(folder_path, 'file')
-    rm(folder_path, recursive=True, force=True)
-    mkdir(subfolder_path, recursive=True)
-    touch(file_path)
-    assert os.path.isfile(file_path)
-    assert os.path.getsize(file_path) == 0
-
-
-def test_touch_empty_file(mount_path):
-    file_path = os.path.join(mount_path, 'file')
-    truncate(file_path, size=0)
-    touch(file_path)
-    assert os.path.isfile(file_path)
-    assert os.path.getsize(file_path) == 0
-
-
-def test_touch_non_empty_file(mount_path):
-    file_path = os.path.join(mount_path, 'file')
-    truncate(file_path, size=1)
-    touch(file_path)
-    assert os.path.isfile(file_path)
-    assert os.path.getsize(file_path) == 1
+@pytest.mark.parametrize('config', operation_config, ids=lambda config: config['name'])
+def test_touch(mount_path, config):
+    write_dirs(mount_path, config['before'])
+    touch(os.path.join(mount_path, config['target']))
+    assert read_dirs(mount_path) == config['after']
