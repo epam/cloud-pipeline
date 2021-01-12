@@ -3,11 +3,11 @@ from datetime import datetime
 
 import pytest
 
-from ..utils import as_literal, as_size, execute, mkdir
+from ..utils import as_literal, as_size, execute, mkdir, KB, MB
 
 root_path = os.getcwd()
 root_logs_path = os.path.join(root_path, 'e2e-logs')
-source_path = os.path.join(root_path, 'e2e-random')
+tests_source_path = os.path.join(root_path, 'e2e-random')
 
 default_storage_kind = 'object'
 default_local_path = os.path.join(root_path, 'e2e-local')
@@ -26,7 +26,13 @@ def pytest_addoption(parser):
 @pytest.fixture(scope='session')
 def session_mount_path(request):
     session = request.node
-    return _get_mount_path(config=session.config)
+    return session.config.storage_mount_path
+
+
+@pytest.fixture(scope='function')
+def mount_path(request):
+    session = request.node
+    return session.config.storage_mount_path
 
 
 @pytest.fixture(scope='session')
@@ -35,34 +41,44 @@ def session_local_path(request):
     return _get_local_path(config=session.config)
 
 
+@pytest.fixture(scope='function')
+def local_path(request):
+    session = request.node
+    return _get_local_path(config=session.config)
+
+
 @pytest.fixture(scope='module', autouse=True)
-def teardown_module(session_mount_path, session_local_path):
-    yield
+def cleanup_before_module(session_mount_path, session_local_path):
     from pyfs import rm
     rm(session_mount_path, under=True, recursive=True, force=True)
     rm(session_local_path, under=True, recursive=True, force=True)
 
 
+@pytest.fixture(scope='function', autouse=True)
+def source_path():
+    return tests_source_path
+
+
 def pytest_generate_tests(metafunc):
     local_path = _get_local_path(config=metafunc.config)
-    storage_mount_path = metafunc.config.storage_mount_path
+    mount_path = metafunc.config.storage_mount_path
 
     # todo: We should run each test in its module directory.
     #  Nevertheless tests should be performed for both mount root and folders.
     # module_local_path = os.path.join(local_path, metafunc.module.__name__)
     # module_mount_path = os.path.join(mount_path, metafunc.module.__name__)
 
-    # todo: Use a special annotation to mark tests for file length parametrization
-    if any(operation in metafunc.module.__name__ for operation in ['read', 'write', 'truncate', 'fallocate']):
-        sizes = _get_sizes(config=metafunc.config)
-        size_literals = [as_literal(size) for size in sizes]
-        file_names = ['file_' + size for size in size_literals]
-        local_files = [os.path.join(local_path, file_name) for file_name in file_names]
-        mount_files = [os.path.join(storage_mount_path, file_name) for file_name in file_names]
-        parameters = zip(size_literals, local_files, mount_files, [source_path] * len(sizes))
-        metafunc.parametrize('size, local_file, mount_file, source_path', parameters, ids=size_literals)
-    else:
-        metafunc.parametrize('mount_path', [storage_mount_path], ids=[''])
+    if 'size' in metafunc.fixturenames:
+        module_sizes = {
+            'cli.mount.operation.test_fallocate': [2, 11 * MB],
+            'cli.mount.operation.test_truncate': [2, 11 * MB]
+        }
+        function_sizes = module_sizes.get(metafunc.module.__name__, [])
+        metafunc.parametrize('size,local_file,mount_file',
+                             zip(function_sizes,
+                                 map(lambda size: os.path.join(local_path, as_literal(size)), function_sizes),
+                                 map(lambda size: os.path.join(mount_path, as_literal(size)), function_sizes)),
+                             ids=map(as_literal, function_sizes))
 
 
 def pytest_sessionstart(session):
@@ -122,7 +138,7 @@ def pytest_sessionstart(session):
                    folder=storage_folder or '',
                    logs_path=logs_path,
                    source_size=sizes[-1],
-                   source_path=source_path,
+                   source_path=tests_source_path,
                    local_path=local_path,
                    mount_path=mount_path))
     else:
@@ -192,7 +208,7 @@ def pytest_sessionstart(session):
                    folder=storage_folder or '',
                    logs_path=logs_path,
                    source_size=sizes[-1],
-                   source_path=source_path,
+                   source_path=tests_source_path,
                    local_path=local_path,
                    mount_path=mount_path))
 
@@ -210,7 +226,7 @@ def pytest_sessionfinish(session, exitstatus):
     """.format(storage_name=session.config.storage_name,
                local_path=local_path,
                mount_path=mount_path,
-               source_path=source_path))
+               source_path=tests_source_path))
 
 
 def _get_storage_type(config, storage_provider):

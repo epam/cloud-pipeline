@@ -65,7 +65,7 @@ def assert_content(local_file, mounted_file):
     local_sha = execute('shasum %s | awk \'{ print $1 }\'' % local_file)
     mounted_sha = execute('shasum %s | awk \'{ print $1 }\'' % mounted_file)
     if local_sha != mounted_sha:
-        fail('Local and mounted file shas do not matches: %s %s' % (local_sha, mounted_sha))
+        fail('Local and mounted file shas do not match: %s %s' % (local_sha, mounted_sha))
 
 
 def mkdir(*paths):
