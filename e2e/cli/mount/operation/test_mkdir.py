@@ -1,46 +1,93 @@
 import os
 
-from pytest import fail
+import pytest
 
-from pyfs import mkdir
+from pyfs import mkdir, rm, touch
+
+operation_config = [
+    {
+        'name': 'mkdir folder',
+        'target': 'folder',
+        'before': {},
+        'after': {
+            'folder': {}
+        }
+    },
+    {
+        'name': 'mkdir subfolder',
+        'target': 'folder/subfolder',
+        'before': {
+            'folder': {}
+        },
+        'after': {
+            'folder': {
+                'subfolder': {}
+            }
+        }
+    },
+    {
+        'name': 'mkdir subfolder with parent',
+        'target': 'folder/subfolder',
+        'before': {},
+        'after': {
+            'folder': {
+                'subfolder': {}
+            }
+        }
+    },
+    {
+        'name': 'mkdir folder with space in name',
+        'target': 'folder name',
+        'before': {},
+        'after': {
+            'folder name': {}
+        }
+    },
+    {
+        'name': 'mkdir folder with uppercase letters in name',
+        'target': 'FOLDER',
+        'before': {},
+        'after': {
+            'FOLDER': {}
+        }
+    }
+]
 
 
-def test_mkdir_folder(mount_path):
-    folder_path = os.path.join(mount_path, 'folder')
-    mkdir(folder_path)
-    assert os.path.isdir(folder_path)
+@pytest.fixture(scope='function', autouse=True)
+def teardown_function(session_mount_path):
+    yield
+    rm(session_mount_path, under=True, recursive=True, force=True)
 
 
-def test_mkdir_subfolder(mount_path):
-    folder_path = os.path.join(mount_path, 'folder')
-    subfolder_path = os.path.join(folder_path, 'subfolder')
-    mkdir(subfolder_path, recursive=True)
-    assert os.path.isdir(subfolder_path)
+@pytest.mark.parametrize('config', operation_config, ids=lambda config: config['name'])
+def test_mkdir(mount_path, config):
+    create_dirs(mount_path, config['before'])
+    makedir(mount_path, config['target'])
+    assert collect_dirs(mount_path) == config['after']
 
 
-def test_mkdir_subfolder_without_parent(mount_path):
-    folder_path = os.path.join(mount_path, 'folder')
-    subfolder_path = os.path.join(folder_path, 'subfolder')
-    mkdir(subfolder_path, recursive=True)
-    assert os.path.isdir(subfolder_path)
+def create_dirs(path, dirs):
+    for k, v in dirs.items():
+        curr_path = os.path.join(path, k)
+        if isinstance(v, str):
+            touch(curr_path)
+        else:
+            mkdir(curr_path)
+            create_dirs(curr_path, v)
 
 
-def test_mkdir_existing_folder(mount_path):
-    folder_path = os.path.join(mount_path, 'folder')
-    try:
-        mkdir(folder_path)
-        fail('Existing folder cannot be created.')
-    except RuntimeError as e:
-        assert 'exists' in str(e)
+def makedir(mount_path, target):
+    target_path = os.path.join(mount_path, target)
+    mkdir(target_path, recursive=not os.path.exists(os.path.dirname(target_path)))
 
 
-def test_mkdir_folder_with_space_in_name(mount_path):
-    folder_path = os.path.join(mount_path, 'folder name')
-    mkdir(folder_path)
-    assert os.path.isdir(folder_path)
-
-
-def test_mkdir_folder_with_uppercase_in_name(mount_path):
-    folder_path = os.path.join(mount_path, 'FOLDER')
-    mkdir(folder_path)
-    assert os.path.isdir(folder_path)
+def collect_dirs(path):
+    dirs = {}
+    for item in os.listdir(path):
+        item_path = os.path.join(path, item)
+        if os.path.isfile(item_path):
+            dirs[item] = ''
+        if os.path.isdir(item_path):
+            dirs[item] = collect_dirs(item_path)
+    return dirs
