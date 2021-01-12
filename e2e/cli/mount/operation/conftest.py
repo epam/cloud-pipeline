@@ -36,6 +36,7 @@ default_sizes = {
 def pytest_addoption(parser):
     parser.addoption('--webdav', help='Executes tests against a webdav data storage.', action='store_true')
     parser.addoption('--object', help='Executes tests against an object data storage.', action='store_true')
+    parser.addoption('--prefix', help='Executes tests against an object data storage with prefix.', action='store_true')
     parser.addoption('--small', help='Executes tests for only small subset of file sizes.', action='store_true')
 
 
@@ -95,14 +96,15 @@ def pytest_sessionstart(session):
     storage_folder = os.getenv('CP_TEST_FOLDER_ID')
     storage_provider = os.environ['CP_PROVIDER']
     storage_type = _get_storage_type(config=session.config, storage_provider=storage_provider)
-    storage_name = _generate_storage_name(storage_type=storage_type, storage_region=storage_region)
-    storage_path = storage_name
-    session.config.storage_name = storage_name
+    session.config.storage_name = _generate_storage_name(storage_type=storage_type, storage_region=storage_region)
+    session.config.storage_path = session.config.storage_name
     session.config.logs_path = os.path.join(default_logs_path, session.config.storage_name)
 
     mkdir(session.config.local_path, session.config.root_mount_path, session.config.logs_path)
 
     if storage_type in ['S3', 'AZ', 'GS']:
+        if session.config.option.prefix:
+            session.config.storage_path += '/prefix'
         session.config.mount_path = session.config.root_mount_path
         execute(log_path=os.path.join(session.config.logs_path, 'start.log'), command="""
         head -c '{source_size}' /dev/urandom > '{source_path}'
@@ -119,7 +121,7 @@ def pytest_sessionstart(session):
                             -u '' \
                             -f '{folder}'
         
-        pipe storage mount -t -l '{logs_path}/mount.log' -b '{storage_name}' '{mount_path}'
+        pipe storage mount -t -l '{logs_path}/mount.log' -b '{storage_path}' '{mount_path}'
         
         counter=0
         while ! mount | grep '{mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
@@ -131,8 +133,8 @@ def pytest_sessionstart(session):
             echo "Mount at {mount_path} is not accessible"
             exit 1
         fi
-        """.format(storage_name=storage_name,
-                   storage_path=storage_path,
+        """.format(storage_name=session.config.storage_name,
+                   storage_path=session.config.storage_path,
                    storage_type=storage_type,
                    region=storage_region,
                    folder=storage_folder or '',
@@ -143,7 +145,8 @@ def pytest_sessionstart(session):
                    mount_path=session.config.root_mount_path))
     else:
         storage_share = os.getenv('CP_TEST_SHARE_ID')
-        session.config.mount_path = os.path.join(session.config.root_mount_path, storage_name.replace('-', '_'))
+        session.config.mount_path = os.path.join(session.config.root_mount_path,
+                                                 session.config.storage_name.replace('-', '_'))
 
         execute(log_path=os.path.join(session.config.logs_path, 'start.log'), command="""
         head -c '{source_size}' /dev/urandom > '{source_path}'
@@ -198,8 +201,8 @@ def pytest_sessionstart(session):
         fi
         """.format(api=api,
                    api_token=api_token,
-                   storage_name=storage_name,
-                   storage_path=storage_path,
+                   storage_name=session.config.storage_name,
+                   storage_path=session.config.storage_path,
                    storage_type=storage_type,
                    region=storage_region,
                    share=storage_share,
