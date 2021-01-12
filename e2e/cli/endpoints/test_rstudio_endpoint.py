@@ -19,7 +19,7 @@ import re
 class TestRStudioEndpoints(object):
     pipeline_id = None
     run_ids = []
-    node = None
+    nodes = set()
     state = FailureIndicator()
     test_case = ''
 
@@ -30,180 +30,268 @@ class TestRStudioEndpoints(object):
 
     @classmethod
     def teardown_class(cls):
-        terminate_node(cls.node)
-        logging.info("Node %s was terminated" % cls.node)
-        for run_id in cls.run_ids:
-            stop_pipe(run_id)
+        for node in cls.nodes:
+            terminate_node(node)
+            logging.info("Node %s was terminated" % node)
 
     @pipe_test
     def test_rstudio_endpoint(self):
         self.test_case = 'TC-EDGE-4'
-        run_id, node_name = run("library/rstudio", "/start.sh", False)
-        endpoints_structure = {
-            "RStudio": "pipeline-" + run_id + "-8788-0"
-        }
+        run_id, node_name, result, message = run_test(
+            "library/rstudio",
+            "echo {test_case} && /start.sh".format(test_case=self.test_case),
+            endpoints_structure={
+                "RStudio": "pipeline-{run_id}-8788-0"
+            })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 1)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
-        stop_pipe(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     @pipe_test
     def test_rstudio_and_no_machine_endpoint(self):
         self.test_case = 'TC-EDGE-5'
-        run_id, node_name = run("library/rstudio", "/start.sh", True)
-
-        endpoints_structure = {
-            "RStudio": "pipeline-" + run_id + "-8788-0",
-            "NoMachine": "pipeline-" + run_id + "-8089-0"
-        }
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      endpoints_structure={
+                                                          "RStudio": "pipeline-{run_id}-8788-0",
+                                                          "NoMachine": "pipeline-{run_id}-8089-0"
+                                                      }, no_machine=True)
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 2)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     @pipe_test
     def test_rstudio_endpoint_friendly_url(self):
         self.test_case = 'TC-EDGE-6'
-        run_id, node_name = run("library/rstudio", "/start.sh", no_machine=False, friendly_url='friendly1')
-
-        endpoints_structure = {
-            "RStudio": "friendly1-RStudio",
-        }
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      friendly_url="friendly1",
+                                                      endpoints_structure={
+                                                          "RStudio": "friendly1"
+                                                      })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 1)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     @pipe_test
     def test_rstudio_and_no_machine_endpoint_friendly_url(self):
         self.test_case = 'TC-EDGE-7'
-        run_id, node_name = run("library/rstudio", "/start.sh", no_machine=True, friendly_url='friendly2')
-
-        endpoints_structure = {
-            "RStudio": "friendly2-RStudio",
-            "NoMachine": "friendly2-NoMachine"
-        }
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      friendly_url="friendly2",
+                                                      no_machine=True,
+                                                      endpoints_structure={
+                                                          "RStudio": "friendly2-RStudio",
+                                                          "NoMachine": "friendly2-NoMachine"
+                                                      })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 2)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     # @pipe_test
     # def test_rstudio_endpoint_friendly_domain_url(self):
-    #     self.test_case = 'TC-EDGE-8'w
-    #     run_id, node_name = run("library/rstudio", "/start.sh", no_machine=False, friendly_url='friendly1.com')
-    #     check_for_access = False
-    #     endpoints_structure = {
-    #         "RStudio": "friendly1.com",
-    #     }
+    #     self.test_case = 'TC-EDGE-8'
+    #     run_id, node_name, result, message = run_test("library/rstudio",
+    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
+    #                                               friendly_url="friendly1.com",
+    #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
+    #                                               endpoints_structure = {
+    #                                                   "RStudio": "https://friendly1.com:\\d*",
+    #                                               })
     #     self.run_ids.append(run_id)
-    #     self.node = node_name
-    #     urls = get_endpoint_urls(run_id)
-    #     check_for_number_of_endpoints(urls, 1)
-    #     for name in urls:
-    #         url = urls[name]
-    #         structure_is_fine = check_service_url_structure(url, endpoints_structure[name], checker=lambda u, p: url.startswith('https://{}'.format(p)))
-    #         if not structure_is_fine:
-    #             raise RuntimeError("service url: {}, has wrong format.".format(url))
-    #         is_accessible = not check_for_access or follow_service_url(url, 100)
-    #         if not is_accessible:
-    #             raise RuntimeError("service url: {}, is not accessible.".format(url))
+    #     self.nodes.add(node_name)
+    #     if not result:
+    #         raise RuntimeError(message)
     #
     # @pipe_test
     # def test_rstudio_and_no_machine_endpoint_friendly_domain_url(self):
     #     self.test_case = 'TC-EDGE-9'
-    #     run_id, node_name = run("library/rstudio", "/start.sh", no_machine=True, friendly_url='friendly2.com')
-    #     check_for_access = False
-    #     endpoints_structure = {
-    #         "RStudio": "https://friendly2.com/.*RStudio",
-    #         "NoMachine": "https://friendly2.com/.*NoMachine"
-    #     }
+    #     run_id, node_name, result, message = run_test("library/rstudio",
+    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
+    #                                               friendly_url="friendly2.com",
+    #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
+    #                                               endpoints_structure = {
+    #                                                   "RStudio": "https://friendly2.com.*/RStudio",
+    #                                                   "NoMachine": "https://friendly2.com.*/NoMachine"
+    #                                               }, no_machine=True)
     #     self.run_ids.append(run_id)
-    #     self.node = node_name
-    #     urls = get_endpoint_urls(run_id)
-    #     check_for_number_of_endpoints(urls, 2)
-    #     for name in urls:
-    #         url = urls[name]
-    #         structure_is_fine = check_service_url_structure(url, endpoints_structure[name], checker=lambda u, p: re.compile(p).match(u))
-    #         if not structure_is_fine:
-    #             raise RuntimeError("service url: {}, has wrong format.".format(url))
-    #         is_accessible = not check_for_access or follow_service_url(url, 100)
-    #         if not is_accessible:
-    #             raise RuntimeError("service url: {}, is not accessible.".format(url))
-
-    @pipe_test
-    def test_rstudio_and_no_machine_endpoint_friendly_domain_and_endpoint_url(self):
-        self.test_case = 'TC-EDGE-10'
-        check_for_access = False
-        run_id, node_name = run("library/rstudio", "/start.sh", no_machine=True, friendly_url='friendly3.com/friendly')
-
-        endpoints_structure = {
-            "RStudio": "https://friendly3.com.*/friendly-RStudio",
-            "NoMachine": "https://friendly3.com.*/friendly-NoMachine"
-        }
-        self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 2)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name], checker=lambda u, p: bool(re.compile(p).match(u)))
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = not check_for_access or follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+    #     self.nodes.add(node_name)
+    #     if not result:
+    #         raise RuntimeError(message)
 
     @pipe_test
     def test_rstudio_endpoint_friendly_domain_and_endpoint_url(self):
-        self.test_case = 'TC-EDGE-11'
-        run_id, node_name = run("library/rstudio", "/start.sh", no_machine=False, friendly_url='friendly4.com/friendly')
-        check_for_access = False
-        endpoints_structure = {
-            "RStudio": "friendly4.com.*/friendly",
-        }
+        self.test_case = 'TC-EDGE-10'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      friendly_url="friendly4.com/friendly",
+                                                      check_access=False,
+                                                      url_checker=lambda u, p: bool(re.compile(p).match(u)),
+                                                      endpoints_structure={
+                                                          "RStudio": "https://friendly4.com.*/friendly",
+                                                      })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 1)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name], checker=lambda u, p: url.startswith('https://{}'.format(p)))
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = not check_for_access or follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_and_no_machine_endpoint_friendly_domain_and_endpoint_url(self):
+        self.test_case = 'TC-EDGE-11'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      friendly_url="friendly3.com/friendly",
+                                                      check_access=False,
+                                                      no_machine=True,
+                                                      url_checker=lambda u, p: bool(re.compile(p).match(u)),
+                                                      endpoints_structure={
+                                                          "RStudio": "https://friendly3.com.*/friendly-RStudio",
+                                                          "NoMachine": "https://friendly3.com.*/friendly-NoMachine"
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_spark_endpoints(self):
+        self.test_case = 'TC-EDGE-17'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      spark=True,
+                                                      endpoints_structure={
+                                                          "RStudio": "pipeline-{run_id}-8788-0",
+                                                          "SparkUI": "pipeline-{run_id}-8088-1000",
+
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_spark_endpoints(self):
+        self.test_case = 'TC-EDGE-18'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      spark=True,
+                                                      no_machine=True,
+                                                      endpoints_structure={
+                                                          "RStudio": "pipeline-{run_id}-8788-0",
+                                                          "SparkUI": "pipeline-{run_id}-8088-1000",
+                                                          "NoMachine": "pipeline-{run_id}-8089-0"
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_spark_endpoints_friendly_url(self):
+        self.test_case = 'TC-EDGE-19'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      spark=True,
+                                                      friendly_url="asdf",
+                                                      endpoints_structure={
+                                                          "RStudio": "asdf-RStudio",
+                                                          "SparkUI": "asdf-SparkUI",
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_spark_endpoints(self):
+        self.test_case = 'TC-EDGE-20'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      spark=True,
+                                                      no_machine=True,
+                                                      friendly_url="asdf",
+                                                      endpoints_structure={
+                                                          "RStudio": "asdf-RStudio",
+                                                          "SparkUI": "asdf-SparkUI",
+                                                          "NoMachine": "asdf-NoMachine"
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    # @pipe_test
+    # def test_rstudio_spark_endpoints_friendly_domain_url(self):
+    #     self.test_case = 'TC-EDGE-21'
+    # run_id, node_name, result, message = run_test("library/rstudio",
+    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
+    #                                               spark=True,
+    #                                               friendly_url="friendly1.com",
+    #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
+    #                                               endpoints_structure={
+    #                                                   "RStudio": "https://friendly1.com.*/RStudio",
+    #                                                   "SparkUI": "https://friendly1.com.*/SparkUI",
+    #                                               })
+    # self.run_ids.append(run_id)
+    # self.nodes.add(node_name)
+    # if not result:
+    #     raise RuntimeError(message)
+    #
+    # @pipe_test
+    # def test_rstudio_spark_no_machine_endpoint_friendly_domain_url(self):
+    #     self.test_case = 'TC-EDGE-22'
+    # run_id, node_name, result, message = run_test("library/rstudio",
+    #                                               "echo {test_case} && /start.sh".format(test_case=self.test_case),
+    #                                               spark=True,
+    #                                               friendly_url="friendly2.com",
+    #                                               url_checker = lambda u, p: bool(re.compile(p).match(u)),
+    #                                               endpoints_structure={
+    #                                                   "RStudio": "https://friendly2.com.*/RStudio",
+    #                                                   "NoMachine": "https://friendly2.com.*/NoMachine",
+    #                                                   "SparkUI": "https://friendly2.com.*/SparkUI",
+    # self.run_ids.append(run_id)
+    # self.nodes.add(node_name)
+    # if not result:
+    #     raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_spark_endpoints_friendly_domain_and_url(self):
+        self.test_case = 'TC-EDGE-23'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      friendly_url="friendly1.com/asdf",
+                                                      check_access=False,
+                                                      spark=True,
+                                                      url_checker=lambda u, p: bool(re.compile(p).match(u)),
+                                                      endpoints_structure={
+                                                          "RStudio": "https://friendly1.com.*/asdf-RStudio",
+                                                          "SparkUI": "https://friendly1.com.*/asdf-SparkUI",
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_rstudio_spark_no_machine_endpoint_friendly_domain_and_url(self):
+        self.test_case = 'TC-EDGE-24'
+        run_id, node_name, result, message = run_test("library/rstudio",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      friendly_url="friendly2.com/asdf",
+                                                      check_access=False,
+                                                      spark=True,
+                                                      no_machine=True,
+                                                      url_checker=lambda u, p: bool(re.compile(p).match(u)),
+                                                      endpoints_structure={
+                                                          "RStudio": "https://friendly2.com.*/asdf-RStudio",
+                                                          "NoMachine": "https://friendly2.com.*/asdf-NoMachine",
+                                                          "SparkUI": "https://friendly2.com.*/asdf-SparkUI",
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)

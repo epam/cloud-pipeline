@@ -19,7 +19,7 @@ import re
 class TestJupiterEndpoints(object):
     pipeline_id = None
     run_ids = []
-    node = None
+    nodes = set()
     state = FailureIndicator()
     test_case = ''
 
@@ -30,72 +30,49 @@ class TestJupiterEndpoints(object):
 
     @classmethod
     def teardown_class(cls):
-        terminate_node(cls.node)
-        logging.info("Node %s was terminated" % cls.node)
-        for run_id in cls.run_ids:
-            stop_pipe(run_id)
+        for node in cls.nodes:
+            terminate_node(node)
+            logging.info("Node %s was terminated" % node)
 
     @pipe_test
     def test_jupiter_endpoint(self):
         self.test_case = 'TC-EDGE-12'
-        run_id, node_name = run("library/jupyter-lab", "/start.sh", False)
-        endpoints_structure = {
-            "JupyterLab": "pipeline-" + run_id + "-8888-0"
-        }
+        run_id, node_name, result, message = run_test("library/jupyter-lab",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      endpoints_structure={
+                                                          "JupyterLab": "pipeline-{run_id}-8888-0"
+                                                      })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 1)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
-        stop_pipe(run_id)
-
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     @pipe_test
     def test_jupiter_endpoint_friendly_url(self):
         self.test_case = 'TC-EDGE-13'
-        run_id, node_name = run("library/jupyter-lab", "/start.sh", no_machine=False, friendly_url='friendly1')
-
-        endpoints_structure = {
-            "JupyterLab": "friendly1-JupiterLab",
-        }
+        run_id, node_name, result, message = run_test("library/jupyter-lab",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      friendly_url='friendly1',
+                                                      endpoints_structure={
+                                                          "JupyterLab": "friendly1-JupiterLab",
+                                                      })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 1)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     @pipe_test
     def test_jupiter_and_no_machine_endpoint_friendly_url(self):
         self.test_case = 'TC-EDGE-14'
-        run_id, node_name = run("library/jupyter-lab", "/start.sh", no_machine=True, friendly_url='friendly2')
-
-        endpoints_structure = {
-            "JupyterLab": "friendly2-JupiterLab",
-            "NoMachine": "friendly2-NoMachine"
-        }
+        run_id, node_name, result, message = run_test("library/jupyter-lab",
+                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                                      friendly_url='friendly2',
+                                                      no_machine=True,
+                                                      endpoints_structure={
+                                                          "JupyterLab": "friendly2-JupiterLab",
+                                                          "NoMachine": "friendly2-NoMachine"
+                                                      })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 2)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)

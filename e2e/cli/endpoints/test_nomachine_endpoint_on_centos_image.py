@@ -17,11 +17,10 @@ from e2e.cli.endpoints.utils import *
 
 class TestNoMachineEndpoints(object):
     pipeline_id = None
-    run_id = None
-    node = None
-    pipeline_name = 'test-nomachine-endpoints-centos'
+    run_ids = []
+    nodes = set()
+    test_case = ''
     state = FailureIndicator()
-    test_case = 'TC-EDGE-1'
 
     @classmethod
     def setup_class(cls):
@@ -30,26 +29,51 @@ class TestNoMachineEndpoints(object):
 
     @classmethod
     def teardown_class(cls):
-        terminate_node(cls.node)
-        logging.info("Node %s was terminated" % cls.node)
-        stop_pipe(cls.run_id)
+        for node in cls.nodes:
+            terminate_node(node)
+            logging.info("Node %s was terminated" % node)
 
     @pipe_test
     def test_nomachine_endpoint_on_centos_image(self):
-        run_id, node_name = run("library/centos:7", no_machine=True)
-        endpoints_structure = {
-            "NoMachine": "pipeline-" + run_id + "-8089-0"
-        }
-        self.run_id = run_id
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 1)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.test_case = 'TC-EDGE-1'
+        run_id, node_name, result, message = run_test("library/centos:7",
+                                                      "echo {test_case} && sleep infinity".format(test_case=self.test_case),
+                                                      no_machine=True,
+                                                      endpoints_structure={
+                                                          "NoMachine": "pipeline-{run_id}-8089-0"
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
+    @pipe_test
+    def test_spark_endpoint_on_centos_image(self):
+        self.test_case = 'TC-EDGE-15'
+        run_id, node_name, result, message = run_test("library/centos:7",
+                                                      "echo {test_case} && sleep infinity".format(test_case=self.test_case),
+                                                      spark=True,
+                                                      endpoints_structure={
+                                                          "SparkUI": "pipeline-{run_id}-8088-1000"
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
+
+    @pipe_test
+    def test_spark_and_no_machine_endpoint_on_centos_image(self):
+        self.test_case = 'TC-EDGE-16'
+        run_id, node_name, result, message = run_test("library/centos:7",
+                                                      "echo {test_case} && sleep infinity".format(
+                                                          test_case=self.test_case),
+                                                      spark=True,
+                                                      no_machine=True,
+                                                      endpoints_structure={
+                                                          "NoMachine": "pipeline-{run_id}-8089-0",
+                                                          "SparkUI": "pipeline-{run_id}-8088-1000"
+                                                      })
+        self.run_ids.append(run_id)
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)

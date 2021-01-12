@@ -18,7 +18,7 @@ from e2e.cli.endpoints.utils import *
 class TestNoMachineEndpoints(object):
     pipeline_id = None
     run_ids = []
-    node = None
+    nodes = set()
     state = FailureIndicator()
     test_case = ''
 
@@ -29,47 +29,36 @@ class TestNoMachineEndpoints(object):
 
     @classmethod
     def teardown_class(cls):
-        logging.info("Node %s was terminated" % cls.node)
-        for run_id in cls.run_ids:
-            stop_pipe(run_id)
+        for node in cls.nodes:
+            terminate_node(node)
+            logging.info("Node %s was terminated" % node)
 
     @pipe_test
     def test_nomachine_endpoint_on_ubuntu_16_image(self):
         self.test_case = 'TC-EDGE-2'
-        run_id, node_name = run("library/ubuntu:16.04", no_machine=True)
-        endpoints_structure = {
-            "NoMachine": "pipeline-" + run_id + "-8089-0"
-        }
+        run_id, node_name, result, message = run_test("library/ubuntu:16.04",
+                                                      "echo {test_case} && sleep infinity".format(
+                                                          test_case=self.test_case),
+                                                      no_machine=True,
+                                                      endpoints_structure={
+                                                          "NoMachine": "pipeline-{run_id}-8089-0"
+                                                      })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 1)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
 
     @pipe_test
     def test_nomachine_endpoint_on_ubuntu_18_image(self):
         self.test_case = 'TC-EDGE-3'
-        run_id, node_name = run("library/ubuntu:18.04", no_machine=True)
-
-        endpoints_structure = {
-            "NoMachine": "pipeline-" + run_id + "-8089-0"
-        }
+        run_id, node_name, result, message = run_test("library/ubuntu:18.04",
+                                                      "echo {test_case} && sleep infinity".format(
+                                                          test_case=self.test_case),
+                                                      no_machine=True,
+                                                      endpoints_structure={
+                                                          "NoMachine": "pipeline-{run_id}-8089-0"
+                                                      })
         self.run_ids.append(run_id)
-        self.node = node_name
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, 1)
-        for name in urls:
-            url = urls[name]
-            structure_is_fine = check_service_url_structure(url, endpoints_structure[name])
-            if not structure_is_fine:
-                raise RuntimeError("service url: {}, has wrong format.".format(url))
-            is_accessible = follow_service_url(url, 100)
-            if not is_accessible:
-                raise RuntimeError("service url: {}, is not accessible.".format(url))
+        self.nodes.add(node_name)
+        if not result:
+            raise RuntimeError(message)
