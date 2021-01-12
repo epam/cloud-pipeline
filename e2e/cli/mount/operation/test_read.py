@@ -1,22 +1,23 @@
 import pytest
 
-from ..utils import execute, assert_content
+from ..utils import assert_content
+from pyfs import head, tail, cp
 from pyio import read, read_regions
 
 
 def test_cp_from_mount_folder_to_local_folder(size, local_file, mount_file, source_path):
-    execute('head -c %s %s > %s' % (size, source_path, local_file))
-    execute('head -c %s %s > %s' % (size, source_path, mount_file))
-    execute('cp %s %s' % (mount_file, (local_file + '.mount.tmp')))
-    assert_content(local_file, local_file + '.mount.tmp')
+    head(source_path, size=size, write_to=local_file)
+    head(source_path, size=size, write_to=mount_file)
+    cp(mount_file, local_file + '.mount.file.copy')
+    assert_content(local_file, local_file + '.mount.file.copy')
 
 
 def test_head_file(local_file, mount_file):
-    assert execute('head -c 10 %s' % local_file) == execute('head -c 10 %s' % mount_file)
+    assert head(local_file) == head(mount_file)
 
 
 def test_tail_file(local_file, mount_file):
-    assert execute('tail -c 10 %s' % local_file) == execute('tail -c 10 %s' % mount_file)
+    assert tail(local_file) == tail(mount_file)
 
 
 def test_read_from_position_bigger_than_file_length(size, local_file, mount_file):

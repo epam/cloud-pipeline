@@ -173,9 +173,9 @@ operation_config = [
 
 
 @pytest.fixture(scope='function', autouse=True)
-def teardown_function(session_mount_path):
+def teardown_function(mount_path):
     yield
-    rm(session_mount_path, under=True, recursive=True, force=True)
+    rm(mount_path, under=True, recursive=True, force=True)
 
 
 @pytest.mark.parametrize('config', operation_config, ids=lambda config: config['name'])

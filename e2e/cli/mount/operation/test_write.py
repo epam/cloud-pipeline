@@ -1,125 +1,156 @@
+import os
+
 import pytest
 
-from ..utils import KB, MB, execute, as_size, as_literal, assert_content
-from pyio import write, write_with_gaps, write_with_small_write_to_head_before_flush, write_with_overlapping
-from pyfs import touch, truncate
-
-small_write_size = 5
+from ..utils import assert_content
+from pyfs import head, cp
+from pyio import write, write_regions
 
 
-def test_streaming_write(size, local_file, mount_file, source_path):
-    execute('head -c %s %s > %s' % (size, source_path, local_file))
-    execute('head -c %s %s > %s' % (size, source_path, mount_file))
+def test_cp_file_from_local_folder_to_mount_folder(size, local_file, mount_file, source_path):
+    head(source_path, size=size, write_to=local_file)
+    cp(local_file, mount_file)
     assert_content(local_file, mount_file)
 
 
-def test_cp_to_mount(size, local_file, mount_file, source_path):
-    execute('cp %s %s' % (local_file, mount_file))
+def test_append_to_file_end(local_file, mount_file, source_path):
+    head(source_path, append_to=local_file)
+    head(source_path, append_to=mount_file)
     assert_content(local_file, mount_file)
 
 
-def test_small_append_using_bash(size, local_file, mount_file, source_path):
-    execute('head -c %s %s >> %s' % (small_write_size, source_path, local_file))
-    execute('head -c %s %s >> %s' % (small_write_size, source_path, mount_file))
+def test_override_file_tail(size, local_file, mount_file):
+    if size < 10:
+        pytest.skip()
+    actual_size = os.path.getsize(local_file)
+    write(local_file, offset=actual_size - 10, amount=10)
+    write(mount_file, offset=actual_size - 10, amount=10)
     assert_content(local_file, mount_file)
 
 
-def test_small_write_to_tail(size, local_file, mount_file, source_path):
-    actual_size = as_size(size)
-    if actual_size <= small_write_size:
-        pytest.skip('Too small file (%s) to perform small write to tail' % size)
-    write(local_file, offset=actual_size - small_write_size, amount=small_write_size)
-    write(mount_file, offset=actual_size - small_write_size, amount=small_write_size)
+def test_override_file_head(size, local_file, mount_file):
+    if size < 10:
+        pytest.skip()
+    write(local_file, offset=0, amount=10)
+    write(mount_file, offset=0, amount=10)
     assert_content(local_file, mount_file)
 
 
-def test_small_write_to_head(size, local_file, mount_file, source_path):
-    actual_size = as_size(size)
-    if actual_size <= small_write_size:
-        pytest.skip('Too small file (%s) to perform small write to head' % size)
-    write(local_file, offset=0, amount=small_write_size)
-    write(mount_file, offset=0, amount=small_write_size)
+def test_write_to_position_that_is_bigger_than_file_length(local_file, mount_file):
+    actual_size = os.path.getsize(local_file)
+    write(local_file, offset=actual_size + 10, amount=10)
+    write(mount_file, offset=actual_size + 10, amount=10)
     assert_content(local_file, mount_file)
 
 
-def test_write_with_gaps(size, local_file, mount_file, source_path):
-    actual_size = as_size(size)
-    if actual_size <= 1 * MB:
-        pytest.skip('Too small file (%s) to perform write with gaps' % size)
-    write_with_gaps(local_file, offset=1 * MB, amount=1 * MB, gap=1 * MB)
-    write_with_gaps(mount_file, offset=1 * MB, amount=1 * MB, gap=1 * MB)
+def test_write_region_that_exceeds_file_length(size, local_file, mount_file):
+    if size < 5:
+        pytest.skip()
+    actual_size = os.path.getsize(local_file)
+    write(local_file, offset=actual_size - 5, amount=10)
+    write(mount_file, offset=actual_size - 5, amount=10)
     assert_content(local_file, mount_file)
 
 
-def test_write_with_small_write_to_head_before_flush(size, local_file, mount_file, source_path):
-    actual_size = as_size(size)
-    if actual_size <= 1 * MB:
-        pytest.skip('Too small file (%s) to perform write with small write to head before flush' % size)
-    write_with_small_write_to_head_before_flush(local_file, offset=0, amount=1 * MB, small_amount=small_write_size)
-    write_with_small_write_to_head_before_flush(mount_file, offset=0, amount=1 * MB, small_amount=small_write_size)
+def test_write_region_in_first_chunk(size, local_file, mount_file):
+    if size < 20:
+        pytest.skip()
+    write(local_file, offset=10, amount=10)
+    write(mount_file, offset=10, amount=10)
     assert_content(local_file, mount_file)
 
 
-def test_write_with_overlapping(size, local_file, mount_file, source_path):
-    actual_size = as_size(size)
-    if actual_size <= 1 * MB:
-        pytest.skip('Too small file (%s) to perform write with overlapping' % size)
-    write_with_overlapping(local_file, offset=0, amount=1 * MB, overlap=small_write_size)
-    write_with_overlapping(mount_file, offset=0, amount=1 * MB, overlap=small_write_size)
+def test_write_region_in_single_chunk(size, chunk_size, local_file, mount_file):
+    if size < chunk_size + 20:
+        pytest.skip()
+    write(local_file, offset=chunk_size + 10, amount=10)
+    write(mount_file, offset=chunk_size + 10, amount=10)
     assert_content(local_file, mount_file)
 
-offset_amount_test_data = [
-    [1 * MB, 1 * MB],
-    [11 * MB, 1 * MB],
-    [11 * MB, 1050 * KB],
-    [21 * MB, 1050 * KB],
-    [0, 1 * MB],
-    [0, 1050 * KB]
-]
 
-@pytest.mark.parametrize('offset, amount', offset_amount_test_data, ids=as_literal)
-def test_write_with_gaps_to_empty_file(size, local_file, mount_file, source_path, offset, amount):
-    local_file_copy = local_file + '.copy'
-    mount_file_copy = mount_file + '.copy'
-    actual_size = as_size(size)
-    if actual_size <= 1 * MB:
-        pytest.skip('Too small file (%s) to perform write with gaps' % size)
-    touch(local_file_copy)
-    touch(mount_file_copy)
-    truncate(local_file_copy, size='0')
-    truncate(mount_file_copy, size='0')
-    write_with_gaps(local_file_copy, offset=offset, amount=amount, size=actual_size, gap=1 * MB)
-    write_with_gaps(mount_file_copy, offset=offset, amount=amount, size=actual_size, gap=1 * MB)
-    assert_content(local_file_copy, mount_file_copy)
+def test_write_region_matching_single_chunk(size, chunk_size, local_file, mount_file):
+    if size < chunk_size:
+        pytest.skip()
+    write(local_file, offset=0, amount=chunk_size)
+    write(mount_file, offset=0, amount=chunk_size)
+    assert_content(local_file, mount_file)
 
 
-@pytest.mark.parametrize('offset, amount', offset_amount_test_data, ids=as_literal)
-def test_write_with_gaps_more_than_length(size, local_file, mount_file, source_path, offset, amount):
-    local_file_copy = local_file + '.copy'
-    mount_file_copy = mount_file + '.copy'
-    actual_size = as_size(size)
-    if actual_size <= 1 * MB:
-        pytest.skip('Too small file (%s) to perform write with gaps' % size)
-    touch(local_file_copy)
-    touch(mount_file_copy)
-    execute('head -c %s %s > %s' % (as_literal(int(actual_size / 2)), source_path, local_file_copy))
-    execute('head -c %s %s > %s' % (as_literal(int(actual_size / 2)), source_path, mount_file_copy))
-    write_with_gaps(local_file_copy, offset=offset, amount=amount, size=actual_size, gap=1 * MB)
-    write_with_gaps(mount_file_copy, offset=offset, amount=amount, size=actual_size, gap=1 * MB)
-    assert_content(local_file_copy, mount_file_copy)
+def test_write_region_between_two_chunks(size, chunk_size, local_file, mount_file):
+    if size < chunk_size + 5:
+        pytest.skip()
+    write(local_file, offset=chunk_size - 5, amount=10)
+    write(mount_file, offset=chunk_size - 5, amount=10)
+    assert_content(local_file, mount_file)
 
 
-@pytest.mark.parametrize('offset, amount', offset_amount_test_data, ids=as_literal)
-def test_write_with_gaps_less_than_length(size, local_file, mount_file, source_path, offset, amount):
-    local_file_copy = local_file + '.copy'
-    mount_file_copy = mount_file + '.copy'
-    actual_size = as_size(size)
-    if actual_size <= 1 * MB:
-        pytest.skip('Too small file (%s) to perform write with gaps' % size)
-    touch(local_file_copy)
-    touch(mount_file_copy)
-    execute('head -c %s %s > %s' % (size, source_path, local_file_copy))
-    execute('head -c %s %s > %s' % (size, source_path, mount_file_copy))
-    write_with_gaps(local_file_copy, offset=offset, amount=amount, size=int(actual_size / 2), gap=1 * MB)
-    write_with_gaps(mount_file_copy, offset=offset, amount=amount, size=int(actual_size / 2), gap=1 * MB)
-    assert_content(local_file_copy, mount_file_copy)
+def test_write_two_regions_in_single_chunk(size, chunk_size, local_file, mount_file):
+    if size < chunk_size + 110:
+        pytest.skip()
+    write_regions(local_file, {'offset': chunk_size + 10, 'amount': 10}, {'offset': chunk_size + 100, 'amount': 10})
+    write_regions(mount_file, {'offset': chunk_size + 10, 'amount': 10}, {'offset': chunk_size + 100, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
+def test_write_two_regions_in_two_adjacent_chunks(size, chunk_size, local_file, mount_file):
+    if size < chunk_size + 20:
+        pytest.skip()
+    write_regions(local_file, {'offset': 10, 'amount': 10}, {'offset': chunk_size + 10, 'amount': 10})
+    write_regions(mount_file, {'offset': 10, 'amount': 10}, {'offset': chunk_size + 10, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
+def test_write_two_regions_in_two_non_adjacent_chunks(size, chunk_size, local_file, mount_file):
+    if size < chunk_size * 2 + 20:
+        pytest.skip()
+    write_regions(local_file, {'offset': 10, 'amount': 10}, {'offset': chunk_size * 2 + 10, 'amount': 10})
+    write_regions(mount_file, {'offset': 10, 'amount': 10}, {'offset': chunk_size * 2 + 10, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
+def test_write_two_regions_between_three_chunks(size, chunk_size, local_file, mount_file):
+    if size < chunk_size * 2 + 5:
+        pytest.skip()
+    write_regions(local_file, {'offset': chunk_size - 5, 'amount': 10}, {'offset': chunk_size * 2 - 5, 'amount': 10})
+    write_regions(mount_file, {'offset': chunk_size - 5, 'amount': 10}, {'offset': chunk_size * 2 - 5, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
+def test_write_two_regions_between_four_chunks(size, chunk_size, local_file, mount_file):
+    if size < chunk_size * 3 + 5:
+        pytest.skip()
+    write_regions(local_file, {'offset': chunk_size - 5, 'amount': 10}, {'offset': chunk_size * 3 - 5, 'amount': 10})
+    write_regions(mount_file, {'offset': chunk_size - 5, 'amount': 10}, {'offset': chunk_size * 3 - 5, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
+def test_write_two_regions_with_one_of_them_exceeding_file_length(size, chunk_size, local_file, mount_file):
+    if size < 5:
+        pytest.skip()
+    actual_size = os.path.getsize(local_file)
+    write_regions(local_file, {'offset': 10, 'amount': 10}, {'offset': actual_size - 5, 'amount': 10})
+    write_regions(mount_file, {'offset': 10, 'amount': 10}, {'offset': actual_size - 5, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
+def test_write_two_regions_starting_from_position_that_is_bigger_than_file_length(chunk_size, local_file, mount_file):
+    actual_size = os.path.getsize(local_file)
+    write_regions(local_file, {'offset': actual_size + 5, 'amount': 10}, {'offset': actual_size + 20, 'amount': 10})
+    write_regions(mount_file, {'offset': actual_size + 5, 'amount': 10}, {'offset': actual_size + 20, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
+def test_write_two_overlapping_regions(size, chunk_size, local_file, mount_file):
+    if size < 25:
+        pytest.skip()
+    write_regions(local_file, {'offset': 10, 'amount': 10}, {'offset': 15, 'amount': 10})
+    write_regions(mount_file, {'offset': 10, 'amount': 10}, {'offset': 15, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
+def test_write_region_to_an_already_written_chunk(size, chunk_size, local_file, mount_file):
+    if size < chunk_size + 10:
+        pytest.skip()
+    write_regions(local_file, {'offset': 0, 'amount': chunk_size}, {'offset': 10, 'amount': chunk_size})
+    write_regions(mount_file, {'offset': 0, 'amount': chunk_size}, {'offset': 10, 'amount': chunk_size})
+    assert_content(local_file, mount_file)

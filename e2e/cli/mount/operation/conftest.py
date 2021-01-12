@@ -3,16 +3,27 @@ from datetime import datetime
 
 import pytest
 
-from ..utils import as_literal, as_size, execute, mkdir, KB, MB
+from ..utils import as_literal, as_size, execute, mkdir, KB, MB, MiB
 
 root_path = os.getcwd()
-root_logs_path = os.path.join(root_path, 'e2e-logs')
-tests_source_path = os.path.join(root_path, 'e2e-random')
 
 default_storage_kind = 'object'
 default_local_path = os.path.join(root_path, 'e2e-local')
 default_mount_path = os.path.join(root_path, 'e2e-mount')
-default_sizes = '0, 1, 1000 KB, 1 MB, 1050 KB, 30 MB, 600 MB'
+default_logs_path = os.path.join(root_path, 'e2e-logs')
+default_source_path = os.path.join(root_path, 'e2e-random')
+default_chunk_size = 10 * MB
+default_buffer_size = 512 * MB
+default_sizes = {
+    'cli.mount.operation.test_fallocate': [2, 11 * MB],
+    'cli.mount.operation.test_truncate': [2, 11 * MB],
+    'cli.mount.operation.test_read': [0, 1, 11 * MB, 600 * MB],
+    'cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
+                                       default_chunk_size,
+                                       default_chunk_size * 4 + 1 * MB,
+                                       default_buffer_size,
+                                       default_buffer_size + 1 * MB]
+}
 
 
 def pytest_addoption(parser):
@@ -23,10 +34,12 @@ def pytest_addoption(parser):
     parser.addoption('--sizes', help='File sizes to perform tests for.')
 
 
-@pytest.fixture(scope='session')
-def session_mount_path(request):
+@pytest.fixture(scope='module', autouse=True)
+def cleanup_before_module(request):
+    from pyfs import rm
     session = request.node
-    return session.config.storage_mount_path
+    rm(_get_local_path(config=session.config), under=True, recursive=True, force=True)
+    rm(session.config.storage_mount_path, under=True, recursive=True, force=True)
 
 
 @pytest.fixture(scope='function')
@@ -35,54 +48,35 @@ def mount_path(request):
     return session.config.storage_mount_path
 
 
-@pytest.fixture(scope='session')
-def session_local_path(request):
-    session = request.node
-    return _get_local_path(config=session.config)
-
-
 @pytest.fixture(scope='function')
 def local_path(request):
     session = request.node
     return _get_local_path(config=session.config)
 
 
-@pytest.fixture(scope='module', autouse=True)
-def cleanup_before_module(session_mount_path, session_local_path):
-    from pyfs import rm
-    rm(session_mount_path, under=True, recursive=True, force=True)
-    rm(session_local_path, under=True, recursive=True, force=True)
-
-
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope='function')
 def source_path():
-    return tests_source_path
+    return default_source_path
+
+
+@pytest.fixture(scope='function')
+def chunk_size():
+    return default_chunk_size
 
 
 def pytest_generate_tests(metafunc):
     local_path = _get_local_path(config=metafunc.config)
     mount_path = metafunc.config.storage_mount_path
 
-    # todo: We should run each test in its module directory.
-    #  Nevertheless tests should be performed for both mount root and folders.
-    # module_local_path = os.path.join(local_path, metafunc.module.__name__)
-    # module_mount_path = os.path.join(mount_path, metafunc.module.__name__)
-
-    module_sizes = {
-        'cli.mount.operation.test_fallocate': [2, 11 * MB],
-        'cli.mount.operation.test_truncate': [2, 11 * MB],
-        'cli.mount.operation.test_read': [0, 1, 21 * MB]
-    }
-
     if all(fixture in metafunc.fixturenames for fixture in ['size', 'local_file', 'mount_file']):
-        function_sizes = module_sizes.get(metafunc.module.__name__, [])
+        function_sizes = default_sizes.get(metafunc.module.__name__, [])
         metafunc.parametrize('size,local_file,mount_file',
                              zip(function_sizes,
                                  map(lambda size: os.path.join(local_path, as_literal(size)), function_sizes),
                                  map(lambda size: os.path.join(mount_path, as_literal(size)), function_sizes)),
                              ids=map(as_literal, function_sizes))
-    elif all(fixture in metafunc.fixturenames for fixture in ['local_file','mount_file']):
-        function_sizes = module_sizes.get(metafunc.module.__name__, [])
+    elif all(fixture in metafunc.fixturenames for fixture in ['local_file', 'mount_file']):
+        function_sizes = default_sizes.get(metafunc.module.__name__, [])
         metafunc.parametrize('local_file,mount_file',
                              zip(map(lambda size: os.path.join(local_path, as_literal(size)), function_sizes),
                                  map(lambda size: os.path.join(mount_path, as_literal(size)), function_sizes)),
@@ -92,7 +86,7 @@ def pytest_generate_tests(metafunc):
 def pytest_sessionstart(session):
     session.config.local_path = local_path = _get_local_path(config=session.config)
     session.config.mount_path = mount_path = _get_mount_path(config=session.config)
-    sizes = _get_sizes(config=session.config)
+    source_size = _get_source_size()
 
     api = os.environ['API']
     api = api if not api.endswith('/') else api[:-1]
@@ -105,7 +99,7 @@ def pytest_sessionstart(session):
     storage_path = storage_name
     session.config.storage_name = storage_name
 
-    logs_path = os.path.join(root_logs_path, storage_name)
+    logs_path = os.path.join(default_logs_path, storage_name)
     start_log_path = os.path.join(logs_path, 'start.log')
 
     mkdir(local_path, mount_path, logs_path)
@@ -145,8 +139,8 @@ def pytest_sessionstart(session):
                    region=storage_region,
                    folder=storage_folder or '',
                    logs_path=logs_path,
-                   source_size=sizes[-1],
-                   source_path=tests_source_path,
+                   source_size=source_size,
+                   source_path=default_source_path,
                    local_path=local_path,
                    mount_path=mount_path))
     else:
@@ -215,8 +209,8 @@ def pytest_sessionstart(session):
                    share=storage_share,
                    folder=storage_folder or '',
                    logs_path=logs_path,
-                   source_size=sizes[-1],
-                   source_path=tests_source_path,
+                   source_size=source_size,
+                   source_path=default_source_path,
                    local_path=local_path,
                    mount_path=mount_path))
 
@@ -224,7 +218,7 @@ def pytest_sessionstart(session):
 def pytest_sessionfinish(session, exitstatus):
     local_path = _get_local_path(config=session.config)
     mount_path = _get_mount_path(config=session.config)
-    logs_path = os.path.join(root_logs_path, session.config.storage_name)
+    logs_path = os.path.join(default_logs_path, session.config.storage_name)
     finish_log_path = os.path.join(logs_path, 'finish.log')
     execute(log_path=finish_log_path, command="""
     if [ -d "{local_path}" ]; then rm -rf '{local_path}'/*; fi
@@ -234,7 +228,7 @@ def pytest_sessionfinish(session, exitstatus):
     """.format(storage_name=session.config.storage_name,
                local_path=local_path,
                mount_path=mount_path,
-               source_path=tests_source_path))
+               source_path=default_source_path))
 
 
 def _get_storage_type(config, storage_provider):
@@ -262,6 +256,10 @@ def _get_local_path(config):
 
 def _get_mount_path(config):
     return config.option.mount or default_mount_path
+
+
+def _get_source_size():
+    return max(map(max, default_sizes.values()))
 
 
 def _get_sizes(config):
