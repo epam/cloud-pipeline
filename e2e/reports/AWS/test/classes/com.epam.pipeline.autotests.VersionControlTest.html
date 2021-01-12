@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">8m43.64s</div>
+<div class="counter">8m51.46s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">91%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,10 +61,52 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="readPermissionTestForBucketWithVersions - EPMCMBIBPC-854"></a>
+<h3 class="failures">readPermissionTestForBucketWithVersions - EPMCMBIBPC-854</h3>
+<span class="code">
+<pre>Element should not visible {by text: versions-bucket-to-check-read-permits4593000267493784064}
+Element: '&lt;span class=&quot;name&quot;&gt;versions-bucket-to-check-read-permits4593000267493784064&lt;/span&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610443734911.72.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610443734911.72.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.validateStorageIsNotPresent(PipelinesLibraryAO.java:248)
+	at com.epam.pipeline.autotests.VersionControlTest.readPermissionTestForBucketWithVersions(VersionControlTest.java:321)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -76,67 +118,67 @@
 </thead>
 <tr>
 <td class="success">checkFilesVersionsAfterUpdate - EPMCMBIBPC-820</td>
-<td>44.475s</td>
+<td>44.757s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">deleteFileByNonAdminUser - EPMCMBIBPC-815</td>
-<td>1m18.18s</td>
+<td>1m18.90s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">deleteFileThatHasDeleteMarker - EPMCMBIBPC-841</td>
-<td>41.639s</td>
+<td>42.760s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">deleteOneOfSiblingsFiles - EPMCMBIBPC-1540</td>
-<td>54.889s</td>
+<td>54.172s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">deletingBucketAfterDisablingOfVersioning - EPMCMBIBPC-1502</td>
-<td>45.262s</td>
+<td>46.544s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">editPermissionTestForBucketWithVersions - EPMCMBIBPC-855</td>
-<td>1m17.68s</td>
-<td class="success">passed</td>
+<td class="skipped">editPermissionTestForBucketWithVersions</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">markToDeleteNotEmptyFolder - EPMCMBIBPC-844</td>
-<td>21.802s</td>
+<td>21.897s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">readPermissionTestForBucketWithVersions - EPMCMBIBPC-854</td>
-<td>52.574s</td>
-<td class="success">passed</td>
+<td class="failures">readPermissionTestForBucketWithVersions - EPMCMBIBPC-854</td>
+<td>2m12.52s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validateDeleteEmptyFolder - EPMCMBIBPC-842</td>
-<td>42.387s</td>
+<td>44.156s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateDeleteNotEmptyFolder - EPMCMBIBPC-845</td>
-<td>19.703s</td>
+<td>19.817s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateRestoreFile - EPMCMBIBPC-816</td>
-<td>6.312s</td>
+<td>6.229s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateRestoreSpecifiedFileVersion - EPMCMBIBPC-888</td>
-<td>5.300s</td>
+<td>5.426s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateShowFilesVersions - EPMCMBIBPC-813</td>
-<td>33.435s</td>
+<td>34.284s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -149,7 +191,7 @@
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 11, 2021 7:38:43 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 12, 2021 7:02:59 PM</p>
 </div>
 </div>
 </body>
