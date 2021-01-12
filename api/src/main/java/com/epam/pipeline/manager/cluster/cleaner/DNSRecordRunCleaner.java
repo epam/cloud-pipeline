@@ -62,6 +62,10 @@ public class DNSRecordRunCleaner implements RunCleaner {
         final String hostZoneId = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID);
         final String hostZoneUrlBase = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE);
 
+        if (StringUtils.isEmpty(hostZoneId) || StringUtils.isEmpty(hostZoneUrlBase)) {
+            return;
+        }
+
         final List<Map<String, String>> serviceUrlsList = JsonMapper.parseData(
                 serviceUrls,
                 new TypeReference<List<Map<String, String>>>(){}
