@@ -68,15 +68,23 @@ def pytest_generate_tests(metafunc):
     # module_local_path = os.path.join(local_path, metafunc.module.__name__)
     # module_mount_path = os.path.join(mount_path, metafunc.module.__name__)
 
-    if 'size' in metafunc.fixturenames:
-        module_sizes = {
-            'cli.mount.operation.test_fallocate': [2, 11 * MB],
-            'cli.mount.operation.test_truncate': [2, 11 * MB]
-        }
+    module_sizes = {
+        'cli.mount.operation.test_fallocate': [2, 11 * MB],
+        'cli.mount.operation.test_truncate': [2, 11 * MB],
+        'cli.mount.operation.test_read': [0, 1, 21 * MB]
+    }
+
+    if all(fixture in metafunc.fixturenames for fixture in ['size', 'local_file', 'mount_file']):
         function_sizes = module_sizes.get(metafunc.module.__name__, [])
         metafunc.parametrize('size,local_file,mount_file',
                              zip(function_sizes,
                                  map(lambda size: os.path.join(local_path, as_literal(size)), function_sizes),
+                                 map(lambda size: os.path.join(mount_path, as_literal(size)), function_sizes)),
+                             ids=map(as_literal, function_sizes))
+    elif all(fixture in metafunc.fixturenames for fixture in ['local_file','mount_file']):
+        function_sizes = module_sizes.get(metafunc.module.__name__, [])
+        metafunc.parametrize('local_file,mount_file',
+                             zip(map(lambda size: os.path.join(local_path, as_literal(size)), function_sizes),
                                  map(lambda size: os.path.join(mount_path, as_literal(size)), function_sizes)),
                              ids=map(as_literal, function_sizes))
 

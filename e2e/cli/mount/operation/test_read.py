@@ -1,52 +1,51 @@
-import os
+import pytest
 
-from ..utils import MB, execute, assert_content
-from pyio import read, read_with_gaps
-
-small_read_size = 5
+from ..utils import execute, assert_content
+from pyio import read, read_regions
 
 
-def test_streaming_write(size, local_file, mount_file, source_path):
+def test_cp_from_mount_folder_to_local_folder(size, local_file, mount_file, source_path):
     execute('head -c %s %s > %s' % (size, source_path, local_file))
     execute('head -c %s %s > %s' % (size, source_path, mount_file))
-    assert_content(local_file, mount_file)
+    execute('cp %s %s' % (mount_file, (local_file + '.mount.tmp')))
+    assert_content(local_file, local_file + '.mount.tmp')
 
 
-def test_cp_from_mount(size, local_file, mount_file, source_path):
-    local_file_tmp = local_file + '.copy'
-    execute('cp %s %s' % (mount_file, local_file_tmp))
-    assert_content(local_file, local_file_tmp)
+def test_head_file(local_file, mount_file):
+    assert execute('head -c 10 %s' % local_file) == execute('head -c 10 %s' % mount_file)
 
 
-def test_small_read_using_head(size, local_file, mount_file, source_path):
-    local_file_copy = local_file + '.copy'
-    mounted_file_copy = mount_file + '.copy'
-    execute('head -c %s %s > %s' % (small_read_size, local_file, local_file_copy))
-    execute('head -c %s %s > %s' % (small_read_size, mount_file, mounted_file_copy))
-    assert_content(local_file_copy, mounted_file_copy)
+def test_tail_file(local_file, mount_file):
+    assert execute('tail -c 10 %s' % local_file) == execute('tail -c 10 %s' % mount_file)
 
 
-def test_small_read_using_tail(size, local_file, mount_file, source_path):
-    local_file_copy = local_file + '.copy'
-    mounted_file_copy = mount_file + '.copy'
-    execute('tail -c %s %s > %s' % (small_read_size, local_file, local_file_copy))
-    execute('tail -c %s %s > %s' % (small_read_size, mount_file, mounted_file_copy))
-    assert_content(local_file_copy, mounted_file_copy)
+def test_read_from_position_bigger_than_file_length(size, local_file, mount_file):
+    assert read(local_file, offset=size * 2, amount=10) == read(mount_file, offset=size * 2, amount=10)
 
 
-def test_read_beyond_file_size(size, local_file, mount_file, source_path):
-    local_read = read(local_file, offset=os.path.getsize(local_file) * 2, amount=small_read_size)
-    mounted_read = read(mount_file, offset=os.path.getsize(mount_file) * 2, amount=small_read_size)
-    assert local_read == mounted_read
+def test_read_region_that_exceeds_file_length(size, local_file, mount_file):
+    if size < 5:
+        pytest.skip()
+    assert read(local_file, offset=size - 5, amount=10) == read(mount_file, offset=size - 5, amount=10)
 
 
-def test_read_which_exceeds_file_size(size, local_file, mount_file, source_path):
-    local_read = read(local_file, offset=os.path.getsize(local_file) - small_read_size, amount=small_read_size * 2)
-    mounted_read = read(mount_file, offset=os.path.getsize(mount_file) - small_read_size, amount=small_read_size * 2)
-    assert local_read == mounted_read
+def test_read_two_non_sequential_regions(size, local_file, mount_file):
+    if size < 30:
+        pytest.skip()
+    assert read_regions(local_file, {'offset': 4, 'amount': 10}, {'offset': 20, 'amount': 10}) \
+           == read_regions(mount_file, {'offset': 4, 'amount': 10}, {'offset': 20, 'amount': 10})
 
 
-def test_read_with_gaps(size, local_file, mount_file, source_path):
-    local_read = read_with_gaps(local_file, offset=1 * MB, amount=1 * MB, gap=1 * MB)
-    mounted_read = read_with_gaps(mount_file, offset=1 * MB, amount=1 * MB, gap=1 * MB)
-    assert all(local_bytes == mounted_bytes for local_bytes, mounted_bytes in zip(local_read, mounted_read))
+def test_read_head_and_tail(size, local_file, mount_file):
+    if size < 10:
+        pytest.skip()
+    assert read_regions(local_file, {'offset': 0, 'amount': 10}, {'offset': size - 10, 'amount': 10}) \
+           == read_regions(mount_file, {'offset': 0, 'amount': 10}, {'offset': size - 10, 'amount': 10})
+
+
+def test_read_tail_and_head(size, local_file, mount_file):
+    if size < 10:
+        pytest.skip()
+    assert read_regions(local_file, {'offset': size - 10, 'amount': 10}, {'offset': 0, 'amount': 10}) \
+           == read_regions(mount_file, {'offset': size - 10, 'amount': 10}, {'offset': 0, 'amount': 10})
+
