@@ -90,6 +90,7 @@ docker run --rm --env API=$API \
 --env RUN_MOUNT_WEBDAV_TESTS_CMD="$RUN_MOUNT_WEBDAV_TESTS_CMD" \
 -v $AWS_CREDS_PATH:/root/.aws \
 -v $WORKSPACE/results:/home/results \
+-v $WORKSPACE/logs:/home/logs \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
 --privileged \
 python:2.7-stretch bash -c /home/run_tests.sh
@@ -123,6 +124,7 @@ docker run --rm --env API=$API \
 --env AZURE_STORAGE_ACCOUNT=$AZURE_STORAGE_ACCOUNT \
 --env AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
 -v $WORKSPACE/results:/home/results \
+-v $WORKSPACE/logs:/home/logs \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
 --privileged \
 python:2.7-stretch bash -c /home/run_tests.sh
@@ -156,6 +158,7 @@ docker run --rm --env API=$API \
 --env GOOGLE_APPLICATION_CREDENTIALS=/root/gcp-creds.json \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/root/gcp-creds.json \
 -v $WORKSPACE/results:/home/results \
+-v $WORKSPACE/logs:/home/logs \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
 --privileged \
 python:2.7-stretch bash -c /home/run_tests.sh

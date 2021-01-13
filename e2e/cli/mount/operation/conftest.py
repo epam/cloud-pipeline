@@ -13,12 +13,24 @@ def pytest_addoption(parser):
     parser.addoption('--prefix', help='Executes tests against an object data storage with prefix.', action='store_true')
     parser.addoption('--small', help='Executes tests for only small subset of file sizes.', action='store_true')
     parser.addoption('--logs-path', help='Specifies test logs directory path.')
+    parser.addoption('--logs-level', help='Specifies test logs level where applicable.')
 
 
 @pytest.fixture(scope='module', autouse=True)
 def cleanup_before_module(request):
     rm(request.node.config.local_path, under=True, recursive=True, force=True)
     rm(request.node.config.mount_path, under=True, recursive=True, force=True)
+
+
+@pytest.fixture(scope='function')
+def check_mount_after_function(request):
+    execute("""
+        if ! mount | grep '{root_mount_path}' > /dev/null
+        then
+            echo "Mount at {root_mount_path} is not accessible"
+            exit 1
+        fi
+    """.format(root_mount_path=request.node.config.root_mount_path))
 
 
 @pytest.fixture(scope='function')
@@ -62,6 +74,7 @@ def pytest_sessionstart(session):
     default_root_mount_path = os.path.join(workdir_path, 'e2e-mount')
     default_logs_path = os.path.join(workdir_path, 'e2e-logs')
     default_source_path = os.path.join(workdir_path, 'e2e-random')
+    default_logs_level = 'ERROR'
     default_chunk_size = 10 * MB
     default_buffer_size = 512 * MB
     default_read_ahead_size = 20 * MB
@@ -89,6 +102,7 @@ def pytest_sessionstart(session):
     session.config.local_path = default_local_path
     session.config.root_mount_path = default_root_mount_path
     session.config.logs_path = session.config.option.logs_path or default_logs_path
+    session.config.logs_level = session.config.option.logs_level or default_logs_level
     session.config.source_path = default_source_path
     session.config.chunk_size = default_chunk_size
     session.config.sizes = default_sizes if not session.config.option.small else default_small_sizes
@@ -126,7 +140,7 @@ def pytest_sessionstart(session):
                             -u '' \
                             -f '{folder}'
         
-        pipe storage mount -t -l '{logs_path}/mount.log' -b '{storage_path}' '{root_mount_path}'
+        pipe storage mount -t -l '{logs_path}/mount.log' -v '{logs_level}' -b '{storage_path}' '{root_mount_path}'
         
         counter=0
         while ! mount | grep '{root_mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
@@ -144,11 +158,12 @@ def pytest_sessionstart(session):
                    region=storage_region,
                    folder=storage_folder or '',
                    logs_path=session.config.logs_path,
+                   logs_level=session.config.logs_level,
                    source_size=session.config.source_size,
                    source_path=session.config.source_path,
                    local_path=local_path,
                    mount_path=session.config.mount_path,
-                   root_mount_path=session.config.root_mount_path))
+                   root_mount_path=session.config.root_mount_path,))
     else:
         storage_share = os.getenv('CP_TEST_SHARE_ID')
         session.config.mount_path = os.path.join(session.config.root_mount_path,
@@ -182,7 +197,7 @@ def pytest_sessionstart(session):
               '{api}/datastorage/save?cloud=true&skipPolicy=false' \
               > {logs_path}/curl-create-storage.log
         
-        pipe storage mount -t -l '{logs_path}/mount.log' -f '{root_mount_path}'
+        pipe storage mount -t -l '{logs_path}/mount.log' -v '{logs_level}' -f '{root_mount_path}'
         
         counter=0
         while ! mount | grep '{root_mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
@@ -214,6 +229,7 @@ def pytest_sessionstart(session):
                    share=storage_share,
                    folder=storage_folder or '',
                    logs_path=session.config.logs_path,
+                   logs_level=session.config.logs_level,
                    source_size=session.config.source_size,
                    source_path=session.config.source_path,
                    local_path=session.config.local_path,
