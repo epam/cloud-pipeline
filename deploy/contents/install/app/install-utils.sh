@@ -1249,7 +1249,7 @@ function generate_self_signed_ca {
                 -subj "/CN=Cloud-Pipeline-$CP_DEPLOYMENT_ID" \
                 -keyout $ca_key_path \
                 -out $ca_cert_path \
-                -days 7300
+                -days ${CP_COMMON_PKI_DURATION:-7300}
 }
 
 function generate_self_signed_key_pair {
@@ -1311,7 +1311,7 @@ function generate_self_signed_key_pair {
             openssl req -x509 -new -newkey rsa:2048 -nodes -subj "/CN=$subject" \
                             -keyout $key_path \
                             -out $cert_path \
-                            -days 7300 \
+                            -days ${CP_COMMON_PKI_DURATION:-7300} \
                             -reqexts SAN \
                             -extensions SAN \
                             -config <(cat $openssl_config_file \
@@ -1331,7 +1331,7 @@ function generate_self_signed_key_pair {
             openssl x509 -req \
                             -in $csr_path  \
                             -out $cert_path \
-                            -days 7300 \
+                            -days ${CP_COMMON_PKI_DURATION:-7300} \
                             -CA "$CP_COMMON_CERT_DIR/ca-public-cert.pem" \
                             -CAkey "$CP_COMMON_CERT_DIR/ca-private-key.pem" \
                             -CAcreateserial \
@@ -1359,7 +1359,7 @@ function generate_rsa_key_pair {
 
         if [ "$cert_path" ]; then
             openssl req -x509 -new -nodes -subj "/CN=Cloud pipeline" \
-                        -days 7300 \
+                        -days ${CP_COMMON_PKI_DURATION:-7300} \
                         -sha256 \
                         -extensions v3_ca \
                         -key $key_path.tmp \
