@@ -59,6 +59,7 @@ Launch command examples:
 $RUN_TESTS_CMD="pytest --html=/home/results/report.html -s -vv --tx 4*popen//python=python2.7 --dist=loadscope /home/cloud-pipeline/e2e/cli/buckets"
 $RUN_METADATA_TESTS_CMD="pytest --html=/home/results/metadata-report.html -s -vv /home/cloud-pipeline/e2e/cli/tag"
 $RUN_MOUNT_OBJECT_TESTS_CMD="pytest --html=/home/results/mount-object-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object"
+$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="pytest --html=/home/results/mount-object-prefix-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object --prefix --small"
 $RUN_MOUNT_WEBDAV_TESTS_CMD="pytest --html=/home/results/mount-webdav-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --webdav"
 ```
 
@@ -85,6 +86,7 @@ docker run --rm --env API=$API \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
 --env RUN_MOUNT_OBJECT_TESTS_CMD="$RUN_MOUNT_OBJECT_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD" \
 --env RUN_MOUNT_WEBDAV_TESTS_CMD="$RUN_MOUNT_WEBDAV_TESTS_CMD" \
 -v $AWS_CREDS_PATH:/root/.aws \
 -v $WORKSPACE/results:/home/results \
@@ -117,6 +119,7 @@ docker run --rm --env API=$API \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
 --env RUN_MOUNT_OBJECT_TESTS_CMD="$RUN_MOUNT_OBJECT_TESTS_CMD" \
 --env RUN_MOUNT_WEBDAV_TESTS_CMD="$RUN_MOUNT_WEBDAV_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD" \
 --env AZURE_STORAGE_ACCOUNT=$AZURE_STORAGE_ACCOUNT \
 --env AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
 -v $WORKSPACE/results:/home/results \
@@ -148,6 +151,7 @@ docker run --rm --env API=$API \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
 --env RUN_MOUNT_OBJECT_TESTS_CMD="$RUN_MOUNT_OBJECT_TESTS_CMD" \
+--env RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD" \
 --env RUN_MOUNT_WEBDAV_TESTS_CMD="$RUN_MOUNT_WEBDAV_TESTS_CMD" \
 --env GOOGLE_APPLICATION_CREDENTIALS=/root/gcp-creds.json \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/root/gcp-creds.json \

@@ -140,7 +140,7 @@ def pytest_sessionstart(session):
                    folder=storage_folder or '',
                    logs_path=session.config.logs_path,
                    source_size=session.config.source_size,
-                   source_path=default_source_path,
+                   source_path=session.config.source_path,
                    local_path=local_path,
                    mount_path=session.config.root_mount_path))
     else:
@@ -209,7 +209,7 @@ def pytest_sessionstart(session):
                    folder=storage_folder or '',
                    logs_path=session.config.logs_path,
                    source_size=session.config.source_size,
-                   source_path=default_source_path,
+                   source_path=session.config.source_path,
                    local_path=session.config.local_path,
                    mount_path=session.config.mount_path,
                    root_mount_path=session.config.root_mount_path))
