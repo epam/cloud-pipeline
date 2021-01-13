@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">5m43.86s</div>
+<div class="counter">6m27.91s</div>
 <p>duration</p>
 </div>
 </td>
@@ -79,15 +79,15 @@
 <a name="blockUnblockUser - EPMCMBIBPC-3016"></a>
 <h3 class="failures">blockUnblockUser - EPMCMBIBPC-3016</h3>
 <span class="code">
-<pre>Element should have match text 'user2' {By.className: run-54207}
-Element: '&lt;tr class=&quot;ant-table-row run-table__run run-54207 ant-table-row-level-0&quot;&gt;pipeline-54207
-aws/eu e2e-endpoints:latest 2021-01-12 16:30:58
-Running for 2.61 min
+<pre>Element should have match text 'user2' {By.className: run-54452}
+Element: '&lt;tr class=&quot;ant-table-row run-table__run run-54452 ant-table-row-level-0&quot;&gt;pipeline-54452
+aws/eu e2e-endpoints:latest 2021-01-13 17:07:44
+Running for 2.77 min
 Cost: 0.01$
 USER2
 STOP LOG&lt;/tr&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610469216628.111.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610469216628.111.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610557832666.119.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610557832666.119.html
 Timeout: 80 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -121,8 +121,8 @@ Timeout: 80 s.
 <span class="code">
 <pre>Element should not visible {By.xpath: //*[contains(@class, 'ant-menu-item') and contains(., 'System events')]}
 Element: '&lt;li aria-selected=&quot;false&quot; class=&quot;ant-menu-item&quot; role=&quot;menuitem&quot; value=&quot;0&quot;&gt;SYSTEM EVENTS&lt;/li&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1610469453168.113.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1610469453168.113.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1610558179615.122.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1610558179615.122.html
 Timeout: 80 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -167,17 +167,17 @@ Timeout: 80 s.
 </thead>
 <tr>
 <td class="success">addTheUser - EPMCMBIBPC-3019</td>
-<td>20.324s</td>
+<td>19.260s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">authenticationInPlatform - EPMCMBIBPC-3014</td>
-<td>8.855s</td>
+<td>9.148s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">blockUnblockUser - EPMCMBIBPC-3016</td>
-<td>2m59.28s</td>
+<td>3m13.65s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -187,17 +187,17 @@ Timeout: 80 s.
 </tr>
 <tr>
 <td class="success">failedAuthentication - EPMCMBIBPC-3015</td>
-<td>15.616s</td>
+<td>46.122s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">generateListOfUsers - EPMCMBIBPC-3168</td>
-<td>14.986s</td>
+<td>16.085s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">provideAdminRightsToTheUser - EPMCMBIBPC-3017</td>
-<td>1m29.36s</td>
+<td>1m29.70s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -207,7 +207,7 @@ Timeout: 80 s.
 </tr>
 <tr>
 <td class="success">removeTheUser - EPMCMBIBPC-3020</td>
-<td>15.430s</td>
+<td>13.949s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -215,32 +215,32 @@ Timeout: 80 s.
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 54207 from [54207]
-Returns latest run with runId 54207 from [54207]
+<pre>Returns latest run with runId 54452 from [54452]
+Returns latest run with runId 54452 from [54452]
 </pre>
 </span>
 </div>
 <div id="tab3" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Jan 12, 2021 4:35:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 793 -&gt; ChromeDriver: chrome on LINUX (612f0db513e319a7a400cb97f975b3f6)
-Jan 12, 2021 4:35:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Jan 13, 2021 5:13:25 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 799 -&gt; ChromeDriver: chrome on LINUX (2677a1bcc1dd3ca327ae9938237f628d)
+Jan 13, 2021 5:13:25 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Jan 12, 2021 4:35:13 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 79 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 3614
+Jan 13, 2021 5:13:25 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 86 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 14442
 Only local connections are allowed.
-Jan 12, 2021 4:35:14 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Jan 13, 2021 5:13:26 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Jan 12, 2021 4:35:14 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Jan 13, 2021 5:13:26 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Jan 12, 2021 4:35:14 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Jan 13, 2021 5:13:26 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Jan 12, 2021 4:35:14 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Jan 13, 2021 5:13:26 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Jan 12, 2021 4:35:14 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 793: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (75fdb75f62781d372126f8b3c2469e0d)
+Jan 13, 2021 5:13:26 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 799: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (17b891a78c10dfb8e5c3dc4993a0e9f4)
 </pre>
 </span>
 </div>
@@ -252,7 +252,7 @@ INFO: Create webdriver in current thread 793: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 12, 2021 7:02:59 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 13, 2021 7:48:06 PM</p>
 </div>
 </div>
 </body>
