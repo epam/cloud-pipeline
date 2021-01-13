@@ -51,7 +51,6 @@ class TestRStudioEndpoints(object):
 
     @pipe_test
     def test_custom_domain_rstudio_endpoint(self):
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-25'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
@@ -66,7 +65,6 @@ class TestRStudioEndpoints(object):
 
     @pipe_test
     def test_custom_domain_rstudio_with_friendly_path(self):
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-26'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
@@ -98,7 +96,6 @@ class TestRStudioEndpoints(object):
 
     @pipe_test
     def test_custom_domain_rstudio_friendly_domain_with_path(self):
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-28'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
@@ -115,7 +112,6 @@ class TestRStudioEndpoints(object):
 
     @pipe_test
     def test_custom_domain_rstudio_and_no_machine_endpoint(self):
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-29'
         run_id, node_name, result, message = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),

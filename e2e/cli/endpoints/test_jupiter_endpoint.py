@@ -52,9 +52,9 @@ class TestJupiterEndpoints(object):
         self.test_case = 'TC-EDGE-13'
         run_id, node_name, result, message = run_test("library/jupyter-lab",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url='friendly1',
+                                                      friendly_url='friendly',
                                                       endpoints_structure={
-                                                          "JupyterLab": "friendly1-JupiterLab",
+                                                          "JupyterLab": "friendly",
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
@@ -66,11 +66,11 @@ class TestJupiterEndpoints(object):
         self.test_case = 'TC-EDGE-14'
         run_id, node_name, result, message = run_test("library/jupyter-lab",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url='friendly2',
+                                                      friendly_url='friendly',
                                                       no_machine=True,
                                                       endpoints_structure={
-                                                          "JupyterLab": "friendly2-JupiterLab",
-                                                          "NoMachine": "friendly2-NoMachine"
+                                                          "JupyterLab": "friendly-JupyterLab",
+                                                          "NoMachine": "friendly-NoMachine"
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
