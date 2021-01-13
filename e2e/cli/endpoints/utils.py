@@ -106,13 +106,15 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
     logging.info("Pipeline run with ID %s." % run_id)
     wait_for_instance_creation(run_id, MAX_REPETITIONS)
     logging.info("Instance %s created." % run_id)
-    wait_for_run_initialized(run_id, MAX_REPETITIONS)
-    wait_for_service_urls(run_id, MAX_REPETITIONS)
-    logging.info("Pipeline %s has initialized successfully." % run_id)
 
     node_state = wait_for_node_up(run_id, MAX_REPETITIONS)
     node_name = get_node_name_from_cluster_state(node_state)
     logging.info("Used node %s." % node_name)
+
+    wait_for_run_initialized(run_id, MAX_REPETITIONS)
+    wait_for_service_urls(run_id, MAX_REPETITIONS / 4)
+    logging.info("Pipeline %s has initialized successfully." % run_id)
+
     return run_id, node_name
 
 
