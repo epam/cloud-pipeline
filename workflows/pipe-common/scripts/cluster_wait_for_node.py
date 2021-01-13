@@ -12,20 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pipeline import Logger, TaskStatus, PipelineAPI, StatusEntry
+import traceback
 import argparse
 import os
 import time
 
+from pipeline import Logger, PipelineAPI
+
 
 class Task:
-    def __init__(self):
-        self.task_name = 'Task'
 
-    def fail_task(self, message):
-        error_text = '{} task failed: {}.'.format(self.task_name, message)
-        Logger.fail(error_text, task_name=self.task_name)
-        raise RuntimeError(error_text)
+    def __init__(self, task_name):
+        self.task_name = task_name
+
+    def fail_task(self, e):
+        Logger.fail('Error in task {}: {}: {}.'
+                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
+
+    def warn_task(self, e):
+        Logger.warn('Warning in task {}: {}: {}'
+                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
 
 
 class Node:
@@ -39,30 +45,51 @@ class Node:
 
 
 class WaitForNode(Task):
+
     def __init__(self):
-        Task.__init__(self)
-        self.task_name = 'WaitForNode'
+        Task.__init__(self, task_name='WaitForNode')
+        self.run_id = os.environ.get('RUN_ID', '')
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
     def await_node_start(self, task_name, run_id, parameters=None):
         try:
-            Logger.info('Waiting for node with parameters = {}, task: {}'.format(','.join(parameters if parameters else ['NA']), task_name),
+            Logger.info('Waiting for node with parameters = {}, task: {}'
+                        .format(','.join(parameters if parameters else ['NA']), task_name),
                         task_name=self.task_name)
-            # approximately 10 minutes
-            attempts = 60
-            master = self.get_node_info(task_name, run_id, parameters=parameters)
-            while not master and attempts > 0:
+
+            master = None
+
+            if self.run_id == str(run_id):
+                master = self.get_current_node_info()
+
+            if not master:
+                # approximately 10 minutes
+                attempts = 60
                 master = self.get_node_info(task_name, run_id, parameters=parameters)
-                attempts -= 1
-                Logger.info('Waiting for node ...', task_name=self.task_name)
-                time.sleep(10)
+                while not master and attempts > 0:
+                    master = self.get_node_info(task_name, run_id, parameters=parameters)
+                    attempts -= 1
+                    Logger.info('Waiting for node ...', task_name=self.task_name)
+                    time.sleep(10)
+
             if not master:
                 raise RuntimeError('Failed to attach to master node')
 
             Logger.success('Attached to node (run id {})'.format(master.name), task_name=self.task_name)
             return master
         except Exception as e:
-            self.fail_task(e.message)
+            self.fail_task(e)
+            raise
+
+    def get_current_node_info(self):
+        try:
+            import socket
+            host_name = socket.gethostname()
+            host_ip = socket.gethostbyname(host_name)
+            return Node({'id': self.run_id, 'podId': host_name, 'podIP': host_ip})
+        except Exception as e:
+            self.warn_task(e)
+            return None
 
     def get_node_info(self, task_name, run_id, parameters=None):
         if not parameters:
@@ -118,16 +145,6 @@ class WaitForNode(Task):
                 return False
         return True
 
-def check_if_self_master(run_id):
-    if os.getenv('RUN_ID', '') != str(run_id):
-        return None
-    try:
-        import socket
-        host_name = socket.gethostname()
-        host_ip = socket.gethostbyname(host_name)
-        return (host_name, host_ip)
-    except:
-        return None
 
 def main():
     parser = argparse.ArgumentParser()
@@ -135,24 +152,10 @@ def main():
     parser.add_argument('--task-name', required=True)
     parser.add_argument('--run-id', required=True, type=int)
     args = parser.parse_args()
-    status = StatusEntry(TaskStatus.SUCCESS)
 
-    # FIXME: This is a "temp" solution to return self IP and host if the run id matches with the current job
-    # Shall be refactored some day
-    self_info = check_if_self_master(args.run_id)
-    if self_info:
-        print(self_info[0] + " " + self_info[1])
-        exit(0)
+    node = WaitForNode().await_node_start(args.task_name, args.run_id, parameters=args.parameter)
 
-    try:
-        node = WaitForNode().await_node_start(args.task_name, args.run_id, parameters=args.parameter)
-        print(node.name + " " + node.ip)
-        exit(0)
-    except Exception as e:
-        Logger.warn(e.message)
-        status = StatusEntry(TaskStatus.FAILURE)
-    if status.status == TaskStatus.FAILURE:
-        raise RuntimeError('Failed to setup cluster')
+    print('{} {}'.format(node.name, node.ip))
 
 
 if __name__ == '__main__':
