@@ -38,7 +38,7 @@ def write_regions(path, *regions):
 
 def get_random_bytes(number_of_bytes):
     random.seed(seed)
-    return bytearray(map(random.getrandbits, (8,) * number_of_bytes))
+    return bytearray(map(random.getrandbits, (8,) * number_of_bytes)) if number_of_bytes else bytearray()
 
 
 def read_dirs(path):

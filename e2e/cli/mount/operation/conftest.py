@@ -6,43 +6,13 @@ import pytest
 from ..utils import as_literal, execute, mkdir, KB, MB, MiB
 from pyfs import rm
 
-root_path = os.getcwd()
-
-default_storage_kind = 'object'
-default_local_path = os.path.join(root_path, 'e2e-local')
-default_root_mount_path = os.path.join(root_path, 'e2e-mount')
-default_logs_path = os.path.join(root_path, 'e2e-logs')
-default_source_path = os.path.join(root_path, 'e2e-random')
-default_chunk_size = 10 * MB
-default_buffer_size = 512 * MB
-default_read_ahead_size = 20 * MB
-default_small_sizes = {
-    'cli.mount.operation.test_fallocate': [1],
-    'cli.mount.operation.test_truncate': [1],
-    'cli.mount.operation.test_read': [1],
-    'cli.mount.operation.test_write': [1]
-}
-default_sizes = {
-    'cli.mount.operation.test_fallocate': [1,
-                                           default_chunk_size + 1 * MB],
-    'cli.mount.operation.test_truncate': [0, 1,
-                                          default_chunk_size + 1 * MB],
-    'cli.mount.operation.test_read': [0, 1,
-                                      default_chunk_size + 1 * MB,
-                                      default_read_ahead_size * 2 + 1 * MB],
-    'cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
-                                       default_chunk_size,
-                                       default_chunk_size * 4 + 1 * MB,
-                                       default_buffer_size,
-                                       default_buffer_size + 1 * MB]
-}
-
 
 def pytest_addoption(parser):
     parser.addoption('--webdav', help='Executes tests against a webdav data storage.', action='store_true')
     parser.addoption('--object', help='Executes tests against an object data storage.', action='store_true')
     parser.addoption('--prefix', help='Executes tests against an object data storage with prefix.', action='store_true')
     parser.addoption('--small', help='Executes tests for only small subset of file sizes.', action='store_true')
+    parser.addoption('--logs-path', help='Specifies test logs directory path.')
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -87,8 +57,38 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_sessionstart(session):
+    workdir_path = os.getcwd()
+    default_local_path = os.path.join(workdir_path, 'e2e-local')
+    default_root_mount_path = os.path.join(workdir_path, 'e2e-mount')
+    default_logs_path = os.path.join(workdir_path, 'e2e-logs')
+    default_source_path = os.path.join(workdir_path, 'e2e-random')
+    default_chunk_size = 10 * MB
+    default_buffer_size = 512 * MB
+    default_read_ahead_size = 20 * MB
+    default_small_sizes = {
+        'cli.mount.operation.test_fallocate': [1],
+        'cli.mount.operation.test_truncate': [1],
+        'cli.mount.operation.test_read': [1],
+        'cli.mount.operation.test_write': [1]
+    }
+    default_sizes = {
+        'cli.mount.operation.test_fallocate': [1,
+                                               default_chunk_size + 1 * MB],
+        'cli.mount.operation.test_truncate': [0, 1,
+                                              default_chunk_size + 1 * MB],
+        'cli.mount.operation.test_read': [0, 1,
+                                          default_chunk_size + 1 * MB,
+                                          default_read_ahead_size * 2 + 1 * MB],
+        'cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
+                                           default_chunk_size,
+                                           default_chunk_size * 4 + 1 * MB,
+                                           default_buffer_size,
+                                           default_buffer_size + 1 * MB]
+    }
+
     session.config.local_path = default_local_path
     session.config.root_mount_path = default_root_mount_path
+    session.config.logs_path = session.config.option.logs_path or default_logs_path
     session.config.source_path = default_source_path
     session.config.chunk_size = default_chunk_size
     session.config.sizes = default_sizes if not session.config.option.small else default_small_sizes
@@ -103,8 +103,8 @@ def pytest_sessionstart(session):
     storage_type = _get_storage_type(config=session.config, storage_provider=storage_provider)
     session.config.storage_name = _generate_storage_name(storage_type=storage_type, storage_region=storage_region)
     session.config.storage_path = session.config.storage_name
-    session.config.logs_path = os.path.join(default_logs_path, session.config.storage_name)
 
+    rm(session.config.logs_path, under=True, force=True)
     mkdir(session.config.local_path, session.config.root_mount_path, session.config.logs_path)
 
     if storage_type in ['S3', 'AZ', 'GS']:
@@ -126,16 +126,16 @@ def pytest_sessionstart(session):
                             -u '' \
                             -f '{folder}'
         
-        pipe storage mount -t -l '{logs_path}/mount.log' -b '{storage_path}' '{mount_path}'
+        pipe storage mount -t -l '{logs_path}/mount.log' -b '{storage_path}' '{root_mount_path}'
         
         counter=0
-        while ! mount | grep '{mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
+        while ! mount | grep '{root_mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
             counter=$((counter+1))
             sleep 1
         done
-        if ! mount | grep '{mount_path}' > /dev/null
+        if ! mount | grep '{root_mount_path}' > /dev/null
         then
-            echo "Mount at {mount_path} is not accessible"
+            echo "Mount at {root_mount_path} is not accessible"
             exit 1
         fi
         """.format(storage_name=session.config.storage_name,
@@ -147,7 +147,8 @@ def pytest_sessionstart(session):
                    source_size=session.config.source_size,
                    source_path=session.config.source_path,
                    local_path=local_path,
-                   mount_path=session.config.root_mount_path))
+                   mount_path=session.config.mount_path,
+                   root_mount_path=session.config.root_mount_path))
     else:
         storage_share = os.getenv('CP_TEST_SHARE_ID')
         session.config.mount_path = os.path.join(session.config.root_mount_path,
@@ -181,27 +182,27 @@ def pytest_sessionstart(session):
               '{api}/datastorage/save?cloud=true&skipPolicy=false' \
               > {logs_path}/curl-create-storage.log
         
-        pipe storage mount -t -l '{logs_path}/mount.log' -f '{mount_path}'
+        pipe storage mount -t -l '{logs_path}/mount.log' -f '{root_mount_path}'
         
         counter=0
-        while ! mount | grep '{mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
+        while ! mount | grep '{root_mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
             counter=$((counter+1))
             sleep 1
         done
-        if ! mount | grep '{mount_path}' > /dev/null
+        if ! mount | grep '{root_mount_path}' > /dev/null
         then
-            echo "Mount at {mount_path} is not accessible"
+            echo "Mount at {root_mount_path} is not accessible"
             exit 1
         fi
         
         counter=0
-        while [ ! -d "{root_mount_path}" ] && [ "$counter" -lt "70" ]; do
+        while [ ! -d "{mount_path}" ] && [ "$counter" -lt "70" ]; do
             counter=$((counter+1))
             sleep 1
         done
-        if [ ! -d "{root_mount_path}" ]
+        if [ ! -d "{mount_path}" ]
         then
-            echo "Mount directory at {root_mount_path} is not accessible"
+            echo "Mount directory at {mount_path} is not accessible"
             exit 1
         fi
         """.format(api=api,
@@ -226,10 +227,11 @@ def pytest_sessionfinish(session, exitstatus):
     pipe storage delete -y -c -n '{storage_name}'
     if [ -f "{source_path}" ]; then rm -f "{source_path}"; fi
     if [ -d "{local_path}" ]; then rm -rf "{local_path}"; fi
-    if [ -d "{root_mount_path}" ]; then rm -rf "{root_mount_path}"; fi
+    if ! mount | grep '{root_mount_path}' > /dev/null && [ -d "{root_mount_path}" ]; then rm -rf "{root_mount_path}"; fi
     """.format(storage_name=session.config.storage_name,
                source_path=session.config.source_path,
                local_path=session.config.local_path,
+               mount_path=session.config.mount_path,
                root_mount_path=session.config.root_mount_path))
 
 
@@ -239,7 +241,7 @@ def _get_storage_type(config, storage_provider):
     elif config.option.object:
         storage_kind = 'object'
     else:
-        storage_kind = default_storage_kind
+        storage_kind = 'object'
     storage_type_dict = {
         'S3': {
             'webdav': 'NFS',
