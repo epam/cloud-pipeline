@@ -122,6 +122,15 @@ def view_runs(run_id, *args):
     return pipe_info
 
 
+def task_in_status(run_id, task, status):
+    command = ['pipe', 'view-runs', run_id, '-td']
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    line = process.stdout.readline()
+    while task not in line and line != '':
+        line = process.stdout.readline()
+    return status in line
+
+
 def run_tool(*args):
     command = ['pipe', 'run', '-y']
 
@@ -224,6 +233,19 @@ def wait_for_required_status(required_status, run_id, max_rep_count, validation=
     if validation and status != required_status:
         raise RuntimeError("Exceeded retry count ({}) for required pipeline status. Required: {}, actual: {}"
                            .format(max_rep_count, required_status, status))
+
+
+def wait_for_run_initialized(run_id, max_rep_count):
+    initialized = task_in_status(run_id, "InitializeEnvironment", "SUCCESS")
+    rep = 0
+    while rep < max_rep_count:
+        if initialized:
+            return
+        sleep(5)
+        rep = rep + 1
+        initialized = task_in_status(run_id, "InitializeEnvironment", "SUCCESS")
+    raise RuntimeError("Exceeded retry count ({}) for required service urls."
+                       .format(max_rep_count))
 
 
 def wait_for_service_urls(run_id, max_rep_count):

@@ -106,6 +106,7 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
     logging.info("Pipeline run with ID %s." % run_id)
     wait_for_instance_creation(run_id, MAX_REPETITIONS)
     logging.info("Instance %s created." % run_id)
+    wait_for_run_initialized(run_id, MAX_REPETITIONS)
     wait_for_service_urls(run_id, MAX_REPETITIONS)
     logging.info("Pipeline %s has initialized successfully." % run_id)
 
