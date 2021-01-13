@@ -49,11 +49,11 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         self.client = discovery.build('compute', 'v1')
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token):
+                     num_rep, time_rep, kube_ip, kubeadm_token, pre_pull_images=[]):
         ssh_pub_key = utils.read_ssh_key(ins_key)
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "GCP")
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img,
-                                                      kube_ip, kubeadm_token, swap_size)
+                                                      kube_ip, kubeadm_token, swap_size, pre_pull_images)
 
         instance_type, gpu_type, gpu_count = self.parse_instance_type(ins_type)
         machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)

@@ -16,14 +16,29 @@
 
 package com.epam.pipeline.test.creator.git;
 
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class GitCreatorUtils {
+
+    public static final TypeReference<Result<GitTagEntry>> GIT_TAG_ENTRY_TYPE =
+            new TypeReference<Result<GitTagEntry>>() {};
+    public static final TypeReference<Result<GitCredentials>> GIT_CREDENTIALS_TYPE =
+            new TypeReference<Result<GitCredentials>>() {};
+    public static final TypeReference<Result<GitCommitEntry>> GIT_COMMIT_ENTRY_TYPE =
+            new TypeReference<Result<GitCommitEntry>>() {};
+    public static final TypeReference<Result<GitRepositoryEntry>> GIT_REPOSITORY_ENTRY_TYPE =
+            new TypeReference<Result<GitRepositoryEntry>>() {};
+    public static final TypeReference<Result<List<GitRepositoryEntry>>> GIT_REPOSITORY_ENTRY_LIST_TYPE =
+            new TypeReference<Result<List<GitRepositoryEntry>>>() {};
 
     private GitCreatorUtils() {
 

@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo;
 
 import com.epam.pipeline.entity.pipeline.PipelineWithPermissions;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,6 +27,7 @@ import java.util.Set;
 @Setter
 @Getter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class PipelinesWithPermissionsVO {
 
     private Set<PipelineWithPermissions> pipelines;

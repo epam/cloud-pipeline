@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,14 @@ from buckets.utils.tag_assertion_utils import *
 from buckets.utils.assertions_utils import *
 from buckets.utils.file_utils import *
 from buckets.utils.listing import *
+from common_utils.test_utils import format_name
 
 ERROR_MESSAGE = "An error occurred in case "
 
 
 class TestS3TaggingRolModel(object):
     test_file = "s3-tagging-role.txt"
-    bucket = 'epmcmbibpc-s3-tagging-role-{}'.format(get_test_prefix()).lower()
+    bucket = format_name('epmcmbibpc-s3-tagging-role-{}'.format(get_test_prefix()).lower())
     path_to_bucket = 'cp://{}'.format(bucket)
     tag1 = ("key1", "value1")
     user_token = os.environ['USER_TOKEN']

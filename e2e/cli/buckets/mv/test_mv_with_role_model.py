@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 from ..utils.assertions_utils import *
 from ..utils.file_utils import *
 from ..utils.utilities_for_test import *
@@ -20,8 +21,9 @@ from ..utils.utilities_for_test import *
 
 class TestMvWithRoleModel(object):
     epam_test_case = "EPMCMBIBPC-666"
-    bucket_name = "epmcmbibpc-it-mv-roles{}".format(get_test_prefix())
-    other_bucket_name = "{}-other".format(bucket_name)
+    raw_bucket_name = "epmcmbibpc-it-mv-roles{}".format(get_test_prefix())
+    bucket_name = format_name(raw_bucket_name)
+    other_bucket_name = format_name("{}-other".format(bucket_name))
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']
     output_folder = epam_test_case + "-" + TestFiles.TEST_FOLDER_FOR_OUTPUT

@@ -82,7 +82,7 @@ class KubeProvider(object):
             }
             pykube.Node(self.api, obj).delete()
 
-    def label_node(self, nodename, run_id, cluster_name, cluster_role, cloud_region):
+    def label_node(self, nodename, run_id, cluster_name, cluster_role, cloud_region, additional_labels):
         utils.pipe_log('Assigning instance {} to RunID: {}'.format(nodename, run_id))
         obj = {
             "apiVersion": "v1",
@@ -95,6 +95,14 @@ class KubeProvider(object):
                 }
             }
         }
+
+        if additional_labels:
+            for label in additional_labels:
+                label_parts = label.split("=")
+                if len(label_parts) == 1:
+                    obj["metadata"]["labels"][label_parts[0]] = None
+                else:
+                    obj["metadata"]["labels"][label_parts[0]] = label_parts[1]
 
         if cluster_name:
             obj["metadata"]["labels"]["cp-cluster-name"] = cluster_name

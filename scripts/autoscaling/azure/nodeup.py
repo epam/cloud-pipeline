@@ -33,6 +33,7 @@ from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from msrestazure.azure_exceptions import CloudError
 from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents
+import jwt
 
 VM_NAME_PREFIX = "az-"
 UUID_LENGHT = 16
@@ -52,6 +53,21 @@ api_token = None
 script_path = None
 
 
+def is_run_id_numerical(run_id):
+    try:
+        int(run_id)
+        return True
+    except ValueError:
+        return False
+
+
+def is_api_logging_enabled():
+    global api_token
+    global api_url
+    global current_run_id
+    return is_run_id_numerical(current_run_id) and api_url and api_token
+
+
 def pipe_log_init(run_id):
     global api_token
     global api_url
@@ -61,7 +77,7 @@ def pipe_log_init(run_id):
     api_url = os.environ["API"]
     api_token = os.environ["API_TOKEN"]
 
-    if not api_url or not api_token:
+    if not is_api_logging_enabled():
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
@@ -71,7 +87,7 @@ def pipe_log_warn(message):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.warn('[{}] {}'.format(current_run_id, message),
                     task_name=NODEUP_TASK,
                     run_id=current_run_id,
@@ -88,7 +104,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
     global script_path
     global current_run_id
 
-    if api_url and api_token:
+    if is_api_logging_enabled():
         Logger.log_task_event(NODEUP_TASK,
                               '[{}] {}'.format(current_run_id, message),
                               run_id=current_run_id,
@@ -217,10 +233,11 @@ resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
 def run_instance(api_url, api_token, instance_name, instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user,
-                 ins_type, is_spot, kube_ip, kubeadm_token):
+                 ins_type, is_spot, kube_ip, kubeadm_token, pre_pull_images):
     ins_key = read_ssh_key(ssh_pub_key)
     swap_size = get_swap_size(cloud_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    user_data_script = get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token,
+                                            swap_size, pre_pull_images)
     access_config = get_access_config(cloud_region)
     disable_external_access = False
     if access_config is not None:
@@ -705,7 +722,7 @@ def verify_regnode(ins_id, num_rep, time_rep, api):
     return ret_namenode
 
 
-def label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region):
+def label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region, additional_labels):
     pipe_log('Assigning instance {} to RunID: {}'.format(nodename, run_id))
     obj = {
         "apiVersion": "v1",
@@ -718,6 +735,14 @@ def label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region):
             }
         }
     }
+
+    if additional_labels:
+        for label in additional_labels:
+            label_parts = label.split("=")
+            if len(label_parts) == 1:
+                obj["metadata"]["labels"][label_parts[0]] = None
+            else:
+                obj["metadata"]["labels"][label_parts[0]] = label_parts[1]
 
     if cluster_name:
         obj["metadata"]["labels"]["cp-cluster-name"] = cluster_name
@@ -926,7 +951,21 @@ def get_swap_ratio(swap_params):
     return None
 
 
-def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
+def replace_docker_images(pre_pull_images, user_data_script):
+    global api_token
+    payload = jwt.decode(api_token, verify=False)
+    if 'sub' in payload:
+        subject = payload['sub']
+        user_data_script = user_data_script \
+            .replace("@PRE_PULL_DOCKERS@", ",".join(pre_pull_images)) \
+            .replace("@API_USER@", subject)
+        return user_data_script
+    else:
+        raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
+
+
+def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size,
+                         pre_pull_images):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -936,6 +975,7 @@ def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, ku
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
+        user_data_script = replace_docker_images(pre_pull_images, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                             .replace('@KUBE_IP@', kube_ip) \
@@ -1000,6 +1040,8 @@ def main():
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
+    parser.add_argument("--label", type=str, default=[], required=False, action='append')
+    parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
     args, unknown = parser.parse_known_args()
     ins_key_path = args.ins_key
@@ -1015,6 +1057,8 @@ def main():
     kube_ip = args.kube_ip
     kubeadm_token = args.kubeadm_token
     region_id = args.region_id
+    pre_pull_images = args.image
+    additional_labels = args.label
 
     global zone
     zone = region_id
@@ -1062,9 +1106,9 @@ def main():
             api_url = os.environ["API"]
             api_token = os.environ["API_TOKEN"]
             ins_id, ins_ip = run_instance(api_url, api_token, resource_name, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path,
-                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token)
+                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token, pre_pull_images)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
-        label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region)
+        label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region, additional_labels)
         pipe_log('Node created:\n'
                  '- {}\n'
                  '- {}'.format(ins_id, ins_ip))

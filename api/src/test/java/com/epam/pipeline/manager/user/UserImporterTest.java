@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
+import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import org.junit.Test;
@@ -53,6 +54,7 @@ public class UserImporterTest {
     public void shouldParseCsvFile() {
         final MultipartFile file = getFile(CONTENT);
         final List<String> allowedMetadata = Arrays.asList(KEY1, KEY2);
+        final List<PipelineUserEvent> events = new ArrayList<>();
 
         final List<CategoricalAttribute> attributes = new ArrayList<>();
         attributes.add(new CategoricalAttribute(KEY1, attributesList(KEY1, VALUE1)));
@@ -60,7 +62,7 @@ public class UserImporterTest {
         attributes.add(new CategoricalAttribute(KEY4, attributesList(KEY4, VALUE1)));
 
         final List<PipelineUserWithStoragePath> resultUsers =
-                new UserImporter(attributes, allowedMetadata).importUsers(file);
+                new UserImporter(attributes, allowedMetadata, events).importUsers(file);
 
         assertThat(resultUsers).hasSize(1);
         final PipelineUserWithStoragePath resultUser = resultUsers.get(0);
@@ -81,6 +83,7 @@ public class UserImporterTest {
             assertAttributeValue(attribute, KEY2, Arrays.asList(VALUE1, VALUE2));
             assertAttributeValue(attribute, KEY4, Collections.singletonList(VALUE1));
         });
+        assertThat(events).hasSize(2);
     }
 
     @Test
@@ -88,10 +91,12 @@ public class UserImporterTest {
         final MultipartFile file = getFile(EMPTY_USER_CONTENT);
         final List<String> allowedMetadata = Arrays.asList(KEY1, KEY2);
         final ArrayList<CategoricalAttribute> attributes = new ArrayList<>();
-        final UserImporter userImporter = new UserImporter(attributes, allowedMetadata);
+        final List<PipelineUserEvent> events = new ArrayList<>();
+        final UserImporter userImporter = new UserImporter(attributes, allowedMetadata, events);
 
         assertThat(userImporter.importUsers(file)).hasSize(0);
         assertThat(attributes).hasSize(0);
+        assertThat(events).hasSize(0);
     }
 
     @Test
@@ -99,9 +104,10 @@ public class UserImporterTest {
         final MultipartFile file = getFile(EMPTY_CONTENT);
         final List<String> allowedMetadata = Arrays.asList(KEY1, KEY2);
         final ArrayList<CategoricalAttribute> attributes = new ArrayList<>();
+        final List<PipelineUserEvent> events = new ArrayList<>();
 
         final List<PipelineUserWithStoragePath> resultUsers =
-                new UserImporter(attributes, allowedMetadata).importUsers(file);
+                new UserImporter(attributes, allowedMetadata, events).importUsers(file);
 
         assertThat(resultUsers).hasSize(1);
         final PipelineUserWithStoragePath resultUser = resultUsers.get(0);
@@ -109,6 +115,7 @@ public class UserImporterTest {
         assertThat(resultUser.getRoles()).hasSize(0);
         assertThat(resultUser.getMetadata()).hasSize(0);
         assertThat(attributes).hasSize(0);
+        assertThat(events).hasSize(0);
     }
 
     private void assertAttributeValue(final CategoricalAttribute attribute,

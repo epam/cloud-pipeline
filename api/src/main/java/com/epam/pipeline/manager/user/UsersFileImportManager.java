@@ -30,6 +30,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,13 +57,14 @@ public class UsersFileImportManager {
                                                        final MultipartFile file) {
         final List<CategoricalAttribute> categoricalAttributes = ListUtils
                 .emptyIfNull(categoricalAttributeManager.loadAll());
+        final List<PipelineUserEvent> events = new ArrayList<>();
         final List<PipelineUserWithStoragePath> users =
-                new UserImporter(categoricalAttributes, attributesToCreate).importUsers(file);
+                new UserImporter(categoricalAttributes, attributesToCreate, events).importUsers(file);
         if (CollectionUtils.isNotEmpty(categoricalAttributes)) {
             categoricalAttributeManager.updateCategoricalAttributes(categoricalAttributes);
         }
 
-        return users.stream()
+        events.addAll(users.stream()
                 .flatMap(user -> {
                     try {
                         return ListUtils.emptyIfNull(userImportManager
@@ -72,6 +74,7 @@ public class UsersFileImportManager {
                         return Stream.of(PipelineUserEvent.error(user.getUserName(), e.getMessage()));
                     }
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
+        return events;
     }
 }

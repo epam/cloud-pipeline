@@ -16,6 +16,7 @@ from buckets.utils.tag_assertion_utils import *
 from buckets.utils.assertions_utils import *
 from buckets.utils.listing import *
 from common_utils.entity_managers import EntityManager
+from common_utils.test_utils import format_name
 
 ERROR_MESSAGE = "An error occurred in case "
 
@@ -25,7 +26,7 @@ class TestTagging(object):
     test_file2 = "test-tag2.txt"
     test_file_in_folder = "tags/" + test_file
     test_file2_in_folder = "tags/" + test_file2
-    bucket = 'epmcmbibpc-storage-tagging-{}'.format(get_test_prefix()).lower()
+    bucket = format_name('epmcmbibpc-storage-tagging-{}'.format(get_test_prefix()).lower())
     path_to_bucket = 'cp://{}'.format(bucket)
     tag1 = ("key1", "value1")
     tag2 = ("key2", "value2")

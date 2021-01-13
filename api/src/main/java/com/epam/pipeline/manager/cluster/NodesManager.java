@@ -94,7 +94,7 @@ public class NodesManager {
 
     @Autowired
     private KubernetesManager kubernetesManager;
-    
+
     @Autowired
     private NodeDiskManager nodeDiskManager;
 
@@ -141,10 +141,13 @@ public class NodesManager {
     public List<NodeInstance> filterNodes(FilterNodesVO filterNodesVO) {
         List<NodeInstance> result;
         Config config = new Config();
-        try (KubernetesClient client = new DefaultKubernetesClient(config)) {
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient(config)) {
             Map<String, String> labelsMap = new HashedMap<>();
             if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
                 labelsMap.put(KubernetesConstants.RUN_ID_LABEL, filterNodesVO.getRunId());
+            }
+            if (MapUtils.isNotEmpty(filterNodesVO.getLabels())) {
+                labelsMap.putAll(filterNodesVO.getLabels());
             }
             Predicate<NodeInstance> addressFilter = node -> true;
             if (StringUtils.isNotBlank(filterNodesVO.getAddress())) {
@@ -153,8 +156,7 @@ public class NodesManager {
                         address.getAddress().equalsIgnoreCase(filterNodesVO.getAddress());
                 addressFilter = node ->
                         node.getAddresses() != null && node.getAddresses()
-                                .stream()
-                                .filter(addressEqualsPredicate).count() > 0;
+                                .stream().anyMatch(addressEqualsPredicate);
             }
             result = client.nodes()
                     .withLabels(labelsMap)

@@ -19,6 +19,8 @@ package com.epam.pipeline.test.creator.configuration;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
+import com.epam.pipeline.entity.configuration.ConfigurationEntry;
+import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -32,10 +34,15 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class ConfigurationCreatorUtils {
 
+    public static final TypeReference<Result<PipelineConfiguration>> PIPELINE_CONFIGURATION_TYPE =
+            new TypeReference<Result<PipelineConfiguration>>() {};
+    public static final TypeReference<Result<List<ConfigurationEntry>>> CONFIGURATION_ENTRY_LIST_TYPE =
+            new TypeReference<Result<List<ConfigurationEntry>>>() {};
+
     public static final TypeReference<Result<RunConfiguration>> RUN_CONFIGURATION_TYPE =
-            new TypeReference<Result<RunConfiguration>>() { };
+            new TypeReference<Result<RunConfiguration>>() {};
     public static final TypeReference<Result<List<RunConfiguration>>> RUN_CONFIGURATION_LIST_TYPE =
-            new TypeReference<Result<List<RunConfiguration>>>() { };
+            new TypeReference<Result<List<RunConfiguration>>>() {};
     private static final List<AbstractRunConfigurationEntry> ENTRIES
             = Collections.singletonList(getRunConfigurationEntry());
 
@@ -86,5 +93,15 @@ public final class ConfigurationCreatorUtils {
         final RunConfigurationEntry runConfigurationEntry = new RunConfigurationEntry();
         runConfigurationEntry.setPipelineId(ID);
         return runConfigurationEntry;
+    }
+
+    public static ConfigurationEntry getConfigurationEntry() {
+        return new ConfigurationEntry();
+    }
+
+    public static PipelineConfiguration getPipelineConfiguration() {
+        final PipelineConfiguration configuration = new PipelineConfiguration();
+        configuration.setLanguage(TEST_STRING);
+        return configuration;
     }
 }

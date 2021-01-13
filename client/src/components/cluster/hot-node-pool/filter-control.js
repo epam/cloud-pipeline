@@ -107,6 +107,9 @@ function criteriaValid (criteria) {
   if (!operator || !type) {
     return false;
   }
+  if (/^run_parameter$/i.test(type)) {
+    return !!value && Object.keys(value).length === 1 && !!Object.keys(value)[0];
+  }
   return !/^(equal|not_equal)$/i.test(operator) || value;
 }
 
@@ -182,11 +185,25 @@ class FilterControl extends React.Component {
   };
 
   onChangeOperator = (o) => {
-    let {value, valueKey, valueValue} = this.state;
+    let {type, value, valueKey, valueValue} = this.state;
     if (/^(empty|not_empty)$/i.test(o)) {
-      value = undefined;
-      valueKey = undefined;
-      valueValue = undefined;
+      if (/^run_parameter$/i.test(type)) {
+        if (value) {
+          [valueKey] = Object.keys(value);
+          valueValue = '';
+          if (valueKey) {
+            value = {[valueKey]: ''};
+          }
+        } else {
+          value = {};
+          valueKey = undefined;
+          valueValue = '';
+        }
+      } else {
+        value = undefined;
+        valueKey = undefined;
+        valueValue = undefined;
+      }
     }
     this.setState({
       operator: o,
@@ -433,7 +450,11 @@ class FilterControl extends React.Component {
   renderValueControl = () => {
     const {disabled} = this.props;
     const {operator, type, value} = this.state;
-    if (!type || !operator || /^(empty|not_empty)$/i.test(operator)) {
+    if (
+      !type ||
+      !operator ||
+      (/^(empty|not_empty)$/i.test(operator) && !/^run_parameter$/i.test(type))
+    ) {
       return null;
     }
     if (/^run_owner$/i.test(type)) {
@@ -452,24 +473,27 @@ class FilterControl extends React.Component {
       const onChangeValue = e => {
         this.onChangeValue({[valueKey || '']: (e.target.value || '')});
       };
+      const showValue = !/^(empty|not_empty)$/i.test(operator);
       return [
         <Input
           key="key"
-          placeholder="Key"
+          placeholder="Parameter name"
           disabled={disabled}
           value={valueKey}
           onChange={onChangeKey}
-          style={{width: 100, marginRight: 5}}
+          style={{width: 200, marginRight: 5}}
         />,
-        <Input
-          key="value"
-          placeholder="Value"
-          disabled={disabled}
-          value={valueValue}
-          onChange={onChangeValue}
-          style={{width: 100, marginRight: 5}}
-        />
-      ];
+        showValue && (
+          <Input
+            key="value"
+            placeholder="Parameter value"
+            disabled={disabled}
+            value={valueValue}
+            onChange={onChangeValue}
+            style={{width: 200, marginRight: 5}}
+          />
+        )
+      ].filter(Boolean);
     } else if (/^docker_image$/i.test(type)) {
       return this.renderDockerImageSelection();
     }
@@ -483,7 +507,7 @@ class FilterControl extends React.Component {
     );
   };
 
-  render() {
+  render () {
     const {className, disabled, style} = this.props;
     const {operator, type} = this.state;
     return (
