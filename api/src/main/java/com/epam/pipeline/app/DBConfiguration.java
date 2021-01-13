@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,11 @@ package com.epam.pipeline.app;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 
@@ -26,7 +30,9 @@ import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
 
 @Configuration
+@EnableCaching
 @ImportResource({"classpath*:dao/*.xml"})
+@ComponentScan(basePackages = {"com.epam.pipeline.dao"})
 public class DBConfiguration {
 
     @Value("${database.url}")
@@ -57,5 +63,10 @@ public class DBConfiguration {
         dataSource.setMaxPoolSize(maxPoolSize);
         dataSource.setInitialPoolSize(initialPoolSize);
         return dataSource;
+    }
+
+    @Bean
+    public CacheManager cacheManager() {
+        return new ConcurrentMapCacheManager("preferences");
     }
 }

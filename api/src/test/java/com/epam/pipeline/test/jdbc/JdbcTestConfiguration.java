@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@ContextConfiguration(classes = {DBConfiguration.class, CommonTestContext.class})
+@ContextConfiguration(classes = {DBConfiguration.class, CommonTestContext.class, JdbcTestBeans.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.dao"})
 @AutoConfigureJdbc
 @TestPropertySource(value={"classpath:test-application.properties"})

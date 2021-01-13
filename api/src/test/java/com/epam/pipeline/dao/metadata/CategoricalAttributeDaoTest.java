@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,9 @@
 
 package com.epam.pipeline.dao.metadata;
 
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertValuesPresentedForKeyInMap;
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.convertToMap;
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
@@ -38,8 +33,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertValuesPresentedForKeyInMap;
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.convertToMap;
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
-public class CategoricalAttributeDaoTest extends AbstractSpringTest {
+
+public class CategoricalAttributeDaoTest extends AbstractJdbcTest {
 
     private static final String ATTRIBUTE_KEY_1 = "key1";
     private static final String ATTRIBUTE_KEY_2 = "key2";
