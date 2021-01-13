@@ -15,6 +15,7 @@ default_logs_path = os.path.join(root_path, 'e2e-logs')
 default_source_path = os.path.join(root_path, 'e2e-random')
 default_chunk_size = 10 * MB
 default_buffer_size = 512 * MB
+default_read_ahead_size = 20 * MB
 default_small_sizes = {
     'cli.mount.operation.test_fallocate': [1],
     'cli.mount.operation.test_truncate': [1],
@@ -22,9 +23,13 @@ default_small_sizes = {
     'cli.mount.operation.test_write': [1]
 }
 default_sizes = {
-    'cli.mount.operation.test_fallocate': [1, 11, 11 * MB],
-    'cli.mount.operation.test_truncate': [1, 11, 11 * MB],
-    'cli.mount.operation.test_read': [0, 1, 11 * MB, 600 * MB],
+    'cli.mount.operation.test_fallocate': [1,
+                                           default_chunk_size + 1 * MB],
+    'cli.mount.operation.test_truncate': [0, 1,
+                                          default_chunk_size + 1 * MB],
+    'cli.mount.operation.test_read': [0, 1,
+                                      default_chunk_size + 1 * MB,
+                                      default_read_ahead_size * 2 + 1 * MB],
     'cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
                                        default_chunk_size,
                                        default_chunk_size * 4 + 1 * MB,
