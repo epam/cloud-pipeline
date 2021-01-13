@@ -58,9 +58,9 @@ Launch command examples:
 ```
 $RUN_TESTS_CMD="pytest --html=/home/results/report.html -s -vv --tx 4*popen//python=python2.7 --dist=loadscope /home/cloud-pipeline/e2e/cli/buckets"
 $RUN_METADATA_TESTS_CMD="pytest --html=/home/results/metadata-report.html -s -vv /home/cloud-pipeline/e2e/cli/tag"
-$RUN_MOUNT_OBJECT_TESTS_CMD="pytest --html=/home/results/mount-object-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object"
-$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="pytest --html=/home/results/mount-object-prefix-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object --prefix --small"
-$RUN_MOUNT_WEBDAV_TESTS_CMD="pytest --html=/home/results/mount-webdav-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --webdav"
+$RUN_MOUNT_OBJECT_TESTS_CMD="pytest --html=/home/results/mount-object-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object --logs-level INFO --logs-path /home/logs/mount-object"
+$RUN_MOUNT_OBJECT_PREFIX_TESTS_CMD="pytest --html=/home/results/mount-object-prefix-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --object --prefix --small --logs-level INFO --logs-path /home/logs/mount-object-prefix"
+$RUN_MOUNT_WEBDAV_TESTS_CMD="pytest --html=/home/results/mount-webdav-report.html -s -vv /home/cloud-pipeline/e2e/cli/mount/operation --webdav --logs-level INFO --logs-path /home/logs/mount-webdav"
 ```
 
 #### Aws
