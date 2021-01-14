@@ -34,6 +34,17 @@ class Task:
                     .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
 
 
+def fail_task_on_error(f):
+    def wrapper(*args, **kwargs):
+        self = args[0]
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            self.fail_task(e)
+            raise
+    return wrapper
+
+
 class Node:
     def __init__(self, run):
         self.run_id = run['id']
@@ -51,35 +62,32 @@ class WaitForNode(Task):
         self.run_id = os.environ.get('RUN_ID', '')
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
+    @fail_task_on_error
     def await_node_start(self, task_name, run_id, parameters=None):
-        try:
-            Logger.info('Waiting for node with parameters = {}, task: {}'
-                        .format(','.join(parameters if parameters else ['NA']), task_name),
-                        task_name=self.task_name)
+        Logger.info('Waiting for node with parameters = {}, task: {}'
+                    .format(','.join(parameters if parameters else ['NA']), task_name),
+                    task_name=self.task_name)
 
-            master = None
+        master = None
 
-            if self.run_id == str(run_id):
-                master = self.get_current_node_info()
+        if self.run_id == str(run_id):
+            master = self.get_current_node_info()
 
-            if not master:
-                # approximately 10 minutes
-                attempts = 60
+        if not master:
+            # approximately 10 minutes
+            attempts = 60
+            master = self.get_node_info(task_name, run_id, parameters=parameters)
+            while not master and attempts > 0:
                 master = self.get_node_info(task_name, run_id, parameters=parameters)
-                while not master and attempts > 0:
-                    master = self.get_node_info(task_name, run_id, parameters=parameters)
-                    attempts -= 1
-                    Logger.info('Waiting for node ...', task_name=self.task_name)
-                    time.sleep(10)
+                attempts -= 1
+                Logger.info('Waiting for node ...', task_name=self.task_name)
+                time.sleep(10)
 
-            if not master:
-                raise RuntimeError('Failed to attach to master node')
+        if not master:
+            raise RuntimeError('Failed to attach to master node')
 
-            Logger.success('Attached to node (run id {})'.format(master.name), task_name=self.task_name)
-            return master
-        except Exception as e:
-            self.fail_task(e)
-            raise
+        Logger.success('Attached to node (run id {})'.format(master.name), task_name=self.task_name)
+        return master
 
     def get_current_node_info(self):
         try:
