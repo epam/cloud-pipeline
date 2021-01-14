@@ -5,9 +5,9 @@
 File shall not have any tags. 
 
 **Actions**:
-1.	Call `pipe storage set-object-tags {bucket_name} {file_name} key=value`
-2.	Call `pipe storage delete-object-tags {bucket_name} {file_name} {unexisting_tag}`
-3.	Call `pipe storage get-object-tags {bucket_name} {file_name}`
+1.	Call `pipe storage set-object-tags {storage_name} {file_name} key=value`
+2.	Call `pipe storage delete-object-tags {storage_name} {file_name} {unexisting_tag}`
+3.	Call `pipe storage get-object-tags {storage_name} {file_name}`
 
 ***
 

@@ -1,7 +1,7 @@
 # [Negative] Set tags with invalid value (without '=' delimiter)
 
 **Actions**:
-1. Call `pipe storage set-object-tags {bucket_name} {file_name} key `
+1. Call `pipe storage set-object-tags {storage_name} {file_name} key `
 
 ***
 

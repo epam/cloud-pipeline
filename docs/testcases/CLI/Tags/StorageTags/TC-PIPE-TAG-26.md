@@ -1,4 +1,4 @@
-# Validation of get tag for S3 objects by non-admin and non-owner user
+# Validation of get tag for object storages by non-admin and non-owner user
 
 **Prerequisites**:
 
@@ -7,7 +7,7 @@ File shall have tags.
 Non-admin and non-owner User shall have full access permissions for storage.
 
 **Actions**:
-1.	Perform command `pipe storage get-object-tags {bucket_name} {file_name}`
+1.	Perform command `pipe storage get-object-tags {storage_name} {file_name}`
 
 ***
 
