@@ -140,7 +140,7 @@ def main():
         BuildHostfile().run(workers, hostfile, run_id)
     except Exception:
         ShutDownCluster().run(workers, StatusEntry(TaskStatus.FAILURE))
-        raise RuntimeError('Failed to setup cluster')
+        raise
     
     
 if __name__ == '__main__':
