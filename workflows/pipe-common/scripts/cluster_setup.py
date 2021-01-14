@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pipeline import Logger, TaskStatus, PipelineAPI, StatusEntry
 import argparse
 import os
 import subprocess
 import time
+
+from pipeline import Logger, LoggerTask, TaskStatus, PipelineAPI, StatusEntry
 
 try:
     from pykube.config import KubeConfig
@@ -26,17 +27,6 @@ try:
     from pykube.objects import Event
 except ImportError:
     raise RuntimeError('pykube is not installed. KubernetesJobTask requires pykube.')
-
-
-class Task:
-
-    def __init__(self):
-        self.task_name = 'Task'
-
-    def fail_task(self, message):
-        error_text = '{} task failed: {}.'.format(self.task_name, message)
-        Logger.fail(error_text, task_name=self.task_name)
-        raise RuntimeError(error_text)
 
 
 class PodModel:
@@ -65,37 +55,34 @@ class Kubernetes:
             return PodModel(pods.response['items'][0], run_id)
 
 
-class CreateWorkerNodes(Task):
+class CreateWorkerNodes(LoggerTask):
 
     INIT_WORKER_TASK = "InitializeFSClient"
 
     def __init__(self):
-        Task.__init__(self)
-        self.task_name = 'CreateWorkerNodes'
+        LoggerTask.__init__(self, task_name='CreateWorkerNodes')
         self.kube = Kubernetes()
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
+    @LoggerTask.fail_on_error
     def run(self, nodes_number, worker_image, worker_disk, worker_type, worker_cmd, parent_id, master_shared,
             worker_shared):
         if nodes_number == 0:
             Logger.success('No workers requested. Processing will run on a master node', task_name=self.task_name)
             return []
-        try:
-            worker_cmd = self.build_worker_start_command(parent_id, worker_cmd, master_shared, worker_shared)
-            Logger.info('Launching {} node(s) with docker image "{}" '
-                        'instance type "{}" disk "{}" and cmd "{}" for master run {}.'
-                        .format(nodes_number, worker_image, worker_type, worker_disk, worker_cmd, parent_id),
-                        task_name=self.task_name)
-            worker_ids = self.launch_workers(nodes_number, worker_image, worker_type, worker_disk, worker_cmd, parent_id)
-            if len(worker_ids) != nodes_number:
-                Logger.fail('Failed to launch all workers.')
-                raise RuntimeError('Failed to launch all workers.')
-            Logger.info('Requested {} worker(s): {}'.format(len(worker_ids), worker_ids), task_name=self.task_name)
-            worker_pods = self.await_workers_start(worker_ids)
-            Logger.success('All workers started', task_name=self.task_name)
-            return worker_pods
-        except Exception as e:
-            self.fail_task(e.message)
+        worker_cmd = self.build_worker_start_command(parent_id, worker_cmd, master_shared, worker_shared)
+        Logger.info('Launching {} node(s) with docker image "{}" '
+                    'instance type "{}" disk "{}" and cmd "{}" for master run {}.'
+                    .format(nodes_number, worker_image, worker_type, worker_disk, worker_cmd, parent_id),
+                    task_name=self.task_name)
+        worker_ids = self.launch_workers(nodes_number, worker_image, worker_type, worker_disk, worker_cmd, parent_id)
+        if len(worker_ids) != nodes_number:
+            Logger.fail('Failed to launch all workers.')
+            raise RuntimeError('Failed to launch all workers.')
+        Logger.info('Requested {} worker(s): {}'.format(len(worker_ids), worker_ids), task_name=self.task_name)
+        worker_pods = self.await_workers_start(worker_ids)
+        Logger.success('All workers started', task_name=self.task_name)
+        return worker_pods
 
     def launch_workers(self, nodes_number, image, type, disk, cmd, parent_id):
         result = []
@@ -151,25 +138,22 @@ class CreateWorkerNodes(Task):
         return cmd
 
 
-class BuildHostfile(Task):
+class BuildHostfile(LoggerTask):
 
     def __init__(self):
-        Task.__init__(self)
-        self.task_name = 'BuildHostfile'
+        LoggerTask.__init__(self, task_name='BuildHostfile')
         self.kube = Kubernetes()
 
+    @LoggerTask.fail_on_error
     def run(self, worker_pods, path, run_id):
-        try:
-            Logger.info('Creating hostfile {}'.format(path), task_name=self.task_name)
-            with open(path, 'w') as file:
-                master_pod = self.kube.get_pod(run_id)
-                file.write('{}\n'.format(master_pod.name))
-                for pod in worker_pods:
-                    file.write('{}\n'.format(pod.name))
-                    self.add_to_hosts(pod)
-            Logger.success('Successfully created hostfile {}'.format(path), task_name=self.task_name)
-        except Exception as e:
-            self.fail_task(e.message)
+        Logger.info('Creating hostfile {}'.format(path), task_name=self.task_name)
+        with open(path, 'w') as file:
+            master_pod = self.kube.get_pod(run_id)
+            file.write('{}\n'.format(master_pod.name))
+            for pod in worker_pods:
+                file.write('{}\n'.format(pod.name))
+                self.add_to_hosts(pod)
+        Logger.success('Successfully created hostfile {}'.format(path), task_name=self.task_name)
 
     def execute_command(self, cmd):
         process = subprocess.Popen(cmd, shell=True)
@@ -181,22 +165,20 @@ class BuildHostfile(Task):
         self.execute_command(cmd)
 
 
-class ShutDownCluster(Task):
-    def __init__(self):
-        Task.__init__(self)
-        self.task_name = 'ShutDownCluster'
+class ShutDownCluster(LoggerTask):
 
+    def __init__(self):
+        LoggerTask.__init__(self, task_name='ShutDownCluster')
+
+    @LoggerTask.fail_on_error
     def run(self, worker_ids, status):
-        try:
-            Logger.info('Shutting down {} node(s)'.format(len(worker_ids)), task_name=self.task_name)
-            api = PipelineAPI(os.environ['API'], 'logs')
-            for pod in worker_ids:
-                Logger.info('Shutting down {} node with status {}.'.format(pod.run_id, status.status),
-                            task_name=self.task_name)
-                api.update_status(pod.run_id, status)
-            Logger.success('Successfully scaled cluster down', task_name=self.task_name)
-        except Exception as e:
-            self.fail_task(e.message)
+        Logger.info('Shutting down {} node(s)'.format(len(worker_ids)), task_name=self.task_name)
+        api = PipelineAPI(os.environ['API'], 'logs')
+        for pod in worker_ids:
+            Logger.info('Shutting down {} node with status {}.'.format(pod.run_id, status.status),
+                        task_name=self.task_name)
+            api.update_status(pod.run_id, status)
+        Logger.success('Successfully scaled cluster down', task_name=self.task_name)
 
 
 def get_env_value(default_name, user_name):
@@ -223,20 +205,17 @@ def main():
     worker_image = get_env_value('docker_image', 'worker_image')
     worker_disk = get_env_value('instance_disk', 'worker_disk')
     worker_type = get_env_value('instance_size', 'worker_type')
-    status = StatusEntry(TaskStatus.SUCCESS)
+
     workers = []
     try:
         workers = CreateWorkerNodes().run(args.nodes_number, worker_image,
                                           worker_disk, worker_type, args.worker_cmd,
                                           run_id, master_shared_dir, worker_shared_dir)
         BuildHostfile().run(workers, hostfile, run_id)
-    except Exception as e:
-        Logger.warn(e.message)
-        status = StatusEntry(TaskStatus.FAILURE)
-        ShutDownCluster().run(workers, status)
-    if status.status == TaskStatus.FAILURE:
-        raise RuntimeError('Failed to setup cluster')
-    
-    
+    except Exception:
+        ShutDownCluster().run(workers, StatusEntry(TaskStatus.FAILURE))
+        raise
+
+
 if __name__ == '__main__':
     main()
