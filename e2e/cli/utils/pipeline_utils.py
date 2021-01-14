@@ -117,7 +117,7 @@ def view_runs(run_id, *args):
         __fill_record(line, pipe_info, "nodeDisk")
         __fill_record(line, pipe_info, "nodeType")
         __fill_record(line, pipe_info, "nodeId")
-        __fill_record(line, pipe_info, "Endpoints")
+        __fill_record(line, pipe_info, "Endpoints", structured=True)
         line = process.stdout.readline()
     return pipe_info
 
@@ -425,9 +425,15 @@ def terminate_instance(run_id):
     return get_client().terminate_instance(run_id)
 
 
-def __fill_record(line, pipe_info, parameter):
+# TODO fix method to pars all lines with ':'
+# TODO f.e. now parameters like Completed, Started etc uses
+# TODO only time without date that can leads to a bug if tests are run near to 00:00
+def __fill_record(line, pipe_info, parameter, structured=False):
     if line.startswith(parameter):
-        splitted = line.rstrip().split(":", 1)
+        if structured:
+            splitted = line.rstrip().split(":", 1)
+        else:
+            splitted = line.rstrip().split(" ")
         pipe_info[parameter] = splitted[splitted.__len__() - 1].strip()
 
 
