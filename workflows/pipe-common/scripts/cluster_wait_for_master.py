@@ -15,45 +15,19 @@
 import argparse
 import os
 import time
-import traceback
 
-from pipeline import Logger, PipelineAPI
+from pipeline import Logger, LoggerTask, PipelineAPI
 from pipeline import Kubernetes
 
 
-class Task:
-
-    def __init__(self, task_name):
-        self.task_name = task_name
-
-    def fail_task(self, e):
-        Logger.fail('Error in task {}: {}: {}.'
-                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
-
-    def warn_task(self, e):
-        Logger.warn('Warning in task {}: {}: {}'
-                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
-
-
-def fail_task_on_error(f):
-    def wrapper(*args, **kwargs):
-        self = args[0]
-        try:
-            return f(*args, **kwargs)
-        except Exception as e:
-            self.fail_task(e)
-            raise
-    return wrapper
-
-
-class MasterNode(Task):
+class MasterNode(LoggerTask):
 
     def __init__(self):
-        Task.__init__(self, task_name='WaitForMasterNode')
+        LoggerTask.__init__(self, task_name='WaitForMasterNode')
         self.kube = Kubernetes()
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
-    @fail_task_on_error
+    @LoggerTask.fail_on_error
     def await_master_start(self, master_id, task_name):
         Logger.info('Waiting for master node (run id: {}), task: {}'.format(master_id, task_name),
                     task_name=self.task_name)

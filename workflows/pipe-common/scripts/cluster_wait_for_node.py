@@ -12,37 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import traceback
 import argparse
 import os
 import time
 
-from pipeline import Logger, PipelineAPI
-
-
-class Task:
-
-    def __init__(self, task_name):
-        self.task_name = task_name
-
-    def fail_task(self, e):
-        Logger.fail('Error in task {}: {}: {}.'
-                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
-
-    def warn_task(self, e):
-        Logger.warn('Warning in task {}: {}: {}'
-                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
-
-
-def fail_task_on_error(f):
-    def wrapper(*args, **kwargs):
-        self = args[0]
-        try:
-            return f(*args, **kwargs)
-        except Exception as e:
-            self.fail_task(e)
-            raise
-    return wrapper
+from pipeline import Logger, LoggerTask, PipelineAPI
 
 
 class Node:
@@ -55,14 +29,14 @@ class Node:
             self.ip = None
 
 
-class WaitForNode(Task):
+class WaitForNode(LoggerTask):
 
     def __init__(self):
-        Task.__init__(self, task_name='WaitForNode')
+        LoggerTask.__init__(self, task_name='WaitForNode')
         self.run_id = os.environ.get('RUN_ID', '')
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
-    @fail_task_on_error
+    @LoggerTask.fail_on_error
     def await_node_start(self, task_name, run_id, parameters=None):
         Logger.info('Waiting for node with parameters = {}, task: {}'
                     .format(','.join(parameters if parameters else ['NA']), task_name),

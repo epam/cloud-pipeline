@@ -13,7 +13,10 @@
 # limitations under the License.
 
 import os
+import traceback
+
 from pipeline.api import LogEntry, TaskStatus, PipelineAPI
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -33,6 +36,7 @@ class bcolors:
     def colored(message, status):
         return bcolors.STATUS_COLORS[status] + message + bcolors.ENDC
 
+
 class Logger:
 
     @staticmethod
@@ -51,7 +55,6 @@ class Logger:
                               log_dir=log_dir,
                               omit_console=omit_console)
 
-
     @staticmethod
     def warn(message,
              task_name=None,
@@ -67,7 +70,6 @@ class Logger:
                               api_url=api_url,
                               log_dir=log_dir,
                               omit_console=omit_console)
-
 
     @staticmethod
     def success(message,
@@ -85,7 +87,6 @@ class Logger:
                               log_dir=log_dir,
                               omit_console=omit_console)
 
-    
     @staticmethod
     def fail(message,
              task_name=None,
@@ -101,8 +102,6 @@ class Logger:
                               api_url=api_url,
                               log_dir=log_dir,
                               omit_console=omit_console)
-
-
 
     @staticmethod
     def log_task_event(task_name, message, status=TaskStatus.RUNNING, run_id=None, instance=None, api_url=None, log_dir=None, omit_console=False):
@@ -139,3 +138,28 @@ class Logger:
                              instance)
         pipe_api = PipelineAPI(_api_url, _log_dir)
         pipe_api.log_event(log_entry, omit_console=omit_console)
+
+
+class LoggerTask:
+
+    def __init__(self, task_name):
+        self.task_name = task_name
+
+    def fail_task(self, e):
+        Logger.fail('Error in task {}: {}: {}.'
+                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
+
+    def warn_task(self, e):
+        Logger.warn('Warning in task {}: {}: {}'
+                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
+
+    @staticmethod
+    def fail_on_error(f):
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            try:
+                return f(*args, **kwargs)
+            except Exception as e:
+                self.fail_task(e)
+                raise
+        return wrapper

@@ -16,9 +16,8 @@ import argparse
 import os
 import subprocess
 import time
-import traceback
 
-from pipeline import Logger, TaskStatus, PipelineAPI, StatusEntry
+from pipeline import Logger, LoggerTask, TaskStatus, PipelineAPI, StatusEntry
 
 try:
     from pykube.config import KubeConfig
@@ -28,31 +27,6 @@ try:
     from pykube.objects import Event
 except ImportError:
     raise RuntimeError('pykube is not installed. KubernetesJobTask requires pykube.')
-
-
-class Task:
-
-    def __init__(self, task_name):
-        self.task_name = task_name
-
-    def fail_task(self, e):
-        Logger.fail('Error in task {}: {}: {}.'
-                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
-
-    def warn_task(self, e):
-        Logger.warn('Warning in task {}: {}: {}'
-                    .format(self.task_name, e, traceback.format_exc()), task_name=self.task_name)
-
-
-def fail_task_on_error(f):
-    def wrapper(*args, **kwargs):
-        self = args[0]
-        try:
-            return f(*args, **kwargs)
-        except Exception as e:
-            self.fail_task(e)
-            raise
-    return wrapper
 
 
 class PodModel:
@@ -81,16 +55,16 @@ class Kubernetes:
             return PodModel(pods.response['items'][0], run_id)
 
 
-class CreateWorkerNodes(Task):
+class CreateWorkerNodes(LoggerTask):
 
     INIT_WORKER_TASK = "InitializeFSClient"
 
     def __init__(self):
-        Task.__init__(self, task_name='CreateWorkerNodes')
+        LoggerTask.__init__(self, task_name='CreateWorkerNodes')
         self.kube = Kubernetes()
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
-    @fail_task_on_error
+    @LoggerTask.fail_on_error
     def run(self, nodes_number, worker_image, worker_disk, worker_type, worker_cmd, parent_id, master_shared,
             worker_shared):
         if nodes_number == 0:
@@ -164,13 +138,13 @@ class CreateWorkerNodes(Task):
         return cmd
 
 
-class BuildHostfile(Task):
+class BuildHostfile(LoggerTask):
 
     def __init__(self):
-        Task.__init__(self, task_name='BuildHostfile')
+        LoggerTask.__init__(self, task_name='BuildHostfile')
         self.kube = Kubernetes()
 
-    @fail_task_on_error
+    @LoggerTask.fail_on_error
     def run(self, worker_pods, path, run_id):
         Logger.info('Creating hostfile {}'.format(path), task_name=self.task_name)
         with open(path, 'w') as file:
@@ -191,12 +165,12 @@ class BuildHostfile(Task):
         self.execute_command(cmd)
 
 
-class ShutDownCluster(Task):
+class ShutDownCluster(LoggerTask):
 
     def __init__(self):
-        Task.__init__(self, task_name='ShutDownCluster')
+        LoggerTask.__init__(self, task_name='ShutDownCluster')
 
-    @fail_task_on_error
+    @LoggerTask.fail_on_error
     def run(self, worker_ids, status):
         Logger.info('Shutting down {} node(s)'.format(len(worker_ids)), task_name=self.task_name)
         api = PipelineAPI(os.environ['API'], 'logs')
