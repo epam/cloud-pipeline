@@ -139,7 +139,6 @@ def pytest_sessionstart(session):
     session.config.storage_name = _generate_storage_name(storage_type=storage_type, storage_region=storage_region)
     session.config.storage_path = session.config.storage_name
 
-    rm(session.config.logs_path, under=True, force=True)
     mkdir(session.config.local_path, session.config.root_mount_path, session.config.logs_path)
 
     if storage_type in ['S3', 'AZ', 'GS']:
@@ -184,39 +183,30 @@ def pytest_sessionstart(session):
                    source_path=session.config.source_path,
                    local_path=local_path,
                    mount_path=session.config.mount_path,
-                   root_mount_path=session.config.root_mount_path,))
+                   root_mount_path=session.config.root_mount_path))
     else:
-        storage_share = os.getenv('CP_TEST_SHARE_ID')
+        storage_share_id = os.environ['CP_TEST_SHARE_ID']
+        storage_share_root = os.environ['CP_TEST_SHARE_ROOT']
         session.config.mount_path = os.path.join(session.config.root_mount_path,
                                                  session.config.storage_name.replace('-', '_'))
 
         execute(log_path=os.path.join(session.config.logs_path, 'start.log'), command="""
         head -c '{source_size}' /dev/urandom > '{source_path}'
         
-        wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O jq
-        chmod +x jq
-        curl -k -X GET \
-             --header 'Content-Type: application/json' \
-             --header 'Accept: application/json' \
-             --header 'Authorization: Bearer {api_token}' \
-             '{api}/cloud/region/{region}' \
-             > {logs_path}/curl-get-region.log
-        SHARE_ROOT=$(cat {logs_path}/curl-get-region.log \
-                     | ./jq -r '.payload.fileShareMounts[] | select(.id=='"{share}"') | .mountRoot')
         curl -k -X POST \
              --header 'Content-Type: application/json' \
              --header 'Accept: application/json' \
              --header 'Authorization: Bearer {api_token}' \
              -d '{{ \
-                 "fileShareMountId": "{share}", \
+                 "fileShareMountId": "{share_id}", \
                  "name": "{storage_name}", \
-                 "path": "'"$SHARE_ROOT"':/{storage_path}", \
+                 "path": "{share_root}:/{storage_path}", \
                  "parentFolderId": "{folder}", \
                  "regionId": "{region}", \
                  "serviceType": "FILE_SHARE" \
               }}' \
               '{api}/datastorage/save?cloud=true&skipPolicy=false' \
-              > {logs_path}/curl-create-storage.log
+              > /dev/null 2>&1
         
         pipe storage mount -t -l '{logs_path}/mount.log' -v '{logs_level}' -f '{root_mount_path}'
         
@@ -247,7 +237,8 @@ def pytest_sessionstart(session):
                    storage_path=session.config.storage_path,
                    storage_type=storage_type,
                    region=storage_region,
-                   share=storage_share,
+                   share_id=storage_share_id,
+                   share_root=storage_share_root,
                    folder=storage_folder or '',
                    logs_path=session.config.logs_path,
                    logs_level=session.config.logs_level,
