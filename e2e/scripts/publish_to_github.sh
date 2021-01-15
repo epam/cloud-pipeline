@@ -18,13 +18,6 @@
 #
 # Example:
 #
-# GITHUB_EXPORT_USERNAME="USERNAME"
-# GITHUB_EXPORT_PASSWORD="PASSWORD"
-# GITHUB_EXPORT_TAG="AWS GUI test results"
-# GITHUB_EXPORT_DESTINATION="e2e/reports/AWS/test"
-# GITHUB_EXPORT_SOURCE="e2e/gui/build/reports/tests/test
-# GITHUB_EXPORT_DESTINATION="${GITHUB_EXPORT_TMPDIR}/${GITHUB_EXPORT_DESTINATION}"
-# 
 # ./e2e/scripts/publish_to_github.sh --username "USERNAME" \
 #                                    --password "PASSWORD" \
 #                                    --source "e2e/gui/build/reports/tests/test" \
