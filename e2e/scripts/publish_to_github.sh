@@ -21,9 +21,9 @@
 # GITHUB_EXPORT_USERNAME="USERNAME"
 # GITHUB_EXPORT_PASSWORD="PASSWORD"
 # GITHUB_EXPORT_TAG="AWS GUI test results"
-# GITHUB_EXPORT_PATH="e2e/reports/AWS/test"
+# GITHUB_EXPORT_DESTINATION="e2e/reports/AWS/test"
 # GITHUB_EXPORT_SOURCE="e2e/gui/build/reports/tests/test
-# GITHUB_EXPORT_DESTINATION="${GITHUB_EXPORT_TMPDIR}/${GITHUB_EXPORT_PATH}"
+# GITHUB_EXPORT_DESTINATION="${GITHUB_EXPORT_TMPDIR}/${GITHUB_EXPORT_DESTINATION}"
 # 
 # ./e2e/scripts/publish_to_github.sh --username "USERNAME" \
 #                                    --password "PASSWORD" \
@@ -53,7 +53,7 @@ do
         shift
         ;;
         --destination)
-        GITHUB_EXPORT_PATH="$2"
+        GITHUB_EXPORT_DESTINATION="$2"
         shift
         shift
         ;;
@@ -81,15 +81,13 @@ GITHUB_EXPORT_TAG="${GITHUB_EXPORT_TAG:-Test Results}"
 
 GITHUB_EXPORT_USERNAME="${GITHUB_EXPORT_USERNAME}"
 GITHUB_EXPORT_PASSWORD="${GITHUB_EXPORT_PASSWORD}"
-GITHUB_EXPORT_PATH="${GITHUB_EXPORT_PATH}"
 GITHUB_EXPORT_SOURCE="${GITHUB_EXPORT_SOURCE}"
+GITHUB_EXPORT_DESTINATION="${GITHUB_EXPORT_DESTINATION}"
 
 if [[ -z "$GITHUB_EXPORT_USERNAME" ]]; then echo "Option --username is missing"; exit 1; fi
 if [[ -z "$GITHUB_EXPORT_PASSWORD" ]]; then echo "Option --password is missing"; exit 1; fi
 if [[ -z "$GITHUB_EXPORT_SOURCE" ]]; then echo "Option --source is missing"; exit 1; fi
-if [[ -z "$GITHUB_EXPORT_PATH" ]]; then echo "Option --destination is missing"; exit 1; fi
-
-GITHUB_EXPORT_DESTINATION="${GITHUB_EXPORT_TMPDIR}/${GITHUB_EXPORT_PATH}"
+if [[ -z "$GITHUB_EXPORT_DESTINATION" ]]; then echo "Option --destination is missing"; exit 1; fi
 
 rm -rf "${GITHUB_EXPORT_TMPDIR}"
 git clone "https://${GITHUB_EXPORT_USERNAME}:${GITHUB_EXPORT_PASSWORD}@github.com/epam/cloud-pipeline.git" -b "${GITHUB_EXPORT_BRANCH}" "${GITHUB_EXPORT_TMPDIR}"
