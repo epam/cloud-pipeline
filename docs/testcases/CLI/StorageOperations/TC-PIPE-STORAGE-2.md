@@ -16,5 +16,7 @@
 **Expected result:**
 
 *1.*	File appears on storage1 (at the same time it has been removed from local machine)
+
 *3.*	File has been downloaded from storage (at the same time it has been removed from storage)
+
 *5.*	File has been copied to another storage (at the same time it has been removed from storage1)

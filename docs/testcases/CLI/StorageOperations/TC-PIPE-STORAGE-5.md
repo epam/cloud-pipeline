@@ -14,4 +14,5 @@
 **Expected result:**
 
 *1.*	File `test_file.txt` has been created in storage and it's correct.
+
 *3.*	File `test_file.txt` has been copied to the local machine home directory and it's correct.

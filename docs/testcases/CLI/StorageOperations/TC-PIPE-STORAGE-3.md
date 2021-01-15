@@ -16,5 +16,7 @@
 **Expected result:**
 
 *1.*	Folder `new_folder` is created in storage `storage_name`. Created folder includes `test_file.txt` file and it's correct.
+
 *3.*	Folder `new_folder` is created on local machine. Created folder includes `test_file.txt` file and it's correct.
+
 *5.*	Folder `new_folder` is created in storage `other_storage_name`. Created folder includes `test_file.txt` file and it's correct.

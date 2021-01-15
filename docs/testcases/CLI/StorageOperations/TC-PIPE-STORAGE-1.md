@@ -16,5 +16,7 @@
 **Expected result:**
 
 *1.*	File appears in storage `storage_name`
+
 *3.*	File has been downloaded from storage to local machine
+
 *5.*	File has been copied to storage `other_storage_name`
