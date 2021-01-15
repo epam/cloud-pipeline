@@ -239,11 +239,13 @@ def pytest_sessionstart(session):
 
 def pytest_sessionfinish(session, exitstatus):
     execute(log_path=os.path.join(session.config.logs_path, 'finish.log'), command="""
-    pipe storage umount '{root_mount_path}'
-    pipe storage delete -y -c -n '{storage_name}'
+    EXIT_CODE=0
+    pipe storage umount '{root_mount_path}' || EXIT_CODE=$?
+    pipe storage delete -y -c -n '{storage_name}' || EXIT_CODE=$?
     if [ -f "{source_path}" ]; then rm -f "{source_path}"; fi
     if [ -d "{local_path}" ]; then rm -rf "{local_path}"; fi
     if ! mount | grep '{root_mount_path}' > /dev/null && [ -d "{root_mount_path}" ]; then rm -rf "{root_mount_path}"; fi
+    exit $EXIT_CODE
     """.format(storage_name=session.config.storage_name,
                source_path=session.config.source_path,
                local_path=session.config.local_path,
