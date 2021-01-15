@@ -7,6 +7,7 @@ from pyio import write_dirs, read_dirs
 
 operation_config = [
     {
+        'case': 'TC-PIPE-FUSE-16',
         'name': 'rm file',
         'target': 'file',
         'before': {
@@ -15,6 +16,7 @@ operation_config = [
         'after': {}
     },
     {
+        'case': 'TC-PIPE-FUSE-17',
         'name': 'rm file in folder',
         'target': 'folder/file',
         'before': {
@@ -27,6 +29,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-18',
         'name': 'rm file in subfolder',
         'target': 'folder/subfolder/file',
         'before': {
@@ -43,6 +46,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-19',
         'name': 'rm file with space in name',
         'target': 'file name',
         'before': {
@@ -51,6 +55,7 @@ operation_config = [
         'after': {}
     },
     {
+        'case': 'TC-PIPE-FUSE-20',
         'name': 'rm file with uppercase letters in name',
         'target': 'FILE',
         'before': {
@@ -59,6 +64,7 @@ operation_config = [
         'after': {}
     },
     {
+        'case': 'TC-PIPE-FUSE-21',
         'name': 'rm folder',
         'target': 'folder',
         'before': {
@@ -67,6 +73,7 @@ operation_config = [
         'after': {}
     },
     {
+        'case': 'TC-PIPE-FUSE-22',
         'name': 'rm subfolder',
         'target': 'folder/subfolder',
         'before': {
@@ -79,6 +86,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-23',
         'name': 'rm folder with subfolder',
         'target': 'folder',
         'before': {
@@ -89,6 +97,7 @@ operation_config = [
         'after': {}
     },
     {
+        'case': 'TC-PIPE-FUSE-24',
         'name': 'rm folder with file',
         'target': 'folder',
         'before': {
@@ -99,6 +108,7 @@ operation_config = [
         'after': {}
     },
     {
+        'case': 'TC-PIPE-FUSE-25',
         'name': 'rm subfolder with file',
         'target': 'folder/subfolder',
         'before': {
@@ -113,6 +123,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-26',
         'name': 'rm folder with subfolder with file',
         'target': 'folder',
         'before': {
@@ -133,8 +144,9 @@ def teardown_function(mount_path):
     rm(mount_path, under=True, recursive=True, force=True)
 
 
-@pytest.mark.parametrize('config', operation_config, ids=lambda config: config['name'])
-def test_rm(mount_path, config):
+@pytest.mark.parametrize('config,test_case', zip(operation_config, [config['case'] for config in operation_config]),
+                         ids=[config['name'] for config in operation_config])
+def test_rm(mount_path, config, test_case):
     write_dirs(mount_path, config['before'])
     target_path = os.path.join(mount_path, config['target'])
     rm(target_path, recursive=os.path.isdir(target_path))

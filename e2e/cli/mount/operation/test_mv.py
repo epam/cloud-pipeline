@@ -8,6 +8,7 @@ from pyio import write_dirs, read_dirs
 
 operation_config = [
     {
+        'case': 'TC-PIPE-FUSE-6',
         'name': 'mv file',
         'from': 'file-old',
         'to': 'file-new',
@@ -19,6 +20,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-7',
         'name': 'mv file from folder to root',
         'from': 'folder/file-old',
         'to': 'file-new',
@@ -33,6 +35,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-8',
         'name': 'mv file from root to folder',
         'from': 'file-old',
         'to': 'folder/file-new',
@@ -47,6 +50,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-9',
         'name': 'mv file from folder to folder',
         'from': 'folder-old/file-old',
         'to': 'folder-new/file-new',
@@ -64,6 +68,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-10',
         'name': 'mv file from folder to subfolder',
         'from': 'folder/file-old',
         'to': 'folder/subfolder/file-new',
@@ -82,6 +87,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-11',
         'name': 'mv file from subfolder to folder',
         'from': 'folder/subfolder/file-old',
         'to': 'folder/file-new',
@@ -99,6 +105,7 @@ operation_config = [
             }
         }
     }, {
+        'case': 'TC-PIPE-FUSE-12',
         'name': 'mv folder with files from root to folder',
         'from': 'folder-old',
         'to': 'folder/subfolder-new',
@@ -117,6 +124,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-13',
         'name': 'mv folder with files from folder to root',
         'from': 'folder/subfolder-old',
         'to': 'folder-new',
@@ -134,6 +142,7 @@ operation_config = [
             }
         }
     }, {
+        'case': 'TC-PIPE-FUSE-14',
         'name': 'mv subfolder from folder to folder',
         'from': 'folder-1/subfolder-old',
         'to': 'folder-2/subfolder-new',
@@ -150,6 +159,7 @@ operation_config = [
             }
         }
     }, {
+        'case': 'TC-PIPE-FUSE-15',
         'name': 'mv subfolder with files from folder to folder',
         'from': 'folder-1/subfolder-old',
         'to': 'folder-2/subfolder-new',
@@ -179,8 +189,9 @@ def teardown_function(mount_path):
     rm(mount_path, under=True, recursive=True, force=True)
 
 
-@pytest.mark.parametrize('config', operation_config, ids=lambda config: config['name'])
-def test_mv(mount_path, config):
+@pytest.mark.parametrize('config,test_case', zip(operation_config, [config['case'] for config in operation_config]),
+                         ids=[config['name'] for config in operation_config])
+def test_mv(mount_path, config, test_case):
     write_dirs(mount_path, config['before'])
     mv(os.path.join(mount_path, config['from']), os.path.join(mount_path, config['to']))
     assert read_dirs(mount_path) == config['after']

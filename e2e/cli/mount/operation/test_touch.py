@@ -7,6 +7,7 @@ from pyio import write_dirs, read_dirs
 
 operation_config = [
     {
+        'case': 'TC-PIPE-FUSE-1',
         'name': 'test touch non existing file',
         'target': 'file',
         'before': {},
@@ -15,6 +16,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-2',
         'name': 'test touch non existing file in folder',
         'target': 'folder/file',
         'before': {
@@ -27,6 +29,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-3',
         'name': 'test touch non existing file in subfolder',
         'target': 'folder/subfolder/file',
         'before': {
@@ -43,6 +46,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-4',
         'name': 'test touch empty file',
         'target': 'file',
         'before': {
@@ -53,6 +57,7 @@ operation_config = [
         }
     },
     {
+        'case': 'TC-PIPE-FUSE-5',
         'name': 'test touch non empty file',
         'target': 'file',
         'before': {
@@ -71,8 +76,9 @@ def teardown_function(mount_path):
     rm(mount_path, under=True, recursive=True, force=True)
 
 
-@pytest.mark.parametrize('config', operation_config, ids=lambda config: config['name'])
-def test_touch(mount_path, config):
+@pytest.mark.parametrize('config,test_case', zip(operation_config, [config['case'] for config in operation_config]),
+                         ids=[config['name'] for config in operation_config])
+def test_touch(mount_path, config, test_case):
     write_dirs(mount_path, config['before'])
     touch(os.path.join(mount_path, config['target']))
     assert read_dirs(mount_path) == config['after']
