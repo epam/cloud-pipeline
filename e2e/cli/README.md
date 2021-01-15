@@ -52,6 +52,7 @@ $GIT_BRANCH - git branch with source code
 $WORKSPACE - path to Cloud Pipeline project source code
 $CP_TEST_REGION_ID - the created Cloud Pipeline region ID
 $CP_TEST_SHARE_ID - the created Cloud Pipeline share ID
+$CP_TEST_SHARE_ROOT - the created Cloud Pipeline share root
 ```
 
 Launch command examples:
@@ -82,6 +83,7 @@ docker run --rm --env API=$API \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
 --env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
+--env CP_TEST_SHARE_ROOT=$CP_TEST_SHARE_ROOT \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
@@ -115,6 +117,7 @@ docker run --rm --env API=$API \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
 --env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
+--env CP_TEST_SHARE_ROOT=$CP_TEST_SHARE_ROOT \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \
@@ -149,6 +152,7 @@ docker run --rm --env API=$API \
 --env CP_PROVIDER=$CP_PROVIDER \
 --env CP_TEST_REGION_ID=$CP_TEST_REGION_ID \
 --env CP_TEST_SHARE_ID=$CP_TEST_SHARE_ID \
+--env CP_TEST_SHARE_ROOT=$CP_TEST_SHARE_ROOT \
 --env GIT_BRANCH=$GIT_BRANCH \
 --env RUN_TESTS_CMD="$RUN_TESTS_CMD" \
 --env RUN_METADATA_TESTS_CMD="$RUN_METADATA_TESTS_CMD" \

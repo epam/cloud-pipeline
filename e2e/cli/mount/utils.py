@@ -24,14 +24,13 @@ class CmdExecutor:
         exit_code = process.wait()
         if log_path:
             with open(log_path, 'w') as log_file:
-                log_file.write('Executing the following command: %s' % command)
-                log_file.write('\nOutput:\n')
+                log_file.write('Standard output:')
                 log_file.write(out)
-                log_file.write('\nError output:\n')
+                log_file.write('\nError output:')
                 log_file.write(err)
         if exit_code != 0:
-            raise RuntimeError('Command \'%s\' execution has failed. '
-                               'Out: %s. Err: %s.' % (command, out.rstrip(), err.rstrip()))
+            raise RuntimeError('Command execution has failed. '
+                               'Out: %s. Err: %s.' % (out.rstrip(), err.rstrip()))
         return out
 
     def execute_to_lines(self, command):
