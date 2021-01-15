@@ -93,9 +93,12 @@ GITHUB_EXPORT_DESTINATION="${GITHUB_EXPORT_TMPDIR}/${GITHUB_EXPORT_PATH}"
 
 rm -rf "${GITHUB_EXPORT_TMPDIR}"
 git clone "https://$CP_AUTO_USERNAME:$CP_AUTO_PASSWORD@github.com/epam/cloud-pipeline.git" -b "${GITHUB_EXPORT_BRANCH}" "${GITHUB_EXPORT_TMPDIR}"
+if [[ ! -d "${GITHUB_EXPORT_TMPDIR}" ]]; then echo "Cloning has failed"; exit 1; fi
 rm -rf "${GITHUB_EXPORT_DESTINATION}"
+mkdir -p "$(dirname "${GITHUB_EXPORT_DESTINATION}")"
 cp -r "${GITHUB_EXPORT_SOURCE}" "${GITHUB_EXPORT_DESTINATION}"
 git add "${GITHUB_EXPORT_DESTINATION}"
 git commit -a -m "${GITHUB_EXPORT_TAG} [$(date +%Y.%m.%d)]"
 git push origin "${GITHUB_EXPORT_BRANCH}"
+cd ..
 rm -rf "${GITHUB_EXPORT_TMPDIR}"
