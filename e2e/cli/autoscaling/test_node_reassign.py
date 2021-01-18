@@ -17,9 +17,9 @@ import os
 
 import pytest
 
-from common_utils.entity_managers import PipelineManager
-from common_utils.test_utils import format_name
-from e2e.cli.utils.pipeline_utils import *
+from ..common_utils.entity_managers import PipelineManager
+from ..common_utils.test_utils import format_name
+from ..utils.pipeline_utils import *
 
 MAX_REP_COUNT = 120
 

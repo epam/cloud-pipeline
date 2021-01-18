@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from e2e.cli.utils.pipeline_utils import *
+from ..utils.pipeline_utils import *
 import os
 
 MAX_REPETITIONS = 200

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from e2e.cli.endpoints.utils import *
+from utils import *
 
 
 class TestNoMachineEndpoints(object):
