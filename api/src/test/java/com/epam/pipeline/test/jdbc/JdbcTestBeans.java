@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.test.jdbc;
 
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
@@ -43,9 +42,10 @@ import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.IssueMapper;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import org.mapstruct.factory.Mappers;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -53,9 +53,6 @@ import static org.mockito.Mockito.spy;
 
 @Configuration
 public class JdbcTestBeans {
-
-    @Autowired
-    protected MessageHelper messageHelper;
 
     @MockBean
     protected JwtTokenGenerator mockJwtTokenGenerator;
@@ -132,5 +129,10 @@ public class JdbcTestBeans {
     @Bean
     protected IssueMapper spyIssueMapper() {
         return spy(Mappers.getMapper(IssueMapper.class));
+    }
+
+    @Bean
+    protected CacheManager cacheManager() {
+        return new ConcurrentMapCacheManager("preferences");
     }
 }

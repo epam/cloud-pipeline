@@ -108,14 +108,12 @@ public class ToolDaoTest extends AbstractJdbcTest {
     private ToolGroupDao toolGroupDao;
     @Autowired
     private IssueManager issueManager;
-
     @Autowired
     private AuthManager authManager;
     @Autowired
     private NotificationManager notificationManager;
-
     @Autowired
-    EntityManager entityManager;
+    private EntityManager entityManager;
 
     @Before
     public void setUp() {
