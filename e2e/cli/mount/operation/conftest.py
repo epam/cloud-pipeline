@@ -134,9 +134,6 @@ def pytest_sessionstart(session):
         session.config.sizes = default_sizes if not session.config.option.small else default_small_sizes
         session.config.source_size = max(map(max, session.config.sizes.values()))
 
-        logging.basicConfig(filename=os.path.join(session.config.logs_path, 'tests.log'), level=logging.INFO,
-                            format='%(levelname)s %(asctime)s %(module)s: %(message)s')
-
         api = os.environ['API']
         api = api if not api.endswith('/') else api[:-1]
         api_token = os.environ['API_TOKEN']
@@ -148,6 +145,9 @@ def pytest_sessionstart(session):
         session.config.storage_path = session.config.storage_name
 
         mkdir(session.config.local_path, session.config.root_mount_path, session.config.logs_path)
+
+        logging.basicConfig(filename=os.path.join(session.config.logs_path, 'tests.log'), level=logging.INFO,
+                            format='%(levelname)s %(asctime)s %(module)s: %(message)s')
 
         if storage_type in ['S3', 'AZ', 'GS']:
             if session.config.option.prefix:
