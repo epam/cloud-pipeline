@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ from ..utils.utilities_for_test import *
 
 class TestCopyWithFiles(object):
 
-    raw_bucket_name = "epmcmbibpc-it-cp-files{}".format(get_test_prefix())
+    raw_bucket_name = "cp-files{}".format(get_test_prefix())
     bucket_name = format_name(raw_bucket_name)
     other_bucket_name = format_name("{}-other".format(raw_bucket_name))
     empty_bucket_name = format_name("{}-empty".format(raw_bucket_name))
     current_directory = os.getcwd()
-    home_dir = "test_cp_home_dir-594%s/" % get_test_prefix()
+    home_dir = "test_cp_home_dir-storage-5%s/" % get_test_prefix()
     checkout_dir = "checkout/"
     output_folder = "cp-files-" + TestFiles.TEST_FOLDER_FOR_OUTPUT
     test_file_1 = "cp-files-" + TestFiles.TEST_FILE1
@@ -52,7 +52,7 @@ class TestCopyWithFiles(object):
         create_test_file(os.path.abspath(cls.test_folder + cls.test_file_1), TestFiles.DEFAULT_CONTENT)
         # ./test_file2.txt
         create_test_file(os.path.abspath(cls.test_file_2), TestFiles.COPY_CONTENT)
-        # ~/test_cp_home_dir-594/test_file.txt
+        # ~/test_cp_home_dir-storage-5/test_file.txt
         create_test_file(os.path.join(os.path.expanduser('~'), cls.home_dir, cls.test_file_1),
                          TestFiles.DEFAULT_CONTENT)
         create_test_file(os.path.abspath(cls.test_file_with_spaces), TestFiles.DEFAULT_CONTENT)
@@ -69,7 +69,7 @@ class TestCopyWithFiles(object):
         clean_test_data(os.path.abspath(cls.test_file_with_spaces))
 
     """
-    1. epam test case
+    1. test case
     2. source path
     3. relative destination path
     4. additional destination relative path to file (uses for assertion needs)
@@ -77,26 +77,26 @@ class TestCopyWithFiles(object):
     6. relative path to file to rewrite (with --force option)
     """
     test_case_for_upload = [
-        ("EPMCMBIBPC-591", os.path.abspath(test_file_1), test_file_1, None, None, None),
-        ("EPMCMBIBPC-592", os.path.abspath(test_file_1), test_folder, test_file_1, None, None),
-        ("EPMCMBIBPC-594", "~/" + home_dir + test_file_1, test_file_1, None, None, None),
-        ("EPMCMBIBPC-595", os.path.abspath(test_file_1), test_file_1, None, None, test_file_2),
-        ("EPMCMBIBPC-593", test_file_1, "test_EPMCMBIBPC-593.txt", None, None, None),
-        ("EPMCMBIBPC-1961", os.path.abspath(test_file_1), "test_EPMCMBIBPC-1961.txt", None, None, None),
-        ("EPMCMBIBPC-1975", os.path.abspath(test_file_with_spaces), "test EPMCMBIBPC-1975.txt", None, None, None),
+        ("TC-PIPE-STORAGE-1", os.path.abspath(test_file_1), test_file_1, None, None, None),
+        ("TC-PIPE-STORAGE-3", os.path.abspath(test_file_1), test_folder, test_file_1, None, None),
+        ("TC-PIPE-STORAGE-5", "~/" + home_dir + test_file_1, test_file_1, None, None, None),
+        ("TC-PIPE-STORAGE-7", os.path.abspath(test_file_1), test_file_1, None, None, test_file_2),
+        ("TC-PIPE-STORAGE-9", test_file_1, "test_TC-PIPE-STORAGE-93.txt", None, None, None),
+        ("TC-PIPE-STORAGE-62", os.path.abspath(test_file_1), "test_TC-PIPE-STORAGE-62.txt", None, None, None),
+        ("TC-PIPE-STORAGE-70", os.path.abspath(test_file_with_spaces), "test TC-PIPE-STORAGE-70.txt", None, None, None),
     ]
 
     @pytest.mark.run(order=1)
-    @pytest.mark.parametrize("case,source,relative_path,add_file,switch_dir,force", test_case_for_upload)
-    def test_file_should_be_uploaded(self, case, source, relative_path, add_file, switch_dir, force):
-        destination = "cp://{}/{}/{}".format(self.bucket_name, case, relative_path)
+    @pytest.mark.parametrize("test_case,source,relative_path,add_file,switch_dir,force", test_case_for_upload)
+    def test_file_should_be_uploaded(self, test_case, source, relative_path, add_file, switch_dir, force):
+        destination = "cp://{}/{}/{}".format(self.bucket_name, test_case, relative_path)
         if force:
             create_test_files_on_bucket(os.path.abspath(force), self.bucket_name,
-                                        os.path.join(case, relative_path))
+                                        os.path.join(test_case, relative_path))
         if add_file:
-            path_to_check = "{}/{}/{}".format(case, relative_path.strip("/"), add_file)
+            path_to_check = "{}/{}/{}".format(test_case, relative_path.strip("/"), add_file)
         else:
-            path_to_check = "{}/{}".format(case, relative_path)
+            path_to_check = "{}/{}".format(test_case, relative_path)
         if source.startswith("~"):
             source_to_check = os.path.join(os.path.expanduser('~'), source.strip("~/"))
             assert os.path.exists(source_to_check), "The test file does not exist"
@@ -109,41 +109,41 @@ class TestCopyWithFiles(object):
         logging.info("Ready to perform operation from {} to {}".format(source, destination))
         pipe_storage_cp(source, destination, force=bool(force))
         assert_copied_object_info(ObjectInfo(True).build(source_to_check),
-                                  ObjectInfo(False).build(self.bucket_name, path_to_check), case)
+                                  ObjectInfo(False).build(self.bucket_name, path_to_check), test_case)
         os.chdir(self.current_directory)
 
     """
-        1. epam test case
+        1. test case
         2. relative source path
         3. destination path
         4. additional source relative path to file (expected file name uses for assertion needs)
         5. relative path to file to rewrite (with --force option)
     """
     test_case_for_download = [
-        ("EPMCMBIBPC-591", test_file_1, os.path.abspath(os.path.join(
-            output_folder, "EPMCMBIBPC-591", test_file_1)), None, None),
-        ("EPMCMBIBPC-592", test_folder + test_file_1,
-         os.path.abspath(os.path.join(output_folder, "EPMCMBIBPC-592")) + "/", test_file_1,
+        ("TC-PIPE-STORAGE-1", test_file_1, os.path.abspath(os.path.join(
+            output_folder, "TC-PIPE-STORAGE-1", test_file_1)), None, None),
+        ("TC-PIPE-STORAGE-3", test_folder + test_file_1,
+         os.path.abspath(os.path.join(output_folder, "TC-PIPE-STORAGE-3")) + "/", test_file_1,
          None),
-        ("EPMCMBIBPC-594", test_file_1, "~/" + os.path.join(
-            home_dir, "EPMCMBIBPC-594", test_file_1), None, None),
-        ("EPMCMBIBPC-595", test_file_1, os.path.abspath(os.path.join(
-            output_folder, "EPMCMBIBPC-595", test_file_1)), None,
+        ("TC-PIPE-STORAGE-5", test_file_1, "~/" + os.path.join(
+            home_dir, "TC-PIPE-STORAGE-5", test_file_1), None, None),
+        ("TC-PIPE-STORAGE-7", test_file_1, os.path.abspath(os.path.join(
+            output_folder, "TC-PIPE-STORAGE-7", test_file_1)), None,
          test_file_2),
-        ("EPMCMBIBPC-593", "test_EPMCMBIBPC-593.txt", os.path.join(
-            output_folder, "EPMCMBIBPC-593", test_file_1), None, None),
-        ("EPMCMBIBPC-593", "test_EPMCMBIBPC-593.txt", os.path.join(
-            output_folder, "EPMCMBIBPC-593") + "/", "test_EPMCMBIBPC-593.txt", None),
-        ("EPMCMBIBPC-593", "test_EPMCMBIBPC-593.txt", "./", "test_EPMCMBIBPC-593.txt", None),
-        ("EPMCMBIBPC-593", "test_EPMCMBIBPC-593.txt", ".", "test_EPMCMBIBPC-593.txt", None),
-        ("EPMCMBIBPC-1975", "test EPMCMBIBPC-1975.txt", os.path.abspath(os.path.join(
-            output_folder, "test EPMCMBIBPC-1975", test_file_with_spaces)), None, None),
+        ("TC-PIPE-STORAGE-9", "test_TC-PIPE-STORAGE-9.txt", os.path.join(
+            output_folder, "TC-PIPE-STORAGE-9", test_file_1), None, None),
+        ("TC-PIPE-STORAGE-9", "test_TC-PIPE-STORAGE-9.txt", os.path.join(
+            output_folder, "TC-PIPE-STORAGE-9") + "/", "test_TC-PIPE-STORAGE-9.txt", None),
+        ("TC-PIPE-STORAGE-9", "test_TC-PIPE-STORAGE-9.txt", "./", "test_TC-PIPE-STORAGE-9.txt", None),
+        ("TC-PIPE-STORAGE-9", "test_TC-PIPE-STORAGE-9.txt", ".", "test_TC-PIPE-STORAGE-9.txt", None),
+        ("TC-PIPE-STORAGE-70", "test TC-PIPE-STORAGE-70.txt", os.path.abspath(os.path.join(
+            output_folder, "test TC-PIPE-STORAGE-70", test_file_with_spaces)), None, None),
     ]
 
     @pytest.mark.run(order=2)
-    @pytest.mark.parametrize("case,relative_path,destination,add_file,force", test_case_for_download)
-    def test_file_should_be_downloaded(self, case, relative_path, destination, add_file, force):
-        source = "cp://{}/{}/{}".format(self.bucket_name, case, relative_path)
+    @pytest.mark.parametrize("test_case,relative_path,destination,add_file,force", test_case_for_download)
+    def test_file_should_be_downloaded(self, test_case, relative_path, destination, add_file, force):
+        source = "cp://{}/{}/{}".format(self.bucket_name, test_case, relative_path)
         if destination.startswith("~"):
             destination_for_checks = os.path.join(os.path.expanduser('~'), destination.strip("~/"))
         else:
@@ -155,40 +155,40 @@ class TestCopyWithFiles(object):
             path_to_check = os.path.join(destination_for_checks, add_file)
         else:
             path_to_check = destination_for_checks
-        if not object_exists(self.bucket_name, "{}/{}".format(case, relative_path)):
+        if not object_exists(self.bucket_name, "{}/{}".format(test_case, relative_path)):
             pytest.fail("Object {} to download does not exist!".format(source))
         if not force and os.path.exists(path_to_check):
             pytest.fail("Destination path already exists! Path: {}".format(path_to_check))
         logging.info("Ready to perform operation from {} to {}".format(source, destination))
         pipe_storage_cp(source, destination, force=bool(force))
-        assert_copied_object_info(ObjectInfo(False).build(self.bucket_name, "{}/{}".format(case, relative_path)),
-                                  ObjectInfo(True).build(path_to_check), case)
+        assert_copied_object_info(ObjectInfo(False).build(self.bucket_name, "{}/{}".format(test_case, relative_path)),
+                                  ObjectInfo(True).build(path_to_check), test_case)
         clean_test_data(path_to_check)
 
     """
-        1. epam test case
+        1. test case
         2. relative source path
         3. additional destination relative path to file (uses for assertion needs)
         4. relative path to file to rewrite (with --force option)
     """
     test_case_for_copy_between_buckets = [
-        ("EPMCMBIBPC-591", test_file_1, None, None),
-        ("EPMCMBIBPC-592", test_folder, test_file_1, None),
-        ("EPMCMBIBPC-595", test_file_1, None, test_file_2),
+        ("TC-PIPE-STORAGE-1", test_file_1, None, None),
+        ("TC-PIPE-STORAGE-3", test_folder, test_file_1, None),
+        ("TC-PIPE-STORAGE-7", test_file_1, None, test_file_2),
     ]
 
     @pytest.mark.run(order=3)
-    @pytest.mark.parametrize("case,relative_path,add_file,force", test_case_for_copy_between_buckets)
-    def test_file_should_be_copied(self, case, relative_path, add_file, force):
+    @pytest.mark.parametrize("test_case,relative_path,add_file,force", test_case_for_copy_between_buckets)
+    def test_file_should_be_copied(self, test_case, relative_path, add_file, force):
         if add_file:
-            path_to_check = "{}/{}/{}".format(case, relative_path.strip("/"), add_file)
+            path_to_check = "{}/{}/{}".format(test_case, relative_path.strip("/"), add_file)
         else:
-            path_to_check = "{}/{}".format(case, relative_path)
+            path_to_check = "{}/{}".format(test_case, relative_path)
         source = "cp://{}/{}".format(self.bucket_name, path_to_check)
-        destination = "cp://{}/{}/{}".format(self.other_bucket_name, case, relative_path)
+        destination = "cp://{}/{}/{}".format(self.other_bucket_name, test_case, relative_path)
         if force:
             create_test_files_on_bucket(os.path.abspath(force), self.other_bucket_name,
-                                        os.path.join(case, relative_path))
+                                        os.path.join(test_case, relative_path))
         if not object_exists(self.bucket_name, path_to_check):
             pytest.fail("Object {} to copy does not exist!".format(source))
         if not force and object_exists(self.other_bucket_name, path_to_check):
@@ -196,7 +196,7 @@ class TestCopyWithFiles(object):
         logging.info("Ready to perform operation from {} to {}".format(source, destination))
         pipe_storage_cp(source, destination, force=bool(force))
         assert_copied_object_info(ObjectInfo(False).build(self.bucket_name, path_to_check),
-                                  ObjectInfo(False).build(self.other_bucket_name, path_to_check), case)
+                                  ObjectInfo(False).build(self.other_bucket_name, path_to_check), test_case)
 
     test_case_copy_to_not_existing = [
         TestFiles.NOT_EXISTS_FILE,
@@ -206,27 +206,29 @@ class TestCopyWithFiles(object):
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("path", test_case_copy_to_not_existing)
     def test_copy_to_not_existing_file(self, path):
+        """TC-PIPE-STORAGE-33"""
         try:
             error = pipe_storage_cp(os.path.abspath(path), "cp://{}/{}".format(self.bucket_name, path),
                                     expected_status=1)[1]
             assert_error_message_is_present(error, 'Source {} doesn\'t exist'.format(os.path.abspath(path)))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-663", e.message))
+            pytest.fail("Test case {} failed. {}".format("TC-PIPE-STORAGE-33", e.message))
 
     test_case_copy_from_empty_bucket = [
         ("cp://{}/{}".format(empty_bucket_name, test_file_1), os.path.abspath(test_file_1)),
         ("cp://{}/{}".format(empty_bucket_name, test_file_1),
-         "cp://{}/{}/{}".format(bucket_name, "EPMCMBIBPC-663", test_file_1)),
+         "cp://{}/{}/{}".format(bucket_name, "TC-PIPE-STORAGE-33", test_file_1)),
     ]
 
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("source,destination", test_case_copy_from_empty_bucket)
     def test_copy_from_empty_bucket(self, source, destination):
+        """TC-PIPE-STORAGE-33"""
         try:
             error = pipe_storage_cp(source, destination, expected_status=1)[1]
             assert_error_message_is_present(error, 'Source {} doesn\'t exist'.format(source))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-663", e.message))
+            pytest.fail("Test case {} failed. {}".format("TC-PIPE-STORAGE-33", e.message))
 
     test_case_copy_from_not_existing_bucket = [
         ("cp://{}/{}".format("does-not-exist", test_file_1), os.path.abspath(test_file_1)),
@@ -237,12 +239,13 @@ class TestCopyWithFiles(object):
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("source,destination", test_case_copy_from_not_existing_bucket)
     def test_copy_from_not_existing_bucket(self, source, destination):
+        """TC-PIPE-STORAGE-29"""
         try:
             error = pipe_storage_cp(source, destination, expected_status=1)[1]
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
                                             .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-649", e.message))
+            pytest.fail("Test case {} failed. {}".format("TC-PIPE-STORAGE-29", e.message))
 
     test_case_copy_to_not_existing_bucket = [
         (os.path.abspath(test_file_1), "cp://{}/{}".format("does-not-exist", test_file_1)),
@@ -253,50 +256,55 @@ class TestCopyWithFiles(object):
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("source,destination", test_case_copy_to_not_existing_bucket)
     def test_copy_to_not_existing_bucket(self, source, destination):
+        """TC-PIPE-STORAGE-29"""
         self.upload_file_to_bucket(source)
         try:
             error = pipe_storage_cp(source, destination, expected_status=1)[1]
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
                                             .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-649", e.message))
+            pytest.fail("Test case {} failed. {}".format("TC-PIPE-STORAGE-29", e.message))
 
     test_case_copy_with_wrong_scheme = [
         ("s4://{}/{}".format(bucket_name, test_file_1), os.path.abspath(test_file_1)),
         ("s4://{}/{}".format(bucket_name, test_file_1),
          "cp://{}/{}".format(bucket_name, test_file_1)),
         (os.path.abspath(test_file_1), "s4://{}/{}".format(bucket_name, test_file_1)),
-        ("cp://{}/{}".format(bucket_name, "{}/{}".format("EPMCMBIBPC-655", test_file_1)),
+        ("cp://{}/{}".format(bucket_name, "{}/{}".format("TC-PIPE-STORAGE-21", test_file_1)),
          "s4://{}/{}".format(bucket_name, test_file_1))
     ]
 
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("source,destination", test_case_copy_with_wrong_scheme)
     def test_copy_with_wrong_scheme(self, source, destination):
+        """TC-PIPE-STORAGE-21"""
         self.upload_file_to_bucket(source)
         try:
             error = pipe_storage_cp(source, destination, force=True, expected_status=1)[1]
-            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
+            assert_error_message_is_present(error,
+                                            'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-655", e.message))
+            pytest.fail("Test case {} failed. {}".format("TC-PIPE-STORAGE-21", e.message))
 
     test_case_copy_with_local_paths = [
-        (os.path.abspath(test_file_1), os.path.abspath(test_folder + "EPMCMBIBPC-655-file.txt")),
-        (os.path.abspath(test_folder), os.path.abspath("EPMCMBIBPC-655-file/")),
+        (os.path.abspath(test_file_1), os.path.abspath(test_folder + "TC-PIPE-STORAGE-35-file.txt")),
+        (os.path.abspath(test_folder), os.path.abspath("TC-PIPE-STORAGE-35-file/")),
     ]
 
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("source,destination", test_case_copy_with_local_paths)
     def test_copy_with_local_paths(self, source, destination):
+        """TC-PIPE-STORAGE-35"""
         try:
             error = pipe_storage_cp(source, destination, recursive=True, expected_status=1)[1]
             assert_error_message_is_present(error, 'Error: Transferring files between the following storage types '
                                                    'LOCAL -> LOCAL is not supported.')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-664", e.message))
+            pytest.fail("Test case {} failed. {}".format("TC-PIPE-STORAGE-35", e.message))
 
     @pytest.mark.run(order=5)
     def test_copy_with_similar_keys(self):
+        """TC-PIPE-STORAGE-59"""
         try:
             source = os.path.abspath(self.test_file_1)
             file_name = "test_file.txt"
@@ -313,11 +321,12 @@ class TestCopyWithFiles(object):
             pipe_storage_rm(destination)
             assert not object_exists(self.bucket_name, file_name)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-1336", e.message))
+            pytest.fail("Test case {} failed. {}".format("TC-PIPE-STORAGE-59", e.message))
 
     @pytest.mark.run(order=5)
     def test_copy_with_tags(self):
-        test_case = "EPMCMBIBPC-1691"
+        """TC-PIPE-STORAGE-61"""
+        test_case = "TC-PIPE-STORAGE-61"
         tag1 = ("key1", "value1")
         tag2 = ("key2", "value2")
         file_name = "{}.txt".format(test_case)
@@ -335,9 +344,10 @@ class TestCopyWithFiles(object):
 
     @pytest.mark.run(order=6)
     def test_download_data_with_similar_keys(self):
-        test_case = "EPMCMBIBPC-1962"
-        file_name1 = "test_EPMCMBIBPC-1962.txt"
-        file_name2 = "test_EPMCMBIBPC-1962"
+        """TC-PIPE-STORAGE-63"""
+        test_case = "TC-PIPE-STORAGE-63"
+        file_name1 = "test_TC-PIPE-STORAGE-63.txt"
+        file_name2 = "test_TC-PIPE-STORAGE-63"
         path_to_test_folder = os.path.abspath(test_case)
         logging.info("Temporary folder created %s." % path_to_test_folder)
         try:
@@ -370,7 +380,8 @@ class TestCopyWithFiles(object):
 
     @pytest.mark.run(order=6)
     def test_upload_files_with_similar_keys(self):
-        case = "EPMCMBIBPC-2005"
+        """TC-PIPE-STORAGE-78"""
+        case = "TC-PIPE-STORAGE-78"
         source = os.path.abspath(self.test_folder + "cp-files-test_file")
         try:
             create_test_file(source, TestFiles.DEFAULT_CONTENT)
@@ -382,7 +393,8 @@ class TestCopyWithFiles(object):
 
     @pytest.mark.run(order=6)
     def test_upload_file_with_skip_existing_option_should_skip(self):
-        case = "EPMCMBIBPC-2164"
+        """TC-PIPE-STORAGE-89"""
+        case = "TC-PIPE-STORAGE-89"
         source = os.path.abspath(self.test_file_1)
         key = os.path.join(case, self.test_file_1)
         try:
@@ -401,7 +413,8 @@ class TestCopyWithFiles(object):
 
     @pytest.mark.run(order=6)
     def test_upload_file_with_skip_existing_option_should_not_skip(self):
-        case = "EPMCMBIBPC-2165"
+        """TC-PIPE-STORAGE-91"""
+        case = "TC-PIPE-STORAGE-91"
         key = os.path.join(case, self.test_file_1)
         source = os.path.abspath(self.test_file_1)
         try:
@@ -418,7 +431,8 @@ class TestCopyWithFiles(object):
 
     @pytest.mark.run(order=6)
     def test_download_file_with_skip_existing_option_should_skip(self):
-        case = "EPMCMBIBPC-2178"
+        """TC-PIPE-STORAGE-92"""
+        case = "TC-PIPE-STORAGE-92"
         key = os.path.join(case, self.test_file_1)
         destination_folder = os.path.abspath(os.path.join(self.output_folder, case))
         destination = os.path.join(destination_folder, key)
@@ -443,7 +457,8 @@ class TestCopyWithFiles(object):
 
     @pytest.mark.run(order=6)
     def test_download_file_with_skip_existing_option_should_not_skip(self):
-        case = "EPMCMBIBPC-2180"
+        """TC-PIPE-STORAGE-94"""
+        case = "TC-PIPE-STORAGE-94"
         key = os.path.join(case, self.test_file_1)
         destination_folder = os.path.abspath(os.path.join(self.output_folder, case))
         destination = os.path.join(destination_folder, key)
@@ -466,7 +481,8 @@ class TestCopyWithFiles(object):
 
     @pytest.mark.run(order=6)
     def test_copy_between_buckets_file_with_skip_existing_option_should_skip(self):
-        case = "EPMCMBIBPC-2204"
+        """TC-PIPE-STORAGE-106"""
+        case = "TC-PIPE-STORAGE-106"
         key = os.path.join(case, self.test_file_1)
         destination = "cp://%s/%s" % (self.other_bucket_name, key)
         source = "cp://%s/%s" % (self.bucket_name, key)
@@ -489,7 +505,8 @@ class TestCopyWithFiles(object):
 
     @pytest.mark.run(order=6)
     def test_copy_between_buckets_file_with_skip_existing_option_should_not_skip(self):
-        case = "EPMCMBIBPC-2205"
+        """TC-PIPE-STORAGE-107"""
+        case = "TC-PIPE-STORAGE-107"
         key = os.path.join(case, self.test_file_1)
         destination = "cp://%s/%s" % (self.other_bucket_name, key)
         source = "cp://%s/%s" % (self.bucket_name, key)
