@@ -63,21 +63,21 @@ def update_tool_info(tool, max_retry=100):
 def run_test(tool, command, endpoints_structure, url_checker=None, check_access=True, friendly_url=None,
              no_machine=False, spark=False):
     run_id, node_name = run(tool, command, no_machine=no_machine, spark=spark, friendly_url=friendly_url)
-    urls = get_endpoint_urls(run_id)
-    check_for_number_of_endpoints(urls, len(endpoints_structure))
-    for name in urls:
-        url = urls[name]
-        pattern = endpoints_structure[name].format(run_id=run_id)
-        structure_is_fine = check_service_url_structure(url, pattern, checker=url_checker)
-        if not structure_is_fine:
-            stop_pipe(run_id)
-            return run_id, node_name, False, "service url: {}, has wrong format.".format(url)
-        is_accessible = not check_access or follow_service_url(url, 100)
-        if not is_accessible:
-            stop_pipe(run_id)
-            return run_id, node_name, False, "service url: {}, is not accessible.".format(url)
-    stop_pipe(run_id)
-    return run_id, node_name, True, None
+    try:
+        urls = get_endpoint_urls(run_id)
+        check_for_number_of_endpoints(urls, len(endpoints_structure))
+        for name in urls:
+            url = urls[name]
+            pattern = endpoints_structure[name].format(run_id=run_id)
+            structure_is_fine = check_service_url_structure(url, pattern, checker=url_checker)
+            if not structure_is_fine:
+                return run_id, node_name, False, "service url: {}, has wrong format.".format(url)
+            is_accessible = not check_access or follow_service_url(url, 100)
+            if not is_accessible:
+                return run_id, node_name, False, "service url: {}, is not accessible.".format(url)
+        return run_id, node_name, True, None
+    finally:
+        stop_pipe(run_id)
 
 
 def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spark=False, friendly_url=None,
