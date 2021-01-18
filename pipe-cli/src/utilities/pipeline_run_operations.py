@@ -17,6 +17,7 @@ from time import sleep
 import click
 import sys
 import requests
+import re
 from prettytable import prettytable
 
 from src.api.pipeline_run import PipelineRun
@@ -361,12 +362,20 @@ class PipelineRunOperations(object):
 
     @classmethod
     def _build_pretty_url(cls, pretty_url):
+        path_pattern = "^[a-zA-Z\\d_]+$"
+        domain_pattern = "^[-a-zA-Z0-9_.]+(:\\d+)?$"
         path = str(pretty_url).strip('/')
         parts = path.split('/')
         if len(parts) > 2:
             click.echo("Pretty URL has an incorrect format. Expected formats: <domain>/<path> or <path>.", err=True)
             sys.exit(1)
         if len(parts) == 1:
-            return '{"path":"%s"}' % parts[0]
+            part = parts[0]
+            if re.match(path_pattern, part):
+                return '{"path":"%s"}' % part
+            elif re.match(domain_pattern, part):
+                return '{"domain":"%s", "path":""}' % part
+            click.echo("Pretty URL has an incorrect format. Expected formats: <domain>/<path> or <path>.", err=True)
+            sys.exit(1)
         return '{"domain":"%s","path":"%s"}' % (parts[0], parts[1])
 
