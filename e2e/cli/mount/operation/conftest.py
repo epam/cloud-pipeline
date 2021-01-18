@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime
 
@@ -69,179 +70,192 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_sessionstart(session):
-    workdir_path = os.getcwd()
-    default_local_path = os.path.join(workdir_path, 'e2e-local')
-    default_root_mount_path = os.path.join(workdir_path, 'e2e-mount')
-    default_logs_path = os.path.join(workdir_path, 'e2e-logs')
-    default_source_path = os.path.join(workdir_path, 'e2e-random')
-    default_logs_level = 'ERROR'
-    default_chunk_size = 10 * MB
-    default_buffer_size = 512 * MB
-    default_read_ahead_size = 20 * MB
-    default_small_sizes = {
-        'cli.mount.operation.test_fallocate': [1],
-        'cli.mount.operation.test_truncate': [1],
-        'cli.mount.operation.test_read': [1],
-        'cli.mount.operation.test_write': [1]
-    }
-    default_sizes = {
-        'cli.mount.operation.test_fallocate': [1,
-                                               default_chunk_size + 1 * MB],
-        'cli.mount.operation.test_truncate': [0, 1,
-                                              default_chunk_size + 1 * MB],
-        'cli.mount.operation.test_read': [0, 1,
-                                          default_chunk_size + 1 * MB,
-                                          default_read_ahead_size * 2 + 1 * MB],
-        'cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
-                                           default_chunk_size,
-                                           default_chunk_size * 4 + 1 * MB,
-                                           default_buffer_size,
-                                           default_buffer_size + 1 * MB]
-    }
+    try:
+        workdir_path = os.getcwd()
+        default_local_path = os.path.join(workdir_path, 'e2e-local')
+        default_root_mount_path = os.path.join(workdir_path, 'e2e-mount')
+        default_logs_path = os.path.join(workdir_path, 'e2e-logs')
+        default_source_path = os.path.join(workdir_path, 'e2e-random')
+        default_logs_level = 'ERROR'
+        default_chunk_size = 10 * MB
+        default_buffer_size = 512 * MB
+        default_read_ahead_size = 20 * MB
+        default_small_sizes = {
+            'cli.mount.operation.test_fallocate': [1],
+            'cli.mount.operation.test_truncate': [1],
+            'cli.mount.operation.test_read': [1],
+            'cli.mount.operation.test_write': [1]
+        }
+        default_sizes = {
+            'cli.mount.operation.test_fallocate': [1,
+                                                   default_chunk_size + 1 * MB],
+            'cli.mount.operation.test_truncate': [0, 1,
+                                                  default_chunk_size + 1 * MB],
+            'cli.mount.operation.test_read': [0, 1,
+                                              default_chunk_size + 1 * MB,
+                                              default_read_ahead_size * 2 + 1 * MB],
+            'cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
+                                               default_chunk_size,
+                                               default_chunk_size * 4 + 1 * MB,
+                                               default_buffer_size,
+                                               default_buffer_size + 1 * MB]
+        }
 
-    session.config.local_path = default_local_path
-    session.config.root_mount_path = default_root_mount_path
-    session.config.logs_path = session.config.option.logs_path or default_logs_path
-    session.config.logs_level = session.config.option.logs_level or default_logs_level
-    session.config.source_path = default_source_path
-    session.config.chunk_size = default_chunk_size
-    session.config.sizes = default_sizes if not session.config.option.small else default_small_sizes
-    session.config.source_size = max(map(max, session.config.sizes.values()))
+        session.config.local_path = default_local_path
+        session.config.root_mount_path = default_root_mount_path
+        session.config.logs_path = session.config.option.logs_path or default_logs_path
+        session.config.logs_level = session.config.option.logs_level or default_logs_level
+        session.config.source_path = default_source_path
+        session.config.chunk_size = default_chunk_size
+        session.config.sizes = default_sizes if not session.config.option.small else default_small_sizes
+        session.config.source_size = max(map(max, session.config.sizes.values()))
 
-    api = os.environ['API']
-    api = api if not api.endswith('/') else api[:-1]
-    api_token = os.environ['API_TOKEN']
-    storage_region = os.environ['CP_TEST_REGION_ID']
-    storage_folder = os.getenv('CP_TEST_FOLDER_ID')
-    storage_provider = os.environ['CP_PROVIDER']
-    storage_type = _get_storage_type(config=session.config, storage_provider=storage_provider)
-    session.config.storage_name = _generate_storage_name(storage_type=storage_type, storage_region=storage_region)
-    session.config.storage_path = session.config.storage_name
+        api = os.environ['API']
+        api = api if not api.endswith('/') else api[:-1]
+        api_token = os.environ['API_TOKEN']
+        storage_region = os.environ['CP_TEST_REGION_ID']
+        storage_folder = os.getenv('CP_TEST_FOLDER_ID')
+        storage_provider = os.environ['CP_PROVIDER']
+        storage_type = _get_storage_type(config=session.config, storage_provider=storage_provider)
+        session.config.storage_name = _generate_storage_name(storage_type=storage_type, storage_region=storage_region)
+        session.config.storage_path = session.config.storage_name
 
-    mkdir(session.config.local_path, session.config.root_mount_path, session.config.logs_path)
+        mkdir(session.config.local_path, session.config.root_mount_path, session.config.logs_path)
 
-    if storage_type in ['S3', 'AZ', 'GS']:
-        if session.config.option.prefix:
-            session.config.storage_path += '/prefix'
-        session.config.mount_path = session.config.root_mount_path
-        execute(log_path=os.path.join(session.config.logs_path, 'start.log'), command="""
-        head -c '{source_size}' /dev/urandom > '{source_path}'
-        
-        pipe storage create -c \
-                            -n '{storage_name}' \
-                            -p '{storage_path}' \
-                            -d '' \
-                            -sts '' \
-                            -lts '' \
-                            -b '' \
-                            -t '{storage_type}' \
-                            -r '{region}' \
-                            -u '' \
-                            -f '{folder}'
-        
-        pipe storage mount -t -l '{logs_path}/mount.log' -v '{logs_level}' -b '{storage_path}' '{root_mount_path}'
-        
-        counter=0
-        while ! mount | grep '{root_mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
-            counter=$((counter+1))
-            sleep 1
-        done
-        if ! mount | grep '{root_mount_path}' > /dev/null
-        then
-            echo "Mount at {root_mount_path} is not accessible"
-            exit 1
-        fi
+        logging.basicConfig(filename=os.path.join(session.config.logs_path, 'tests.log'), level=logging.INFO,
+                            format='%(levelname)s %(asctime)s %(module)s: %(message)s')
+
+        if storage_type in ['S3', 'AZ', 'GS']:
+            if session.config.option.prefix:
+                session.config.storage_path += '/prefix'
+            session.config.mount_path = session.config.root_mount_path
+            execute("""
+            head -c '{source_size}' /dev/urandom > '{source_path}'
+            
+            pipe storage create -c \
+                                -n '{storage_name}' \
+                                -p '{storage_path}' \
+                                -d '' \
+                                -sts '' \
+                                -lts '' \
+                                -b '' \
+                                -t '{storage_type}' \
+                                -r '{region}' \
+                                -u '' \
+                                -f '{folder}'
+            
+            pipe storage mount -t -l '{logs_path}/mount.log' -v '{logs_level}' -b '{storage_path}' '{root_mount_path}'
+            
+            counter=0
+            while ! mount | grep '{root_mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
+                counter=$((counter+1))
+                sleep 1
+            done
+            if ! mount | grep '{root_mount_path}' > /dev/null
+            then
+                echo "Mount at {root_mount_path} is not accessible"
+                exit 1
+            fi
+            """.format(storage_name=session.config.storage_name,
+                       storage_path=session.config.storage_path,
+                       storage_type=storage_type,
+                       region=storage_region,
+                       folder=storage_folder or '',
+                       logs_path=session.config.logs_path,
+                       logs_level=session.config.logs_level,
+                       source_size=session.config.source_size,
+                       source_path=session.config.source_path,
+                       local_path=local_path,
+                       mount_path=session.config.mount_path,
+                       root_mount_path=session.config.root_mount_path))
+        else:
+            storage_share_id = os.environ['CP_TEST_SHARE_ID']
+            storage_share_root = os.environ['CP_TEST_SHARE_ROOT']
+            session.config.mount_path = os.path.join(session.config.root_mount_path,
+                                                     session.config.storage_name.replace('-', '_'))
+
+            execute("""
+            head -c '{source_size}' /dev/urandom > '{source_path}'
+            
+            curl -k -X POST \
+                 --header 'Content-Type: application/json' \
+                 --header 'Accept: application/json' \
+                 --header 'Authorization: Bearer {api_token}' \
+                 -d '{{ \
+                     "fileShareMountId": "{share_id}", \
+                     "name": "{storage_name}", \
+                     "path": "{share_root}:/{storage_path}", \
+                     "parentFolderId": "{folder}", \
+                     "regionId": "{region}", \
+                     "serviceType": "FILE_SHARE" \
+                  }}' \
+                  '{api}/datastorage/save?cloud=true&skipPolicy=false' \
+                  > /dev/null 2>&1
+            
+            pipe storage mount -t -l '{logs_path}/mount.log' -v '{logs_level}' -f '{root_mount_path}'
+            
+            counter=0
+            while ! mount | grep '{root_mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
+                counter=$((counter+1))
+                sleep 1
+            done
+            if ! mount | grep '{root_mount_path}' > /dev/null
+            then
+                echo "Mount at {root_mount_path} is not accessible"
+                exit 1
+            fi
+            
+            counter=0
+            while [ ! -d "{mount_path}" ] && [ "$counter" -lt "70" ]; do
+                counter=$((counter+1))
+                sleep 1
+            done
+            if [ ! -d "{mount_path}" ]
+            then
+                echo "Mount directory at {mount_path} is not accessible"
+                exit 1
+            fi
+            """.format(api=api,
+                       api_token=api_token,
+                       storage_name=session.config.storage_name,
+                       storage_path=session.config.storage_path,
+                       storage_type=storage_type,
+                       region=storage_region,
+                       share_id=storage_share_id,
+                       share_root=storage_share_root,
+                       folder=storage_folder or '',
+                       logs_path=session.config.logs_path,
+                       logs_level=session.config.logs_level,
+                       source_size=session.config.source_size,
+                       source_path=session.config.source_path,
+                       local_path=session.config.local_path,
+                       mount_path=session.config.mount_path,
+                       root_mount_path=session.config.root_mount_path))
+    except Exception:
+        import sys
+        logging.error('Session start has failed', exc_info=sys.exc_info())
+        raise
+
+
+def pytest_sessionfinish(session, exitstatus):
+    try:
+        execute("""
+        EXIT_CODE=0
+        pipe storage umount '{root_mount_path}' || EXIT_CODE=$?
+        pipe storage delete -y -c -n '{storage_name}' || EXIT_CODE=$?
+        if [ -f "{source_path}" ]; then rm -f "{source_path}"; fi
+        if [ -d "{local_path}" ]; then rm -rf "{local_path}"; fi
+        if ! mount | grep '{root_mount_path}' > /dev/null && [ -d "{root_mount_path}" ]; then rm -rf "{root_mount_path}"; fi
+        exit $EXIT_CODE
         """.format(storage_name=session.config.storage_name,
-                   storage_path=session.config.storage_path,
-                   storage_type=storage_type,
-                   region=storage_region,
-                   folder=storage_folder or '',
-                   logs_path=session.config.logs_path,
-                   logs_level=session.config.logs_level,
-                   source_size=session.config.source_size,
-                   source_path=session.config.source_path,
-                   local_path=local_path,
-                   mount_path=session.config.mount_path,
-                   root_mount_path=session.config.root_mount_path))
-    else:
-        storage_share_id = os.environ['CP_TEST_SHARE_ID']
-        storage_share_root = os.environ['CP_TEST_SHARE_ROOT']
-        session.config.mount_path = os.path.join(session.config.root_mount_path,
-                                                 session.config.storage_name.replace('-', '_'))
-
-        execute(log_path=os.path.join(session.config.logs_path, 'start.log'), command="""
-        head -c '{source_size}' /dev/urandom > '{source_path}'
-        
-        curl -k -X POST \
-             --header 'Content-Type: application/json' \
-             --header 'Accept: application/json' \
-             --header 'Authorization: Bearer {api_token}' \
-             -d '{{ \
-                 "fileShareMountId": "{share_id}", \
-                 "name": "{storage_name}", \
-                 "path": "{share_root}:/{storage_path}", \
-                 "parentFolderId": "{folder}", \
-                 "regionId": "{region}", \
-                 "serviceType": "FILE_SHARE" \
-              }}' \
-              '{api}/datastorage/save?cloud=true&skipPolicy=false' \
-              > /dev/null 2>&1
-        
-        pipe storage mount -t -l '{logs_path}/mount.log' -v '{logs_level}' -f '{root_mount_path}'
-        
-        counter=0
-        while ! mount | grep '{root_mount_path}' > /dev/null && [ "$counter" -lt "10" ]; do
-            counter=$((counter+1))
-            sleep 1
-        done
-        if ! mount | grep '{root_mount_path}' > /dev/null
-        then
-            echo "Mount at {root_mount_path} is not accessible"
-            exit 1
-        fi
-        
-        counter=0
-        while [ ! -d "{mount_path}" ] && [ "$counter" -lt "70" ]; do
-            counter=$((counter+1))
-            sleep 1
-        done
-        if [ ! -d "{mount_path}" ]
-        then
-            echo "Mount directory at {mount_path} is not accessible"
-            exit 1
-        fi
-        """.format(api=api,
-                   api_token=api_token,
-                   storage_name=session.config.storage_name,
-                   storage_path=session.config.storage_path,
-                   storage_type=storage_type,
-                   region=storage_region,
-                   share_id=storage_share_id,
-                   share_root=storage_share_root,
-                   folder=storage_folder or '',
-                   logs_path=session.config.logs_path,
-                   logs_level=session.config.logs_level,
-                   source_size=session.config.source_size,
                    source_path=session.config.source_path,
                    local_path=session.config.local_path,
                    mount_path=session.config.mount_path,
                    root_mount_path=session.config.root_mount_path))
-
-
-def pytest_sessionfinish(session, exitstatus):
-    execute(log_path=os.path.join(session.config.logs_path, 'finish.log'), command="""
-    EXIT_CODE=0
-    pipe storage umount '{root_mount_path}' || EXIT_CODE=$?
-    pipe storage delete -y -c -n '{storage_name}' || EXIT_CODE=$?
-    if [ -f "{source_path}" ]; then rm -f "{source_path}"; fi
-    if [ -d "{local_path}" ]; then rm -rf "{local_path}"; fi
-    if ! mount | grep '{root_mount_path}' > /dev/null && [ -d "{root_mount_path}" ]; then rm -rf "{root_mount_path}"; fi
-    exit $EXIT_CODE
-    """.format(storage_name=session.config.storage_name,
-               source_path=session.config.source_path,
-               local_path=session.config.local_path,
-               mount_path=session.config.mount_path,
-               root_mount_path=session.config.root_mount_path))
+    except Exception:
+        import sys
+        logging.error('Session finish has failed', exc_info=sys.exc_info())
+        raise
 
 
 def _get_storage_type(config, storage_provider):
