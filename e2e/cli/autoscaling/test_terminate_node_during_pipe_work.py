@@ -29,7 +29,7 @@ class TestTerminateNodeDuringPipelineWork(object):
     run_id = None
     node_name = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-166'
+    test_case = 'TC-SCALING-9'
 
     @classmethod
     def setup_class(cls):

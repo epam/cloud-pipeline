@@ -31,7 +31,7 @@ class TestTwoPipesRunSimultaneously(object):
     first_node_name = None
     second_node_name = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-168'
+    test_case = 'TC-SCALING-5'
 
     @classmethod
     def setup_class(cls):
