@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,6 +126,7 @@ import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -326,9 +327,6 @@ public class AclTestBeans {
     protected PreferenceManager mockPreferenceManager;
 
     @MockBean
-    protected RoleManager mockRoleManager;
-
-    @MockBean
     protected NodeDiskManager mockNodeDiskManager;
 
     @MockBean
@@ -493,6 +491,9 @@ public class AclTestBeans {
     protected HierarchicalEntityManager spyHierarchicalEntityManager() {
         return spy(HierarchicalEntityManager.class);
     }
+
+    @SpyBean
+    protected RoleManager spyRoleManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

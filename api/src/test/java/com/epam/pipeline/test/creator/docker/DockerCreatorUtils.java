@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,6 +158,14 @@ public final class DockerCreatorUtils {
         return dockerRegistry;
     }
 
+    public static DockerRegistry getDockerRegistry(final Long id,
+                                                   final String owner,
+                                                   final List<ToolGroup> toolGroups) {
+        final DockerRegistry dockerRegistry = getDockerRegistry(id, owner);
+        dockerRegistry.setGroups(toolGroups);
+        return dockerRegistry;
+    }
+
     public static DockerRegistryVO getDockerRegistryVO() {
         final DockerRegistryVO dockerRegistryVO = new DockerRegistryVO();
         dockerRegistryVO.setId(ID);
@@ -212,6 +220,12 @@ public final class DockerCreatorUtils {
         toolGroup.setId(id);
         toolGroup.setRegistryId(id);
         toolGroup.setOwner(owner);
+        return toolGroup;
+    }
+
+    public static ToolGroup getToolGroup(final Long id, final String owner, final List<Tool> toolList) {
+        final ToolGroup toolGroup = getToolGroup(id, owner);
+        toolGroup.setTools(toolList);
         return toolGroup;
     }
 
