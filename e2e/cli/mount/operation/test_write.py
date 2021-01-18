@@ -133,6 +133,15 @@ def test_write_two_regions_with_one_of_them_exceeding_file_length(size, chunk_si
     assert_content(local_file, mount_file)
 
 
+def test_write_two_regions_with_one_of_them_starting_from_position_that_is_bigger_than_file_length(size, chunk_size, local_file, mount_file):
+    if size < 5:
+        pytest.skip()
+    actual_size = os.path.getsize(local_file)
+    write_regions(local_file, {'offset': 10, 'amount': 10}, {'offset': actual_size + 5, 'amount': 10})
+    write_regions(mount_file, {'offset': 10, 'amount': 10}, {'offset': actual_size + 5, 'amount': 10})
+    assert_content(local_file, mount_file)
+
+
 def test_write_two_regions_starting_from_position_that_is_bigger_than_file_length(chunk_size, local_file, mount_file):
     actual_size = os.path.getsize(local_file)
     write_regions(local_file, {'offset': actual_size + 5, 'amount': 10}, {'offset': actual_size + 20, 'amount': 10})
