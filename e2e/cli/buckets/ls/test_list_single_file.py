@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ from common_utils.test_utils import format_name
 # TODO: disable test until the GCP support is merged
 @pytest.mark.skip()
 class TestLsSingleFile(object):
-    epam_test_case = "EPMCMBIBPC-617"
+    epam_test_case = "TC-PIPE-STORAGE-38"
     resources_root = "resources-{}/".format(epam_test_case)
     relative_path = os.path.join(resources_root, "test_file.txt")
-    bucket_name = format_name("epmcmbibpc-it-{}{}".format(epam_test_case, get_test_prefix()).lower())
+    bucket_name = format_name("ls-files{}".format(get_test_prefix()).lower())
     another_bucket_alias = "{}-alias".format(bucket_name)
     another_bucket_path = "{}-path".format(bucket_name)
 
@@ -55,8 +55,8 @@ class TestLsSingleFile(object):
     test_paths = [
         (bucket_name, relative_path, True, False, [f('test_file.txt', 11)]),
         (bucket_name, relative_path, False, False, [f('test_file.txt', 11)]),
-        (bucket_name, relative_path, False, True, [f('resources-EPMCMBIBPC-617/test_file.txt', 11)]),
-        (bucket_name, relative_path, True, True, [f('resources-EPMCMBIBPC-617/test_file.txt', 11)]),
+        (bucket_name, relative_path, False, True, [f('resources-TC-PIPE-STORAGE-38/test_file.txt', 11)]),
+        (bucket_name, relative_path, True, True, [f('resources-TC-PIPE-STORAGE-38/test_file.txt', 11)]),
         (bucket_name, os.path.basename(relative_path), True, False, [f('test_file.txt', 11)]),
         (bucket_name, os.path.basename(relative_path), False, False, [f('test_file.txt', 11)]),
         (bucket_name, os.path.basename(relative_path), False, True, [f('test_file.txt', 11)]),
@@ -68,6 +68,7 @@ class TestLsSingleFile(object):
     @pytest.mark.run()
     @pytest.mark.parametrize("bucket,path,show_details,recursive,expected_listing", test_paths)
     def test_list_file(self, bucket, path, show_details, recursive, expected_listing):
+        """TC-PIPE-STORAGE-38"""
         try:
             actual_listing = get_pipe_listing("cp://{}/{}".format(bucket, path), show_details=show_details,
                                               recursive=recursive)
@@ -77,8 +78,9 @@ class TestLsSingleFile(object):
 
     @pytest.mark.run()
     def test_last_modification_date_listing(self):
+        """TC-PIPE-STORAGE-38"""
         try:
-            listing_path = "cp://{}/{}".format(self.bucket_name, 'resources-EPMCMBIBPC-617/test_file.txt')
+            listing_path = "cp://{}/{}".format(self.bucket_name, 'resources-TC-PIPE-STORAGE-38/test_file.txt')
             actual_listing = get_pipe_listing(listing_path, show_details=True)
             expected_file = f('test_file.txt', 11)
             expected_file.last_modified = get_modification_date(listing_path)

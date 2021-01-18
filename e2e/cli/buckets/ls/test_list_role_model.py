@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ from common_utils.test_utils import format_name
 
 
 class TestLsWithRoleModel(object):
-    epam_test_case = "EPMCMBIBPC-629"
+    epam_test_case = "TC-PIPE-STORAGE-37"
     resources_root = "resources-{}/".format(epam_test_case).lower()
-    bucket_name = format_name("epmcmbibpc-it-{}{}".format(epam_test_case, get_test_prefix()).lower())
+    bucket_name = format_name("ls-roles{}".format(get_test_prefix()).lower())
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']
 
@@ -41,6 +41,7 @@ class TestLsWithRoleModel(object):
 
     @pytest.mark.run(order=1)
     def test_list_folder_without_permission(self):
+        """TC-PIPE-STORAGE-37"""
         try:
             error_text = pipe_storage_ls("cp://{}/{}".format(self.bucket_name, self.resources_root),
                                          expected_status=1, token=self.token)[1]
@@ -51,7 +52,8 @@ class TestLsWithRoleModel(object):
 
     @pytest.mark.run(order=2)
     def test_list_from_root(self):
-        case = "EPMCMBIBPC-699"
+        """TC-PIPE-STORAGE-44"""
+        case = "TC-PIPE-STORAGE-44"
         try:
             buckets = get_pipe_listing(None, show_details=False)
             available_buckets = map(lambda bucket: filter(None, bucket.name.split(" ")[0]), buckets)
@@ -65,6 +67,7 @@ class TestLsWithRoleModel(object):
 
     @pytest.mark.run(order=3)
     def test_list_folder_with_permission(self):
+        """TC-PIPE-STORAGE-37"""
         try:
             set_storage_permission(self.user, self.bucket_name, allow='r')
             output = pipe_storage_ls("cp://{}/{}".format(self.bucket_name, self.resources_root),
@@ -75,6 +78,7 @@ class TestLsWithRoleModel(object):
 
     @pytest.mark.run(order=4)
     def test_list_folder_with_write_permission(self):
+        """TC-PIPE-STORAGE-37"""
         try:
             set_storage_permission(self.user, self.bucket_name, allow='w', deny='r')
             error_text = pipe_storage_ls("cp://{}/{}".format(self.bucket_name, self.resources_root),
