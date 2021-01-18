@@ -23,7 +23,7 @@ from ..utils.pipeline_utils import *
 
 class TestPipelineRunSync(object):
 
-    test_case = "EPMCMBIBPC-1071"
+    test_case = "TC-SCALING-13"
     state = FailureIndicator()
     pipeline_id = None
     pipeline_name = None

@@ -26,7 +26,7 @@ class TestTerminateNodeByTimeout(object):
     run_id = None
     pipeline_id = None
     state = FailureIndicator()
-    test_case = "EPMCMBIBPC-98"
+    test_case = "TC-SCALING-3"
 
     @classmethod
     def setup_class(cls):
