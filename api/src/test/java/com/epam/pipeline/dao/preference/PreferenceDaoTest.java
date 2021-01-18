@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -51,7 +52,7 @@ public class PreferenceDaoTest extends AbstractJdbcTest {
     @Before
     public void setup() {
         preference = new Preference(TEST_NAME, TEST_VALUE, TEST_GROUP,
-                TEST_DESCRIPTION, TEST_TYPE, TEST_VISIBLE);
+                                    TEST_DESCRIPTION, TEST_TYPE, TEST_VISIBLE);
         preference2 = new Preference(TEST_NAME_2, TEST_VALUE_2, TEST_GROUP,
                                      TEST_DESCRIPTION, TEST_TYPE, TEST_VISIBLE);
     }
@@ -79,8 +80,8 @@ public class PreferenceDaoTest extends AbstractJdbcTest {
         assertEquals(preference, updatedPreference);
 
         Preference loadedByName = preferenceDao.loadPreferenceByName(TEST_NAME);
-        assertEquals(preference, loadedByName);
-        assertEquals(updatedPreference, loadedByName);
+        assertThat(preference).isEqualToIgnoringGivenFields(loadedByName, "createdDate");
+        assertThat(updatedPreference).isEqualToIgnoringGivenFields(loadedByName, "createdDate");
 
         Preference loadedPref2 = preferenceDao.loadPreferenceByName(preference2.getName());
         assertNotNull(loadedPref2);

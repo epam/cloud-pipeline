@@ -19,7 +19,6 @@ package com.epam.pipeline.test.jdbc;
 import com.epam.pipeline.app.DBConfiguration;
 import com.epam.pipeline.test.CommonTestContext;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureJdbc;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -33,7 +32,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {DBConfiguration.class, CommonTestContext.class, JdbcTestBeans.class})
-@EnableCaching
 @AutoConfigureJdbc
 @ImportResource({"classpath*:dao/*.xml"})
 @TestPropertySource(value={"classpath:test-application.properties"})
