@@ -140,3 +140,5 @@ This folder contains testcases to check different operations with data storage o
 | [**TC-PIPE-STORAGE-134**](TC-PIPE-STORAGE-134.md) | \[Negative\] Try to restore unexisting file version |
 | [**TC-PIPE-STORAGE-135**](TC-PIPE-STORAGE-135.md) | \[Negative\] Try to restore not removed file |
 | [**TC-PIPE-STORAGE-136**](TC-PIPE-STORAGE-136.md) | \[Negative\] Try to restore the latest version of non-removed file |
+| [**TC-PIPE-STORAGE-137**](TC-PIPE-STORAGE-137.md) | Change bucket policy with enabled fields |
+| [**TC-PIPE-STORAGE-138**](TC-PIPE-STORAGE-138.md) | Change bucket policy with disabled fields |
