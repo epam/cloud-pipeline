@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,18 +20,18 @@ from ..utils.utilities_for_test import *
 
 
 class TestRmFileFolder(object):
-    epam_test_case_rm_file = "EPMCMBIBPC-611"
-    epam_test_case_rm_folder = "EPMCMBIBPC-612"
-    epam_test_case_rm_root = "EPMCMBIBPC-648"
-    epam_test_case_rm_not_existing_item = "EPMCMBIBPC-645"
-    epam_test_case_rm_from_non_existing_bucket = "EPMCMBIBPC-644"
-    epam_test_case_rm_wrong_scheme = "EPMCMBIBPC-652"
-    epam_test_case_rm_with_confirmation = "EPMCMBIBPC-950"
+    epam_test_case_rm_file = "TC-PIPE-STORAGE-47"
+    epam_test_case_rm_folder = "TC-PIPE-STORAGE-51"
+    epam_test_case_rm_root = "TC-PIPE-STORAGE-46"
+    epam_test_case_rm_not_existing_item = "TC-PIPE-STORAGE-49"
+    epam_test_case_rm_from_non_existing_bucket = "TC-PIPE-STORAGE-52"
+    epam_test_case_rm_wrong_scheme = "TC-PIPE-STORAGE-50"
+    epam_test_case_rm_with_confirmation = "TC-PIPE-STORAGE-57"
 
-    suffix = "EPMCMBIBPC-611-612-648-644-645"
+    suffix = "storage-47-51-46-52-49"
     resources_root = "resources-{}/".format(suffix).lower()
-    bucket_name = format_name("epmcmbibpc-it-rm-{}{}".format(suffix, get_test_prefix()).lower())
-    empty_bucket_name = format_name("cmbi-pipe-integration-tests-rm-empty")
+    bucket_name = format_name("rm-files{}".format(get_test_prefix()).lower())
+    empty_bucket_name = format_name("rm-empty".format(get_test_prefix()).lower())
     file_in_root = "file_in_root.txt"
     root_file_path = os.path.abspath(os.path.join(resources_root, file_in_root))
 
@@ -65,6 +65,7 @@ class TestRmFileFolder(object):
     @pytest.mark.run(order=1)
     @pytest.mark.parametrize("path", test_rm_file)
     def test_remove_file(self, path):
+        """TC-PIPE-STORAGE-47"""
         try:
             pipe_storage_rm("cp://{}/{}".format(self.bucket_name, path))
             assert not object_exists(self.bucket_name, path), "Failed to delete s3 file object {}".format(path)
@@ -81,6 +82,7 @@ class TestRmFileFolder(object):
     @pytest.mark.run(order=2)
     @pytest.mark.parametrize("path", test_rm_folder_without_recursive)
     def test_remove_folder_without_recursive(self, path):
+        """TC-PIPE-STORAGE-51"""
         try:
             error_text = pipe_storage_rm("cp://{}/{}".format(self.bucket_name, path), expected_status=1)[1]
             assert_error_message_is_present(error_text, 'Flag --recursive (-r) is required to remove folders.')
@@ -95,6 +97,7 @@ class TestRmFileFolder(object):
     @pytest.mark.run(order=3)
     @pytest.mark.parametrize("path", test_rm_folder)
     def test_remove_folder(self, path):
+        """TC-PIPE-STORAGE-51"""
         try:
             pipe_storage_rm("cp://{}/{}".format(self.bucket_name, path), recursive=True, expected_status=0)
             assert not folder_exists(self.bucket_name, path), "Failed to delete s3 folder {}".format(path)
@@ -111,6 +114,7 @@ class TestRmFileFolder(object):
     @pytest.mark.run(order=4)
     @pytest.mark.parametrize("path,recursive", test_rm_root)
     def test_deleting_root_is_not_allowed(self, path, recursive):
+        """TC-PIPE-STORAGE-46"""
         try:
             error = pipe_storage_rm("cp://{}".format(path), recursive=recursive, expected_status=1)[1]
             assert_error_message_is_present(error, "Cannot remove root folder 'cp://{}'".format(path))
@@ -125,6 +129,7 @@ class TestRmFileFolder(object):
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("path", test_rm_not_existing)
     def test_deleting_not_existing_file(self, path):
+        """TC-PIPE-STORAGE-49"""
         try:
             error = pipe_storage_rm("cp://{}/{}".format(self.bucket_name, path), expected_status=1)[1]
             assert_error_message_is_present(error,
@@ -135,10 +140,12 @@ class TestRmFileFolder(object):
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("path", test_rm_not_existing)
     def test_remove_from_empty_bucket(self, path):
+        """TC-PIPE-STORAGE-52"""
         try:
             error = pipe_storage_rm("cp://{}/{}".format(self.empty_bucket_name, path), expected_status=1)[1]
             assert_error_message_is_present(error,
-                                            'Storage path "cp://{}/{}" was not found'.format(self.empty_bucket_name, path))
+                                            'Storage path "cp://{}/{}" was not found'.format(self.empty_bucket_name,
+                                                                                             path))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_from_non_existing_bucket, e.message))
 
@@ -150,6 +157,7 @@ class TestRmFileFolder(object):
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("path", test_rm_not_existing)
     def test_remove_from_not_existing_bucket(self, path):
+        """TC-PIPE-STORAGE-52"""
         bucket_name = "does-not-exist"
         try:
             error = pipe_storage_rm("cp://{}/{}".format(bucket_name, path), expected_status=1)[1]
@@ -160,21 +168,24 @@ class TestRmFileFolder(object):
 
     @pytest.mark.run(order=5)
     def test_remove_from_wrong_scheme(self):
+        """TC-PIPE-STORAGE-50"""
         try:
             error = pipe_storage_rm("s4://{}/test.txt".format(self.bucket_name), expected_status=1)[1]
-            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
+            assert_error_message_is_present(error,
+                                            'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_wrong_scheme, e.message))
 
     @pytest.mark.run(order=5)
     def test_remove_with_confirmation(self):
+        """TC-PIPE-STORAGE-57"""
         try:
             source = self.root_file_path
             destination = 'cp://{}/{}'.format(self.bucket_name, self.epam_test_case_rm_with_confirmation + ".txt")
             pipe_storage_cp(source, destination, expected_status=0)
             pipe_storage_rm_piped(destination, delete=False)
             pipe_output = get_pipe_listing(destination)
-            aws_output = [f('EPMCMBIBPC-950.txt', 10)]
+            aws_output = [f('TC-PIPE-STORAGE-57.txt', 10)]
             compare_listing(pipe_output, aws_output, 1)
             pipe_storage_rm_piped(destination, delete=True)
             pipe_output = get_pipe_listing(destination)
@@ -185,7 +196,8 @@ class TestRmFileFolder(object):
 
     @pytest.mark.run(order=5)
     def test_remove_folder_with_same_name_as_file(self):
-        case = "EPMCMBIBPC-1974"
+        """TC-PIPE-STORAGE-72"""
+        case = "TC-PIPE-STORAGE-72"
         try:
             pipe_storage_cp(self.root_file_path, "cp://%s/%s/" % (self.bucket_name, case))
             assert object_exists(self.bucket_name, "%s/%s" % (case, self.file_in_root))
@@ -200,7 +212,8 @@ class TestRmFileFolder(object):
 
     @pytest.mark.run(order=5)
     def test_remove_file_with_same_name_as_folder(self):
-        case = "EPMCMBIBPC-1976"
+        """TC-PIPE-STORAGE-71"""
+        case = "TC-PIPE-STORAGE-71"
         try:
             pipe_storage_cp(self.root_file_path, "cp://%s/%s/" % (self.bucket_name, case))
             assert object_exists(self.bucket_name, "%s/%s" % (case, self.file_in_root))
