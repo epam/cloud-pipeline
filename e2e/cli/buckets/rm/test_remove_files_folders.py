@@ -30,7 +30,7 @@ class TestRmFileFolder(object):
 
     suffix = "storage-47-51-46-52-49"
     resources_root = "resources-{}/".format(suffix).lower()
-    bucket_name = format_name("rm-files{}".format(get_test_prefix()).lower())
+    bucket_name = format_name("rm-{}".format(get_test_prefix()).lower())
     empty_bucket_name = format_name("rm-empty".format(get_test_prefix()).lower())
     file_in_root = "file_in_root.txt"
     root_file_path = os.path.abspath(os.path.join(resources_root, file_in_root))
