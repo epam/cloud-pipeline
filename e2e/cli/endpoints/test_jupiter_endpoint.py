@@ -44,8 +44,6 @@ class TestJupiterEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_jupiter_endpoint_friendly_url(self):
@@ -58,8 +56,6 @@ class TestJupiterEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_jupiter_and_no_machine_endpoint_friendly_url(self):
@@ -74,5 +70,3 @@ class TestJupiterEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)

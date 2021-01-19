@@ -45,8 +45,6 @@ class TestNoMachineEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_nomachine_endpoint_on_ubuntu_18_image(self):
@@ -60,5 +58,3 @@ class TestNoMachineEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)

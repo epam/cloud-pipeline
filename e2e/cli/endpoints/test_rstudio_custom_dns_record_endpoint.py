@@ -60,8 +60,6 @@ class TestRStudioEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_custom_domain_rstudio_with_friendly_path(self):
@@ -75,10 +73,9 @@ class TestRStudioEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
 
+    @pipe_test
     def test_custom_domain_rstudio_endpoint_friendly_domain(self):
         pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-27'
@@ -91,8 +88,7 @@ class TestRStudioEndpoints(object):
                                                   })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
+
 
     @pipe_test
     def test_custom_domain_rstudio_friendly_domain_with_path(self):
@@ -107,8 +103,6 @@ class TestRStudioEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_custom_domain_rstudio_and_no_machine_endpoint(self):
@@ -124,8 +118,6 @@ class TestRStudioEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_custom_domain_rstudio_and_no_machine_endpoint_friendly_path(self):
@@ -142,8 +134,6 @@ class TestRStudioEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_custom_domain_rstudio_spark_no_machine_endpoint_friendly_path(self):
@@ -162,5 +152,3 @@ class TestRStudioEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)

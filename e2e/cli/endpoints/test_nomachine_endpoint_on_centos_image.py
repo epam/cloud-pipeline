@@ -44,8 +44,6 @@ class TestNoMachineEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_spark_endpoint_on_centos_image(self):
@@ -58,8 +56,6 @@ class TestNoMachineEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)
 
     @pipe_test
     def test_spark_and_no_machine_endpoint_on_centos_image(self):
@@ -75,5 +71,3 @@ class TestNoMachineEndpoints(object):
                                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
-        if not result:
-            raise RuntimeError(message)

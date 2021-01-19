@@ -70,12 +70,10 @@ def run_test(tool, command, endpoints_structure, url_checker=None, check_access=
             url = urls[name]
             pattern = endpoints_structure[name].format(run_id=run_id)
             structure_is_fine = check_service_url_structure(url, pattern, checker=url_checker)
-            if not structure_is_fine:
-                return run_id, node_name, False, "service url: {}, has wrong format.".format(url)
+            assert structure_is_fine, "service url: {}, has wrong format.".format(url)
             is_accessible = not check_access or follow_service_url(url, 100)
-            if not is_accessible:
-                return run_id, node_name, False, "service url: {}, is not accessible.".format(url)
-        return run_id, node_name, True, None
+            assert is_accessible, "service url: {}, is not accessible.".format(url)
+        return run_id, node_name
     finally:
         stop_pipe(run_id)
 
@@ -119,9 +117,7 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
 
 
 def check_for_number_of_endpoints(urls, number_of_endpoints):
-    if len(urls) != number_of_endpoints:
-        raise RuntimeError("Number of endpoints is not correct. Required: {}, actual: {}"
-                           .format(number_of_endpoints, len(urls)))
+    assert len(urls) == number_of_endpoints, "Number of endpoints is not correct. Required: {}, actual: {}".format(number_of_endpoints, len(urls))
 
 
 def check_service_url_structure(url, pattern, checker):
