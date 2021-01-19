@@ -19,14 +19,14 @@ package com.epam.pipeline.app;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
 
 import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
 
 @Configuration
-@ComponentScan(basePackages = {"com.epam.pipeline.dao"})
+@ImportResource({"classpath*:dao/*.xml"})
 public class DBConfiguration {
 
     @Value("${database.url}")
