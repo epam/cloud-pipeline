@@ -25,9 +25,9 @@ class TestLsFolder(object):
     epam_test_case_ls_non_existing_bucket = "TC-PIPE-STORAGE-41"
     epam_test_case_ls_non_existing_path = "TC-PIPE-STORAGE-42"
     epam_test_case_ls_wrong_scheme = "TC-PIPE-STORAGE-43"
-    suffix = "ls-folders"
+    suffix = "storage-39-40"
     resources_root = "resources-{}/".format(suffix).lower()
-    bucket_name = format_name("{}{}".format(suffix, get_test_prefix()).lower())
+    bucket_name = format_name("ls-folders{}".format(get_test_prefix()).lower())
 
     @classmethod
     def setup_class(cls):
