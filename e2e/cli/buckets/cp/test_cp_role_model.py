@@ -14,6 +14,7 @@
 
 from common_utils.pipe_cli import *
 from common_utils.test_utils import format_name
+from utils.pipeline_utils import get_log_filename
 from ..utils.assertions_utils import *
 from ..utils.file_utils import *
 from ..utils.utilities_for_test import *
@@ -31,7 +32,7 @@ class TestCpWithRoleModel(object):
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         create_buckets(cls.bucket_name, cls.other_bucket_name)
         source = os.path.abspath(cls.test_file)

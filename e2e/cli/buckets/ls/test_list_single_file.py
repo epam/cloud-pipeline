@@ -19,6 +19,7 @@ from buckets.utils.listing import *
 from buckets.utils.file_utils import *
 from buckets.utils.utilities_for_test import *
 from common_utils.test_utils import format_name
+from utils.pipeline_utils import get_log_filename
 
 
 # TODO: disable test until the GCP support is merged
@@ -33,7 +34,7 @@ class TestLsSingleFile(object):
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         create_buckets(cls.bucket_name)
         create_bucket(cls.another_bucket_alias, path=cls.another_bucket_path)
