@@ -29,7 +29,7 @@ class TestUnusedInstanceTermination(object):
     node_name = None
     pipeline_id = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-177'
+    test_case = 'TC-SCALING-6'
 
     @classmethod
     def setup_class(cls):

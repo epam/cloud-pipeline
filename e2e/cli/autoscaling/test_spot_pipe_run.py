@@ -27,7 +27,7 @@ class TestSpotPipelineRun(object):
     run_id = None
     node_name = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-67'
+    test_case = 'TC-SCALING-11'
 
     @classmethod
     def setup_class(cls):

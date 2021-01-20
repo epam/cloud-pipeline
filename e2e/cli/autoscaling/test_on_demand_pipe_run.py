@@ -27,7 +27,7 @@ class TestOnDemandPipelineRun(object):
     run_id = None
     node_name = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-1216'
+    test_case = 'TC-SCALING-12'
 
     @classmethod
     def setup_class(cls):

@@ -28,7 +28,7 @@ class TestTerminateInstanceBeforeKubeRegistration(object):
     pipeline_id = None
     run_id = None
     state = FailureIndicator()
-    test_case = "EPMCMBIBPC-176"
+    test_case = "TC-SCALING-7"
 
     @classmethod
     def setup_class(cls):

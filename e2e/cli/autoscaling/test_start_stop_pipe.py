@@ -29,7 +29,7 @@ class TestStartStopPipe(object):
     node_name = None
     latest_run_id = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-169'
+    test_case = 'TC-SCALING-4'
 
     @classmethod
     def setup_class(cls):

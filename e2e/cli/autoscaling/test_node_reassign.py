@@ -32,7 +32,7 @@ class TestNodeReassign(object):
     first_run_id = None
     second_run_id = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-69'
+    test_case = 'TC-SCALING-2'
 
     @classmethod
     def setup_class(cls):

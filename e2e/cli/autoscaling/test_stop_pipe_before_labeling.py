@@ -32,7 +32,7 @@ class TestStopPipelineBeforeLabeling(object):
     new_node_name = None  # should be equal node_name. needed to terminate instance if test failed
     new_run_id = None
     state = FailureIndicator()
-    test_case = "EPMCMBIBPC-162"
+    test_case = "TC-SCALING-10"
 
     @classmethod
     def setup_class(cls):
