@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <link href="assets/style.css" rel="stylesheet" type="text/css"/></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function find_all(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sort_column(elem) {
+    toggle_sort_states(elem);
+    var colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    var key;
+    if (elem.classList.contains('numeric')) {
+        key = key_num;
+    } else if (elem.classList.contains('result')) {
+        key = key_result;
+    } else {
+        key = key_alpha;
+    }
+    sort_table(elem, key(colIndex));
+}
+
+function show_all_extras() {
+    find_all('.col-result').forEach(show_extras);
+}
+
+function hide_all_extras() {
+    find_all('.col-result').forEach(hide_extras);
+}
+
+function show_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.remove("collapsed");
+    expandcollapse.classList.remove("expander");
+    expandcollapse.classList.add("collapser");
+}
+
+function hide_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.add("collapsed");
+    expandcollapse.classList.remove("collapser");
+    expandcollapse.classList.add("expander");
+}
+
+function show_filters() {
+    var filter_items = document.getElementsByClassName('filter');
+    for (var i = 0; i < filter_items.length; i++)
+        filter_items[i].hidden = false;
+}
+
+function add_collapse() {
+    // Add links for show/hide all
+    var resulttable = find('table#results-table');
+    var showhideall = document.createElement("p");
+    showhideall.innerHTML = '<a href="javascript:show_all_extras()">Show all details</a> / ' +
+                            '<a href="javascript:hide_all_extras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    find_all('.col-result').forEach(function(elem) {
+        var extras = elem.parentNode.nextElementSibling;
+        var expandcollapse = document.createElement("span");
+        if (elem.innerHTML === 'Passed') {
+            extras.classList.add("collapsed");
+            expandcollapse.classList.add("expander");
+        } else {
+            expandcollapse.classList.add("collapser");
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener("click", function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains("collapsed")) {
+                show_extras(event.currentTarget);
+            } else {
+                hide_extras(event.currentTarget);
+            }
+        });
+    })
+}
+
+function init () {
+    reset_sort_headers();
+
+    add_collapse();
+
+    show_filters();
+
+    toggle_sort_states(find('.initial-sort'));
+
+    find_all('.sortable').forEach(function(elem) {
+        elem.addEventListener("click",
+                              function(event) {
+                                  sort_column(elem);
+                              }, false)
+    });
+
+};
+
+function sort_table(clicked, key_func) {
+    var rows = find_all('.results-table-row');
+    var reversed = !clicked.classList.contains('asc');
+    var sorted_rows = sort(rows, key_func, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    var thead = document.getElementById("results-table-head");
+    document.getElementById('results-table').remove();
+    var parent = document.createElement("table");
+    parent.id = "results-table";
+    parent.appendChild(thead);
+    sorted_rows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName("BODY")[0].appendChild(parent);
+}
+
+function sort(items, key_func, reversed) {
+    var sort_array = items.map(function(item, i) {
+        return [key_func(item), i];
+    });
+    var multiplier = reversed ? -1 : 1;
+
+    sort_array.sort(function(a, b) {
+        var key_a = a[0];
+        var key_b = b[0];
+        return multiplier * (key_a >= key_b ? 1 : -1);
+    });
+
+    return sort_array.map(function(item) {
+        var index = item[1];
+        return items[index];
+    });
+}
+
+function key_alpha(col_index) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[col_index].firstChild.data.toLowerCase();
+    };
+}
+
+function key_num(col_index) {
+    return function(elem) {
+        return parseFloat(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function key_result(col_index) {
+    return function(elem) {
+        var strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+                       'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function reset_sort_headers() {
+    find_all('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    find_all('.sortable').forEach(function(elem) {
+        var icon = document.createElement("div");
+        icon.className = "sort-icon";
+        icon.textContent = "vvv";
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove("desc", "active");
+        elem.classList.add("asc", "inactive");
+    });
+}
+
+function toggle_sort_states(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        reset_sort_headers();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function is_all_rows_hidden(value) {
+  return value.hidden == false;
+}
+
+function filter_table(elem) {
+    var outcome_att = "data-test-result";
+    var outcome = elem.getAttribute(outcome_att);
+    class_outcome = outcome + " results-table-row";
+    var outcome_rows = document.getElementsByClassName(class_outcome);
+
+    for(var i = 0; i < outcome_rows.length; i++){
+        outcome_rows[i].hidden = !elem.checked;
+    }
+
+    var rows = find_all('.results-table-row').filter(is_all_rows_hidden);
+    var all_rows_hidden = rows.length == 0 ? true : false;
+    var not_found_message = document.getElementById("not-found-message");
+    not_found_message.hidden = !all_rows_hidden;
+}
+</script>
+    <p>Report generated on 20-Jan-2021 at 14:03:38 by<a href="https://pypi.python.org/pypi/pytest-html"> pytest-html</a> v1.15.2</p>
+    <h2>Environment</h2>
+    <table id="environment">
+      <tr>
+        <td>GIT_BRANCH</td>
+        <td>origin/develop</td></tr>
+      <tr>
+        <td>Packages</td>
+        <td>{&apos;py&apos;: &apos;1.10.0&apos;, &apos;pytest&apos;: &apos;3.2.5&apos;, &apos;pluggy&apos;: &apos;0.4.0&apos;}</td></tr>
+      <tr>
+        <td>Platform</td>
+        <td>Linux-3.10.0-1127.8.2.el7.x86_64-x86_64-with-debian-9.11</td></tr>
+      <tr>
+        <td>Plugins</td>
+        <td>{&apos;forked&apos;: &apos;1.0.2&apos;, &apos;metadata&apos;: &apos;1.8.0&apos;, &apos;html&apos;: &apos;1.15.2&apos;, &apos;xdist&apos;: &apos;1.20.0&apos;, &apos;cov&apos;: &apos;2.5.1&apos;}</td></tr>
+      <tr>
+        <td>Python</td>
+        <td>2.7.17</td></tr></table>
+    <h2>Summary</h2>
+    <p>35 tests ran in 3780.36 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="passed">35 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="failed">0 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th>Test Case</th>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable numeric" col="duration">Duration</th>
+          <th>Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="5">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-12</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_on_demand_pipe_run.py::TestOnDemandPipelineRun::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">5.96</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-1</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_node_should_be_terminated</td>
+          <td class="col-duration">4.22</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-1</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_instance_should_be_terminated</td>
+          <td class="col-duration">0.82</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-1</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">3.09</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-11</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_spot_pipe_run.py::TestSpotPipelineRun::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">1.68</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-2</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_node_reassign.py::TestNodeReassign::()::test_node_ip_should_be_the_same</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-2</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_node_reassign.py::TestNodeReassign::()::test_cluster_should_have_one_node_with_latest_id</td>
+          <td class="col-duration">5.47</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-2</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_node_reassign.py::TestNodeReassign::()::test_cluster_should_not_have_node_with_first_id</td>
+          <td class="col-duration">1.92</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-2</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_node_reassign.py::TestNodeReassign::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">3.44</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-3</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_pipeline_should_be_completed</td>
+          <td class="col-duration">327.81</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-12</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_on_demand_pipe_run.py::TestOnDemandPipelineRun::()::test_on_demand_pipeline_runs_and_finishes_successfully</td>
+          <td class="col-duration">412.99</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-10</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_node_should_have_label</td>
+          <td class="col-duration">1.60</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-10</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_node_should_reassign</td>
+          <td class="col-duration">22.94</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-10</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">1.63</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-11</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_spot_pipe_run.py::TestSpotPipelineRun::()::test_spot_pipeline_runs_and_finishes_successfully</td>
+          <td class="col-duration">340.12</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-13</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_pipline_run_sync.py::TestPipelineRunSync::()::test_pipe_run_sync</td>
+          <td class="col-duration">338.49</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-4</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_start_stop_pipe.py::TestStartStopPipe::()::test_created_only_one_node</td>
+          <td class="col-duration">1.85</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-4</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_start_stop_pipe.py::TestStartStopPipe::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">1.89</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-4</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_start_stop_pipe.py::TestStartStopPipe::()::test_node_should_have_latest_id</td>
+          <td class="col-duration">1.87</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-7</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_pipe_should_still_wait</td>
+          <td class="col-duration">6.22</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-7</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_new_node_should_be_created</td>
+          <td class="col-duration">5.73</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-7</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">4.79</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-9</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_node_during_pipe_work.py::TestTerminateNodeDuringPipelineWork::()::test_pipeline_should_be_stopped</td>
+          <td class="col-duration">4.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-9</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_node_during_pipe_work.py::TestTerminateNodeDuringPipelineWork::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">1.90</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-8</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_during_pipe_work.py::TestTerminateInstanceDuringPipelineWork::()::test_pipe_should_fail</td>
+          <td class="col-duration">368.42</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-8</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_during_pipe_work.py::TestTerminateInstanceDuringPipelineWork::()::test_node_should_be_terminated</td>
+          <td class="col-duration">21.47</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-6</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_unused_instance_termination.py::TestUnusedInstanceTermination::()::test_node_should_be_terminated</td>
+          <td class="col-duration">58.87</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-5</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_two_pipes_simultaneously.py::TestTwoPipesRunSimultaneously::()::test_should_be_created_two_nodes</td>
+          <td class="col-duration">3.79</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-5</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_two_pipes_simultaneously.py::TestTwoPipesRunSimultaneously::()::test_node_should_have_correct_labels</td>
+          <td class="col-duration">4.31</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-3</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_node_should_be_terminated</td>
+          <td class="col-duration">3291.71</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-3</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_instance_should_be_terminated</td>
+          <td class="col-duration">60.58</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-8</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_during_pipe_work.py::TestTerminateInstanceDuringPipelineWork::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">5.97</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-6</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_unused_instance_termination.py::TestUnusedInstanceTermination::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">6.23</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-3</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">10.55</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-SCALING-5</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">e2e/cli/autoscaling/test_two_pipes_simultaneously.py::TestTwoPipesRunSimultaneously::()::test_cluster_should_not_have_node_without_label</td>
+          <td class="col-duration">12.55</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody></table></body></html>
