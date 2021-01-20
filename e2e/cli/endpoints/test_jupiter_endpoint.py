@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from utils import *
-import re
 
 
 class TestJupiterEndpoints(object):

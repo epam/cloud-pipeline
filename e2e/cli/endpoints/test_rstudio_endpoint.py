@@ -86,8 +86,8 @@ class TestRStudioEndpoints(object):
 
     @pipe_test
     def test_rstudio_endpoint_friendly_domain_url(self):
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-8'
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         run_id, node_name = run_test("library/rstudio",
                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                       friendly_url="friendly.com",
@@ -100,8 +100,8 @@ class TestRStudioEndpoints(object):
 
     @pipe_test
     def test_rstudio_and_no_machine_endpoint_friendly_domain_url(self):
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-9'
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         run_id, node_name = run_test("library/rstudio",
                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                       friendly_url="friendly.com",
@@ -204,8 +204,8 @@ class TestRStudioEndpoints(object):
 
     @pipe_test
     def test_rstudio_spark_endpoints_friendly_domain_url(self):
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-21'
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         run_id, node_name = run_test("library/rstudio",
                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                       spark=True,
@@ -220,8 +220,8 @@ class TestRStudioEndpoints(object):
 
     @pipe_test
     def test_rstudio_spark_no_machine_endpoint_friendly_domain_url(self):
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         self.test_case = 'TC-EDGE-22'
+        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
         run_id, node_name = run_test("library/rstudio",
                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                       spark=True,
