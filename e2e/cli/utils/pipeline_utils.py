@@ -18,13 +18,14 @@ import re
 import os
 import pytest
 import requests
+import json
 
 from time import sleep
 
-from autoscaling.utils.aws_client import Ec2Client
-from autoscaling.utils.azure_client import AzureClient
-from autoscaling.utils.gcp_client import GCPClient
-from common_utils.entity_managers import UtilsManager
+from e2e.cli.utils.aws_client import Ec2Client
+from e2e.cli.utils.azure_client import AzureClient
+from e2e.cli.utils.gcp_client import GCPClient
+from e2e.cli.common_utils.entity_managers import UtilsManager
 
 IP_PATTERN = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
@@ -116,8 +117,51 @@ def view_runs(run_id, *args):
         __fill_record(line, pipe_info, "nodeDisk")
         __fill_record(line, pipe_info, "nodeType")
         __fill_record(line, pipe_info, "nodeId")
+        __fill_record(line, pipe_info, "Endpoints", structured=True)
         line = process.stdout.readline()
     return pipe_info
+
+
+def task_in_status(run_id, task, status):
+    command = ['pipe', 'view-runs', run_id, '-td']
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    line = process.stdout.readline()
+    while task not in line and line != '':
+        line = process.stdout.readline()
+    return status in line
+
+
+def run_tool(*args):
+    command = ['pipe', 'run', '-y']
+
+    instance_type = os.environ['CP_TEST_INSTANCE_TYPE']
+    if instance_type and "-it" not in args:
+        command.append("-it")
+        command.append(instance_type)
+
+    price_type = os.environ['CP_TEST_PRICE_TYPE']
+    if price_type and "-pt" not in args:
+        command.append("-pt")
+        command.append(price_type)
+
+    for arg in args:
+        command.append(arg)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process.wait()
+    line = process.stdout.readline()
+    run_id = None
+    status = None
+    while line != '':
+        if line.startswith('{}'.format("Pipeline run scheduled with RunId:")):
+            splitted = line.rstrip().split(" ")
+            run_id = splitted[splitted.__len__() - 1]
+        if "completed with status" in line:
+            splitted = line.rstrip().split(" ")
+            status = splitted[splitted.__len__() - 1]
+        line = process.stdout.readline()
+    if not run_id:
+        raise RuntimeError('RunID was not found')
+    return run_id, status
 
 
 def run_pipe(pipeline_name, *args):
@@ -191,12 +235,49 @@ def wait_for_required_status(required_status, run_id, max_rep_count, validation=
                            .format(max_rep_count, required_status, status))
 
 
+def wait_for_run_initialized(run_id, max_rep_count):
+    initialized = task_in_status(run_id, "InitializeEnvironment", "SUCCESS")
+    rep = 0
+    while rep < max_rep_count:
+        if initialized:
+            return
+        sleep(5)
+        rep = rep + 1
+        initialized = task_in_status(run_id, "InitializeEnvironment", "SUCCESS")
+    raise RuntimeError("Exceeded retry count ({}) for required service urls."
+                       .format(max_rep_count))
+
+
+def wait_for_service_urls(run_id, max_rep_count):
+    urls = get_endpoint_urls(run_id)
+    rep = 0
+    while rep < max_rep_count:
+        if urls and urls != "":
+            return urls
+        sleep(5)
+        rep = rep + 1
+        urls = get_endpoint_urls(run_id)
+    raise RuntimeError("Exceeded retry count ({}) for required service urls."
+                       .format(max_rep_count))
+
+
 def get_node_name(run_id):
     cluster_state = get_cluster_state_for_run_id(run_id)
     if len(cluster_state) == 0:
         return None
     if "Name" in cluster_state[0]:
         return cluster_state[0]["Name"]
+
+
+def get_endpoint_urls(run_id):
+    pipe_info = view_runs(run_id)
+    result = {}
+    if "Endpoints" in pipe_info:
+        service_urls = json.loads(pipe_info["Endpoints"])
+        if service_urls:
+            for service_url in service_urls:
+                result[service_url['name']] = service_url['url']
+    return result
 
 
 def get_runid_label(node_name):
@@ -344,10 +425,16 @@ def terminate_instance(run_id):
     return get_client().terminate_instance(run_id)
 
 
-def __fill_record(line, pipe_info, parameter):
+# TODO fix method to pars all lines with ':'
+# TODO f.e. now parameters like Completed, Started etc uses
+# TODO only time without date that can leads to a bug if tests are run near to 00:00
+def __fill_record(line, pipe_info, parameter, structured=False):
     if line.startswith(parameter):
-        splitted = line.rstrip().split(" ")
-        pipe_info[parameter] = splitted[splitted.__len__() - 1]
+        if structured:
+            splitted = line.rstrip().split(":", 1)
+        else:
+            splitted = line.rstrip().split(" ")
+        pipe_info[parameter] = splitted[splitted.__len__() - 1].strip()
 
 
 def pipeline_preference_should_be(preference, expected_value):
@@ -370,9 +457,13 @@ def pipe_test(instance_method):
         try:
             instance_method(self)
         except BaseException as e:
-            self.__class__.state.failure = True
-            logging.info("Case %s failed!" % self.test_case)
-            pytest.fail("Test case %s failed.\n%s" % (self.test_case, e.message))
+            from _pytest.outcomes import Skipped
+            if type(e) is Skipped:
+                pytest.skip(e.message)
+            else:
+                self.__class__.state.failure = True
+                logging.info("Case %s failed!" % self.test_case)
+                pytest.fail("Test case %s failed.\n%s" % (self.test_case, e.message))
 
     return test_method_wrapper
 

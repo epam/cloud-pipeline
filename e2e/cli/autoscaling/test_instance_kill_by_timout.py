@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import datetime as dt
-from common_utils.entity_managers import PipelineManager
-from common_utils.test_utils import format_name
-from utils.pipeline_utils import *
+from ..common_utils.entity_managers import PipelineManager
+from ..common_utils.test_utils import format_name
+from ..utils.pipeline_utils import *
 
 MAX_REP_COUNT = 600
 DATA_TIME_FORMAT = "%H:%M:%S"

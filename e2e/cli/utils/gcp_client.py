@@ -15,7 +15,7 @@ import os
 import time
 from googleapiclient import discovery
 
-from autoscaling.utils.cloud_client import CloudClient
+from e2e.cli.utils.cloud_client import CloudClient
 
 
 class GCPClient(CloudClient):

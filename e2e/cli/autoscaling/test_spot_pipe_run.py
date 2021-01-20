@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common_utils.entity_managers import PipelineManager
-from common_utils.test_utils import format_name
-from utils.pipeline_utils import *
+from ..common_utils.entity_managers import PipelineManager
+from ..common_utils.test_utils import format_name
+from ..utils.pipeline_utils import *
 
 MAX_REPETITIONS = 100
 
