@@ -16,9 +16,6 @@
 
 package com.epam.pipeline.test.jdbc;
 
-import com.epam.pipeline.dao.DaoHelper;
-import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
-import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.git.GitManager;
@@ -94,6 +91,12 @@ public class JdbcTestBeans {
     @MockBean
     protected ConfigurationProviderManager mockConfigurationProviderManager;
 
+    @MockBean
+    protected RestartRunManager spyRestartRunManager;
+
+    @MockBean
+    protected RunStatusManager spyRunStatusManager;
+
     @SpyBean
     protected PipelineManager spyPipelineManager;
 
@@ -101,25 +104,10 @@ public class JdbcTestBeans {
     protected IssueManager spyIssueManager;
 
     @SpyBean
-    protected PipelineDao spyPipelineDao;
-
-    @SpyBean
-    protected DaoHelper spyDaoHelper;
-
-    @SpyBean
     protected AuthManager spyAuthManager;
 
     @SpyBean
-    protected RestartRunManager spyRestartRunManager;
-
-    @SpyBean
-    protected RunStatusManager spyRunStatusManager;
-
-    @SpyBean
     protected RunScheduleManager spyRunScheduleManager;
-
-    @SpyBean
-    protected MonitoringNotificationDao spyMonitoringNotificationDao;
 
     @SpyBean
     protected RunConfigurationManager spyRunConfigurationManager;

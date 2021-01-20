@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -154,6 +155,7 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractJdbcTest {
         
         assertTrue(loadedPreference.isPresent());
         final ContextualPreference actualPreference = loadedPreference.get();
+        Assertions.assertThat(actualPreference).isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
         assertThat(actualPreference, is(expectedPreference));
     }
 
