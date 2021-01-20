@@ -82,7 +82,7 @@ class TestCopyWithFiles(object):
         ("TC-PIPE-STORAGE-3", os.path.abspath(test_file_1), test_folder, test_file_1, None, None),
         ("TC-PIPE-STORAGE-5", "~/" + home_dir + test_file_1, test_file_1, None, None, None),
         ("TC-PIPE-STORAGE-7", os.path.abspath(test_file_1), test_file_1, None, None, test_file_2),
-        ("TC-PIPE-STORAGE-9", test_file_1, "test_TC-PIPE-STORAGE-93.txt", None, None, None),
+        ("TC-PIPE-STORAGE-9", test_file_1, "test_TC-PIPE-STORAGE-9.txt", None, None, None),
         ("TC-PIPE-STORAGE-62", os.path.abspath(test_file_1), "test_TC-PIPE-STORAGE-62.txt", None, None, None),
         ("TC-PIPE-STORAGE-70", os.path.abspath(test_file_with_spaces), "test TC-PIPE-STORAGE-70.txt", None, None, None),
     ]
