@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <link href="assets/style.css" rel="stylesheet" type="text/css"/></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function find_all(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sort_column(elem) {
+    toggle_sort_states(elem);
+    var colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    var key;
+    if (elem.classList.contains('numeric')) {
+        key = key_num;
+    } else if (elem.classList.contains('result')) {
+        key = key_result;
+    } else {
+        key = key_alpha;
+    }
+    sort_table(elem, key(colIndex));
+}
+
+function show_all_extras() {
+    find_all('.col-result').forEach(show_extras);
+}
+
+function hide_all_extras() {
+    find_all('.col-result').forEach(hide_extras);
+}
+
+function show_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.remove("collapsed");
+    expandcollapse.classList.remove("expander");
+    expandcollapse.classList.add("collapser");
+}
+
+function hide_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.add("collapsed");
+    expandcollapse.classList.remove("collapser");
+    expandcollapse.classList.add("expander");
+}
+
+function show_filters() {
+    var filter_items = document.getElementsByClassName('filter');
+    for (var i = 0; i < filter_items.length; i++)
+        filter_items[i].hidden = false;
+}
+
+function add_collapse() {
+    // Add links for show/hide all
+    var resulttable = find('table#results-table');
+    var showhideall = document.createElement("p");
+    showhideall.innerHTML = '<a href="javascript:show_all_extras()">Show all details</a> / ' +
+                            '<a href="javascript:hide_all_extras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    find_all('.col-result').forEach(function(elem) {
+        var extras = elem.parentNode.nextElementSibling;
+        var expandcollapse = document.createElement("span");
+        if (elem.innerHTML === 'Passed') {
+            extras.classList.add("collapsed");
+            expandcollapse.classList.add("expander");
+        } else {
+            expandcollapse.classList.add("collapser");
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener("click", function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains("collapsed")) {
+                show_extras(event.currentTarget);
+            } else {
+                hide_extras(event.currentTarget);
+            }
+        });
+    })
+}
+
+function init () {
+    reset_sort_headers();
+
+    add_collapse();
+
+    show_filters();
+
+    toggle_sort_states(find('.initial-sort'));
+
+    find_all('.sortable').forEach(function(elem) {
+        elem.addEventListener("click",
+                              function(event) {
+                                  sort_column(elem);
+                              }, false)
+    });
+
+};
+
+function sort_table(clicked, key_func) {
+    var rows = find_all('.results-table-row');
+    var reversed = !clicked.classList.contains('asc');
+    var sorted_rows = sort(rows, key_func, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    var thead = document.getElementById("results-table-head");
+    document.getElementById('results-table').remove();
+    var parent = document.createElement("table");
+    parent.id = "results-table";
+    parent.appendChild(thead);
+    sorted_rows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName("BODY")[0].appendChild(parent);
+}
+
+function sort(items, key_func, reversed) {
+    var sort_array = items.map(function(item, i) {
+        return [key_func(item), i];
+    });
+    var multiplier = reversed ? -1 : 1;
+
+    sort_array.sort(function(a, b) {
+        var key_a = a[0];
+        var key_b = b[0];
+        return multiplier * (key_a >= key_b ? 1 : -1);
+    });
+
+    return sort_array.map(function(item) {
+        var index = item[1];
+        return items[index];
+    });
+}
+
+function key_alpha(col_index) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[col_index].firstChild.data.toLowerCase();
+    };
+}
+
+function key_num(col_index) {
+    return function(elem) {
+        return parseFloat(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function key_result(col_index) {
+    return function(elem) {
+        var strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+                       'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function reset_sort_headers() {
+    find_all('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    find_all('.sortable').forEach(function(elem) {
+        var icon = document.createElement("div");
+        icon.className = "sort-icon";
+        icon.textContent = "vvv";
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove("desc", "active");
+        elem.classList.add("asc", "inactive");
+    });
+}
+
+function toggle_sort_states(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        reset_sort_headers();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function is_all_rows_hidden(value) {
+  return value.hidden == false;
+}
+
+function filter_table(elem) {
+    var outcome_att = "data-test-result";
+    var outcome = elem.getAttribute(outcome_att);
+    class_outcome = outcome + " results-table-row";
+    var outcome_rows = document.getElementsByClassName(class_outcome);
+
+    for(var i = 0; i < outcome_rows.length; i++){
+        outcome_rows[i].hidden = !elem.checked;
+    }
+
+    var rows = find_all('.results-table-row').filter(is_all_rows_hidden);
+    var all_rows_hidden = rows.length == 0 ? true : false;
+    var not_found_message = document.getElementById("not-found-message");
+    not_found_message.hidden = !all_rows_hidden;
+}
+</script>
+    <p>Report generated on 20-Jan-2021 at 13:10:05 by<a href="https://pypi.python.org/pypi/pytest-html"> pytest-html</a> v1.15.2</p>
+    <h2>Environment</h2>
+    <table id="environment">
+      <tr>
+        <td>GIT_BRANCH</td>
+        <td>origin/develop</td></tr>
+      <tr>
+        <td>Packages</td>
+        <td>{&apos;py&apos;: &apos;1.10.0&apos;, &apos;pytest&apos;: &apos;3.2.5&apos;, &apos;pluggy&apos;: &apos;0.4.0&apos;}</td></tr>
+      <tr>
+        <td>Platform</td>
+        <td>Linux-3.10.0-1127.8.2.el7.x86_64-x86_64-with-debian-9.11</td></tr>
+      <tr>
+        <td>Plugins</td>
+        <td>{&apos;forked&apos;: &apos;1.0.2&apos;, &apos;html&apos;: &apos;1.15.2&apos;, &apos;xdist&apos;: &apos;1.20.0&apos;, &apos;cov&apos;: &apos;2.5.1&apos;, &apos;metadata&apos;: &apos;1.8.0&apos;}</td></tr>
+      <tr>
+        <td>Python</td>
+        <td>2.7.17</td></tr></table>
+    <h2>Summary</h2>
+    <p>31 tests ran in 94.07 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="passed">31 passed</span>, <input checked="true" class="filter" data-test-result="skipped" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="skipped">38 skipped</span>, <input checked="true" class="filter" data-test-result="failed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="failed">0 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th>Test Case</th>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable numeric" col="duration">Duration</th>
+          <th>Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="5">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-32</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_fallocate.py::test_fallocate_non_existing_file_to_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-33</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_fallocate.py::test_fallocate_empty_file_to_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-35</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_fallocate.py::test_fallocate_file_to_its_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-34</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_fallocate.py::test_fallocate_file_to_half_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-36</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_fallocate.py::test_fallocate_file_to_double_its_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-42</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_read.py::test_cp_from_mount_folder_to_local_folder[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-43</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_read.py::test_head_file[local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-44</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_read.py::test_tail_file[local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-45</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_read.py::test_read_from_position_bigger_than_file_length[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-46</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_read.py::test_read_region_that_exceeds_file_length[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-47</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_read.py::test_read_two_non_sequential_regions[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-48</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_read.py::test_read_head_and_tail[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-49</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_read.py::test_read_tail_and_head[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-37</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_truncate.py::test_truncate_non_existing_file_to_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-38</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_truncate.py::test_truncate_empty_file_to_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-40</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_truncate.py::test_truncate_file_to_its_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-39</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_truncate.py::test_truncate_file_to_half_its_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-41</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_truncate.py::test_truncate_file_to_double_its_size[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-50</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_cp_file_from_local_folder_to_mount_folder[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-51</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_append_to_file_end[local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-52</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_override_file_tail[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-53</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_override_file_head[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-54</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_to_position_that_is_bigger_than_file_length[local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-55</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_region_that_exceeds_file_length[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-56</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_region_in_first_chunk[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-57</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_region_in_single_chunk[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-58</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_region_matching_single_chunk[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-59</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_region_between_two_chunks[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-60</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_regions_in_single_chunk[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-61</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_regions_in_two_adjacent_chunks[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-62</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_regions_in_two_non_adjacent_chunks[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-63</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_regions_between_three_chunks[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-64</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_regions_between_four_chunks[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-65</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_regions_with_one_of_them_exceeding_file_length[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-66</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_regions_with_one_of_them_starting_from_position_that_is_bigger_than_file_length[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-67</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_regions_starting_from_position_that_is_bigger_than_file_length[local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-68</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_two_overlapping_regions[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="skipped results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-69</td>
+          <td class="col-result">Skipped</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_write.py::test_write_region_to_an_already_written_chunk[size0-local_file0-mount_file0]::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-27</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mkdir.py::test_mkdir[mkdir folder]</td>
+          <td class="col-duration">0.25</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-28</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mkdir.py::test_mkdir[mkdir subfolder]</td>
+          <td class="col-duration">0.56</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-29</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mkdir.py::test_mkdir[mkdir subfolder with parent]</td>
+          <td class="col-duration">0.54</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-30</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mkdir.py::test_mkdir[mkdir folder with space in name]</td>
+          <td class="col-duration">0.33</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-31</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mkdir.py::test_mkdir[mkdir folder with uppercase letters in name]</td>
+          <td class="col-duration">0.31</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-6</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv file]</td>
+          <td class="col-duration">0.38</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-7</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv file from folder to root]</td>
+          <td class="col-duration">0.63</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-8</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv file from root to folder]</td>
+          <td class="col-duration">0.63</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-9</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv file from folder to folder]</td>
+          <td class="col-duration">0.86</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-10</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv file from folder to subfolder]</td>
+          <td class="col-duration">0.84</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-11</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv file from subfolder to folder]</td>
+          <td class="col-duration">0.79</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-12</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv folder with files from root to folder]</td>
+          <td class="col-duration">0.98</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-13</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv folder with files from folder to root]</td>
+          <td class="col-duration">0.96</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-14</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv subfolder from folder to folder]</td>
+          <td class="col-duration">1.01</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-15</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_mv.py::test_mv[mv subfolder with files from folder to folder]</td>
+          <td class="col-duration">1.18</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-16</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm file]</td>
+          <td class="col-duration">0.40</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-17</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm file in folder]</td>
+          <td class="col-duration">0.58</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-18</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm file in subfolder]</td>
+          <td class="col-duration">0.78</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-19</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm file with space in name]</td>
+          <td class="col-duration">0.37</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-20</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm file with uppercase letters in name]</td>
+          <td class="col-duration">0.37</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-21</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm folder]</td>
+          <td class="col-duration">0.36</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-22</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm subfolder]</td>
+          <td class="col-duration">0.59</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-23</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm folder with subfolder]</td>
+          <td class="col-duration">0.80</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-24</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm folder with file]</td>
+          <td class="col-duration">0.77</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-25</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm subfolder with file]</td>
+          <td class="col-duration">0.92</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-26</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_rm.py::test_rm[rm folder with subfolder with file]</td>
+          <td class="col-duration">1.11</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-1</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_touch.py::test_touch[test touch non existing file]</td>
+          <td class="col-duration">0.38</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-2</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_touch.py::test_touch[test touch non existing file in folder]</td>
+          <td class="col-duration">0.63</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-3</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_touch.py::test_touch[test touch non existing file in subfolder]</td>
+          <td class="col-duration">0.83</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-4</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_touch.py::test_touch[test touch empty file]</td>
+          <td class="col-duration">0.40</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td>TC-PIPE-FUSE-5</td>
+          <td class="col-result">Passed</td>
+          <td class="col-name">cloud-pipeline/e2e/cli/mount/operation/test_touch.py::test_touch[test touch non empty file]</td>
+          <td class="col-duration">0.62</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody></table></body></html>
