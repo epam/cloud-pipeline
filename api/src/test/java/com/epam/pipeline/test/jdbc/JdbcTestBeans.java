@@ -92,10 +92,10 @@ public class JdbcTestBeans {
     protected ConfigurationProviderManager mockConfigurationProviderManager;
 
     @MockBean
-    protected RestartRunManager spyRestartRunManager;
+    protected RestartRunManager mockRestartRunManager;
 
     @MockBean
-    protected RunStatusManager spyRunStatusManager;
+    protected RunStatusManager mockRunStatusManager;
 
     @SpyBean
     protected PipelineManager spyPipelineManager;
