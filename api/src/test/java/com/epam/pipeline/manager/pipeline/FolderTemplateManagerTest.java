@@ -16,48 +16,31 @@
 
 package com.epam.pipeline.manager.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.app.TestApplicationWithAclSecurity;
-import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.controller.vo.data.storage.DataStorageWithMetadataVO;
-import com.epam.pipeline.dao.region.CloudRegionDao;
-import com.epam.pipeline.dao.util.AclTestDao;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
-import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
 import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.templates.FolderTemplate;
-import com.epam.pipeline.manager.MockS3Helper;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.*;
@@ -165,7 +148,8 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
 
     private void preConditions() {
         doReturn(getMockFolder()).when(crudManager).create(any());
-        doReturn(getMockSecurityEntity()).when(dataStorageManager).create(any(), anyBoolean(), anyBoolean(), anyBoolean());
+        doReturn(getMockSecurityEntity()).when(dataStorageManager)
+                .create(any(), anyBoolean(), anyBoolean(), anyBoolean());
         doNothing().when(metadataManager).updateEntityMetadata(any(), anyLong(), any());
         doNothing().when(permissionManager).setPermissionsToEntity(any(), anyLong(), any());
 
