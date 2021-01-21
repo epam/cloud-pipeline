@@ -135,23 +135,6 @@ public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
     }
 
     @Test
-    public void upsertShouldUpdateCreatedDateWhileUpdatingPreference() throws InterruptedException {
-        final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(LEVEL,
-                RESOURCE_ID);
-        final ContextualPreference preference = new ContextualPreference(NAME, VALUE, resource);
-        final ContextualPreference oldPreference = contextualPreferenceDao.upsert(preference);
-
-        Thread.sleep(TWO_SEC); // Make sure that old vs loaded creation dates change
-        
-        contextualPreferenceDao.upsert(oldPreference.withValue(ANOTHER_VALUE));
-
-        final Optional<ContextualPreference> loadedPreference = contextualPreferenceDao.load(NAME, resource);
-
-        assertTrue(loadedPreference.isPresent());
-        assertThat(loadedPreference.get().getCreatedDate(), is(not(oldPreference.getCreatedDate())));
-    }
-
-    @Test
     public void loadShouldReturnEmptyOptionalIfPreferenceDoesNotExist() {
         final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(LEVEL,
                 RESOURCE_ID);

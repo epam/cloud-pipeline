@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao" id="dataStorageTagDao"
+          autowire="byName">
+        <constructor-arg>
+            <value>
+                <!--upsertDataStorageTag-->
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_tag (
+                        datastorage_id,
+                        datastorage_path,
+                        datastorage_version,
+                        tag_key,
+                        tag_value,
+                        created_date)
+                    VALUES (
+                        :DATASTORAGE_ID,
+                        :DATASTORAGE_PATH,
+                        :DATASTORAGE_VERSION,
+                        :TAG_KEY,
+                        :TAG_VALUE,
+                        :CREATED_DATE)
+                    ON CONFLICT (datastorage_id, datastorage_path, datastorage_version, tag_key) DO UPDATE SET
+                        tag_value = :TAG_VALUE,
+                        created_date = :CREATED_DATE
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadTagQuery-->
+                <![CDATA[
+                    SELECT
+                        t.datastorage_id,
+                        t.datastorage_path,
+                        t.datastorage_version,
+                        t.tag_key,
+                        t.tag_value,
+                        t.created_date
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.datastorage_id = :DATASTORAGE_ID
+                    AND t.datastorage_path = :DATASTORAGE_PATH
+                    AND t.datastorage_version = :DATASTORAGE_VERSION
+                    AND t.tag_key = :TAG_KEY
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadTagsQuery-->
+                <![CDATA[
+                    SELECT
+                        t.datastorage_id,
+                        t.datastorage_path,
+                        t.datastorage_version,
+                        t.tag_key,
+                        t.tag_value,
+                        t.created_date
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.datastorage_id = :DATASTORAGE_ID
+                    AND t.datastorage_path = :DATASTORAGE_PATH
+                    AND t.datastorage_version = :DATASTORAGE_VERSION
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--bulkLoadTagsQuery-->
+                <![CDATA[
+                    SELECT
+                        t.datastorage_id,
+                        t.datastorage_path,
+                        t.datastorage_version,
+                        t.tag_key,
+                        t.tag_value,
+                        t.created_date
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.datastorage_id = :DATASTORAGE_ID
+                    AND t.datastorage_path IN (:DATASTORAGE_PATH)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteTagsQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tag
+                    WHERE datastorage_id = :DATASTORAGE_ID
+                    AND datastorage_path = :DATASTORAGE_PATH
+                    AND datastorage_version = :DATASTORAGE_VERSION
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--bulkDeleteTagsQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tag
+                    WHERE datastorage_id = :DATASTORAGE_ID
+                    AND datastorage_path = :DATASTORAGE_PATH
+                    AND datastorage_version = :DATASTORAGE_VERSION
+                    AND tag_key IN (:TAG_KEY)
+                ]]>
+            </value>
+        </constructor-arg>
+    </bean>
+</beans>
