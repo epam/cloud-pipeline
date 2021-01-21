@@ -36,7 +36,7 @@ class TestNoMachineEndpoints(object):
     @pipe_test
     def test_nomachine_endpoint_on_centos_image(self):
         self.test_case = 'TC-EDGE-1'
-        run_id, node_name, result, message = run_test("library/centos:7",
+        run_id, node_name = run_test("library/centos:7",
                                                       "echo {test_case} && sleep infinity".format(test_case=self.test_case),
                                                       no_machine=True,
                                                       endpoints_structure={
@@ -48,7 +48,7 @@ class TestNoMachineEndpoints(object):
     @pipe_test
     def test_spark_endpoint_on_centos_image(self):
         self.test_case = 'TC-EDGE-15'
-        run_id, node_name, result, message = run_test("library/centos:7",
+        run_id, node_name = run_test("library/centos:7",
                                                       "echo {test_case} && sleep infinity".format(test_case=self.test_case),
                                                       spark=True,
                                                       endpoints_structure={
@@ -60,7 +60,7 @@ class TestNoMachineEndpoints(object):
     @pipe_test
     def test_spark_and_no_machine_endpoint_on_centos_image(self):
         self.test_case = 'TC-EDGE-16'
-        run_id, node_name, result, message = run_test("library/centos:7",
+        run_id, node_name  = run_test("library/centos:7",
                                                       "echo {test_case} && sleep infinity".format(
                                                           test_case=self.test_case),
                                                       spark=True,

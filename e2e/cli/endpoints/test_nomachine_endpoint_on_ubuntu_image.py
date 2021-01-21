@@ -36,7 +36,7 @@ class TestNoMachineEndpoints(object):
     @pipe_test
     def test_nomachine_endpoint_on_ubuntu_16_image(self):
         self.test_case = 'TC-EDGE-2'
-        run_id, node_name, result, message = run_test("library/ubuntu:16.04",
+        run_id, node_name = run_test("library/ubuntu:16.04",
                                                       "echo {test_case} && sleep infinity".format(
                                                           test_case=self.test_case),
                                                       no_machine=True,
@@ -49,7 +49,7 @@ class TestNoMachineEndpoints(object):
     @pipe_test
     def test_nomachine_endpoint_on_ubuntu_18_image(self):
         self.test_case = 'TC-EDGE-3'
-        run_id, node_name, result, message = run_test("library/ubuntu:18.04",
+        run_id, node_name  = run_test("library/ubuntu:18.04",
                                                       "echo {test_case} && sleep infinity".format(
                                                           test_case=self.test_case),
                                                       no_machine=True,

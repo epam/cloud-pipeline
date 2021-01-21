@@ -52,7 +52,7 @@ class TestRStudioEndpoints(object):
     @pipe_test
     def test_custom_domain_rstudio_endpoint(self):
         self.test_case = 'TC-EDGE-25'
-        run_id, node_name, result, message = run_test("library/rstudio",
+        run_id, node_name = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
@@ -64,7 +64,7 @@ class TestRStudioEndpoints(object):
     @pipe_test
     def test_custom_domain_rstudio_with_friendly_path(self):
         self.test_case = 'TC-EDGE-26'
-        run_id, node_name, result, message = run_test("library/rstudio",
+        run_id, node_name = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       friendly_url="rstudio",
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
@@ -79,7 +79,7 @@ class TestRStudioEndpoints(object):
     def test_custom_domain_rstudio_endpoint_friendly_domain(self):
         self.test_case = 'TC-EDGE-27'
         pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
-        run_id, node_name, result, message = run_test("library/rstudio",
+        run_id, node_name = run_test("library/rstudio",
                                                   "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                   friendly_url="friendly.com",
                                                   url_checker=lambda u, p: u == p,
@@ -93,7 +93,7 @@ class TestRStudioEndpoints(object):
     @pipe_test
     def test_custom_domain_rstudio_friendly_domain_with_path(self):
         self.test_case = 'TC-EDGE-28'
-        run_id, node_name, result, message = run_test("library/rstudio",
+        run_id, node_name = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       friendly_url="friendly.com/friendly",
                                                       check_access=False,
@@ -107,7 +107,7 @@ class TestRStudioEndpoints(object):
     @pipe_test
     def test_custom_domain_rstudio_and_no_machine_endpoint(self):
         self.test_case = 'TC-EDGE-29'
-        run_id, node_name, result, message = run_test("library/rstudio",
+        run_id, node_name = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       check_access=True,
                                                       no_machine=True,
@@ -122,7 +122,7 @@ class TestRStudioEndpoints(object):
     @pipe_test
     def test_custom_domain_rstudio_and_no_machine_endpoint_friendly_path(self):
         self.test_case = 'TC-EDGE-30'
-        run_id, node_name, result, message = run_test("library/rstudio",
+        run_id, node_name = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       check_access=True,
                                                       no_machine=True,
@@ -138,7 +138,7 @@ class TestRStudioEndpoints(object):
     @pipe_test
     def test_custom_domain_rstudio_spark_no_machine_endpoint_friendly_path(self):
         self.test_case = 'TC-EDGE-31'
-        run_id, node_name, result, message = run_test("library/rstudio",
+        run_id, node_name = run_test("library/rstudio",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       check_access=True,
                                                       no_machine=True,

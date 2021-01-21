@@ -36,7 +36,7 @@ class TestJupiterEndpoints(object):
     @pipe_test
     def test_jupiter_endpoint(self):
         self.test_case = 'TC-EDGE-12'
-        run_id, node_name, result, message = run_test("library/jupyter-lab",
+        run_id, node_name = run_test("library/jupyter-lab",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       endpoints_structure={
                                                           "JupyterLab": "pipeline-{run_id}-8888-0"
@@ -47,7 +47,7 @@ class TestJupiterEndpoints(object):
     @pipe_test
     def test_jupiter_endpoint_friendly_url(self):
         self.test_case = 'TC-EDGE-13'
-        run_id, node_name, result, message = run_test("library/jupyter-lab",
+        run_id, node_name = run_test("library/jupyter-lab",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       friendly_url='friendly',
                                                       endpoints_structure={
@@ -59,7 +59,7 @@ class TestJupiterEndpoints(object):
     @pipe_test
     def test_jupiter_and_no_machine_endpoint_friendly_url(self):
         self.test_case = 'TC-EDGE-14'
-        run_id, node_name, result, message = run_test("library/jupyter-lab",
+        run_id, node_name = run_test("library/jupyter-lab",
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       friendly_url='friendly',
                                                       no_machine=True,
