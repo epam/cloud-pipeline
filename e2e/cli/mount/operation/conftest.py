@@ -81,24 +81,24 @@ def pytest_sessionstart(session):
         default_buffer_size = 512 * MB
         default_read_ahead_size = 20 * MB
         default_small_sizes = {
-            'cli.mount.operation.test_fallocate': [1],
-            'cli.mount.operation.test_truncate': [1],
-            'cli.mount.operation.test_read': [1],
-            'cli.mount.operation.test_write': [1]
+            'e2e.cli.mount.operation.test_fallocate': [1],
+            'e2e.cli.mount.operation.test_truncate': [1],
+            'e2e.cli.mount.operation.test_read': [1],
+            'e2e.cli.mount.operation.test_write': [1]
         }
         default_sizes = {
-            'cli.mount.operation.test_fallocate': [1,
-                                                   default_chunk_size + 1 * MB],
-            'cli.mount.operation.test_truncate': [0, 1,
-                                                  default_chunk_size + 1 * MB],
-            'cli.mount.operation.test_read': [0, 1,
-                                              default_chunk_size + 1 * MB,
-                                              default_read_ahead_size * 2 + 1 * MB],
-            'cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
-                                               default_chunk_size,
-                                               default_chunk_size * 4 + 1 * MB,
-                                               default_buffer_size,
-                                               default_buffer_size + 1 * MB]
+            'e2e.cli.mount.operation.test_fallocate': [1,
+                                                       default_chunk_size + 1 * MB],
+            'e2e.cli.mount.operation.test_truncate': [0, 1,
+                                                      default_chunk_size + 1 * MB],
+            'e2e.cli.mount.operation.test_read': [0, 1,
+                                                  default_chunk_size + 1 * MB,
+                                                  default_read_ahead_size * 2 + 1 * MB],
+            'e2e.cli.mount.operation.test_write': [0, 1, 1 * KB, 1 * MB, 1 * MiB,
+                                                   default_chunk_size,
+                                                   default_chunk_size * 4 + 1 * MB,
+                                                   default_buffer_size,
+                                                   default_buffer_size + 1 * MB]
         }
 
         session.config.local_path = default_local_path
