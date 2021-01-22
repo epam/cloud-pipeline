@@ -38,11 +38,16 @@ import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkDeleteRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkUpsertRequest;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
+import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
@@ -69,6 +74,7 @@ public class DataStorageApiService {
 
     private final DataStorageManager dataStorageManager;
     private final DataStorageRuleManager dataStorageRuleManager;
+    private final DataStorageTagManager dataStorageTagManager;
     private final GrantPermissionManager grantPermissionManager;
     private final MessageHelper messageHelper;
     private final TemporaryCredentialsManager temporaryCredentialsManager;
@@ -282,8 +288,8 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public Map<String, String> deleteDataStorageObjectTags(Long id, String path, Set<String> tags, String version) {
-        return dataStorageManager.deleteDataStorageObjectTags(id, path, tags, version);
+    public Map<String, String> deleteDataStorageObjectTags(Long id, String path, String version, Set<String> tags) {
+        return dataStorageManager.deleteDataStorageObjectTags(id, path, version, tags);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
@@ -338,5 +344,23 @@ public class DataStorageApiService {
     @PreAuthorize(AclExpressions.RUN_ID_OWNER)
     public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public List<DataStorageTag> bulkUpsertDataStorageObjectTags(final Long id,
+                                                                final DataStorageTagBulkUpsertRequest request) {
+        return dataStorageTagManager.bulkUpsert(id, request);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public List<DataStorageTag> bulkLoadDataStorageObjectTags(final Long id,
+                                                              final DataStorageTagBulkLoadRequest request) {
+        return dataStorageTagManager.bulkLoad(id, request);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public void bulkDeleteDataStorageObjectTags(final Long id,
+                                                final DataStorageTagBulkDeleteRequest request) {
+        dataStorageTagManager.bulkDelete(id, request);
     }
 }
