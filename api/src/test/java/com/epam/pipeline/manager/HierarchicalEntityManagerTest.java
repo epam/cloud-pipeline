@@ -21,12 +21,13 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
-import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.ExtendedRole;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
@@ -46,7 +47,6 @@ import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ALL_PERMISSIONS;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.WRITE_PERMISSION;
 import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getRunConfiguration;
@@ -55,25 +55,17 @@ import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDocker
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getToolGroup;
 import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolder;
-import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipeline;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 
 public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
+    private final DockerRegistryList dockerRegistryList = getDockerRegistryList();
     private final Tool tool = getTool(ID, ANOTHER_SIMPLE_USER);
-    private final ToolGroup toolGroup = getToolGroup(ID, ANOTHER_SIMPLE_USER, Collections.singletonList(tool));
     private final RunConfiguration runConfiguration = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
-    private final Pipeline pipeline = getPipeline(ID, ANOTHER_SIMPLE_USER);
     private final UserContext userContext = new UserContext(ID, SIMPLE_USER);
-    private final DockerRegistry registry =
-            getDockerRegistry(ID, ANOTHER_SIMPLE_USER, Collections.singletonList(toolGroup));
-    private final DockerRegistryList dockerRegistryList = getDockerRegistryList(ID, ANOTHER_SIMPLE_USER, registry);
-    private final Folder folder = getFolder(ID, ANOTHER_SIMPLE_USER);
-    private final Role role = UserCreatorUtils.getRole();
 
     @Autowired
     private HierarchicalEntityManager hierarchicalEntityManager;
@@ -85,16 +77,22 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
     private UserManager mockUserManager;
 
     @Autowired
-    private GrantPermissionManager spyPermissionManager;
-
-    @Autowired
     private FolderManager mockFolderManager;
 
     @Autowired
-    private RoleManager spyRoleManager;
+    private RoleManager mockRoleManager;
+
+    @Autowired
+    private GrantPermissionManager spyPermissionManager;
 
     @Test
     public void shouldInheritPermissionsFromRegistry() {
+        final DockerRegistry registry = getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = getToolGroup(ID, ANOTHER_SIMPLE_USER);
+        final DockerRegistryList dockerRegistryList = getDockerRegistryList(ID, ANOTHER_SIMPLE_USER, registry);
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
+        toolGroup.setTools(Collections.singletonList(tool));
+        registry.setGroups(Collections.singletonList(toolGroup));
         doReturn(dockerRegistryList).when(mockRegistryManager).loadAllRegistriesContent();
         doReturn(folder).when(mockFolderManager).loadTree();
         mockUserContext();
@@ -113,6 +111,12 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     @Test
     public void shouldLoadOnlyEntityWithPermission() {
+        final DockerRegistry registry = getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = getToolGroup(ID, ANOTHER_SIMPLE_USER);
+        final DockerRegistryList dockerRegistryList = getDockerRegistryList(ID, ANOTHER_SIMPLE_USER, registry);
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
+        toolGroup.setTools(Collections.singletonList(tool));
+        registry.setGroups(Collections.singletonList(toolGroup));
         doReturn(dockerRegistryList).when(mockRegistryManager).loadAllRegistriesContent();
         doReturn(folder).when(mockFolderManager).loadTree();
         mockUserContext();
@@ -131,6 +135,12 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     @Test
     public void shouldLoadByRoleSid() {
+        final DockerRegistry registry = getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = getToolGroup(ID, ANOTHER_SIMPLE_USER);
+        final DockerRegistryList dockerRegistryList = getDockerRegistryList(ID, ANOTHER_SIMPLE_USER, registry);
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
+        toolGroup.setTools(Collections.singletonList(tool));
+        registry.setGroups(Collections.singletonList(toolGroup));
         folder.setConfigurations(Collections.singletonList(runConfiguration));
         doReturn(dockerRegistryList).when(mockRegistryManager).loadAllRegistriesContent();
         doReturn(folder).when(mockFolderManager).loadTree();
@@ -154,6 +164,16 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     @Test
     public void shouldLoadByRoleSidWhenLoadForUser() {
+        final UserContext userContext = new UserContext(ID, SIMPLE_USER);
+        userContext.setRoles(Collections.singletonList(new Role(DefaultRoles.ROLE_USER.getName())));
+        final Tool tool = getTool(ID, DefaultRoles.ROLE_USER.getName());
+        final RunConfiguration runConfiguration = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
+        final DockerRegistry registry = getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = getToolGroup(ID, ANOTHER_SIMPLE_USER);
+        final DockerRegistryList dockerRegistryList = getDockerRegistryList(ID, ANOTHER_SIMPLE_USER, registry);
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
+        toolGroup.setTools(Collections.singletonList(tool));
+        registry.setGroups(Collections.singletonList(toolGroup));
         folder.setConfigurations(Collections.singletonList(runConfiguration));
         doReturn(dockerRegistryList).when(mockRegistryManager).loadAllRegistriesContent();
         doReturn(folder).when(mockFolderManager).loadTree();
@@ -175,11 +195,19 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     @Test
     public void shouldLoadByGroupSidWhenLoadForUser() {
+        final DockerRegistry registry = getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = getToolGroup(ID, ANOTHER_SIMPLE_USER);
+        final DockerRegistryList dockerRegistryList = getDockerRegistryList(ID, ANOTHER_SIMPLE_USER, registry);
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
+        final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser();
+        final ExtendedRole extendedRole = UserCreatorUtils.getExtendedRole();
+        extendedRole.setUsers(Collections.singletonList(pipelineUser));
+        toolGroup.setTools(Collections.singletonList(tool));
+        registry.setGroups(Collections.singletonList(toolGroup));
         folder.setConfigurations(Collections.singletonList(runConfiguration));
         doReturn(dockerRegistryList).when(mockRegistryManager).loadAllRegistriesContent();
         doReturn(folder).when(mockFolderManager).loadTree();
-        doReturn(role).when(spyRoleManager).loadRole(anyLong());
-        spyRoleManager.assignRole(role.getId(), Collections.singletonList(ID));
+        doReturn(extendedRole).when(mockRoleManager).assignRole(any(), any());
         mockUserContext();
         mockSid();
         initAclEntity(dockerRegistryList);
@@ -198,13 +226,57 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     @Test
     public void shouldInheritPermissions() {
+        final Folder root = new Folder();
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
         folder.setConfigurations(Collections.singletonList(runConfiguration));
-        doReturn(folder).when(mockFolderManager).loadTree();
+        root.setChildFolders(Collections.singletonList(folder));
+        doReturn(root).when(mockFolderManager).loadTree();
         mockDockerRegistryList();
         mockUserContext();
         mockSid();
         initAclEntity(folder, AclPermission.READ);
         initAclEntity(runConfiguration);
+
+        final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+
+        assertThat(available.size()).isEqualTo(2);
+        assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask()).isEqualTo(READ_PERMISSION);
+    }
+
+    @Test
+    public void shouldUseItsOwnPermissions() {
+        final Folder root = new Folder();
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
+        folder.setConfigurations(Collections.singletonList(runConfiguration));
+        root.setChildFolders(Collections.singletonList(folder));
+        doReturn(root).when(mockFolderManager).loadTree();
+        mockDockerRegistryList();
+        mockUserContext();
+        mockSid();
+        initAclEntity(folder, AclPermission.READ);
+        initAclEntity(runConfiguration, AclPermission.WRITE);
+
+        final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+
+        assertThat(available.size()).isEqualTo(2);
+        assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask())
+                .isEqualTo(READ_PERMISSION + WRITE_PERMISSION);
+    }
+
+    @Test
+    public void shouldUseItOwnPermissionsIfParentRestricted() {
+        final Folder root = new Folder();
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
+        folder.setConfigurations(Collections.singletonList(runConfiguration));
+        root.setChildFolders(Collections.singletonList(folder));
+        doReturn(root).when(mockFolderManager).loadTree();
+        mockDockerRegistryList();
+        mockUserContext();
+        mockSid();
+        initAclEntity(folder);
+        initAclEntity(runConfiguration, AclPermission.READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
                 .loadAvailable(new AclSid(SIMPLE_USER, true), null);
@@ -214,56 +286,17 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
     }
 
     @Test
-    public void shouldUseItsOwnPermissions() {
+    public void shouldUseItOwnRestrictedPermissionsIfParentAllowed() {
+        final Folder root = new Folder();
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
+        final RunConfiguration runConfiguration = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
         folder.setConfigurations(Collections.singletonList(runConfiguration));
-        folder.setPipelines(Collections.singletonList(pipeline));
-        doReturn(folder).when(mockFolderManager).loadTree();
+        root.setChildFolders(Collections.singletonList(folder));
+        doReturn(root).when(mockFolderManager).loadTree();
         mockDockerRegistryList();
         mockUserContext();
         mockSid();
         initAclEntity(folder, AclPermission.READ);
-        initAclEntity(pipeline);
-        initAclEntity(runConfiguration, AclPermission.WRITE);
-
-        final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
-
-        assertThat(available.size()).isEqualTo(2);
-        assertThat(available.get(AclClass.PIPELINE).get(0).getMask()).isEqualTo(READ_PERMISSION);
-        assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask())
-                .isEqualTo(READ_PERMISSION + WRITE_PERMISSION);
-    }
-
-    @Test
-    public void shouldUseItOwnPermissionsIfParentRestricted() {
-        final RunConfiguration runConfiguration = getRunConfiguration(ID, SIMPLE_USER);
-        folder.setConfigurations(Collections.singletonList(runConfiguration));
-        doReturn(folder).when(mockFolderManager).loadTree();
-        mockDockerRegistryList();
-        mockUserContext();
-        mockSid();
-        initAclEntity(folder, AclPermission.NO_READ);
-        initAclEntity(runConfiguration);
-
-        final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
-
-        assertThat(available.size()).isEqualTo(1);
-        assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask()).isEqualTo(ALL_PERMISSIONS);
-    }
-
-    @Test
-    public void shouldUseItOwnRestrictedPermissionsIfParentAllowed() {
-        final Folder childFolder = getFolder(ID_2, ANOTHER_SIMPLE_USER);
-        final RunConfiguration runConfiguration = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
-        childFolder.setConfigurations(Collections.singletonList(runConfiguration));
-        folder.setChildFolders(Collections.singletonList(childFolder));
-        doReturn(folder).when(mockFolderManager).loadTree();
-        mockDockerRegistryList();
-        mockUserContext();
-        mockSid();
-        initAclEntity(folder);
-        initAclEntity(childFolder, AclPermission.READ);
         initAclEntity(runConfiguration, AclPermission.NO_READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
@@ -275,16 +308,16 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     @Test
     public void shouldUseItOwnPermissionsIfParentRestrictedByInheritance() {
-        final Folder childFolder = getFolder(ID_2, ANOTHER_SIMPLE_USER);
+        final Folder root = new Folder();
+        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
         final RunConfiguration runConfiguration = getRunConfiguration(ID, SIMPLE_USER);
-        childFolder.setConfigurations(Collections.singletonList(runConfiguration));
-        folder.setChildFolders(Collections.singletonList(childFolder));
-        doReturn(folder).when(mockFolderManager).loadTree();
+        folder.setConfigurations(Collections.singletonList(runConfiguration));
+        root.setChildFolders(Collections.singletonList(folder));
+        doReturn(root).when(mockFolderManager).loadTree();
         mockDockerRegistryList();
         mockUserContext();
         mockSid();
-        initAclEntity(folder, AclPermission.NO_READ);
-        initAclEntity(childFolder);
+        initAclEntity(folder);
         initAclEntity(runConfiguration);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
@@ -296,17 +329,16 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     @Test
     public void shouldReturnOneAclClassOnly() {
-        final Folder folder = getFolder(ID, SIMPLE_USER);
-        final Folder childFolder = getFolder(ID_2, SIMPLE_USER);
+        final Folder root = new Folder();
+        final Folder folder = getFolder(SIMPLE_USER);
         final RunConfiguration runConfiguration = getRunConfiguration(ID, SIMPLE_USER);
-        childFolder.setConfigurations(Collections.singletonList(runConfiguration));
-        folder.setChildFolders(Collections.singletonList(childFolder));
-        doReturn(folder).when(mockFolderManager).loadTree();
+        folder.setConfigurations(Collections.singletonList(runConfiguration));
+        root.setChildFolders(Collections.singletonList(folder));
+        doReturn(root).when(mockFolderManager).loadTree();
         mockDockerRegistryList();
         mockUserContext();
         mockSid();
         initAclEntity(folder);
-        initAclEntity(childFolder);
         initAclEntity(runConfiguration);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
@@ -325,6 +357,6 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
     }
 
     private void mockDockerRegistryList() {
-        doReturn(getDockerRegistryList()).when(mockRegistryManager).loadAllRegistriesContent();
+        doReturn(dockerRegistryList).when(mockRegistryManager).loadAllRegistriesContent();
     }
 }

@@ -43,12 +43,22 @@ public final class FolderCreatorUtils {
         return getFolder(ID, TEST_STRING);
     }
 
+    public static Folder getFolder(final String owner) {
+        final Folder folder = new Folder();
+        folder.setId(ID);
+        folder.setOwner(owner);
+        folder.setMetadata(Collections.singletonMap(TEST_STRING, TEST_INT));
+        folder.setHasMetadata(true);
+        return folder;
+    }
+
     public static Folder getFolder(final Long id, final String owner) {
         final Folder folder = new Folder();
         folder.setId(id);
         folder.setOwner(owner);
         folder.setMetadata(Collections.singletonMap(TEST_STRING, TEST_INT));
         folder.setHasMetadata(true);
+        folder.setPipelines(Collections.singletonList(new Pipeline()));
         return folder;
     }
 

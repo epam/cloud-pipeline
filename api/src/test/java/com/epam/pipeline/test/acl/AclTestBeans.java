@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.test.acl;
 
-import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
-import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -34,11 +32,11 @@ import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.log.LogPagination;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
-import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
@@ -72,7 +70,6 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
-import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
@@ -123,7 +120,6 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -399,6 +395,9 @@ public class AclTestBeans {
     protected NotificationManager mockNotificationManager;
 
     @MockBean
+    protected Pipeline mockPipeline;
+
+    @MockBean
     protected PipelineManager mockPipelineManager;
 
     @MockBean
@@ -456,44 +455,22 @@ public class AclTestBeans {
     protected MetadataDownloadManager mockMetadataDownloadManager;
 
     @MockBean
-    protected UsersFileImportManager usersFileImportManager;
+    protected UsersFileImportManager mockUsersFileImportManager;
 
     @MockBean
-    protected OntologyApiService ontologyApiService;
+    protected JsonService mockJsonService;
 
     @MockBean
-    protected CloudProfileCredentialsApiService cloudProfileCredentialsApiService;
+    protected DataStorageManager mockDataStorageManager;
 
     @MockBean
-    protected CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
+    protected FolderCrudManager mockFolderCrudManager;
 
-    @Bean
-    protected TemplatesScanner mockTemplatesScanner() {
-        return Mockito.mock(TemplatesScanner.class);
-    }
-
-    @Bean
-    protected JsonService mockJsonService() {
-        return Mockito.mock(JsonService.class);
-    }
-
-    @Bean
-    protected DataStorageManager mockDataStorageManager() {
-        return Mockito.mock(DataStorageManager.class);
-    }
-
-    @Bean
-    protected FolderCrudManager mockFolderCrudManager() {
-        return Mockito.mock(FolderCrudManager.class);
-    }
-
-    @Bean
-    protected HierarchicalEntityManager spyHierarchicalEntityManager() {
-        return spy(HierarchicalEntityManager.class);
-    }
+    @MockBean
+    protected RoleManager mockRoleManager;
 
     @SpyBean
-    protected RoleManager spyRoleManager;
+    protected HierarchicalEntityManager spyHierarchicalEntityManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
