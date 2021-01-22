@@ -23,25 +23,25 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">3</div>
+<div class="counter">1</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3m16.63s</div>
+<div class="counter">6m35.01s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,118 +61,10 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
-</li>
-<li>
-<a href="#tab1">Tests</a>
+<a href="#tab0">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="cleanUp"></a>
-<h3 class="failures">cleanUp</h3>
-<span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'Launch-InputDataValidationTest951289962')]]}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1611219531206.61.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1611219531206.61.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'Launch-InputDataValidationTest951289962')]]
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.clickOnPipeline(PipelinesLibraryAO.java:174)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.removePipeline(PipelinesLibraryAO.java:359)
-	at com.epam.pipeline.autotests.Launch_InputDataValidationTest.cleanUp(Launch_InputDataValidationTest.java:108)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'Launch-InputDataValidationTest951289962')]]
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'b5e9c61bd986', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 24 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="createInitialResources"></a>
-<h3 class="failures">createInitialResources</h3>
-<span class="code">
-<pre>Element not found {visible(By.xpath: .//button[normalize-space(.) = 'Edit'])}
-Expected: enabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1611219442833.60.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1611219442833.60.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using visible(By.xpath: .//button[normalize-space(.) = 'Edit'])
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
-	at com.epam.pipeline.autotests.ao.MetadataFilePreviewAO.editFileWithText(MetadataFilePreviewAO.java:74)
-	at com.epam.pipeline.autotests.ao.StorageContentAO.createAndEditFile(StorageContentAO.java:201)
-	at com.epam.pipeline.autotests.Launch_InputDataValidationTest.createInitialResources(Launch_InputDataValidationTest.java:68)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using visible(By.xpath: .//button[normalize-space(.) = 'Edit'])
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'b5e9c61bd986', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: RemoteWebDriver
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 24 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -183,19 +75,9 @@ Driver info: driver.version: RemoteWebDriver
 </tr>
 </thead>
 <tr>
-<td class="failures">cleanUp</td>
-<td>1m28.37s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="failures">createInitialResources</td>
-<td>1m48.26s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="skipped">inputDataInPipelineValidation - EPMCMBIBPC-2158</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">inputDataInPipelineValidation - EPMCMBIBPC-2158</td>
+<td>6m35.01s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
@@ -207,7 +89,7 @@ Driver info: driver.version: RemoteWebDriver
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 21, 2021 5:45:24 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 22, 2021 5:54:13 PM</p>
 </div>
 </div>
 </body>
