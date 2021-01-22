@@ -93,7 +93,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                 .collect(Collectors.toList());
     }
 
-    private List<DataStorageTag> load(final Long storageId, final List<String> paths) {
+    public List<DataStorageTag> load(final Long storageId, final List<String> paths) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(Parameters.DATASTORAGE_ID.name(), storageId);
         params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);

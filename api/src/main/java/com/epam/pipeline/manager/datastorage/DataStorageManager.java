@@ -47,6 +47,7 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -57,6 +58,7 @@ import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
@@ -163,6 +165,9 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private GrantPermissionManager permissionManager;
+
+    @Autowired
+    private DataStorageTagManager tagManager;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -641,15 +646,22 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public Map<String, String> loadDataStorageObjectTags(Long id, String path, String version) {
-        AbstractDataStorage dataStorage = load(id);
+        final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        return storageProviderManager.listObjectTags(dataStorage, path, version);
+        final DataStorageObject object = new DataStorageObject(id, path, version);
+        return tagManager.loadAsMap(object);
     }
 
-    public Map<String, String> deleteDataStorageObjectTags(Long id, String path, Set<String> tags, String version) {
-        AbstractDataStorage dataStorage = load(id);
+    public Map<String, String> deleteDataStorageObjectTags(Long id, String path, String version,
+                                                           Set<String> tags) {
+        final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        return storageProviderManager.deleteObjectTags(dataStorage, path, tags, version);
+        final DataStorageObject object = new DataStorageObject(id, path, version);
+        final Map<String, String> existingTags = tagManager.loadAsMap(object);
+        tags.forEach(tag -> Assert.isTrue(existingTags.containsKey(tag), messageHelper.getMessage(
+                MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag)));
+        tagManager.delete(object, tags);
+        return tagManager.loadAsMap(object);
     }
 
     public AbstractDataStorageItem getDataStorageItemWithTags(final Long dataStorageId, final String path,
@@ -661,25 +673,26 @@ public class DataStorageManager implements SecuredEntityManager {
         }
         DataStorageFile dataStorageFile = (DataStorageFile) dataStorageItems.get(0);
         if (MapUtils.isEmpty(dataStorageFile.getVersions())) {
-            dataStorageFile.setTags(loadDataStorageObjectTags(dataStorageId, path, null));
+            dataStorageFile.setTags(tagManager.loadAsMap(new DataStorageObject(dataStorageId, path)));
         } else {
             dataStorageFile
                     .getVersions()
-                    .forEach((version, item) -> item.setTags(loadDataStorageObjectTags(dataStorageId, path, version)));
+                    .forEach((version, item) -> 
+                            item.setTags(tagManager.loadAsMap(new DataStorageObject(dataStorageId, path, version))));
         }
         return dataStorageFile;
     }
 
-    public Map<String, String> updateDataStorageObjectTags(Long id, String path, Map<String, String> tagsToAdd,
-            String version, Boolean rewrite) {
-        AbstractDataStorage dataStorage = load(id);
+    public Map<String, String> updateDataStorageObjectTags(Long id, String path,
+                                                           Map<String, String> tagsToAdd, String version,
+                                                           Boolean rewrite) {
+        final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        Map<String, String> resultingTags = new HashMap<>();
-        if (!rewrite) {
-            resultingTags = storageProviderManager.listObjectTags(dataStorage, path, version);
-        }
-        resultingTags.putAll(tagsToAdd);
-        return storageProviderManager.updateObjectTags(dataStorage, path, resultingTags, version);
+        final DataStorageObject object = new DataStorageObject(id, path, version);
+        final Map<String, String> upsertingTags = rewrite ? new HashMap<>() : tagManager.loadAsMap(object);
+        upsertingTags.putAll(tagsToAdd);
+        tagManager.delete(object);
+        return tagManager.upsertFromMap(object, upsertingTags);
     }
 
     public DataStorageStreamingContent getStreamingContent(long dataStorageId, String path, String version) {

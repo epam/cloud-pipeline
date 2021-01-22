@@ -27,6 +27,10 @@ import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkDeleteRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkUpsertRequest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -598,6 +602,21 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.updateDataStorageObjectTags(id, path, tags, version, rewrite));
     }
 
+    @RequestMapping(value = "/datastorage/{id}/tags", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates or updates data storage item tags, by datastorage id and object path.",
+            notes = "Creates or updates data storage item tags, by datastorage id and object path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<?> bulkUpsertTags(@PathVariable(value = ID) final Long id,
+                                    @RequestBody final DataStorageTagBulkUpsertRequest request) {
+        dataStorageApiService.bulkUpsertDataStorageObjectTags(id, request);
+        return Result.success();
+    }
+
     @RequestMapping(value = "/datastorage/{id}/tags", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
@@ -615,6 +634,20 @@ public class DataStorageController extends AbstractRestController {
                 Result.success(dataStorageApiService.loadDataStorageObjectTags(id, path, version));
     }
 
+    @RequestMapping(value = "/datastorage/{id}/tags/bulk", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns data storage item tags, specified by datastorage id and object path.",
+            notes = "Returns data storage item tags, specified by datastorage id and object path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<DataStorageTag>> bulkLoadTags(@PathVariable(value = ID) final Long id,
+                                                     @RequestBody final DataStorageTagBulkLoadRequest request) {
+        return Result.success(dataStorageApiService.bulkLoadDataStorageObjectTags(id, request));
+    }
+
     @DeleteMapping(value = "/datastorage/{id}/tags")
     @ResponseBody
     @ApiOperation(
@@ -628,7 +661,22 @@ public class DataStorageController extends AbstractRestController {
                                                       @RequestParam(value = PATH) String path,
                                                       @RequestParam(value = VERSION, required = false) String version,
                                                       @RequestBody final Set<String> tags) {
-        return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, tags, version));
+        return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, version, tags));
+    }
+
+    @DeleteMapping(value = "/datastorage/{id}/tags/bulk")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes data storage item tags, specified by datastorage id and object path.",
+            notes = "Deletes data storage item tags, specified by datastorage id and object path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<?> bulkDeleteTags(@PathVariable(value = ID) final Long id,
+                                    @RequestBody final DataStorageTagBulkDeleteRequest request) {
+        dataStorageApiService.bulkDeleteDataStorageObjectTags(id, request);
+        return Result.success();
     }
 
     @GetMapping(value = "/datastorage/{id}/tags/list")
