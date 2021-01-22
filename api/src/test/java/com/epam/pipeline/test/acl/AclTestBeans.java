@@ -86,6 +86,7 @@ import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
@@ -120,6 +121,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -471,6 +473,16 @@ public class AclTestBeans {
 
     @SpyBean
     protected HierarchicalEntityManager spyHierarchicalEntityManager;
+
+    @Bean
+    protected FolderTemplateManager folderTemplateManager() {
+        return new FolderTemplateManager();
+    }
+
+    @Bean
+    protected JsonService mockJsonService() {
+        return Mockito.mock(JsonService.class);
+    }
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
