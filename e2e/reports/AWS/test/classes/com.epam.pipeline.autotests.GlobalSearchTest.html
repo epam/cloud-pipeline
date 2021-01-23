@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h5m0.37s</div>
+<div class="counter">1h5m36.19s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">95%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,54 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="searchForFilesAndFoldersInStorage - EPMCMBIBPC-2666"></a>
+<h3 class="failures">searchForFilesAndFoldersInStorage - EPMCMBIBPC-2666</h3>
+<span class="code">
+<pre>Element should be visible {By.id: search-results}
+Element: '&lt;div class=&quot;earch__search-results&quot; id=&quot;search-results&quot; displayed:false&gt;&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1611417589203.77.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1611417589203.77.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.hover(AccessObject.java:177)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForFilesAndFoldersInStorage(GlobalSearchTest.java:429)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,120 +120,120 @@
 </thead>
 <tr>
 <td class="success">folderSearch - EPMCMBIBPC-2654</td>
-<td>12.403s</td>
+<td>12.126s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">folderSearchByEnterKey - EPMCMBIBPC-2655</td>
-<td>7.165s</td>
+<td>6.866s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">identicalNamesSearch - EPMCMBIBPC-2671</td>
-<td>5m21.04s</td>
+<td>5m20.07s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">issueSearch - EPMCMBIBPC-2670</td>
-<td>7m25.20s</td>
+<td>7m24.73s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">negativeFolderSearch - EPMCMBIBPC-2656</td>
-<td>6.231s</td>
+<td>6.308s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchAfterDeleting - EPMCMBIBPC-2676</td>
-<td>5m17.85s</td>
+<td>5m15.74s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForCompletedToolRun - EPMCMBIBPC-2669</td>
-<td>5m28.81s</td>
+<td>5m28.15s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForDetachConfigByConfiguration - EPMCMBIBPC-2673</td>
-<td>14.577s</td>
+<td>13.983s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForDetachConfigByName - EPMCMBIBPC-2672</td>
-<td>13.675s</td>
+<td>14.159s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">searchForFilesAndFoldersInStorage - EPMCMBIBPC-2666</td>
-<td>2m33.76s</td>
-<td class="success">passed</td>
+<td class="failures">searchForFilesAndFoldersInStorage - EPMCMBIBPC-2666</td>
+<td>3m50.03s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">searchForPipeline - EPMCMBIBPC-2658</td>
-<td>2m44.11s</td>
+<td>2m44.04s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForPipelineRun - EPMCMBIBPC-2663</td>
-<td>13.109s</td>
+<td>12.989s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForPipelineRunByID - EPMCMBIBPC-2665</td>
-<td>9.569s</td>
+<td>9.254s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForPipelineRunOverStoragePath - EPMCMBIBPC-2664</td>
-<td>7m45.82s</td>
+<td>7m54.80s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForPipelineWithRuns - EPMCMBIBPC-2662</td>
-<td>7m28.31s</td>
+<td>6m46.58s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForStorage - EPMCMBIBPC-2660</td>
-<td>16.462s</td>
+<td>16.400s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForStorageWithChangedName - EPMCMBIBPC-2661</td>
-<td>7m26.18s</td>
+<td>7m26.15s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForTool - EPMCMBIBPC-2667</td>
-<td>18.047s</td>
+<td>17.691s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForToolRun - EPMCMBIBPC-2668</td>
-<td>6m11.00s</td>
+<td>6m10.42s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchResultCancel - EPMCMBIBPC-2657</td>
-<td>11.332s</td>
+<td>10.630s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchWithSpecialExpressions - EPMCMBIBPC-2675</td>
-<td>5m15.73s</td>
+<td>5m15.07s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 55911 from [55911]
-Returns latest run with runId 55912 from [55911, 55912]
-Returns latest run with runId 55913 from [55911, 55912, 55913]
-Returns latest run with runId 55915 from [55911, 55912, 55913, 55914, 55915]
-Returns latest run with runId 55915 from [55911, 55912, 55913, 55914, 55915]
-Returns latest run with runId 55915 from [55911, 55912, 55913, 55914, 55915]
+<pre>Returns latest run with runId 56059 from [56059]
+Returns latest run with runId 56060 from [56059, 56060]
+Returns latest run with runId 56061 from [56059, 56060, 56061]
+Returns latest run with runId 56063 from [56059, 56060, 56061, 56062, 56063]
+Returns latest run with runId 56063 from [56059, 56060, 56061, 56062, 56063]
+Returns latest run with runId 56063 from [56059, 56060, 56061, 56062, 56063]
 </pre>
 </span>
 </div>
@@ -204,7 +245,7 @@ Returns latest run with runId 55915 from [55911, 55912, 55913, 55914, 55915]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 22, 2021 5:54:13 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 23, 2021 6:40:33 PM</p>
 </div>
 </div>
 </body>
