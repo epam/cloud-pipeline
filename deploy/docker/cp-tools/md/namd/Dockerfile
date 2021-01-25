@@ -9,7 +9,7 @@ FROM $BASE_IMAGE
 ADD install/install_common_packages.sh /tmp/install_common_packages.sh
 RUN chmod +x /tmp/install_common_packages.sh && \
 	/tmp/install_common_packages.sh && \
-	curl https://bootstrap.pypa.io/get-pip.py | python -
+	curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
 
 # Install NAMD from sources. To install from binaries - use install_namd_binaries.sh
 ADD install/install_namd_sources.sh /tmp/install_namd_sources.sh

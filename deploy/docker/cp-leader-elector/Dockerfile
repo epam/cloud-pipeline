@@ -21,7 +21,7 @@ RUN yum update -y && \
                 python3 \
                 curl
 
-RUN  curl -s https://bootstrap.pypa.io/get-pip.py | python3 - && \
+RUN  curl -s https://bootstrap.pypa.io/2.7/get-pip.py | python3 - && \
      pip3 install -I  \
                 pykube==0.15.0 \
                 flask==1.1.2

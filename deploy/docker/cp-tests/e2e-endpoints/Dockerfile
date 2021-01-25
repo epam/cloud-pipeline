@@ -21,7 +21,7 @@ RUN apt-get update -y && \
                    git \
                    nginx
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python -
+RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
 
 RUN mkdir /hosted
 COPY index.html /hosted/

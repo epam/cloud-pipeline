@@ -114,7 +114,7 @@ function prepare_environment {
             pip --help
             if [ $? -ne 0 ]; then
                 print_info "pip not found, proceed with the installation"
-                curl https://bootstrap.pypa.io/get-pip.py | python -
+                curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
                 pip --help
                 if [ $? -ne 0 ]; then
                     print_err "Can't install pip, exiting"

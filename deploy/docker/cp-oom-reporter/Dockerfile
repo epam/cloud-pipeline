@@ -27,7 +27,7 @@ RUN if [ -z "$CP_API_DIST_URL" ]; then \
 RUN yum install unzip -y
 
 # Install pip
-RUN curl -s https://bootstrap.pypa.io/get-pip.py | python2 && \
+RUN curl -s https://bootstrap.pypa.io/2.7/get-pip.py | python2 && \
     python2 -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
 
 # Install "pipeline/CommonRepo" python package

@@ -45,7 +45,7 @@ RUN apt-get update -y && \
                         python \
                         sudo
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
+RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python - && \
     pip install --upgrade pip flask
 
 RUN pip install -I setuptools

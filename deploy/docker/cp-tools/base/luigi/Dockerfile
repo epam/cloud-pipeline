@@ -30,7 +30,7 @@ RUN yum install -y wget \
                    python && \
     yum clean all
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
+RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python - && \
     pip install requests==2.21.0 \
                 ipaddress==1.0.22 \
                 pykube==0.15.0 \
