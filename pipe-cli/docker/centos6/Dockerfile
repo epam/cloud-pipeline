@@ -26,4 +26,4 @@ RUN cd /usr/src && \
     make install -j$(nproc)
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-RUN curl https://bootstrap.pypa.io/get-pip.py | python2
+RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python2

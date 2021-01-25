@@ -28,7 +28,7 @@ RUN apt-get update && \
 RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
+RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python - && \
     pip install awscli
 
 RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | \

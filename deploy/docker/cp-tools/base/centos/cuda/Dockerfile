@@ -20,4 +20,4 @@ RUN yum install -y wget \
                    curl \
                    python \
                    git && \
-    curl https://bootstrap.pypa.io/get-pip.py | python -
+    curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
