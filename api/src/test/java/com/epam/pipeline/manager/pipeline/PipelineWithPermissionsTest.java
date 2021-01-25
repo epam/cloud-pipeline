@@ -137,7 +137,6 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
     @Test
     public void shouldReturnPermissionsWhenGrantedToPipelineCase2() {
-        // key - pipelineId, value - <sid, mask>
         final Map<Long, Map<String, Integer>> expectedMap = new HashMap<>();
         final Map<String, Integer> permissionsForPipeline1 = new HashMap<>();
         final Map<String, Integer> permissionsForPipeline2 = new HashMap<>();
