@@ -845,10 +845,10 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteObjectTagsForAdmin() {
         doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
-                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_SET, TEST_STRING);
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET);
         mockUserContext(context);
 
-        assertThat(dataStorageApiService.deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_SET, TEST_STRING))
+        assertThat(dataStorageApiService.deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET))
                 .isEqualTo(TEST_STRING_MAP);
     }
 
@@ -857,10 +857,10 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldDeleteObjectTagsWhenPermissionIsGranted() {
         initAclEntity(notSharedS3bucket, AclPermission.OWNER);
         doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
-                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_SET, TEST_STRING);
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET);
         initUserAndEntityMocks(SIMPLE_USER, notSharedS3bucket, context);
 
-        assertThat(dataStorageApiService.deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_SET, TEST_STRING))
+        assertThat(dataStorageApiService.deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET))
                 .isEqualTo(TEST_STRING_MAP);
     }
 
@@ -869,11 +869,11 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldDenyDeleteObjectTagsWhenStoragePermissionIsNotGranted() {
         initAclEntity(s3bucket);
         doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
-                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_SET, TEST_STRING);
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, s3bucket, context);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService
-                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_SET, TEST_STRING));
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET));
     }
 
     @Test
@@ -881,11 +881,11 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldDenyDeleteObjectTagsWhenSharedPermissionIsNotGranted() {
         initAclEntity(notSharedS3bucket, AclPermission.OWNER);
         doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
-                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_SET, TEST_STRING);
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService
-                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_SET, TEST_STRING));
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET));
     }
 
     @Test

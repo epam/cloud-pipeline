@@ -19,6 +19,7 @@ package com.epam.pipeline.test.creator;
 import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,7 @@ public final class CommonCreatorConstants {
     public static final Set<String> TEST_STRING_SET = Collections.singleton(TEST_STRING);
     public static final List<Long> TEST_LONG_LIST = Collections.singletonList(ID);
     public static final Set<Long> TEST_LONG_SET = Collections.singleton(ID);
+    public static final LocalDateTime TEST_LOCAL_DATE_TIME = LocalDateTime.now();
 
     private CommonCreatorConstants() {
 

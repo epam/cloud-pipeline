@@ -43,17 +43,21 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LOCAL_DATE_TIME;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
@@ -98,6 +102,10 @@ public final class DatastorageCreatorUtils {
             new TypeReference<Result<DataStorageRule>>() { };
     public static final TypeReference<Result<List<DataStorageRule>>> DATA_STORAGE_RULE_LIST_URL =
             new TypeReference<Result<List<DataStorageRule>>>() { };
+    public static final TypeReference<Result<DataStorageTag>> DATA_STORAGE_TAG_TYPE =
+            new TypeReference<Result<DataStorageTag>>() { };
+    public static final TypeReference<Result<List<DataStorageTag>>> DATA_STORAGE_TAG_LIST_TYPE =
+            new TypeReference<Result<List<DataStorageTag>>>() { };
     public static final TypeReference<Result<TemporaryCredentials>> TEMP_CREDENTIALS_TYPE =
             new TypeReference<Result<TemporaryCredentials>>() { };
     public static final TypeReference<Result<DataStorageFolder>> DATA_STORAGE_FOLDER_TYPE =
@@ -204,6 +212,14 @@ public final class DatastorageCreatorUtils {
         dataStorageRule.setFileMask(TEST_STRING);
         dataStorageRule.setMoveToSts(true);
         return dataStorageRule;
+    }
+
+    public static DataStorageTag getDataStorageTag() {
+        return new DataStorageTag(getDataStorageObject(), TEST_STRING, TEST_STRING, TEST_LOCAL_DATE_TIME);
+    }
+
+    private static DataStorageObject getDataStorageObject() {
+        return new DataStorageObject(ID, TEST_STRING, TEST_STRING);
     }
 
     public static TemporaryCredentials getTemporaryCredentials() {
