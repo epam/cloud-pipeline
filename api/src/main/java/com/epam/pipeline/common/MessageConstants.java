@@ -573,6 +573,10 @@ public final class MessageConstants {
     public static final String EVENT_ROLE_ASSIGNED = "user.import.event.role.assigned";
     public static final String EVENT_METADATA_ASSIGNED = "user.import.event.metadata.assigned";
 
+    // Cloud profiles
+    public static final String ERROR_PROFILE_ID_NOT_FOUND = "error.profile.id.not.found";
+    public static final String ERROR_PROFILE_HAS_LINKS = "error.profile.has.links";
+
     private MessageConstants() {
         // no-op
     }

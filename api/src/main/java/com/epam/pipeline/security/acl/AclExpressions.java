@@ -126,6 +126,9 @@ public final class AclExpressions {
     public static final String TOOL_READ = ADMIN_ONLY + OR +
             "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')";
 
+    public final static String OR_HAS_ASSIGNED_USER_OR_ROLE =
+            " OR @grantPermissionManager.hasCloudProfilePermissions(#profileId)";
+
     private AclExpressions() {
         // no op
     }

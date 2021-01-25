@@ -26,10 +26,10 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum DefaultRoles {
 
-    ROLE_ADMIN(new Role(1L, "ROLE_ADMIN", true, false, null, null, null)),
-    ROLE_USER(new Role(2L, "ROLE_USER", true, true, null, null, null)),
-    ROLE_BILLING_MANAGER(new Role(null, "ROLE_BILLING_MANAGER", true, false, null, null, null)),
-    ROLE_ANONYMOUS_USER(new Role(null, "ROLE_ANONYMOUS_USER", true, false, null, null, null));
+    ROLE_ADMIN(new Role(1L, "ROLE_ADMIN", true, false, null, null, null, null)),
+    ROLE_USER(new Role(2L, "ROLE_USER", true, true, null, null, null, null)),
+    ROLE_BILLING_MANAGER(new Role(null, "ROLE_BILLING_MANAGER", true, false, null, null, null, null)),
+    ROLE_ANONYMOUS_USER(new Role(null, "ROLE_ANONYMOUS_USER", true, false, null, null, null, null));
 
     private Role role;
 

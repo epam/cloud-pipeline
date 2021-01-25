@@ -16,9 +16,9 @@
 
 package com.epam.pipeline.mapper.cloud.credentials;
 
-import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
-import com.epam.pipeline.entity.cloud.credentials.aws.AWSProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.aws.AWSProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.aws.AWSProfileCredentialsEntity;
 import com.epam.pipeline.entity.region.CloudProvider;
 import org.mapstruct.Mapper;

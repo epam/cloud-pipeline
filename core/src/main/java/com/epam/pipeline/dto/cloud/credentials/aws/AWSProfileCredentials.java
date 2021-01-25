@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cloud.credentials.aws;
+package com.epam.pipeline.dto.cloud.credentials.aws;
 
-import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

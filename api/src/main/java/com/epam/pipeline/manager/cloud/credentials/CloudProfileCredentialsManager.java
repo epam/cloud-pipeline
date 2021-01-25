@@ -16,16 +16,16 @@
 
 package com.epam.pipeline.manager.cloud.credentials;
 
-import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
 
 public interface CloudProfileCredentialsManager<T extends CloudProfileCredentials> extends CloudAwareService {
 
     T create(T credentials);
 
-    T get(Long id);
-
     T update(Long id, T credentials);
 
-    T delete(Long id);
+    TemporaryCredentials generateProfileCredentials(T credentials, AbstractCloudRegion region);
 }

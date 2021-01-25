@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import lombok.Setter;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
@@ -51,10 +53,18 @@ public class Role implements StorageContainer, Serializable {
 
     private Long defaultStorageId;
 
+    private Long defaultProfileId;
+
     @Transient
     private Boolean blocked;
 
-    @ManyToMany(mappedBy = "roles")
+    @ManyToMany
+    @JoinTable(
+            name = "cloud_profile_credentials_role",
+            schema = "pipeline",
+            inverseJoinColumns = { @JoinColumn(name = "cloud_profile_credentials_id") },
+            joinColumns = { @JoinColumn(name = "role_id") }
+    )
     private List<CloudProfileCredentialsEntity> cloudProfiles;
 
     public Role() {

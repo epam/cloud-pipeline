@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
@@ -88,9 +90,16 @@ public class PipelineUser implements StorageContainer {
     private Long defaultStorageId;
 
     @Convert(converter = AttributesConverterJson.class)
+    @Column(updatable = false)
     private Map<String, String> attributes;
 
-    @ManyToMany(mappedBy = "users")
+    @ManyToMany
+    @JoinTable(
+            name = "cloud_profile_credentials_user",
+            schema = "pipeline",
+            inverseJoinColumns = { @JoinColumn(name = "cloud_profile_credentials_id") },
+            joinColumns = { @JoinColumn(name = "user_id") }
+    )
     private List<CloudProfileCredentialsEntity> cloudProfiles;
 
     private Long defaultProfileId;

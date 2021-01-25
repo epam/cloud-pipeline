@@ -16,15 +16,18 @@
 
 package com.epam.pipeline.acl.cloud.credentials;
 
-import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.OR_HAS_ASSIGNED_USER_OR_ROLE;
 
 @Service
 @RequiredArgsConstructor
@@ -57,13 +60,19 @@ public class CloudProfileCredentialsApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<? extends CloudProfileCredentials> getProfilesByUserOrRole(final Long id, final boolean principal) {
-        return manager.getProfilesByUserOrRole(id, principal);
+    public List<? extends CloudProfileCredentials> getAssignedProfiles(final Long id, final boolean principal) {
+        return manager.getAssignedProfiles(id, principal);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public CloudProfileCredentials attachProfileToUserOrRole(final Long profileId, final Long sidId,
-                                                             final boolean principal) {
-        return manager.attachProfileToUserOrRole(profileId, sidId, principal);
+    public List<? extends CloudProfileCredentials> assignProfiles(final Long sidId, final boolean principal,
+                                                                  final Set<Long> profileIds,
+                                                                  final Long defaultProfileId) {
+        return manager.assignProfiles(sidId, principal, profileIds, defaultProfileId);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR_HAS_ASSIGNED_USER_OR_ROLE)
+    public TemporaryCredentials generateProfileCredentials(final Long profileId, final Long regionId) {
+        return manager.generateProfileCredentials(profileId, regionId);
     }
 }

@@ -33,13 +33,11 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import java.util.List;
 
-@Entity(name = "cloud_profile_credentials")
+@Entity
 @Getter
 @Setter
 @NoArgsConstructor
@@ -55,21 +53,9 @@ public class CloudProfileCredentialsEntity {
     @Enumerated(EnumType.STRING)
     private CloudProvider cloudProvider;
 
-    @ManyToMany
-    @JoinTable(
-            name = "cloud_profile_credentials_user",
-            schema = "pipeline",
-            joinColumns = { @JoinColumn(name = "cloud_profile_credentials_id") },
-            inverseJoinColumns = { @JoinColumn(name = "user_id") }
-    )
+    @ManyToMany(mappedBy = "cloudProfiles")
     private List<PipelineUser> users;
 
-    @ManyToMany
-    @JoinTable(
-            name = "cloud_profile_credentials_role",
-            schema = "pipeline",
-            joinColumns = { @JoinColumn(name = "cloud_profile_credentials_id") },
-            inverseJoinColumns = { @JoinColumn(name = "role_id") }
-    )
+    @ManyToMany(mappedBy = "cloudProfiles")
     private List<Role> roles;
 }

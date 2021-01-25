@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cloud.credentials;
+package com.epam.pipeline.dto.cloud.credentials;
 
-import com.epam.pipeline.entity.cloud.credentials.aws.AWSProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.aws.AWSProfileCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;

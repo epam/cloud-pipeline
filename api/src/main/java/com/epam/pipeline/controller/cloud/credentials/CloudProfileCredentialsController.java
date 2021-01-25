@@ -19,7 +19,8 @@ package com.epam.pipeline.controller.cloud.credentials;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -29,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @Api(value = "Cloud profile credentials management methods")
@@ -75,21 +77,32 @@ public class CloudProfileCredentialsController extends AbstractRestController {
         return Result.success(cloudProfileCredentialsApiService.findAll());
     }
 
-    @GetMapping("/profiles")
+    @GetMapping("/assigners")
     @ApiOperation(value = "Loads all cloud profile credentials associated with a user or a role",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<? extends CloudProfileCredentials>> getProfilesByUserOrRole(
+    public Result<List<? extends CloudProfileCredentials>> getAssignedProfiles(
             @RequestParam final Long id, @RequestParam final boolean principal) {
-        return Result.success(cloudProfileCredentialsApiService.getProfilesByUserOrRole(id, principal));
+        return Result.success(cloudProfileCredentialsApiService.getAssignedProfiles(id, principal));
     }
 
-    @PostMapping("/profiles/{profileId}")
-    @ApiOperation(value = "",
+    @PostMapping("/assigners")
+    @ApiOperation(value = "Assigns specified profiles to user or role",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<CloudProfileCredentials> attachProfileToUserOrRole(@PathVariable final Long profileId,
-            @RequestParam final Long id, @RequestParam final boolean principal) {
-        return Result.success(cloudProfileCredentialsApiService.attachProfileToUserOrRole(profileId, id, principal));
+    public Result<List<? extends CloudProfileCredentials>> assignProfiles(
+            @RequestParam final Long sidId, @RequestParam final boolean principal,
+            @RequestParam final Set<Long> profileIds, @RequestParam(required = false) final Long defaultProfileId) {
+        return Result.success(cloudProfileCredentialsApiService.assignProfiles(sidId, principal, profileIds,
+                defaultProfileId));
+    }
+
+    @GetMapping("/generate/{profileId}")
+    @ApiOperation(value = "Generates temporary credentials for specified profile",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<TemporaryCredentials> generateProfileCredentials(
+            @PathVariable final Long profileId, @RequestParam(required = false) final Long regionId) {
+        return Result.success(cloudProfileCredentialsApiService.generateProfileCredentials(profileId, regionId));
     }
 }
