@@ -27,6 +27,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkDeleteRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkUpsertRequest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
@@ -40,12 +43,17 @@ import org.springframework.util.MultiValueMap;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.INTEGER_TYPE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.OBJECT_TYPE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_MAP_INSTANCE_TYPE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.DATA_STORAGE_TAG_LIST_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -527,6 +535,25 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
     }
 
     @Test
+    public void shouldFailBulkUpsertTagsForUnauthorizedUser() {
+        performUnauthorizedRequest(post(String.format(TAGS_BULK_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldBulkUpsertTags() {
+        final HashMap<String, Map<String, String>> pathTags = new HashMap<>();
+        pathTags.put(TEST_STRING, TEST_STRING_MAP);
+        final DataStorageTagBulkUpsertRequest request = new DataStorageTagBulkUpsertRequest(pathTags);
+        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).bulkUpsertDataStorageObjectTags(ID, request);
+
+        final MvcResult mvcResult = performRequest(post(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
+
+        Mockito.verify(mockStorageApiService).bulkUpsertDataStorageObjectTags(ID, request);
+        assertResponse(mvcResult, null, OBJECT_TYPE);
+    }
+
+    @Test
     public void shouldFailLoadTagsByIdForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(TAGS_URL, ID)));
     }
@@ -560,6 +587,24 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
     }
 
     @Test
+    public void shouldFailBulkLoadTagsForUnauthorizedUser() {
+        performUnauthorizedRequest(get(String.format(TAGS_BULK_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldBulkLoadTags() {
+        final DataStorageTagBulkLoadRequest request =
+                new DataStorageTagBulkLoadRequest(Collections.singletonList(TEST));
+        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).bulkLoadDataStorageObjectTags(ID, request);
+
+        final MvcResult mvcResult = performRequest(get(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
+
+        Mockito.verify(mockStorageApiService).bulkLoadDataStorageObjectTags(ID, request);
+        assertResponse(mvcResult, OBJECT_TAGS, DATA_STORAGE_TAG_LIST_TYPE);
+    }
+
+    @Test
     public void shouldFailDeleteTagsByIdForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(TAGS_URL, ID)));
     }
@@ -572,11 +617,28 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
         params.add(VERSION, TEST);
-        Mockito.doReturn(TAGS).when(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, setTags, TEST);
+        Mockito.doReturn(TAGS).when(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, TEST, setTags);
 
         final MvcResult mvcResult = performRequest(delete(String.format(TAGS_URL, ID)).params(params).content(content));
 
-        Mockito.verify(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, setTags, TEST);
+        Mockito.verify(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, TEST, setTags);
         assertResponse(mvcResult, TAGS, STRING_MAP_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailBulkDeleteTagsForUnauthorizedUser() {
+        performUnauthorizedRequest(delete(String.format(TAGS_BULK_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldBulkDeleteTags() {
+        final DataStorageTagBulkDeleteRequest request = 
+                new DataStorageTagBulkDeleteRequest(Collections.singletonList(TEST));
+
+        final MvcResult mvcResult = performRequest(delete(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
+
+        Mockito.verify(mockStorageApiService).bulkDeleteDataStorageObjectTags(ID, request);
+        assertResponse(mvcResult, null, OBJECT_TYPE);
     }
 }

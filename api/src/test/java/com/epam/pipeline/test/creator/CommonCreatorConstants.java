@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.ontology.OntologyEntity;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,7 @@ public final class CommonCreatorConstants {
     public static final List<Long> TEST_LONG_LIST = Collections.singletonList(ID);
     public static final Set<Long> TEST_LONG_SET = Collections.singleton(ID);
     public static final Iterable<OntologyEntity> EMPTY_ITERABLE = Collections::emptyIterator;
+    public static final LocalDateTime TEST_LOCAL_DATE_TIME = LocalDateTime.now();
 
     private CommonCreatorConstants() {
 

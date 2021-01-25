@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -46,6 +47,9 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
 
     @Autowired
     protected DataStorageManager mockDataStorageManager;
+
+    @Autowired
+    protected DataStorageTagManager mockDataStorageTagManager;
 
     @Autowired
     protected AuthManager mockAuthManager;
