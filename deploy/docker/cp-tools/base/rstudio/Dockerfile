@@ -30,7 +30,7 @@ RUN if [ ! -f /var/lib/dpkg/available ]; then \
         dselect update; \
     fi
 
-RUN  apt-get install -y automake \
+RUN apt-get update && apt-get install -y automake \
                         autotools-dev \
                         fuse \
                         g++ \
