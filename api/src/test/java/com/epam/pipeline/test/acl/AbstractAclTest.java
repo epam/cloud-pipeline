@@ -73,6 +73,9 @@ public abstract class AbstractAclTest {
     protected static final String ANOTHER_SIMPLE_USER = "ANOTHER_SIMPLE_USER";
     protected static final String TEST_NAME = "TEST_NAME";
     protected static final String TEST_NAME_2 = "TEST_NAME_2";
+    protected static final String TEST_NAME_3 = "TEST_NAME_3";
+    protected static final String TEST_PATH = "TEST_PATH";
+    protected static final String TEST_PATH_2 = "TEST_PATH_2";
     protected static final String PERMISSION_EXECUTE = "EXECUTE";
 
     @Autowired

@@ -19,6 +19,7 @@ package com.epam.pipeline.test.creator.datastorage;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
+import com.epam.pipeline.controller.vo.data.storage.DataStorageWithMetadataVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -43,6 +44,7 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.lang3.tuple.Pair;
@@ -52,6 +54,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
@@ -221,6 +224,16 @@ public final class DatastorageCreatorUtils {
         dataStorageRule.setFileMask(TEST_STRING);
         dataStorageRule.setMoveToSts(true);
         return dataStorageRule;
+    }
+
+    public static DataStorageWithMetadataVO getS3BucketDataStorageWithMetadataNameAndPath(
+            Map<String, PipeConfValue> metadata, String name, String path) {
+        DataStorageWithMetadataVO storage = new DataStorageWithMetadataVO();
+        storage.setName(name);
+        storage.setType(DataStorageType.S3);
+        storage.setPath(path);
+        storage.setMetadata(metadata);
+        return storage;
     }
 
     public static TemporaryCredentials getTemporaryCredentials() {

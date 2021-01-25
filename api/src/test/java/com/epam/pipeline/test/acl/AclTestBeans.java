@@ -479,10 +479,11 @@ public class AclTestBeans {
         return new FolderTemplateManager();
     }
 
-    @Bean
-    protected JsonService mockJsonService() {
-        return Mockito.mock(JsonService.class);
-    }
+    @MockBean
+    protected TemplatesScanner mockTemplatesScanner;
+
+    @MockBean
+    protected JsonService mockJsonService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
