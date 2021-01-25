@@ -28,6 +28,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     private final String loadTagsQuery;
     private final String bulkLoadTagsQuery;
     private final String deleteTagsQuery;
+    private final String deleteSpecificTagsQuery;
     private final String bulkDeleteTagsQuery;
 
     public DataStorageTag upsert(final DataStorageTag tag) {
@@ -74,7 +75,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<DataStorageTag> load(final DataStorageObject... objects) {
-        return load(Stream.of(objects));
+        return load(Arrays.stream(objects));
     }
 
     public List<DataStorageTag> load(final List<DataStorageObject> objects) {
@@ -111,8 +112,31 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     }
 
     public void delete(final DataStorageObject object, final List<String> keys) {
-        getNamedParameterJdbcTemplate().update(bulkDeleteTagsQuery, Parameters.getParameters(object)
+        getNamedParameterJdbcTemplate().update(deleteSpecificTagsQuery, Parameters.getParameters(object)
                 .addValue(Parameters.TAG_KEY.name(), keys));
+    }
+    
+    public void delete(final DataStorageObject... objects) {
+        delete(Arrays.stream(objects));
+    }
+    
+    public void delete(final List<DataStorageObject> objects) {
+        delete(objects.stream());
+    }
+    
+    public void delete(final Stream<DataStorageObject> objects) {
+        objects.collect(
+                Collectors.groupingBy(DataStorageObject::getStorageId,
+                        Collectors.mapping(DataStorageObject::getPath,
+                                Collectors.toList())))
+                .forEach(this::delete);
+    }
+
+    public void delete(final Long storageId, final List<String> paths) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(Parameters.DATASTORAGE_ID.name(), storageId);
+        params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);
+        getNamedParameterJdbcTemplate().update(bulkDeleteTagsQuery, params);
     }
 
     enum Parameters {

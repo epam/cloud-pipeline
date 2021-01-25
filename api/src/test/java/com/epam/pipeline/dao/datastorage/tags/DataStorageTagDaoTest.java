@@ -255,7 +255,7 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Transactional
     public void bulkUpsertShouldCreateTagsForMultipleDataStorages() {
         final DataStorageObject firstObject = new DataStorageObject(objectStorage.getId(), STORAGE_PATH);
-        final DataStorageObject secondObject = new DataStorageObject(anotherObjectStorage.getId(), ANOTHER_STORAGE_PATH);
+        final DataStorageObject secondObject = new DataStorageObject(anotherObjectStorage.getId(), STORAGE_PATH);
         final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
         
@@ -301,5 +301,33 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
         dataStorageTagDao.delete(object);
         
         assertTrue(dataStorageTagDao.load(object).isEmpty());
+    }
+
+    @Test
+    @Transactional
+    public void bulkDeleteShouldRemoveObjectTags() {
+        final DataStorageObject firstObject = new DataStorageObject(objectStorage.getId(), STORAGE_PATH);
+        final DataStorageObject secondObject = new DataStorageObject(objectStorage.getId(), ANOTHER_STORAGE_PATH);
+        final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
+        final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
+        dataStorageTagDao.upsert(firstTag, secondTag);
+
+        dataStorageTagDao.delete(firstObject, secondObject);
+
+        assertTrue(dataStorageTagDao.load(firstObject, secondObject).isEmpty());
+    }
+
+    @Test
+    @Transactional
+    public void bulkDeleteShouldRemoveObjectTagsForMultipleDataStorages() {
+        final DataStorageObject firstObject = new DataStorageObject(objectStorage.getId(), STORAGE_PATH);
+        final DataStorageObject secondObject = new DataStorageObject(anotherObjectStorage.getId(), STORAGE_PATH);
+        final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
+        final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
+        dataStorageTagDao.upsert(firstTag, secondTag);
+
+        dataStorageTagDao.delete(firstObject, secondObject);
+
+        assertTrue(dataStorageTagDao.load(firstObject, secondObject).isEmpty());
     }
 }

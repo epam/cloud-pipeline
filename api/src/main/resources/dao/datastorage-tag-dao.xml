@@ -22,7 +22,7 @@
           autowire="byName">
         <constructor-arg>
             <value>
-                <!--upsertDataStorageTag-->
+                <!--upsertTagQuery-->
                 <![CDATA[
                     INSERT INTO pipeline.datastorage_tag (
                         datastorage_id,
@@ -49,17 +49,17 @@
                 <!--loadTagQuery-->
                 <![CDATA[
                     SELECT
-                        t.datastorage_id,
-                        t.datastorage_path,
-                        t.datastorage_version,
-                        t.tag_key,
-                        t.tag_value,
-                        t.created_date
-                    FROM pipeline.datastorage_tag t
-                    WHERE t.datastorage_id = :DATASTORAGE_ID
-                    AND t.datastorage_path = :DATASTORAGE_PATH
-                    AND t.datastorage_version = :DATASTORAGE_VERSION
-                    AND t.tag_key = :TAG_KEY
+                        datastorage_id,
+                        datastorage_path,
+                        datastorage_version,
+                        tag_key,
+                        tag_value,
+                        created_date
+                    FROM pipeline.datastorage_tag
+                    WHERE datastorage_id = :DATASTORAGE_ID
+                    AND datastorage_path = :DATASTORAGE_PATH
+                    AND datastorage_version = :DATASTORAGE_VERSION
+                    AND tag_key = :TAG_KEY
                 ]]>
             </value>
         </constructor-arg>
@@ -68,16 +68,16 @@
                 <!--loadTagsQuery-->
                 <![CDATA[
                     SELECT
-                        t.datastorage_id,
-                        t.datastorage_path,
-                        t.datastorage_version,
-                        t.tag_key,
-                        t.tag_value,
-                        t.created_date
-                    FROM pipeline.datastorage_tag t
-                    WHERE t.datastorage_id = :DATASTORAGE_ID
-                    AND t.datastorage_path = :DATASTORAGE_PATH
-                    AND t.datastorage_version = :DATASTORAGE_VERSION
+                        datastorage_id,
+                        datastorage_path,
+                        datastorage_version,
+                        tag_key,
+                        tag_value,
+                        created_date
+                    FROM pipeline.datastorage_tag
+                    WHERE datastorage_id = :DATASTORAGE_ID
+                    AND datastorage_path = :DATASTORAGE_PATH
+                    AND datastorage_version = :DATASTORAGE_VERSION
                 ]]>
             </value>
         </constructor-arg>
@@ -86,15 +86,15 @@
                 <!--bulkLoadTagsQuery-->
                 <![CDATA[
                     SELECT
-                        t.datastorage_id,
-                        t.datastorage_path,
-                        t.datastorage_version,
-                        t.tag_key,
-                        t.tag_value,
-                        t.created_date
-                    FROM pipeline.datastorage_tag t
-                    WHERE t.datastorage_id = :DATASTORAGE_ID
-                    AND t.datastorage_path IN (:DATASTORAGE_PATH)
+                        datastorage_id,
+                        datastorage_path,
+                        datastorage_version,
+                        tag_key,
+                        tag_value,
+                        created_date
+                    FROM pipeline.datastorage_tag
+                    WHERE datastorage_id = :DATASTORAGE_ID
+                    AND datastorage_path IN (:DATASTORAGE_PATH)
                 ]]>
             </value>
         </constructor-arg>
@@ -111,13 +111,23 @@
         </constructor-arg>
         <constructor-arg>
             <value>
-                <!--bulkDeleteTagsQuery-->
+                <!--deleteSpecificTagsQuery-->
                 <![CDATA[
                     DELETE FROM pipeline.datastorage_tag
                     WHERE datastorage_id = :DATASTORAGE_ID
                     AND datastorage_path = :DATASTORAGE_PATH
                     AND datastorage_version = :DATASTORAGE_VERSION
                     AND tag_key IN (:TAG_KEY)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--bulkDeleteTagsQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tag
+                    WHERE datastorage_id = :DATASTORAGE_ID
+                    AND datastorage_path IN (:DATASTORAGE_PATH)
                 ]]>
             </value>
         </constructor-arg>
