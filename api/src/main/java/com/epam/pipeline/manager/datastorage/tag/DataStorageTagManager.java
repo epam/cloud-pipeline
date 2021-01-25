@@ -7,6 +7,7 @@ import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkDeleteRequest
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkUpsertRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Service
 @RequiredArgsConstructor
 public class DataStorageTagManager {
 
@@ -54,10 +56,7 @@ public class DataStorageTagManager {
     }
 
     public void bulkDelete(final Long id, final DataStorageTagBulkDeleteRequest request) {
-        // TODO 22.01.2021: Implement bulk delete in dao level
-        request.getPaths().stream()
-                .map(path -> new DataStorageObject(id, path))
-                .forEach(tagDao::delete);
+        tagDao.delete(id, request.getPaths());
     }
 
     private Map<String, String> asMap(final List<DataStorageTag> tags) {
