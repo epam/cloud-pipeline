@@ -25,15 +25,20 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.templates.FolderTemplate;
+import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.mapper.PermissionGrantVOMapper;
+import com.epam.pipeline.security.acl.AclPermission;
+import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.security.acls.domain.PrincipalSid;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,15 +48,13 @@ import java.util.function.Predicate;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3BucketDataStorageWithMetadataNameAndPath;
 import static com.epam.pipeline.test.creator.folderTemplate.FolderTemplateCreatorUtils.buildFolderTemplate;
 import static com.epam.pipeline.test.creator.folderTemplate.FolderTemplateCreatorUtils.buildFolderTemplateChild;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVOFrom;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionVO;
 import static com.epam.pipeline.util.CustomMatchers.matches;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -71,8 +74,14 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
     private static final String DATASTORAGE_NAME = "ds-1";
     private static final String DATASTORAGE_NAME_2 = "ds-2";
 
+    private static final String PERMISSION_NAME = "PERMISSION";
+    private static final String PERMISSION_NAME_2 = "PERMISSION_2";
+
     private static final Long FOLDER_ID = 1L;
     private static final Long FOLDER_CHILD_ID = 2L;
+
+    private Folder folder;
+    private Folder childFolder;
 
     @Autowired
     private FolderTemplateManager folderTemplateManager;
@@ -84,36 +93,57 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
     private GrantPermissionManager spyGrantPermissionManager;
     @Autowired
     private FolderCrudManager mockFolderCrudManager;
+    @Autowired
+    private PermissionGrantVOMapper mockPermissionGrantVOMapper;
+    @Autowired
+    private EntityManager mockEntityManager;
+    @Autowired
+    private JdbcMutableAclServiceImpl aclService;
 
     @Test
     public void createFolderFromTemplateTest() {
         Map<String, PipeConfValue> metadata = getMetadata();
         Map<String, PipeConfValue> childMetadata = getChildMetadata();
-
         DataStorageWithMetadataVO dataStorageVO = getS3BucketDataStorageWithMetadataNameAndPath(metadata,
                 DATASTORAGE_NAME, TEST_PATH);
         DataStorageWithMetadataVO dataStorageForChild = getS3BucketDataStorageWithMetadataNameAndPath(childMetadata,
                 DATASTORAGE_NAME_2, TEST_PATH_2);
-        PermissionVO permissionVO = getPermissionVO();
+        PermissionVO permissionVO = getPermissionVO(PERMISSION_NAME);
+        PermissionVO childPermissionVO = getPermissionVO(PERMISSION_NAME_2);
         FolderTemplate childFolderTemplate = buildFolderTemplateChild(dataStorageForChild,
-                null, null);
+                childMetadata, childPermissionVO);
         FolderTemplate folderTemplate = buildFolderTemplate(dataStorageVO, childFolderTemplate,
                 metadata, permissionVO);
 
-        doReturn(getFolder()).when(mockFolderCrudManager)
+        childFolder = getFolderChild(new S3bucketDataStorage(FOLDER_ID, DATASTORAGE_NAME_2, TEST_PATH_2));
+        folder = getFolder(new S3bucketDataStorage(FOLDER_CHILD_ID, DATASTORAGE_NAME, TEST_PATH));
+
+        doReturn(folder).when(mockFolderCrudManager)
                 .create(argThat(matches(Predicates.forFolderTemplate(folderTemplate.getName()))));
-        doReturn(getFolderChild()).when(mockFolderCrudManager)
+        doReturn(childFolder).when(mockFolderCrudManager)
                 .create(argThat(matches(Predicates.forChildFolderTemplate(childFolderTemplate.getName()))));
         doReturn(getMockSecurityEntity()).when(mockDataStorageManager)
                 .create(argThat(matches(Predicates.forDataStorage())), eq(true), eq(true), eq(false));
         doReturn(getMockSecurityEntity()).when(mockDataStorageManager)
                 .create(argThat(matches(Predicates.forChildDataStorage())), eq(true), eq(true), eq(false));
 
-        doNothing().when(spyGrantPermissionManager).setPermissionsToEntity(anyListOf(PermissionVO.class),
-                anyLong(), any(AclClass.class));
+        //permissionGrantVOMapper doesn't work, so mapping it manually
+        doReturn(getPermissionGrantVOFrom(permissionVO, AclClass.FOLDER, FOLDER_ID)).when(mockPermissionGrantVOMapper)
+                .toPermissionGrantVO(eq(permissionVO));
+        doReturn(getPermissionGrantVOFrom(childPermissionVO, AclClass.FOLDER, FOLDER_CHILD_ID))
+                .when(mockPermissionGrantVOMapper).toPermissionGrantVO(eq(childPermissionVO));
 
+        doReturn(folder).when(mockEntityManager).load(eq(AclClass.FOLDER), eq(FOLDER_ID));
+        doReturn(childFolder).when(mockEntityManager).load(eq(AclClass.FOLDER), eq(FOLDER_CHILD_ID));
+        doReturn(new PrincipalSid(folder.getOwner())).when(aclService).createOrGetSid(
+                eq(permissionVO.getUserName().toUpperCase()), eq(permissionVO.getPrincipal()));
+        doReturn(new PrincipalSid(childFolder.getOwner())).when(aclService).createOrGetSid(
+                eq(childPermissionVO.getUserName().toUpperCase()), eq(childPermissionVO.getPrincipal()));
 
-        Folder folder = new Folder();
+        initAclEntity(folder, AclPermission.READ);
+        initAclEntity(childFolder, AclPermission.READ);
+
+        Folder newFolder = new Folder();
         folder.setName(TEST_NAME_3);
         folder.setId(FOLDER_ID);
         folderTemplateManager.createFolderFromTemplate(folder, folderTemplate);
@@ -136,10 +166,23 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
                 eq(true), eq(false));
         verify(mockDataStorageManager, times(1)).create(eq(dataStorageForChild), eq(true),
                 eq(true), eq(false));
-        verify(mockMetadataManager, times(4))
-                .updateEntityMetadata(anyMapOf(String.class, PipeConfValue.class), anyLong(), any(AclClass.class));
-        verify(spyGrantPermissionManager, times(2)).setPermissionsToEntity(anyListOf(PermissionVO.class),
-                anyLong(), any(AclClass.class));
+        verify(mockMetadataManager, times(1))
+                .updateEntityMetadata(eq(metadata), anyLong(), eq(AclClass.DATA_STORAGE));
+        verify(mockMetadataManager, times(1))
+                .updateEntityMetadata(eq(metadata), anyLong(), eq(AclClass.FOLDER));
+        verify(mockMetadataManager, times(1))
+                .updateEntityMetadata(eq(childMetadata), anyLong(), eq(AclClass.DATA_STORAGE));
+        verify(mockMetadataManager, times(1))
+                .updateEntityMetadata(eq(childMetadata), anyLong(), eq(AclClass.FOLDER));
+
+        verify(mockPermissionGrantVOMapper, times(1)).toPermissionGrantVO(eq(permissionVO));
+        verify(mockPermissionGrantVOMapper, times(1)).toPermissionGrantVO(eq(childPermissionVO));
+        verify(mockEntityManager, times(1)).load(eq(AclClass.FOLDER), eq(FOLDER_ID));
+        verify(mockEntityManager, times(1)).load(eq(AclClass.FOLDER), eq(FOLDER_CHILD_ID));
+        verify(aclService, times(1))
+                .createOrGetSid(eq(permissionVO.getUserName()), eq(permissionVO.getPrincipal()));
+        verify(aclService, times(1))
+                .createOrGetSid(eq(childPermissionVO.getUserName()), eq(childPermissionVO.getPrincipal()));
     }
 
     private SecuredEntityWithAction<AbstractDataStorage> getMockSecurityEntity() {
@@ -148,18 +191,22 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
         return action;
     }
 
-    private Folder getFolder() {
+    private Folder getFolder(AbstractDataStorage dataStorage) {
         Folder folder = new Folder();
         folder.setId(FOLDER_ID);
-        folder.setStorages(Collections.singletonList(new S3bucketDataStorage()));
+        folder.setOwner(SIMPLE_USER);
+        folder.setChildFolders(Collections.singletonList(childFolder));
+        folder.setStorages(Collections.singletonList(dataStorage));
         return folder;
     }
 
-    private Folder getFolderChild() {
+    private Folder getFolderChild(AbstractDataStorage dataStorage) {
         Folder folder = new Folder();
         folder.setId(FOLDER_CHILD_ID);
+        folder.setOwner(SIMPLE_USER);
         folder.setName(CHILD_TEMPLATE_FOLDER_NAME);
         folder.setParentId(FOLDER_ID);
+        folder.setStorages(Collections.singletonList(dataStorage));
         return folder;
     }
 

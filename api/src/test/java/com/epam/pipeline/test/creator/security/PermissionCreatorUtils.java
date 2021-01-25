@@ -31,7 +31,6 @@ import java.util.Collections;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_ROLE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class PermissionCreatorUtils {
@@ -44,10 +43,10 @@ public final class PermissionCreatorUtils {
     private PermissionCreatorUtils() {
     }
 
-    public static PermissionVO getPermissionVO() {
+    public static PermissionVO getPermissionVO(String userName) {
         PermissionVO permissionVO = new PermissionVO();
         permissionVO.setMask(AclPermission.READ.getMask());
-        permissionVO.setUserName(TEST_ROLE);
+        permissionVO.setUserName(userName);
         permissionVO.setPrincipal(false);
         return permissionVO;
     }
@@ -65,6 +64,16 @@ public final class PermissionCreatorUtils {
         permissionGrantVO.setMask(TEST_INT);
         permissionGrantVO.setPrincipal(true);
         permissionGrantVO.setAclClass(AclClass.DATA_STORAGE);
+        return permissionGrantVO;
+    }
+
+    public static PermissionGrantVO getPermissionGrantVOFrom(PermissionVO permissionVO, AclClass aclClass, Long id) {
+        final PermissionGrantVO permissionGrantVO = new PermissionGrantVO();
+        permissionGrantVO.setUserName(permissionVO.getUserName());
+        permissionGrantVO.setMask(permissionVO.getMask());
+        permissionGrantVO.setPrincipal(permissionVO.getPrincipal());
+        permissionGrantVO.setAclClass(aclClass);
+        permissionGrantVO.setId(id);
         return permissionGrantVO;
     }
 
