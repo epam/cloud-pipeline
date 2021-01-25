@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">5</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">8m9.91s</div>
+<div class="counter">2m29.30s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">90%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,55 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="shouldHaveHistoryEntry - EPMCMBIBPC-350"></a>
+<h3 class="failures">shouldHaveHistoryEntry - EPMCMBIBPC-350</h3>
+<span class="code">
+<pre>Element should have anticon-loading {By.className: log__run-title}
+Element: '&lt;h1 class=&quot;log__run-title&quot;&gt;Run #56159 - pipeline-details-test-4602412782393838588 (draft-95e0e7f3) - Logs&lt;/h1&gt;'
+Actual value: WORKING
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1611579966855.73.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1611579966855.73.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldHave(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.shouldHaveStatus(LogAO.java:101)
+	at com.epam.pipeline.autotests.PipelineDetailsTest.shouldHaveHistoryEntry(PipelineDetailsTest.java:195)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,95 +121,91 @@
 </thead>
 <tr>
 <td class="success">documentShouldBeRenamed - EPMCMBIBPC-346</td>
-<td>2.302s</td>
+<td>2.559s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">documentTabShouldBeValid - EPMCMBIBPC-345</td>
-<td>2.866s</td>
+<td>2.934s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">luigiGraphTabShouldBeValid - EPMCMBIBPC-344</td>
-<td>3.696s</td>
+<td>3.813s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">luigiPipelineTabsShouldBeValid - EPMCMBIBPC-343</td>
-<td>14.845s</td>
+<td>15.161s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldCreateFileInSubfolder - EPMCMBIBPC-340</td>
-<td>4.412s</td>
+<td>4.414s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldCreateFolderInPipeline - EPMCMBIBPC-339</td>
-<td>3.652s</td>
+<td>3.678s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">shouldCreateStorageRule - EPMCMBIBPC-354</td>
-<td>4.142s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldCreateStorageRule</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">shouldDeleteDocumentFile - EPMCMBIBPC-348</td>
-<td>2.077s</td>
+<td>2.049s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">shouldDeleteStorageRule - EPMCMBIBPC-355</td>
-<td>1.603s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldDeleteStorageRule</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">shouldDownloadCorrectDocumentFile - EPMCMBIBPC-347</td>
-<td>6.204s</td>
+<td>6.236s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldHaveEmptyHistory - EPMCMBIBPC-350</td>
-<td>3.033s</td>
+<td>3.059s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">shouldHaveHistoryEntry - EPMCMBIBPC-350</td>
-<td>5m58.51s</td>
-<td class="success">passed</td>
+<td class="failures">shouldHaveHistoryEntry - EPMCMBIBPC-350</td>
+<td>1m41.58s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">shouldNotCreateACopyOfRule - EPMCMBIBPC-356</td>
-<td>1.924s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldNotCreateACopyOfRule</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">shouldUploadFile - EPMCMBIBPC-349</td>
-<td>3.660s</td>
+<td>3.820s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">storageRulesTabShouldBeValid - EPMCMBIBPC-353</td>
-<td>3.892s</td>
-<td class="success">passed</td>
+<td class="skipped">storageRulesTabShouldBeValid</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateViewDraftVersionsPipelineHistory - EPMCMBIBPC-1629</td>
-<td>1m13.09s</td>
-<td class="success">passed</td>
+<td class="skipped">validateViewDraftVersionsPipelineHistory</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 56047 from [56047]
-Returns latest run with runId 56047 from [56047]
-Returns latest run with runId 56047 from [56047]
-Returns latest run with runId 56048 from [56047, 56048]
-Returns latest run with runId 56049 from [56047, 56048, 56049]
-Returns latest run with runId 56050 from [56047, 56048, 56049, 56050]
+<pre>Returns latest run with runId 56159 from [56159]
+Returns latest run with runId 56159 from [56159]
 </pre>
 </span>
 </div>
@@ -179,7 +217,7 @@ Returns latest run with runId 56050 from [56047, 56048, 56049, 56050]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 23, 2021 6:40:33 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 25, 2021 5:18:31 PM</p>
 </div>
 </div>
 </body>
