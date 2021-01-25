@@ -23,7 +23,7 @@ public class DataStorageTagManager {
     private final DataStorageTagDao tagDao;
 
     public List<DataStorageTag> bulkUpsert(final Long storageId, final DataStorageTagBulkUpsertRequest request) {
-        return tagDao.upsert(request.getPathTags().entrySet().stream()
+        return tagDao.bulkUpsert(request.getPathTags().entrySet().stream()
                 .flatMap(pathEntry -> {
                     final DataStorageObject object = new DataStorageObject(storageId, pathEntry.getKey());
                     return pathEntry.getValue().entrySet().stream()
@@ -32,11 +32,11 @@ public class DataStorageTagManager {
     }
 
     public List<DataStorageTag> bulkLoad(final Long storageId, final DataStorageTagBulkLoadRequest request) {
-        return tagDao.load(storageId, request.getPaths());
+        return tagDao.bulkLoad(storageId, request.getPaths());
     }
 
     public void bulkDelete(final Long storageId, final DataStorageTagBulkDeleteRequest request) {
-        tagDao.delete(storageId, request.getPaths());
+        tagDao.bulkDelete(storageId, request.getPaths());
     }
 
     public DataStorageTag upsert(final DataStorageTag tag) {
@@ -44,11 +44,11 @@ public class DataStorageTagManager {
     }
 
     public List<DataStorageTag> upsert(final Stream<DataStorageTag> tags) {
-        return tagDao.upsert(tags);
+        return tagDao.bulkUpsert(tags);
     }
 
     public Map<String, String> upsertFromMap(final DataStorageObject object, final Map<String, String> tags) {
-        return asMap(tagDao.upsert(tags.entrySet().stream()
+        return asMap(tagDao.bulkUpsert(tags.entrySet().stream()
                 .map(entry -> new DataStorageTag(object, entry.getKey(), entry.getValue()))));
     }
 

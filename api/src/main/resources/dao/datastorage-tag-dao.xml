@@ -95,6 +95,7 @@
                     FROM pipeline.datastorage_tag
                     WHERE datastorage_id = :DATASTORAGE_ID
                     AND datastorage_path IN (:DATASTORAGE_PATH)
+                    AND datastorage_version IN (:DATASTORAGE_VERSION)
                 ]]>
             </value>
         </constructor-arg>
@@ -128,6 +129,7 @@
                     DELETE FROM pipeline.datastorage_tag
                     WHERE datastorage_id = :DATASTORAGE_ID
                     AND datastorage_path IN (:DATASTORAGE_PATH)
+                    AND datastorage_version IN (:DATASTORAGE_VERSION)
                 ]]>
             </value>
         </constructor-arg>
