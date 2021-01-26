@@ -174,7 +174,7 @@ class ImportUsersButton extends React.Component {
         ]
       );
       const hide = message.loading('Importing...', 0);
-      const resolve = (error) => {
+      const resolve = ({error, logs}) => {
         hide();
         if (error) {
           message.error(error, 5);
@@ -189,28 +189,28 @@ class ImportUsersButton extends React.Component {
           createUsers: false,
           createGroups: false
         }, () => {
-          onImportDone && onImportDone(!error);
+          onImportDone && onImportDone({error, logs});
         });
       };
       const request = new XMLHttpRequest();
       request.upload.onabort = (event) => {
-        resolve('Aborted');
+        resolve({error: 'Aborted'});
       };
       request.onreadystatechange = () => {
         if (request.readyState !== 4) return;
 
         if (request.status !== 200) {
-          resolve(`Error importing users: ${request.statusText}`);
+          resolve({error: `Error importing users: ${request.statusText}`});
         } else {
           try {
             const json = JSON.parse(request.responseText);
             if (json.status === 'ERROR') {
-              resolve(json.message);
+              resolve({error: json.message});
             } else {
-              resolve();
+              resolve({logs: json.payload});
             }
           } catch (_) {
-            resolve();
+            resolve({logs: []});
           }
         }
       };
