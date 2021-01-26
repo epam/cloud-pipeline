@@ -39,6 +39,11 @@ public final class PermissionCreatorUtils {
             new TypeReference<Result<AclSecuredEntry>>() {};
     public static final TypeReference<Result<EntityPermissionVO>> ENTITY_WITH_PERMISSION_VO_TYPE =
             new TypeReference<Result<EntityPermissionVO>>() {};
+    public static final TypeReference<Result<PermissionVO>> PERMISSION_VO_TYPE =
+            new TypeReference<Result<PermissionVO>>() {};
+    public static final TypeReference<Result<PermissionGrantVO>> PERMISSION_GRANT_VO_TYPE =
+            new TypeReference<Result<PermissionGrantVO>>() {};
+
 
     private PermissionCreatorUtils() {
     }
