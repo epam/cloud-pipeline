@@ -454,6 +454,7 @@ public final class MessageConstants {
     public static final String ERROR_REGION_DEFAULT_UNDEFINED = "error.region.default.undefined";
     public static final String ERROR_REGION_NAME_MISSING = "error.region.name.missing";
     public static final String ERROR_REGION_MOUNT_RULE_MISSING = "error.region.mount.rule.missing";
+    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING = "error.region.mont.credentials.missing";
     public static final String ERROR_REGION_PROVIDER_MISMATCH = "error.region.provider.mismatch";
     public static final String ERROR_REGION_REGIONID_MISSING = "error.region.regionid.missing";
     public static final String ERROR_REGION_REGIONID_INVALID = "error.region.regionid.invalid";
