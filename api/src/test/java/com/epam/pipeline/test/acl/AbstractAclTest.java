@@ -86,6 +86,11 @@ public abstract class AbstractAclTest {
                 Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())));
     }
 
+    protected void initAclEntity(AbstractSecuredEntity entity, String user, Permission permission) {
+        initAclEntity(entity,
+                Collections.singletonList(new UserPermission(user, permission.getMask())));
+    }
+
     protected void initAclEntity(AbstractSecuredEntity entity) {
         initAclEntity(entity, Collections.emptyList());
     }
