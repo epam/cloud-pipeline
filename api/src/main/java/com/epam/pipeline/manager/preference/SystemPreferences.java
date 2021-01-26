@@ -129,6 +129,8 @@ public class SystemPreferences {
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final IntPreference PROFILE_TEMP_CREDENTIALS_DURATION = new IntPreference(
+            "profile.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(
             "storage.mounts.per.gb.ratio", null, DATA_STORAGE_GROUP, isNullOrGreaterThan(0));
     public static final BooleanPreference DEFAULT_USER_DATA_STORAGE_ENABLED =
