@@ -36,6 +36,7 @@
     - [8.8. Data sharing](08_Manage_Data_Storage/8.8._Data_sharing.md)
     - [8.9. Mapping storages](08_Manage_Data_Storage/8.9._Mapping_storages.md)
 - [9. Manage Cluster nodes](09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md)
+    - [9.1. Manage hot node pools](09_Manage_Cluster_nodes/9.1._Hot_node_pools.md)
 - [10. Manage Tools](10_Manage_Tools/10._Manage_Tools.md)
     - [10.1. Add/Edit a Docker registry](10_Manage_Tools/10.1._Add_Edit_a_Docker_registry.md)
     - [10.2. Add/Edit a Tool group](10_Manage_Tools/10.2._Add_Edit_a_Tool_group.md)

@@ -9,6 +9,7 @@
 - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
+- [Hot node pools](#hot-node-pools)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
 ***
@@ -380,6 +381,31 @@ If it's exceeded - the user is being warned with the following wording and asked
 - Warning does not prohibit the run launching, user can start it at his own discretion changing nothing.
 - If the **`storage.mounts.per.gb.ratio`** is not set - no checks are being performed, no warning appears.
 - Before the launch, only the _object storages_ count is being calculated, _file mounts_ do not introduce this limitation.
+
+## Hot node pools
+
+For some jobs, a waiting for a node launch can be too long. It is convenient to have some scope of the running nodes in the background that will be always or on schedule be available.
+
+In the current version, the mechanism of "**Hot node pools**" was implemented. It allows controlling the number of persistent compute nodes (of the certain configuration) in the cluster during the certain schedule.  
+This is useful to speed up the compute instances creation process (as the nodes are already up and running).  
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_HotNodePools_01.png)
+
+Admins can create node pools:
+
+- each pool contains _one or several identical nodes_ - admin specifies the node configuration (instance type, disk, **Cloud Region**, etc.) and a corresponding number of such nodes
+- each pool has _the schedule of these nodes creation/termination_. E.g. the majority of the new compute jobs are started during the workday, so no need to keep these persistent instances over the weekends. For the pool, several schedules can be specified
+- for each pool can be configured additional filters - to restrict its usage by the specific users/groups or for the specific pipelines/tools etc.
+
+When the pool is created, corresponding nodes are being up (_according to pool's schedule(s)_) and waiting in the background:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HotNodePools_02.png)
+
+If the user starts a job in this time (_pool's schedule(s)_) and the instance requested for a job matches to the pool's node - such running node from the pool is automatically being assigned to the job, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HotNodePools_03.png)
+
+**_Note_**: pools management is available only for admins. Usage of pool nodes is available for any user.
+
+For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
 
 ## AWS: transfer objects between AWS regions using `pipe storage cp`/`mv` commands
 
