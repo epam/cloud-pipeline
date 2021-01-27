@@ -594,11 +594,13 @@ class NFSMounter(StorageMounter):
     def append_timeout_options(self, mount_options):
         if self.share_mount.mount_type == 'SMB':
             return mount_options
-        if 'retry' not in mount_options:
+        if not mount_options or 'retry' not in mount_options:
             mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
             retry_option = 'retry={}'.format(mount_retry)
             mount_options = retry_option if not mount_options else mount_options + ',' + retry_option
-        if 'timeo' not in mount_options and self.share_mount.mount_type == 'NFS':
+        if self.share_mount.mount_type == 'LUSTRE':
+            return mount_options
+        if not mount_options or 'timeo' not in mount_options:
             mount_timeo = os.getenv('CP_FS_MOUNT_TIMEOUT', 7)
             timeo_option = 'timeo={}'.format(mount_timeo)
             mount_options = timeo_option if not mount_options else mount_options + ',' + timeo_option
