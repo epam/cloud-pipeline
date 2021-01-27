@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,6 @@
 
 package com.epam.pipeline.manager.cloud.aws;
 
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
-import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
-import com.amazonaws.services.securitytoken.model.Credentials;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -32,7 +28,6 @@ import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import com.epam.pipeline.utils.PasswordGenerator;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -97,30 +92,11 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .collect(Collectors.toList());
 
         final String role = buildRole(storagesWithRegions);
-        final String sessionName = "SessionID-" + PasswordGenerator.generateRandomString(10);
         final String profile = buildProfile(storagesWithRegions);
         final String policy = createPolicyWithPermissions(actions, buildKmsArns(storagesWithRegions));
+        final String regionCode = buildRegion(storagesWithRegions);
 
-        final AssumeRoleRequest assumeRoleRequest = new AssumeRoleRequest()
-                .withDurationSeconds(duration)
-                .withPolicy(policy)
-                .withRoleSessionName(sessionName)
-                .withRoleArn(role);
-
-        final AssumeRoleResult assumeRoleResult = AWSSecurityTokenServiceClientBuilder.standard()
-                .withCredentials(AWSUtils.getCredentialsProvider(profile))
-                .build()
-                .assumeRole(assumeRoleRequest);
-        final Credentials resultingCredentials = assumeRoleResult.getCredentials();
-
-        return TemporaryCredentials.builder()
-                .accessKey(resultingCredentials.getSecretAccessKey())
-                .keyId(resultingCredentials.getAccessKeyId())
-                .token(resultingCredentials.getSessionToken())
-                .expirationTime(TemporaryCredentialsGenerator
-                        .expirationTimeWithUTC(resultingCredentials.getExpiration()))
-                .region(buildRegion(storagesWithRegions))
-                .build();
+        return AWSUtils.generate(duration, policy, role, profile, regionCode);
     }
 
     @Override

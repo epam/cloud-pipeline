@@ -32,11 +32,11 @@ import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -81,16 +81,10 @@ public class CloudProfileCredentialsManagerProvider {
 
     public List<? extends CloudProfileCredentials> getAssignedProfiles(final Long id, final boolean principal) {
         if (principal) {
-            final PipelineUser user = userRepository.findOne(id);
-            if (Objects.isNull(user)) {
-                return Collections.emptyList();
-            }
+            final PipelineUser user = findUserEntity(id);
             return toDtos(user.getCloudProfiles());
         }
-        final Role role = roleRepository.findOne(id);
-        if (Objects.isNull(role)) {
-            return Collections.emptyList();
-        }
+        final Role role = findRoleEntity(id);
         return toDtos(role.getCloudProfiles());
     }
 
@@ -101,8 +95,8 @@ public class CloudProfileCredentialsManagerProvider {
     @Transactional
     public CloudProfileCredentials delete(final Long id) {
         final CloudProfileCredentialsEntity entity = findEntity(id);
-        Assert.state(CollectionUtils.isNotEmpty(entity.getUsers())
-                        && CollectionUtils.isNotEmpty(entity.getRoles()),
+        Assert.state(CollectionUtils.isEmpty(entity.getUsers())
+                        && CollectionUtils.isEmpty(entity.getRoles()),
                 messageHelper.getMessage(MessageConstants.ERROR_PROFILE_HAS_LINKS, id));
         repository.delete(id);
         return mapper.toDto(entity);
@@ -140,12 +134,17 @@ public class CloudProfileCredentialsManagerProvider {
     }
 
     private boolean hasAssignedUser(final List<PipelineUser> assignedUsers, final Long targetUserId) {
-        return assignedUsers.stream().anyMatch(user -> Objects.equals(user.getId(), targetUserId));
+        return ListUtils.emptyIfNull(assignedUsers).stream()
+                .anyMatch(user -> Objects.equals(user.getId(), targetUserId));
     }
 
     private boolean hasAssignedRole(final List<Role> assignedRoles, final List<Role> targetRoles) {
-        final List<Long> targetRoleIds = targetRoles.stream().map(Role::getId).collect(Collectors.toList());
-        return assignedRoles.stream().map(Role::getId).anyMatch(targetRoleIds::contains);
+        final List<Long> targetRoleIds = ListUtils.emptyIfNull(targetRoles).stream()
+                .map(Role::getId)
+                .collect(Collectors.toList());
+        return ListUtils.emptyIfNull(assignedRoles).stream()
+                .map(Role::getId)
+                .anyMatch(targetRoleIds::contains);
     }
 
     private CloudProfileCredentialsManager getManager(final CloudProvider type) {
@@ -180,7 +179,7 @@ public class CloudProfileCredentialsManagerProvider {
         return userEntity;
     }
 
-    public Role assignProfilesToRole(final Long sidId, final Long defaultProfileId,
+    private Role assignProfilesToRole(final Long sidId, final Long defaultProfileId,
                                      final List<CloudProfileCredentialsEntity> profiles) {
         final Role roleEntity = findRoleEntity(sidId);
         roleEntity.setDefaultProfileId(defaultProfileId);

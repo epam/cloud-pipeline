@@ -16,23 +16,19 @@
 
 package com.epam.pipeline.manager.cloud.credentials.aws;
 
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
-import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
-import com.amazonaws.services.securitytoken.model.Credentials;
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.cloud.credentials.aws.AWSProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.aws.AWSProfileCredentialsEntity;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
-import com.epam.pipeline.utils.PasswordGenerator;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
@@ -49,6 +45,7 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
     private final AWSProfileCredentialsRepository repository;
     private final CloudProfileCredentialsMapper mapper;
     private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
 
     @Override
     public CloudProvider getProvider() {
@@ -87,44 +84,24 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
         final Integer duration = preferenceManager.getPreference(SystemPreferences.PROFILE_TEMP_CREDENTIALS_DURATION);
 
         final String role = credentials.getAssumedRole();
-        final String sessionName = "SessionID-" + PasswordGenerator.generateRandomString(10);
         final String profile = credentials.getProfileName();
         final String policy = credentials.getPolicy();
         final String regionCode = getRegionCode(region);
 
-        final AssumeRoleRequest assumeRoleRequest = new AssumeRoleRequest()
-                .withDurationSeconds(duration)
-                .withPolicy(policy)
-                .withRoleSessionName(sessionName)
-                .withRoleArn(role);
-
-        final AssumeRoleResult assumeRoleResult = AWSSecurityTokenServiceClientBuilder.standard()
-                .withCredentials(AWSUtils.getCredentialsProvider(profile))
-                .build()
-                .assumeRole(assumeRoleRequest);
-        final Credentials resultingCredentials = assumeRoleResult.getCredentials();
-
-        return TemporaryCredentials.builder()
-                .accessKey(resultingCredentials.getSecretAccessKey())
-                .keyId(resultingCredentials.getAccessKeyId())
-                .token(resultingCredentials.getSessionToken())
-                .expirationTime(TemporaryCredentialsGenerator
-                        .expirationTimeWithUTC(resultingCredentials.getExpiration()))
-                .region(regionCode)
-                .build();
+        return AWSUtils.generate(duration, policy, role, profile, regionCode);
     }
 
     private AWSProfileCredentialsEntity findEntity(final Long id) {
         final AWSProfileCredentialsEntity entity = repository.findOne(id);
-        Assert.notNull(entity, String.format("Profile credentials with id %s wasn't found.", id));
+        Assert.notNull(entity, messageHelper.getMessage(MessageConstants.ERROR_PROFILE_ID_NOT_FOUND, id));
         return entity;
     }
 
     private void validateProfileCredentials(final AWSProfileCredentials credentials) {
         Assert.state(StringUtils.isNotBlank(credentials.getAssumedRole()),
-                "Assumed role shall be specified");
+                messageHelper.getMessage(MessageConstants.ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND));
         Assert.state(StringUtils.isNotBlank(credentials.getPolicy()),
-                "Policy shall be specified");
+                messageHelper.getMessage(MessageConstants.ERROR_PROFILE_POLICY_NOT_FOUND));
     }
 
     private String getRegionCode(final AbstractCloudRegion region) {

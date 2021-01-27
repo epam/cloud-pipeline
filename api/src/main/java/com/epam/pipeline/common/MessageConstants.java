@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -577,6 +577,8 @@ public final class MessageConstants {
     // Cloud profiles
     public static final String ERROR_PROFILE_ID_NOT_FOUND = "error.profile.id.not.found";
     public static final String ERROR_PROFILE_HAS_LINKS = "error.profile.has.links";
+    public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
+    public static final String ERROR_PROFILE_POLICY_NOT_FOUND = "error.profile.policy.not.found";
 
     private MessageConstants() {
         // no-op

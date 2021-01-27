@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,11 +65,14 @@ public class ContextualPreferenceManagerTest {
     private static final Role ROLE_2 = new Role(2L, "role2");
     private static final String USER_NAME = "userName";
     private static final PipelineUser USER = new PipelineUser(1L, null, Arrays.asList(ROLE_1, ROLE_2),
-            Collections.emptyList(), false, false, null, null, null, Collections.emptyMap(), Collections.emptyList(), null);
+            Collections.emptyList(), false, false, null, null, null,
+            Collections.emptyMap(), Collections.emptyList(), null);
     private static final PipelineUser USER_WITHOUT_ROLES = new PipelineUser(USER.getId(), null, null,
-            Collections.emptyList(), false, false, null, null, null, Collections.emptyMap(), Collections.emptyList(), null);
+            Collections.emptyList(), false, false, null, null, null,
+            Collections.emptyMap(), Collections.emptyList(), null);
     private static final PipelineUser USER_WITHOUT_ID = new PipelineUser(null, USER_NAME, Collections.emptyList(),
-            Collections.emptyList(), false, false, null, null, null, Collections.emptyMap(), Collections.emptyList(), null);
+            Collections.emptyList(), false, false, null, null, null,
+            Collections.emptyMap(), Collections.emptyList(), null);
 
     private final ContextualPreferenceExternalResource toolResource =
             new ContextualPreferenceExternalResource(LEVEL, TOOL_ID);

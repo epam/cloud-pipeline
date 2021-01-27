@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.repository;
 
 import com.epam.pipeline.app.DBConfiguration;
+import com.epam.pipeline.test.CommonTestContext;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureDataJpa;
@@ -31,7 +32,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-//@AutoConfigurationPackage
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @AutoConfigureDataJpa
@@ -41,6 +41,6 @@ import java.lang.annotation.Target;
 @EntityScan("com.epam.pipeline.entity")
 @TestPropertySource(locations="classpath:test-application.properties")
 @EnableJpaRepositories("com.epam.pipeline.repository")
-@ContextConfiguration(classes = {DBConfiguration.class, JpaTestBeans.class})
+@ContextConfiguration(classes = {DBConfiguration.class, JpaTestBeans.class, CommonTestContext.class})
 public @interface JpaTestConfiguration {
 }
