@@ -4,7 +4,7 @@ import com.epam.pipeline.autotests.ao.MetadataSamplesAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import org.testng.annotations.AfterTest;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.text.SimpleDateFormat;
@@ -33,7 +33,7 @@ public class SampleProcessingModuleTest extends AbstractBfxPipelineTest implemen
     private final String value1 = "value1";
     private String errorMessage = "Metadata entity with external id '%s' already exists.";
 
-    @AfterTest
+    @AfterClass(alwaysRun = true)
     public void removeEntities() {
         library()
                 .removeFolder(folder);
