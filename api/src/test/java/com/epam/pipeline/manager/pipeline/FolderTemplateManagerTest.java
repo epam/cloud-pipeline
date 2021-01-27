@@ -33,8 +33,6 @@ import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.PrincipalSid;
@@ -48,7 +46,7 @@ import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils
 import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils.getS3BucketDataStorageWithMetadataNameAndPath;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVOFrom;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionVO;
-import static org.mockito.Matchers.anyLong;
+import static com.epam.pipeline.util.CustomMatchers.matches;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -74,6 +72,8 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
 
     private Folder folder;
     private Folder childFolder;
+    private AbstractDataStorage folderDataStorage;
+    private AbstractDataStorage childFolderDataStorage;
 
     @Autowired
     private FolderTemplateManager folderTemplateManager;
@@ -107,16 +107,19 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
         FolderTemplate folderTemplate = getFolderTemplate(dataStorageVO, childFolderTemplate,
                 metadata, permissionVO, TEST_NAME);
 
-        childFolder = getFolderChild(new S3bucketDataStorage(FOLDER_ID, DATASTORAGE_NAME_2, TEST_PATH_2));
-        folder = getFolder(new S3bucketDataStorage(FOLDER_CHILD_ID, DATASTORAGE_NAME, TEST_PATH));
+        folderDataStorage = new S3bucketDataStorage(FOLDER_ID, DATASTORAGE_NAME, TEST_PATH);
+        childFolderDataStorage = new S3bucketDataStorage(FOLDER_CHILD_ID, DATASTORAGE_NAME_2, TEST_PATH_2);
+
+        childFolder = getFolderChild(childFolderDataStorage);
+        folder = getFolder(folderDataStorage);
 
         doReturn(folder).when(mockFolderCrudManager)
                 .create(argThat(matches(Predicates.forFolderTemplate(folderTemplate.getName()))));
         doReturn(childFolder).when(mockFolderCrudManager)
                 .create(argThat(matches(Predicates.forChildFolderTemplate(childFolderTemplate.getName()))));
-        doReturn(getMockSecurityEntity()).when(mockDataStorageManager)
+        doReturn(getSecurityEntityForFolder()).when(mockDataStorageManager)
                 .create(argThat(matches(Predicates.forDataStorage())), eq(true), eq(true), eq(false));
-        doReturn(getMockSecurityEntity()).when(mockDataStorageManager)
+        doReturn(getSecurityEntityForFolderChild()).when(mockDataStorageManager)
                 .create(argThat(matches(Predicates.forChildDataStorage())), eq(true), eq(true), eq(false));
 
         //permissionGrantVOMapper doesn't work, so mapping it manually
@@ -137,14 +140,16 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
 
         folderTemplateManager.createFolderFromTemplate(folder, folderTemplate);
 
-        verify(mockFolderCrudManager).create(argThat(matches(folder -> TEST_NAME.equals(folder.getName()))));
-        verify(mockFolderCrudManager).create(argThat(matches(folder -> TEST_NAME_2.equals(folder.getName()))));
+        verify(mockFolderCrudManager).create(argThat(matches(Predicates.forFolderTemplate(folderTemplate.getName()))));
+        verify(mockFolderCrudManager).create(argThat(matches(
+                Predicates.forChildFolderTemplate(childFolderTemplate.getName()))));
         verify(mockDataStorageManager).create(eq(dataStorageVO), eq(true), eq(true), eq(false));
         verify(mockDataStorageManager).create(eq(dataStorageForChild), eq(true), eq(true), eq(false));
-        verify(mockMetadataManager).updateEntityMetadata(eq(metadata), anyLong(), eq(AclClass.DATA_STORAGE));
-        verify(mockMetadataManager).updateEntityMetadata(eq(metadata), anyLong(), eq(AclClass.FOLDER));
-        verify(mockMetadataManager).updateEntityMetadata(eq(childMetadata), anyLong(), eq(AclClass.DATA_STORAGE));
-        verify(mockMetadataManager).updateEntityMetadata(eq(childMetadata), anyLong(), eq(AclClass.FOLDER));
+        verify(mockMetadataManager).updateEntityMetadata(eq(metadata), eq(FOLDER_ID), eq(AclClass.DATA_STORAGE));
+        verify(mockMetadataManager).updateEntityMetadata(eq(metadata), eq(FOLDER_ID), eq(AclClass.FOLDER));
+        verify(mockMetadataManager).updateEntityMetadata(eq(childMetadata),
+                eq(FOLDER_CHILD_ID), eq(AclClass.DATA_STORAGE));
+        verify(mockMetadataManager).updateEntityMetadata(eq(childMetadata), eq(FOLDER_CHILD_ID), eq(AclClass.FOLDER));
 
         verify(mockPermissionGrantVOMapper).toPermissionGrantVO(eq(permissionVO));
         verify(mockPermissionGrantVOMapper).toPermissionGrantVO(eq(childPermissionVO));
@@ -154,9 +159,15 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
         verify(aclService).createOrGetSid(eq(childPermissionVO.getUserName()), eq(childPermissionVO.getPrincipal()));
     }
 
-    private SecuredEntityWithAction<AbstractDataStorage> getMockSecurityEntity() {
+    private SecuredEntityWithAction<AbstractDataStorage> getSecurityEntityForFolder() {
         SecuredEntityWithAction<AbstractDataStorage> action = new SecuredEntityWithAction<>();
-        action.setEntity(new S3bucketDataStorage());
+        action.setEntity(folderDataStorage);
+        return action;
+    }
+
+    private SecuredEntityWithAction<AbstractDataStorage> getSecurityEntityForFolderChild() {
+        SecuredEntityWithAction<AbstractDataStorage> action = new SecuredEntityWithAction<>();
+        action.setEntity(childFolderDataStorage);
         return action;
     }
 
@@ -189,22 +200,6 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
         Map<String, PipeConfValue> metadata = new HashMap<>();
         metadata.put(DATA_KEY_2, new PipeConfValue(DATA_TYPE_2, DATA_VALUE_2));
         return metadata;
-    }
-
-    private static <T> BaseMatcher<T> matches(final Predicate<T> test) {
-        return new BaseMatcher<T>() {
-
-            @Override
-            public void describeTo(final Description description) {
-                description.appendText("custom matcher");
-            }
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public boolean matches(final Object item) {
-                return test.test((T) item);
-            }
-        };
     }
 
     private static class Predicates {

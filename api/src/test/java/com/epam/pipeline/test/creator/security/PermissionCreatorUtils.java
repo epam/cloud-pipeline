@@ -48,8 +48,8 @@ public final class PermissionCreatorUtils {
     private PermissionCreatorUtils() {
     }
 
-    public static PermissionVO getPermissionVO(String userName) {
-        PermissionVO permissionVO = new PermissionVO();
+    public static PermissionVO getPermissionVO(final String userName) {
+        final PermissionVO permissionVO = new PermissionVO();
         permissionVO.setMask(AclPermission.READ.getMask());
         permissionVO.setUserName(userName);
         permissionVO.setPrincipal(false);
@@ -72,7 +72,9 @@ public final class PermissionCreatorUtils {
         return permissionGrantVO;
     }
 
-    public static PermissionGrantVO getPermissionGrantVOFrom(PermissionVO permissionVO, AclClass aclClass, Long id) {
+    public static PermissionGrantVO getPermissionGrantVOFrom(final PermissionVO permissionVO,
+                                                             final AclClass aclClass,
+                                                             final Long id) {
         final PermissionGrantVO permissionGrantVO = new PermissionGrantVO();
         permissionGrantVO.setUserName(permissionVO.getUserName());
         permissionGrantVO.setMask(permissionVO.getMask());

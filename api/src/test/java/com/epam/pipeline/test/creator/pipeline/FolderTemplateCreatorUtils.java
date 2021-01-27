@@ -24,23 +24,25 @@ public final class FolderTemplateCreatorUtils {
     private FolderTemplateCreatorUtils() {
     }
 
-    public static FolderTemplate getFolderTemplate(DataStorageWithMetadataVO dataStorage,
-                                                   FolderTemplate childFolderTemplate,
-                                                   Map<String, PipeConfValue> metadata,
-                                                   PermissionVO permissionVO,
-                                                   String name) {
-        return FolderTemplate.builder()
-                .name(name)
-                .datastorages(getListOfNullable(dataStorage))
-                .children(getListOfNullable(childFolderTemplate))
-                .metadata(metadata != null ? metadata : new HashMap<>())
-                .permissions(getListOfNullable(permissionVO))
-                .build();
+    public static FolderTemplate getFolderTemplate(final DataStorageWithMetadataVO dataStorage,
+                                                   final FolderTemplate childFolderTemplate,
+                                                   final Map<String, PipeConfValue> metadata,
+                                                   final PermissionVO permissionVO,
+                                                   final String name) {
+        final FolderTemplate folderTemplate = new FolderTemplate();
+        folderTemplate.setName(name);
+        folderTemplate.setDatastorages(getListOfNullable(dataStorage));
+        folderTemplate.setChildren(getListOfNullable(childFolderTemplate));
+        folderTemplate.setMetadata(metadata != null ? metadata : new HashMap<>());
+        folderTemplate.setPermissions(getListOfNullable(permissionVO));
+        return folderTemplate;
     }
 
     public static DataStorageWithMetadataVO getS3BucketDataStorageWithMetadataNameAndPath(
-            Map<String, PipeConfValue> metadata, String name, String path) {
-        DataStorageWithMetadataVO storage = new DataStorageWithMetadataVO();
+            final Map<String, PipeConfValue> metadata,
+            final String name,
+            final String path) {
+        final DataStorageWithMetadataVO storage = new DataStorageWithMetadataVO();
         storage.setName(name);
         storage.setType(DataStorageType.S3);
         storage.setPath(path);
