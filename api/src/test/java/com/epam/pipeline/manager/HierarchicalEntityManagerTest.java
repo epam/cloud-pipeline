@@ -167,7 +167,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         final Folder root = new Folder();
         final UserContext userContext = new UserContext(ID, SIMPLE_USER);
         userContext.setRoles(Collections.singletonList(new Role(DefaultRoles.ROLE_USER.getName())));
-        final Tool tool = getTool(ID, DefaultRoles.ROLE_USER.getName());
+        final Tool tool = getTool(ID, ANOTHER_SIMPLE_USER);
         final RunConfiguration runConfiguration = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
         final DockerRegistry registry = getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
         final ToolGroup toolGroup = getToolGroup(ID, ANOTHER_SIMPLE_USER);
@@ -192,6 +192,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
                 new AclSid(DefaultRoles.ROLE_USER.getName(), true), null);
 
         assertThat(available.size()).isEqualTo(2);
+        assertThat(available.get(AclClass.TOOL).get(0).getMask()).isEqualTo(READ_PERMISSION);
     }
 
     @Test
