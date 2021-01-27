@@ -279,5 +279,6 @@ public enum Primitive {
     FRIENDLY_URL,
     SERVICES,
     NODE_IMAGE,
-    GIT_REPOSITORY
+    GIT_REPOSITORY,
+    ADD_INSTANCE
 }
