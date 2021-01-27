@@ -315,6 +315,13 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_PIPE_FUSE_TIMEOUT",
+        "type": "int",
+        "description": "Allows to specify the pipe fuse timeout",
+        "defaultValue": "500",
+        "passToWorkers": false
+    },
+    {
         "name": "CP_FS_MOUNT_ATTEMPT",
         "type": "int",
         "description": "Allows to specify the number of times the NFS client attempts to retries an NFS mount operation after the first attempt fails",
