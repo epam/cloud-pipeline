@@ -57,7 +57,7 @@ public class AzureDNSZoneHelper {
             }
         }
 
-        return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
+        return new InstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
                 InstanceDNSRecord.DNSRecordStatus.INSYNC);
     }
 
@@ -87,23 +87,13 @@ public class AzureDNSZoneHelper {
                         .apply();
             }
         }
-        return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
+        return new InstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
                 InstanceDNSRecord.DNSRecordStatus.INSYNC);
 
     }
 
     private boolean isDnsRecordDoesntExist(final InstanceDNSRecord dnsRecord, final DnsZone rootDnsZone) {
-        return rootDnsZone.listRecordSets(dnsRecord.getDnsRecord()).isEmpty();
-    }
-
-    private InstanceDNSRecord buildInstanceDNSRecord(final String dnsRecord,
-                                                     final String target,
-                                                     final InstanceDNSRecord.DNSRecordStatus status) {
-        return new InstanceDNSRecord(dnsRecord, target, status);
-    }
-
-    private InstanceDNSRecord.DNSRecordStatus getStatus(final String status) {
-        return InstanceDNSRecord.DNSRecordStatus.valueOf(status);
+        return rootDnsZone.listRecordSets(extractRecordSetName(dnsRecord, rootDnsZone)).isEmpty();
     }
 
     private static boolean aName(final String target) {
