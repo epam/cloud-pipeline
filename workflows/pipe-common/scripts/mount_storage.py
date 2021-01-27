@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -585,6 +585,14 @@ class NFSMounter(StorageMounter):
                 mount_options = file_mode_options
             else:
                 mount_options += ',' + file_mode_options
+
+        mount_timeo = os.getenv('CP_FS_MOUNT_TIMEOUT', 7)
+        mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
+        mount_attempt_option = 'timeo={timeo},retry={retry}'.format(timeo=mount_timeo, retry=mount_retry)
+        if not mount_options:
+            mount_options = mount_attempt_option
+        else:
+            mount_options += ',' + mount_attempt_option
         if mount_options:
             command += ' -o {}'.format(mount_options)
         command += ' {path} {mount}'.format(**params)
