@@ -10,6 +10,8 @@
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
+- [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
+- [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
 ***
@@ -406,6 +408,40 @@ If the user starts a job in this time (_pool's schedule(s)_) and the instance re
 **_Note_**: pools management is available only for admins. Usage of pool nodes is available for any user.
 
 For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
+
+## Export cluster utilization in Excel format
+
+Previously, users could export **Cluster Node Monitor** reports only in **`csv`** format.
+
+From now, the ability to export these reports in **`xls`** format is implemented.  
+Users can choose the format of the report before the download:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
+
+**Excel**-reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.  
+Example of the **Excel**-report sheets:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_02.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_03.png)
+
+For more details how to configure **Cluster Node Monitor** reports see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#export-utilization-data).
+
+## Export cluster utilization via `pipe`
+
+Also in the current version, the ability to export **Cluster Node Monitor** reports by `pipe` CLI is introduced.
+
+The command to download the node usage metrics:
+
+``` bash
+pipe cluster monitor [OPTIONS]
+```
+
+The one of the below options should be specified:
+
+- **`-i`** / **`--instance-id`** **{ID}** - allows to specify the cloud instance ID. This option cannot be used in conjunction with the **`--run-id`** option
+- **`-r`** / **`--run-id`** **{RUN\_ID}** - allows to specify the pipeline run ID. This option cannot be used in conjunction with the **`--instance-id`** option
+
+Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.
+
+For details and examples see [here](../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md#export-cluster-utilization).
 
 ## AWS: transfer objects between AWS regions using `pipe storage cp`/`mv` commands
 
