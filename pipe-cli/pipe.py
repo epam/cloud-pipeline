@@ -1385,10 +1385,12 @@ def start_tunnel(run_id, local_port, remote_port, connection_timeout,
 
     Additionally it enables passwordless ssh connections if the corresponding option is specified.
     Once specified ssh is configured both locally and remotely to support passwordless connections.
+
     For Linux workstations openssh library is configured to allow passwordless access
     using ssh and scp command line clients usage.
-    For Windows workstations putty utils are configured to allow passwordless access
-    using putty application as well as plink and pscp command line clients.
+
+    For Windows workstations openssh library and putty utils are configured to allow passwordless access
+    using ssh and scp command line clients as well as putty application with plink and pscp command line clients.
 
     Examples:
 
@@ -1416,9 +1418,17 @@ def start_tunnel(run_id, local_port, remote_port, connection_timeout,
 
         plink pipeline-12345
 
+    [Windows] Or connect to run instance using regular ssh client.
+
+        ssh pipeline-12345
+
     [Windows] Or transfer some files to and from run instance using regular pscp client.
 
         pscp file.txt pipeline-12345:/common/workdir/file.txt
+
+    [Windows] Or transfer some files to and from run instance using regular scp client.
+
+        scp file.txt pipeline-12345:/common/workdir/file.txt
 
     Advanced tunnel configuration environment variables:
 
