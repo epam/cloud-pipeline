@@ -589,14 +589,14 @@ class NFSMounter(StorageMounter):
 
         mount_timeo = os.getenv('CP_FS_MOUNT_TIMEOUT', 7)
         mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
-        mount_attempt_option = 'timeo={timeo},retry={retry}'.format(timeo=mount_timeo, retry=mount_retry)
-        if not mount_options:
-            mount_options = mount_attempt_option
-        else:
-            mount_options += ',' + mount_attempt_option
         if mount_options:
-            command += ' -o {}'.format(mount_options)
-        command += ' {path} {mount}'.format(**params)
+            if "timeo" not in mount_options:
+                mount_options += ',timeo={}'.format(mount_timeo)
+            if "retry" not in mount_options:
+                mount_options += ',retry={}'.format(mount_retry)
+        else:
+            mount_options = 'timeo={timeo},retry={retry}'.format(timeo=mount_timeo, retry=mount_retry)
+        command += ' -o {mount_option} {path} {mount}'.format(mount_option=mount_options, **params)
         if PermissionHelper.is_storage_writable(self.storage):
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
         return command
