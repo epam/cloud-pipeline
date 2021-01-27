@@ -69,6 +69,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final CloudRegionManager cloudRegionManager;
     private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
+    private AzureDNSZoneHelper dnsZoneHelper;
     private final String nodeUpScript;
     private final String nodeDownScript;
     private final String nodeReassignScript;
@@ -76,12 +77,16 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final String kubeMasterIP;
     private final String kubeToken;
 
+    private static final InstanceDNSRecord NO_OP_INSTANCE_DNS_RECORD = new InstanceDNSRecord(
+            "", "", InstanceDNSRecord.DNSRecordStatus.NO_OP);
+
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
                                 final ClusterCommandService commandService,
                                 final PreferenceManager preferenceManager,
                                 final AzureVMService vmService,
                                 final CloudRegionManager regionManager,
                                 final ParallelExecutorService executorService,
+                                final AzureDNSZoneHelper dnsZoneHelper,
                                 @Value("${cluster.azure.nodeup.script:}") final String nodeUpScript,
                                 @Value("${cluster.azure.nodedown.script:}") final String nodeDownScript,
                                 @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
@@ -94,6 +99,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         this.preferenceManager = preferenceManager;
         this.vmService = vmService;
         this.executorService = executorService;
+        this.dnsZoneHelper = dnsZoneHelper;
         this.nodeUpScript = nodeUpScript;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
@@ -264,12 +270,21 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         }
     }
 
-    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
-        throw new UnsupportedOperationException("Creation of DNS record doesn't work with Azure provider yet.");
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AzureRegion cloudRegion,
+                                                          final InstanceDNSRecord dnsRecord) {
+        if (dnsRecord.getDnsRecord().contains(
+                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
+            return  dnsZoneHelper.createDNSRecord(cloudRegion, preferenceManager.getPreference(
+                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
+                    );
+        } else {
+            return NO_OP_INSTANCE_DNS_RECORD;
+        }
+
     }
 
     @Override
-    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord deleteInstanceDNSRecord(final AzureRegion cloudRegion, final InstanceDNSRecord dnsRecord) {
         throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
     }
 
