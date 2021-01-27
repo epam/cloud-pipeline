@@ -16,12 +16,12 @@
 
 package com.epam.pipeline.mapper.cloud.credentials;
 
-import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.AbstractCloudProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
 import com.epam.pipeline.dto.cloud.credentials.aws.AWSProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.aws.AWSProfileCredentialsEntity;
 
-public interface CloudProfileCredentialsMapperHelper<D extends CloudProfileCredentials,
+public interface CloudProfileCredentialsMapperHelper<D extends AbstractCloudProfileCredentials,
         E extends CloudProfileCredentialsEntity> {
 
     E toEntity(CloudProfileCredentialsMapper mapper, D dto);

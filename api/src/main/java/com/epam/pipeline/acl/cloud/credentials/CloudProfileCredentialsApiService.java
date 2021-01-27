@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.acl.cloud.credentials;
 
-import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.AbstractCloudProfileCredentials;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import lombok.RequiredArgsConstructor;
@@ -35,39 +35,39 @@ public class CloudProfileCredentialsApiService {
     private final CloudProfileCredentialsManagerProvider manager;
 
     @PreAuthorize(ADMIN_ONLY)
-    public CloudProfileCredentials create(final CloudProfileCredentials credentials) {
+    public AbstractCloudProfileCredentials create(final AbstractCloudProfileCredentials credentials) {
         return manager.create(credentials);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public CloudProfileCredentials get(final Long id) {
+    public AbstractCloudProfileCredentials get(final Long id) {
         return manager.get(id);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public CloudProfileCredentials update(final Long id, final CloudProfileCredentials credentials) {
+    public AbstractCloudProfileCredentials update(final Long id, final AbstractCloudProfileCredentials credentials) {
         return manager.update(id, credentials);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public CloudProfileCredentials delete(final Long id) {
+    public AbstractCloudProfileCredentials delete(final Long id) {
         return manager.delete(id);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<? extends CloudProfileCredentials> findAll() {
+    public List<? extends AbstractCloudProfileCredentials> findAll() {
         return manager.findAll();
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<? extends CloudProfileCredentials> getAssignedProfiles(final Long id, final boolean principal) {
+    public List<? extends AbstractCloudProfileCredentials> getAssignedProfiles(final Long id, final boolean principal) {
         return manager.getAssignedProfiles(id, principal);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<? extends CloudProfileCredentials> assignProfiles(final Long sidId, final boolean principal,
-                                                                  final Set<Long> profileIds,
-                                                                  final Long defaultProfileId) {
+    public List<? extends AbstractCloudProfileCredentials> assignProfiles(final Long sidId, final boolean principal,
+                                                                          final Set<Long> profileIds,
+                                                                          final Long defaultProfileId) {
         return manager.assignProfiles(sidId, principal, profileIds, defaultProfileId);
     }
 

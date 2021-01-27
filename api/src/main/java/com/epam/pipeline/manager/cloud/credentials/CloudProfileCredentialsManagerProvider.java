@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cloud.credentials;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.AbstractCloudProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -71,15 +71,15 @@ public class CloudProfileCredentialsManagerProvider {
         this.messageHelper = messageHelper;
     }
 
-    public CloudProfileCredentials create(final CloudProfileCredentials credentials) {
+    public AbstractCloudProfileCredentials create(final AbstractCloudProfileCredentials credentials) {
         return getManager(credentials.getCloudProvider()).create(credentials);
     }
 
-    public CloudProfileCredentials get(final Long id) {
+    public AbstractCloudProfileCredentials get(final Long id) {
         return mapper.toDto(findEntity(id));
     }
 
-    public List<? extends CloudProfileCredentials> getAssignedProfiles(final Long id, final boolean principal) {
+    public List<? extends AbstractCloudProfileCredentials> getAssignedProfiles(final Long id, final boolean principal) {
         if (principal) {
             final PipelineUser user = findUserEntity(id);
             return toDtos(user.getCloudProfiles());
@@ -88,12 +88,12 @@ public class CloudProfileCredentialsManagerProvider {
         return toDtos(role.getCloudProfiles());
     }
 
-    public CloudProfileCredentials update(final Long id, final CloudProfileCredentials credentials) {
+    public AbstractCloudProfileCredentials update(final Long id, final AbstractCloudProfileCredentials credentials) {
         return getManager(credentials.getCloudProvider()).update(id, credentials);
     }
 
     @Transactional
-    public CloudProfileCredentials delete(final Long id) {
+    public AbstractCloudProfileCredentials delete(final Long id) {
         final CloudProfileCredentialsEntity entity = findEntity(id);
         Assert.state(CollectionUtils.isEmpty(entity.getUsers())
                         && CollectionUtils.isEmpty(entity.getRoles()),
@@ -102,14 +102,14 @@ public class CloudProfileCredentialsManagerProvider {
         return mapper.toDto(entity);
     }
 
-    public List<? extends CloudProfileCredentials> findAll() {
+    public List<? extends AbstractCloudProfileCredentials> findAll() {
         return toDtos(repository.findAll());
     }
 
     @Transactional
-    public List<? extends CloudProfileCredentials> assignProfiles(final Long sidId, final boolean principal,
-                                                                  final Set<Long> profileIds,
-                                                                  final Long defaultProfileId) {
+    public List<? extends AbstractCloudProfileCredentials> assignProfiles(final Long sidId, final boolean principal,
+                                                                          final Set<Long> profileIds,
+                                                                          final Long defaultProfileId) {
         if (Objects.nonNull(defaultProfileId)) {
             profileIds.add(defaultProfileId);
         }
@@ -123,7 +123,7 @@ public class CloudProfileCredentialsManagerProvider {
     }
 
     public TemporaryCredentials generateProfileCredentials(final Long profileId, final Long regionId) {
-        final CloudProfileCredentials credentials = get(profileId);
+        final AbstractCloudProfileCredentials credentials = get(profileId);
         return managers.get(credentials.getCloudProvider())
                 .generateProfileCredentials(credentials, getRegion(regionId));
     }
@@ -157,7 +157,8 @@ public class CloudProfileCredentialsManagerProvider {
         return entity;
     }
 
-    private List<? extends CloudProfileCredentials> toDtos(final Iterable<CloudProfileCredentialsEntity> entities) {
+    private List<? extends AbstractCloudProfileCredentials> toDtos(
+            final Iterable<CloudProfileCredentialsEntity> entities) {
         return StreamSupport.stream(entities.spliterator(), false)
                 .map(mapper::toDto)
                 .collect(Collectors.toList());

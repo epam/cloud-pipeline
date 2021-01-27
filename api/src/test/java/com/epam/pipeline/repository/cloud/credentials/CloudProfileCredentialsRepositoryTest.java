@@ -42,7 +42,9 @@ import static com.epam.pipeline.assertions.cloud.credentials.CloudProfileCredent
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getRole;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CloudProfileCredentialsRepositoryTest extends AbstractJpaTest {

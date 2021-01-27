@@ -32,7 +32,7 @@ import lombok.NoArgsConstructor;
         property = "cloudProvider")
 @JsonSubTypes({@JsonSubTypes.Type(value = AWSProfileCredentials.class, name = "AWS")})
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class CloudProfileCredentials {
+public abstract class AbstractCloudProfileCredentials {
 
     private Long id;
 

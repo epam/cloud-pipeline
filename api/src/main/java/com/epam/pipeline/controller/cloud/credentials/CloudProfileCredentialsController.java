@@ -19,7 +19,7 @@ package com.epam.pipeline.controller.cloud.credentials;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.AbstractCloudProfileCredentials;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -42,7 +42,8 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @PostMapping
     @ApiOperation(value = "Creates cloud profile credentials object", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<CloudProfileCredentials> create(@RequestBody final CloudProfileCredentials credentials) {
+    public Result<AbstractCloudProfileCredentials> create(
+            @RequestBody final AbstractCloudProfileCredentials credentials) {
         return Result.success(cloudProfileCredentialsApiService.create(credentials));
     }
 
@@ -50,7 +51,7 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @ApiOperation(value = "Gets the cloud profile credentials object by identifier",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<CloudProfileCredentials> get(@PathVariable final Long id) {
+    public Result<AbstractCloudProfileCredentials> get(@PathVariable final Long id) {
         return Result.success(cloudProfileCredentialsApiService.get(id));
     }
 
@@ -58,22 +59,22 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @ApiOperation(value = "Updates cloud profile credentials object by id",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<CloudProfileCredentials> update(@PathVariable final Long id,
-                                                  @RequestBody final CloudProfileCredentials credentials) {
+    public Result<AbstractCloudProfileCredentials> update(
+            @PathVariable final Long id, @RequestBody final AbstractCloudProfileCredentials credentials) {
         return Result.success(cloudProfileCredentialsApiService.update(id, credentials));
     }
 
     @DeleteMapping("/{id}")
     @ApiOperation(value = "Deletes cloud profile credentials object", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<CloudProfileCredentials> delete(@PathVariable final Long id) {
+    public Result<AbstractCloudProfileCredentials> delete(@PathVariable final Long id) {
         return Result.success(cloudProfileCredentialsApiService.delete(id));
     }
 
     @GetMapping
     @ApiOperation(value = "Loads all cloud profile credentials", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<? extends CloudProfileCredentials>> findAll() {
+    public Result<List<? extends AbstractCloudProfileCredentials>> findAll() {
         return Result.success(cloudProfileCredentialsApiService.findAll());
     }
 
@@ -81,7 +82,7 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @ApiOperation(value = "Loads all cloud profile credentials associated with a user or a role",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<? extends CloudProfileCredentials>> getAssignedProfiles(
+    public Result<List<? extends AbstractCloudProfileCredentials>> getAssignedProfiles(
             @RequestParam final Long id, @RequestParam final boolean principal) {
         return Result.success(cloudProfileCredentialsApiService.getAssignedProfiles(id, principal));
     }
@@ -90,7 +91,7 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @ApiOperation(value = "Assigns specified profiles to user or role",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<? extends CloudProfileCredentials>> assignProfiles(
+    public Result<List<? extends AbstractCloudProfileCredentials>> assignProfiles(
             @RequestParam final Long sidId, @RequestParam final boolean principal,
             @RequestParam final Set<Long> profileIds, @RequestParam(required = false) final Long defaultProfileId) {
         return Result.success(cloudProfileCredentialsApiService.assignProfiles(sidId, principal, profileIds,

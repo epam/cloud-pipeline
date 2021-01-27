@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.dto.cloud.credentials.aws;
 
-import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.AbstractCloudProfileCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-public class AWSProfileCredentials extends CloudProfileCredentials {
+public class AWSProfileCredentials extends AbstractCloudProfileCredentials {
 
     private CloudProvider cloudProvider = CloudProvider.AWS;
     private String profileName;

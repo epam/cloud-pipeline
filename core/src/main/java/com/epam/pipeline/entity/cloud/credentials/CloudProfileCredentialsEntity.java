@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.persistence.Column;
 import javax.persistence.DiscriminatorColumn;
 import javax.persistence.DiscriminatorType;
 import javax.persistence.Entity;
@@ -43,7 +44,7 @@ import java.util.List;
 @NoArgsConstructor
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @Table(name = "cloud_profile_credentials", schema = "pipeline")
-@DiscriminatorColumn(name="type", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorColumn(name="cloudProvider", discriminatorType = DiscriminatorType.STRING)
 public class CloudProfileCredentialsEntity {
 
     @Id
@@ -51,6 +52,7 @@ public class CloudProfileCredentialsEntity {
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @Column(insertable = false, updatable = false)
     private CloudProvider cloudProvider;
 
     @ManyToMany(mappedBy = "cloudProfiles")

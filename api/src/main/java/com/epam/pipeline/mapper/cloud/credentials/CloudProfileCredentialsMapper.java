@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.mapper.cloud.credentials;
 
-import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.AbstractCloudProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
 import com.epam.pipeline.dto.cloud.credentials.aws.AWSProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.aws.AWSProfileCredentialsEntity;
@@ -30,11 +30,11 @@ public interface CloudProfileCredentialsMapper {
 
     String UNSUPPORTED_CLOUD_PROVIDER = "Unsupported cloud provider: ";
 
-    default CloudProfileCredentialsEntity toEntity(final CloudProfileCredentials credentials) {
+    default CloudProfileCredentialsEntity toEntity(final AbstractCloudProfileCredentials credentials) {
         return getMapper(credentials.getCloudProvider()).toEntity(this, credentials);
     }
 
-    default CloudProfileCredentials toDto(final CloudProfileCredentialsEntity entity) {
+    default AbstractCloudProfileCredentials toDto(final CloudProfileCredentialsEntity entity) {
         return getMapper(entity.getCloudProvider()).toDTO(this, entity);
     };
 

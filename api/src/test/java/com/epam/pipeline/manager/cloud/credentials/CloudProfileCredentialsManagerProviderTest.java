@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.cloud.credentials;
 
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.dto.cloud.credentials.CloudProfileCredentials;
+import com.epam.pipeline.dto.cloud.credentials.AbstractCloudProfileCredentials;
 import com.epam.pipeline.dto.cloud.credentials.aws.AWSProfileCredentials;
 import com.epam.pipeline.entity.cloud.credentials.aws.AWSProfileCredentialsEntity;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -147,7 +147,7 @@ public class CloudProfileCredentialsManagerProviderTest {
         doReturn(entities).when(cloudProfileCredentialsRepository).findAll();
         doReturn(credentials).when(cloudProfileCredentialsMapper).toDto(credentialsEntity);
 
-        final List<? extends CloudProfileCredentials> result = manager.findAll();
+        final List<? extends AbstractCloudProfileCredentials> result = manager.findAll();
         verify(cloudProfileCredentialsRepository).findAll();
         verify(cloudProfileCredentialsMapper).toDto(credentialsEntity);
         assertThat(result).hasSize(1);
@@ -180,7 +180,7 @@ public class CloudProfileCredentialsManagerProviderTest {
         final AWSProfileCredentials credentials = awsProfileCredentials();
         doReturn(credentials).when(cloudProfileCredentialsMapper).toDto(credentialsEntity);
 
-        final List<? extends CloudProfileCredentials> result = manager.getAssignedProfiles(ID, true);
+        final List<? extends AbstractCloudProfileCredentials> result = manager.getAssignedProfiles(ID, true);
         verify(userRepository).findOne(ID);
         verify(cloudProfileCredentialsMapper).toDto(credentialsEntity);
         assertThat(result).hasSize(1);
@@ -202,7 +202,7 @@ public class CloudProfileCredentialsManagerProviderTest {
         final AWSProfileCredentials credentials = awsProfileCredentials();
         doReturn(credentials).when(cloudProfileCredentialsMapper).toDto(credentialsEntity);
 
-        final List<? extends CloudProfileCredentials> result = manager.getAssignedProfiles(ID, false);
+        final List<? extends AbstractCloudProfileCredentials> result = manager.getAssignedProfiles(ID, false);
         verify(roleRepository).findOne(ID);
         verify(cloudProfileCredentialsMapper).toDto(credentialsEntity);
         assertThat(result).hasSize(1);
@@ -226,7 +226,7 @@ public class CloudProfileCredentialsManagerProviderTest {
         final PipelineUser pipelineUser = getPipelineUser(TEST_STRING, ID);
         doReturn(pipelineUser).when(userRepository).findOne(ID);
 
-        final List<? extends CloudProfileCredentials> result = manager.assignProfiles(ID, true,
+        final List<? extends AbstractCloudProfileCredentials> result = manager.assignProfiles(ID, true,
                 profileIds, ID_2);
         verify(userRepository).findOne(ID);
         verify(cloudProfileCredentialsMapper).toDto(credentialsEntity1);
@@ -246,7 +246,7 @@ public class CloudProfileCredentialsManagerProviderTest {
         final Role role = getRole(TEST_STRING, ID);
         doReturn(role).when(roleRepository).findOne(ID);
 
-        final List<? extends CloudProfileCredentials> result = manager.assignProfiles(ID, false,
+        final List<? extends AbstractCloudProfileCredentials> result = manager.assignProfiles(ID, false,
                 profileIds, ID_2);
         verify(roleRepository).findOne(ID);
         verify(cloudProfileCredentialsMapper).toDto(credentialsEntity1);
