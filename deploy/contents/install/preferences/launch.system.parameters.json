@@ -320,5 +320,12 @@
         "description": "Allows to specify the number of times the NFS client attempts to retries an NFS mount operation after the first attempt fails",
         "defaultValue": "0",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_FS_MOUNT_TIMEOUT",
+        "type": "int",
+        "description": "Allows to specify the time in deciseconds the NFS client waits for a response before it retries an NFS request",
+        "defaultValue": "7",
+        "passToWorkers": false
     }
 ]

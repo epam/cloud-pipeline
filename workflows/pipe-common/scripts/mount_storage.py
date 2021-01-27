@@ -587,8 +587,9 @@ class NFSMounter(StorageMounter):
             else:
                 mount_options += ',' + file_mode_options
 
-        mount_attempt = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
-        mount_attempt_option = 'retry={}'.format(mount_attempt)
+        mount_timeo = os.getenv('CP_FS_MOUNT_TIMEOUT', 7)
+        mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
+        mount_attempt_option = 'timeo={timeo},retry={retry}'.format(timeo=mount_timeo, retry=mount_retry)
         if not mount_options:
             mount_options = mount_attempt_option
         else:
