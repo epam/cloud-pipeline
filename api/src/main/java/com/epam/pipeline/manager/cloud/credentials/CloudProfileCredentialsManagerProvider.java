@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -81,8 +82,7 @@ public class CloudProfileCredentialsManagerProvider {
 
     public List<? extends AbstractCloudProfileCredentials> getAssignedProfiles(final Long id, final boolean principal) {
         if (principal) {
-            final PipelineUser user = findUserEntity(id);
-            return toDtos(user.getCloudProfiles());
+            return findUserProfiles(id);
         }
         final Role role = findRoleEntity(id);
         return toDtos(role.getCloudProfiles());
@@ -102,7 +102,10 @@ public class CloudProfileCredentialsManagerProvider {
         return mapper.toDto(entity);
     }
 
-    public List<? extends AbstractCloudProfileCredentials> findAll() {
+    public List<? extends AbstractCloudProfileCredentials> findAll(final Long userId) {
+        if (Objects.nonNull(userId)) {
+            return findAllForUser(userId);
+        }
         return toDtos(repository.findAll());
     }
 
@@ -199,5 +202,22 @@ public class CloudProfileCredentialsManagerProvider {
         final Role roleEntity = roleRepository.findOne(roleId);
         Assert.notNull(roleEntity, messageHelper.getMessage(MessageConstants.ERROR_ROLE_ID_NOT_FOUND, roleId));
         return roleEntity;
+    }
+
+    private List<? extends AbstractCloudProfileCredentials> findUserProfiles(final Long id) {
+        final PipelineUser user = findUserEntity(id);
+        return toDtos(user.getCloudProfiles());
+    }
+
+    private List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long id) {
+        final PipelineUser user = findUserEntity(id);
+        final List<? extends AbstractCloudProfileCredentials> userProfiles = toDtos(user.getCloudProfiles());
+        final List<Role> roles = user.getRoles();
+        final List<? extends AbstractCloudProfileCredentials> rolesProfiles = roles.stream()
+                .flatMap(role -> toDtos(role.getCloudProfiles()).stream())
+                .collect(Collectors.toList());
+        return Stream.concat(userProfiles.stream(), rolesProfiles.stream())
+                .distinct()
+                .collect(Collectors.toList());
     }
 }

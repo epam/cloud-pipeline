@@ -40,7 +40,6 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class AWSProfileCredentialsManager implements CloudProfileCredentialsManager<AWSProfileCredentials> {
-    private static final String AWS_DEFAULT_PROFILE = "default";
 
     private final AWSProfileCredentialsRepository repository;
     private final CloudProfileCredentialsMapper mapper;
@@ -58,9 +57,6 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
         validateProfileCredentials(credentials);
         final AWSProfileCredentialsEntity entity = mapper.toAWSEntity(credentials);
         entity.setId(null);
-        if (StringUtils.isBlank(credentials.getProfileName())) {
-            entity.setProfileName(AWS_DEFAULT_PROFILE);
-        }
         return mapper.toAWSDto(repository.save(entity));
     }
 
@@ -70,9 +66,7 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
         validateProfileCredentials(credentials);
         final AWSProfileCredentialsEntity entity = findEntity(id);
         entity.setAssumedRole(credentials.getAssumedRole());
-        if (StringUtils.isBlank(credentials.getProfileName())) {
-            entity.setProfileName(AWS_DEFAULT_PROFILE);
-        }
+        entity.setProfileName(credentials.getProfileName());
         entity.setPolicy(credentials.getPolicy());
         repository.save(entity);
         return mapper.toAWSDto(entity);
@@ -102,6 +96,8 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
                 messageHelper.getMessage(MessageConstants.ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND));
         Assert.state(StringUtils.isNotBlank(credentials.getPolicy()),
                 messageHelper.getMessage(MessageConstants.ERROR_PROFILE_POLICY_NOT_FOUND));
+        Assert.state(StringUtils.isNotBlank(credentials.getProfileName()),
+                messageHelper.getMessage(MessageConstants.ERROR_PROFILE_NAME_NOT_FOUND));
     }
 
     private String getRegionCode(final AbstractCloudRegion region) {

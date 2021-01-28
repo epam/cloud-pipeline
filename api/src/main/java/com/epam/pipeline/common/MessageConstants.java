@@ -579,6 +579,7 @@ public final class MessageConstants {
     public static final String ERROR_PROFILE_HAS_LINKS = "error.profile.has.links";
     public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
     public static final String ERROR_PROFILE_POLICY_NOT_FOUND = "error.profile.policy.not.found";
+    public static final String ERROR_PROFILE_NAME_NOT_FOUND = "error.profile.name.not.found";
 
     private MessageConstants() {
         // no-op

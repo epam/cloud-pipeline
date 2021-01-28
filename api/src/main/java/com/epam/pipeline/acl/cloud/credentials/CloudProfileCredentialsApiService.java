@@ -55,8 +55,8 @@ public class CloudProfileCredentialsApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<? extends AbstractCloudProfileCredentials> findAll() {
-        return manager.findAll();
+    public List<? extends AbstractCloudProfileCredentials> findAll(final Long userId) {
+        return manager.findAll(userId);
     }
 
     @PreAuthorize(ADMIN_ONLY)

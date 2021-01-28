@@ -69,7 +69,13 @@ public class PipelineUser implements StorageContainer {
     @Column(name = "name")
     private String userName;
 
-    @Transient
+    @ManyToMany
+    @JoinTable(
+            name = "user_roles",
+            schema = "pipeline",
+            inverseJoinColumns = { @JoinColumn(name = "role_id") },
+            joinColumns = { @JoinColumn(name = "user_id") }
+    )
     private List<Role> roles;
 
     @Transient

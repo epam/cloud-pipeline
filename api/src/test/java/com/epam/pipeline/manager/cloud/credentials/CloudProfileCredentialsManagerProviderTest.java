@@ -147,7 +147,7 @@ public class CloudProfileCredentialsManagerProviderTest {
         doReturn(entities).when(cloudProfileCredentialsRepository).findAll();
         doReturn(credentials).when(cloudProfileCredentialsMapper).toDto(credentialsEntity);
 
-        final List<? extends AbstractCloudProfileCredentials> result = manager.findAll();
+        final List<? extends AbstractCloudProfileCredentials> result = manager.findAll(null);
         verify(cloudProfileCredentialsRepository).findAll();
         verify(cloudProfileCredentialsMapper).toDto(credentialsEntity);
         assertThat(result).hasSize(1);
