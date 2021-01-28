@@ -58,9 +58,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.epam.pipeline.util.CustomMatchers.matches;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -74,9 +76,9 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
     private static final String ADMIN = "ADMIN";
     private static final String TEST_USER = "USER";
     private static final String TEST_REPO = "repository";
-    private static final String TEST_REPO_WITH_EXTERNAL_PATH = "repository3";
+    private static final String TEST_REPO_WITH_EXTERNAL_PATH = "repository2";
     private static final String EXTERNAL_REPO_PATH = "external_repository";
-    private static final String TEST_REPO_WITHOUT_WRITE_ACCESS = "repository2";
+    private static final String TEST_REPO_WITHOUT_WRITE_ACCESS = "repository3";
     private static final String TEST_IMAGE = "library/image";
     private static final String TEST_IMAGE_NEW_GROUP = "library2/image";
     private static final String PUSH_ACTION = "push";
@@ -85,8 +87,13 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
     public static final String LATEST = "latest";
     public static final long DOCKER_SIZE = 123456L;
     private static final Long REGISTRY_ID_1 = 1L;
+    private static final Long REGISTRY_ID_2 = 8L;
     private static final Long TOOLGROUP_ID_1 = 2L;
     private static final Long TOOL_ID_1 = 3L;
+    private static final Long TOOLGROUP_ID_2 = 4L;
+    private static final Long TOOL_ID_2 = 5L;
+    private static final Long TOOLGROUP_ID_3 = 6L;
+    private static final Long TOOL_ID_3 = 7L;
 
     @Autowired
     private AclTestDao aclTestDao;
@@ -121,8 +128,14 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
     private ToolVersionManager mockToolVersionManager;
 
     private DockerRegistry registry1;
-    private ToolGroup toolGroup;
-    private Tool tool;
+    private DockerRegistry registry2;
+    private DockerRegistry registry3;
+    private ToolGroup toolGroup1;
+    private ToolGroup toolGroup2;
+    private ToolGroup toolGroup3;
+    private Tool tool1;
+    private Tool tool2;
+    private Tool tool3;
 
     @Before
     public void setUp() {
@@ -141,25 +154,40 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
         registry1.setOwner(TEST_USER);
         mockRegistryDao.createDockerRegistry(registry1);
 
-        DockerRegistry registry2 = new DockerRegistry();
-        registry2.setPath(TEST_REPO_WITHOUT_WRITE_ACCESS);
+        registry2 = new DockerRegistry();
+        registry2.setId(REGISTRY_ID_2);
+        registry2.setPath(TEST_REPO_WITH_EXTERNAL_PATH);
+        registry2.setExternalUrl(EXTERNAL_REPO_PATH);
         registry2.setOwner(ADMIN);
         mockRegistryDao.createDockerRegistry(registry2);
 
-        DockerRegistry registry3 = new DockerRegistry();
-        registry3.setPath(TEST_REPO_WITH_EXTERNAL_PATH);
-        registry3.setExternalUrl(EXTERNAL_REPO_PATH);
+        registry3 = new DockerRegistry();
+        registry3.setPath(TEST_REPO_WITHOUT_WRITE_ACCESS);
         registry3.setOwner(ADMIN);
         mockRegistryDao.createDockerRegistry(registry3);
 
-        toolGroup = new ToolGroup();
-        toolGroup.setId(TOOLGROUP_ID_1);
-        toolGroup.setName("library");
-        toolGroup.setRegistryId(registry1.getId());
-        toolGroup.setOwner(TEST_USER);
-        toolGroupDao.createToolGroup(toolGroup);
+        toolGroup1 = new ToolGroup();
+        toolGroup1.setId(TOOLGROUP_ID_1);
+        toolGroup1.setName("library");
+        toolGroup1.setRegistryId(registry1.getId());
+        toolGroup1.setOwner(TEST_USER);
+        toolGroupDao.createToolGroup(toolGroup1);
 
-        tool = buildTool(toolGroup, TEST_IMAGE, registry1, TEST_USER);
+        toolGroup2 = new ToolGroup();
+        toolGroup1.setId(TOOLGROUP_ID_2);
+        toolGroup1.setName("library2");
+        toolGroup1.setRegistryId(registry1.getId());
+        toolGroup1.setOwner(TEST_USER);
+
+        toolGroup3 = new ToolGroup();
+        toolGroup3.setId(TOOLGROUP_ID_3);
+        toolGroup3.setName("library");
+        toolGroup3.setRegistryId(registry2.getId());
+        toolGroup3.setOwner(TEST_USER);
+
+        tool1 = buildTool(toolGroup1, TEST_IMAGE, registry1, TEST_USER);
+        tool2 = buildTool(toolGroup2, TEST_IMAGE_NEW_GROUP, registry1, TEST_USER);
+        tool3 = buildTool(toolGroup3, TEST_IMAGE, registry2, TEST_USER);
 
         // And for USER group, which all users are belong to
         AclTestDao.AclSid userGroupSid = new AclTestDao.AclSid(false, "ROLE_USER");
@@ -187,7 +215,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
                 registryAclClass.getId(), null, true);
         aclTestDao.createObjectIdentity(registryIdentity3);
 
-        AclTestDao.AclObjectIdentity groupIdentity = new AclTestDao.AclObjectIdentity(testUserSid, toolGroup.getId(),
+        AclTestDao.AclObjectIdentity groupIdentity = new AclTestDao.AclObjectIdentity(testUserSid, toolGroup1.getId(),
                                                                 groupAclClass.getId(), null, true);
         aclTestDao.createObjectIdentity(groupIdentity);
 
@@ -209,16 +237,16 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
         groupAclEntry.setOrder(2);
         aclTestDao.createAclEntry(groupAclEntry);
 
-        //Only Admin can write to second registry
         AclTestDao.AclEntry registryAclEntry2 = new AclTestDao.AclEntry(registryIdentity2, 1, adminSid,
                 AclPermission.WRITE.getMask(), true);
         aclTestDao.createAclEntry(registryAclEntry2);
+        registryAclEntry2.setSid(testUserSid);
+        registryAclEntry2.setOrder(2);
+        aclTestDao.createAclEntry(registryAclEntry2);
 
+        //Only Admin can write to second registry
         AclTestDao.AclEntry registryAclEntry3 = new AclTestDao.AclEntry(registryIdentity3, 1, adminSid,
                 AclPermission.WRITE.getMask(), true);
-        aclTestDao.createAclEntry(registryAclEntry3);
-        registryAclEntry3.setSid(testUserSid);
-        registryAclEntry3.setOrder(2);
         aclTestDao.createAclEntry(registryAclEntry3);
 
         MockitoAnnotations.initMocks(this);
@@ -243,61 +271,78 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
                 any(DockerRegistry.class), any(DockerClient.class));
     }
 
-    private Tool buildTool(ToolGroup toolGroup, String toolName, DockerRegistry dockerRegistry, String actor) {
-        Tool tool = new Tool();
-        tool.setToolGroup(toolGroup.getName());
-        tool.setToolGroupId(toolGroup.getId());
-        tool.setImage(toolName);
-        tool.setCpu("0mi");
-        tool.setRam("0Gi");
-        tool.setRegistry(dockerRegistry.getPath());
-        tool.setRegistryId(dockerRegistry.getId());
-        tool.setOwner(actor);
-        return tool;
-    }
-
-    private ImmutablePair<String, String> splitAndGetPairOf(String string) {
-        String[] groupAndTool = string.split("/");
-        return new ImmutablePair<>(groupAndTool[0], groupAndTool[1]);
-    }
-
-    private Tool cloneToolAndSetId(Tool tool, Long id) {
-        Tool newTool = new Tool();
-        newTool.setToolGroup(tool.getToolGroup());
-        newTool.setToolGroupId(tool.getToolGroupId());
-        newTool.setImage(tool.getImage());
-        newTool.setCpu(tool.getCpu());
-        newTool.setRam(tool.getRam());
-        newTool.setRegistry(tool.getRegistry());
-        newTool.setRegistryId(tool.getRegistryId());
-        newTool.setOwner(tool.getOwner());
-        newTool.setId(id);
-        newTool.setParent(tool.getParent());
-        return newTool;
-    }
-
-    private void startUp() {
+    private void startUp1() {
         doReturn(registry1).when(mockRegistryDao).loadDockerRegistry(eq(TEST_REPO));
         doReturn(false).when(mockMetadataManager).hasMetadata(
                 eq(new EntityVO(registry1.getId(), AclClass.DOCKER_REGISTRY)));
         doReturn(splitAndGetPairOf(TEST_IMAGE)).when(mockToolGroupManager).getGroupAndTool(eq(TEST_IMAGE));
         doReturn(true).when(mockToolGroupManager).doesToolGroupExist(eq(TEST_REPO), eq(getGroupFrom(TEST_IMAGE)));
-        doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(eq(getIdentifierFrom(registry1, TEST_IMAGE)));
+        doReturn(toolGroup1).when(mockToolGroupManager).loadByNameOrId(eq(getIdentifierFrom(registry1, TEST_IMAGE)));
         doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(TEST_IMAGE), eq(TOOLGROUP_ID_1));
         doReturn(true).when(mockGrantPermissionManager).isActionAllowedForUser(
-                eq(toolGroup), TEST_USER, eq(AclPermission.WRITE));
-        doReturn(cloneToolAndSetId(tool, TOOL_ID_1)).when(mockToolManager).create(eq(tool), eq(false));
-        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_1), eq(LATEST),
-                eq(TEST_IMAGE), eq(registry1), eq(null));
+                eq(toolGroup1), TEST_USER, eq(AclPermission.WRITE));
+        doReturn(cloneToolAndSetId(tool1, TOOL_ID_1)).when(mockToolManager).create(eq(tool1), eq(false));
+        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_1), eq(LATEST), eq(TEST_IMAGE),
+                argThat(matches(registry -> REGISTRY_ID_1.equals(registry.getId()) &&
+                        registry.getTools().contains(eq(tool1)))), eq(null));
     }
 
-    private String getIdentifierFrom(DockerRegistry registry, String image) {
-        return registry.getPath() + Constants.PATH_DELIMITER + getGroupFrom(image);
+    private void startUp2() {
+        doReturn(registry1).when(mockRegistryDao).loadDockerRegistry(eq(TEST_REPO));
+        doReturn(false).when(mockMetadataManager).hasMetadata(
+                eq(new EntityVO(registry1.getId(), AclClass.DOCKER_REGISTRY)));
+        doReturn(splitAndGetPairOf(TEST_IMAGE_NEW_GROUP)).when(mockToolGroupManager).getGroupAndTool(eq(TEST_IMAGE_NEW_GROUP));
+        doReturn(false).when(mockToolGroupManager).doesToolGroupExist(
+                eq(TEST_REPO), eq(getGroupFrom(TEST_IMAGE_NEW_GROUP)));
+        doReturn(true).when(mockGrantPermissionManager).isActionAllowedForUser(
+                eq(registry1), TEST_USER, eq(AclPermission.WRITE));
+        doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(TEST_IMAGE_NEW_GROUP), eq(TOOLGROUP_ID_2));
+        doReturn(true).when(mockGrantPermissionManager).isActionAllowedForUser(
+                eq(toolGroup2), TEST_USER, eq(AclPermission.WRITE));
+        doReturn(cloneToolAndSetId(tool2, TOOL_ID_2)).when(mockToolManager).create(eq(tool2), eq(false));
+        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_2), eq(LATEST), eq(TEST_IMAGE_NEW_GROUP),
+                argThat(matches(registry -> REGISTRY_ID_1.equals(registry.getId()) &&
+                        registry.getTools().contains(eq(tool2)))), eq(null));
     }
 
-    private String getGroupFrom(String testImage) {
-        return testImage.substring(0, testImage.indexOf(Constants.PATH_DELIMITER));
+    private void startUp3() {}
+
+    private void startUp4() {
+        doReturn(registry1).when(mockRegistryDao).loadDockerRegistry(eq(TEST_REPO));
+        doReturn(false).when(mockMetadataManager).hasMetadata(
+                eq(new EntityVO(registry1.getId(), AclClass.DOCKER_REGISTRY)));
+        doReturn(splitAndGetPairOf(TEST_IMAGE)).when(mockToolGroupManager).getGroupAndTool(eq(TEST_IMAGE));
+        doReturn(true).when(mockToolGroupManager).doesToolGroupExist(eq(TEST_REPO), eq(getGroupFrom(TEST_IMAGE)));
+        doReturn(toolGroup1).when(mockToolGroupManager).loadByNameOrId(eq(getIdentifierFrom(registry1, TEST_IMAGE)));
+        doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(TEST_IMAGE), eq(TOOLGROUP_ID_1));
+        doReturn(true).when(mockGrantPermissionManager).isActionAllowedForUser(
+                eq(toolGroup1), TEST_USER, eq(AclPermission.WRITE));
+        doReturn(cloneToolAndSetId(tool1, TOOL_ID_1)).when(mockToolManager).create(eq(tool1), eq(false));
+        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_1), eq(LATEST), eq(TEST_IMAGE),
+                argThat(matches(registry -> REGISTRY_ID_1.equals(registry.getId()) &&
+                        registry.getTools().contains(eq(tool1)))), eq(null));
     }
+
+    private void startUp5() {
+        doReturn(null).when(mockRegistryDao).loadDockerRegistry(eq(EXTERNAL_REPO_PATH));
+        doReturn(registry2).when(mockRegistryDao).loadDockerRegistryByExternalUrl(eq(EXTERNAL_REPO_PATH));
+        doReturn(false).when(mockMetadataManager).hasMetadata(
+                eq(new EntityVO(registry1.getId(), AclClass.DOCKER_REGISTRY)));
+        doReturn(splitAndGetPairOf(TEST_IMAGE)).when(mockToolGroupManager).getGroupAndTool(eq(TEST_IMAGE));
+        doReturn(false).when(mockToolGroupManager).doesToolGroupExist(eq(EXTERNAL_REPO_PATH), eq(getGroupFrom(TEST_IMAGE)));
+        doReturn(true).when(mockGrantPermissionManager).isActionAllowedForUser(
+                eq(registry2), TEST_USER, eq(AclPermission.WRITE));
+        doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(TEST_IMAGE), eq(TOOLGROUP_ID_3));
+        //TODO Parent в ToolGroup
+        doReturn(true).when(mockGrantPermissionManager).isActionAllowedForUser(
+                eq(toolGroup3), TEST_USER, eq(AclPermission.WRITE));
+        doReturn(cloneToolAndSetId(tool3, TOOL_ID_3)).when(mockToolManager).create(eq(tool3), eq(false));
+        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_3), eq(LATEST), eq(TEST_IMAGE),
+                argThat(matches(registry -> REGISTRY_ID_2.equals(registry.getId()) &&
+                        registry.getTools().contains(eq(tool3)))), eq(null));
+        //TODO registy везде принимается без id?
+    }
+
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -396,6 +441,47 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
         Assert.assertEquals(2, registeredTools.size());
         Assert.assertEquals(registeredTools.get(0).getId(), registeredTools.get(1).getId());
+    }
+
+    private Tool buildTool(ToolGroup toolGroup, String toolName, DockerRegistry dockerRegistry, String actor) {
+        Tool tool = new Tool();
+        tool.setToolGroup(toolGroup.getName());
+        tool.setToolGroupId(toolGroup.getId());
+        tool.setImage(toolName);
+        tool.setCpu("0mi");
+        tool.setRam("0Gi");
+        tool.setRegistry(dockerRegistry.getPath());
+        tool.setRegistryId(dockerRegistry.getId());
+        tool.setOwner(actor);
+        return tool;
+    }
+
+    private ImmutablePair<String, String> splitAndGetPairOf(String string) {
+        String[] groupAndTool = string.split("/");
+        return new ImmutablePair<>(groupAndTool[0], groupAndTool[1]);
+    }
+
+    private Tool cloneToolAndSetId(Tool tool, Long id) {
+        Tool newTool = new Tool();
+        newTool.setToolGroup(tool.getToolGroup());
+        newTool.setToolGroupId(tool.getToolGroupId());
+        newTool.setImage(tool.getImage());
+        newTool.setCpu(tool.getCpu());
+        newTool.setRam(tool.getRam());
+        newTool.setRegistry(tool.getRegistry());
+        newTool.setRegistryId(tool.getRegistryId());
+        newTool.setOwner(tool.getOwner());
+        newTool.setId(id);
+        newTool.setParent(tool.getParent());
+        return newTool;
+    }
+
+    private String getIdentifierFrom(DockerRegistry registry, String image) {
+        return registry.getPath() + Constants.PATH_DELIMITER + getGroupFrom(image);
+    }
+
+    private String getGroupFrom(String testImage) {
+        return testImage.substring(0, testImage.indexOf(Constants.PATH_DELIMITER));
     }
 
     private DockerRegistryEventEnvelope generateDockerRegistryEvents(List<String> users,
