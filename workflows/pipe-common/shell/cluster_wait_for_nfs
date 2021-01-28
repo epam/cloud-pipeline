@@ -112,11 +112,26 @@ elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
     if [ "${CP_CAP_NFS_DEBUG}" == "true" ] || [ "${CP_CAP_NFS_DEBUG}" == "yes" ]; then
         MOUNT_OPTIONS="${MOUNT_OPTIONS} -o debug"
     fi
+
     mkdir -p ${SHARED_PATH} && \
-    rm -rf ${SHARED_PATH}/* && \
-    mfsmount -H lizardfs-master ${MOUNT_OPTIONS} ${SHARED_PATH}
-    
-    if [ $? -ne 0 ]
+    rm -rf ${SHARED_PATH}/*
+    nfs_mount_exit_code=$?
+
+    if [ $nfs_mount_exit_code -eq 0 ]; then
+        export CP_CAP_NFS_MOUNT_ATTEMPTS="${CP_CAP_NFS_MOUNT_ATTEMPTS:-6}"
+        export CP_CAP_NFS_MOUNT_DELAY="${CP_CAP_NFS_MOUNT_DELAY:-10}"
+        for nfs_mount_attempt in $(seq 1 "$CP_CAP_NFS_MOUNT_ATTEMPTS"); do
+            mfsmount -H lizardfs-master ${MOUNT_OPTIONS} ${SHARED_PATH}
+            nfs_mount_exit_code=$?
+            if [ $nfs_mount_exit_code -eq 0 ]; then
+                break
+            fi
+            pipe_log_warn "Mounting NFS folder has failed at $nfs_mount_attempt attempt. Trying again in $CP_CAP_NFS_MOUNT_DELAY seconds." "$FS_SETUP_TASK"
+            sleep "$CP_CAP_NFS_MOUNT_DELAY"
+        done
+    fi
+
+    if [ $nfs_mount_exit_code -ne 0 ]
     then
         pipe_log_fail "Failed to mount LFS to worker node" "$FS_SETUP_TASK"
         exit 1
