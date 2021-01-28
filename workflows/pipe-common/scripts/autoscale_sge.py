@@ -659,6 +659,10 @@ class GridEngineScaleUpHandler:
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
             run = self.api.load_run(run_id)
+            if run.get('status', 'RUNNING') != 'RUNNING':
+                error_msg = 'Additional worker is not running. Probably it has failed.'
+                Logger.warn(error_msg, crucial=True)
+                raise ScalingError(error_msg)
             if 'podIP' in run:
                 pod = KubernetesPod(ip=run['podIP'], name=run['podId'])
                 Logger.info('Additional worker pod has started with ip=%s and name=%s.' % (pod.ip, pod.name))
@@ -680,6 +684,10 @@ class GridEngineScaleUpHandler:
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts > 0:
             run = self.api.load_run(run_id)
+            if run.get('status', 'RUNNING') != 'RUNNING':
+                error_msg = 'Additional worker is not running. Probably it has failed.'
+                Logger.warn(error_msg, crucial=True)
+                raise ScalingError(error_msg)
             if run['initialized']:
                 Logger.info('Additional worker with run_id=%s has been marked as initialized.' % run_id)
                 Logger.info('Checking additional worker with run_id=%s grid engine initialization status.' % run_id)
