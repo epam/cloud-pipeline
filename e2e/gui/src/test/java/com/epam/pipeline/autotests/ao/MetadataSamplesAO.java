@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         return this;
     }
 
-    public PipelinesLibraryAO returnToMetadate() {
+    public PipelinesLibraryAO returnToMetadata() {
         click(byXpath(".//div//a[.='Metadata']"));
         return new PipelinesLibraryAO();
     }
@@ -150,10 +150,10 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         return this;
     }
 
-    public MetadataSamplesAO addInstanceWithValue(String metadate, String value) {
+    public MetadataSamplesAO addInstanceWithValue(String metadata, String value) {
         click(ADD_INSTANCE);
         SelenideElement element = context().$(byId("add-instance-form"))
-                .$(byText(metadate)).parent().$(byXpath("following::input"));
+                .$(byText(metadata)).parent().$(byXpath("following::input"));
         setValue(element, value);
         click(byId("add-instance-form-create-button"));
         return this;
