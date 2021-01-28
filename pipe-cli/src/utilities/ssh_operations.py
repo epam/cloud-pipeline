@@ -693,7 +693,11 @@ def add_record_to_openssh_config(local_port, remote_host, passwordless_config):
     remove_record_from_openssh_config(remote_host, passwordless_config)
     logging.info('Appending host record to ssh config...')
     ssh_config_path_existed = os.path.exists(passwordless_config.local_openssh_config_path)
-    with open(passwordless_config.local_openssh_config_path, 'a') as f:
+    with open(passwordless_config.local_openssh_config_path, 'a+') as f:
+        if ssh_config_path_existed:
+            f.seek(0)
+            if not (f.read() or '').endswith('\n'):
+                f.write('\n')
         f.write('Host {}\n'
                 '    Hostname 127.0.0.1\n'
                 '    Port {}\n'
@@ -712,13 +716,20 @@ def remove_record_from_openssh_config(remote_host, passwordless_config):
             ssh_config_lines = f.readlines()
         updated_ssh_config_lines = []
         skip_host = False
+        skip_newlines = False
         for line in ssh_config_lines:
             if line.startswith('Host '):
+                skip_newlines = False
                 if line.startswith('Host {}'.format(remote_host)):
                     skip_host = True
                 else:
                     skip_host = False
             if not skip_host:
+                if not line or not line.strip():
+                    if skip_newlines:
+                        continue
+                    else:
+                        skip_newlines = True
                 updated_ssh_config_lines.append(line)
         with open(passwordless_config.local_openssh_config_path, 'w') as f:
             f.writelines(updated_ssh_config_lines)
@@ -727,6 +738,7 @@ def remove_record_from_openssh_config(remote_host, passwordless_config):
 
 
 def copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config):
+    remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, passwordless_config)
     logging.info('Copying remote public key to known hosts...')
     ssh_known_hosts_temp_path = passwordless_config.local_openssh_known_hosts_path + '_{}'.format(random.randint(0, sys.maxsize))
     run_scp_download(run_id, passwordless_config.remote_host_rsa_public_key_path, ssh_known_hosts_temp_path,
@@ -735,7 +747,11 @@ def copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, re
         public_key = f.read().strip()
     os.remove(ssh_known_hosts_temp_path)
     ssh_known_hosts_path_existed = os.path.exists(passwordless_config.local_openssh_known_hosts_path)
-    with open(passwordless_config.local_openssh_known_hosts_path, 'a') as f:
+    with open(passwordless_config.local_openssh_known_hosts_path, 'a+') as f:
+        if ssh_known_hosts_path_existed:
+            f.seek(0)
+            if not (f.read() or '').endswith('\n'):
+                f.write('\n')
         f.write('[127.0.0.1]:{} {}\n'.format(local_port, public_key))
     if not ssh_known_hosts_path_existed and not is_windows():
         os.chmod(passwordless_config.local_openssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
@@ -747,11 +763,12 @@ def remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, passwo
         with open(passwordless_config.local_openssh_known_hosts_path, 'r') as f:
             ssh_known_hosts_lines = f.readlines()
         updated_ssh_known_hosts_lines = [line for line in ssh_known_hosts_lines
-                                         if not line.startswith('[127.0.0.1]:{}'.format(local_port))]
-        with open(passwordless_config.local_openssh_config_path, 'w') as f:
+                                         if line and line.strip()
+                                         and not line.startswith('[127.0.0.1]:{}'.format(local_port))]
+        with open(passwordless_config.local_openssh_known_hosts_path, 'w') as f:
             f.writelines(updated_ssh_known_hosts_lines)
         if not is_windows():
-            os.chmod(passwordless_config.local_openssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
+            os.chmod(passwordless_config.local_openssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
 def perform_command(executable, log_file=None, collect_output=True):
