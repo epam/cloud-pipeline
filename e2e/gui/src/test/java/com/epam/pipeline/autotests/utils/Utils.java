@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -393,5 +394,13 @@ public class Utils {
     public static String entityIDfromURL() {
         String url = WebDriverRunner.getWebDriver().getCurrentUrl();
         return url.substring(url.lastIndexOf("/") + 1);
+    }
+
+    public static File getFile(String filename) {
+        try {
+            return Paths.get(ClassLoader.getSystemResource(filename).toURI()).toFile();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Unable to get resource file");
+        }
     }
 }

@@ -430,6 +430,12 @@
         </classes>
     </test>
 
+    <test name="SampleProcessingModuleTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.SampleProcessingModuleTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
