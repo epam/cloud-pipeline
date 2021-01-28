@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
+import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
@@ -122,6 +123,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -464,6 +466,14 @@ public class AclTestBeans {
 
     @MockBean
     protected RoleManager mockRoleManager;
+
+    @MockBean
+    protected DockerRegistryDao mockDockerRegistryDao;
+
+    @Bean
+    protected TemplatesScanner mockTemplatesScanner() {
+        return Mockito.mock(TemplatesScanner.class);
+    }
 
     @MockBean
     protected CloudProfileCredentialsManagerProvider mockCloudProfileCredentialsManagerProvider;
