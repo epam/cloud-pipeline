@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -198,6 +198,9 @@ class PipelineAPI:
     NOTIFICATION_URL = '/notification'
     REGION_URL = '/cloud/region'
     LOAD_ALLOWED_INSTANCE_TYPES = '/cluster/instance/allowed?regionId=%s&spot=%s'
+    LOAD_PROFILE_CREDENTIALS = 'cloud/credentials/generate/%d'
+    LOAD_PROFILES = 'cloud/credentials'
+    LOAD_USER_BY_NAME = 'user?name=%s'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -840,3 +843,38 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load generated upload url for storage ID {}. "
                                "Error message: {}".format(str(storage_id), str(e.message)))
+
+    def load_profile_credentials(self, profile_id, region_id=None):
+        try:
+            url = str(self.api_url) + self.LOAD_PROFILE_CREDENTIALS % int(profile_id)
+            if region_id:
+                url += '?regionId=%d' % int(region_id)
+            return self.execute_request(url, method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to generate profile credentials for profile ID '{}'. "
+                               "Error message: {}".format(str(profile_id), str(e.message)))
+
+    def load_profiles_for_user(self, user_id=None):
+        try:
+            url = str(self.api_url) + self.LOAD_PROFILES
+            if user_id:
+                url += '?userId=%d' % int(user_id)
+            result = self.execute_request(url, method='get')
+            return [] if result is None else result
+        except Exception as e:
+            raise RuntimeError("Failed to load profile credentials. Error message: {}".format(str(e.message)))
+
+    def get_region(self, region_id):
+        try:
+            url = str(self.api_url) + self.REGION_URL + '/%d' % region_id
+            return self.execute_request(url, method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to get region by ID '{}'.", "Error message: {}".format(str(region_id),
+                                                                                              str(e.message)))
+
+    def load_user_by_name(self, user_name):
+        try:
+            url = str(self.api_url) + self.LOAD_USER_BY_NAME % user_name
+            return self.execute_request(url, method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load profile credentials. Error message: {}".format(str(e.message)))
