@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -784,6 +784,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(2, SECONDS);
+                searchGroupBySubstring(group);
                 performIf(context().$$(byText(group)).filterBy(visible).first().exists(), t -> deleteGroup(group));
                 return this;
             }
@@ -800,7 +801,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public GroupsTabAO searchGroupBySubstring(final String part) {
-                click(SEARCH);
                 setValue(SEARCH, part);
                 return this;
             }
@@ -1021,6 +1021,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             SelenideElement checkBox = context().shouldBe(visible)
                     .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
             if (!checkBox.has(cssClass("ant-checkbox-checked"))) {
+                checkBox.click();
+            }
+            if (context().find(byClassName("anticon-eye-o")).isDisplayed()) {
+                context().find(byClassName("anticon-eye-o")).click();
+            }
+            return this;
+        }
+
+        public PreferencesAO setStorageUserHomeAutoDisabled() {
+            setValue(SEARCH, "storage.user.home.auto").enter();
+            SelenideElement checkBox = context().shouldBe(visible)
+                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
+            if (checkBox.has(cssClass("ant-checkbox-checked"))) {
                 checkBox.click();
             }
             if (context().find(byClassName("anticon-eye-o")).isDisplayed()) {
