@@ -41,7 +41,7 @@ yum install -y  nc \
                 curl \
                 wget \
                 btrfs-progs && \
-curl https://bootstrap.pypa.io/get-pip.py | python -
+curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
 
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \

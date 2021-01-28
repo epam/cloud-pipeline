@@ -211,4 +211,9 @@ public abstract class AbstractControllerTest {
         }
         return map;
     }
+
+    @SneakyThrows
+    public String stringOf(Object object) {
+        return objectMapper.writeValueAsString(object);
+    }
 }

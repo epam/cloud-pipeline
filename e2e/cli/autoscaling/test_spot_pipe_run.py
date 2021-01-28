@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common_utils.entity_managers import PipelineManager
-from utils.pipeline_utils import *
+from ..common_utils.entity_managers import PipelineManager
+from ..common_utils.test_utils import format_name
+from ..utils.pipeline_utils import *
 
 MAX_REPETITIONS = 100
 
@@ -22,11 +23,11 @@ MAX_REPETITIONS = 100
                     reason="Spot instances (low priority virtual machines) are not supported for launching AZURE")
 class TestSpotPipelineRun(object):
     pipeline_id = None
-    pipeline_name = 'spot_integration_pipeline_test'
+    pipeline_name = format_name('spot_integration_pipeline_test')
     run_id = None
     node_name = None
     state = FailureIndicator()
-    test_case = 'EPMCMBIBPC-67'
+    test_case = 'TC-SCALING-11'
 
     @classmethod
     def setup_class(cls):

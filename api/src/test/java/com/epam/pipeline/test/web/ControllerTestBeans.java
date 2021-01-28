@@ -52,7 +52,7 @@ import com.epam.pipeline.acl.notification.NotificationSettingsApiService;
 import com.epam.pipeline.acl.notification.NotificationTemplateApiService;
 import com.epam.pipeline.acl.notification.SystemNotificationApiService;
 import com.epam.pipeline.acl.folder.FolderApiService;
-import com.epam.pipeline.manager.pipeline.PipelineConfigApiService;
+import com.epam.pipeline.acl.pipeline.PipelineConfigApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;

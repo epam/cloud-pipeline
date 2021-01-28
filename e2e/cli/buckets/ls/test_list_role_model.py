@@ -15,12 +15,13 @@
 from buckets.utils.listing import *
 from buckets.utils.assertions_utils import *
 from buckets.utils.utilities_for_test import *
+from common_utils.test_utils import format_name
 
 
 class TestLsWithRoleModel(object):
     epam_test_case = "EPMCMBIBPC-629"
     resources_root = "resources-{}/".format(epam_test_case).lower()
-    bucket_name = "epmcmbibpc-it-{}{}".format(epam_test_case, get_test_prefix()).lower()
+    bucket_name = format_name("epmcmbibpc-it-{}{}".format(epam_test_case, get_test_prefix()).lower())
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']
 

@@ -22,7 +22,7 @@ RUN apt update && \
                    openjdk-8-jdk \
                     graphviz \
                    python && \
-    curl https://bootstrap.pypa.io/get-pip.py | python -
+    curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
 # NXF_VER will be considered in the installation script

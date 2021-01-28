@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.cluster;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -23,6 +24,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @RequiredArgsConstructor
+@EqualsAndHashCode
 public class InstancePrice {
     private String instanceType;
     private int instanceDisk;

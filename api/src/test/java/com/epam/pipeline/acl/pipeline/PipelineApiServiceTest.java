@@ -390,7 +390,7 @@ public class PipelineApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyDeletePipelineWithoutPipelineManagerRole() {
+    public void shouldDenyDeletePipelineForUserRole() {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).delete(ID, true);
 

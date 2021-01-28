@@ -35,14 +35,6 @@ public class ClusterCommandService {
 
     public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommand(final String nodeUpScript,
                                                                  final AbstractCloudRegion region,
-                                                                 final Long runId,
-                                                                 final RunInstance instance,
-                                                                 final String cloud) {
-        return buildNodeUpCommand(nodeUpScript, region, String.valueOf(runId), instance, cloud);
-    }
-
-    public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommand(final String nodeUpScript,
-                                                                 final AbstractCloudRegion region,
                                                                  final String nodeLabel,
                                                                  final RunInstance instance,
                                                                  final String cloud) {

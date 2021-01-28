@@ -15,10 +15,12 @@
 import pytest
 
 from buckets.utils.cloud.azure_client import AzureClient
+from buckets.utils.cloud.google_client import GsClient
 from buckets.utils.cloud.utilities import object_exists, get_versions
 from buckets.utils.listing import *
 from buckets.utils.file_utils import *
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 
 ERROR_MESSAGE = "An error occurred in case "
 
@@ -33,7 +35,7 @@ class TestDataStorageVersioning(object):
     test_folder_1 = "test_folder1"
     test_folder_2 = "test_folder2"
     test_folder_3 = "test_folder3"
-    bucket = 'epmcmbibpc-versioning-it{}'.format(get_test_prefix())
+    bucket = format_name('epmcmbibpc-versioning-it{}'.format(get_test_prefix()))
     path_to_bucket = 'cp://{}'.format(bucket)
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']
@@ -179,6 +181,8 @@ class TestDataStorageVersioning(object):
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-993:" + "\n" + e.message)
 
+    @pytest.mark.skipif(os.environ['CP_PROVIDER'] == GsClient.name,
+                        reason="Folder restore allowed for S3 provider only")
     def test_mark_for_deletion_non_empty_folder(self):
         destination_1 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
         try:

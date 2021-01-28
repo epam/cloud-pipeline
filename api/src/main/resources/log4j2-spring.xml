@@ -31,7 +31,7 @@
         <RollingFile  name="App-Appender" fileName="${log-path}/pipeline.log"
                       filePattern="${log-path}/pipeline-%d{yyyyMMdd}.log">
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="pipeline-*.log">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="20"/>
@@ -51,7 +51,7 @@
         <RollingFile  name="JSONSecurityLogsAppender" fileName="${log-path}/security.json"
                       filePattern="${log-path}/security-%d{yyyyMMdd}.json">
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="security-*.json">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="20"/>
@@ -71,7 +71,7 @@
         <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"
                       filePattern="${log-path}/spring-%d{yyyyMMdd}.log">
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="spring-*.log">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="2"/>
@@ -94,7 +94,7 @@
                 <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
             </Filters>
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="error-*.log">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="5"/>
@@ -114,7 +114,7 @@
         <RollingFile  name="Requests-Appender" fileName="${log-path}/requests.log"
                       filePattern="${log-path}/requests-%d{yyyyMMdd}.log">
             <DefaultRolloverStrategy>
-                <Delete basePath="${log-path}" maxDepth="1">
+                <Delete basePath="${log-path}" maxDepth="1" followLinks="true">
                     <IfFileName glob="requests-*.log">
                         <IfAny>
                             <IfAccumulatedFileCount exceeds="5"/>

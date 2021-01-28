@@ -25,9 +25,7 @@ except ImportError:
 
 import click
 import collections
-import jwt
 import os
-import re
 from boto3 import Session
 from botocore.config import Config as AwsConfig
 from botocore.credentials import RefreshableCredentials
@@ -274,49 +272,40 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 
 
 class RestoreManager(StorageItemManager, AbstractRestoreManager):
+    VERSION_NOT_EXISTS_ERROR = 'Version "%s" doesn\'t exist.'
 
     def __init__(self, bucket, session, region_name=None):
         super(RestoreManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
+        self.listing_manager = bucket.get_list_manager(True)
 
     def restore_version(self, version, exclude=[], include=[], recursive=False):
         client = self._get_client()
         bucket = self.bucket.bucket.path
 
-        if not recursive:
-            if version:
-                self.restore_file_version(version, bucket, client)
-                return
-            item = self.load_delete_marker(bucket, self.bucket.path, client)
-            if not item:
-                raise RuntimeError('Failed to receive deleted marker')
-            self.restore_last_file_version(item, client, bucket)
-            return
-        item = self.load_delete_marker(bucket, self.bucket.path, client, quite=True)
-        if item:
-            self.restore_last_file_version(item, client, bucket)
+        file_items = self._list_file_items()
+        if not recursive or self._has_deleted_file(file_items):
+            if not version:
+                version = self._find_last_version(self.bucket.path, file_items)
+            self.restore_file_version(version, bucket, client, file_items)
             return
         self.restore_folder(bucket, client, exclude, include, recursive)
 
-    @staticmethod
-    def restore_last_file_version(item, client, bucket):
-        delete_us = dict(Objects=[])
-        delete_us['Objects'].append(dict(Key=item['Key'], VersionId=item['VersionId']))
-        client.delete_objects(Bucket=bucket, Delete=delete_us)
-
-    def restore_file_version(self, version, bucket, client):
-        current_item = self.load_item(bucket, client)
-        if current_item['VersionId'] == version:
-            raise RuntimeError('Version "{}" is already the latest version'.format(version))
+    def restore_file_version(self, version, bucket, client, file_items):
+        relative_path = self.bucket.path
+        self._validate_version(bucket, client, version, file_items)
         try:
-            client.copy_object(Bucket=bucket, Key=self.bucket.path,
-                               CopySource=dict(Bucket=bucket, Key=self.bucket.path, VersionId=version))
+            client.copy_object(Bucket=bucket, Key=relative_path,
+                               CopySource=dict(Bucket=bucket, Key=relative_path, VersionId=version))
+            delete_us = dict(Objects=[])
+            delete_us['Objects'].append(dict(Key=relative_path, VersionId=version))
+            client.delete_objects(Bucket=bucket, Delete=delete_us)
         except ClientError as e:
             error_message = str(e)
             if 'delete marker' in error_message:
                 text = "Cannot restore a delete marker"
             elif 'Invalid version' in error_message:
-                text = 'Version "{}" doesn\'t exist.'.format(version)
+                text = self.VERSION_NOT_EXISTS_ERROR % version
             else:
                 text = error_message
             raise RuntimeError(text)
@@ -332,6 +321,12 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         if item is None:
             raise RuntimeError('Path "{}" doesn\'t exist'.format(self.bucket.path))
         return item
+
+    def _list_file_items(self):
+        relative_path = self.bucket.path
+        all_items = self.listing_manager.list_items(relative_path, show_all=True)
+        item_name = relative_path.split(S3BucketOperations.S3_PATH_SEPARATOR)[-1]
+        return [item for item in all_items if item.type == 'File' and item.name == item_name]
 
     def load_delete_marker(self, bucket, path, client, quite=False):
         operation_parameters = {
@@ -350,6 +345,27 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
                     return item
         if not quite:
             raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
+
+    @staticmethod
+    def _find_last_version(relative_path, file_items):
+        if not file_items or not len(file_items):
+            raise RuntimeError('Requested file "%s" doesn\'t exist.' % relative_path)
+        item = file_items[0]
+        if not item:
+            raise RuntimeError('Failed to receive deleted marker')
+        if not item.delete_marker:
+            raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
+        versions = [item_version for item_version in item.versions if not item_version.delete_marker]
+        if not versions or not len(versions):
+            raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
+        version = versions[0].version
+        if not version:
+            raise RuntimeError('Failed to find last version')
+        return version
+
+    @staticmethod
+    def _has_deleted_file(file_items):
+        return file_items and len(file_items) and file_items[0] and file_items[0].delete_marker
 
     def restore_folder(self, bucket, client, exclude, include, recursive):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
@@ -376,6 +392,16 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         # flush rest
         if len(restore_us['Objects']):
             client.delete_objects(Bucket=bucket, Delete=restore_us)
+
+    def _validate_version(self, bucket, client, version, file_items):
+        current_item = self.load_item(bucket, client)
+        if current_item['VersionId'] == version:
+            raise RuntimeError('Version "{}" is already the latest version'.format(version))
+        if not file_items:
+            raise RuntimeError(self.VERSION_NOT_EXISTS_ERROR % version)
+        item = file_items[0]
+        if not any(item.version == version for item in item.versions):
+            raise RuntimeError(self.VERSION_NOT_EXISTS_ERROR % version)
 
 
 class DeleteManager(StorageItemManager, AbstractDeleteManager):

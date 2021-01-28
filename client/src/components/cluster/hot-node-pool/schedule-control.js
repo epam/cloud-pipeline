@@ -110,7 +110,7 @@ function parseDay (day, date) {
     const act = moment.utc(date, 'HH:mm:ss').add(moment().utcOffset(), 'm').get('d');
     return getDay((getDayIndex(day) + (act - curr) + Dates.length) % Dates.length);
   }
-  return undefined;
+  return day;
 }
 
 function formatTime (date) {
@@ -128,7 +128,7 @@ function formatDay (day, date) {
     const act = moment.utc(date).add(moment().utcOffset(), 'm').get('d');
     return getDay((getDayIndex(day) + (curr - act) + Dates.length) % Dates.length);
   }
-  return undefined;
+  return day;
 }
 
 class ScheduleControl extends React.Component {

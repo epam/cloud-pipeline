@@ -30,7 +30,7 @@ RUN if [ ! -f /var/lib/dpkg/available ]; then \
         dselect update; \
     fi
 
-RUN  apt-get install -y automake \
+RUN apt-get update && apt-get install -y automake \
                         autotools-dev \
                         fuse \
                         g++ \
@@ -51,7 +51,7 @@ RUN  apt-get install -y automake \
                         libncurses5-dev \
                         gettext-base \
                         libjsoncpp-dev && \
-    curl https://bootstrap.pypa.io/get-pip.py | python -
+    curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
     # Install gitfs
 RUN apt-get install -y libssl1.0-dev \
                         libffi-dev \

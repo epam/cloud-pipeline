@@ -38,7 +38,8 @@ def main():
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--cloud", type=str, default=None)
-
+    parser.add_argument("--label", type=str, default=[], required=False, action='append')
+    parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
     args = parser.parse_args()
     ins_key = args.ins_key
@@ -57,6 +58,8 @@ def main():
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     cloud = args.cloud
+    pre_pull_images = args.image
+    additional_labels = args.label
 
     if not kube_ip or not kubeadm_token:
         raise RuntimeError('Kubernetes configuration is required to create a new node')
@@ -97,13 +100,14 @@ def main():
 
         if not ins_id:
             ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id,
-                                                         kms_encyr_key_id, num_rep, time_rep, kube_ip, kubeadm_token)
+                                                         kms_encyr_key_id, num_rep, time_rep, kube_ip, kubeadm_token,
+                                                         pre_pull_images)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)
         nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
         utils.pipe_log('Waiting for instance {} registration in cluster with name {}'.format(ins_id, nodename))
         nodename = kube_provider.verify_regnode(ins_id, nodename, nodename_full, num_rep, time_rep)
-        kube_provider.label_node(nodename, run_id, cluster_name, cluster_role, region_id)
+        kube_provider.label_node(nodename, run_id, cluster_name, cluster_role, region_id, additional_labels)
 
         utils.pipe_log('Node created:\n'
                        '- {}\n'

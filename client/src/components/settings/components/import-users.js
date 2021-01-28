@@ -23,6 +23,7 @@ import {
   Modal,
   Upload
 } from 'antd';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import displaySize from '../../../utils/displaySize';
 import importUsersUrl from '../../../models/user/Import';
@@ -30,6 +31,7 @@ import styles from './import-users.css';
 
 class ImportUsersButton extends React.Component {
   state = {
+    attributes: [],
     users: [],
     metadata: [],
     file: undefined,
@@ -40,6 +42,10 @@ class ImportUsersButton extends React.Component {
   };
 
   onFileSelected = file => {
+    const {systemDictionaries} = this.props;
+    const dictionaries = systemDictionaries.loaded
+      ? new Set((systemDictionaries.value || []).map(d => d.key))
+      : new Set([]);
     const hide = message.loading('Analyzing...', 0);
     this.setState({
       file,
@@ -51,6 +57,7 @@ class ImportUsersButton extends React.Component {
         hide();
         message.error(e || 'Error reading file', 5);
         this.setState({
+          attributes: [],
           file: undefined,
           pending: false,
           users: [],
@@ -75,8 +82,13 @@ class ImportUsersButton extends React.Component {
           return;
         }
         const users = lines.slice(1).map(line => line[0]).filter(Boolean);
-        const metadata = (lines[0] || '').slice(2).filter(Boolean);
+        const attrs = (lines[0] || '')
+          .slice(2)
+          .filter(Boolean);
+        const metadata = attrs.filter(a => dictionaries.has(a));
+        const attributes = attrs.filter(a => !dictionaries.has(a));
         this.setState({
+          attributes: attributes.map(m => ({name: m, create: false})),
           users,
           metadata: metadata.map(m => ({name: m, create: false})),
           pending: false,
@@ -119,6 +131,17 @@ class ImportUsersButton extends React.Component {
     }
   };
 
+  onCreateAttributesChanged = name => e => {
+    const {attributes} = this.state;
+    const m = (attributes || []).find(mm => mm.name === name);
+    if (m) {
+      m.create = e.target.checked;
+      this.setState({
+        attributes
+      });
+    }
+  };
+
   onCancel = () => {
     this.setState({
       dialogVisible: false,
@@ -130,6 +153,7 @@ class ImportUsersButton extends React.Component {
 
   onImport = () => {
     const {
+      attributes,
       file,
       metadata,
       createGroups,
@@ -144,15 +168,19 @@ class ImportUsersButton extends React.Component {
       const url = importUsersUrl(
         createUsers,
         createGroups,
-        metadata.filter(m => m.create).map(m => m.name)
+        [
+          ...metadata.filter(m => m.create).map(m => m.name),
+          ...attributes.filter(m => m.create).map(m => m.name)
+        ]
       );
       const hide = message.loading('Importing...', 0);
-      const resolve = (error) => {
+      const resolve = ({error, logs}) => {
         hide();
         if (error) {
           message.error(error, 5);
         }
         this.setState({
+          attributes: [],
           users: [],
           metadata: [],
           file: undefined,
@@ -161,28 +189,28 @@ class ImportUsersButton extends React.Component {
           createUsers: false,
           createGroups: false
         }, () => {
-          onImportDone && onImportDone(!error);
+          onImportDone && onImportDone({error, logs});
         });
       };
       const request = new XMLHttpRequest();
       request.upload.onabort = (event) => {
-        resolve('Aborted');
+        resolve({error: 'Aborted'});
       };
       request.onreadystatechange = () => {
         if (request.readyState !== 4) return;
 
         if (request.status !== 200) {
-          resolve(`Error importing users: ${request.statusText}`);
+          resolve({error: `Error importing users: ${request.statusText}`});
         } else {
           try {
             const json = JSON.parse(request.responseText);
             if (json.status === 'ERROR') {
-              resolve(json.message);
+              resolve({error: json.message});
             } else {
-              resolve();
+              resolve({logs: json.payload});
             }
           } catch (_) {
-            resolve();
+            resolve({logs: []});
           }
         }
       };
@@ -197,11 +225,13 @@ class ImportUsersButton extends React.Component {
   render () {
     const {
       className,
-      disabled,
+      disabled: d,
       size,
-      style
+      style,
+      systemDictionaries
     } = this.props;
     const {
+      attributes,
       file,
       pending,
       dialogVisible,
@@ -210,6 +240,7 @@ class ImportUsersButton extends React.Component {
       createGroups,
       createUsers
     } = this.state;
+    const disabled = d || (systemDictionaries.pending && !systemDictionaries.loaded);
     return (
       <div
         className={classNames(className)}
@@ -282,13 +313,39 @@ class ImportUsersButton extends React.Component {
             </Checkbox>
           </div>
           {
+            metadata.length > 0 && (
+              <div style={{fontWeight: 'bold', marginTop: 5, marginBottom: 5}}>
+                Create elements for dictionaries:
+              </div>
+            )
+          }
+          {
             metadata.map((m, i) => (
               <div key={`${m}_${i}`} className={styles.formItem}>
                 <Checkbox
                   checked={m.create}
                   onChange={this.onCreateMetadataChanged(m.name)}
                 >
-                  Create <b>{m.name}</b> dictionary
+                  {m.name}
+                </Checkbox>
+              </div>
+            ))
+          }
+          {
+            attributes.length > 0 && (
+              <div style={{fontWeight: 'bold', marginTop: 5, marginBottom: 5}}>
+                Create user attributes:
+              </div>
+            )
+          }
+          {
+            attributes.map((m, i) => (
+              <div key={`${m}_${i}`} className={styles.formItem}>
+                <Checkbox
+                  checked={m.create}
+                  onChange={this.onCreateAttributesChanged(m.name)}
+                >
+                  {m.name}
                 </Checkbox>
               </div>
             ))
@@ -307,4 +364,4 @@ ImportUsersButton.propTypes = {
   onImportDone: PropTypes.func
 };
 
-export default ImportUsersButton;
+export default inject('systemDictionaries')(observer(ImportUsersButton));

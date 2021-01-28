@@ -46,6 +46,7 @@ import CreateUserForm from './forms/CreateUserForm';
 import EditRoleDialog from './forms/EditRoleDialog';
 import LoadingView from '../special/LoadingView';
 import ImportUsersButton from './components/import-users';
+import ImportResult from './components/import-result';
 import styles from './UserManagementForm.css';
 import roleModel from '../../utils/roleModel';
 
@@ -89,7 +90,9 @@ export default class UserManagementForm extends React.Component {
     createGroupDefaultDataStorage: null,
     operationInProgress: false,
     userDataToExport: [],
-    metadataKeys: []
+    metadataKeys: [],
+    importLogs: [],
+    importLogsVisible: false
   };
 
   get isAdmin () {
@@ -172,6 +175,24 @@ export default class UserManagementForm extends React.Component {
     }
     return [];
   }
+
+  onCloseImportLogsDialog = () => {
+    this.setState({
+      importLogs: [],
+      importLogsVisible: false
+    });
+  };
+
+  onImportDone = (opts) => {
+    if (opts) {
+      const {logs = []} = opts;
+      this.setState({
+        importLogs: logs,
+        importLogsVisible: true
+      });
+    }
+    return this.reload();
+  };
 
   reload = async () => {
     if (this._findUsers) {
@@ -356,6 +377,20 @@ export default class UserManagementForm extends React.Component {
           )
         }
         {
+          this.isAdmin && (
+            <ImportUsersButton
+              size="small"
+              style={{marginLeft: 5}}
+              onImportDone={this.onImportDone}
+            />
+          )
+        }
+        <ImportResult
+          visible={this.state.importLogsVisible}
+          logs={this.state.importLogs}
+          onClose={this.onCloseImportLogsDialog}
+        />
+        {
           (this.isReader || this.isAdmin) && (
             <Dropdown.Button
               size="small"
@@ -366,15 +401,6 @@ export default class UserManagementForm extends React.Component {
             >
               Export users
             </Dropdown.Button>
-          )
-        }
-        {
-          this.isAdmin && (
-            <ImportUsersButton
-              size="small"
-              style={{marginLeft: 5}}
-              onImportDone={this.reload}
-            />
           )
         }
       </Row>

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 from ..utils.assertions_utils import *
 from ..utils.file_utils import *
 from ..utils.utilities_for_test import *
@@ -20,8 +21,9 @@ from ..utils.utilities_for_test import *
 
 class TestMoveWithFolders(object):
 
-    bucket_name = "epmcmbibpc-it-mv-folders{}".format(get_test_prefix())
-    other_bucket_name = "{}-other".format(bucket_name)
+    raw_bucket_name = "epmcmbibpc-it-mv-folders{}".format(get_test_prefix())
+    bucket_name = format_name(raw_bucket_name)
+    other_bucket_name = format_name("{}-other".format(raw_bucket_name))
     current_directory = os.getcwd()
     home_dir = "test_cp_home_dir-681%s/" % get_test_prefix()
     checkout_dir = "mv-folders-checkout/"

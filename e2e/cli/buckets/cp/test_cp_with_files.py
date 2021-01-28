@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from common_utils.pipe_cli import pipe_storage_rm
+from common_utils.test_utils import format_name
 
 from ..utils.assertions_utils import *
 from ..utils.cloud.utilities import *
@@ -23,9 +24,10 @@ from ..utils.utilities_for_test import *
 
 class TestCopyWithFiles(object):
 
-    bucket_name = "epmcmbibpc-it-cp-files{}".format(get_test_prefix())
-    other_bucket_name = "{}-other".format(bucket_name)
-    empty_bucket_name = "{}-empty".format(bucket_name)
+    raw_bucket_name = "epmcmbibpc-it-cp-files{}".format(get_test_prefix())
+    bucket_name = format_name(raw_bucket_name)
+    other_bucket_name = format_name("{}-other".format(raw_bucket_name))
+    empty_bucket_name = format_name("{}-empty".format(raw_bucket_name))
     current_directory = os.getcwd()
     home_dir = "test_cp_home_dir-594%s/" % get_test_prefix()
     checkout_dir = "checkout/"

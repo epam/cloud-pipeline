@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,7 +46,6 @@ AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
 READ_ONLY_MOUNT_OPT = 'ro'
 MOUNT_LIMITS_NONE = 'none'
-
 
 class PermissionHelper:
 
@@ -586,12 +585,26 @@ class NFSMounter(StorageMounter):
                 mount_options = file_mode_options
             else:
                 mount_options += ',' + file_mode_options
-        if mount_options:
-            command += ' -o {}'.format(mount_options)
-        command += ' {path} {mount}'.format(**params)
+        mount_options = self.append_timeout_options(mount_options)
+        command += ' -o {mount_option} {path} {mount}'.format(mount_option=mount_options, **params)
         if PermissionHelper.is_storage_writable(self.storage):
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
         return command
+
+    def append_timeout_options(self, mount_options):
+        if self.share_mount.mount_type == 'SMB':
+            return mount_options
+        if not mount_options or 'retry' not in mount_options:
+            mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
+            retry_option = 'retry={}'.format(mount_retry)
+            mount_options = retry_option if not mount_options else mount_options + ',' + retry_option
+        if self.share_mount.mount_type == 'LUSTRE':
+            return mount_options
+        if not mount_options or 'timeo' not in mount_options:
+            mount_timeo = os.getenv('CP_FS_MOUNT_TIMEOUT', 7)
+            timeo_option = 'timeo={}'.format(mount_timeo)
+            mount_options = timeo_option if not mount_options else mount_options + ',' + timeo_option
+        return mount_options
 
 
 def main():

@@ -44,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,20 +90,15 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
 
-        final String command = commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance,
-                getProviderName()).sshKey(region.getSshPublicKeyPath())
-                .isSpot(Optional.ofNullable(instance.getSpot())
-                        .orElse(false))
-                .bidPrice(StringUtils.EMPTY)
-                .build()
-                .getCommand();
-        final Map<String, String> envVars = buildScriptGCPEnvVars(region);
-        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
+        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptGCPEnvVars(region));
     }
 
     @Override
     public RunInstance scaleUpPoolNode(final GCPRegion region, final String nodeId, final NodePool node) {
-        throw new UnsupportedOperationException();
+        final RunInstance instance = node.toRunInstance();
+        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(node));
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptGCPEnvVars(region));
     }
 
     @Override
@@ -114,7 +110,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public void scaleDownPoolNode(final GCPRegion region, final String nodeLabel) {
-        throw new UnsupportedOperationException();
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, getProviderName());
+        instanceService.runNodeDownScript(cmdExecutor, command, buildScriptGCPEnvVars(region));
     }
 
     @Override
@@ -127,9 +124,11 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public boolean reassignPoolNode(final GCPRegion region, final String nodeLabel, final Long newId) {
-        throw new UnsupportedOperationException();
+        final String command = commandService
+            .buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProviderName());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel, String.valueOf(newId),
+                                                     buildScriptGCPEnvVars(region));
     }
-
 
     @Override
     public void terminateNode(final GCPRegion region, final String internalIp, final String nodeName) {
@@ -257,6 +256,20 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
             log.error(e.getMessage(), e);
             return CloudInstanceState.TERMINATED;
         }
+    }
+
+    private String buildNodeUpCommand(final GCPRegion region, final String nodeLabel, final RunInstance instance,
+                                      final Map<String, String> labels) {
+        return commandService
+            .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
+            .sshKey(region.getSshPublicKeyPath())
+            .isSpot(Optional.ofNullable(instance.getSpot())
+                        .orElse(false))
+            .bidPrice(StringUtils.EMPTY)
+            .additionalLabels(labels)
+            .prePulledImages(instance.getPrePulledDockerImages())
+            .build()
+            .getCommand();
     }
 
     private String getCredentialsFilePath(GCPRegion region) {

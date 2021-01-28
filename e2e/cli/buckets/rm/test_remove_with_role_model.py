@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from common_utils.pipe_cli import *
+from common_utils.test_utils import format_name
 from ..utils.assertions_utils import *
 from ..utils.file_utils import *
 from ..utils.utilities_for_test import *
@@ -21,7 +22,7 @@ from ..utils.utilities_for_test import *
 class TestRmWithRoleModel(object):
     epam_test_case = "EPMCMBIBPC-609"
     resources_root = "resources-{}/".format(epam_test_case).lower()
-    bucket_name = "epmcmbibpc-it-rm-{}{}".format(epam_test_case, get_test_prefix()).lower()
+    bucket_name = format_name("epmcmbibpc-it-rm-{}{}".format(epam_test_case, get_test_prefix()).lower())
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']
     test_file = "test_file.txt"

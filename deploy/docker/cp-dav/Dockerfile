@@ -77,7 +77,7 @@ RUN wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
     wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
     yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
     rm -f *lustre-client.rpm
-RUN curl -s https://bootstrap.pypa.io/get-pip.py | python && \
+RUN curl -s https://bootstrap.pypa.io/2.7/get-pip.py | python && \
     pip install -I requests==2.21.0 && \
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq

@@ -4,7 +4,7 @@ import sys
 import time
 from datetime import datetime
 
-import pytz
+from dateutil.tz import tzlocal
 from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Bucket, Blob, Client
@@ -252,7 +252,7 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
     def _get_file_object(self, blob, prefix, recursive):
         return File(name=self._get_object_name(blob.name, prefix, recursive),
                     size=blob.size,
-                    mtime=time.mktime(blob.updated.astimezone(pytz.utc).timetuple()),
+                    mtime=time.mktime(blob.updated.astimezone(tzlocal()).timetuple()),
                     ctime=None,
                     contenttype='',
                     is_dir=False)
@@ -260,7 +260,7 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
     def _get_folder_object(self, name, prefix, recursive):
         return File(name=self._get_object_name(name, prefix, recursive),
                     size=0,
-                    mtime=time.mktime(datetime.now(tz=pytz.utc).timetuple()),
+                    mtime=time.mktime(datetime.now(tz=tzlocal()).timetuple()),
                     ctime=None,
                     contenttype='',
                     is_dir=True)

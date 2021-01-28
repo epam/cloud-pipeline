@@ -21,7 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.manager.pipeline.PipelineConfigApiService;
+import com.epam.pipeline.acl.pipeline.PipelineConfigApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

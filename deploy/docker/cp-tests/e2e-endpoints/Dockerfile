@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian
+FROM debian:9
 
 RUN apt-get update -y && \
     apt-get install -y wget \
@@ -21,7 +21,7 @@ RUN apt-get update -y && \
                    git \
                    nginx
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python -
+RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
 
 RUN mkdir /hosted
 COPY index.html /hosted/
