@@ -79,7 +79,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     public static final long DOCKER_SIZE = 123456L;
     private static final Long REGISTRY_ID_1 = 1L;
     private static final Long REGISTRY_ID_2 = 8L;
-    private static final Long TOOLGROUP_ID_1 = 22L;
+    private static final Long TOOLGROUP_ID_1 = 2L;
     private static final Long TOOL_ID_1 = 3L;
     private static final Long TOOLGROUP_ID_2 = 4L;
     private static final Long TOOL_ID_2 = 5L;
@@ -111,11 +111,12 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     @Autowired
     private MessageHelper mockMessageHelper;
 
+    @Autowired
+    private DockerClientFactory mockDockerClientFactory;
+
     @InjectMocks
     private final DockerRegistryManager registryManager = new DockerRegistryManager();
 
-//    @MockBean
-//    private DockerClientFactory mockDockerClientFactory;
 //    @Mock
 //    private DockerClient dockerClient;
 
@@ -159,10 +160,10 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         toolGroup1.setOwner(TEST_USER);
 
         toolGroup2 = new ToolGroup();
-        toolGroup1.setId(TOOLGROUP_ID_2);
-        toolGroup1.setName("library2");
-        toolGroup1.setRegistryId(registry1.getId());
-        toolGroup1.setOwner(TEST_USER);
+        toolGroup2.setId(TOOLGROUP_ID_2);
+        toolGroup2.setName("library2");
+        toolGroup2.setRegistryId(registry1.getId());
+        toolGroup2.setOwner(TEST_USER);
 
         toolGroup3 = new ToolGroup();
         toolGroup3.setId(TOOLGROUP_ID_3);
@@ -337,8 +338,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         Assert.assertEquals(1, registeredTools.size());
 
         verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_1), eq(LATEST), eq(TEST_IMAGE),
-                argThat(matches(registry -> REGISTRY_ID_1.equals(registry.getId()) &&
-                        registry.getTools().contains(eq(tool1)))), eq(null));
+                eq(registry1), eq(null));
     }
 
     @Test
