@@ -1677,6 +1677,14 @@ then
     initialise_wrappers "docker" "docker_wrapper \"$DEFAULT_ENV_FILE\"" "$CP_USR_BIN"
 fi
 
+echo "Prepare profile credentials"
+$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON2_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
+_PROFILE_CREDENTIALS_WRITER_RESULT=$?
+if [ "$_PROFILE_CREDENTIALS_WRITER_RESULT" -ne 0 ];
+then
+      echo "[ERROR] Failed to write profile credentials"
+fi
+
 # As some environments do not support "sleep infinity" command - it is substituted with "sleep 10000d"
 SCRIPT="${SCRIPT/sleep infinity/sleep 10000d}"
 

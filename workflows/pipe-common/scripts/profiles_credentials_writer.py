@@ -37,8 +37,8 @@ def filter_profiles_by_region(profiles, region):
         return [profile for profile in profiles if profile.get('cloudProvider') == region.get('provider')]
 
 
-def build_command(path_to_script, profile_id, python_path):
-    return "%s %s --profile-id=%s" % (python_path, path_to_script, profile_id)
+def build_command(path_to_script, profile_id, python_path, log_dir):
+    return "%s %s --profile-id=%s --log-dir=%s" % (python_path, path_to_script, profile_id, log_dir)
 
 
 def write_content(f, credentials_process, profile_name, region_field):
@@ -50,16 +50,24 @@ def write_content(f, credentials_process, profile_name, region_field):
     f.write("\n")
 
 
-def write_to_config_file(profiles, region, path_to_script, path_to_config, python_path, default_profile_id=None):
+def create_config_dir(path_to_config):
+    path_to_config_dir = os.path.dirname(path_to_config)
+    if path_to_config_dir and not os.path.exists(path_to_config_dir):
+        os.makedirs(path_to_config_dir)
+
+
+def write_to_config_file(profiles, region, path_to_script, path_to_config, python_path, log_dir,
+                         default_profile_id=None):
     if not profiles:
         return
+    create_config_dir(path_to_config)
     with open(path_to_config, 'w+') as f:
         for profile in profiles:
             default_profile_name = '[default]' if default_profile_id \
                                                   and int(profile.get('id')) == int(default_profile_id) else None
             profile_name = '[profile %s]' % profile.get('profileName')
             credentials_process = 'credential_process = %s' % build_command(path_to_script, profile.get('id'),
-                                                                            python_path)
+                                                                            python_path, log_dir)
             region_field = "region = %s" % region.get('regionId')
             if default_profile_name:
                 write_content(f, credentials_process, default_profile_name, region_field)
@@ -112,7 +120,7 @@ def main():
     default_profile_id = find_default_profile_id(user)
     profiles = filter_profiles_by_region(find_profiles_by_user(api, user_id), region)
 
-    write_to_config_file(profiles, region, script_path, config_file, python_path, default_profile_id)
+    write_to_config_file(profiles, region, script_path, config_file, python_path, log_dir, default_profile_id)
 
 
 if __name__ == '__main__':
