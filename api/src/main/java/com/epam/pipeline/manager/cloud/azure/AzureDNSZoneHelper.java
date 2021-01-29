@@ -35,27 +35,83 @@ public class AzureDNSZoneHelper {
 
     public InstanceDNSRecord createDNSRecord(final AzureRegion azureRegion,
                                              final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
+        return createDNSRecord(azureRegion, hostedZoneId, dnsRecord, 5);
+    }
+
+    public InstanceDNSRecord removeDNSRecord(final AzureRegion azureRegion,
+                                             final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
+        return removeDNSRecord(azureRegion, hostedZoneId, dnsRecord, 5);
+    }
+
+    public InstanceDNSRecord removeDNSRecord(final AzureRegion azureRegion, final String hostedZoneId,
+                                             final InstanceDNSRecord dnsRecord, final int retry) {
+        log.info("Removing DNS record: {} for target: {} in hostedZoneId: {}",
+                dnsRecord.getDnsRecord(), dnsRecord.getTarget(), hostedZoneId);
+        try {
+            final Azure azure = AzureHelper.buildClient(azureRegion.getAuthFile());
+            final DnsZone rootDnsZone = azure.dnsZones().getById(hostedZoneId);
+
+            if (isDnsRecordDoesntExist(dnsRecord, rootDnsZone)) {
+                log.warn("DNS record: {} type: {} for target: {} in hostedZoneId: {} doesn't exists",
+                        dnsRecord.getDnsRecord(), aName(dnsRecord.getTarget()) ? "A" : "CNAME",
+                        dnsRecord.getTarget(), hostedZoneId);
+            } else {
+                if (aName(dnsRecord.getTarget())) {
+                    rootDnsZone.update()
+                            .withoutARecordSet(extractRecordSetName(dnsRecord, rootDnsZone))
+                            .apply();
+                } else {
+                    rootDnsZone.update()
+                            .withoutCNameRecordSet(extractRecordSetName(dnsRecord, rootDnsZone))
+                            .apply();
+                }
+            }
+        } catch (Exception e) {
+            if (retry < 1) {
+                throw new IllegalStateException("Exceeded retry count, error: ", e);
+            }
+            log.warn("Retry to remove DNS record in hostedZoneId: {} record: {} and target: {} error message: {}",
+                    hostedZoneId, dnsRecord.getDnsRecord(), dnsRecord.getTarget(), e.getMessage());
+            return removeDNSRecord(azureRegion, hostedZoneId, dnsRecord, retry - 1);
+        }
+        return new InstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
+                InstanceDNSRecord.DNSRecordStatus.INSYNC);
+
+    }
+
+    private InstanceDNSRecord createDNSRecord(final AzureRegion azureRegion, final String hostedZoneId,
+                                              final InstanceDNSRecord dnsRecord, final int retry) {
         log.info("Creating DNS record for hostedZoneId: {} record: {} and target: {}",
                 hostedZoneId, dnsRecord.getDnsRecord(), dnsRecord.getTarget());
-        final Azure azure = AzureHelper.buildClient(azureRegion.getAuthFile());
-        final DnsZone rootDnsZone = azure.dnsZones().getById(hostedZoneId);
-        if (isDnsRecordDoesntExist(dnsRecord, rootDnsZone)) {
-            if (aName(dnsRecord.getTarget())) {
-                rootDnsZone.update()
-                        .defineARecordSet(extractRecordSetName(dnsRecord, rootDnsZone))
-                        .withIPv4Address(dnsRecord.getTarget())
-                        .withTimeToLive(TTL_TIME)
-                        .attach()
-                        .apply();
-            } else {
-                rootDnsZone.update()
-                        .defineCNameRecordSet(extractRecordSetName(dnsRecord, rootDnsZone))
-                        .withAlias(dnsRecord.getTarget())
-                        .withTimeToLive(TTL_TIME)
-                        .attach()
-                        .apply();
+        try {
+            final Azure azure = AzureHelper.buildClient(azureRegion.getAuthFile());
+            final DnsZone rootDnsZone = azure.dnsZones().getById(hostedZoneId);
+            if (isDnsRecordDoesntExist(dnsRecord, rootDnsZone)) {
+                if (aName(dnsRecord.getTarget())) {
+                    rootDnsZone.update()
+                            .defineARecordSet(extractRecordSetName(dnsRecord, rootDnsZone))
+                            .withIPv4Address(dnsRecord.getTarget())
+                            .withTimeToLive(TTL_TIME)
+                            .attach()
+                            .apply();
+                } else {
+                    rootDnsZone.update()
+                            .defineCNameRecordSet(extractRecordSetName(dnsRecord, rootDnsZone))
+                            .withAlias(dnsRecord.getTarget())
+                            .withTimeToLive(TTL_TIME)
+                            .attach()
+                            .apply();
+                }
             }
+        } catch (Exception e) {
+            if (retry < 1) {
+                throw new IllegalStateException("Exceeded retry count, error: ", e);
+            }
+            log.warn("Retry to create DNS reccord in hostedZoneId: {} record: {} and target: {} error message: {}",
+                    hostedZoneId, dnsRecord.getDnsRecord(), dnsRecord.getTarget(), e.getMessage());
+            return createDNSRecord(azureRegion, hostedZoneId, dnsRecord, retry - 1);
         }
+
 
         return new InstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
                 InstanceDNSRecord.DNSRecordStatus.INSYNC);
@@ -63,33 +119,6 @@ public class AzureDNSZoneHelper {
 
     private String extractRecordSetName(final InstanceDNSRecord dnsRecord, final DnsZone rootDnsZone) {
         return dnsRecord.getDnsRecord().replace("." + rootDnsZone.name(), EMPTY);
-    }
-
-    public InstanceDNSRecord removeDNSRecord(final AzureRegion azureRegion,
-                                             final String hostedZoneId, final InstanceDNSRecord dnsRecord) {
-        log.info("Removing DNS record: {} for target: {} in hostedZoneId: {}",
-                dnsRecord.getDnsRecord(), dnsRecord.getTarget(), hostedZoneId);
-        final Azure azure = AzureHelper.buildClient(azureRegion.getAuthFile());
-        final DnsZone rootDnsZone = azure.dnsZones().getById(hostedZoneId);
-
-        if (isDnsRecordDoesntExist(dnsRecord, rootDnsZone)) {
-            log.info("DNS record: {} type: {} for target: {} in hostedZoneId: {} doesn't exists",
-                    dnsRecord.getDnsRecord(), aName(dnsRecord.getTarget()) ? "A" : "CNAME",
-                    dnsRecord.getTarget(), hostedZoneId);
-        } else {
-            if (aName(dnsRecord.getTarget())) {
-                rootDnsZone.update()
-                        .withoutARecordSet(extractRecordSetName(dnsRecord, rootDnsZone))
-                        .apply();
-            } else {
-                rootDnsZone.update()
-                        .withoutCNameRecordSet(extractRecordSetName(dnsRecord, rootDnsZone))
-                        .apply();
-            }
-        }
-        return new InstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
-                InstanceDNSRecord.DNSRecordStatus.INSYNC);
-
     }
 
     private boolean isDnsRecordDoesntExist(final InstanceDNSRecord dnsRecord, final DnsZone rootDnsZone) {

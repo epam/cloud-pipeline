@@ -285,7 +285,14 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public InstanceDNSRecord deleteInstanceDNSRecord(final AzureRegion cloudRegion, final InstanceDNSRecord dnsRecord) {
-        throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
+        if (dnsRecord.getDnsRecord().contains(
+                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
+            return  dnsZoneHelper.removeDNSRecord(cloudRegion, preferenceManager.getPreference(
+                    SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
+            );
+        } else {
+            return NO_OP_INSTANCE_DNS_RECORD;
+        }
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {
