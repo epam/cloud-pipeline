@@ -20,6 +20,8 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
@@ -110,6 +112,12 @@ public class TestApplication {
 
     @MockBean
     public OntologyManager ontologyManager;
+
+    @MockBean
+    public CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
+
+    @MockBean
+    public CloudProfileCredentialsManager cloudProfileCredentialsManager;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

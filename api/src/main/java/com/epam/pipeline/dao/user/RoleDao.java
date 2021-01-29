@@ -140,6 +140,7 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
         ROLE_USER_DEFAULT,
         IDS,
         ROLE_DEFAULT_STORAGE_ID,
+        ROLE_DEFAULT_PROFILE_ID,
         GROUP_BLOCKED;
 
         private static MapSqlParameterSource getParameters(Role role) {
@@ -173,6 +174,10 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
             long defaultStorageId = rs.getLong(ROLE_DEFAULT_STORAGE_ID.name());
             if (!rs.wasNull()) {
                 role.setDefaultStorageId(defaultStorageId);
+            }
+            long defaultProfileId = rs.getLong(ROLE_DEFAULT_PROFILE_ID.name());
+            if (!rs.wasNull()) {
+                role.setDefaultProfileId(defaultProfileId);
             }
             if (getGroupStatus) {
                 final boolean groupStatus = rs.getBoolean(GROUP_BLOCKED.name());

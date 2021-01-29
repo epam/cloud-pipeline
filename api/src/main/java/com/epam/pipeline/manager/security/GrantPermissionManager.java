@@ -55,6 +55,7 @@ import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -186,6 +187,8 @@ public class GrantPermissionManager {
     @Autowired private RunPermissionManager runPermissionManager;
 
     @Autowired private PermissionGrantVOMapper permissionGrantVOMapper;
+
+    @Autowired private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -845,6 +848,12 @@ public class GrantPermissionManager {
         }
         final Integer entriesCount = aclService.loadEntriesBySidsCount(sidIds);
         return entriesCount != null && entriesCount != 0;
+    }
+
+    public boolean hasCloudProfilePermissions(final Long profileId) {
+        final PipelineUser currentUser = authManager.getCurrentUser();
+        return cloudProfileCredentialsManagerProvider.hasAssignedUserOrRole(profileId, currentUser.getId(),
+                currentUser.getRoles());
     }
 
     private List<Sid> convertUserToSids(String user) {

@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
+import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
@@ -226,4 +227,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected OntologyApiService ontologyApiService;
+
+    @MockBean
+    protected CloudProfileCredentialsApiService cloudProfileCredentialsApiService;
 }

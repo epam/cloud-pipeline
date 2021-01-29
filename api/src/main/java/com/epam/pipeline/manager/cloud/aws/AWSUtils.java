@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,15 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
+import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
+import com.amazonaws.services.securitytoken.model.Credentials;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
+import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.lang3.StringUtils;
 
 public final class AWSUtils {
@@ -59,5 +66,31 @@ public final class AWSUtils {
             return region.getTempCredentialsRole();
         }
         return storage.getTempCredentialsRole();
+    }
+
+    public static TemporaryCredentials generate(final Integer duration, final String policy, final String role,
+                                                final String profile, final String regionCode) {
+        final String sessionName = "SessionID-" + PasswordGenerator.generateRandomString(10);
+
+        final AssumeRoleRequest assumeRoleRequest = new AssumeRoleRequest()
+                .withDurationSeconds(duration)
+                .withPolicy(policy)
+                .withRoleSessionName(sessionName)
+                .withRoleArn(role);
+
+        final AssumeRoleResult assumeRoleResult = AWSSecurityTokenServiceClientBuilder.standard()
+                .withCredentials(AWSUtils.getCredentialsProvider(profile))
+                .build()
+                .assumeRole(assumeRoleRequest);
+        final Credentials resultingCredentials = assumeRoleResult.getCredentials();
+
+        return TemporaryCredentials.builder()
+                .accessKey(resultingCredentials.getSecretAccessKey())
+                .keyId(resultingCredentials.getAccessKeyId())
+                .token(resultingCredentials.getSessionToken())
+                .expirationTime(TemporaryCredentialsGenerator
+                        .expirationTimeWithUTC(resultingCredentials.getExpiration()))
+                .region(regionCode)
+                .build();
     }
 }
