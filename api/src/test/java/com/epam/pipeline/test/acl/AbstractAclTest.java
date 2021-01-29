@@ -30,14 +30,26 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.PrincipalSid;
-import org.springframework.security.acls.model.*;
+
+import org.springframework.security.acls.model.Acl;
+import org.springframework.security.acls.model.ObjectIdentity;
+import org.springframework.security.acls.model.Permission;
+import org.springframework.security.acls.model.PermissionGrantingStrategy;
+import org.springframework.security.acls.model.Sid;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
-import static org.mockito.Matchers.*;
+
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anySet;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 /**
@@ -111,30 +123,29 @@ public abstract class AbstractAclTest {
         doReturn(Collections.singletonMap(objectIdentity, acl)).when(aclService).getObjectIdentities(anySet());
     }
 
-    protected void initAclEntity(List<Pair<AbstractSecuredEntity,List<AbstractGrantPermission>>> pairs) {
+    protected void initAclEntity(List<Pair<AbstractSecuredEntity, List<AbstractGrantPermission>>> pairs) {
         final Map<ObjectIdentity, Acl> acls = new HashMap<>();
         pairs.forEach(p -> {
             final AbstractSecuredEntity entity = p.getLeft();
             final List<AbstractGrantPermission> permissions = p.getRight();
+            initAclEntity(entity, permissions);
             ObjectIdentityImpl objectIdentity = new ObjectIdentityImpl(entity);
-            AclImpl acl = new AclImpl(objectIdentity, entity.getId(), aclAuthorizationStrategy,
-                    grantingStrategy, null, null, true, new PrincipalSid(entity.getOwner()));
-            if (CollectionUtils.isNotEmpty(permissions)) {
-                IntStream
-                        .range(0, permissions.size())
-                        .forEach(i -> {
-                            AbstractGrantPermission permission = permissions.get(i);
-                            acl.insertAce(i, permissionFactory.buildFromMask(permission.mask), permission.toSid(), true);
-                        });
-            }
-            doReturn(acl).when(aclService).readAclById(eq(objectIdentity), anyList());
-            doReturn(acl).when(aclService).getAcl(eq(entity));
-            doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity));
-            doReturn(acl).when(aclService).createAcl(eq(entity));
-            doReturn(acl).when(aclService).updateAcl(acl);
+            AclImpl acl = prepareAcl(objectIdentity, entity, permissions);
             acls.put(objectIdentity, acl);
         });
         doReturn(acls).when(aclService).getObjectIdentities(anySet());
+    }
+
+    private AclImpl prepareAcl(ObjectIdentityImpl objectIdentity, AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions) {
+        AclImpl acl = new AclImpl(objectIdentity, entity.getId(), aclAuthorizationStrategy,
+                grantingStrategy, null, null, true, new PrincipalSid(entity.getOwner()));
+        IntStream.
+                range(0, permissions.size()).
+                forEach(i -> {
+                    AbstractGrantPermission permission = permissions.get(i);
+                    acl.insertAce(i, permissionFactory.buildFromMask(permission.mask), permission.toSid(), true);
+                });
+        return acl;
     }
 
 

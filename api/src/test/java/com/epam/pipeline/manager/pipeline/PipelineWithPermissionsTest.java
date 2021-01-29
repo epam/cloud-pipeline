@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import java.util.Arrays;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.constructPipeline;
 import static org.junit.Assert.assertEquals;
@@ -52,6 +58,11 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
     private static final String TEST_PIPELINE_REPO_SSH = "git@test";
     private static final String TEST_USER_1 = "user1";
     private static final String TEST_USER_2 = "user2";
+
+    // key - pipelineId, value - <sid, mask>
+    private final Map<Long, Map<String, Integer>> expectedMap = new HashMap<>();
+    private final Map<String, Integer> permissionsForPipeline1 = new HashMap<>();
+    private final Map<String, Integer> permissionsForPipeline2 = new HashMap<>();
 
 
     @Autowired
@@ -95,84 +106,38 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
     @Test
     public void shouldReturnPermissionsWhenGrantedToPipelineCase1() {
-        // key - pipelineId, value - <sid, mask>
-        final Map<Long, Map<String, Integer>> expectedMap = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline1 = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline2 = new HashMap<>();
-
         final List<Pair<AbstractSecuredEntity, List<AbstractGrantPermission>>> pipelinesAndFolders = Arrays.asList(
                 new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()))),
                 new ImmutablePair<>(pipeline2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
                 new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
                 new ImmutablePair<>(folder2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))));
 
-        initAclEntity(pipelinesAndFolders);
-
-        doReturn(Arrays.asList(pipeline1, pipeline2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.PIPELINE), any(), any());
-        doReturn(Arrays.asList(folder1, folder2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.FOLDER), any(), any());
-
-
-        final PipelineWithPermissions pipelineWithPermissions1 = new PipelineWithPermissions();
-        pipelineWithPermissions1.setId(pipeline1.getId());
-        pipelineWithPermissions1.setOwner(pipeline1.getOwner());
-        doReturn(pipelineWithPermissions1).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline1));
-
-        final PipelineWithPermissions pipelineWithPermissions2 = new PipelineWithPermissions();
-        pipelineWithPermissions2.setId(pipeline2.getId());
-        pipelineWithPermissions2.setOwner(pipeline2.getOwner());
-        doReturn(pipelineWithPermissions2).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline2));
-
-        doReturn(2).when(mockEntityManager).loadTotalCount(eq(AclClass.PIPELINE));
-        doReturn(2).when(mockEntityManager).loadTotalCount(AclClass.FOLDER);
+        mockPipelineAndFolders(pipelinesAndFolders);
 
         permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
         expectedMap.put(pipeline1.getId(), permissionsForPipeline1);
         expectedMap.put(pipeline2.getId(), permissionsForPipeline2);
 
-
         assertPipelineWithPermissions(expectedMap);
-
     }
 
     @Test
     public void shouldReturnPermissionsWhenGrantedToPipelineCase2() {
-        // key - pipelineId, value - <sid, mask>
-        final Map<Long, Map<String, Integer>> expectedMap = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline1 = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline2 = new HashMap<>();
-
         final List<Pair<AbstractSecuredEntity, List<AbstractGrantPermission>>> pipelinesAndFolders = Arrays.asList(
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()))),
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))),
+                new ImmutablePair<>(pipeline1, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))),
                 new ImmutablePair<>(pipeline2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
                 new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
                 new ImmutablePair<>(folder2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))));
 
-        initAclEntity(pipelinesAndFolders);
+        mockPipelineAndFolders(pipelinesAndFolders);
 
-        doReturn(Arrays.asList(pipeline1, pipeline2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.PIPELINE), any(), any());
-        doReturn(Arrays.asList(folder1, folder2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.FOLDER), any(), any());
+        Arrays.asList(new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()),
+                new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()));
 
-        final PipelineWithPermissions pipelineWithPermissions1 = new PipelineWithPermissions();
-        pipelineWithPermissions1.setId(pipeline1.getId());
-        pipelineWithPermissions1.setOwner(pipeline1.getOwner());
-        doReturn(pipelineWithPermissions1).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline1));
-
-        final PipelineWithPermissions pipelineWithPermissions2 = new PipelineWithPermissions();
-        pipelineWithPermissions2.setId(pipeline2.getId());
-        pipelineWithPermissions2.setOwner(pipeline2.getOwner());
-        doReturn(pipelineWithPermissions2).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline2));
-
-        final PipelineWithPermissions pipelineWithPermissions3 = new PipelineWithPermissions();
-        pipelineWithPermissions3.setId(pipeline2.getId());
-        pipelineWithPermissions3.setOwner(pipeline2.getOwner());
-        doReturn(pipelineWithPermissions3).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline2));
-
-        doReturn(2).when(mockEntityManager).loadTotalCount(eq(AclClass.PIPELINE));
-        doReturn(2).when(mockEntityManager).loadTotalCount(AclClass.FOLDER);
-
-        permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 1);
+        permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
         permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 4);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
 
@@ -184,43 +149,19 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
     @Test
     public void shouldReturnPermissionsWhenGrantedToPipelineCase3() {
-        // key - pipelineId, value - <sid, mask>
-        final Map<Long, Map<String, Integer>> expectedMap = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline1 = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline2 = new HashMap<>();
-
         final List<Pair<AbstractSecuredEntity, List<AbstractGrantPermission>>> pipelinesAndFolders = Arrays.asList(
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()))),
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))),
+                new ImmutablePair<>(pipeline1, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))),
                 new ImmutablePair<>(pipeline2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))));
+                new ImmutablePair<>(folder1, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))),
+                new ImmutablePair<>(folder2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))));
 
-        initAclEntity(pipelinesAndFolders);
+        mockPipelineAndFolders(pipelinesAndFolders);
 
-        doReturn(Arrays.asList(pipeline1, pipeline2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.PIPELINE), any(), any());
-        doReturn(Arrays.asList(folder1, folder2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.FOLDER), any(), any());
-
-        final PipelineWithPermissions pipelineWithPermissions1 = new PipelineWithPermissions();
-        pipelineWithPermissions1.setId(pipeline1.getId());
-        pipelineWithPermissions1.setOwner(pipeline1.getOwner());
-        doReturn(pipelineWithPermissions1).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline1));
-
-        final PipelineWithPermissions pipelineWithPermissions2 = new PipelineWithPermissions();
-        pipelineWithPermissions2.setId(pipeline2.getId());
-        pipelineWithPermissions2.setOwner(pipeline2.getOwner());
-        doReturn(pipelineWithPermissions2).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline2));
-
-        final PipelineWithPermissions pipelineWithPermissions3 = new PipelineWithPermissions();
-        pipelineWithPermissions3.setId(pipeline2.getId());
-        pipelineWithPermissions3.setOwner(pipeline2.getOwner());
-        doReturn(pipelineWithPermissions3).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline2));
-
-        doReturn(2).when(mockEntityManager).loadTotalCount(eq(AclClass.PIPELINE));
-        doReturn(2).when(mockEntityManager).loadTotalCount(AclClass.FOLDER);
-
-        permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 1);
+        permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
         permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 4);
         permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 1);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
@@ -233,43 +174,25 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
     @Test
     public void shouldReturnPermissionsWhenGrantedToPipelineCase4() {
-        // key - pipelineId, value - <sid, mask>
-        final Map<Long, Map<String, Integer>> expectedMap = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline1 = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline2 = new HashMap<>();
-
         final List<Pair<AbstractSecuredEntity, List<AbstractGrantPermission>>> pipelinesAndFolders = Arrays.asList(
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()))),
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))),
+                new ImmutablePair<>(pipeline1, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))),
                 new ImmutablePair<>(pipeline2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.NO_READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder2, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))));
+                new ImmutablePair<>(folder1, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.READ.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.NO_READ.getMask()))),
+                new ImmutablePair<>(folder2, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))));
 
-        initAclEntity(pipelinesAndFolders);
-
-        doReturn(Arrays.asList(pipeline1, pipeline2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.PIPELINE), any(), any());
-        doReturn(Arrays.asList(folder1, folder2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.FOLDER), any(), any());
-
-        final PipelineWithPermissions pipelineWithPermissions1 = new PipelineWithPermissions();
-        pipelineWithPermissions1.setId(pipeline1.getId());
-        pipelineWithPermissions1.setOwner(pipeline1.getOwner());
-        doReturn(pipelineWithPermissions1).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline1));
-
-        final PipelineWithPermissions pipelineWithPermissions2 = new PipelineWithPermissions();
-        pipelineWithPermissions2.setId(pipeline2.getId());
-        pipelineWithPermissions2.setOwner(pipeline2.getOwner());
-        doReturn(pipelineWithPermissions2).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline2));
-
-        doReturn(3).when(mockEntityManager).loadTotalCount(eq(AclClass.PIPELINE));
-        doReturn(2).when(mockEntityManager).loadTotalCount(AclClass.FOLDER);
+        mockPipelineAndFolders(pipelinesAndFolders);
 
         permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 5);
+        permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
         permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 1);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
-
 
         expectedMap.put(pipeline1.getId(), permissionsForPipeline1);
         expectedMap.put(pipeline2.getId(), permissionsForPipeline2);
@@ -279,43 +202,26 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
     @Test
     public void shouldReturnPermissionsWhenGrantedToPipelineCase5() {
-        // key - pipelineId, value - <sid, mask>
-        final Map<Long, Map<String, Integer>> expectedMap = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline1 = new HashMap<>();
-        final Map<String, Integer> permissionsForPipeline2 = new HashMap<>();
-
         final List<Pair<AbstractSecuredEntity, List<AbstractGrantPermission>>> pipelinesAndFolders = Arrays.asList(
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()))),
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))),
-                new ImmutablePair<>(pipeline1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.NO_WRITE.getMask()))),
+                new ImmutablePair<>(pipeline1, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.NO_WRITE.getMask()))),
                 new ImmutablePair<>(pipeline2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.NO_READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder2, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))),
-                new ImmutablePair<>(folder1, Collections.singletonList(new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))));
+                new ImmutablePair<>(folder1, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.READ.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.NO_READ.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask())
+                )),
+                new ImmutablePair<>(folder2, Arrays.asList(
+                        new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
+                        new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))));
 
-        initAclEntity(pipelinesAndFolders);
-
-        doReturn(Arrays.asList(pipeline1, pipeline2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.PIPELINE), any(), any());
-        doReturn(Arrays.asList(folder1, folder2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.FOLDER), any(), any());
-
-        final PipelineWithPermissions pipelineWithPermissions1 = new PipelineWithPermissions();
-        pipelineWithPermissions1.setId(pipeline1.getId());
-        pipelineWithPermissions1.setOwner(pipeline1.getOwner());
-        doReturn(pipelineWithPermissions1).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline1));
-
-        final PipelineWithPermissions pipelineWithPermissions2 = new PipelineWithPermissions();
-        pipelineWithPermissions2.setId(pipeline2.getId());
-        pipelineWithPermissions2.setOwner(pipeline2.getOwner());
-        doReturn(pipelineWithPermissions2).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline2));
-
-        doReturn(3).when(mockEntityManager).loadTotalCount(eq(AclClass.PIPELINE));
-        doReturn(2).when(mockEntityManager).loadTotalCount(AclClass.FOLDER);
+        mockPipelineAndFolders(pipelinesAndFolders);
 
         permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 9);
-        permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 4);
+        permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
+        permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 5);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
 
         expectedMap.put(pipeline1.getId(), permissionsForPipeline1);
@@ -337,6 +243,26 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
                 assertEquals(expectedPermissions.get(sid), permission.getMask());
             });
         });
+    }
+
+    private void mockPipelineAndFolders(List<Pair<AbstractSecuredEntity, List<AbstractGrantPermission>>> pipelinesAndFolders) {
+        initAclEntity(pipelinesAndFolders);
+
+        doReturn(Arrays.asList(pipeline1, pipeline2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.PIPELINE), any(), any());
+        doReturn(Arrays.asList(folder1, folder2)).when(mockEntityManager).loadAllWithParents(eq(AclClass.FOLDER), any(), any());
+
+        final PipelineWithPermissions pipelineWithPermissions1 = new PipelineWithPermissions();
+        pipelineWithPermissions1.setId(pipeline1.getId());
+        pipelineWithPermissions1.setOwner(pipeline1.getOwner());
+        doReturn(pipelineWithPermissions1).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline1));
+
+        final PipelineWithPermissions pipelineWithPermissions2 = new PipelineWithPermissions();
+        pipelineWithPermissions2.setId(pipeline2.getId());
+        pipelineWithPermissions2.setOwner(pipeline2.getOwner());
+        doReturn(pipelineWithPermissions2).when(mockPipelineWithPermissionsMapper).toPipelineWithPermissions(eq(pipeline2));
+
+        doReturn(2).when(mockEntityManager).loadTotalCount(eq(AclClass.PIPELINE));
+        doReturn(2).when(mockEntityManager).loadTotalCount(AclClass.FOLDER);
     }
 
     private Folder getFolder(String name, String owner) {
