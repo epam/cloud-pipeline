@@ -21,8 +21,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
-import com.epam.pipeline.dao.util.AclTestDao;
-import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEvent;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
@@ -30,10 +28,13 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -78,14 +79,15 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     private static final Long REGISTRY_ID_2 = 8L;
     private static final Long TOOLGROUP_ID_1 = 2L;
     private static final Long TOOL_ID_1 = 3L;
-    private static final Long TOOLGROUP_ID_2 = 4L;
+    private static final Long CONTEXT_ID = 4L;
     private static final Long TOOL_ID_2 = 5L;
-    private static final Long TOOLGROUP_ID_3 = 6L;
+    private static final Long ROLE_ID = 6L;
     private static final Long TOOL_ID_3 = 7L;
     private static final Long REGISTRY_ID_3 = 9L;
     private static final CharSequence NOT_ALLOWED_MESSAGE = String.format("Permission is not granted for '%s' on '%S'",
             TEST_REPO_WITHOUT_WRITE_ACCESS, AclPermission.WRITE_NAME);
     private static final Long TOOLGROUP_ID_4 = 10L;
+    private static final String ROLE_USER = "ROLE_USER";
 
     @Autowired
     private DockerRegistryDao mockDockerRegistryDao;
@@ -111,11 +113,11 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     @Autowired
     private DockerClientFactory mockDockerClientFactory;
 
+    @Autowired
+    private UserManager mockUserManager;
+
     @InjectMocks
     private final DockerRegistryManager registryManager = new DockerRegistryManager();
-
-//    @Mock
-//    private DockerClient dockerClient;
 
     private DockerRegistry registry1;
     private DockerRegistry registry2;
@@ -129,10 +131,6 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
 
     @Before
     public void setUp() {
-        AclTestDao.AclSid adminSid = new AclTestDao.AclSid(true, ADMIN);
-
-        AclTestDao.AclSid testUserSid = new AclTestDao.AclSid(true, TEST_USER);
-
         registry1 = new DockerRegistry();
         registry1.setId(REGISTRY_ID_1);
         registry1.setPath(TEST_REPO);
@@ -169,65 +167,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         tool2 = buildTool(toolGroup2, TEST_IMAGE_NEW_GROUP, registry1, TEST_USER);
         tool3 = buildTool(toolGroup3, TEST_IMAGE, registry2, TEST_USER);
 
-        // And for USER group, which all users are belong to
-        AclTestDao.AclSid userGroupSid = new AclTestDao.AclSid(false, "ROLE_USER");
-
-        // Mock ACL stuff
-        AclTestDao.AclClass groupAclClass = new AclTestDao.AclClass(ToolGroup.class.getCanonicalName());
-
-        AclTestDao.AclClass toolAclClass = new AclTestDao.AclClass(Tool.class.getCanonicalName());
-
-        AclTestDao.AclClass registryAclClass = new AclTestDao.AclClass(DockerRegistry.class.getCanonicalName());
-
-        AclTestDao.AclObjectIdentity registryIdentity = new AclTestDao.AclObjectIdentity(testUserSid, registry1.getId(),
-                                                                 registryAclClass.getId(), null, true);
-
-        AclTestDao.AclObjectIdentity registryIdentity2 = new AclTestDao.AclObjectIdentity(adminSid, registry2.getId(),
-                registryAclClass.getId(), null, true);
-
-        AclTestDao.AclObjectIdentity registryIdentity3 = new AclTestDao.AclObjectIdentity(adminSid, registry3.getId(),
-                registryAclClass.getId(), null, true);
-        AclTestDao.AclObjectIdentity groupIdentity = new AclTestDao.AclObjectIdentity(testUserSid, toolGroup1.getId(),
-                                                                groupAclClass.getId(), null, true);
-
-        // All Test users can write to registry
-        AclTestDao.AclEntry registryAclEntry = new AclTestDao.AclEntry(registryIdentity, 1, adminSid,
-                                                                       AclPermission.WRITE.getMask(), true);
-        registryAclEntry.setSid(testUserSid);
-        registryAclEntry.setOrder(2);
-
-        // All Test users can write to group
-        AclTestDao.AclEntry groupAclEntry = new AclTestDao.AclEntry(groupIdentity, 1, adminSid,
-                AclPermission.WRITE.getMask(), true);
-        groupAclEntry.setSid(testUserSid);
-        groupAclEntry.setOrder(2);
-
-        AclTestDao.AclEntry registryAclEntry2 = new AclTestDao.AclEntry(registryIdentity2, 1, adminSid,
-                AclPermission.WRITE.getMask(), true);
-        registryAclEntry2.setSid(testUserSid);
-        registryAclEntry2.setOrder(2);
-
-        //Only Admin can write to second registry
-        AclTestDao.AclEntry registryAclEntry3 = new AclTestDao.AclEntry(registryIdentity3, 1, adminSid,
-                AclPermission.WRITE.getMask(), true);
-
         MockitoAnnotations.initMocks(this);
-
-//        TestUtils.configureDockerClientMock(dockerClient, mockDockerClientFactory);
-//
-//        mockDockerClientFactory.setObjectMapper(new ObjectMapper());
-//
-//        when(mockDockerClientFactory.getDockerClient(any(DockerRegistry.class)))
-//                .thenReturn(dockerClient);
-//        when(dockerClient.getImageTags(any(String.class), any(String.class)))
-//                .thenReturn(Collections.singletonList("latest"));
-
-        ToolVersion toolVersion = new ToolVersion();
-        toolVersion.setDigest("test_digest");
-        toolVersion.setSize(DOCKER_SIZE);
-        toolVersion.setVersion("test_version");
-//        Mockito.doReturn(toolVersion).when(dockerClient)
-//                .getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.any());
     }
 
     @Test
@@ -296,6 +236,10 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     @Test
     public void testLoadRegistryByExternalHostName() {
         startUp5();
+        List<AbstractGrantPermission> permissions = new ArrayList<>();
+        permissions.add(new UserPermission(TEST_USER, AclPermission.WRITE.getMask()));
+        permissions.add(new UserPermission(ADMIN, AclPermission.WRITE.getMask()));
+        initAclEntity(registry2, permissions);
         DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
                 Collections.singletonList(TEST_USER),
                 Collections.singletonList(EXTERNAL_REPO_PATH),
@@ -313,6 +257,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     @Test
     public void testToolWontBeEnabledIfUserIsntPermittedToWriteToRegistryAndGroupDoesntExist() {
         startUp6();
+        initAclEntity(registry3);
         DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
                 Collections.singletonList(TEST_USER),
                 Collections.singletonList(TEST_REPO_WITHOUT_WRITE_ACCESS),
@@ -342,6 +287,10 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 any(Date.class), eq(LATEST), eq(null), eq(null));
     }
 
+    private void permissionGroup() {
+        doReturn(getUserContext()).when(mockUserManager).loadUserContext(eq(TEST_USER));
+    }
+
     private void startUp1() {
         doReturn(registry1).when(mockDockerRegistryDao).loadDockerRegistry(eq(TEST_REPO));
         doReturn(false).when(mockMetadataManager).hasMetadata(
@@ -350,8 +299,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         doReturn(true).when(mockToolGroupManager).doesToolGroupExist(eq(TEST_REPO), eq(getGroupFrom(TEST_IMAGE)));
         doReturn(toolGroup1).when(mockToolGroupManager).loadByNameOrId(eq(getIdentifierFrom(registry1, TEST_IMAGE)));
         doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(TEST_IMAGE), eq(TOOLGROUP_ID_1));
-        doReturn(true).when(spyGrantPermissionManager).isActionAllowedForUser(
-                eq(toolGroup1), eq(TEST_USER), eq(AclPermission.WRITE));
+        permissionGroup();
         doReturn(cloneAndSetParameters(tool1, TOOL_ID_1)).when(mockToolManager).create(eq(tool1), eq(false));
     }
 
@@ -362,11 +310,8 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         doReturn(splitAndGetPairOf(TEST_IMAGE_NEW_GROUP)).when(mockToolGroupManager).getGroupAndTool(eq(TEST_IMAGE_NEW_GROUP));
         doReturn(false).when(mockToolGroupManager).doesToolGroupExist(
                 eq(TEST_REPO), eq(getGroupFrom(TEST_IMAGE_NEW_GROUP)));
-        doReturn(true).when(spyGrantPermissionManager).isActionAllowedForUser(
-                eq(registry1), eq(TEST_USER), eq(AclPermission.WRITE));
         doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(TEST_IMAGE_NEW_GROUP), eq(null));
-        doReturn(true).when(spyGrantPermissionManager).isActionAllowedForUser(
-                eq(toolGroup2), eq(TEST_USER), eq(AclPermission.WRITE));
+        permissionGroup();
         doReturn(cloneAndSetParameters(tool2, TOOL_ID_2)).when(mockToolManager).create(eq(tool2), eq(false));
     }
 
@@ -378,8 +323,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         doReturn(true).when(mockToolGroupManager).doesToolGroupExist(eq(TEST_REPO), eq(getGroupFrom(TEST_IMAGE)));
         doReturn(toolGroup1).when(mockToolGroupManager).loadByNameOrId(eq(getIdentifierFrom(registry1, TEST_IMAGE)));
         doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(TEST_IMAGE), eq(TOOLGROUP_ID_1));
-        doReturn(true).when(spyGrantPermissionManager).isActionAllowedForUser(
-                eq(toolGroup1), eq(TEST_USER), eq(AclPermission.WRITE));
+        permissionGroup();
         doReturn(cloneAndSetParameters(tool1, TOOL_ID_1)).when(mockToolManager).create(eq(tool1), eq(false));
     }
 
@@ -390,11 +334,8 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 eq(new EntityVO(registry2.getId(), AclClass.DOCKER_REGISTRY)));
         doReturn(splitAndGetPairOf(TEST_IMAGE)).when(mockToolGroupManager).getGroupAndTool(eq(TEST_IMAGE));
         doReturn(false).when(mockToolGroupManager).doesToolGroupExist(eq(EXTERNAL_REPO_PATH), eq(getGroupFrom(TEST_IMAGE)));
-        doReturn(true).when(spyGrantPermissionManager).isActionAllowedForUser(
-                eq(registry2), eq(TEST_USER), eq(AclPermission.WRITE));
+        permissionGroup();
         doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(TEST_IMAGE), eq(null));
-        doReturn(true).when(spyGrantPermissionManager).isActionAllowedForUser(
-                eq(toolGroup3), eq(TEST_USER), eq(AclPermission.WRITE));
         doReturn(cloneAndSetParameters(tool3, TOOL_ID_3)).when(mockToolManager).create(eq(tool3), eq(false));
     }
 
@@ -405,8 +346,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         doReturn(splitAndGetPairOf(TEST_IMAGE_NEW_GROUP)).when(mockToolGroupManager).getGroupAndTool(eq(TEST_IMAGE_NEW_GROUP));
         doReturn(false).when(mockToolGroupManager).doesToolGroupExist(
                 eq(TEST_REPO_WITHOUT_WRITE_ACCESS), eq(getGroupFrom(TEST_IMAGE_NEW_GROUP)));
-        doReturn(false).when(spyGrantPermissionManager).isActionAllowedForUser(
-                eq(registry3), eq(TEST_USER), eq(AclPermission.WRITE));
+        permissionGroup();
         doReturn(NOT_ALLOWED_MESSAGE).when(mockMessageHelper).getMessage(eq(MessageConstants.ERROR_PERMISSION_IS_NOT_GRANTED),
                 eq(TEST_REPO_WITHOUT_WRITE_ACCESS), eq(AclPermission.WRITE_PERMISSION));
     }
@@ -489,5 +429,18 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         target.setTag(LATEST);
         event.setTarget(target);
         return event;
+    }
+
+    private UserContext getUserContext() {
+        UserContext context = new UserContext();
+        context.setUserId(CONTEXT_ID);
+        context.setUserName(TEST_USER);
+        Role role = new Role();
+        role.setId(ROLE_ID);
+        role.setName(ROLE_USER);
+        role.setUserDefault(true);
+        role.setPredefined(true);
+        context.setRoles(Collections.singletonList(role));
+        return context;
     }
 }
