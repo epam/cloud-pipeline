@@ -69,6 +69,7 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
         originalRegion.setBackupDuration(updatedRegion.getBackupDuration());
         originalRegion.setVersioningEnabled(updatedRegion.isVersioningEnabled());
         originalRegion.setMountStorageRule(updatedRegion.getMountStorageRule());
+        originalRegion.setMountCredentialsRule(updatedRegion.getMountCredentialsRule());
         return originalRegion;
     }
 

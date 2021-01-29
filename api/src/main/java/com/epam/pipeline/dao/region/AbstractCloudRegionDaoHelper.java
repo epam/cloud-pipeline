@@ -42,6 +42,7 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         params.addValue(CloudRegionParameters.CREATED_DATE.name(), region.getCreatedDate());
         params.addValue(CloudRegionParameters.CLOUD_PROVIDER.name(), region.getProvider().name());
         params.addValue(CloudRegionParameters.MOUNT_STORAGE_RULE.name(), region.getMountStorageRule().name());
+        params.addValue(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name(), region.getMountCredentialsRule().name());
         params.addValues(getProviderParameters(region, credentials).getValues());
         return withFilledMissingValues(params);
     }
@@ -66,5 +67,7 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         region.setCreatedDate(new Date(rs.getTimestamp(CloudRegionParameters.CREATED_DATE.name()).getTime()));
         region.setMountStorageRule(MountStorageRule.valueOf(
                 rs.getString(CloudRegionParameters.MOUNT_STORAGE_RULE.name())));
+        region.setMountCredentialsRule(MountStorageRule.valueOf(
+                rs.getString(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name())));
     }
 }

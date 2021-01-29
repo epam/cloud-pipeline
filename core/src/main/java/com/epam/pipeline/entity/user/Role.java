@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.user;
 
+import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -25,10 +26,16 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.io.Serializable;
+import java.util.List;
 
 @Getter
 @Setter
@@ -53,8 +60,19 @@ public class Role implements StorageContainer, Serializable {
 
     private Long defaultStorageId;
 
+    private Long defaultProfileId;
+
     @Transient
     private Boolean blocked;
+
+    @ManyToMany
+    @JoinTable(
+            name = "cloud_profile_credentials_role",
+            schema = "pipeline",
+            inverseJoinColumns = { @JoinColumn(name = "cloud_profile_credentials_id") },
+            joinColumns = { @JoinColumn(name = "role_id") }
+    )
+    private List<CloudProfileCredentialsEntity> cloudProfiles;
 
     public Role() {
         this.predefined = false;

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.acl;
 
+import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -35,6 +36,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -441,6 +443,12 @@ public class AclTestBeans {
 
     @MockBean
     protected UsersFileImportManager usersFileImportManager;
+
+    @MockBean
+    protected CloudProfileCredentialsApiService cloudProfileCredentialsApiService;
+
+    @MockBean
+    protected CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

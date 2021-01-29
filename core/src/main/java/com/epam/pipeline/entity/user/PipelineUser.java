@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.user;
 
+import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -98,6 +99,17 @@ public class PipelineUser implements StorageContainer {
     @Convert(converter = AttributesConverterJson.class)
     @Column(updatable = false)
     private Map<String, String> attributes;
+
+    @ManyToMany
+    @JoinTable(
+            name = "cloud_profile_credentials_user",
+            schema = "pipeline",
+            inverseJoinColumns = { @JoinColumn(name = "cloud_profile_credentials_id") },
+            joinColumns = { @JoinColumn(name = "user_id") }
+    )
+    private List<CloudProfileCredentialsEntity> cloudProfiles;
+
+    private Long defaultProfileId;
 
     @ElementCollection
     private List<RunnerSid> allowedRunners;

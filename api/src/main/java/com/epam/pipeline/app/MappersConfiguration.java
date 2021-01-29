@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
+import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
@@ -94,5 +95,10 @@ public class MappersConfiguration {
     @Bean
     public NodePoolMapper nodePoolMapper() {
         return Mappers.getMapper(NodePoolMapper.class);
+    }
+
+    @Bean
+    public CloudProfileCredentialsMapper cloudProfileCredentialsMapper() {
+        return Mappers.getMapper(CloudProfileCredentialsMapper.class);
     }
 }
