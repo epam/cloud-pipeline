@@ -75,6 +75,7 @@
     - [14.6. View cluster nodes via CLI](14_CLI/14.6._View_cluster_nodes_via_CLI.md)
     - [14.7. View and manage Permissions via CLI](14_CLI/14.7._View_and_manage_Permissions_via_CLI.md)
     - [14.8. View tools definitions via CLI](14_CLI/14.8._View_tools_definitions_via_CLI.md)
+    - [14.9. User management via CLI](14_CLI/14.9._User_management_via_CLI.md)
 - [15. Interactive services](15_Interactive_services/15._Interactive_services.md)
     - [15.1. Starting an Interactive application](15_Interactive_services/15.1._Starting_an_Interactive_application.md)
     - [15.2. Using Terminal access](15_Interactive_services/15.2._Using_Terminal_access.md)

@@ -13,6 +13,7 @@
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
+- [Batch users import](#batch-users-import)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
 ***
@@ -470,6 +471,73 @@ The newly created storage is being set as a "default" storage in the user's prof
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_HomeStorage_03.png)
 
 For more details and examples see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#home-storage-for-each-user).
+
+## Batch users import
+
+Previously, **Cloud Pipeline** allowed creating users only one-by-one via the GUI. If a number of users shall be created - it could be quite complicated to perform those operation multiple times.
+
+To address this, a new feature was implemented in the current version - now, admins can import users from a `CSV` file using GUI and CLI.
+
+`CSV` format of the file for the batch import:
+
+``` csv
+UserName,Groups,<AttributeItem1>,<AttributeItem2>,<AttributeItemN>
+<user1>,<group1>,<Value1>,<Value2>,<ValueN>
+<user2>,<group2>|<group3>,<Value3>,<Value4>,<ValueN>
+<user3>,,<Value3>,<Value4>,<ValueN>
+<user4>,<group4>,,,
+```
+
+Where:
+
+- **UserName** - contains the user name
+- **Groups** - contains the "permission" groups, which shall be assigned to the user
+- **`<AttributeItem1>`**, **`<AttributeItem2>`** ... **`<AttributeItemN>`** - set of optional columns, which correspond to the user attributes (they could be existing or new)
+
+The import process takes a number of inputs:
+
+- `CSV` file
+- _Users/Groups/Attributes creation options_, which control if a corresponding object shall be created if not found in the database. If a creation option is not specified - the object creation won't happen:
+    - "`create-user`"
+    - "`create-group`"
+    - "`create-<ATTRIBUTE_ITEM_NAME>`"
+
+### Import users via GUI
+
+Import users from a `CSV` file via GUI can be performed at the **USER MANAGEMENT** section of the **System Settings**.
+
+1. Click the "**Import users**" button:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_1.png)
+2. Select a `CSV` file for the import. The GUI will show the creation options selection, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_2.png)
+3. After the options are selected, click the **IMPORT** button, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_3.png)
+4. Once the import is done - you can review the import results:  
+    - Users and groups have been created
+    - Users were assigned to the specified groups
+    - Attributes were assigned to the users as well
+
+For more details and examples see [here](../../manual/12_Manage_Settings/12.3._Create_a_new_user.md#users-batch-import).
+
+### Import users via CLI
+
+Also in the current version, a new `pipe` command was implemented to import users from a `CSV` file via CLI:
+
+``` bash
+pipe users import [OPTIONS] FILE_PATH
+```
+
+Where **FILE_PATH** - defines a path to the `CSV` file with users list
+
+Possible options:
+
+- **`-cu`** / **`--create-user`** - allows the creation of new users
+- **`-cg`** / **`--create-group`** - allows the creation of new groups
+- **`-cm`** / **`--create-metadata` `<KEY>`** - allows the creation of a new metadata with specified key
+
+Results of the command execution are similar to the users import operation via GUI.
+
+For more details and examples see [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#batch-import).
 
 ## AWS: transfer objects between AWS regions using `pipe storage cp`/`mv` commands
 
