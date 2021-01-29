@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.AllArgsConstructor;
@@ -83,22 +84,37 @@ public abstract class AbstractAclTest {
 
     protected void initAclEntity(AbstractSecuredEntity entity, Permission permission) {
         initAclEntity(entity,
-                Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())));
-    }
-
-    protected void initAclEntity(AbstractSecuredEntity entity, String user, Permission permission) {
-        initAclEntity(entity,
-                Collections.singletonList(new UserPermission(user, permission.getMask())));
+                Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())), null);
     }
 
     protected void initAclEntity(AbstractSecuredEntity entity) {
-        initAclEntity(entity, Collections.emptyList());
+        initAclEntity(entity, Collections.emptyList(), null);
     }
 
     protected void initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions) {
+        initAclEntity(entity, permissions, null);
+    }
+
+    protected void initAclEntity(AbstractSecuredEntity entity, String role, Permission permission) {
+        initAclEntity(entity,
+                Collections.singletonList(new AuthorityPermission(permission.getMask(), role)), role);
+    }
+
+    protected void initAclEntity(AbstractSecuredEntity entity, String role) {
+        initAclEntity(entity, Collections.emptyList(), role);
+    }
+
+    protected void initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions, String role) {
+        Sid sid;
+        if (role == null) {
+            sid = new PrincipalSid(entity.getOwner());
+        } else {
+            sid = new GrantedAuthoritySid(DefaultRoles.ROLE_ANONYMOUS_USER.getName());
+        }
+
         ObjectIdentityImpl objectIdentity = new ObjectIdentityImpl(entity);
         AclImpl acl = new AclImpl(objectIdentity, entity.getId(), aclAuthorizationStrategy,
-                grantingStrategy, null, null, true, new PrincipalSid(entity.getOwner()));
+                grantingStrategy, null, null, true, sid);
         if (CollectionUtils.isNotEmpty(permissions)) {
             IntStream
                     .range(0, permissions.size())
