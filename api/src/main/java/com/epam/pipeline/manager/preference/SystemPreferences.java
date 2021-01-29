@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,6 +149,16 @@ public class SystemPreferences {
             "storage.mount.black.list",
             "/,/etc,/runs,/common,/bin,/opt,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/tmp",
             DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
+
+    /**
+     * Defines NFS mounting policy for sensitive runs. Can take SKIP, TIMEOUT, NONE values.
+     * */
+    public static final StringPreference DATA_STORAGE_NFS_MOUNT_SENSITIVE_POLICY = new StringPreference(
+            "storage.mounts.nfs.sensitive.policy",
+            null,
+            DATA_STORAGE_GROUP,
+            PreferenceValidators.isValidNFSMountSensitivePolicy);
+
     /**
      * Configures a system data storage for storing attachments and etc.
      */

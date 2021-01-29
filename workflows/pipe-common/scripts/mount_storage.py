@@ -46,6 +46,8 @@ AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
 READ_ONLY_MOUNT_OPT = 'ro'
 MOUNT_LIMITS_NONE = 'none'
+SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
+
 
 class PermissionHelper:
 
@@ -512,6 +514,7 @@ class GCPMounter(StorageMounter):
 
 class NFSMounter(StorageMounter):
     available = False
+    sensitive_policy = PipelineAPI(os.environ['API'], None).get_preference(SENSITIVE_POLICY_PREFERENCE)['value']
 
     @staticmethod
     def scheme():
@@ -523,7 +526,8 @@ class NFSMounter(StorageMounter):
 
     @staticmethod
     def check_or_install(task_name):
-        NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
+        NFSMounter.available = False if PermissionHelper.is_run_sensitive() and NFSMounter.sensitive_policy == "SKIP" \
+            else StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):
@@ -592,7 +596,8 @@ class NFSMounter(StorageMounter):
         return command
 
     def append_timeout_options(self, mount_options):
-        if self.share_mount.mount_type == 'SMB':
+        if self.share_mount.mount_type == 'SMB' or \
+                (PermissionHelper.is_run_sensitive() and NFSMounter.sensitive_policy != "TIMEOUT"):
             return mount_options
         if not mount_options or 'retry' not in mount_options:
             mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
