@@ -29,7 +29,6 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     private final String bulkLoadTagsQuery;
     private final String deleteTagsQuery;
     private final String deleteSpecificTagsQuery;
-    private final String bulkDeleteTagsQuery;
     
     public List<DataStorageTag> bulkUpsert(final DataStorageTag... tags) {
         return bulkUpsert(Arrays.stream(tags));
@@ -85,19 +84,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     }
 
     public void bulkDelete(final Stream<DataStorageObject> objects) {
-        objects.collect(
-                Collectors.groupingBy(DataStorageObject::getStorageId,
-                        Collectors.mapping(DataStorageObject::getPath,
-                                Collectors.toList())))
-                .forEach(this::bulkDelete);
-    }
-
-    public void bulkDelete(final Long storageId, final List<String> paths) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(Parameters.DATASTORAGE_ID.name(), storageId);
-        params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);
-        params.addValue(Parameters.DATASTORAGE_VERSION.name(), Collections.singletonList(LATEST));
-        getNamedParameterJdbcTemplate().update(bulkDeleteTagsQuery, params);
+        getNamedParameterJdbcTemplate().batchUpdate(deleteTagsQuery, Parameters.getParameters(objects));
     }
 
     public DataStorageTag upsert(final DataStorageTag tag) {
@@ -152,9 +139,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
         }
 
         static MapSqlParameterSource[] getParameters(final List<DataStorageTag> tags) {
-            return tags.stream()
-                    .map(Parameters::getParameters)
-                    .toArray(MapSqlParameterSource[]::new);
+            return tags.stream().map(Parameters::getParameters).toArray(MapSqlParameterSource[]::new);
         }
 
         static MapSqlParameterSource getParameters(final DataStorageObject object, final String key) {
@@ -167,6 +152,10 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                     .addValue(DATASTORAGE_ID.name(), object.getStorageId())
                     .addValue(DATASTORAGE_PATH.name(), object.getPath())
                     .addValue(DATASTORAGE_VERSION.name(), Optional.ofNullable(object.getVersion()).orElse(LATEST));
+        }
+
+        public static MapSqlParameterSource[] getParameters(final Stream<DataStorageObject> objects) {
+            return objects.map(Parameters::getParameters).toArray(MapSqlParameterSource[]::new);
         }
 
         static RowMapper<DataStorageTag> getRowMapper() {

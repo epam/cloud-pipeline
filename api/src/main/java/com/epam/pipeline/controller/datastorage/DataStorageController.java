@@ -28,9 +28,10 @@ import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkDeleteRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkUpsertRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBulkRequest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -602,18 +603,33 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.updateDataStorageObjectTags(id, path, tags, version, rewrite));
     }
 
-    @RequestMapping(value = "/datastorage/{id}/tags/bulk", method = RequestMethod.POST)
+    @RequestMapping(value = "/datastorage/{id}/tags/bulk", method = RequestMethod.PUT)
     @ResponseBody
     @ApiOperation(
-            value = "Creates or updates data storage item tags, by datastorage id and object path.",
-            notes = "Creates or updates data storage item tags, by datastorage id and object path.",
+            value = "Inserts or replaces data storage item tags.",
+            notes = "Inserts or replaces data storage item tags.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result bulkUpsertTags(@PathVariable(value = ID) final Long id,
-                                    @RequestBody final DataStorageTagBulkUpsertRequest request) {
-        dataStorageApiService.bulkUpsertDataStorageObjectTags(id, request);
+    public Result bulkInsertTags(@PathVariable(value = ID) final Long id,
+                                 @RequestBody final DataStorageTagInsertBulkRequest request) {
+        dataStorageApiService.bulkInsertDataStorageObjectTags(id, request);
+        return Result.success();
+    }
+
+    @RequestMapping(value = "/datastorage/{id}/tags/copy/bulk", method = RequestMethod.PUT)
+    @ResponseBody
+    @ApiOperation(
+            value = "Inserts or replaces data storage item tags from existing data storage item.",
+            notes = "Inserts or replaces data storage item tags from existing data storage item.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result bulkCopyTags(@PathVariable(value = ID) final Long id,
+                               @RequestBody final DataStorageTagCopyBulkRequest request) {
+        dataStorageApiService.bulkCopyDataStorageObjectTags(id, request);
         return Result.success();
     }
 
@@ -674,7 +690,7 @@ public class DataStorageController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result bulkDeleteTags(@PathVariable(value = ID) final Long id,
-                                 @RequestBody final DataStorageTagBulkDeleteRequest request) {
+                                 @RequestBody final DataStorageTagDeleteBulkRequest request) {
         dataStorageApiService.bulkDeleteDataStorageObjectTags(id, request);
         return Result.success();
     }
