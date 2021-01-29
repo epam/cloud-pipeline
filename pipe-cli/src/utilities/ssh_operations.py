@@ -287,7 +287,7 @@ def parse_scp_location(location):
         run_id = parse_run_identifier(location_parts[0])
         if run_id:
             return location_parts[1], run_id
-    return location_parts[0], None
+    return location, None
 
 
 def create_tunnel(run_id, local_port, remote_port, connection_timeout,
