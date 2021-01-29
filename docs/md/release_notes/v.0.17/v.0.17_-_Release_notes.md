@@ -12,6 +12,7 @@
 - [Hot node pools](#hot-node-pools)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
+- [Home storage for each user](#home-storage-for-each-user)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
 ***
@@ -442,6 +443,33 @@ The one of the below options should be specified:
 Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.
 
 For details and examples see [here](../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md#export-cluster-utilization).
+
+## Home storage for each user
+
+Typically each general user stores personal assets in the data storage, that is created for him/her by the Administrator.  
+This is treated as a "home" storage and is used a lot. But the creation of multiple users becomes a tedious task (create the user/create storage/grant permissions for the user).
+To facilitate this task, in the current version the ability (optionally) to create home storages for the newly created users in automatic mode was implemented.
+
+This behavior is controlled by the system preference **`storage.user.home.auto`** (_Boolean_, default value is `false`).  
+It controls whether the home storages shall be created automatically.  
+If it is set to `true` - new storage will be created for the user automatically simultaneously with the user creation. Also the just-created user is being granted **_OWNER_** permissions for the new storage.
+
+The "home" storage automatic creation is being driven by a template. The template is being described as `JSON` element in the other new system preference - **`storage.user.home.template`**.  
+In this preference for the template, being described:
+
+- settings for the storage
+- permissions on the storage
+
+Example of the configured preferences:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HomeStorage_01.png)
+
+So, after the user creation, the new storage according to the settings in template is being created:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HomeStorage_02.png)
+
+The newly created storage is being set as a "default" storage in the user's profile:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HomeStorage_03.png)
+
+For more details and examples see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#home-storage-for-each-user).
 
 ## AWS: transfer objects between AWS regions using `pipe storage cp`/`mv` commands
 
