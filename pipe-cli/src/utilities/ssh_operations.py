@@ -347,16 +347,20 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connectio
 
 def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
                                                  ssh_keep, remote_host, log_level, retries):
-    logging.info('Configuring putty passwordless ssh...')
+    logging.info('Configuring putty and openssh passwordless ssh...')
     passwordless_config = PasswordlessSSHConfig(run_id, conn_info)
+    if not os.path.exists(passwordless_config.local_openssh_path):
+        os.makedirs(passwordless_config.local_openssh_path, mode=stat.S_IRWXU)
     if not os.path.exists(passwordless_config.local_keys_path):
         os.makedirs(passwordless_config.local_keys_path, mode=stat.S_IRWXU)
     try:
         logging.info('Initializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
         generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
-        copy_remote_putty_key(run_id, retries, passwordless_config)
+        copy_remote_putty_and_private_keys(run_id, retries, passwordless_config)
         add_record_to_putty_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_host_key_to_putty_known_hosts(run_id, local_port, retries, passwordless_config)
+        add_record_to_openssh_config(local_port, remote_host, passwordless_config)
+        copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                                  remote_host, log_level, retries)
     except:
@@ -366,9 +370,13 @@ def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port
         if not ssh_keep:
             logging.info('Deinitializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
             remove_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
+            remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, passwordless_config)
+            remove_record_from_openssh_config(remote_host, passwordless_config)
             remove_remote_openssh_host_public_key_from_putty_known_hosts(local_port, passwordless_config)
             remove_record_from_putty_config(remote_host, passwordless_config)
-            remove_ssh_keys(passwordless_config.local_ppk_key_path, passwordless_config.local_host_ed25519_public_key_path)
+            remove_ssh_keys(passwordless_config.local_private_key_path,
+                            passwordless_config.local_ppk_key_path,
+                            passwordless_config.local_host_ed25519_public_key_path)
 
 
 def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
@@ -384,7 +392,7 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
         generate_openssh_keys(log_file, passwordless_config)
         copy_openssh_public_key_to_remote_authorized_hosts(run_id, retries, passwordless_config)
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
-        copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, log_file, retries, passwordless_config)
+        copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                                  remote_host, log_level, retries)
     except:
@@ -394,9 +402,10 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
         if not ssh_keep:
             logging.info('Deinitializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
             remove_openssh_public_key_from_remote_authorized_hosts(run_id, retries, passwordless_config)
-            remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, log_file, passwordless_config)
+            remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, passwordless_config)
             remove_record_from_openssh_config(remote_host, passwordless_config)
-            remove_ssh_keys(passwordless_config.local_public_key_path, passwordless_config.local_private_key_path)
+            remove_ssh_keys(passwordless_config.local_public_key_path,
+                            passwordless_config.local_private_key_path)
 
 
 def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
@@ -545,9 +554,11 @@ def remove_remote_openssh_and_putty_keys(run_id, retries, passwordless_config):
                            .format(exit_code))
 
 
-def copy_remote_putty_key(run_id, retries, passwordless_config):
+def copy_remote_putty_and_private_keys(run_id, retries, passwordless_config):
     logging.info('Copying remote ppk key...')
     run_scp_download(run_id, passwordless_config.remote_ppk_key_path, passwordless_config.local_ppk_key_path,
+                     user=DEFAULT_SSH_USER, retries=retries)
+    run_scp_download(run_id, passwordless_config.remote_private_key_path, passwordless_config.local_private_key_path,
                      user=DEFAULT_SSH_USER, retries=retries)
 
 
@@ -682,7 +693,14 @@ def add_record_to_openssh_config(local_port, remote_host, passwordless_config):
     remove_record_from_openssh_config(remote_host, passwordless_config)
     logging.info('Appending host record to ssh config...')
     ssh_config_path_existed = os.path.exists(passwordless_config.local_openssh_config_path)
-    with open(passwordless_config.local_openssh_config_path, 'a') as f:
+    with open(passwordless_config.local_openssh_config_path, 'a+') as f:
+        f.seek(0)
+        content = f.read() or ''
+        if content.strip():
+            if not content.endswith('\n\n'):
+                if not content.endswith('\n'):
+                    f.write('\n')
+                f.write('\n')
         f.write('Host {}\n'
                 '    Hostname 127.0.0.1\n'
                 '    Port {}\n'
@@ -690,7 +708,7 @@ def add_record_to_openssh_config(local_port, remote_host, passwordless_config):
                 '    User {}\n'
                 .format(remote_host, local_port,
                         passwordless_config.local_private_key_path, passwordless_config.user))
-    if not ssh_config_path_existed:
+    if not ssh_config_path_existed and not is_windows():
         os.chmod(passwordless_config.local_openssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
@@ -701,20 +719,29 @@ def remove_record_from_openssh_config(remote_host, passwordless_config):
             ssh_config_lines = f.readlines()
         updated_ssh_config_lines = []
         skip_host = False
+        skip_newlines = True
         for line in ssh_config_lines:
             if line.startswith('Host '):
+                skip_newlines = False
                 if line.startswith('Host {}'.format(remote_host)):
                     skip_host = True
                 else:
                     skip_host = False
             if not skip_host:
+                if not line or not line.strip():
+                    if skip_newlines:
+                        continue
+                    else:
+                        skip_newlines = True
                 updated_ssh_config_lines.append(line)
         with open(passwordless_config.local_openssh_config_path, 'w') as f:
             f.writelines(updated_ssh_config_lines)
-        os.chmod(passwordless_config.local_openssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
+        if not is_windows():
+            os.chmod(passwordless_config.local_openssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
-def copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, log_file, retries, passwordless_config):
+def copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config):
+    remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, passwordless_config)
     logging.info('Copying remote public key to known hosts...')
     ssh_known_hosts_temp_path = passwordless_config.local_openssh_known_hosts_path + '_{}'.format(random.randint(0, sys.maxsize))
     run_scp_download(run_id, passwordless_config.remote_host_rsa_public_key_path, ssh_known_hosts_temp_path,
@@ -723,17 +750,28 @@ def copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, lo
         public_key = f.read().strip()
     os.remove(ssh_known_hosts_temp_path)
     ssh_known_hosts_path_existed = os.path.exists(passwordless_config.local_openssh_known_hosts_path)
-    with open(passwordless_config.local_openssh_known_hosts_path, 'a') as f:
+    with open(passwordless_config.local_openssh_known_hosts_path, 'a+') as f:
+        f.seek(0)
+        content = f.read() or ''
+        if content.strip() and not content.endswith('\n'):
+            f.write('\n')
         f.write('[127.0.0.1]:{} {}\n'.format(local_port, public_key))
-    if not ssh_known_hosts_path_existed:
+    if not ssh_known_hosts_path_existed and not is_windows():
         os.chmod(passwordless_config.local_openssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
-    perform_command(['ssh-keygen', '-H', '-f', passwordless_config.local_openssh_known_hosts_path], log_file)
 
 
-def remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, log_file, passwordless_config):
+def remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, passwordless_config):
     logging.info('Removing remote public key from known hosts...')
     if os.path.exists(passwordless_config.local_openssh_known_hosts_path):
-        perform_command(['ssh-keygen', '-R', '[127.0.0.1]:{}'.format(local_port), '-f', passwordless_config.local_openssh_known_hosts_path], log_file)
+        with open(passwordless_config.local_openssh_known_hosts_path, 'r') as f:
+            ssh_known_hosts_lines = f.readlines()
+        updated_ssh_known_hosts_lines = [line for line in ssh_known_hosts_lines
+                                         if line and line.strip()
+                                         and not line.startswith('[127.0.0.1]:{}'.format(local_port))]
+        with open(passwordless_config.local_openssh_known_hosts_path, 'w') as f:
+            f.writelines(updated_ssh_known_hosts_lines)
+        if not is_windows():
+            os.chmod(passwordless_config.local_openssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
 def perform_command(executable, log_file=None, collect_output=True):
