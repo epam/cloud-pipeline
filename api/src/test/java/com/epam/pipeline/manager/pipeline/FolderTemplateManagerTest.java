@@ -143,8 +143,10 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
         verify(mockFolderCrudManager).create(argThat(matches(Predicates.forFolderTemplate(folderTemplate.getName()))));
         verify(mockFolderCrudManager).create(argThat(matches(
                 Predicates.forChildFolderTemplate(childFolderTemplate.getName()))));
-        verify(mockDataStorageManager).create(eq(dataStorageVO), eq(true), eq(true), eq(false));
-        verify(mockDataStorageManager).create(eq(dataStorageForChild), eq(true), eq(true), eq(false));
+        verify(mockDataStorageManager).create(argThat(matches(Predicates.forDataStorage())),
+                eq(true), eq(true), eq(false));
+        verify(mockDataStorageManager).create(argThat(matches(Predicates.forDataStorage())),
+                eq(true), eq(true), eq(false));
         verify(mockMetadataManager).updateEntityMetadata(eq(metadata), eq(FOLDER_ID), eq(AclClass.DATA_STORAGE));
         verify(mockMetadataManager).updateEntityMetadata(eq(metadata), eq(FOLDER_ID), eq(AclClass.FOLDER));
         verify(mockMetadataManager).updateEntityMetadata(eq(childMetadata),
