@@ -964,15 +964,17 @@ public class DataStorageManager implements SecuredEntityManager {
     private DataStorageFile createDataStorageFile(final AbstractDataStorage storage,
                                                   final String path,
                                                   final byte[] contents) throws DataStorageException {
+        final DataStorageFile file = storageProviderManager.createFile(storage, path, contents);
         createDataStorageFileTags(storage, path);
-        return storageProviderManager.createFile(storage, path, contents);
+        return file;
     }
 
     private DataStorageFile createDataStorageFile(final AbstractDataStorage storage, 
                                                   final String path, 
                                                   final InputStream contentStream) {
+        final DataStorageFile file = storageProviderManager.createFile(storage, path, contentStream);
         createDataStorageFileTags(storage, path);
-        return storageProviderManager.createFile(storage, path, contentStream);
+        return file;
     }
 
     private void createDataStorageFileTags(final AbstractDataStorage storage, final String path) {

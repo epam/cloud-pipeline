@@ -27,9 +27,11 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkDeleteRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkUpsertRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBulkRequest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
@@ -43,16 +45,13 @@ import org.springframework.util.MultiValueMap;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.INTEGER_TYPE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.OBJECT_TYPE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_MAP_INSTANCE_TYPE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.DATA_STORAGE_TAG_LIST_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -541,15 +540,15 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
 
     @Test
     @WithMockUser
-    public void shouldBulkUpsertTags() {
-        final HashMap<String, Map<String, String>> pathTags = new HashMap<>();
-        pathTags.put(TEST_STRING, TEST_STRING_MAP);
-        final DataStorageTagBulkUpsertRequest request = new DataStorageTagBulkUpsertRequest(pathTags);
-        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).bulkUpsertDataStorageObjectTags(ID, request);
+    public void shouldBulkInsertTags() {
+        final List<DataStorageTagInsertRequest> tagRequests = Collections.singletonList(
+                new DataStorageTagInsertRequest(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING));
+        final DataStorageTagInsertBulkRequest request = new DataStorageTagInsertBulkRequest(tagRequests);
+        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).bulkInsertDataStorageObjectTags(ID, request);
 
         final MvcResult mvcResult = performRequest(post(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
 
-        Mockito.verify(mockStorageApiService).bulkUpsertDataStorageObjectTags(ID, request);
+        Mockito.verify(mockStorageApiService).bulkInsertDataStorageObjectTags(ID, request);
         assertResponse(mvcResult, null, OBJECT_TYPE);
     }
 
@@ -633,8 +632,8 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
     @Test
     @WithMockUser
     public void shouldBulkDeleteTags() {
-        final DataStorageTagBulkDeleteRequest request = 
-                new DataStorageTagBulkDeleteRequest(Collections.singletonList(TEST));
+        final DataStorageTagDeleteBulkRequest request = new DataStorageTagDeleteBulkRequest(
+                        Collections.singletonList(new DataStorageTagDeleteRequest(TEST, TEST)));
 
         final MvcResult mvcResult = performRequest(delete(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
 

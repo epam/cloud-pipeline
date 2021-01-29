@@ -39,9 +39,10 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkDeleteRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkUpsertRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBulkRequest;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
@@ -346,10 +347,16 @@ public class DataStorageApiService {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public List<DataStorageTag> bulkUpsertDataStorageObjectTags(final Long id,
-                                                                final DataStorageTagBulkUpsertRequest request) {
-        return dataStorageTagManager.bulkUpsert(id, request);
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public List<DataStorageTag> bulkInsertDataStorageObjectTags(final Long id,
+                                                                final DataStorageTagInsertBulkRequest request) {
+        return dataStorageTagManager.bulkInsert(id, request);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public List<DataStorageTag> bulkCopyDataStorageObjectTags(final Long id,
+                                                              final DataStorageTagCopyBulkRequest request) {
+        return dataStorageTagManager.bulkCopy(id, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
@@ -358,9 +365,9 @@ public class DataStorageApiService {
         return dataStorageTagManager.bulkLoad(id, request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public void bulkDeleteDataStorageObjectTags(final Long id,
-                                                final DataStorageTagBulkDeleteRequest request) {
+                                                final DataStorageTagDeleteBulkRequest request) {
         dataStorageTagManager.bulkDelete(id, request);
     }
 }
