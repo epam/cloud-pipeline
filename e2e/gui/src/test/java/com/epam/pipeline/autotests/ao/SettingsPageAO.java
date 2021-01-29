@@ -1003,6 +1003,33 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public PreferencesAO setCheckboxPreference(String preference, boolean checkboxIsEnable, boolean eyeIsChecked) {
+            searchPreference(preference);
+            final SelenideElement checkBox = context().shouldBe(visible)
+                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
+            if ((checkBox.has(cssClass("ant-checkbox-checked")) && !checkboxIsEnable) ||
+                    (!checkBox.has(cssClass("ant-checkbox-checked")) && checkboxIsEnable)) {
+                checkBox.click();
+            }
+            final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
+                    .find(byClassName("anticon"));
+            if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
+                    (eye.has(cssClass("anticon-eye")) && !eyeIsChecked)) {
+                eye.click();
+            }
+            return this;
+        }
+
+        public boolean[] getCheckboxPreferenceState(String preference) {
+            boolean[] checkboxState = new boolean[2];
+            searchPreference(preference);
+            checkboxState[0] = context().shouldBe(visible)
+                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span")).has(cssClass("ant-checkbox-checked"));
+            checkboxState[1] = context().find(byClassName("preference-group__preference-row"))
+                    .find(byClassName("anticon")).has(cssClass("anticon-eye"));
+            return checkboxState;
+        }
+
         private By getByField(final String variable) {
             return new By() {
                 @Override
@@ -1021,19 +1048,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             SelenideElement checkBox = context().shouldBe(visible)
                     .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
             if (!checkBox.has(cssClass("ant-checkbox-checked"))) {
-                checkBox.click();
-            }
-            if (context().find(byClassName("anticon-eye-o")).isDisplayed()) {
-                context().find(byClassName("anticon-eye-o")).click();
-            }
-            return this;
-        }
-
-        public PreferencesAO setStorageUserHomeAutoDisabled() {
-            setValue(SEARCH, "storage.user.home.auto").enter();
-            SelenideElement checkBox = context().shouldBe(visible)
-                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
-            if (checkBox.has(cssClass("ant-checkbox-checked"))) {
                 checkBox.click();
             }
             if (context().find(byClassName("anticon-eye-o")).isDisplayed()) {
