@@ -694,9 +694,12 @@ def add_record_to_openssh_config(local_port, remote_host, passwordless_config):
     logging.info('Appending host record to ssh config...')
     ssh_config_path_existed = os.path.exists(passwordless_config.local_openssh_config_path)
     with open(passwordless_config.local_openssh_config_path, 'a+') as f:
-        if ssh_config_path_existed:
-            f.seek(0)
-            if not (f.read() or '').endswith('\n'):
+        f.seek(0)
+        content = f.read() or ''
+        if content.strip():
+            if not content.endswith('\n\n'):
+                if not content.endswith('\n'):
+                    f.write('\n')
                 f.write('\n')
         f.write('Host {}\n'
                 '    Hostname 127.0.0.1\n'
@@ -716,7 +719,7 @@ def remove_record_from_openssh_config(remote_host, passwordless_config):
             ssh_config_lines = f.readlines()
         updated_ssh_config_lines = []
         skip_host = False
-        skip_newlines = False
+        skip_newlines = True
         for line in ssh_config_lines:
             if line.startswith('Host '):
                 skip_newlines = False
@@ -748,10 +751,10 @@ def copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, re
     os.remove(ssh_known_hosts_temp_path)
     ssh_known_hosts_path_existed = os.path.exists(passwordless_config.local_openssh_known_hosts_path)
     with open(passwordless_config.local_openssh_known_hosts_path, 'a+') as f:
-        if ssh_known_hosts_path_existed:
-            f.seek(0)
-            if not (f.read() or '').endswith('\n'):
-                f.write('\n')
+        f.seek(0)
+        content = f.read() or ''
+        if content.strip() and not content.endswith('\n'):
+            f.write('\n')
         f.write('[127.0.0.1]:{} {}\n'.format(local_port, public_key))
     if not ssh_known_hosts_path_existed and not is_windows():
         os.chmod(passwordless_config.local_openssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
