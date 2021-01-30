@@ -17,7 +17,6 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.AllArgsConstructor;
@@ -84,37 +83,22 @@ public abstract class AbstractAclTest {
 
     protected void initAclEntity(AbstractSecuredEntity entity, Permission permission) {
         initAclEntity(entity,
-                Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())), null);
+                Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())));
     }
 
     protected void initAclEntity(AbstractSecuredEntity entity) {
-        initAclEntity(entity, Collections.emptyList(), null);
-    }
-
-    protected void initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions) {
-        initAclEntity(entity, permissions, null);
+        initAclEntity(entity, Collections.emptyList());
     }
 
     protected void initAclEntity(AbstractSecuredEntity entity, String role, Permission permission) {
         initAclEntity(entity,
-                Collections.singletonList(new AuthorityPermission(permission.getMask(), role)), role);
+                Collections.singletonList(new AuthorityPermission(permission.getMask(), role)));
     }
 
-    protected void initAclEntity(AbstractSecuredEntity entity, String role) {
-        initAclEntity(entity, Collections.emptyList(), role);
-    }
-
-    protected void initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions, String role) {
-        Sid sid;
-        if (role == null) {
-            sid = new PrincipalSid(entity.getOwner());
-        } else {
-            sid = new GrantedAuthoritySid(DefaultRoles.ROLE_ANONYMOUS_USER.getName());
-        }
-
+    protected void initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions) {
         ObjectIdentityImpl objectIdentity = new ObjectIdentityImpl(entity);
         AclImpl acl = new AclImpl(objectIdentity, entity.getId(), aclAuthorizationStrategy,
-                grantingStrategy, null, null, true, sid);
+                grantingStrategy, null, null, true, new PrincipalSid(entity.getOwner()));
         if (CollectionUtils.isNotEmpty(permissions)) {
             IntStream
                     .range(0, permissions.size())
