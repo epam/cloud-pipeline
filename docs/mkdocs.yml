@@ -103,6 +103,7 @@ nav:
     - 14.7. View and manage Permissions: 'manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI.md'
     - 14.8. View tools definitions: 'manual/14_CLI/14.8._View_tools_definitions_via_CLI.md'
     - 14.9. User management: 'manual/14_CLI/14.9._User_management_via_CLI.md'
+    - 14.10. SSH tunnel: 'manual/14_CLI/14.10._SSH_tunnel.md'
   - 15. Interactive services:
     - 15.0. Overview: 'manual/15_Interactive_services/15._Interactive_services.md'
     - 15.1. Starting an interactive application: 'manual/15_Interactive_services/15.1._Starting_an_Interactive_application.md'

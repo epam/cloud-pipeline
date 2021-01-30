@@ -14,6 +14,7 @@
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
 - [Batch users import](#batch-users-import)
+- [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
 ***
@@ -538,6 +539,41 @@ Possible options:
 Results of the command execution are similar to the users import operation via GUI.
 
 For more details and examples see [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#batch-import).
+
+## SSH tunnel to the running compute instance
+
+In the current version, a new ability to access **Cloud Pipeline** run instances from local workstations is implemented.  
+Now, **Cloud Pipeline** run instance can be accessed via SSH directly using special **network tunnels**. Such tunnels can be established between a local **Windows** or **Linux** workstation and a **Cloud Pipeline** run.
+
+`pipe` CLI provides a set of command to manage such network tunnels. `pipe` CLI automatically manages SSH keys and configures **passwordless SSH access**. As a result no manual SSH keys management is required to access **Cloud Pipeline** run from the local workstation.
+
+SSH tunnels to **Cloud Pipeline** runs can be used for interactive SSH sessions, files transferring and third-party applications which depends on SSH protocol.
+
+The command that runs ports tunnelling operations:
+
+``` bash
+pipe tunnel COMMAND [ARGS]
+```
+
+Where **COMMAND** - one of the following commands:
+
+- **`start <RUN_ID>`** - establishes tunnel connection to specified run instance port and serves it as a local port
+- **`stop <RUN_ID`** - stops background tunnel processes with specified run
+
+For the `start` command there are two _mandatory_ options:
+
+- **`-lp`** / **`--local-port`** - specifies local port to establish connection from
+- **`-rp`** / **`--remote-port`** - specifies remote port to establish connection to
+
+Example of the command that establishes tunnel connection to the run:
+
+``` bash
+pipe tunnel start 12345 -lp 4567 -rp 22 --ssh
+```
+
+Here: `12345` is the _Run ID_, `4567` is just a random free _local port_ and `22` is the **Cloud Pipeline** run _SSH port_. Additional `--ssh` flag enables passwordless SSH access.
+
+For more details and examples see [here](../../manual/14_CLI/14.10._SSH_tunnel.md).
 
 ## AWS: transfer objects between AWS regions using `pipe storage cp`/`mv` commands
 
