@@ -400,6 +400,14 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .min().getAsInt();
     }
 
+    public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {
+        if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected))    {
+            get(DO_NOT_MOUNT_STORAGES).click();
+        }
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;

@@ -67,6 +67,7 @@ public class LaunchLimitMountsTest
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage2 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage3 = "launchLimitMountsStorage" + Utils.randomSuffix();
+    private String storage4 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storageSensitive = "launchLimitMountsStorage" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
@@ -347,6 +348,24 @@ public class LaunchLimitMountsTest
                 addStor.forEach(stor -> library().removeStorage(stor));
             }
         }
+    }
+
+    @Test(priority = 4)
+    @TestCase(value = {"1590"})
+    public void allowToLaunchRunsWithoutMounts() {
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.settings()
+                                .expandTab(EXEC_ENVIRONMENT)
+                                .doNotMountStoragesSelect(false)
+                                .save());
+        library()
+                .createStorage(storage4);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
+                .doNotMountStoragesSelect(true);
     }
 
     private String mountStorageMessage(String storage) {
