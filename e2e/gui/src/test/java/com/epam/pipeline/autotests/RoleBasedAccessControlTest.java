@@ -61,7 +61,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     private final String toolEndpoint = testingTool.substring(testingTool.lastIndexOf("/") + 1);
     private static final String localFilePath = URI.create(C.DOWNLOAD_FOLDER + "/").resolve("export.csv")
             .toString();
-    private boolean[] storageUserHomeAutoState = new boolean[] {true, true};
+    private boolean[] storageUserHomeAutoState = null;
 
     @BeforeClass
     public void initialLogout() {
@@ -80,12 +80,14 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
 
     @AfterClass(alwaysRun = true)
     public void resetPreference() {
-        navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .setCheckboxPreference("storage.user.home.auto",
-                        storageUserHomeAutoState[0], storageUserHomeAutoState[1])
-                .saveIfNeeded();
+        if (storageUserHomeAutoState != null) {
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setCheckboxPreference("storage.user.home.auto",
+                            storageUserHomeAutoState[0], storageUserHomeAutoState[1])
+                    .saveIfNeeded();
+        }
     }
 
     @AfterClass(alwaysRun = true)
