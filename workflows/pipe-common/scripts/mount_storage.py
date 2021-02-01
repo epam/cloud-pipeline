@@ -46,6 +46,8 @@ AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
 READ_ONLY_MOUNT_OPT = 'ro'
 MOUNT_LIMITS_NONE = 'none'
+SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
+
 
 class PermissionHelper:
 
@@ -119,10 +121,11 @@ class MountStorageTask:
                 return
             Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
+            sensitive_policy = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)['value']
             for mounter in [mounter for mounter in self.mounters.values()]:
                 storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
                 if storage_count_by_type > 0:
-                    mounter.check_or_install(self.task_name)
+                    mounter.check_or_install(self.task_name, sensitive_policy)
                     mounter.init_tmp_dir(tmp_dir, self.task_name)
 
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
@@ -131,7 +134,9 @@ class MountStorageTask:
             for storage_and_mount in available_storages_with_mounts:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
                     continue
-                mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage, storage_and_mount.file_share_mount) \
+                mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
+                                                                                storage_and_mount.file_share_mount,
+                                                                                sensitive_policy) \
                     if storage_and_mount.storage.storage_type in self.mounters else None
                 if not mounter:
                     Logger.warn('Unsupported storage type {}.'.format(storage_and_mount.storage.storage_type), task_name=self.task_name)
@@ -151,10 +156,11 @@ class StorageMounter:
     __metaclass__ = ABCMeta
     _cached_regions = []
 
-    def __init__(self, api, storage, share_mount):
+    def __init__(self, api, storage, share_mount, sensitive_policy):
         self.api = api
         self.storage = storage
         self.share_mount = share_mount
+        self.sensitive_policy = sensitive_policy
 
     @staticmethod
     @abstractmethod
@@ -168,7 +174,7 @@ class StorageMounter:
 
     @staticmethod
     @abstractmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, sensitive_policy):
         pass
 
     @staticmethod
@@ -256,7 +262,7 @@ class AzureMounter(StorageMounter):
         return AZ_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, sensitive_policy):
         AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse', task_name=task_name)
 
     @staticmethod
@@ -319,7 +325,7 @@ class S3Mounter(StorageMounter):
         return S3_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, sensitive_policy):
         S3Mounter.fuse_type = S3Mounter._check_or_install(task_name)
 
     @staticmethod
@@ -433,7 +439,7 @@ class GCPMounter(StorageMounter):
         return GCP_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, sensitive_policy):
         GCPMounter.fuse_type = GCPMounter._check_or_install(task_name)
 
     @staticmethod
@@ -522,8 +528,9 @@ class NFSMounter(StorageMounter):
         return NFS_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
-        NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
+    def check_or_install(task_name, sensitive_policy):
+        NFSMounter.available = False if PermissionHelper.is_run_sensitive() and sensitive_policy == "SKIP" \
+            else StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):
@@ -592,7 +599,8 @@ class NFSMounter(StorageMounter):
         return command
 
     def append_timeout_options(self, mount_options):
-        if self.share_mount.mount_type == 'SMB':
+        if self.share_mount.mount_type == 'SMB' or not PermissionHelper.is_run_sensitive() \
+                or NFSMounter.sensitive_policy != "TIMEOUT":
             return mount_options
         if not mount_options or 'retry' not in mount_options:
             mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
