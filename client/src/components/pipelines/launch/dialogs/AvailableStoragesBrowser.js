@@ -15,7 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Input, Modal, Row, Table} from 'antd';
@@ -47,6 +47,13 @@ function arraysAreEqual (a, b) {
   return true;
 }
 
+export function filterNFSStorages (nfsSensitivePolicy, sensitiveStoragesAreSelected) {
+  return a => !sensitiveStoragesAreSelected ||
+    !/^skip$/i.test(nfsSensitivePolicy) ||
+    a.type !== 'NFS';
+}
+
+@inject('preferences')
 @observer
 export default class AvailableStoragesBrowser extends Component {
   static propTypes = {
@@ -80,6 +87,12 @@ export default class AvailableStoragesBrowser extends Component {
       selectedStorages: this.props.selectedStorages.slice()
     });
   };
+
+  @computed
+  get nfsSensitivePolicy () {
+    const {preferences} = this.props;
+    return preferences.nfsSensitivePolicy;
+  }
 
   get limitMountsParameter () {
     if (this.state.selectedStorages.length === 0) {
@@ -118,10 +131,27 @@ export default class AvailableStoragesBrowser extends Component {
       .length === this.availableNonSensitiveStorages.length;
   }
 
+  get allStoragesAreSelected () {
+    const {selectedStorages} = this.state;
+    const ids = new Set(selectedStorages.map(id => +id));
+    const allAllowedStorages = (this.props.availableStorages || [])
+      .filter(filterNFSStorages(this.nfsSensitivePolicy, this.hasSelectedSensitiveStorages));
+    return allAllowedStorages
+      .filter(s => ids.has(+s.id))
+      .length === allAllowedStorages.length;
+  }
+
+  get hasSelectedSensitiveStorages () {
+    const {selectedStorages} = this.state;
+    const ids = new Set(selectedStorages.map(id => +id));
+    return (this.props.availableStorages || [])
+      .filter(s => s.sensitive && ids.has(+s.id))
+      .length > 0;
+  }
+
   onSave = () => {
     if (this.props.onSave) {
-      const {selectedStorages} = this.state;
-      this.props.onSave(selectedStorages);
+      this.props.onSave(this.selectedStorages);
     }
   };
 
@@ -157,8 +187,11 @@ export default class AvailableStoragesBrowser extends Component {
   };
 
   selectAll = () => {
+    const hasSensitive = (this.props.availableStorages || []).find(a => a.sensitive);
     this.setState({
-      selectedStorages: (this.props.availableStorages || []).map(s => +(s.id)),
+      selectedStorages: (this.props.availableStorages || [])
+        .filter(filterNFSStorages(this.nfsSensitivePolicy, hasSensitive))
+        .map(s => +(s.id)),
       searchString: null
     });
   };
@@ -172,7 +205,6 @@ export default class AvailableStoragesBrowser extends Component {
       this.state.selectedStorages.filter(p => p === +(item.id)).length > 0;
   };
 
-  @computed
   get availableStorages () {
     if (!this.props.availableStorages || !this.props.availableStorages.length) {
       return [];
@@ -188,7 +220,21 @@ export default class AvailableStoragesBrowser extends Component {
           storage.description.toLowerCase().includes(this.state.searchString.toLowerCase()));
     };
 
-    return this.props.availableStorages.filter(storageMatches).sort(sensitiveSorter);
+    return this.props.availableStorages
+      .filter(filterNFSStorages(this.nfsSensitivePolicy, this.hasSelectedSensitiveStorages))
+      .filter(storageMatches)
+      .sort(sensitiveSorter);
+  }
+
+  get selectedStorages () {
+    const {selectedStorages} = this.state;
+    const ids = new Set(selectedStorages.map(s => +s));
+    const hasSensitive = (this.props.availableStorages || [])
+      .find(s => s.sensitive && ids.has(+s.id));
+    const allAllowedStorages = (this.props.availableStorages || [])
+      .filter(filterNFSStorages(this.nfsSensitivePolicy, !!hasSensitive));
+    const allowedIds = new Set(allAllowedStorages.map(s => +s.id));
+    return selectedStorages.filter(s => allowedIds.has(+s));
   }
 
   renderStoragesTable = () => {
@@ -243,7 +289,7 @@ export default class AvailableStoragesBrowser extends Component {
     ];
 
     return (
-      <Row type="flex" style={{height: 450, overflow: 'auto'}}>
+      <Row type="flex" style={{flex: 1, overflow: 'auto'}}>
         <Table
           className={styles.table}
           dataSource={this.availableStorages}
@@ -274,55 +320,57 @@ export default class AvailableStoragesBrowser extends Component {
               onClick={this.onSave}
             >
               OK{
-                !!this.state.selectedStorages.length > 0 &&
-                ` (${this.state.selectedStorages.length})`
+                !!this.selectedStorages.length > 0 &&
+                ` (${this.selectedStorages.length})`
               }
             </Button>
           </Row>
         }>
-        <Row type="flex" align="middle" style={{marginBottom: 10}}>
-          <Input.Search
-            style={{flex: 1}}
-            value={this.state.searchString}
-            placeholder="Search for the storage"
-            onChange={this.onSearch}
-          />
-          <Button
-            style={{marginLeft: 5}}
-            disabled={this.allAvailableNonSensitiveStoragesAreSelected}
-            onClick={this.selectAllNonSensitive}>
-            Select all non-sensitive
-          </Button>
-          <Button
-            style={{marginLeft: 5}}
-            disabled={this.state.selectedStorages.length === this.props.availableStorages.length}
-            onClick={this.selectAll}
-          >
-            Select all
-          </Button>
-          {
-            this.state.selectedStorages.length &&
+        <div style={{maxHeight: '60vh', display: 'flex', flexDirection: 'column'}}>
+          <Row type="flex" align="middle" style={{marginBottom: 10}}>
+            <Input.Search
+              style={{flex: 1}}
+              value={this.state.searchString}
+              placeholder="Search for the storage"
+              onChange={this.onSearch}
+            />
             <Button
-              type="danger"
               style={{marginLeft: 5}}
-              onClick={this.clearSelection}>
-              Clear selection
+              disabled={this.allAvailableNonSensitiveStoragesAreSelected}
+              onClick={this.selectAllNonSensitive}>
+              Select all non-sensitive
             </Button>
-          }
-        </Row>
-        <SensitiveBucketsWarning
-          parameters={this.limitMountsParameter}
-          style={{margin: '5px 0'}}
-          message={(
-            <div>
-              Selection contains <b>sensitive storages</b>.
-              This will apply a number of restrictions for the job: no Internet access,
-              all the storages will be available in a read-only mode,
-              you won't be able to extract the data from the running job and other.
-            </div>
-          )}
-        />
-        {this.renderStoragesTable()}
+            <Button
+              style={{marginLeft: 5}}
+              disabled={this.allStoragesAreSelected}
+              onClick={this.selectAll}
+            >
+              Select all
+            </Button>
+            {
+              this.state.selectedStorages.length &&
+              <Button
+                type="danger"
+                style={{marginLeft: 5}}
+                onClick={this.clearSelection}>
+                Clear selection
+              </Button>
+            }
+          </Row>
+          <SensitiveBucketsWarning
+            parameters={this.limitMountsParameter}
+            style={{margin: '5px 0'}}
+            message={(
+              <div>
+                Selection contains <b>sensitive storages</b>.
+                This will apply a number of restrictions for the job: no Internet access,
+                all the storages will be available in a read-only mode,
+                you won't be able to extract the data from the running job and other.
+              </div>
+            )}
+          />
+          {this.renderStoragesTable()}
+        </div>
       </Modal>
     );
   }
