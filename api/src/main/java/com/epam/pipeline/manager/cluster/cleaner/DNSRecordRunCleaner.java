@@ -84,6 +84,11 @@ public class DNSRecordRunCleaner implements RunCleaner {
         });
     }
 
+    @Override
+    public void cleanResources(final Long runId) {
+        log.error("Clearing resource via runId is not supported.");
+    }
+
     private static String unify(final String url) {
         return url.trim()
                 .replace(HTTP, "")

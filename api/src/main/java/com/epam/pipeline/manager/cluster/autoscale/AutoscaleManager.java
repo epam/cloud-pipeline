@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -104,6 +105,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final NodePoolManager nodePoolManager;
         private final ReassignHandler reassignHandler;
         private final ScaleDownHandler scaleDownHandler;
+        private final List<RunCleaner> runCleaners;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -120,7 +122,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final CloudFacade cloudFacade,
                              final NodePoolManager nodePoolManager,
                              final ReassignHandler reassignHandler,
-                             final ScaleDownHandler scaleDownHandler) {
+                             final ScaleDownHandler scaleDownHandler,
+                             final List<RunCleaner> runCleaners) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -132,6 +135,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.nodePoolManager = nodePoolManager;
             this.reassignHandler = reassignHandler;
             this.scaleDownHandler = scaleDownHandler;
+            this.runCleaners = runCleaners;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -370,6 +374,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     log.error(e.getMessage(), e);
                     // If we failed to load a matching pipeline run for a pod, we delete it here, since
                     // PodMonitor wont't process it either
+                    log.debug("Trying to clear resources for run {}.", runId);
+                    runCleaners.forEach(cleaner -> cleaner.cleanResources(runId));
                     deletePod(pod, client);
                     removeNodeUpTask(runId);
                 }
