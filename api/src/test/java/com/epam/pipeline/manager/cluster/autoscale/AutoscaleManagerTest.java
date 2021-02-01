@@ -109,7 +109,7 @@ public class AutoscaleManagerTest {
                 pipelineRunManager, executorService,
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
-                nodePoolManager, reassignHandler, scaleDownHandler);
+                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList());
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
