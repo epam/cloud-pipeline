@@ -486,11 +486,6 @@ public class AclTestBeans {
     protected JsonService mockJsonService;
 
     @Bean
-    public FolderTemplateManager folderTemplateManager() {
-        return new FolderTemplateManager();
-    }
-
-    @Bean
     public GrantPermissionManager grantPermissionManager() {
         GrantPermissionManager grantPermissionManager = new GrantPermissionManager();
         grantPermissionManager.setAclService(mockAclService);
