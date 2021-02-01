@@ -869,8 +869,8 @@ class PipelineAPI:
             url = str(self.api_url) + self.REGION_URL + '/%d' % region_id
             return self.execute_request(url, method="get")
         except Exception as e:
-            raise RuntimeError("Failed to get region by ID '{}'.", "Error message: {}".format(str(region_id),
-                                                                                              str(e.message)))
+            raise RuntimeError("Failed to get region by ID '{}'. Error message: {}".format(str(region_id),
+                                                                                           str(e.message)))
 
     def load_user_by_name(self, user_name):
         try:
