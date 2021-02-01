@@ -94,6 +94,7 @@ class DataStorageOperations(object):
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
             sorted_items = list()
+            transfer_results = []
             for item in items:
                 full_path = item[1]
                 relative_path = item[2]
@@ -121,12 +122,18 @@ class DataStorageOperations(object):
                 if threads:
                     sorted_items.append(item)
                 else:
-                    manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                     relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                     tags=tags, skip_existing=skip_existing)
+                    transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                                       relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                                       tags=tags, skip_existing=skip_existing)
+                    if not destination_wrapper.is_local():
+                        transfer_results.append(transfer_result)
+                        transfer_results = cls._flush_transfer_results(destination_wrapper, transfer_results)
             if threads:
                 cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
                                                  clean, quiet, tags, skip_existing)
+            else:
+                if not destination_wrapper.is_local():
+                    cls._flush_transfer_results(destination_wrapper, transfer_results, flush_size=1)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)
@@ -545,17 +552,6 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, skip_existing,
-                        lock):
-        for item in items:
-            full_path = item[1]
-            relative_path = item[2]
-            size = item[3]
-            manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                             relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                             tags=tags, skip_existing=skip_existing, lock=lock)
-
-    @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
                                      quiet, tags, skip_existing):
         size_index = 3
@@ -578,6 +574,48 @@ class DataStorageOperations(object):
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
+
+    @classmethod
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, skip_existing,
+                        lock):
+        transfer_results = []
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            size = item[3]
+            transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                                relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                                tags=tags, skip_existing=skip_existing, lock=lock)
+            if not destination_wrapper.is_local():
+                transfer_results.append(transfer_result)
+                transfer_results = cls._flush_transfer_results(destination_wrapper, transfer_results)
+        if not destination_wrapper.is_local():
+            cls._flush_transfer_results(destination_wrapper, transfer_results, flush_size=1)
+
+
+    @classmethod
+    def _flush_transfer_results(cls, destination_wrapper, transfer_results, flush_size=100, chunk_size=100):
+        if len(transfer_results) < flush_size:
+            return transfer_results
+        tag_objects = []
+        for path, version, tags in transfer_results:
+            for key, value in tags.items():
+                tag_objects.append({
+                    'path': path,
+                    'key': key,
+                    'value': value
+                })
+                if version:
+                    tag_objects.append({
+                        'path': path,
+                        'version': version,
+                        'key': key,
+                        'value': value
+                    })
+        for tag_objects_chunk in [tag_objects[i:i + chunk_size]
+                                  for i in range(0, len(tag_objects), chunk_size)]:
+            DataStorage.bulk_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects_chunk)
+        return []
 
     @staticmethod
     def _handle_keyboard_interrupt(workers):

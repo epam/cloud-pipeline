@@ -333,6 +333,57 @@ class DataStorage(API):
             raise RuntimeError("Failed to update tags for object {}.".format(path))
 
     @classmethod
+    def bulk_insert_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        data = json.dumps({
+            'requests': requests
+        })
+        endpoint = 'datastorage/{}/tags/bulk'.format(identifier)
+        response_data = api.call(endpoint, data=data, http_method='PUT')
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError('Failed to bulk upsert tags: {}.'.format(requests))
+
+    @classmethod
+    def bulk_copy_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        data = json.dumps({
+            'requests': requests
+        })
+        endpoint = 'datastorage/{}/tags/copy/bulk'.format(identifier)
+        response_data = api.call(endpoint, data=data, http_method='PUT')
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError('Failed to bulk copy tags: {}.'.format(requests))
+
+    @classmethod
+    def bulk_delete_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        data = json.dumps({
+            'requests': requests
+        })
+        endpoint = 'datastorage/{}/tags/bulk'.format(identifier)
+        response_data = api.call(endpoint, data=data, http_method='DELETE')
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError('Failed to bulk delete tags for paths {}.'.format(requests))
+
+    @classmethod
     def get_storage_usage(cls, name, path=None):
         api = cls.instance()
         endpoint = 'datastorage/path/usage?id={}'.format(name)

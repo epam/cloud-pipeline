@@ -52,6 +52,8 @@ class API(object):
                 response = requests.get(url, headers=self.__headers__, verify=False, proxies=self.__proxies__)
             elif http_method.lower() == 'post':
                 response = requests.post(url, data, headers=self.__headers__, verify=False, proxies=self.__proxies__)
+            elif http_method.lower() == 'put':
+                response = requests.put(url, data, headers=self.__headers__, verify=False, proxies=self.__proxies__)
             elif http_method.lower() == 'delete':
                 if data:
                     response = requests.delete(url, data=data, headers=self.__headers__, verify=False, proxies=self.__proxies__)
