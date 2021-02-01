@@ -233,13 +233,21 @@ public class LustreFSManager {
     }
 
     private AwsRegion getRegionForRun(Long runId) {
-        final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
-        return getRegion(pipelineRun);
+        try {
+            final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
+            return getRegion(pipelineRun);
+        } catch (IllegalArgumentException e) {
+            return getAwsRegion(regionManager.loadDefaultRegion());
+        }
     }
 
     private AwsRegion getRegion(PipelineRun pipelineRun) {
         final Long cloudRegionId = pipelineRun.getInstance().getCloudRegionId();
         final AbstractCloudRegion region = regionManager.load(cloudRegionId);
+        return getAwsRegion(region);
+    }
+
+    private AwsRegion getAwsRegion(final AbstractCloudRegion region) {
         if (region instanceof AwsRegion) {
             return (AwsRegion)region;
         } else {

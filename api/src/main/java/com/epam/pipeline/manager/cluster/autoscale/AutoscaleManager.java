@@ -370,14 +370,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     checkedPods.add(pod);
                     priorityScore.put(pod, getParameterValue(runParameters, "priority-score", 0L));
                 } catch (IllegalArgumentException e) {
-                    log.error("Failed to load pipeline run {}.", runId);
-                    log.error(e.getMessage(), e);
-                    // If we failed to load a matching pipeline run for a pod, we delete it here, since
-                    // PodMonitor wont't process it either
-                    log.debug("Trying to clear resources for run {}.", runId);
-                    runCleaners.forEach(cleaner -> cleaner.cleanResources(runId));
-                    deletePod(pod, client);
-                    removeNodeUpTask(runId);
+                    cleanDeletedRun(client, pod, runId, e);
                 }
             }
             if (!CollectionUtils.isEmpty(checkedPods)) {
@@ -395,6 +388,21 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             } else {
                 return Collections.emptyList();
             }
+        }
+
+        private void cleanDeletedRun(final KubernetesClient client, final Pod pod, final Long runId, final IllegalArgumentException e) {
+            log.error("Failed to load pipeline run {}.", runId);
+            log.error(e.getMessage(), e);
+            // If we failed to load a matching pipeline run for a pod, we delete it here, since
+            // PodMonitor wont't process it either
+            log.debug("Trying to clear resources for run {}.", runId);
+            try {
+                runCleaners.forEach(cleaner -> cleaner.cleanResources(runId));
+            } catch (Exception ex) {
+                log.error("Error during resources clean up: {}", e.getMessage());
+            }
+            deletePod(pod, client);
+            removeNodeUpTask(runId);
         }
 
         private void deletePod(Pod pod, KubernetesClient client) {
