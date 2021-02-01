@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
+import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
@@ -78,6 +79,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreate
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
@@ -157,7 +159,7 @@ public class SystemPreferences {
             "storage.mounts.nfs.sensitive.policy",
             null,
             DATA_STORAGE_GROUP,
-            PreferenceValidators.isValidNFSMountSensitivePolicy);
+            isNullOrValidEnum(NFSMountPolicy.class));
 
     /**
      * Configures a system data storage for storing attachments and etc.

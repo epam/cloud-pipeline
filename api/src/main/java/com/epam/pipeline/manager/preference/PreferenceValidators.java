@@ -186,6 +186,15 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> EnumUtils.isValidEnum(enumClass, pref);
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isNullOrValidEnum(final Class<? extends Enum>
+                                                                                         enumClass) {
+        return (pref, dependencies) -> {
+            if (StringUtils.isBlank(pref)) {
+                return true;
+            }
+            return EnumUtils.isValidEnum(enumClass, pref);
+        };
+    }
     /**
      * A no-op validator, that is always true
      */
@@ -254,9 +263,6 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isValidLongPauseRunAction =
             (pref, ignored) -> LongPausedRunAction.contains(pref);
-
-    public static final BiPredicate<String, Map<String, Preference>> isValidNFSMountSensitivePolicy = (pref, ignored) ->
-            StringUtils.isBlank(pref) || pref.equals("SKIP") || pref.equals("TIMEOUT") || pref.equals("NONE");
 
     private PreferenceValidators() {
         // No-op
