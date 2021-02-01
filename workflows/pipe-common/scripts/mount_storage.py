@@ -602,7 +602,7 @@ class NFSMounter(StorageMounter):
 
     def append_timeout_options(self, mount_options):
         if self.share_mount.mount_type == 'SMB' or not PermissionHelper.is_run_sensitive() \
-                or NFSMounter.sensitive_policy != "TIMEOUT":
+                or self.sensitive_policy != "TIMEOUT":
             return mount_options
         if not mount_options or 'retry' not in mount_options:
             mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
