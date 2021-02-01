@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     private final String toolEndpoint = testingTool.substring(testingTool.lastIndexOf("/") + 1);
     private static final String localFilePath = URI.create(C.DOWNLOAD_FOLDER + "/").resolve("export.csv")
             .toString();
+    private boolean[] storageUserHomeAutoState;
 
     @BeforeClass
     public void initialLogout() {
@@ -75,6 +76,19 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @AfterClass(alwaysRun = true)
     public void deleteDownloaded() {
         new File(localFilePath).delete();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void resetPreference() {
+        if (storageUserHomeAutoState == null) {
+            return;
+        }
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .setCheckboxPreference("storage.user.home.auto",
+                        storageUserHomeAutoState[0], storageUserHomeAutoState[1])
+                .saveIfNeeded();
     }
 
     @AfterClass(alwaysRun = true)
@@ -110,6 +124,15 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @TestCase({"EPMCMBIBPC-3019"})
     public void addTheUser() {
         loginAs(admin);
+        storageUserHomeAutoState = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .getCheckboxPreferenceState("storage.user.home.auto");
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .setCheckboxPreference("storage.user.home.auto", false, true)
+                .saveIfNeeded();
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
