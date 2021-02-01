@@ -22,9 +22,11 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSid;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.UserContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -50,6 +52,21 @@ public final class SecurityCreatorUtils {
         final UserContext context = new UserContext();
         context.setExternal(external);
         return context;
+    }
+
+    public static UserContext getUserContext(final Long contextId, final String userName,
+                                             final Long roleId, final String roleName) {
+        final UserContext context = new UserContext();
+        context.setUserId(contextId);
+        context.setUserName(userName);
+        final Role role = new Role();
+        role.setId(roleId);
+        role.setName(roleName);
+        role.setUserDefault(true);
+        role.setPredefined(true);
+        context.setRoles(Collections.singletonList(role));
+        return context;
+
     }
 
     public static AclSid getAclSid() {

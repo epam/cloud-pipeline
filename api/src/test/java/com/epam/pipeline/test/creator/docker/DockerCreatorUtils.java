@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -158,6 +159,18 @@ public final class DockerCreatorUtils {
         return dockerRegistry;
     }
 
+    public static DockerRegistry getDockerRegistry(final Long id, final String path,
+                                                   final String owner, final String externalUrl) {
+        final DockerRegistry registry = new DockerRegistry();
+        registry.setId(id);
+        registry.setPath(path);
+        registry.setOwner(owner);
+        if (!StringUtils.isEmpty(externalUrl)){
+            registry.setExternalUrl(externalUrl);
+        }
+        return registry;
+    }
+
     public static DockerRegistryVO getDockerRegistryVO() {
         final DockerRegistryVO dockerRegistryVO = new DockerRegistryVO();
         dockerRegistryVO.setId(ID);
@@ -207,6 +220,17 @@ public final class DockerCreatorUtils {
         return getTool(ID, owner);
     }
 
+    public static ToolGroup getToolGroup(final Long id, final String name, final Long registryId, final String owner) {
+        final ToolGroup toolGroup = new ToolGroup();
+        if (id != null) {
+            toolGroup.setId(id);
+        }
+        toolGroup.setName(name);
+        toolGroup.setRegistryId(registryId);
+        toolGroup.setOwner(owner);
+        return toolGroup;
+    }
+
     public static ToolGroup getToolGroup(final Long id, final String owner) {
         final ToolGroup toolGroup = new ToolGroup();
         toolGroup.setId(id);
@@ -229,6 +253,35 @@ public final class DockerCreatorUtils {
         tool.setToolGroupId(id);
         tool.setRegistry(TEST_STRING);
         return tool;
+    }
+
+    public static Tool getTool(final ToolGroup toolGroup, final String image,
+                               final DockerRegistry dockerRegistry, final String actor) {
+        final Tool tool = new Tool();
+        tool.setToolGroup(toolGroup.getName());
+        tool.setToolGroupId(toolGroup.getId());
+        tool.setImage(image);
+        tool.setCpu(TEST_STRING);
+        tool.setRam(TEST_STRING);
+        tool.setRegistry(dockerRegistry.getPath());
+        tool.setRegistryId(dockerRegistry.getId());
+        tool.setOwner(actor);
+        return tool;
+    }
+
+    public static Tool getClonedTool(final Tool tool, final Long id) {
+        final Tool clonedTool = new Tool();
+        clonedTool.setToolGroup(tool.getToolGroup());
+        clonedTool.setToolGroupId(tool.getToolGroupId());
+        clonedTool.setImage(tool.getImage());
+        clonedTool.setCpu(tool.getCpu());
+        clonedTool.setRam(tool.getRam());
+        clonedTool.setRegistry(tool.getRegistry());
+        clonedTool.setRegistryId(tool.getRegistryId());
+        clonedTool.setOwner(tool.getOwner());
+        clonedTool.setId(id);
+        clonedTool.setParent(tool.getParent());
+        return clonedTool;
     }
 
     public static ToolGroupWithIssues getToolGroupWithIssues(final Long id, final String owner) {
