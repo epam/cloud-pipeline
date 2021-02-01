@@ -153,6 +153,7 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             check_file = False
         if not recursive:
             self.__delete_blob(prefix, exclude, include)
+            self._delete_object_tags([prefix])
         else:
             blob_names_for_deletion = []
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
@@ -163,6 +164,13 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
                     blob_names_for_deletion.append(item.name)
             for blob_name in blob_names_for_deletion:
                 self.__delete_blob(blob_name, exclude, include, prefix=prefix)
+            self._delete_object_tags(blob_names_for_deletion)
+
+    def _delete_object_tags(self, blob_names_for_deletion, chunk_size=100):
+        for blob_names_for_deletion_chunk in [blob_names_for_deletion[i:i + chunk_size]
+                                              for i in range(0, len(blob_names_for_deletion), chunk_size)]:
+            DataStorage.bulk_delete_object_tags(self.bucket.identifier,
+                                                [{'path': blob_name} for blob_name in blob_names_for_deletion_chunk])
 
     def __file_under_folder(self, file_path, folder_path):
         return StorageOperations.without_prefix(file_path, folder_path).startswith(self.delimiter)
@@ -224,6 +232,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
             progress_callback(size, size)
         if clean:
             source_service.delete_blob(source_wrapper.bucket.path, full_path)
+        return destination_path, None, destination_tags
 
     def _wait_for_copying(self, destination_bucket, destination_path, full_path):
         for _ in range(0, TransferBetweenAzureBucketsManager._POLLS_ATTEMPTS):
@@ -297,6 +306,7 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
                                            progress_callback=progress_callback)
         if clean:
             source_wrapper.delete_item(source_key)
+        return destination_key, None, destination_tags
 
 
 class _SourceUrlIO(io.BytesIO):
@@ -336,6 +346,7 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
                                              progress_callback=progress_callback)
+        return destination_key, None, destination_tags
 
 
 class AzureTemporaryCredentials:

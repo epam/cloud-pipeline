@@ -109,6 +109,11 @@ class GsCompositeUploadClient(S3TransferUploadClient):
         self._parts = {}
         self._max_composite_parts = 32
         self._progress_callback = progress_callback
+        self._generation = None
+
+    @property
+    def generation(self):
+        return self._generation
 
     def create_multipart_upload(self, Bucket, Key, *args, **kwargs):
         return {'UploadId': self._path}
@@ -138,8 +143,9 @@ class GsCompositeUploadClient(S3TransferUploadClient):
                 composed_part = self._merge(merging_parts, last_part_number)
                 remaining_parts = remaining_parts[self._max_composite_parts:]
         source_blob = self._bucket_object.blob(composed_part.name)
-        self._bucket_object.copy_blob(source_blob, self._bucket_object, self._path)
+        resulting_blob = self._bucket_object.copy_blob(source_blob, self._bucket_object, self._path)
         source_blob.delete()
+        self._generation = resulting_blob.generation
 
     def _merge(self, parts, last_part_number):
         merged_part_path = self._merged_part_path(last_part_number)
@@ -512,6 +518,8 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         bucket = self.client.bucket(self.bucket.path)
         if not recursive and not hard_delete:
             self._delete_blob(bucket.blob(prefix, generation=version), exclude, include)
+            if not self.bucket.policy.versioning_enabled:
+                DataStorage.bulk_delete_object_tags(self.bucket.identifier, [{'path': self.bucket.path}])
         else:
             blobs_for_deletion = []
             listing_manager = self._get_listing_manager(show_versions=version is not None or hard_delete)
@@ -529,6 +537,12 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
                     blobs_for_deletion.extend(self._item_blobs_for_deletion(bucket, item, hard_delete))
             for blob in blobs_for_deletion:
                 self._delete_blob(blob, exclude, include, prefix)
+            if not self.bucket.policy.versioning_enabled:
+                chunk_size = 100
+                for blobs_for_deletion_chunk in [blobs_for_deletion[i:i + chunk_size]
+                                                 for i in range(0, len(blobs_for_deletion), chunk_size)]:
+                    DataStorage.bulk_delete_object_tags(self.bucket.identifier,
+                                                        [{'path': blob.name} for blob in blobs_for_deletion_chunk])
 
     def _item_blobs_for_deletion(self, bucket, item, hard_delete):
         if hard_delete:
@@ -583,7 +597,25 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
                 raise RuntimeError('Version "%s" doesn\'t exist.' % version)
             if not item.deleted and item.version == version:
                 raise RuntimeError('Version "%s" is already the latest version.' % version)
-            bucket.copy_blob(blob, bucket, blob.name, source_generation=int(version))
+            restored_object = bucket.copy_blob(blob, bucket, blob.name, source_generation=int(version))
+            DataStorage.bulk_copy_object_tags(self.wrapper.bucket.identifier, [{
+                'source': {
+                    'path': self.wrapper.path,
+                    'version': version
+                },
+                'destination': {
+                    'path': self.wrapper.path
+                }
+            }, {
+                'source': {
+                    'path': self.wrapper.path,
+                    'version': version
+                },
+                'destination': {
+                    'path': self.wrapper.path,
+                    'version': restored_object.generation
+                }
+            }])
         else:
             all_items = self.listing_manager.list_items(self.wrapper.path, show_all=True, recursive=True)
             file_items = [item for item in all_items if item.name == self.wrapper.path]
@@ -591,16 +623,62 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
                 item = file_items[0]
                 if not item.deleted:
                     raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
-                self._restore_latest_archived_version(bucket, item)
+                restored_item = self._restore_latest_archived_version(bucket, item)
+                DataStorage.bulk_copy_object_tags(self.wrapper.bucket.identifier,[{
+                    'source': {
+                        'path': self.wrapper.path,
+                        'version': item.version
+                    },
+                    'destination': {
+                        'path': self.wrapper.path
+                    }
+                }, {
+                    'source': {
+                        'path': self.wrapper.path,
+                        'version': item.version
+                    },
+                    'destination': {
+                        'path': self.wrapper.path,
+                        'version': restored_item.generation
+                    }
+                }])
             else:
+                chunk_size = 100
+                restoring_results = []
                 for item in all_items:
                     if item.deleted:
-                        self._restore_latest_archived_version(bucket, item)
+                        restored_item = self._restore_latest_archived_version(bucket, item)
+                        restoring_results.append((item, restored_item))
+                        if len(restoring_results) > chunk_size:
+                            item_requests = []
+                            for original_item, restored_item in restoring_results:
+                                item_requests.append({
+                                    'source': {
+                                        'path': original_item.name,
+                                        'version': original_item.version
+                                    },
+                                    'destination': {
+                                        'path': restored_item.name
+                                    }
+                                })
+                                item_requests.append({
+                                    'source': {
+                                        'path': original_item.name,
+                                        'version': original_item.version
+                                    },
+                                    'destination': {
+                                        'path': restored_item.name,
+                                        'version': restored_item.version
+                                    }
+                                })
+                            DataStorage.bulk_delete_object_tags(self.wrapper.bucket.identifier,
+                                                                item_requests)
+                            restoring_results = []
 
     def _restore_latest_archived_version(self, bucket, item):
         blob = bucket.blob(item.name)
         latest_version = item.version
-        bucket.copy_blob(blob, bucket, blob.name, source_generation=int(latest_version))
+        return bucket.copy_blob(blob, bucket, blob.name, source_generation=int(latest_version))
 
 
 class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
@@ -621,10 +699,8 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         source_bucket = source_client.bucket(source_wrapper.bucket.path)
         source_blob = source_bucket.blob(full_path)
         destination_bucket = self.client.bucket(destination_wrapper.bucket.path)
-        source_bucket.copy_blob(source_blob, destination_bucket, destination_path, client=self.client)
-        destination_blob = destination_bucket.blob(destination_path)
-        destination_blob.metadata = self._destination_tags(source_wrapper, full_path, tags)
-        destination_blob.patch()
+        destination_blob = source_bucket.copy_blob(source_blob, destination_bucket, destination_path, client=self.client)
+        destination_tags = self._destination_tags(source_wrapper, full_path, tags)
         # Transfer between buckets in GCP is almost an instant operation. Therefore the progress bar can be updated
         # only once.
         if StorageOperations.show_progress(quiet, size, lock):
@@ -635,6 +711,7 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
             progress_callback(size)
         if clean:
             source_blob.delete()
+        return destination_path, destination_blob.generation, destination_tags
 
     def _destination_tags(self, source_wrapper, full_path, raw_tags):
         tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
@@ -769,20 +846,24 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         else:
             progress_callback = None
         transfer_config = self._get_upload_config(size)
+        destination_tags = StorageOperations.generate_tags(tags, source_key)
         if size > transfer_config.multipart_threshold:
             upload_client = GsCompositeUploadClient(destination_wrapper.bucket.path, destination_key,
-                                                    StorageOperations.generate_tags(tags, source_key),
+                                                    destination_tags,
                                                     self.client, progress_callback)
             uploader = MultipartUploader(client=upload_client, config=transfer_config, osutil=OSUtils())
             uploader.upload_file(filename=source_key, bucket=destination_wrapper.bucket.path, key=destination_key,
                                  callback=None, extra_args={})
+            generation = upload_client.generation
         else:
             bucket = self.client.bucket(destination_wrapper.bucket.path)
             blob = self.custom_blob(bucket, destination_key, progress_callback, size)
-            blob.metadata = StorageOperations.generate_tags(tags, source_key)
+            blob.metadata = destination_tags
             blob.upload_from_filename(source_key)
+            generation = blob.generation
         if clean:
             source_wrapper.delete_item(source_key)
+        return destination_key, generation, destination_tags
 
     def _get_upload_config(self, size):
         multipart_threshold, multipart_chunksize = self._get_adjusted_parameters(size,
@@ -853,8 +934,10 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
             blob = bucket.blob(destination_key)
         else:
             blob = self.custom_blob(bucket, destination_key, progress_callback, size)
-        blob.metadata = StorageOperations.generate_tags(tags, source_key)
+        destination_tags = StorageOperations.generate_tags(tags, source_key)
+        blob.metadata = destination_tags
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
+        return destination_key, blob.generation, destination_tags
 
 
 class GsTemporaryCredentials:
