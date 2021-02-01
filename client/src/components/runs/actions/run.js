@@ -49,6 +49,7 @@ import {
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import SensitiveBucketsWarning from './sensitive-buckets-warning';
 import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
+import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -118,6 +119,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
     let launchName;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
+    const {dataStorageAvailable} = stores;
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
@@ -145,11 +147,41 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         availableInstanceTypes = (stores[storeName].value || []).map(i => i);
       }
     }
-    if (stores.awsRegions) {
-      await stores.awsRegions.fetchIfNeededOrWait();
-    }
     if (stores.preferences) {
       await stores.preferences.fetchIfNeededOrWait();
+    }
+    if (
+      dataStorageAvailable &&
+      stores.preferences &&
+      stores.preferences.loaded &&
+      /^skip$/i.test(stores.preferences.nfsSensitivePolicy) &&
+      payload &&
+      payload.params &&
+      payload.params[CP_CAP_LIMIT_MOUNTS] &&
+      payload.params[CP_CAP_LIMIT_MOUNTS].value &&
+      !/^none$/i.test(payload.params[CP_CAP_LIMIT_MOUNTS].value)
+    ) {
+      dataStorageAvailable && await dataStorageAvailable.fetchIfNeededOrWait();
+      if (dataStorageAvailable.loaded) {
+        const ids = new Set(payload.params[CP_CAP_LIMIT_MOUNTS].value.split(',').map(i => +i));
+        const selection = (dataStorageAvailable.value || []).filter(s => ids.has(+s.id));
+        const hasSensitive = !!selection.find(s => s.sensitive);
+        const filtered = selection
+          .filter(
+            filterNFSStorages(
+              stores.preferences.nfsSensitivePolicy,
+              hasSensitive
+            )
+          );
+        if (filtered.length) {
+          payload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+        } else {
+          payload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
+        }
+      }
+    }
+    if (stores.awsRegions) {
+      await stores.awsRegions.fetchIfNeededOrWait();
     }
     if (payload.pipelineId) {
       const {pipelines} = stores;
@@ -191,7 +223,6 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
     if (!confirm) {
       await launchFn();
     } else {
-      const {dataStorageAvailable} = stores;
       const inputs = getInputPaths(null, payload.params);
       const outputs = getOutputPaths(null, payload.params);
       const {errors: permissionErrors} = await performAsyncCheck({

@@ -18,12 +18,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import AvailableStoragesBrowser
+import AvailableStoragesBrowser, {filterNFSStorages}
   from '../dialogs/AvailableStoragesBrowser';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './LimitMountsInput.css';
 
-@inject('dataStorageAvailable')
+@inject('dataStorageAvailable', 'preferences')
 @observer
 export class LimitMountsInput extends React.Component {
   static propTypes = {
@@ -90,6 +90,12 @@ export class LimitMountsInput extends React.Component {
   };
 
   @computed
+  get nfsSensitivePolicy () {
+    const {preferences} = this.props;
+    return preferences.nfsSensitivePolicy;
+  }
+
+  @computed
   get availableStorages () {
     if (this.props.dataStorageAvailable.loaded) {
       return (this.props.dataStorageAvailable.value || [])
@@ -112,6 +118,15 @@ export class LimitMountsInput extends React.Component {
         .length === this.availableNonSensitiveStorages.length;
   }
 
+  allStorages (selection) {
+    const hasSensitive = !!this.availableStorages.find(s => s.sensitive);
+    const all = this.availableStorages
+      .filter(filterNFSStorages(this.nfsSensitivePolicy, hasSensitive));
+    const ids = new Set(selection.map(id => +id));
+    return ids.size === all.length &&
+      all.filter(s => ids.has(+s.id)).length === all.length;
+  }
+
   get selectedStorages () {
     if (this.state.value) {
       if (/^none$/i.test(this.state.value)) {
@@ -121,6 +136,10 @@ export class LimitMountsInput extends React.Component {
       return this.availableStorages.filter(s => ids.has(s.id));
     }
     return this.availableNonSensitiveStorages;
+  }
+
+  get hasSelectedSensitiveStorages () {
+    return !!this.selectedStorages.find(s => s.sensitive);
   }
 
   input;
@@ -174,21 +193,21 @@ export class LimitMountsInput extends React.Component {
         </span>
       );
     }
-    if (this.selectedStorages.length === this.availableStorages.length) {
+    if (this.allStorages(this.selectedStorages.map(s => s.id))) {
       return (
         <span>
           All available storages
         </span>
       );
     }
-    return this.selectedStorages.map(s => {
-      return (
+    return this.selectedStorages
+      .filter(filterNFSStorages(this.nfsSensitivePolicy, this.hasSelectedSensitiveStorages))
+      .map(s => (
         <span key={s.id} className={styles.storage}>
           <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
           {s.name}
         </span>
-      );
-    });
+      ));
   };
 
   render () {

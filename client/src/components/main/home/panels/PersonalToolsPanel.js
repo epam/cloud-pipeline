@@ -44,6 +44,7 @@ import {
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
@@ -410,6 +411,39 @@ export default class PersonalToolsPanel extends React.Component {
             : undefined,
           cloudRegionId: cloudRegionIdValue
         }, allowedInstanceTypesRequest);
+        if (
+          this.props.dataStorageAvailable &&
+          this.props.preferences &&
+          this.props.preferences.loaded &&
+          /^skip$/i.test(this.props.preferences.nfsSensitivePolicy) &&
+          defaultPayload.params &&
+          defaultPayload.params[CP_CAP_LIMIT_MOUNTS] &&
+          defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value &&
+          !/^none$/i.test(defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value)
+        ) {
+          await this.props.dataStorageAvailable.fetchIfNeededOrWait();
+          if (this.props.dataStorageAvailable.loaded) {
+            const ids = new Set(
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value
+                .split(',').map(i => +i)
+            );
+            const selection = (this.props.dataStorageAvailable.value || [])
+              .filter(s => ids.has(+s.id));
+            const hasSensitive = !!selection.find(s => s.sensitive);
+            const filtered = selection
+              .filter(
+                filterNFSStorages(
+                  this.props.preferences.nfsSensitivePolicy,
+                  hasSensitive
+                )
+              );
+            if (filtered.length) {
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+            } else {
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
+            }
+          }
+        }
         const parts = (tool.image || '').toLowerCase().split('/');
         const [image] = parts[parts.length - 1].split(':');
         const {
