@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
+import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
@@ -78,6 +79,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreate
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
@@ -147,6 +149,16 @@ public class SystemPreferences {
             "storage.mount.black.list",
             "/,/etc,/runs,/common,/bin,/opt,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/tmp",
             DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
+
+    /**
+     * Defines NFS mounting policy for sensitive runs. Can take SKIP, TIMEOUT, NONE values.
+     * */
+    public static final StringPreference DATA_STORAGE_NFS_MOUNT_SENSITIVE_POLICY = new StringPreference(
+            "storage.mounts.nfs.sensitive.policy",
+            null,
+            DATA_STORAGE_GROUP,
+            isNullOrValidEnum(NFSMountPolicy.class));
+
     /**
      * Configures a system data storage for storing attachments and etc.
      */
