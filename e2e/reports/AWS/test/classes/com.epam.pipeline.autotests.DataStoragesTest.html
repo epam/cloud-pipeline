@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">36</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1m26.53s</div>
+<div class="counter">8m6.68s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="percent">97%</div>
 <p>successful</p>
 </div>
 </td>
@@ -70,28 +70,32 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="createPresetStorage"></a>
-<h3 class="failures">createPresetStorage</h3>
+<a name="removeStorages"></a>
+<h3 class="failures">removeStorages</h3>
 <span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'preset-test-storage4603176054900277552')]]}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1611971878847.11.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1611971878847.11.html
+<pre>Element not found {By.id: navigation-button-pipelines}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1612147480580.6.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1612147480580.6.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'preset-test-storage4603176054900277552')]]
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle4&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:238)
-	at com.epam.pipeline.autotests.DataStoragesTest.createPresetStorage(DataStoragesTest.java:70)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
+	at com.epam.pipeline.autotests.utils.Utils.lambda$removeStorages$0(Utils.java:329)
+	at java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:174)
+	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
+	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+	at java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:485)
+	at com.epam.pipeline.autotests.utils.Utils.removeStorages(Utils.java:334)
+	at com.epam.pipeline.autotests.DataStoragesTest.removeStorages(DataStoragesTest.java:85)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -100,22 +104,39 @@ Caused by: NoSuchElementException: Cannot locate an element using title of a By.
 	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
 	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
 	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'preset-test-storage4603176054900277552')]]
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle4&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'b956d4826458', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 23 more
+System info: host: 'dca36a4f6996', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 5bbd4e44016c5abae1722b9af2d08ae8
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 27 more
 </pre>
 </span>
 </div>
@@ -131,189 +152,189 @@ Driver info: driver.version: unknown
 </tr>
 </thead>
 <tr>
-<td class="skipped">addExistingBucket</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">addExistingBucket - EPMCMBIBPC-477</td>
+<td>11.016s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">changeDescriptionAndValidate</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">changeDescriptionAndValidate - EPMCMBIBPC-472</td>
+<td>3.380s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">changeLtsDurationAndValidate</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">changeLtsDurationAndValidate - EPMCMBIBPC-474</td>
+<td>3.496s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">changeStsDurationAndValidate</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">changeStsDurationAndValidate - EPMCMBIBPC-473</td>
+<td>3.295s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">clearSelection</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">clearSelection - EPMCMBIBPC-464</td>
+<td>3.573s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">clickCrossButtonInDataStorageDeletionDialog</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">clickCrossButtonInDataStorageDeletionDialog - EPMCMBIBPC-1017</td>
+<td>3.947s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">clickOnRefreshButton - EPMCMBIBPC-475</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">clickOnRefreshButton - EPMCMBIBPC-475</td>
+<td>27.380s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">createAndUnregisterBucket - EPMCMBIBPC-476</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">createAndUnregisterBucket - EPMCMBIBPC-476</td>
+<td>14.680s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">createDataStorageAndValidate - EPMCMBIBPC-448</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">createDataStorageAndValidate - EPMCMBIBPC-448</td>
+<td>14.907s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">createDataStorageWithNameThatAlreadyExists</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">createDataStorageWithNameThatAlreadyExists - EPMCMBIBPC-491</td>
+<td>7.667s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">createFolderInDataStorageWithNameThatAlreadyExists</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">createFolderInDataStorageWithNameThatAlreadyExists - EPMCMBIBPC-492</td>
+<td>8.157s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">createPresetStorage</td>
-<td>1m26.53s</td>
+<td class="success">createStorageAndChangeAlias - EPMCMBIBPC-471</td>
+<td>15.018s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">createSubfolderInDataStorage - EPMCMBIBPC-454</td>
+<td>8.862s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">deleteFolder - EPMCMBIBPC-459</td>
+<td>14.363s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">deleteFolderWithContent - EPMCMBIBPC-460</td>
+<td>15.059s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">deleteSeveralFiles - EPMCMBIBPC-462</td>
+<td>21.667s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">deleteSeveralFolders - EPMCMBIBPC-461</td>
+<td>45.365s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">downloadFileAndValidate - EPMCMBIBPC-457</td>
+<td>7.045s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">editFileName - EPMCMBIBPC-468</td>
+<td>5.877s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">editFolderName - EPMCMBIBPC-458</td>
+<td>6.809s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">navigateToFolderUsingAddressRow - EPMCMBIBPC-469</td>
+<td>7.945s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">navigateToSubfolderAndBackToTheRoot - EPMCMBIBPC-455</td>
+<td>12.107s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">removeStorages</td>
+<td>1m39.56s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">createStorageAndChangeAlias</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">tryToCreateDeletedBucket - EPMCMBIBPC-478</td>
+<td>47.459s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">createSubfolderInDataStorage</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">uploadFile - EPMCMBIBPC-456</td>
+<td>12.437s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">deleteFolder</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForCreateBucketPopUp - EPMCMBIBPC-487</td>
+<td>8.293s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">deleteFolderWithContent</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForCreateExistingBucketPopUp - EPMCMBIBPC-488</td>
+<td>10.748s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">deleteSeveralFiles - EPMCMBIBPC-462</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForCreateFolderPopUp - EPMCMBIBPC-486</td>
+<td>3.942s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">deleteSeveralFolders - EPMCMBIBPC-461</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForDeleteBucketPopUp - EPMCMBIBPC-489</td>
+<td>3.946s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">downloadFileAndValidate - EPMCMBIBPC-457</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForDeleteFilePopUp - EPMCMBIBPC-485</td>
+<td>2.421s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">editFileName - EPMCMBIBPC-468</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForDeleteFolderPopUp - EPMCMBIBPC-484</td>
+<td>2.410s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">editFolderName - EPMCMBIBPC-458</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForEditFilePopUp - EPMCMBIBPC-482</td>
+<td>2.591s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">navigateToFolderUsingAddressRow</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForEditFolderPopUp - EPMCMBIBPC-483</td>
+<td>2.518s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">navigateToSubfolderAndBackToTheRoot</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelButtonForEditStorageMenu - EPMCMBIBPC-481</td>
+<td>3.220s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">tryToCreateDeletedBucket</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCancelDeletingSeveralFolders - EPMCMBIBPC-490</td>
+<td>19.445s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">uploadFile</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateEditForm - EPMCMBIBPC-470</td>
+<td>2.731s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateCancelButtonForCreateBucketPopUp - EPMCMBIBPC-487</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelButtonForCreateExistingBucketPopUp</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelButtonForCreateFolderPopUp - EPMCMBIBPC-486</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelButtonForDeleteBucketPopUp - EPMCMBIBPC-489</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelButtonForDeleteFilePopUp - EPMCMBIBPC-485</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelButtonForDeleteFolderPopUp - EPMCMBIBPC-484</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelButtonForEditFilePopUp - EPMCMBIBPC-482</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelButtonForEditFolderPopUp - EPMCMBIBPC-483</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelButtonForEditStorageMenu</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateCancelDeletingSeveralFolders</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateEditForm</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validateSelectPageButton - EPMCMBIBPC-467</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateSelectPageButton - EPMCMBIBPC-467</td>
+<td>3.343s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
@@ -325,7 +346,7 @@ Driver info: driver.version: unknown
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 30, 2021 5:20:47 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 1, 2021 6:56:43 PM</p>
 </div>
 </div>
 </body>
