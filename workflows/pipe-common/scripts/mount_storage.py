@@ -593,7 +593,9 @@ class NFSMounter(StorageMounter):
             else:
                 mount_options += ',' + file_mode_options
         mount_options = self.append_timeout_options(mount_options)
-        command += ' -o {mount_option} {path} {mount}'.format(mount_option=mount_options, **params)
+        if mount_options:
+            command += ' -o {}'.format(mount_options)
+        command += ' {path} {mount}'.format(**params)
         if PermissionHelper.is_storage_writable(self.storage):
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
         return command
