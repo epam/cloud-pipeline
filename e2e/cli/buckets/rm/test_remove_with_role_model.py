@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,22 +14,23 @@
 
 from common_utils.pipe_cli import *
 from common_utils.test_utils import format_name
+from utils.pipeline_utils import get_log_filename
 from ..utils.assertions_utils import *
 from ..utils.file_utils import *
 from ..utils.utilities_for_test import *
 
 
 class TestRmWithRoleModel(object):
-    epam_test_case = "EPMCMBIBPC-609"
+    epam_test_case = "TC-PIPE-STORAGE-45"
     resources_root = "resources-{}/".format(epam_test_case).lower()
-    bucket_name = format_name("epmcmbibpc-it-rm-{}{}".format(epam_test_case, get_test_prefix()).lower())
+    bucket_name = format_name("rm-roles{}".format(get_test_prefix()).lower())
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']
     test_file = "test_file.txt"
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         create_buckets(cls.bucket_name)
         source = os.path.abspath(os.path.join(cls.resources_root, cls.test_file))
@@ -44,6 +45,7 @@ class TestRmWithRoleModel(object):
 
     @pytest.mark.run(order=1)
     def test_rm_file_without_permission(self):
+        """TC-PIPE-STORAGE-45"""
         try:
             error_text = pipe_storage_rm("cp://{}/{}".format(self.bucket_name, self.test_file),
                                          expected_status=1, token=self.token)[1]
@@ -55,6 +57,7 @@ class TestRmWithRoleModel(object):
 
     @pytest.mark.run(order=2)
     def test_rm_file_with_read_permission(self):
+        """TC-PIPE-STORAGE-45"""
         try:
             set_storage_permission(self.user, self.bucket_name, allow='r')
             error_text = pipe_storage_rm("cp://{}/{}".format(self.bucket_name, self.test_file),
@@ -66,6 +69,7 @@ class TestRmWithRoleModel(object):
 
     @pytest.mark.run(order=3)
     def test_rm_file_with_write_permission(self):
+        """TC-PIPE-STORAGE-45"""
         try:
             set_storage_permission(self.user, self.bucket_name, allow='w',)
             pipe_storage_rm("cp://{}/{}".format(self.bucket_name, self.test_file), expected_status=0, token=self.token)

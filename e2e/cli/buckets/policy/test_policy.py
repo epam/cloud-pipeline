@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,9 +28,10 @@ from common_utils.test_utils import format_name
 ERROR_MESSAGE = "An error occurred in case "
 
 
-@pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name, reason="Storage policy is not supported for AZURE provider")
+@pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name,
+                    reason="Storage policy is not supported for AZURE provider")
 class TestPolicy(object):
-    bucket_name = format_name("epmcmbibpc-it-policy{}".format(get_test_prefix()))
+    bucket_name = "policy{}".format(get_test_prefix())
 
     @classmethod
     def setup_class(cls):
@@ -41,11 +42,12 @@ class TestPolicy(object):
             cls.default_backup_duration = region['backupDuration']
 
     def test_update_policy_with_enabled_fields(self):
-        test_case = "1693"
+        """TC-PIPE-STORAGE-137"""
+        test_case = "137"
         sts = 20
         lts = 30
         backup_duration = 10
-        bucket_name = "{}-{}".format(self.bucket_name, test_case)
+        bucket_name = format_name("{}{}".format(self.bucket_name, test_case))
         create_bucket(bucket_name, sts=str(sts), lts=str(lts), backup_duration=str(backup_duration), versioning=True)
         try:
             assert_policy(bucket_name, sts, lts, backup_duration)
@@ -68,11 +70,12 @@ class TestPolicy(object):
         delete_buckets(bucket_name)
 
     def test_update_policy_with_disabled_fields(self):
-        test_case = "1762"
+        """TC-PIPE-STORAGE-138"""
+        test_case = "138"
         sts = 20
         lts = 30
         backup_duration = 10
-        bucket_name = "{}-{}".format(self.bucket_name, test_case)
+        bucket_name = format_name("{}{}".format(self.bucket_name, test_case))
         create_buckets(bucket_name)
         try:
             sleep(15)

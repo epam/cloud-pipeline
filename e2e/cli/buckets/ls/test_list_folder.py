@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,21 +16,22 @@ from buckets.utils.listing import *
 from buckets.utils.assertions_utils import *
 from buckets.utils.utilities_for_test import *
 from common_utils.test_utils import format_name
+from utils.pipeline_utils import get_log_filename
 
 
 class TestLsFolder(object):
-    epam_test_case_ls_folder_with_delimiter = "EPMCMBIBPC-634"
-    epam_test_case_ls_folder_without_delimiter = "EPMCMBIBPC-633"
-    epam_test_case_ls_non_existing_bucket = "EPMCMBIBPC-651"
-    epam_test_case_ls_non_existing_path = "EPMCMBIBPC-653"
-    epam_test_case_ls_wrong_scheme = "EPMCMBIBPC-654"
-    suffix = "EPMCMBIBPC-633-634"
+    epam_test_case_ls_folder_with_delimiter = "TC-PIPE-STORAGE-40"
+    epam_test_case_ls_folder_without_delimiter = "TC-PIPE-STORAGE-39"
+    epam_test_case_ls_non_existing_bucket = "TC-PIPE-STORAGE-41"
+    epam_test_case_ls_non_existing_path = "TC-PIPE-STORAGE-42"
+    epam_test_case_ls_wrong_scheme = "TC-PIPE-STORAGE-43"
+    suffix = "storage-39-40"
     resources_root = "resources-{}/".format(suffix).lower()
-    bucket_name = format_name("epmcmbibpc-it-{}{}".format(suffix, get_test_prefix()).lower())
+    bucket_name = format_name("ls-folders{}".format(get_test_prefix()).lower())
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         create_buckets(cls.bucket_name)
         create_default_test_folder(cls.resources_root)
@@ -44,73 +45,76 @@ class TestLsFolder(object):
 
     test_paths_without_delimiter = [
         (resources_root[:-1], True, False, 1, epam_test_case_ls_folder_without_delimiter, [
-            d('resources-epmcmbibpc-633-634/')
+            d('resources-storage-39-40/')
         ]),
         (resources_root[:-1], False, False, 1, epam_test_case_ls_folder_without_delimiter, [
-            d('resources-epmcmbibpc-633-634/')
+            d('resources-storage-39-40/')
         ]),
         (resources_root[:-1], False, True, 3, epam_test_case_ls_folder_without_delimiter, [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ]),
         (resources_root[:-1], True, True, 3, epam_test_case_ls_folder_without_delimiter, [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ]),
-        ("%st" % resources_root, True, True, 3, "EPMCMBIBPC-1968", [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+        ("%st" % resources_root, True, True, 3, "TC-PIPE-STORAGE-65", [
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ]),
-        ("%st" % resources_root, False, True, 3, "EPMCMBIBPC-1968", [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+        ("%st" % resources_root, False, True, 3, "TC-PIPE-STORAGE-65", [
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ]),
-        ("%st" % resources_root, True, False, 2, "EPMCMBIBPC-1968", [
+        ("%st" % resources_root, True, False, 2, "TC-PIPE-STORAGE-65", [
             d('test_folder/'),
             f('test_file.txt', 10)
         ]),
-        ("%st" % resources_root, False, False, 2, "EPMCMBIBPC-1968", [
+        ("%st" % resources_root, False, False, 2, "TC-PIPE-STORAGE-65", [
             d('test_folder/'),
             f('test_file.txt', 10)
         ])
     ]
 
     @pytest.mark.run()
-    @pytest.mark.parametrize("path,show_details,recursive,length,case,expected_listing", test_paths_without_delimiter)
-    def test_list_folder_without_trailing_delimiter(self, path, show_details, recursive, length, case, expected_listing):
+    @pytest.mark.parametrize("path,show_details,recursive,length,test_case,expected_listing",
+                             test_paths_without_delimiter)
+    def test_list_folder_without_trailing_delimiter(self, path, show_details, recursive, length, test_case,
+                                                    expected_listing):
         try:
             actual_listing = get_pipe_listing("cp://{}/{}".format(self.bucket_name, path), show_details=show_details,
                                               recursive=recursive)
             compare_listing(actual_listing, expected_listing, length, show_details=show_details)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(test_case, e.message))
 
     bucket_parameters_without_delimiter = [
         (True, False, 1, [
-            d('resources-epmcmbibpc-633-634/')
+            d('resources-storage-39-40/')
         ]),
         (False, False, 1, [
-            d('resources-epmcmbibpc-633-634/')
+            d('resources-storage-39-40/')
         ]),
         (False, True, 3, [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ]),
         (True, True, 3, [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ])
     ]
 
     @pytest.mark.run()
     @pytest.mark.parametrize("show_details,recursive,length,expected_listing", bucket_parameters_without_delimiter)
     def test_list_bucket_without_trailing_delimiter(self, show_details, recursive, length, expected_listing):
+        """TC-PIPE-STORAGE-39"""
         try:
             actual_listing = get_pipe_listing("cp://{}".format(self.bucket_name), show_details=show_details,
                                               recursive=recursive)
@@ -128,20 +132,21 @@ class TestLsFolder(object):
             f('test_file.txt', 10)
         ]),
         (resources_root, False, True, 3, [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ]),
         (resources_root, True, True, 3, [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ])
     ]
 
     @pytest.mark.run()
     @pytest.mark.parametrize("path,show_details,recursive,length,expected_listing", test_paths_with_delimiter)
     def test_list_folder_with_trailing_delimiter(self, path, show_details, recursive, length, expected_listing):
+        """TC-PIPE-STORAGE-40"""
         try:
             actual_listing = get_pipe_listing("cp://{}/{}".format(self.bucket_name, path), show_details=show_details,
                                               recursive=recursive)
@@ -151,26 +156,27 @@ class TestLsFolder(object):
 
     bucket_parameters_with_delimiter = [
         (True, False, 1, [
-            d('resources-epmcmbibpc-633-634/')
+            d('resources-storage-39-40/')
         ]),
         (False, False, 1, [
-            d('resources-epmcmbibpc-633-634/')
+            d('resources-storage-39-40/')
         ]),
         (False, True, 3, [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ]),
         (True, True, 3, [
-            f('resources-epmcmbibpc-633-634/test_file.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file2.txt', 10),
-            f('resources-epmcmbibpc-633-634/test_folder/test_file3.log', 10)
+            f('resources-storage-39-40/test_file.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file2.txt', 10),
+            f('resources-storage-39-40/test_folder/test_file3.log', 10)
         ])
     ]
 
     @pytest.mark.run()
     @pytest.mark.parametrize("show_details,recursive,length,expected_listing", bucket_parameters_with_delimiter)
     def test_list_bucket_with_trailing_delimiter(self, show_details, recursive, length, expected_listing):
+        """TC-PIPE-STORAGE-40"""
         try:
             actual_listing = get_pipe_listing("cp://{}/".format(self.bucket_name), show_details=show_details,
                                               recursive=recursive)
@@ -180,6 +186,7 @@ class TestLsFolder(object):
 
     @pytest.mark.run()
     def test_list_not_existing_bucket(self):
+        """TC-PIPE-STORAGE-41"""
         bucket_name = "does-not-exist"
         file_name = "file.txt"
         try:
@@ -191,6 +198,7 @@ class TestLsFolder(object):
 
     @pytest.mark.run()
     def test_list_with_wrong_scheme(self):
+        """TC-PIPE-STORAGE-43"""
         try:
             error = pipe_storage_ls("s4://{}/".format(self.bucket_name), recursive=True, expected_status=1)[1]
             assert_error_message_is_present(error, 'Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
@@ -206,6 +214,7 @@ class TestLsFolder(object):
     @pytest.mark.run()
     @pytest.mark.parametrize("path,recursive", non_existing_paths)
     def test_list_not_existing_path(self, path, recursive):
+        """TC-PIPE-STORAGE-42"""
         try:
             listing = get_pipe_listing("cp://{}/{}".format(self.bucket_name, path), recursive=recursive)
             assert len(listing) == 0, \
@@ -215,8 +224,9 @@ class TestLsFolder(object):
 
     @pytest.mark.run()
     def test_last_modification_date_listing(self):
+        """TC-PIPE-STORAGE-40"""
         try:
-            listing_path = "cp://{}/{}/".format(self.bucket_name, 'resources-epmcmbibpc-633-634')
+            listing_path = "cp://{}/{}/".format(self.bucket_name, 'resources-storage-39-40')
             actual_listing = get_pipe_listing(listing_path, show_details=True)
             expected_file = f('test_file.txt', 10)
             expected_file.last_modified = get_modification_date(listing_path + 'test_file.txt')

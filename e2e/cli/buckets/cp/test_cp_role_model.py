@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
 
 from common_utils.pipe_cli import *
 from common_utils.test_utils import format_name
+from utils.pipeline_utils import get_log_filename
 from ..utils.assertions_utils import *
 from ..utils.file_utils import *
 from ..utils.utilities_for_test import *
 
 
 class TestCpWithRoleModel(object):
-    epam_test_case = "EPMCMBIBPC-600"
-    raw_bucket_name = "epmcmbibpc-it-cp-roles{}".format(get_test_prefix())
+    epam_test_case = "TC-PIPE-STORAGE-23"
+    raw_bucket_name = "cp-roles{}".format(get_test_prefix())
     bucket_name = format_name(raw_bucket_name)
     other_bucket_name = format_name("{}-other".format(raw_bucket_name))
     token = os.environ['USER_TOKEN']
@@ -31,7 +32,7 @@ class TestCpWithRoleModel(object):
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         create_buckets(cls.bucket_name, cls.other_bucket_name)
         source = os.path.abspath(cls.test_file)
@@ -47,6 +48,7 @@ class TestCpWithRoleModel(object):
 
     @pytest.mark.run(order=1)
     def test_download_file_without_permission(self):
+        """TC-PIPE-STORAGE-23"""
         try:
             set_storage_permission(self.user, self.bucket_name, deny='rw')
             error_text = pipe_storage_cp("cp://{}/{}".format(self.bucket_name, self.test_file),
@@ -61,10 +63,11 @@ class TestCpWithRoleModel(object):
 
     @pytest.mark.run(order=1)
     def test_upload_file_without_permission(self):
+        """TC-PIPE-STORAGE-23"""
         try:
             case = self.epam_test_case + "-no-permissions"
             error_text = pipe_storage_cp(self.test_file, "cp://{}/{}/{}".format(self.bucket_name, case,
-                                                                                      self.test_file),
+                                                                                self.test_file),
                                          expected_status=1, token=self.token)[1]
             assert_error_message_is_present(error_text, "data storage with id: '{}/{}/{}' was not found"
                                             .format(self.bucket_name, case, self.test_file))
@@ -76,6 +79,7 @@ class TestCpWithRoleModel(object):
 
     @pytest.mark.run(order=2)
     def test_copy_between_buckets_without_permission(self):
+        """TC-PIPE-STORAGE-23"""
         try:
             case = self.epam_test_case + "-no-permissions"
             # set permissions only for source bucket
@@ -93,6 +97,7 @@ class TestCpWithRoleModel(object):
 
     @pytest.mark.run(order=2)
     def test_download_from_bucket_with_read_permission(self):
+        """TC-PIPE-STORAGE-23"""
         try:
             case = self.epam_test_case + "-download-from-bucket-with-read-permission"
             # set permissions only for source bucket
@@ -109,11 +114,12 @@ class TestCpWithRoleModel(object):
 
     @pytest.mark.run(order=2)
     def test_upload_file_with_read_permission(self):
+        """TC-PIPE-STORAGE-23"""
         try:
             case = self.epam_test_case + "-upload-file-with-read-permission"
             set_storage_permission(self.user, self.bucket_name, allow='r')
             error_text = pipe_storage_cp(self.test_file, "cp://{}/{}/{}".format(self.bucket_name, case,
-                                                                                      self.test_file),
+                                                                                self.test_file),
                                          expected_status=1, token=self.token)[1]
             assert_error_message_is_present(error_text, 'Access is denied')
             assert_copied_object_does_not_exist(ObjectInfo(False).build(self.bucket_name,
@@ -124,6 +130,7 @@ class TestCpWithRoleModel(object):
 
     @pytest.mark.run(order=2)
     def test_write_from_bucket_to_bucket_with_read_permission(self):
+        """TC-PIPE-STORAGE-23"""
         try:
             case = self.epam_test_case + "-write-from-bucket-to-bucket-with-read-permission"
             set_storage_permission(self.user, self.bucket_name, allow='r')
@@ -140,6 +147,7 @@ class TestCpWithRoleModel(object):
 
     @pytest.mark.run(order=3)
     def test_upload_file_with_write_permission(self):
+        """TC-PIPE-STORAGE-23"""
         try:
             case = self.epam_test_case + "-upload-file-with-write-permission"
             set_storage_permission(self.user, self.bucket_name, allow='w')
@@ -154,6 +162,7 @@ class TestCpWithRoleModel(object):
 
     @pytest.mark.run(order=3)
     def test_write_from_bucket_to_bucket_with_write_permission(self):
+        """TC-PIPE-STORAGE-23"""
         try:
             case = self.epam_test_case + "-write-from-bucket-to-bucket-with-write-permission"
             set_storage_permission(self.user, self.other_bucket_name, allow='w')

@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
 
 from common_utils.pipe_cli import *
 from common_utils.test_utils import format_name
+from utils.pipeline_utils import get_log_filename
 from ..utils.assertions_utils import *
 from ..utils.utilities_for_test import *
 
 
 class TestRmWithPatterns(object):
-    epam_test_case = "EPMCMBIBPC-615"
+    epam_test_case = "TC-PIPE-STORAGE-48"
     resources_root = "resources-{}/".format(epam_test_case).lower()
-    bucket_name = format_name("epmcmbibpc-it-rm-{}{}".format(epam_test_case, get_test_prefix()).lower())
+    bucket_name = format_name("rm-patterns{}".format(get_test_prefix()).lower())
     json_file = "test.json"
     text_file = "test.txt"
     json_file_in_folder = "folder.json"
@@ -30,7 +31,7 @@ class TestRmWithPatterns(object):
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         create_buckets(cls.bucket_name)
         sources_root = os.path.abspath(cls.resources_root)
@@ -51,6 +52,7 @@ class TestRmWithPatterns(object):
 
     @pytest.mark.run(order=1)
     def test_rm_with_exclude(self):
+        """TC-PIPE-STORAGE-48"""
         try:
             pipe_storage_rm("cp://{}/{}".format(self.bucket_name, self.resources_root),
                             recursive=True,
@@ -66,6 +68,7 @@ class TestRmWithPatterns(object):
 
     @pytest.mark.run(order=2)
     def test_rm_with_include(self):
+        """TC-PIPE-STORAGE-48"""
         try:
             pipe_storage_cp(self.resources_root + self.text_file,
                             "cp://{}/{}/".format(self.bucket_name, self.resources_root), force=True, recursive=True)
@@ -83,6 +86,7 @@ class TestRmWithPatterns(object):
 
     @pytest.mark.run(order=3)
     def test_rm_with_both_patterns(self):
+        """TC-PIPE-STORAGE-48"""
         try:
             pipe_storage_cp(self.resources_root, "cp://{}/{}/".format(self.bucket_name, self.resources_root),
                             force=True, recursive=True)

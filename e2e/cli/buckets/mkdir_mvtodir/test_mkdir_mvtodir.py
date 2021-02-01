@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ class TestMkdirMvtodir(object):
     test_folder = "mkdir-test-folder"
     test_folder_1 = "test-folder1"
     test_folder_2 = "test-folder2"
-    bucket = format_name('epmcmbibpc-mkdir-mvtodir-it{}'.format(get_test_prefix()))
+    bucket = format_name('mkdir-mvtodir{}'.format(get_test_prefix()))
     path_to_bucket = 'cp://{}'.format(bucket)
-    negative_test_case = "epmcmbibpc-1022"
+    negative_test_case = "TC-PIPE-STORAGE-53"
 
     @classmethod
     def setup_class(cls):
@@ -43,6 +43,7 @@ class TestMkdirMvtodir(object):
 
     @pytest.mark.skip()
     def test_mkdir_without_name(self):
+        """TC-PIPE-STORAGE-55"""
         destination = 'cp://{}/'.format(self.bucket)
         try:
             pipe_output = pipe_storage_mkdir([destination], expected_status=1)[1]
@@ -55,9 +56,10 @@ class TestMkdirMvtodir(object):
             pipe_output = get_pipe_listing(self.path_to_bucket)
             assert len(pipe_output) == 0
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1018:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-55:" + "\n" + e.message)
 
     def test_mkdir(self):
+        """TC-PIPE-STORAGE-54"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_folder)
         try:
             pipe_storage_mkdir([destination], expected_status=0)
@@ -72,10 +74,11 @@ class TestMkdirMvtodir(object):
             aws_output = [d('MKDIR-TEST-FOLDER/'), d('mkdir-test-folder/')]
             compare_listing(pipe_output, aws_output, 2)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1015:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-54:" + "\n" + e.message)
 
     def test_mvtodir_with_path(self):
-        test_case = "epmcmbibpc-1020"
+        """TC-PIPE-STORAGE-56"""
+        test_case = "TC-PIPE-STORAGE-56"
         path_to_folder_1 = "{}/{}".format(self.test_folder, self.test_folder_1)
         path_to_folder_2 = "{}/{}".format(self.test_folder, self.test_folder_2)
         folder_manager = EntityManager.get_manager('FOLDER')
@@ -106,6 +109,7 @@ class TestMkdirMvtodir(object):
         folder_manager.delete(root_folder_id)
 
     def test_move_data_storage_to_nonexistent_folder(self):
+        """TC-PIPE-STORAGE-53"""
         folder_name = "nonexistent_folder"
         try:
             pipe_output = pipe_storage_mvtodir(self.bucket, directory=folder_name, expected_status=1)[1]
@@ -114,6 +118,7 @@ class TestMkdirMvtodir(object):
             pytest.fail(ERROR_MESSAGE + self.negative_test_case + "\n" + e.message)
 
     def test_move_nonexistent_data_storage(self):
+        """TC-PIPE-STORAGE-53"""
         data_storage_name = "nonexistent-data-storage"
         folder_name = "nonexistent-data-storage-test-{}".format(self.test_folder)
         folder_manager = EntityManager.get_manager('FOLDER')
@@ -127,6 +132,7 @@ class TestMkdirMvtodir(object):
         folder_manager.delete(folder_id)
 
     def test_move_nonexistent_data_storage_to_nonexistent_folder(self):
+        """TC-PIPE-STORAGE-53"""
         folder_name = "nonexistent_folder"
         data_storage_name = "nonexistent-data-storage"
         try:
