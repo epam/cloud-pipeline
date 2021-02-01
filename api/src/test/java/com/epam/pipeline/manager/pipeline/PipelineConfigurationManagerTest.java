@@ -20,7 +20,6 @@ import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -38,11 +37,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getNfsDataStorage;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
-import static org.junit.Assert.assertEquals;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -51,23 +53,13 @@ import static org.mockito.Mockito.verify;
 public class PipelineConfigurationManagerTest {
     private static final String TEST_IMAGE = "image";
     private static final String TEST_REPO = "repository";
-    private static final String TEST_INSTANCE_TYPE = "testInstanceType";
     private static final String OWNER1 = "testUser1";
     private static final String OWNER2 = "testUser2";
-    private static final Long TEST_TIMEOUT = 11L;
     private static final Long NFS_ID_1 = 1L;
     private static final Long S3_ID_1 = 2L;
     private static final Long NFS_ID_2 = 3L;
     private static final Long S3_ID_2 = 4L;
     private static final String TEST_DOCKER_IMAGE = TEST_REPO + "/" + TEST_IMAGE;
-    private static final boolean TEST_NON_PAUSE = false;
-    private static final String TEST_INSTANCE_IMAGE = "instanceImage";
-    private static final String TEST_PRETTY_URL = "prettyUrl";
-    private static final String TEST_WORKER_CMD = "workerCmd";
-    private static final Integer TEST_HDD_SIZE = 2;
-    private static final String TEST_CMD_TEMPLATE = "cmdTemplate";
-    private static final Integer TEST_NODE_COUNT = 1;
-    private static final Boolean TEST_IS_SPOT = true;
     private static final Map<String, PipeConfValueVO> TEST_PARAMS = Collections.singletonMap("testParam",
             new PipeConfValueVO("testParamValue", "int", true));
 
@@ -99,67 +91,44 @@ public class PipelineConfigurationManagerTest {
         doReturn(TEST_DOCKER_IMAGE).when(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
         doReturn(dataStorages).when(dataStorageApiService).getWritableStorages();
 
-        final PipelineStart vo = getPipelineStartVO();
-        final PipelineConfiguration config = pipelineConfigurationManager.getPipelineConfiguration(vo);
+        final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
+        final PipelineConfiguration config = pipelineConfigurationManager.getPipelineConfiguration(runVO);
         assertFalse(config.getBuckets().isEmpty());
         assertFalse(config.getNfsMountOptions().isEmpty());
 
-        String[] buckets = config.getBuckets().split(";");
-        assertEquals(4, buckets.length);
-        for (String bucket : buckets) {
-            assertTrue(dataStorages.stream().anyMatch(ds -> bucket.equals(ds.getPathMask())));
-        }
+        final String[] buckets = config.getBuckets().split(";");
+        assertThat(buckets)
+                .hasSize(4)
+                .contains("nfs://test/path1", "s3://test/path2", "nfs://test/path3", "s3://test/path4");
 
-        String[] nfsOptions = deleteEmptyElements(config.getNfsMountOptions().split(";"));
-        assertEquals(2, nfsOptions.length);
-        for (String option : nfsOptions) {
-            assertTrue(dataStorages.stream()
-                    .filter(ds -> ds instanceof NFSDataStorage)
-                    .anyMatch(ds -> {
-                        NFSDataStorage nfsDs = (NFSDataStorage) ds;
-                        return nfsDs.getMountOptions().equals(option) ||
-                                option.equals(nfsDs.getMountOptions() + ",ro");
-                    }));
-        }
+        final String[] nfsOptions = deleteEmptyElements(config.getNfsMountOptions().split(";"));
+        assertThat(nfsOptions)
+                .hasSize(2)
+                .contains("options1", "options2");
 
-        String[] mountPoints = deleteEmptyElements(config.getMountPoints().split(";"));
+        final String[] mountPoints = config.getMountPoints().split(";");
+        assertThat(mountPoints)
+                .hasSize(1)
+                .contains("/some/path");
 
-        assertEquals(dataStorages.get(0).getMountPoint(), mountPoints[0]);
-        assertFalse(config.isNonPause());
-        assertEquals(TEST_INSTANCE_IMAGE, config.getInstanceImage());
-        assertEquals(TEST_INSTANCE_TYPE, config.getInstanceType());
-        assertEquals(TEST_PRETTY_URL, config.getPrettyUrl());
-        assertEquals(TEST_WORKER_CMD, config.getWorkerCmd());
-        assertEquals(TEST_CMD_TEMPLATE, config.getCmdTemplate());
-        assertEquals(TEST_NODE_COUNT, config.getNodeCount());
-        assertEquals(TEST_HDD_SIZE, Integer.valueOf(config.getInstanceDisk()));
-        assertTrue(config.getIsSpot());
-        assertEquals(TEST_PARAMS, config.getParameters());
-        assertEquals(TEST_REPO + "/" + TEST_IMAGE, config.getDockerImage());
-        assertEquals(TEST_TIMEOUT, config.getTimeout());
+        assertThat(config.isNonPause()).isFalse();
+        assertThat(config.getInstanceImage()).isEqualTo(TEST_STRING);
+        assertThat(config.getInstanceType()).isEqualTo(TEST_STRING);
+        assertThat(config.getPrettyUrl()).isEqualTo(TEST_STRING);
+        assertThat(config.getWorkerCmd()).isEqualTo(TEST_STRING);
+        assertThat(config.getCmdTemplate()).isEqualTo(TEST_STRING);
+        assertThat(config.getNodeCount()).isEqualTo(TEST_INT);
+        assertThat(Integer.valueOf(config.getInstanceDisk())).isEqualTo(TEST_INT);
+        assertThat(config.getIsSpot()).isTrue();
+        assertThat(config.getParameters()).isEqualTo(TEST_PARAMS);
+        assertThat(config.getDockerImage()).isEqualTo(TEST_REPO + "/" + TEST_IMAGE);
+        assertThat(config.getTimeout()).isEqualTo(TEST_LONG);
 
         verify(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
         verify(dataStorageApiService).getWritableStorages();
         verify(permissionsService, times(2)).isMaskBitSet(
                 eq(AbstractDataStorage.ALL_PERMISSIONS_MASK),
                 eq(((AclPermission) AclPermission.WRITE).getSimpleMask()));
-    }
-
-    private PipelineStart getPipelineStartVO() {
-        final PipelineStart vo = new PipelineStart();
-        vo.setNonPause(TEST_NON_PAUSE);
-        vo.setInstanceImage(TEST_INSTANCE_IMAGE);
-        vo.setPrettyUrl(TEST_PRETTY_URL);
-        vo.setWorkerCmd(TEST_WORKER_CMD);
-        vo.setInstanceType(TEST_INSTANCE_TYPE);
-        vo.setDockerImage(TEST_IMAGE);
-        vo.setHddSize(TEST_HDD_SIZE);
-        vo.setCmdTemplate(TEST_CMD_TEMPLATE);
-        vo.setTimeout(TEST_TIMEOUT);
-        vo.setNodeCount(TEST_NODE_COUNT);
-        vo.setIsSpot(TEST_IS_SPOT);
-        vo.setParams(TEST_PARAMS);
-        return vo;
     }
 
     private String[] deleteEmptyElements(String[] array) {
