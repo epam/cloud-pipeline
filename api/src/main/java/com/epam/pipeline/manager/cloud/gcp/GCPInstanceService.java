@@ -215,12 +215,14 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final GCPRegion cloudRegion,
+                                                          final InstanceDNSRecord dnsRecord) {
         throw new UnsupportedOperationException("Creation of DNS record doesn't work with GCP provider yet.");
     }
 
     @Override
-    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord deleteInstanceDNSRecord(final GCPRegion cloudRegion,
+                                                     final InstanceDNSRecord dnsRecord) {
         throw new UnsupportedOperationException("Deletion of DNS record doesn't work with GCP provider yet.");
     }
 

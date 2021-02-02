@@ -199,8 +199,8 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
 
     CloudInstanceState getInstanceState(T region, String nodeLabel);
 
-    InstanceDNSRecord getOrCreateInstanceDNSRecord(InstanceDNSRecord dnsRecord);
+    InstanceDNSRecord getOrCreateInstanceDNSRecord(T cloudRegion, InstanceDNSRecord dnsRecord);
 
-    InstanceDNSRecord deleteInstanceDNSRecord(InstanceDNSRecord dnsRecord);
+    InstanceDNSRecord deleteInstanceDNSRecord(T cloudRegion, InstanceDNSRecord dnsRecord);
 
 }

@@ -278,7 +278,8 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AwsRegion cloudRegion,
+                                                          final InstanceDNSRecord dnsRecord) {
         if (dnsRecord.getDnsRecord().contains(
                 preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
             return route53Helper
@@ -291,7 +292,8 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord deleteInstanceDNSRecord(final AwsRegion cloudRegion,
+                                                     final InstanceDNSRecord dnsRecord) {
         if (dnsRecord.getDnsRecord().contains(
                 preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
             return route53Helper
