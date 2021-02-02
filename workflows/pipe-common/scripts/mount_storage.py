@@ -131,6 +131,7 @@ class MountStorageTask:
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
                 Logger.success('Mounting of remote storages is not available for this image', task_name=self.task_name)
                 return
+            initialized_mounters = []
             for storage_and_mount in available_storages_with_mounts:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
                     continue
@@ -141,11 +142,16 @@ class MountStorageTask:
                 if not mounter:
                     Logger.warn('Unsupported storage type {}.'.format(storage_and_mount.storage.storage_type), task_name=self.task_name)
                 elif mounter.is_available():
-                    try:
-                        mounter.mount(mount_root, self.task_name)
-                    except RuntimeError as e:
-                        Logger.warn('Data storage {} mounting has failed: {}'.format(storage_and_mount.storage.name, e.message),
-                                    task_name=self.task_name)
+                    initialized_mounters.append(mounter)
+
+            initialized_mounters.sort(key=lambda mnt: mnt.build_mount_point(mount_root))
+            for mnt in initialized_mounters:
+                try:
+                    mnt.mount(mount_root, self.task_name)
+                except RuntimeError as e:
+                    Logger.warn(
+                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, e.message),
+                        task_name=self.task_name)
             Logger.success('Finished data storage mounting', task_name=self.task_name)
         except Exception as e:
             Logger.fail('Unhandled error during mount task: {}.'.format(str(e.message)), task_name=self.task_name)
