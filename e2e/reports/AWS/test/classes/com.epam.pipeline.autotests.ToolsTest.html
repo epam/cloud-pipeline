@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">19m21.19s</div>
+<div class="counter">18m9.95s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">89%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,10 +61,158 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="toolCustomSettingsRun - EPMCMBIBPC-436"></a>
+<h3 class="failures">toolCustomSettingsRun - EPMCMBIBPC-436</h3>
+<span class="code">
+<pre>Element not found {by text: On-demand}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1612230640416.11.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1612230640416.11.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setPriceType(PipelineRunFormAO.java:152)
+	at com.epam.pipeline.autotests.ToolsTest.toolCustomSettingsRun(ToolsTest.java:348)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '	
+ ', '    ')) = &quot;On-demand&quot;]/parent::*&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'bfd00015ef3c', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: b03a8cc9899efc804bd1d5381ea45e0d
+*** Element info: {Using=xpath, value=.//*/text()[normalize-space(translate(string(.), '	
+ ', '    ')) = &quot;On-demand&quot;]/parent::*}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
+	at org.openqa.selenium.remote.RemoteWebElement.findElementByXPath(RemoteWebElement.java:255)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validateEstimatedPriceAvailabilityForFilledTool - EPMCMBIBPC-1436"></a>
+<h3 class="failures">validateEstimatedPriceAvailabilityForFilledTool - EPMCMBIBPC-1436</h3>
+<span class="code">
+<pre>Element not found {by text: On-demand}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1612231262365.12.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1612231262365.12.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setPriceType(PipelineRunFormAO.java:152)
+	at com.epam.pipeline.autotests.ToolsTest.validateEstimatedPriceAvailabilityForFilledTool(ToolsTest.java:481)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '	
+ ', '    ')) = &quot;On-demand&quot;]/parent::*&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'bfd00015ef3c', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: b03a8cc9899efc804bd1d5381ea45e0d
+*** Element info: {Using=xpath, value=.//*/text()[normalize-space(translate(string(.), '	
+ ', '    ')) = &quot;On-demand&quot;]/parent::*}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
+	at org.openqa.selenium.remote.RemoteWebElement.findElementByXPath(RemoteWebElement.java:255)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -76,108 +224,108 @@
 </thead>
 <tr>
 <td class="success">addToolDescriptionAndChangeSettings - EPMCMBIBPC-1546</td>
-<td>7.905s</td>
+<td>7.633s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">createGroupWithInvalidName - EPMCMBIBPC-1576</td>
-<td>7.158s</td>
+<td>7.013s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">fullGroupNameSearch - EPMCMBIBPC-401</td>
-<td>2.286s</td>
+<td>2.249s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">fullToolNameSearch - EPMCMBIBPC-399</td>
-<td>3.677s</td>
+<td>3.475s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">groupCrudOperations - EPMCMBIBPC-433</td>
-<td>28.447s</td>
+<td>27.907s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">partToolNameSearch - EPMCMBIBPC-402</td>
-<td>8.103s</td>
+<td>7.908s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">personalGroupCrudOperations - EPMCMBIBPC-403</td>
-<td>34.317s</td>
+<td>33.896s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">toolCustomSettingsRun - EPMCMBIBPC-436</td>
-<td>6m40.08s</td>
-<td class="success">passed</td>
+<td class="failures">toolCustomSettingsRun - EPMCMBIBPC-436</td>
+<td>1m49.09s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">toolCustomSettingsRunWithoutDefaults - EPMCMBIBPC-1296</td>
-<td>3m42.16s</td>
+<td>6m14.89s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolDefaultCommandAddition - EPMCMBIBPC-430</td>
-<td>24.011s</td>
+<td>23.602s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">toolDefaultCommandIsSavedOnlyForEditedTool - EPMCMBIBPC-434</td>
-<td>5.482s</td>
-<td class="success">passed</td>
+<td class="skipped">toolDefaultCommandIsSavedOnlyForEditedTool</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">toolDefaultSettingsRun - EPMCMBIBPC-435</td>
-<td>4m45.96s</td>
+<td>5m0.02s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolDescriptionAddition - EPMCMBIBPC-432</td>
-<td>6.336s</td>
+<td>6.124s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolEditionMenu - EPMCMBIBPC-412</td>
-<td>7.202s</td>
+<td>7.125s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolExecutionParameters - EPMCMBIBPC-429</td>
-<td>25.022s</td>
+<td>24.212s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolLabelsAddition - EPMCMBIBPC-409</td>
-<td>7.452s</td>
+<td>7.596s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolVersionsTab - EPMCMBIBPC-427</td>
-<td>12.263s</td>
+<td>12.422s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolsPageValidation - EPMCMBIBPC-398</td>
-<td>5.385s</td>
+<td>5.375s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateEstimatedPriceAvailabilityForFilledTool - EPMCMBIBPC-1436</td>
-<td>17.631s</td>
-<td class="success">passed</td>
+<td class="failures">validateEstimatedPriceAvailabilityForFilledTool - EPMCMBIBPC-1436</td>
+<td>1m33.31s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validateFirstGroupDefaultHasOpened - EPMCMBIBPC-1645</td>
-<td>37.029s</td>
+<td>36.105s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateSwitchBetweenGroups - EPMCMBIBPC-404</td>
-<td>13.276s</td>
-<td class="success">passed</td>
+<td class="skipped">validateSwitchBetweenGroups</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
@@ -189,7 +337,7 @@
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 1, 2021 6:56:43 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 2, 2021 1:36:34 PM</p>
 </div>
 </div>
 </body>

@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">4</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">2</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">31m18.09s</div>
+<div class="counter">15m45.83s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">83%</div>
+<div class="percent">71%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,15 +73,17 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803"></a>
-<h3 class="failures">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</h3>
+<a name="changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257"></a>
+<h3 class="failures">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</h3>
 <span class="code">
-<pre>Element should be status-icon__icon-green {By.className: log__run-title}
-Element: '&lt;h1 class=&quot;log__run-title&quot;&gt;Run #57026 - ui-tests-epmcmbibpc-795-4606940132661408011 (draft-8acc5aba) - Logs&lt;/h1&gt;'
-Actual value: WORKING
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612176632741.72.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612176632741.72.html
-Timeout: 1500 s.
+<pre>Element should be be expanded tab {By.id: launch-pipeline-exec-environment-panel}
+Element: '&lt;div class=&quot;ant-collapse-item launch-pipeline-form__section&quot; id=&quot;launch-pipeline-exec-environment-panel&quot; role=&quot;tablist&quot;&gt;Exec environment
+library/centos:7
+m5.large
+20Gb&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1612255392402.96.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1612255392402.96.html
+Timeout: 80 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
@@ -89,9 +91,82 @@ Timeout: 1500 s.
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.waitForCompletion(LogAO.java:72)
-	at com.epam.pipeline.autotests.PipelineConfigurationTest.launchAndCheckLaunchParametersInPipelineLogsPage(PipelineConfigurationTest.java:325)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.expandTab(AccessObject.java:272)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.&lt;init&gt;(PipelineRunFormAO.java:85)
+	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.runPipeline(AbstractPipelineTabAO.java:112)
+	at com.epam.pipeline.autotests.PipelineConfigurationTest.changeInstancePriceTypeToSpotInConfigurationFile(PipelineConfigurationTest.java:124)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="priceTypeValidation - EPMCMBIBPC-1517"></a>
+<h3 class="failures">priceTypeValidation - EPMCMBIBPC-1517</h3>
+<span class="code">
+<pre>Element should have value Spot {By.xpath: .//*[@class = 'ant-select-selection__rendered' and .//*[@class = 'ant-select-selection__placeholder' and text() = 'Price type']]}
+Element: '&lt;div class=&quot;ant-select-selection__rendered&quot;&gt;On-demand&lt;/div&gt;'
+Actual value: On-demand
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1612255733148.99.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1612255733148.99.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
+	at com.epam.pipeline.autotests.PipelineConfigurationTest.priceTypeValidation(PipelineConfigurationTest.java:229)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfDefaultPriceType - EPMCMBIBPC-1263"></a>
+<h3 class="failures">validationOfDefaultPriceType - EPMCMBIBPC-1263</h3>
+<span class="code">
+<pre>Element should contains {By.xpath: .//ul[@role = 'menu' and contains(@class, 'ant-select-dropdown-menu')]}
+Element: '&lt;ul class=&quot;ant-select-dropdown-menu ant-select-dropdown-menu-vertical  ant-select-dropdown-menu-root&quot; role=&quot;menu&quot;&gt;On-demand&lt;/ul&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1612255538998.97.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1612255538998.97.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
+	at com.epam.pipeline.autotests.PipelineConfigurationTest.validationOfDefaultPriceType(PipelineConfigurationTest.java:139)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -112,24 +187,21 @@ Timeout: 1500 s.
 <a name="validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241"></a>
 <h3 class="failures">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</h3>
 <span class="code">
-<pre>Element not found {task with name InitializeNode}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612175023577.71.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612175023577.71.html
+<pre>Element should contains {By.xpath: .//ul[@role = 'menu' and contains(@class, 'ant-select-dropdown-menu')]}
+Element: '&lt;ul class=&quot;ant-select-dropdown-menu ant-select-dropdown-menu-vertical  ant-select-dropdown-menu-root&quot; role=&quot;menu&quot;&gt;On-demand&lt;/ul&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1612255636270.98.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1612255636270.98.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using task with name InitializeNode
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:105)
-	at com.epam.pipeline.autotests.PipelineConfigurationTest.validationOfRunPipelineUsingOnDemandInstance(PipelineConfigurationTest.java:158)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
+	at com.epam.pipeline.autotests.PipelineConfigurationTest.validationOfRunPipelineUsingOnDemandInstance(PipelineConfigurationTest.java:152)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -143,17 +215,6 @@ Caused by: NoSuchElementException: Cannot locate an element using task with name
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using task with name InitializeNode
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'dca36a4f6996', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
 </pre>
 </span>
 </div>
@@ -170,81 +231,80 @@ Driver info: driver.version: unknown
 </thead>
 <tr>
 <td class="success">changeInstancePriceTypeInConfigurationFile - EPMCMBIBPC-1256</td>
-<td>47.429s</td>
+<td>44.555s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</td>
-<td>44.631s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="success">checkConfigurationTabOnPipelineEditPage - EPMCMBIBPC-795</td>
-<td>16.576s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="failures">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</td>
-<td>25m8.63s</td>
+<td class="failures">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</td>
+<td>1m59.46s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
+<td class="success">checkConfigurationTabOnPipelineEditPage - EPMCMBIBPC-795</td>
+<td>16.245s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</td>
+<td>5m30.37s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
 <td class="success">launchPipelineThatHaveSeveralConfigurations - EPMCMBIBPC-800</td>
-<td>6.223s</td>
+<td>5.881s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">parametersDoesntChangeOnSwitchingConfigurations - EPMCMBIBPC-1500</td>
-<td>51.542s</td>
+<td>49.317s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">priceTypeValidation - EPMCMBIBPC-1517</td>
-<td>0.604s</td>
-<td class="success">passed</td>
+<td class="failures">priceTypeValidation - EPMCMBIBPC-1517</td>
+<td>1m20.63s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validationOfAddingNewConfigurationFeature - EPMCMBIBPC-796</td>
-<td>9.656s</td>
+<td>9.894s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfConfigurationRemoving</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validationOfConfigurationRemoving - EPMCMBIBPC-805</td>
+<td>12.204s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfDefaultPriceType - EPMCMBIBPC-1263</td>
-<td>17.397s</td>
-<td class="success">passed</td>
+<td class="failures">validationOfDefaultPriceType - EPMCMBIBPC-1263</td>
+<td>1m37.27s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validationOfEditConfigurationInConfigurationFile - EPMCMBIBPC-799</td>
-<td>48.707s</td>
+<td>46.649s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfEditNewConfiguration - EPMCMBIBPC-797</td>
-<td>18.766s</td>
+<td>18.813s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</td>
-<td>1m47.93s</td>
+<td>1m37.27s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfSettingAsDefaultBehavior</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validationOfSettingAsDefaultBehavior - EPMCMBIBPC-804</td>
+<td>17.277s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 57025 from [57025]
-Returns latest run with runId 57026 from [57025, 57026]
+<pre>Returns latest run with runId 57154 from [57154]
 </pre>
 </span>
 </div>
@@ -256,7 +316,7 @@ Returns latest run with runId 57026 from [57025, 57026]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 1, 2021 6:56:43 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 2, 2021 1:36:34 PM</p>
 </div>
 </div>
 </body>
