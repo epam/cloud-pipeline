@@ -86,6 +86,10 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
         folder2 = getFolder(TEST_FOLDER2, TEST_OWNER2);
         folder2.setId(2L);
+        folder2.setParent(folder1);
+        folder2.setParentId(folder1.getId());
+
+        folder1.setChildFolders(Collections.singletonList(folder2));
 
         pipeline1 = constructPipeline(TEST_PIPELINE1, TEST_PIPELINE_REPO, TEST_PIPELINE_REPO_SSH, folder2.getId());
         pipeline1.setOwner(TEST_OWNER1);
@@ -134,9 +138,6 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
         mockPipelineAndFolders(pipelinesAndFolders);
 
-        Arrays.asList(new UserPermission(TEST_USER_1, AclPermission.WRITE.getMask()),
-                new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()));
-
         permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
         permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 4);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
@@ -162,7 +163,7 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
         mockPipelineAndFolders(pipelinesAndFolders);
 
         permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
-        permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 4);
+        permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 5);
         permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 1);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
 
@@ -181,7 +182,6 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
                 new ImmutablePair<>(pipeline2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
                 new ImmutablePair<>(folder1, Arrays.asList(
                         new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
-                        new UserPermission(TEST_USER_2, AclPermission.READ.getMask()),
                         new UserPermission(TEST_USER_2, AclPermission.NO_READ.getMask()))),
                 new ImmutablePair<>(folder2, Arrays.asList(
                         new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
@@ -191,7 +191,7 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
         permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 5);
         permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
-        permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 1);
+        permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 2);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
 
         expectedMap.put(pipeline1.getId(), permissionsForPipeline1);
@@ -209,10 +209,7 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
                 new ImmutablePair<>(pipeline2, Collections.singletonList(new UserPermission(TEST_USER_1, AclPermission.READ.getMask()))),
                 new ImmutablePair<>(folder1, Arrays.asList(
                         new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
-                        new UserPermission(TEST_USER_2, AclPermission.READ.getMask()),
-                        new UserPermission(TEST_USER_2, AclPermission.NO_READ.getMask()),
-                        new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask())
-                )),
+                        new UserPermission(TEST_USER_2, AclPermission.WRITE.getMask()))),
                 new ImmutablePair<>(folder2, Arrays.asList(
                         new UserPermission(TEST_USER_1, AclPermission.READ.getMask()),
                         new UserPermission(TEST_USER_2, AclPermission.READ.getMask()))));
@@ -221,8 +218,8 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
 
         permissionsForPipeline1.put(TEST_USER_2.toUpperCase(), 9);
         permissionsForPipeline1.put(TEST_USER_1.toUpperCase(), 5);
-        permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 5);
         permissionsForPipeline2.put(TEST_USER_1.toUpperCase(), 1);
+        permissionsForPipeline2.put(TEST_USER_2.toUpperCase(), 4);
 
         expectedMap.put(pipeline1.getId(), permissionsForPipeline1);
         expectedMap.put(pipeline2.getId(), permissionsForPipeline2);
