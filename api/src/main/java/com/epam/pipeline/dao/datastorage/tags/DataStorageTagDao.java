@@ -29,6 +29,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     private final String bulkLoadTagsQuery;
     private final String deleteTagsQuery;
     private final String deleteSpecificTagsQuery;
+    private final String bulkDeleteAllTagsQuery;
     
     public List<DataStorageTag> bulkUpsert(final DataStorageTag... tags) {
         return bulkUpsert(Arrays.stream(tags));
@@ -85,6 +86,29 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
 
     public void bulkDelete(final Stream<DataStorageObject> objects) {
         getNamedParameterJdbcTemplate().batchUpdate(deleteTagsQuery, Parameters.getParameters(objects));
+    }
+
+    public void bulkDeleteAll(final DataStorageObject... objects) {
+        bulkDeleteAll(Arrays.stream(objects));
+    }
+
+    public void bulkDeleteAll(final List<DataStorageObject> objects) {
+        bulkDeleteAll(objects.stream());
+    }
+
+    public void bulkDeleteAll(final Stream<DataStorageObject> objects) {
+        objects.collect(
+                Collectors.groupingBy(DataStorageObject::getStorageId,
+                        Collectors.mapping(DataStorageObject::getPath,
+                                Collectors.toList())))
+                .forEach(this::bulkDeleteAll);
+    }
+
+    public void bulkDeleteAll(final Long storageId, final List<String> paths) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(Parameters.DATASTORAGE_ID.name(), storageId);
+        params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);
+        getNamedParameterJdbcTemplate().update(bulkDeleteAllTagsQuery, params);
     }
 
     public DataStorageTag upsert(final DataStorageTag tag) {

@@ -39,6 +39,7 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
@@ -369,5 +370,11 @@ public class DataStorageApiService {
     public void bulkDeleteDataStorageObjectTags(final Long id,
                                                 final DataStorageTagDeleteBulkRequest request) {
         dataStorageTagManager.bulkDelete(id, request);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public void bulkDeleteAllDataStorageObjectTags(final Long id,
+                                                   final DataStorageTagDeleteAllBulkRequest request) {
+        dataStorageTagManager.bulkDeleteAll(id, request);
     }
 }

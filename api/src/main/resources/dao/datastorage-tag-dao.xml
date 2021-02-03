@@ -122,5 +122,15 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--bulkDeleteAllTagsQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tag
+                    WHERE datastorage_id = :DATASTORAGE_ID
+                    AND datastorage_path IN (:DATASTORAGE_PATH)
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>
