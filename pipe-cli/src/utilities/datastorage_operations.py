@@ -605,7 +605,7 @@ class DataStorageOperations(object):
                     'key': key,
                     'value': value
                 })
-                if version:
+                if destination_wrapper.bucket.policy.versioning_enabled and version:
                     tag_objects.append({
                         'path': path,
                         'version': version,
