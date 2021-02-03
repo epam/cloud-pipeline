@@ -4,6 +4,7 @@ import lombok.Value;
 
 @Value
 public class DataStorageTagInsertRequest {
+    
     String path;
     String version;
     String key;

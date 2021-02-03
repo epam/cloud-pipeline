@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
@@ -692,6 +693,21 @@ public class DataStorageController extends AbstractRestController {
     public Result bulkDeleteTags(@PathVariable(value = ID) final Long id,
                                  @RequestBody final DataStorageTagDeleteBulkRequest request) {
         dataStorageApiService.bulkDeleteDataStorageObjectTags(id, request);
+        return Result.success();
+    }
+
+    @DeleteMapping(value = "/datastorage/{id}/tags/all/bulk")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes all data storage item tags, specified by datastorage id and object path.",
+            notes = "Deletes all data storage item tags, specified by datastorage id and object path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result bulkDeleteAllTags(@PathVariable(value = ID) final Long id,
+                                    @RequestBody final DataStorageTagDeleteAllBulkRequest request) {
+        dataStorageApiService.bulkDeleteAllDataStorageObjectTags(id, request);
         return Result.success();
     }
 
