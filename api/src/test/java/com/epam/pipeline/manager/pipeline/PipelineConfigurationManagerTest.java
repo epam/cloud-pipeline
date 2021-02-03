@@ -40,6 +40,8 @@ import java.util.Map;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.NFS_MASK;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.S3_MASK;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getNfsDataStorage;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
@@ -62,6 +64,13 @@ public class PipelineConfigurationManagerTest {
     private static final String TEST_DOCKER_IMAGE = TEST_REPO + "/" + TEST_IMAGE;
     private static final Map<String, PipeConfValueVO> TEST_PARAMS = Collections.singletonMap("testParam",
             new PipeConfValueVO("testParamValue", "int", true));
+    private static final String TEST_MOUNT_POINT = "/some/path";
+    private static final String TEST_OPTIONS_1 = "options1";
+    private static final String TEST_OPTIONS_2 = "options2";
+    private static final String TEST_PATH_1 = "test/path1";
+    private static final String TEST_PATH_2 = "test/path2";
+    private static final String TEST_PATH_3 = "test/path3";
+    private static final String TEST_PATH_4 = "test/path4";
 
     @Mock
     private PipelineVersionManager pipelineVersionManager;
@@ -80,10 +89,10 @@ public class PipelineConfigurationManagerTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        dataStorages.add(getNfsDataStorage(NFS_ID_1, "test/path1", "options1", "/some/path", OWNER1));
-        dataStorages.add(getS3bucketDataStorage(S3_ID_1, "test/path2", OWNER1));
-        dataStorages.add(getNfsDataStorage(NFS_ID_2, "test/path3", "options2", "", OWNER2));
-        dataStorages.add(getS3bucketDataStorage(S3_ID_2, "test/path4", OWNER2));
+        dataStorages.add(getNfsDataStorage(NFS_ID_1, TEST_PATH_1, TEST_OPTIONS_1, TEST_MOUNT_POINT, OWNER1));
+        dataStorages.add(getS3bucketDataStorage(S3_ID_1, TEST_PATH_2, OWNER1));
+        dataStorages.add(getNfsDataStorage(NFS_ID_2, TEST_PATH_3, TEST_OPTIONS_2, "", OWNER2));
+        dataStorages.add(getS3bucketDataStorage(S3_ID_2, TEST_PATH_4, OWNER2));
     }
 
     @Test
@@ -99,17 +108,17 @@ public class PipelineConfigurationManagerTest {
         final String[] buckets = config.getBuckets().split(";");
         assertThat(buckets)
                 .hasSize(4)
-                .contains("nfs://test/path1", "s3://test/path2", "nfs://test/path3", "s3://test/path4");
+                .contains(NFS_MASK + TEST_PATH_1, S3_MASK + TEST_PATH_2, NFS_MASK + TEST_PATH_3, S3_MASK + TEST_PATH_4);
 
         final String[] nfsOptions = deleteEmptyElements(config.getNfsMountOptions().split(";"));
         assertThat(nfsOptions)
                 .hasSize(2)
-                .contains("options1", "options2");
+                .contains(TEST_OPTIONS_1, TEST_OPTIONS_2);
 
         final String[] mountPoints = config.getMountPoints().split(";");
         assertThat(mountPoints)
                 .hasSize(1)
-                .contains("/some/path");
+                .contains(TEST_MOUNT_POINT);
 
         assertThat(config.isNonPause()).isFalse();
         assertThat(config.getInstanceImage()).isEqualTo(TEST_STRING);
@@ -131,7 +140,7 @@ public class PipelineConfigurationManagerTest {
                 eq(((AclPermission) AclPermission.WRITE).getSimpleMask()));
     }
 
-    private String[] deleteEmptyElements(String[] array) {
+    private String[] deleteEmptyElements(final String[] array) {
         return Arrays.stream(array)
                 .filter(StringUtils::isNotBlank)
                 .toArray(String[]::new);

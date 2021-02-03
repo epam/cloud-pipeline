@@ -78,10 +78,6 @@ public final class PipelineCreatorUtils {
             new TypeReference<List<UploadFileMetadata>>() {};
     public static final TypeReference<Result<List<RunSchedule>>> RUN_SCHEDULE_LIST_TYPE =
             new TypeReference<Result<List<RunSchedule>>>() {};
-    public static final TypeReference<Result<PipelineVO>> PIPELINE_VO_INSTANCE_TYPE =
-            new TypeReference<Result<PipelineVO>>() {};
-    public static final TypeReference<Result<PipelineStart>> PIPELINE_START_INSTANCE_TYPE =
-            new TypeReference<Result<PipelineStart>>() {};
 
     private PipelineCreatorUtils() {
 
@@ -138,7 +134,7 @@ public final class PipelineCreatorUtils {
         return pipelineVO;
     }
 
-    public static PipelineStart getPipelineStart(final Map<String, PipeConfValueVO> params, String image) {
+    public static PipelineStart getPipelineStart(final Map<String, PipeConfValueVO> params, final String image) {
         final PipelineStart vo = new PipelineStart();
         vo.setNonPause(false);
         vo.setInstanceImage(TEST_STRING);

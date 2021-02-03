@@ -112,6 +112,8 @@ public final class DatastorageCreatorUtils {
             new TypeReference<Result<StorageMountPath>>() { };
     public static final TypeReference<Result<FileShareMount>> FILE_SHARE_MOUNT_TYPE =
             new TypeReference<Result<FileShareMount>>() { };
+    public static final String NFS_MASK = "nfs://";
+    public static final String S3_MASK = "s3://";
     private static final String TEST_PATH = "localhost:root/test";
 
     private DatastorageCreatorUtils() {
