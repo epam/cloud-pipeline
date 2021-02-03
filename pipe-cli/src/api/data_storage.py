@@ -384,6 +384,23 @@ class DataStorage(API):
             raise RuntimeError('Failed to bulk delete tags for paths {}.'.format(requests))
 
     @classmethod
+    def bulk_delete_all_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        data = json.dumps({
+            'requests': requests
+        })
+        endpoint = 'datastorage/{}/tags/all/bulk'.format(identifier)
+        response_data = api.call(endpoint, data=data, http_method='DELETE')
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError('Failed to bulk delete tags for paths {}.'.format(requests))
+
+    @classmethod
     def get_storage_usage(cls, name, path=None):
         api = cls.instance()
         endpoint = 'datastorage/path/usage?id={}'.format(name)

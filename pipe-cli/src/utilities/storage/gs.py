@@ -517,9 +517,10 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
             check_file = False
         bucket = self.client.bucket(self.bucket.path)
         if not recursive and not hard_delete:
-            self._delete_blob(bucket.blob(prefix, generation=version), exclude, include)
-            if not self.bucket.policy.versioning_enabled:
-                DataStorage.bulk_delete_object_tags(self.bucket.identifier, [{'path': self.bucket.path}])
+            deleting_blob = bucket.blob(prefix, generation=version)
+            self._delete_blob(deleting_blob, exclude, include)
+            if version or not self.bucket.policy.versioning_enabled:
+                self._delete_object_tags([deleting_blob], versions=self.bucket.policy.versioning_enabled)
         else:
             blobs_for_deletion = []
             listing_manager = self._get_listing_manager(show_versions=version is not None or hard_delete)
@@ -537,12 +538,24 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
                     blobs_for_deletion.extend(self._item_blobs_for_deletion(bucket, item, hard_delete))
             for blob in blobs_for_deletion:
                 self._delete_blob(blob, exclude, include, prefix)
+            if hard_delete:
+                self._delete_all_object_tags(blobs_for_deletion)
             if not self.bucket.policy.versioning_enabled:
-                chunk_size = 100
-                for blobs_for_deletion_chunk in [blobs_for_deletion[i:i + chunk_size]
-                                                 for i in range(0, len(blobs_for_deletion), chunk_size)]:
-                    DataStorage.bulk_delete_object_tags(self.bucket.identifier,
-                                                        [{'path': blob.name} for blob in blobs_for_deletion_chunk])
+                self._delete_object_tags(blobs_for_deletion, versions=False)
+
+    def _delete_all_object_tags(self, blobs_for_deletion, chunk_size=100):
+        for blobs_for_deletion_chunk in [blobs_for_deletion[i:i + chunk_size]
+                                         for i in range(0, len(blobs_for_deletion), chunk_size)]:
+            blob_names = set(blob.name for blob in blobs_for_deletion_chunk)
+            DataStorage.bulk_delete_all_object_tags(self.bucket.identifier,
+                                                    [{'path': blob_name} for blob_name in blob_names])
+
+    def _delete_object_tags(self, blobs_for_deletion, versions, chunk_size=100):
+        for blobs_for_deletion_chunk in [blobs_for_deletion[i:i + chunk_size]
+                                         for i in range(0, len(blobs_for_deletion), chunk_size)]:
+            DataStorage.bulk_delete_object_tags(self.bucket.identifier,
+                                                [{'path': blob.name, 'version': blob.generation if versions else None}
+                                                 for blob in blobs_for_deletion_chunk])
 
     def _item_blobs_for_deletion(self, bucket, item, hard_delete):
         if hard_delete:
@@ -597,25 +610,10 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
                 raise RuntimeError('Version "%s" doesn\'t exist.' % version)
             if not item.deleted and item.version == version:
                 raise RuntimeError('Version "%s" is already the latest version.' % version)
-            restored_object = bucket.copy_blob(blob, bucket, blob.name, source_generation=int(version))
-            DataStorage.bulk_copy_object_tags(self.wrapper.bucket.identifier, [{
-                'source': {
-                    'path': self.wrapper.path,
-                    'version': version
-                },
-                'destination': {
-                    'path': self.wrapper.path
-                }
-            }, {
-                'source': {
-                    'path': self.wrapper.path,
-                    'version': version
-                },
-                'destination': {
-                    'path': self.wrapper.path,
-                    'version': restored_object.generation
-                }
-            }])
+            restored_blob = bucket.copy_blob(blob, bucket, blob.name, source_generation=int(version))
+            item.name = self.wrapper.path
+            item.version = version
+            self._flush_restore_results([(item, restored_blob)], flush_size=1)
         else:
             all_items = self.listing_manager.list_items(self.wrapper.path, show_all=True, recursive=True)
             file_items = [item for item in all_items if item.name == self.wrapper.path]
@@ -623,57 +621,45 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
                 item = file_items[0]
                 if not item.deleted:
                     raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
-                restored_item = self._restore_latest_archived_version(bucket, item)
-                DataStorage.bulk_copy_object_tags(self.wrapper.bucket.identifier,[{
-                    'source': {
-                        'path': self.wrapper.path,
-                        'version': item.version
-                    },
-                    'destination': {
-                        'path': self.wrapper.path
-                    }
-                }, {
-                    'source': {
-                        'path': self.wrapper.path,
-                        'version': item.version
-                    },
-                    'destination': {
-                        'path': self.wrapper.path,
-                        'version': restored_item.generation
-                    }
-                }])
+                restored_blob = self._restore_latest_archived_version(bucket, item)
+                self._flush_restore_results([(item, restored_blob)], flush_size=1)
             else:
-                chunk_size = 100
                 restoring_results = []
                 for item in all_items:
                     if item.deleted:
-                        restored_item = self._restore_latest_archived_version(bucket, item)
-                        restoring_results.append((item, restored_item))
-                        if len(restoring_results) > chunk_size:
-                            item_requests = []
-                            for original_item, restored_item in restoring_results:
-                                item_requests.append({
-                                    'source': {
-                                        'path': original_item.name,
-                                        'version': original_item.version
-                                    },
-                                    'destination': {
-                                        'path': restored_item.name
-                                    }
-                                })
-                                item_requests.append({
-                                    'source': {
-                                        'path': original_item.name,
-                                        'version': original_item.version
-                                    },
-                                    'destination': {
-                                        'path': restored_item.name,
-                                        'version': restored_item.version
-                                    }
-                                })
-                            DataStorage.bulk_delete_object_tags(self.wrapper.bucket.identifier,
-                                                                item_requests)
-                            restoring_results = []
+                        restored_blob = self._restore_latest_archived_version(bucket, item)
+                        restoring_results.append((item, restored_blob))
+                        restoring_results = self._flush_restore_results(restoring_results)
+                self._flush_restore_results(restoring_results, flush_size=1)
+
+    def _flush_restore_results(self, restoring_results, flush_size=100, chunk_size=100):
+        if len(restoring_results) < flush_size:
+            return restoring_results
+        copy_requests = []
+        for original_item, restored_item in restoring_results:
+            copy_requests.append({
+                'source': {
+                    'path': original_item.name,
+                    'version': getattr(original_item, 'version', getattr(original_item, 'generation', None))
+                },
+                'destination': {
+                    'path': restored_item.name
+                }
+            })
+            copy_requests.append({
+                'source': {
+                    'path': original_item.name,
+                    'version': getattr(original_item, 'version', getattr(original_item, 'generation', None))
+                },
+                'destination': {
+                    'path': restored_item.name,
+                    'version': getattr(restored_item, 'version', getattr(restored_item, 'generation', None))
+                }
+            })
+        for copy_requests_chunk in [copy_requests[i:i + chunk_size]
+                                    for i in range(0, len(copy_requests), chunk_size)]:
+            DataStorage.bulk_copy_object_tags(self.wrapper.bucket.identifier, copy_requests_chunk)
+        return []
 
     def _restore_latest_archived_version(self, bucket, item):
         blob = bucket.blob(item.name)

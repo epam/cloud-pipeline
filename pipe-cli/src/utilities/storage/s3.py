@@ -92,6 +92,8 @@ class StorageItemManager(object):
         try:
             client = self._get_client()
             item = client.head_object(Bucket=bucket, Key=key)
+            if 'DeleteMarker' in item:
+                return None
             return item.get('VersionId')
         except ClientError:
             return None
@@ -460,9 +462,21 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
                 delete_us['Objects'].append(dict(Key=prefix, VersionId=version))
             else:
                 delete_us['Objects'].append(dict(Key=prefix))
-            if not self.bucket.bucket.policy.versioning_enabled:
-                self._delete_object_tags(delete_us)
             client.delete_objects(Bucket=bucket, Delete=delete_us)
+            if version:
+                latest_version = self.get_s3_file_version(bucket, prefix)
+                if latest_version:
+                    DataStorage.bulk_copy_object_tags(self.bucket.bucket.identifier, [{
+                        'source': {
+                            'path': relative_path,
+                            'version': latest_version
+                        },
+                        'destination': {
+                            'path': relative_path
+                        }
+                    }])
+            if version or not self.bucket.bucket.policy.versioning_enabled:
+                self._delete_object_tags(delete_us)
         else:
             operation_parameters = {
                 'Bucket': bucket,
@@ -481,20 +495,30 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
                 S3BucketOperations.process_listing(page, 'DeleteMarkers', delete_us, delimiter, exclude, include,
                                                    prefix, versions=True)
                 # flush once aws limit reached
-                self._delete_object_tags(delete_us)
+                if hard_delete:
+                    self._delete_all_object_tags(delete_us)
+                if not self.bucket.bucket.policy.versioning_enabled:
+                    self._delete_object_tags(delete_us)
                 delete_us = S3BucketOperations.send_delete_objects_request(client, bucket, delete_us)
             # flush rest
             if len(delete_us['Objects']):
-                self._delete_object_tags(delete_us)
+                if hard_delete:
+                    self._delete_all_object_tags(delete_us)
+                if not self.bucket.bucket.policy.versioning_enabled:
+                    self._delete_object_tags(delete_us)
                 client.delete_objects(Bucket=bucket, Delete=delete_us)
 
+    def _delete_all_object_tags(self, delete_us):
+        object_names = set(item['Key'] for item in delete_us['Objects'])
+        DataStorage.bulk_delete_all_object_tags(self.bucket.bucket.identifier,
+                                                [{'path': object_name} for object_name in object_names])
+
     def _delete_object_tags(self, delete_us, chunk_size=100):
-        if not self.bucket.bucket.policy.versioning_enabled:
-            for objects_for_deletion_chunk in [delete_us['Objects'][i:i + chunk_size]
-                                               for i in range(0, len(delete_us['Objects']), chunk_size)]:
-                DataStorage.bulk_delete_object_tags(self.bucket.bucket.identifier,
-                                                    [{'path': item['Key']}
-                                                     for item in objects_for_deletion_chunk])
+        for delete_us_chunk in [delete_us['Objects'][i:i + chunk_size]
+                                for i in range(0, len(delete_us['Objects']), chunk_size)]:
+            DataStorage.bulk_delete_object_tags(self.bucket.bucket.identifier,
+                                                [{'path': item['Key'], 'version': item.get('VersionId')}
+                                                 for item in delete_us_chunk])
 
 
 class ListingManager(StorageItemManager, AbstractListingManager):
