@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">4</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">15m45.83s</div>
+<div class="counter">10m58.87s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">71%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,165 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257"></a>
-<h3 class="failures">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</h3>
-<span class="code">
-<pre>Element should be be expanded tab {By.id: launch-pipeline-exec-environment-panel}
-Element: '&lt;div class=&quot;ant-collapse-item launch-pipeline-form__section&quot; id=&quot;launch-pipeline-exec-environment-panel&quot; role=&quot;tablist&quot;&gt;Exec environment
-library/centos:7
-m5.large
-20Gb&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612255392402.96.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612255392402.96.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.expandTab(AccessObject.java:272)
-	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.&lt;init&gt;(PipelineRunFormAO.java:85)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.runPipeline(AbstractPipelineTabAO.java:112)
-	at com.epam.pipeline.autotests.PipelineConfigurationTest.changeInstancePriceTypeToSpotInConfigurationFile(PipelineConfigurationTest.java:124)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="priceTypeValidation - EPMCMBIBPC-1517"></a>
-<h3 class="failures">priceTypeValidation - EPMCMBIBPC-1517</h3>
-<span class="code">
-<pre>Element should have value Spot {By.xpath: .//*[@class = 'ant-select-selection__rendered' and .//*[@class = 'ant-select-selection__placeholder' and text() = 'Price type']]}
-Element: '&lt;div class=&quot;ant-select-selection__rendered&quot;&gt;On-demand&lt;/div&gt;'
-Actual value: On-demand
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612255733148.99.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612255733148.99.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
-	at com.epam.pipeline.autotests.PipelineConfigurationTest.priceTypeValidation(PipelineConfigurationTest.java:229)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfDefaultPriceType - EPMCMBIBPC-1263"></a>
-<h3 class="failures">validationOfDefaultPriceType - EPMCMBIBPC-1263</h3>
-<span class="code">
-<pre>Element should contains {By.xpath: .//ul[@role = 'menu' and contains(@class, 'ant-select-dropdown-menu')]}
-Element: '&lt;ul class=&quot;ant-select-dropdown-menu ant-select-dropdown-menu-vertical  ant-select-dropdown-menu-root&quot; role=&quot;menu&quot;&gt;On-demand&lt;/ul&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612255538998.97.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612255538998.97.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
-	at com.epam.pipeline.autotests.PipelineConfigurationTest.validationOfDefaultPriceType(PipelineConfigurationTest.java:139)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241"></a>
-<h3 class="failures">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</h3>
-<span class="code">
-<pre>Element should contains {By.xpath: .//ul[@role = 'menu' and contains(@class, 'ant-select-dropdown-menu')]}
-Element: '&lt;ul class=&quot;ant-select-dropdown-menu ant-select-dropdown-menu-vertical  ant-select-dropdown-menu-root&quot; role=&quot;menu&quot;&gt;On-demand&lt;/ul&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612255636270.98.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612255636270.98.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
-	at com.epam.pipeline.autotests.PipelineConfigurationTest.validationOfRunPipelineUsingOnDemandInstance(PipelineConfigurationTest.java:152)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -231,80 +79,81 @@ Timeout: 80 s.
 </thead>
 <tr>
 <td class="success">changeInstancePriceTypeInConfigurationFile - EPMCMBIBPC-1256</td>
-<td>44.555s</td>
+<td>45.155s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</td>
-<td>1m59.46s</td>
-<td class="failures">failed</td>
+<td class="success">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</td>
+<td>41.092s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkConfigurationTabOnPipelineEditPage - EPMCMBIBPC-795</td>
-<td>16.245s</td>
+<td>15.849s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</td>
-<td>5m30.37s</td>
+<td>5m54.78s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchPipelineThatHaveSeveralConfigurations - EPMCMBIBPC-800</td>
-<td>5.881s</td>
+<td>5.938s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">parametersDoesntChangeOnSwitchingConfigurations - EPMCMBIBPC-1500</td>
-<td>49.317s</td>
+<td>48.559s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">priceTypeValidation - EPMCMBIBPC-1517</td>
-<td>1m20.63s</td>
-<td class="failures">failed</td>
+<td class="success">priceTypeValidation - EPMCMBIBPC-1517</td>
+<td>0.547s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfAddingNewConfigurationFeature - EPMCMBIBPC-796</td>
-<td>9.894s</td>
+<td>9.050s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfConfigurationRemoving - EPMCMBIBPC-805</td>
-<td>12.204s</td>
+<td>12.698s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validationOfDefaultPriceType - EPMCMBIBPC-1263</td>
-<td>1m37.27s</td>
-<td class="failures">failed</td>
+<td class="success">validationOfDefaultPriceType - EPMCMBIBPC-1263</td>
+<td>17.079s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfEditConfigurationInConfigurationFile - EPMCMBIBPC-799</td>
-<td>46.649s</td>
+<td>45.273s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfEditNewConfiguration - EPMCMBIBPC-797</td>
-<td>18.813s</td>
+<td>18.129s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</td>
-<td>1m37.27s</td>
-<td class="failures">failed</td>
+<td class="success">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</td>
+<td>27.517s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfSettingAsDefaultBehavior - EPMCMBIBPC-804</td>
-<td>17.277s</td>
+<td>17.205s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 57154 from [57154]
+<pre>Returns latest run with runId 57297 from [57297]
+Returns latest run with runId 57298 from [57297, 57298]
 </pre>
 </span>
 </div>
@@ -316,7 +165,7 @@ Timeout: 80 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 2, 2021 1:36:34 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 3, 2021 5:56:34 PM</p>
 </div>
 </div>
 </body>
