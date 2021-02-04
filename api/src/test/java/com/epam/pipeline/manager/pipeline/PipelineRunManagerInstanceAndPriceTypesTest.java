@@ -24,6 +24,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitorin
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
+import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -94,6 +95,9 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
     @MockBean
     private RunStatusManager runStatusManager;
+
+    @Mock
+    private GitManager gitManager;
 
     @Mock
     private DataStorageManager dataStorageManager;
@@ -334,9 +338,32 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     }
 
     @Test
-    @WithMockUser
     public void testLaunchPipelineValidatesPipelineInstanceType() {
         launchPipeline(INSTANCE_TYPE);
+
+        verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
+
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(PriceType.SPOT.getLiteral()),
+                eq(null), eq(false));
+
+        verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+
+        verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
+        verify(securityManager).getAuthorizedUser();
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun(TEST_USER))),
+                argThat(matches(Predicates.forConfiguration())),
+                eq(null), eq("0"), eq(null));
+
+        verify(dataStorageManager).analyzePipelineRunsParameters(anyListOf(PipelineRun.class));
+
 
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
     }
