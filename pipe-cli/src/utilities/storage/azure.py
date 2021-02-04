@@ -153,7 +153,7 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             check_file = False
         if not recursive:
             self.__delete_blob(prefix, exclude, include)
-            self._delete_object_tags([prefix])
+            DataStorage.bulk_delete_object_tags(self.bucket.identifier, [{'path': prefix}])
         else:
             blob_names_for_deletion = []
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
@@ -164,13 +164,7 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
                     blob_names_for_deletion.append(item.name)
             for blob_name in blob_names_for_deletion:
                 self.__delete_blob(blob_name, exclude, include, prefix=prefix)
-            self._delete_object_tags(blob_names_for_deletion)
-
-    def _delete_object_tags(self, blob_names_for_deletion, chunk_size=100):
-        for blob_names_for_deletion_chunk in [blob_names_for_deletion[i:i + chunk_size]
-                                              for i in range(0, len(blob_names_for_deletion), chunk_size)]:
-            DataStorage.bulk_delete_object_tags(self.bucket.identifier,
-                                                [{'path': blob_name} for blob_name in blob_names_for_deletion_chunk])
+            DataStorage.bulk_delete_all_object_tags(self.bucket.identifier, [{'path': prefix, 'type': 'FOLDER'}])
 
     def __file_under_folder(self, file_path, folder_path):
         return StorageOperations.without_prefix(file_path, folder_path).startswith(self.delimiter)
