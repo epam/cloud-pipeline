@@ -4,6 +4,7 @@ import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
@@ -80,8 +81,33 @@ public class DataStorageTagManager {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return;
         }
-        tagDao.bulkDeleteAll(request.getRequests().stream()
-            .map(r -> new DataStorageObject(storageId, r.getPath())));
+        bulkDeleteAllFiles(storageId, request.getRequests());
+        bulkDeleteAllFolders(storageId, request.getRequests());
+    }
+
+    private void bulkDeleteAllFiles(final Long storageId, final List<DataStorageTagDeleteAllRequest> requests) {
+        final List<String> filesToDelete = requests.stream()
+                .filter(r -> r.getType() == null
+                        || r.getType() == DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FILE)
+                .map(r -> new DataStorageObject(storageId, r.getPath()))
+                .map(DataStorageObject::getPath)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(filesToDelete)) {
+            return;
+        }
+        tagDao.bulkDeleteAll(storageId, filesToDelete);
+    }
+
+    private void bulkDeleteAllFolders(final Long storageId, final List<DataStorageTagDeleteAllRequest> requests) {
+        final List<String> foldersToDelete = requests.stream()
+                .filter(r -> r.getType() != null
+                        && r.getType() == DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FOLDER)
+                .map(DataStorageTagDeleteAllRequest::getPath)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(foldersToDelete)) {
+            return;
+        }
+        foldersToDelete.forEach(path -> tagDao.deleteAllInFolder(storageId, path));
     }
 
     public DataStorageTag upsert(final DataStorageTag tag) {

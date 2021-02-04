@@ -106,6 +106,11 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
+    public DataStorageFile getFileMetadata(final GSBucketStorage dataStorage, final String path) {
+        return getHelper(dataStorage).getFile(dataStorage, path);
+    }
+
+    @Override
     public DataStorageDownloadFileUrl generateDownloadURL(final GSBucketStorage dataStorage, final String path,
                                                           final String version, ContentDisposition contentDisposition) {
         return getHelper(dataStorage).generateDownloadUrl(dataStorage, path, version);
@@ -141,11 +146,6 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public DataStorageFolder createFolder(final GSBucketStorage dataStorage, final String path)
             throws DataStorageException {
         return getHelper(dataStorage).createFolder(dataStorage, path);
-    }
-
-    @Override
-    public void deleteFiles(final GSBucketStorage dataStorage, final List<DataStorageFile> files) {
-        getHelper(dataStorage).deleteFiles(dataStorage, files);
     }
 
     @Override

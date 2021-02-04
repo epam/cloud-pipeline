@@ -59,6 +59,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);
 
+    DataStorageFile getFileMetadata(T dataStorage, String path);
+
     DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
                                                    ContentDisposition contentDisposition);
 
@@ -74,8 +76,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
 
     DataStorageFolder createFolder(T dataStorage, String path)
             throws DataStorageException;
-    
-    void deleteFiles(T dataStorage, List<DataStorageFile> files);
 
     void deleteFile(T dataStorage, String path, String version, Boolean totally)
             throws DataStorageException;

@@ -176,6 +176,16 @@ public class GSBucketStorageHelper {
         return new DataStorageListing(blobs.getNextPageToken(), items);
     }
 
+    public DataStorageFile getFile(final GSBucketStorage storage, final String path) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        final Blob blob = client.get(storage.getPath(), path);
+        final DataStorageFile file = new DataStorageFile();
+        file.setName(blob.getName());
+        file.setPath(blob.getName());
+        file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
+        return file;
+    }
+
     public DataStorageFile createFile(final GSBucketStorage storage, final String path,
                                       final byte[] contents, final String owner) {
         final Storage client = gcpClient.buildStorageClient(region);
@@ -206,20 +216,6 @@ public class GSBucketStorageHelper {
 
         createFile(storage, tokenFilePath, EMPTY_FILE_CONTENT, null);
         return createDataStorageFolder(folderPath);
-    }
-
-    public void deleteFiles(final GSBucketStorage dataStorage, final List<DataStorageFile> files) {
-        final Storage client = gcpClient.buildStorageClient(region);
-        files.forEach(file -> {
-            final Long version = Optional.ofNullable(file.getVersion()).map(Long::valueOf).orElse(null);
-            final BlobId blobId = BlobId.of(dataStorage.getPath(), file.getPath(), version);
-            final boolean deleted = client.delete(blobId);
-            if (!deleted) {
-                throw new DataStorageException(
-                        String.format("Failed to delete google storage file '%s' from bucket '%s'", 
-                                blobId.getName(), blobId.getBucket()));
-            }
-        });
     }
 
     public void deleteFile(final GSBucketStorage dataStorage, final String path, final String version,
@@ -567,7 +563,7 @@ public class GSBucketStorageHelper {
             }
             items.add(blob.isDirectory()
                     ? createDataStorageFolder(blob.getName())
-                    : createDataStorageFile(blob));
+                    : createDataStorageFileWithoutVersion(blob));
         }
         return items;
     }
@@ -675,7 +671,15 @@ public class GSBucketStorageHelper {
         return folder;
     }
 
+    private DataStorageFile createDataStorageFileWithoutVersion(final Blob blob) {
+        return createDataStorageFile(blob, false);
+    }
+
     private DataStorageFile createDataStorageFile(final Blob blob) {
+        return createDataStorageFile(blob, true);
+    }
+    
+    private DataStorageFile createDataStorageFile(final Blob blob, final boolean withVersion) {
         final TimeZone tz = TimeZone.getTimeZone("UTC");
         final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         df.setTimeZone(tz);
@@ -687,6 +691,9 @@ public class GSBucketStorageHelper {
         file.setPath(blob.getName());
         file.setSize(blob.getSize());
         file.setChanged(df.format(new Date(blob.getUpdateTime())));
+        if (withVersion) {
+            file.setVersion(String.valueOf(blob.getGeneration()));
+        }
         return file;
     }
 

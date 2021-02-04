@@ -371,6 +371,18 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
+    public DataStorageFile getFileMetadata(final NFSDataStorage dataStorage, final String path) {
+        final File dataStorageRoot = mount(dataStorage);
+        final File file = new File(dataStorageRoot, path);
+        final DataStorageFile item = new DataStorageFile();
+        item.setSize(file.length());
+        item.setChanged(S3Constants.getAwsDateFormat().format(new Date(file.lastModified())));
+        item.setName(file.getName());
+        item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
+        return item;
+    }
+
+    @Override
     public DataStorageDownloadFileUrl generateDownloadURL(NFSDataStorage dataStorage, String path,
                                                           String version, ContentDisposition contentDisposition) {
 
@@ -454,11 +466,6 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                     MessageConstants.ERROR_DATASTORAGE_CANNOT_CREATE_FILE, folder.getPath()), e);
         }
         return new DataStorageFolder(path, folder);
-    }
-
-    @Override
-    public void deleteFiles(NFSDataStorage dataStorage, List<DataStorageFile> files) {
-        files.forEach(file -> deleteFile(dataStorage, file.getPath(), null, null));
     }
 
     @Override

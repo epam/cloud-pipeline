@@ -162,7 +162,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public DataStorageItemContent getFile(S3bucketDataStorage dataStorage, String path,
-            String version, Long maxDownloadSize) {
+                                          String version, Long maxDownloadSize) {
         return getS3Helper(dataStorage).getFileContent(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version, maxDownloadSize);
     }
@@ -180,6 +180,11 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         return getS3Helper(dataStorage).getItems(datastoragePath.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
                 ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()));
+    }
+
+    @Override
+    public DataStorageFile getFileMetadata(final S3bucketDataStorage dataStorage, final String path) {
+        return getS3Helper(dataStorage).getFile(dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path));
     }
 
     @Override
@@ -238,11 +243,6 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                                                                final String path) {
         return getS3Helper(dataStorage).listDataStorageFileVersions(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path));
-    }
-
-    @Override
-    public void deleteFiles(final S3bucketDataStorage dataStorage, final List<DataStorageFile> files) {
-        getS3Helper(dataStorage).deleteFiles(dataStorage.getRoot(), files);
     }
 
     @Override

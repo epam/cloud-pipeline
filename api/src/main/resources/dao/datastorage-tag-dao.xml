@@ -132,5 +132,15 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteAllTagsByPathPatternQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_tag
+                    WHERE datastorage_id = :DATASTORAGE_ID
+                    AND datastorage_path LIKE :DATASTORAGE_PATH
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>

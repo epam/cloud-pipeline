@@ -104,6 +104,11 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
+    public DataStorageFile getFileMetadata(final AzureBlobStorage dataStorage, final String path) {
+        return getAzureStorageHelper(dataStorage).getFileMetadata(dataStorage, path);
+    }
+
+    @Override
     public DataStorageDownloadFileUrl generateDownloadURL(final AzureBlobStorage dataStorage,
                                                           final String path,
                                                           final String version, ContentDisposition contentDisposition) {
@@ -185,11 +190,6 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public DataStorageFolder createFolder(final AzureBlobStorage dataStorage, final String path) {
         return getAzureStorageHelper(dataStorage).createFolder(dataStorage, path);
-    }
-
-    @Override
-    public void deleteFiles(final AzureBlobStorage dataStorage, final List<DataStorageFile> files) {
-        getAzureStorageHelper(dataStorage).deleteFiles(dataStorage, files);
     }
 
     @Override
