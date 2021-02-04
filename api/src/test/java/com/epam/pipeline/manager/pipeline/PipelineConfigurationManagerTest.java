@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,182 +16,133 @@
 
 package com.epam.pipeline.manager.pipeline;
 
-import com.epam.pipeline.app.TestApplicationWithAclSecurity;
-import com.epam.pipeline.dao.datastorage.DataStorageDao;
-import com.epam.pipeline.dao.docker.DockerRegistryDao;
-import com.epam.pipeline.dao.tool.ToolDao;
-import com.epam.pipeline.dao.tool.ToolGroupDao;
-import com.epam.pipeline.dao.util.AclTestDao;
+import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
-import com.epam.pipeline.entity.pipeline.DockerRegistry;
-import com.epam.pipeline.entity.pipeline.Tool;
-import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.manager.AbstractManagerTest;
+import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.security.acl.AclPermission;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-@DirtiesContext
-@ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
-public class PipelineConfigurationManagerTest extends AbstractManagerTest {
-    private static final String TEST_USER = "test";
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.NFS_MASK;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.S3_MASK;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getNfsDataStorage;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+public class PipelineConfigurationManagerTest {
     private static final String TEST_IMAGE = "image";
-    private static final String TEST_CPU = "500m";
-    private static final String TEST_RAM = "1Gi";
     private static final String TEST_REPO = "repository";
-    private static final String TOOL_GROUP_NAME = "library";
-    private static final String TEST_INSTANCE_TYPE = "testInstanceType";
-    private static final String TEST_OWNER1 = "testUser1";
-    private static final String TEST_OWNER2 = "testUser2";
-    private static final Long TEST_TIMEOUT = 11L;
+    private static final String OWNER1 = "testUser1";
+    private static final String OWNER2 = "testUser2";
+    private static final Long NFS_ID_1 = 1L;
+    private static final Long S3_ID_1 = 2L;
+    private static final Long NFS_ID_2 = 3L;
+    private static final Long S3_ID_2 = 4L;
+    private static final String TEST_DOCKER_IMAGE = TEST_REPO + "/" + TEST_IMAGE;
+    private static final Map<String, PipeConfValueVO> TEST_PARAMS = Collections.singletonMap("testParam",
+            new PipeConfValueVO("testParamValue", "int", true));
+    private static final String TEST_MOUNT_POINT = "/some/path";
+    private static final String TEST_OPTIONS_1 = "options1";
+    private static final String TEST_OPTIONS_2 = "options2";
+    private static final String TEST_PATH_1 = "test/path1";
+    private static final String TEST_PATH_2 = "test/path2";
+    private static final String TEST_PATH_3 = "test/path3";
+    private static final String TEST_PATH_4 = "test/path4";
 
-    @Autowired
-    private PipelineConfigurationManager pipelineConfigurationManager;
+    @Mock
+    private PipelineVersionManager pipelineVersionManager;
 
-    @Autowired
-    private ToolDao toolDao;
+    @Mock
+    private DataStorageApiService dataStorageApiService;
 
-    @Autowired
-    private ToolGroupDao toolGroupDao;
+    @Spy
+    private PermissionsService permissionsService;
 
-    @Autowired
-    private DockerRegistryDao dockerRegistryDao;
+    @InjectMocks
+    private final PipelineConfigurationManager pipelineConfigurationManager = new PipelineConfigurationManager();
 
-    @Autowired
-    private DataStorageDao dataStorageDao;
-
-    @Autowired
-    private AclTestDao aclTestDao;
-
-    private DockerRegistry registry;
-    private ToolGroup library;
-    private Tool tool;
-    private List<AbstractDataStorage> dataStorages = new ArrayList<>();
+    private final List<AbstractDataStorage> dataStorages = new ArrayList<>();
 
     @Before
     public void setUp() throws Exception {
-        registry = new DockerRegistry();
-        registry.setPath(TEST_REPO);
-        registry.setOwner(TEST_USER);
-        dockerRegistryDao.createDockerRegistry(registry);
-
-        library = new ToolGroup();
-        library.setName(TOOL_GROUP_NAME);
-        library.setRegistryId(registry.getId());
-        library.setOwner(TEST_USER);
-        toolGroupDao.createToolGroup(library);
-
-        tool = new Tool();
-        tool.setImage(TEST_IMAGE);
-        tool.setRam(TEST_RAM);
-        tool.setCpu(TEST_CPU);
-        tool.setOwner(TEST_USER);
-
-        tool.setRegistryId(registry.getId());
-        tool.setToolGroupId(library.getId());
-        toolDao.createTool(tool);
-
-        // Data storages of user 1
-        NFSDataStorage dataStorage = new NFSDataStorage(dataStorageDao.createDataStorageId(), "testNFS",
-                                                        "test/path1");
-        dataStorage.setMountOptions("testMountOptions1");
-        dataStorage.setMountPoint("/some/other/path");
-        dataStorage.setOwner(TEST_OWNER1);
-        dataStorageDao.createDataStorage(dataStorage);
-        dataStorages.add(dataStorage);
-
-        S3bucketDataStorage bucketDataStorage = new S3bucketDataStorage(dataStorageDao.createDataStorageId(),
-                                                                        "testBucket", "test/path2");
-        bucketDataStorage.setOwner(TEST_OWNER1);
-        dataStorageDao.createDataStorage(bucketDataStorage);
-        dataStorages.add(bucketDataStorage);
-
-        // Data storages of user 2
-        dataStorage = new NFSDataStorage(dataStorageDao.createDataStorageId(), "testNFS2", "test/path3");
-        dataStorage.setMountOptions("testMountOptions2");
-        dataStorage.setOwner(TEST_OWNER2);
-        dataStorageDao.createDataStorage(dataStorage);
-        dataStorages.add(dataStorage);
-
-        bucketDataStorage = new S3bucketDataStorage(dataStorageDao.createDataStorageId(),
-                                                                        "testBucket2", "test/path4");
-        bucketDataStorage.setOwner(TEST_OWNER2);
-        dataStorageDao.createDataStorage(bucketDataStorage);
-        dataStorages.add(bucketDataStorage);
-
-        dataStorages.forEach(ds -> aclTestDao.createAclForObject(ds));
-        aclTestDao.grantPermissions(dataStorage, TEST_OWNER1,
-                                    Collections.singletonList((AclPermission) AclPermission.READ));
+        MockitoAnnotations.initMocks(this);
+        dataStorages.add(getNfsDataStorage(NFS_ID_1, TEST_PATH_1, TEST_OPTIONS_1, TEST_MOUNT_POINT, OWNER1));
+        dataStorages.add(getS3bucketDataStorage(S3_ID_1, TEST_PATH_2, OWNER1));
+        dataStorages.add(getNfsDataStorage(NFS_ID_2, TEST_PATH_3, TEST_OPTIONS_2, "", OWNER2));
+        dataStorages.add(getS3bucketDataStorage(S3_ID_2, TEST_PATH_4, OWNER2));
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    @WithMockUser(username = TEST_OWNER1)
-    public void testGetUnregisteredPipelineConfiguration() {
-        PipelineStart vo = getPipelineStartVO();
-        PipelineConfiguration config = pipelineConfigurationManager.getPipelineConfiguration(vo);
-        Assert.assertFalse(config.getBuckets().isEmpty());
-        Assert.assertFalse(config.getNfsMountOptions().isEmpty());
+    public void shouldGetUnregisteredPipelineConfiguration() {
+        doReturn(TEST_DOCKER_IMAGE).when(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
+        doReturn(dataStorages).when(dataStorageApiService).getWritableStorages();
 
-        String[] buckets = config.getBuckets().split(";");
+        final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
+        final PipelineConfiguration config = pipelineConfigurationManager.getPipelineConfiguration(runVO);
+        assertFalse(config.getBuckets().isEmpty());
+        assertFalse(config.getNfsMountOptions().isEmpty());
 
-        Assert.assertEquals(2, buckets.length);
-        for (String bucket : buckets) {
-            Assert.assertTrue(dataStorages.stream().anyMatch(ds -> bucket.equals(ds.getPathMask())));
-        }
+        final String[] buckets = config.getBuckets().split(";");
+        assertThat(buckets)
+                .hasSize(4)
+                .contains(NFS_MASK + TEST_PATH_1, S3_MASK + TEST_PATH_2, NFS_MASK + TEST_PATH_3, S3_MASK + TEST_PATH_4);
 
+        final String[] nfsOptions = deleteEmptyElements(config.getNfsMountOptions().split(";"));
+        assertThat(nfsOptions)
+                .hasSize(2)
+                .contains(TEST_OPTIONS_1, TEST_OPTIONS_2);
 
-        String[] nfsOptions = config.getNfsMountOptions().split(";");
+        final String[] mountPoints = config.getMountPoints().split(";");
+        assertThat(mountPoints)
+                .hasSize(1)
+                .contains(TEST_MOUNT_POINT);
 
-        Assert.assertEquals(1, nfsOptions.length);
-        for (String option : nfsOptions) {
-            if (StringUtils.isNotBlank(option)) {
-                Assert.assertTrue(dataStorages.stream()
-                                      .filter(ds -> ds instanceof NFSDataStorage)
-                                      .anyMatch(ds -> {
-                                          NFSDataStorage nfsDs = (NFSDataStorage) ds;
-                                          return nfsDs.getMountOptions().equals(option) ||
-                                                 option.equals(nfsDs.getMountOptions() + ",ro");
-                                      }));
-            }
-        }
+        assertThat(config.isNonPause()).isFalse();
+        assertThat(config.getInstanceImage()).isEqualTo(TEST_STRING);
+        assertThat(config.getInstanceType()).isEqualTo(TEST_STRING);
+        assertThat(config.getPrettyUrl()).isEqualTo(TEST_STRING);
+        assertThat(config.getWorkerCmd()).isEqualTo(TEST_STRING);
+        assertThat(config.getCmdTemplate()).isEqualTo(TEST_STRING);
+        assertThat(config.getNodeCount()).isEqualTo(TEST_INT);
+        assertThat(Integer.valueOf(config.getInstanceDisk())).isEqualTo(TEST_INT);
+        assertThat(config.getIsSpot()).isTrue();
+        assertThat(config.getParameters()).isEqualTo(TEST_PARAMS);
+        assertThat(config.getDockerImage()).isEqualTo(TEST_REPO + "/" + TEST_IMAGE);
+        assertThat(config.getTimeout()).isEqualTo(TEST_LONG);
 
-        String[] mountPoints = config.getMountPoints().split(";");
-        for (String mountPoint : mountPoints) {
-            if (StringUtils.isNotBlank(mountPoint)) {
-                Assert.assertTrue(dataStorages.stream().anyMatch(ds -> mountPoint.equals(ds.getMountPoint())));
-            }
-        }
-        //Assert.assertTrue(Arrays.stream(nfsOptions).anyMatch(o -> o.endsWith(",ro")));
+        verify(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
+        verify(dataStorageApiService).getWritableStorages();
+        verify(permissionsService, times(2)).isMaskBitSet(
+                eq(AbstractDataStorage.ALL_PERMISSIONS_MASK),
+                eq(((AclPermission) AclPermission.WRITE).getSimpleMask()));
     }
 
-    private PipelineStart getPipelineStartVO() {
-        PipelineStart vo = new PipelineStart();
-        vo.setInstanceType(TEST_INSTANCE_TYPE);
-        vo.setDockerImage(tool.getImage());
-        vo.setHddSize(1);
-        vo.setCmdTemplate("template");
-        vo.setTimeout(TEST_TIMEOUT);
-        vo.setNodeCount(1);
-        vo.setIsSpot(true);
-        vo.setParams(Collections.singletonMap("testParam", new PipeConfValueVO("testParamValue", "int", true)));
-        return vo;
+    private String[] deleteEmptyElements(final String[] array) {
+        return Arrays.stream(array)
+                .filter(StringUtils::isNotBlank)
+                .toArray(String[]::new);
     }
 }
