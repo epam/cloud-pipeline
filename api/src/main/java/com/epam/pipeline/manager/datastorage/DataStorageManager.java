@@ -53,6 +53,8 @@ import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertRequest;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -864,23 +866,12 @@ public class DataStorageManager implements SecuredEntityManager {
     private void deleteDataStorageFolder(final AbstractDataStorage dataStorage,
                                          final String path,
                                          final Boolean totally) throws DataStorageException {
-        if (dataStorage.isVersioningEnabled() && !totally) {
-            storageProviderManager.deleteFolder(dataStorage, path, totally);
-        } else {
-            final Iterator<DataStorageFile> iterator = totally
-                    ? storageProviderManager.listFileVersions(dataStorage, path).iterator()
-                    : storageProviderManager.listFiles(dataStorage, path).iterator();
-            final int chunkSize = 100;
-            final List<DataStorageFile> files = new ArrayList<>(chunkSize);
-            while (iterator.hasNext()) {
-                while (files.size() < chunkSize && iterator.hasNext()) {
-                    files.add(iterator.next());
-                }
-                if (files.size() > 0) {
-                    storageProviderManager.deleteFiles(dataStorage, files);
-                    files.clear();
-                }
-            }
+        storageProviderManager.deleteFolder(dataStorage, path, totally);
+        if (!dataStorage.isVersioningEnabled() || totally) {
+            tagManager.bulkDeleteAll(dataStorage.getId(), new DataStorageTagDeleteAllBulkRequest(
+                    Collections.singletonList(
+                            new DataStorageTagDeleteAllRequest(path, 
+                                    DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FOLDER))));
         }
     }
 
@@ -892,9 +883,10 @@ public class DataStorageManager implements SecuredEntityManager {
         if (dataStorage.isVersioningEnabled()) {
             if (totally) {
                 tagManager.bulkDeleteAll(dataStorage.getId(), new DataStorageTagDeleteAllBulkRequest(
-                        Collections.singletonList(new DataStorageTagDeleteAllRequest(path))));
+                        Collections.singletonList(new DataStorageTagDeleteAllRequest(path, 
+                                DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FILE))));
             } else if (version != null) {
-                final String latestVersion = getDataStorageFileLatestVersion(dataStorage, path);
+                final String latestVersion = storageProviderManager.getFileMetadata(dataStorage, path).getVersion();
                 tagManager.bulkCopy(dataStorage.getId(), new DataStorageTagCopyBulkRequest(Collections.singletonList(
                         new DataStorageTagCopyRequest(
                                 new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(path, latestVersion),
@@ -1002,7 +994,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                                   final String path,
                                                   final byte[] contents) throws DataStorageException {
         final DataStorageFile file = storageProviderManager.createFile(storage, path, contents);
-        createDataStorageFileTags(storage, path);
+        createDataStorageFileTags(storage, path, file.getVersion());
         return file;
     }
 
@@ -1010,40 +1002,20 @@ public class DataStorageManager implements SecuredEntityManager {
                                                   final String path, 
                                                   final InputStream contentStream) {
         final DataStorageFile file = storageProviderManager.createFile(storage, path, contentStream);
-        createDataStorageFileTags(storage, path);
+        createDataStorageFileTags(storage, path, file.getVersion());
         return file;
     }
 
-    private void createDataStorageFileTags(final AbstractDataStorage storage, final String path) {
-        final DataStorageObject latestObject = new DataStorageObject(storage.getId(), path);
-        tagManager.delete(latestObject);
-        tagManager.upsert(buildOwnerTag(latestObject));
+    private void createDataStorageFileTags(final AbstractDataStorage storage,
+                                           final String path,
+                                           final String version) {
+        final ArrayList<DataStorageTagInsertRequest> requests = new ArrayList<>(2);
+        final String authorizedUser = authManager.getAuthorizedUser();
+        requests.add(new DataStorageTagInsertRequest(path, null, ProviderUtils.OWNER_TAG_KEY, authorizedUser));
         if (storage.isVersioningEnabled()) {
-            final String latestVersion = getDataStorageFileLatestVersion(storage, path);
-            final DataStorageObject versionObject = new DataStorageObject(storage.getId(), path, latestVersion);
-            tagManager.upsert(buildOwnerTag(versionObject));
+            requests.add(new DataStorageTagInsertRequest(path, version, ProviderUtils.OWNER_TAG_KEY, authorizedUser));
         }
-    }
-
-    private String getDataStorageFileLatestVersion(final AbstractDataStorage storage, final String path) {
-        DataStorageListing items = null;
-        String version = null;
-        while (version == null && (items == null || items.getNextPageMarker() != null)) {
-            final String marker = Optional.ofNullable(items).map(DataStorageListing::getNextPageMarker).orElse(null);
-            items = getDataStorageItems(storage.getId(), path, true, 100, marker);
-            version = items.getResults().stream()
-                    .filter(DataStorageFile.class::isInstance)
-                    .filter(it -> it.getPath().equals(path))
-                    .map(DataStorageFile.class::cast)
-                    .map(DataStorageFile::getVersion)
-                    .findAny()
-                    .orElse(null);
-        }
-        return version;
-    }
-
-    private DataStorageTag buildOwnerTag(final DataStorageObject object) {
-        return new DataStorageTag(object, ProviderUtils.OWNER_TAG_KEY, authManager.getAuthorizedUser());
+        tagManager.bulkInsert(storage.getId(), new DataStorageTagInsertBulkRequest(requests));
     }
 
     private AbstractDataStorageItem updateDataStorageItem(final AbstractDataStorage storage,

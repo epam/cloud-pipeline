@@ -79,7 +79,9 @@ public class S3ListingHelper {
         }
 
         private boolean pathMatch(final String path, final String key) {
-            return key.startsWith(path);
+            return StringUtils.isNullOrEmpty(path)
+                    || (path.endsWith(ProviderUtils.DELIMITER) && key.startsWith(path))
+                    || key.equals(path);
         }
 
         public Stream<List<AbstractDataStorageItem>> stream() {

@@ -30,6 +30,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     private final String deleteTagsQuery;
     private final String deleteSpecificTagsQuery;
     private final String bulkDeleteAllTagsQuery;
+    private final String deleteAllTagsByPathPatternQuery;
     
     public List<DataStorageTag> bulkUpsert(final DataStorageTag... tags) {
         return bulkUpsert(Arrays.stream(tags));
@@ -147,6 +148,14 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate().update(deleteSpecificTagsQuery, Parameters.getParameters(object)
                 .addValue(Parameters.TAG_KEY.name(), keys));
     }
+    
+    public void deleteAllInFolder(final Long storageId, final String path) {
+        final String pathWithTrailingDelimiter = path.endsWith("/") ? path : String.format("%s/", path);
+        final String pathPattern = String.format("%s%%", pathWithTrailingDelimiter);
+        getNamedParameterJdbcTemplate().update(deleteAllTagsByPathPatternQuery, Parameters.getParameters()
+                .addValue(Parameters.DATASTORAGE_ID.name(), storageId)
+                .addValue(Parameters.DATASTORAGE_PATH.name(), pathPattern));
+    }
 
     enum Parameters {
         DATASTORAGE_ID,
@@ -156,33 +165,37 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
         TAG_VALUE,
         CREATED_DATE;
 
-        static MapSqlParameterSource getParameters(final DataStorageTag tag) {
-            return getParameters(tag.getObject(), tag.getKey())
-                    .addValue(TAG_VALUE.name(), tag.getValue())
-                    .addValue(CREATED_DATE.name(), tag.getCreatedDate());
-        }
-
-        static MapSqlParameterSource[] getParameters(final List<DataStorageTag> tags) {
+        public static MapSqlParameterSource[] getParameters(final List<DataStorageTag> tags) {
             return tags.stream().map(Parameters::getParameters).toArray(MapSqlParameterSource[]::new);
-        }
-
-        static MapSqlParameterSource getParameters(final DataStorageObject object, final String key) {
-            return getParameters(object)
-                    .addValue(TAG_KEY.name(), key);
-        }
-
-        static MapSqlParameterSource getParameters(final DataStorageObject object) {
-            return new MapSqlParameterSource()
-                    .addValue(DATASTORAGE_ID.name(), object.getStorageId())
-                    .addValue(DATASTORAGE_PATH.name(), object.getPath())
-                    .addValue(DATASTORAGE_VERSION.name(), Optional.ofNullable(object.getVersion()).orElse(LATEST));
         }
 
         public static MapSqlParameterSource[] getParameters(final Stream<DataStorageObject> objects) {
             return objects.map(Parameters::getParameters).toArray(MapSqlParameterSource[]::new);
         }
 
-        static RowMapper<DataStorageTag> getRowMapper() {
+        public static MapSqlParameterSource getParameters(final DataStorageTag tag) {
+            return getParameters(tag.getObject(), tag.getKey())
+                    .addValue(TAG_VALUE.name(), tag.getValue())
+                    .addValue(CREATED_DATE.name(), tag.getCreatedDate());
+        }
+
+        public static MapSqlParameterSource getParameters(final DataStorageObject object, final String key) {
+            return getParameters(object)
+                    .addValue(TAG_KEY.name(), key);
+        }
+
+        public static MapSqlParameterSource getParameters(final DataStorageObject object) {
+            return getParameters()
+                    .addValue(DATASTORAGE_ID.name(), object.getStorageId())
+                    .addValue(DATASTORAGE_PATH.name(), object.getPath())
+                    .addValue(DATASTORAGE_VERSION.name(), Optional.ofNullable(object.getVersion()).orElse(LATEST));
+        }
+
+        public static MapSqlParameterSource getParameters() {
+            return new MapSqlParameterSource();
+        }
+
+        public static RowMapper<DataStorageTag> getRowMapper() {
             return (rs, rowNum) -> {
                 final Long storageId = rs.getLong(DATASTORAGE_ID.name());
                 final String path = rs.getString(DATASTORAGE_PATH.name());

@@ -173,6 +173,10 @@ public class AzureStorageHelper {
         return !StringUtils.endsWithIgnoreCase(item.getName(), ProviderUtils.FOLDER_TOKEN_FILE.toLowerCase());
     }
 
+    public DataStorageFile getFileMetadata(final AzureBlobStorage dataStorage, final String path) {
+        return getDataStorageFile(dataStorage, path);
+    }
+
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
                                       final String owner) {
         validatePath(path);
@@ -394,10 +398,6 @@ public class AzureStorageHelper {
             final String ipValue = Optional.ofNullable(policy.getIpMin()).orElse(policy.getIpMax());
             values.withIpRange(new IPRange().withIpMin(ipValue).withIpMax(ipValue));
         }
-    }
-
-    public void deleteFiles(final AzureBlobStorage dataStorage, final List<DataStorageFile> files) {
-        files.forEach(item -> deleteBlob(dataStorage, item.getPath()));
     }
 
     public void deleteItem(final AzureBlobStorage dataStorage, final String path) {

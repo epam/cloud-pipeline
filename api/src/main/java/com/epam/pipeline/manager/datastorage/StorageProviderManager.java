@@ -105,6 +105,10 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
+    public DataStorageFile getFileMetadata(AbstractDataStorage dataStorage, String path) {
+        return getStorageProvider(dataStorage).getFileMetadata(dataStorage, path);
+    }
+
     public Stream<DataStorageFile> listFiles(AbstractDataStorage dataStorage, String path) {
         return getStorageProvider(dataStorage).listDataStorageFiles(dataStorage, path);
     }
@@ -150,12 +154,6 @@ public class StorageProviderManager {
     public DataStorageFolder createFolder(AbstractDataStorage dataStorage, String path)
             throws DataStorageException {
         return getStorageProvider(dataStorage).createFolder(dataStorage, path);
-    }
-
-    @StorageWriteOperation
-    public void deleteFiles(AbstractDataStorage dataStorage, List<DataStorageFile> files)
-            throws DataStorageException {
-        getStorageProvider(dataStorage).deleteFiles(dataStorage, files);
     }
 
     @StorageWriteOperation
