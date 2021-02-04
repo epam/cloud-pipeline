@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,6 +39,12 @@ public class NodePool {
     private int count;
     private NodeSchedule schedule;
     private PoolFilter filter;
+    private boolean autoscaled;
+    private Integer minSize;
+    private Integer maxSize;
+    private Double scaleUpThreshold;
+    private Double scaleDownThreshold;
+    private Integer scaleStep;
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {
