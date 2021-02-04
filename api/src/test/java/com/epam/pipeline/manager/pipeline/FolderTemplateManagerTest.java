@@ -28,7 +28,6 @@ import com.epam.pipeline.entity.templates.FolderTemplate;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
-import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
@@ -81,8 +80,6 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
     private MetadataManager mockMetadataManager;
     @Autowired
     private DataStorageManager mockDataStorageManager;
-    @Autowired
-    private GrantPermissionManager spyGrantPermissionManager;
     @Autowired
     private FolderCrudManager mockFolderCrudManager;
     @Autowired

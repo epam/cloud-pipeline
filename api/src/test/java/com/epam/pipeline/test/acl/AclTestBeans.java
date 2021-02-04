@@ -69,6 +69,7 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
@@ -121,7 +122,6 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -481,9 +481,6 @@ public class AclTestBeans {
 
     @MockBean
     protected TemplatesScanner mockTemplatesScanner;
-
-    @MockBean
-    protected JsonService mockJsonService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
