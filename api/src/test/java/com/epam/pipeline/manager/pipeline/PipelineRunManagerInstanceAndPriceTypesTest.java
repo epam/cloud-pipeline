@@ -239,7 +239,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     }
 
     @Test
-    public void testLaunchPipelineValidatesToolInstanceType() {
+    public void testLaunchPipelineValidatesToolInstanceTypeAndPriceType() {
         launchTool(INSTANCE_TYPE);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
@@ -369,40 +369,65 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     }
 
     @Test
-    @WithMockUser
     public void testLaunchPipelineValidatesPipelineInstanceTypeInTheSpecifiedRegion() {
         configuration.setCloudRegionId(NOT_ALLOWED_REGION_ID);
+        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
                 () -> launchPipeline(INSTANCE_TYPE));
+
+        verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(cloudRegionManager).load(eq(NOT_ALLOWED_REGION_ID));
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(nonAllowedAwsRegion));
+
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(NOT_ALLOWED_REGION_ID), eq(true));
     }
 
     @Test
-    @WithMockUser
     public void testLaunchPipelineFailsOnNotAllowedInstanceType() {
-        when(instanceOfferManager.isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true))).thenReturn(false);
+        doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
+        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
                 () -> launchPipeline(INSTANCE_TYPE));
+
+        verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
+
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
     }
 
     @Test
-    @WithMockUser
     public void testLaunchPipelineDoesNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
         launchPipeline((String) null);
 
+        verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
+
         verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
         verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
-    }
 
-    @Test
-    @WithMockUser
-    public void testLaunchPipelineValidatesPriceType() {
-        launchPipeline(INSTANCE_TYPE);
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
+        verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
 
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), any(), anyBoolean());
+        verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
+        verify(securityManager).getAuthorizedUser();
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun(TEST_USER))),
+                argThat(matches(Predicates.forConfiguration())),
+                eq(null), eq("0"), eq(null));
+
+        verify(dataStorageManager).analyzePipelineRunsParameters(anyListOf(PipelineRun.class));
     }
 
     @Test
