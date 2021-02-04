@@ -663,7 +663,8 @@ class AWSRegionForm extends React.Component {
       },
       'versioningEnabled',
       'fileShareMounts',
-      'mountStorageRule'
+      'mountStorageRule',
+      'mountCredentialsRule'
     ],
     AZURE: [
       'regionId',
@@ -682,7 +683,8 @@ class AWSRegionForm extends React.Component {
       'priceOfferId',
       'enterpriseAgreements',
       'fileShareMounts',
-      'mountStorageRule'
+      'mountStorageRule',
+      'mountCredentialsRule'
     ],
     GCP: [
       'regionId',
@@ -697,6 +699,7 @@ class AWSRegionForm extends React.Component {
       'customInstanceTypes',
       'corsRules',
       'mountStorageRule',
+      'mountCredentialsRule',
       'policy',
       {
         key: 'backupDuration',
@@ -817,6 +820,7 @@ class AWSRegionForm extends React.Component {
       check('kmsKeyArn', checkStringValue) ||
       check('corsRules', checkJSONValue) ||
       check('mountStorageRule', checkStringValue) ||
+      check('mountCredentialsRule', checkStringValue) ||
       check('policy', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
       check('storageAccountKey', checkStringValue) ||
@@ -1425,6 +1429,25 @@ class AWSRegionForm extends React.Component {
             >
               {getFieldDecorator('mountStorageRule', {
                 initialValue: this.props.region.mountStorageRule
+              })(
+                <Select
+                  size="small"
+                  allowClear={false}
+                  style={{marginTop: 4}}
+                >
+                  <Select.Option value="NONE">None</Select.Option>
+                  <Select.Option value="CLOUD">Same cloud</Select.Option>
+                  <Select.Option value="ALL">All</Select.Option>
+                </Select>
+              )}
+            </Form.Item>
+            <Form.Item
+              {...this.formItemLayoutWideLabel}
+              className={this.getFieldClassName('mountCredentialsRule')}
+              label="Mount credentials rule"
+            >
+              {getFieldDecorator('mountCredentialsRule', {
+                initialValue: this.props.region.mountCredentialsRule
               })(
                 <Select
                   size="small"
