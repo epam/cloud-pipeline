@@ -26,17 +26,13 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.ExtendedRole;
-import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
-import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -75,9 +71,6 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     @Autowired
     private FolderManager mockFolderManager;
-
-    @Autowired
-    private RoleManager mockRoleManager;
 
     @Autowired
     private GrantPermissionManager spyPermissionManager;
@@ -184,39 +177,6 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(toolGroup);
         initAclEntity(tool, DefaultRoles.ROLE_USER.getName(), AclPermission.READ);
         initAclEntity(runConfiguration, DefaultRoles.ROLE_USER.getName(), AclPermission.READ);
-
-        final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager.loadAvailable(
-                new AclSid(SIMPLE_USER, true), null);
-
-        assertThat(available.size()).isEqualTo(2);
-        assertThat(available.get(AclClass.TOOL).get(0).getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    public void shouldLoadByGroupSidWhenLoadForUser() {
-        final DockerRegistry registry = getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
-        final ToolGroup toolGroup = getToolGroup(ID, ANOTHER_SIMPLE_USER);
-        final DockerRegistryList dockerRegistryList = getDockerRegistryList(ID, ANOTHER_SIMPLE_USER, registry);
-        final Folder folder = getFolder(ANOTHER_SIMPLE_USER);
-        final Tool tool = getTool(ID, ANOTHER_SIMPLE_USER);
-        final RunConfiguration runConfiguration = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
-        final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser();
-        final ExtendedRole extendedRole = UserCreatorUtils.getExtendedRole();
-        extendedRole.setUsers(Collections.singletonList(pipelineUser));
-        toolGroup.setTools(Collections.singletonList(tool));
-        registry.setGroups(Collections.singletonList(toolGroup));
-        folder.setConfigurations(Collections.singletonList(runConfiguration));
-        doReturn(dockerRegistryList).when(mockRegistryManager).loadAllRegistriesContent();
-        doReturn(folder).when(mockFolderManager).loadTree();
-        doReturn(extendedRole).when(mockRoleManager).assignRole(any(), any());
-        mockUserContext();
-        mockSid();
-        initAclEntity(dockerRegistryList);
-        initAclEntity(folder);
-        initAclEntity(registry);
-        initAclEntity(toolGroup);
-        initAclEntity(tool, AclPermission.READ);
-        initAclEntity(runConfiguration, AclPermission.READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager.loadAvailable(
                 new AclSid(SIMPLE_USER, true), null);
