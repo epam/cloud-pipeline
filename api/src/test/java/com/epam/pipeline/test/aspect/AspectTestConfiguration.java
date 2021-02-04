@@ -36,7 +36,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {AspectTestBeans.class, CommonTestContext.class})
 @Import({DBConfiguration.class})
-@ComponentScan(basePackages = {"com.epam.pipeline.manager"})
+@ComponentScan(basePackages = {"com.epam.pipeline.manager", "com.epam.pipeline.dao"})
 @AutoConfigureJdbc
 @Transactional
 @EnableAspectJAutoProxy(proxyTargetClass = true)

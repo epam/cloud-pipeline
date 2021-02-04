@@ -20,33 +20,8 @@ import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
-import com.epam.pipeline.dao.cluster.ClusterDao;
-import com.epam.pipeline.dao.cluster.InstanceOfferDao;
-import com.epam.pipeline.dao.cluster.NodeDiskDao;
-import com.epam.pipeline.dao.configuration.RunConfigurationDao;
-import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
-import com.epam.pipeline.dao.datastorage.DataStorageDao;
-import com.epam.pipeline.dao.datastorage.FileShareMountDao;
-import com.epam.pipeline.dao.docker.DockerRegistryDao;
-import com.epam.pipeline.dao.dts.DtsRegistryDao;
-import com.epam.pipeline.dao.issue.IssueCommentDao;
-import com.epam.pipeline.dao.issue.IssueDao;
-import com.epam.pipeline.dao.metadata.MetadataClassDao;
-import com.epam.pipeline.dao.metadata.MetadataDao;
-import com.epam.pipeline.dao.metadata.MetadataEntityDao;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
-import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.RestartRunDao;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
-import com.epam.pipeline.dao.preference.PreferenceDao;
-import com.epam.pipeline.dao.region.CloudRegionDao;
-import com.epam.pipeline.dao.tool.ToolDao;
-import com.epam.pipeline.dao.tool.ToolGroupDao;
-import com.epam.pipeline.dao.tool.ToolVersionDao;
-import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
-import com.epam.pipeline.dao.user.GroupStatusDao;
-import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
@@ -56,6 +31,7 @@ import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.docker.scan.AggregatingToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
+import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
@@ -88,46 +64,19 @@ import java.util.concurrent.Executor;
 public class AspectTestBeans {
 
     @MockBean
+    protected PipelineManager mockPipelineManager;
+
+    @MockBean
     protected JwtTokenGenerator mockJwtTokenGenerator;
-
-    @MockBean
-    protected MetadataDao mockMetadataDao;
-
-    @MockBean
-    protected RunConfigurationDao mockRunConfigurationDao;
-
-    @MockBean
-    protected FolderDao mockFolderDao;
-
-    @MockBean
-    protected MetadataEntityDao mockMetadataEntityDao;
-
-    @MockBean
-    protected MetadataClassDao mockMetadataClassDao;
 
     @MockBean
     protected PreferenceManager mockPreferenceManager;
 
     @MockBean
-    protected CloudRegionDao mockCloudRegionDao;
-
-    @MockBean
     protected CloudRegionMapper mockCloudRegionMapper;
 
     @MockBean
-    protected FileShareMountDao mockFileShareMountDao;
-
-    @MockBean
-    protected DataStorageDao mockDataStorageDao;
-
-    @MockBean
     protected JdbcMutableAclServiceImpl mockJdbcMutableAclService;
-
-    @MockBean
-    protected UserDao mockUserDao;
-
-    @MockBean
-    protected GroupStatusDao mockGroupStatusDao;
 
     @MockBean
     protected PermissionEvaluator mockPermissionEvaluator;
@@ -136,40 +85,19 @@ public class AspectTestBeans {
     protected PermissionFactory mockPermissionFactory;
 
     @MockBean
-    protected ToolDao mockToolDao;
-
-    @MockBean
-    protected ToolVulnerabilityDao mockToolVulnerabilityDao;
-
-    @MockBean
-    protected DockerRegistryDao mockDockerRegistryDao;
-
-    @MockBean
-    protected ToolGroupDao mockToolGroupDao;
-
-    @MockBean
     protected ToolGroupWithIssuesMapper mockToolGroupWithIssuesMapper;
 
     @MockBean
     protected JwtTokenVerifier mockTwtTokenVerifier;
 
     @MockBean
-    protected ToolVersionDao mockToolVersionDao;
-
-    @MockBean
     protected AggregatingToolScanManager mockAggregatingToolScanManager;
-
-    @MockBean
-    protected InstanceOfferDao mockInstanceOfferDao;
 
     @MockBean
     protected PipelineApiService mockPipelineApiService;
 
     @MockBean
     protected SidRetrievalStrategy mockSidRetrievalStrategy;
-
-    @MockBean
-    protected ContextualPreferenceDao mockContextualPreferenceDao;
 
     @MockBean
     protected ContextualPreferenceHandler mockContextualPreferenceHandler;
@@ -184,31 +112,10 @@ public class AspectTestBeans {
     protected FolderApiService mockFolderApiService;
 
     @MockBean
-    protected DtsRegistryDao mockDtsRegistryDao;
-
-    @MockBean
     protected DtsRegistryMapper mockDtsRegistryMapper;
 
     @MockBean
-    protected RestartRunDao mockRestartRunDao;
-
-    @MockBean
-    protected ClusterDao mockClusterDao;
-
-    @MockBean
-    protected NodeDiskDao mockNodeDiskDao;
-
-    @MockBean
-    protected StopServerlessRunDao mockStopServerlessRunDao;
-
-    @MockBean
     protected InstanceOfferManager mockInstanceOfferManager;
-
-    @MockBean
-    protected IssueDao mockIssueDao;
-
-    @MockBean
-    protected IssueCommentDao mockIssueCommentDao;
 
     @MockBean
     protected IssueMapper mockIssueMapper;
@@ -275,8 +182,4 @@ public class AspectTestBeans {
 
     @MockBean
     protected PipelineRunDao mockPipelineRunDao;
-
-
-    @MockBean
-    PreferenceDao preferenceDao;
 }
