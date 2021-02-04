@@ -81,10 +81,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -115,6 +118,41 @@ public class GSBucketStorageHelper {
         final Storage client = gcpClient.buildStorageClient(region);
         deleteAllVersions(bucketName, EMPTY_PREFIX, client);
         deleteBucket(bucketName, client);
+    }
+
+    public Stream<DataStorageFile> listDataStorageFiles(final GSBucketStorage storage, final String path) {
+        final String folderPath = normalizeFolderPath(path);
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+        final Page<Blob> blobs = client.list(bucketName, 
+                Storage.BlobListOption.prefix(folderPath));
+        final Spliterator<Blob> spliterator = blobs.iterateAll().spliterator();
+        return StreamSupport.stream(spliterator, false)
+                .map(blob -> {
+                    final DataStorageFile file = new DataStorageFile();
+                    file.setName(blob.getName());
+                    file.setPath(blob.getName());
+                    file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
+                    return file;
+                });
+    }
+
+    public Stream<DataStorageFile> listDataStorageFileVersions(final GSBucketStorage storage, final String path) {
+        final String folderPath = normalizeFolderPath(path);
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+        final Page<Blob> blobs = client.list(bucketName,
+                Storage.BlobListOption.versions(true),
+                Storage.BlobListOption.prefix(folderPath));
+        final Spliterator<Blob> spliterator = blobs.iterateAll().spliterator();
+        return StreamSupport.stream(spliterator, false)
+                .map(blob -> {
+                    final DataStorageFile file = new DataStorageFile();
+                    file.setName(blob.getName());
+                    file.setPath(blob.getName());
+                    file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
+                    return file;
+                });
     }
 
     public DataStorageListing listItems(final GSBucketStorage storage, final String path, final Boolean showVersion,
@@ -168,6 +206,20 @@ public class GSBucketStorageHelper {
 
         createFile(storage, tokenFilePath, EMPTY_FILE_CONTENT, null);
         return createDataStorageFolder(folderPath);
+    }
+
+    public void deleteFiles(final GSBucketStorage dataStorage, final List<DataStorageFile> files) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        files.forEach(file -> {
+            final Long version = Optional.ofNullable(file.getVersion()).map(Long::valueOf).orElse(null);
+            final BlobId blobId = BlobId.of(dataStorage.getPath(), file.getPath(), version);
+            final boolean deleted = client.delete(blobId);
+            if (!deleted) {
+                throw new DataStorageException(
+                        String.format("Failed to delete google storage file '%s' from bucket '%s'", 
+                                blobId.getName(), blobId.getBucket()));
+            }
+        });
     }
 
     public void deleteFile(final GSBucketStorage dataStorage, final String path, final String version,

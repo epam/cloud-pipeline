@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -223,6 +224,25 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override public DataStorageFolder createFolder(S3bucketDataStorage dataStorage, String path) {
         return getS3Helper(dataStorage).createFolder(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path));
+    }
+
+    @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final S3bucketDataStorage dataStorage,
+                                                        final String path) {
+        return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path));
+    }
+
+    @Override
+    public Stream<DataStorageFile> listDataStorageFileVersions(final S3bucketDataStorage dataStorage,
+                                                               final String path) {
+        return getS3Helper(dataStorage).listDataStorageFileVersions(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path));
+    }
+
+    @Override
+    public void deleteFiles(final S3bucketDataStorage dataStorage, final List<DataStorageFile> files) {
+        getS3Helper(dataStorage).deleteFiles(dataStorage.getRoot(), files);
     }
 
     @Override

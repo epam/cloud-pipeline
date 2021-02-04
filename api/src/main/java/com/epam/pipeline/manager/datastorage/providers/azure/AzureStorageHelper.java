@@ -150,6 +150,12 @@ public class AzureStorageHelper {
         unwrap(getContainerURL(storage).delete());
     }
 
+    public Stream<DataStorageFile> listDataStorageFiles(final AzureBlobStorage dataStorage, final String path) {
+        return listFilesRecursively(dataStorage, path)
+                .filter(DataStorageFile.class::isInstance)
+                .map(DataStorageFile.class::cast);
+    }
+
     public DataStorageListing getItems(final AzureBlobStorage storage, final String path, final Integer pageSize,
                                        final String marker) {
         final String prefix = Optional.ofNullable(path).map(ProviderUtils::withTrailingDelimiter).orElse("");
@@ -388,6 +394,10 @@ public class AzureStorageHelper {
             final String ipValue = Optional.ofNullable(policy.getIpMin()).orElse(policy.getIpMax());
             values.withIpRange(new IPRange().withIpMin(ipValue).withIpMax(ipValue));
         }
+    }
+
+    public void deleteFiles(final AzureBlobStorage dataStorage, final List<DataStorageFile> files) {
+        files.forEach(item -> deleteBlob(dataStorage, item.getPath()));
     }
 
     public void deleteItem(final AzureBlobStorage dataStorage, final String path) {

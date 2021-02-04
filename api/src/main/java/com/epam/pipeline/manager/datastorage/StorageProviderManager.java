@@ -46,6 +46,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Service
 @SuppressWarnings("unchecked")
@@ -104,6 +105,14 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
+    public Stream<DataStorageFile> listFiles(AbstractDataStorage dataStorage, String path) {
+        return getStorageProvider(dataStorage).listDataStorageFiles(dataStorage, path);
+    }
+
+    public Stream<DataStorageFile> listFileVersions(AbstractDataStorage dataStorage, String path) {
+        return getStorageProvider(dataStorage).listDataStorageFileVersions(dataStorage, path);
+    }
+
     @SensitiveStorageOperation
     public DataStorageDownloadFileUrl generateDownloadURL(AbstractDataStorage dataStorage,
                                                           String path, String version,
@@ -141,6 +150,12 @@ public class StorageProviderManager {
     public DataStorageFolder createFolder(AbstractDataStorage dataStorage, String path)
             throws DataStorageException {
         return getStorageProvider(dataStorage).createFolder(dataStorage, path);
+    }
+
+    @StorageWriteOperation
+    public void deleteFiles(AbstractDataStorage dataStorage, List<DataStorageFile> files)
+            throws DataStorageException {
+        getStorageProvider(dataStorage).deleteFiles(dataStorage, files);
     }
 
     @StorageWriteOperation
