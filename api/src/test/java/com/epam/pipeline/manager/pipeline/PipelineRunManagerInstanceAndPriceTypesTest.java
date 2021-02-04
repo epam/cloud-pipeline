@@ -43,6 +43,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import static com.epam.pipeline.common.MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
 import static org.mockito.Matchers.any;
@@ -259,14 +260,23 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     }
 
     @Test
-    @WithMockUser
     public void testLaunchPipelineFailsOnNotAllowedToolInstanceType() {
-        when(instanceOfferManager
-                .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(true))).thenReturn(false);
+        doReturn(false).when(instanceOfferManager)
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(true));
+        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
                 () -> launchTool(INSTANCE_TYPE));
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(true));
+
+        verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
+        verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
+
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE),
+                eq(getContextualPreferenceExternalResource(notScannedTool)), eq(REGION_ID), eq(true));
     }
 
     @Test
