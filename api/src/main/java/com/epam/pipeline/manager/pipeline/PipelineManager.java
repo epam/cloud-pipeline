@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -54,6 +55,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -184,6 +186,8 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
         pipelineDao.updatePipeline(dbPipeline);
+        ListUtils.emptyIfNull(pipelineRunDao.loadAllRunsForPipeline(pipelineVO.getId()))
+                .forEach(run -> updatePipelineNameForRun(pipelineVOName, run));
         if (projectNameUpdated) {
             gitManager.updateRepositoryName(currentProjectName, newProjectName);
         }
@@ -246,7 +250,8 @@ public class PipelineManager implements SecuredEntityManager {
         runStatusManager.deleteRunStatusForPipeline(id);
         runScheduleManager.deleteSchedulesForRunByPipeline(id);
         pipelineRunDao.deleteRunSidsByPipelineId(id);
-        pipelineRunDao.deleteRunsByPipeline(id);
+        ListUtils.emptyIfNull(pipelineRunDao.loadAllRunsForPipeline(id))
+                .forEach(this::resetPipelineIdForRun);
         dataStorageRuleDao.deleteRulesByPipeline(id);
         pipelineDao.deletePipeline(id);
         return pipeline;
@@ -386,5 +391,18 @@ public class PipelineManager implements SecuredEntityManager {
             rule.setPipelineId(newPipelineId);
             dataStorageRuleDao.createDataStorageRule(rule);
         });
+    }
+
+    private void updatePipelineNameForRun(final String pipelineName, final PipelineRun run) {
+        if (Objects.equals(run.getPipelineName(), pipelineName)) {
+            return;
+        }
+        run.setPipelineName(pipelineName);
+        pipelineRunDao.updateRun(run);
+    }
+
+    private void resetPipelineIdForRun(final PipelineRun run) {
+        run.setPipelineId(null);
+        pipelineRunDao.updateRun(run);
     }
 }

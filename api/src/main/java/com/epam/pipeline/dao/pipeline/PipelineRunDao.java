@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadPipelineRunsWithPipelineByIdsQuery;
     private String updateRunInstanceQuery;
     private String updatePodIPQuery;
-    private String deleteRunsByPipelineQuery;
     private String updateServiceUrlQuery;
     private String loadRunsGroupingQuery;
     private String countRunGroupsQuery;
@@ -322,11 +321,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         MapSqlParameterSource params = new MapSqlParameterSource();
         String query = wherePattern.matcher(countActiveServicesQuery).replaceFirst(makeRunSidsCondition(user, params));
         return getNamedParameterJdbcTemplate().queryForObject(query, params, Integer.class);
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRunsByPipeline(Long id) {
-        getJdbcTemplate().update(deleteRunsByPipelineQuery, id);
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -810,7 +804,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 Map<Long, List<PipelineRun>> childRuns = new HashMap<>();
                 while (rs.next()) {
                     PipelineRun run = parsePipelineRun(rs);
-                    run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
                     run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
                     if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
                         run.setQueued(rs.getBoolean(QUEUED.name()));
@@ -845,6 +838,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 run.setPipelineId(pipelineId);
                 run.setParent(new Pipeline(pipelineId));
             }
+            run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
             run.setVersion(rs.getString(VERSION.name()));
             run.setStartDate(new Date(rs.getTimestamp(START_DATE.name()).getTime()));
             run.setParams(rs.getString(PARAMETERS.name()));
@@ -945,7 +939,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         static RowMapper<PipelineRun> getExtendedRowMapper(final boolean loadEnvVars) {
             return (rs, rowNum) -> {
                 PipelineRun run = parsePipelineRun(rs);
-                run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
                 run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
                 if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
                     run.setQueued(rs.getBoolean(QUEUED.name()));
@@ -1097,11 +1090,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setUpdateRunInstanceQuery(String updateRunInstanceQuery) {
         this.updateRunInstanceQuery = updateRunInstanceQuery;
-    }
-
-    @Required
-    public void setDeleteRunsByPipelineQuery(String deleteRunsByPipelineQuery) {
-        this.deleteRunsByPipelineQuery = deleteRunsByPipelineQuery;
     }
 
     @Required

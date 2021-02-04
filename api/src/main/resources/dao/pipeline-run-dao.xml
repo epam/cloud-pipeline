@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -71,7 +71,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive)
+                        sensitive,
+                        pipeline_name)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -120,7 +121,8 @@
                         :NODE_REAL_DISK,
                         :NODE_CLOUD_PROVIDER,
                         to_jsonb(:TAGS::jsonb),
-                        :SENSITIVE)
+                        :SENSITIVE,
+                        :PIPELINE_NAME)
                 ]]>
             </value>
         </property>
@@ -175,6 +177,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.pipeline_name,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -189,11 +192,9 @@
 				                WHERE nodeup_tasks.run_id = :RUN_ID AND nodeup_tasks.task_name = :NODEUP_TASK)
 				            THEN FALSE
 				            ELSE TRUE
-				        END AS queued,
-                        pipelines.pipeline_name
+				        END AS queued
                     FROM
                         pipeline.pipeline_run r
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     WHERE
                         r.run_id = :RUN_ID
                     ORDER BY
@@ -265,7 +266,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -325,7 +327,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -385,7 +388,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -483,7 +487,8 @@
                         non_pause = :NON_PAUSE,
                         node_real_disk =:NODE_REAL_DISK,
                         tags = to_jsonb(:TAGS::jsonb),
-                        sensitive = :SENSITIVE
+                        sensitive = :SENSITIVE,
+                        pipeline_name = :PIPELINE_NAME
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -595,9 +600,9 @@
                       r.sensitive,
                       TRUE as initialization_finished,
                       FALSE as queued,
-                      p.pipeline_name
+                      r.pipeline_name
                     FROM
-                      pipeline.pipeline_run r LEFT JOIN pipeline.pipeline p ON r.pipeline_id = p.pipeline_id
+                      pipeline.pipeline_run r
                     WHERE
                     r.status = 2 or r.terminating
                 ]]>
@@ -657,9 +662,9 @@
                       r.sensitive,
                       TRUE as initialization_finished,
                       FALSE as queued,
-                      p.pipeline_name
+                      r.pipeline_name
                     FROM
-                      pipeline.pipeline_run r LEFT JOIN pipeline.pipeline p ON r.pipeline_id = p.pipeline_id
+                      pipeline.pipeline_run r
                     WHERE
                     r.status = 2
                 ]]>
@@ -716,7 +721,8 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
-                      r.sensitive
+                      r.sensitive,
+                      r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -769,7 +775,8 @@
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
                       active_run.tags,
-                      active_run.sensitive
+                      active_run.sensitive,
+                      active_run.pipeline_name
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -835,7 +842,8 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
-                      r.sensitive
+                      r.sensitive,
+                      r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -887,7 +895,8 @@
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
                       active_run.tags,
-                      active_run.sensitive
+                      active_run.sensitive,
+                      active_run.pipeline_name
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -950,7 +959,8 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
-                        r.sensitive
+                        r.sensitive,
+                        r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1008,7 +1018,8 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
-                        r.sensitive
+                        r.sensitive,
+                        r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1067,6 +1078,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.pipeline_name,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1081,11 +1093,9 @@
 				                WHERE nodeup_tasks.run_id = r.run_id AND nodeup_tasks.task_name = :NODEUP_TASK)
 				            THEN FALSE
 				            ELSE TRUE
-				        END AS queued,
-                        pipelines.pipeline_name
+				        END AS queued
                     FROM
                         pipeline.pipeline_run r
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     @WHERE@
                     ORDER BY r.run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
@@ -1100,13 +1110,6 @@
                     FROM
                         pipeline.pipeline_run r
                     @WHERE@
-                ]]>
-            </value>
-        </property>
-        <property name="deleteRunsByPipelineQuery">
-            <value>
-                <![CDATA[
-                    DELETE FROM pipeline.pipeline_run WHERE pipeline_id = ?
                 ]]>
             </value>
         </property>
@@ -1176,10 +1179,9 @@
 				            THEN FALSE
 				            ELSE TRUE
 				        END AS queued,
-                        pipelines.pipeline_name
+                        runs.pipeline_name
                     FROM
                         pipeline.pipeline_run runs
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
                     WHERE runs.run_id IN (:list)
                 ]]>
             </value>
@@ -1235,7 +1237,8 @@
                             p.node_real_disk,
                             p.node_cloud_provider,
                             p.tags,
-                            p.sensitive
+                            p.sensitive,
+                            p.pipeline_name
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1289,7 +1292,8 @@
                             c.node_real_disk,
                             c.node_cloud_provider,
                             c.tags,
-                            c.sensitive
+                            c.sensitive,
+                            c.pipeline_name
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1357,10 +1361,8 @@
 				            THEN FALSE
 				            ELSE TRUE
 				        END AS queued,
-                        pipelines.pipeline_name
-                    FROM
-                        runs
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
+                        runs.pipeline_name
+                    FROM runs
                  ]]>
             </value>
         </property>
@@ -1490,7 +1492,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1550,7 +1553,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1624,7 +1628,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1684,7 +1689,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE

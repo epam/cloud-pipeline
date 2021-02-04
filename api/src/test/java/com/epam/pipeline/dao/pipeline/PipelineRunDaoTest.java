@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,6 @@ import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +69,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -120,6 +120,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     private static final String DOCKER_IMAGE = "dockerImage";
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
+    private static final String TEST_PIPELINE_NAME = "Test";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -153,7 +154,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     @Before
     public void setup() {
         testPipeline = new Pipeline();
-        testPipeline.setName("Test");
+        testPipeline.setName(TEST_PIPELINE_NAME);
         testPipeline.setRepository(TEST_REPO);
         testPipeline.setRepositorySsh(TEST_REPO_SSH);
         testPipeline.setOwner(TEST_USER);
@@ -381,7 +382,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(1, runs.get(1).getChildRuns().size());
         assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
 
-        assertThat(runs.get(1).getTags(), CoreMatchers.is(parent.getTags()));
+        assertThat(runs.get(1).getTags(), is(parent.getTags()));
         assertEquals(2L, pipelineRunDao.countRootRuns(filterVO, null).longValue());
 
     }
@@ -845,7 +846,24 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         
         assertNotNull(loadedRun.getInstance());
-        assertThat(loadedRun.getInstance().getNodeImage(), CoreMatchers.is(TEST_NODE_IMAGE));
+        assertThat(loadedRun.getInstance().getNodeImage(), is(TEST_NODE_IMAGE));
+    }
+
+    @Test
+    public void shouldNotDeleteRunIfPipelineDeleted() {
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run = buildPipelineRun(pipeline.getId(), TEST_SERVICE_URL);
+        run.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run);
+        pipelineDao.deletePipeline(pipeline.getId());
+
+        run.setPipelineId(null);
+        pipelineRunDao.updateRun(run);
+
+        final PipelineRun result = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(result);
+        assertThat(result.getPipelineName(), is(TEST_PIPELINE_NAME));
+        assertNull(result.getPipelineId());
     }
 
     private PipelineRun createTestPipelineRun() {
@@ -980,7 +998,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
     private Pipeline getPipeline() {
         Pipeline testPipeline2 = new Pipeline();
-        testPipeline2.setName("Test");
+        testPipeline2.setName(TEST_PIPELINE_NAME);
         testPipeline2.setRepository(TEST_REPO);
         testPipeline2.setRepositorySsh(TEST_REPO_SSH);
         testPipeline2.setOwner(TEST_USER);
@@ -996,7 +1014,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
     private void loadTagsAndCompareWithExpected(final Long runId, final Map<String, String> tags) {
         final Map<String, String> loadedTags = pipelineRunDao.loadPipelineRun(runId).getTags();
-        assertThat(loadedTags, CoreMatchers.is(tags));
+        assertThat(loadedTags, is(tags));
     }
 
     private RunLog createLog(final PipelineRun run,
