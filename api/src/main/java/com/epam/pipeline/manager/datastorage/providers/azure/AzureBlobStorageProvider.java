@@ -46,6 +46,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -83,6 +84,16 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     @Override
     public void restoreFileVersion(final AzureBlobStorage dataStorage, final String path, final String version) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final AzureBlobStorage dataStorage, final String path) {
+        return getAzureStorageHelper(dataStorage).listDataStorageFiles(dataStorage, path);
+    }
+
+    @Override
+    public Stream<DataStorageFile> listDataStorageFileVersions(final AzureBlobStorage dataStorage, final String path) {
         throw new UnsupportedOperationException();
     }
 
@@ -174,6 +185,11 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public DataStorageFolder createFolder(final AzureBlobStorage dataStorage, final String path) {
         return getAzureStorageHelper(dataStorage).createFolder(dataStorage, path);
+    }
+
+    @Override
+    public void deleteFiles(final AzureBlobStorage dataStorage, final List<DataStorageFile> files) {
+        getAzureStorageHelper(dataStorage).deleteFiles(dataStorage, files);
     }
 
     @Override

@@ -49,6 +49,10 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllRequest;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -98,6 +102,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -859,16 +864,48 @@ public class DataStorageManager implements SecuredEntityManager {
     private void deleteDataStorageFolder(final AbstractDataStorage dataStorage,
                                          final String path,
                                          final Boolean totally) throws DataStorageException {
-//        todo: Support tags deletion
-        storageProviderManager.deleteFolder(dataStorage, path, totally);
+        if (dataStorage.isVersioningEnabled() && !totally) {
+            storageProviderManager.deleteFolder(dataStorage, path, totally);
+        } else {
+            final Iterator<DataStorageFile> iterator = totally
+                    ? storageProviderManager.listFileVersions(dataStorage, path).iterator()
+                    : storageProviderManager.listFiles(dataStorage, path).iterator();
+            final int chunkSize = 100;
+            final List<DataStorageFile> files = new ArrayList<>(chunkSize);
+            while (iterator.hasNext()) {
+                while (files.size() < chunkSize && iterator.hasNext()) {
+                    files.add(iterator.next());
+                }
+                if (files.size() > 0) {
+                    storageProviderManager.deleteFiles(dataStorage, files);
+                    files.clear();
+                }
+            }
+        }
     }
 
     private void deleteDataStorageFile(final AbstractDataStorage dataStorage,
                                        final String path,
                                        final String version,
                                        final Boolean totally) throws DataStorageException {
-//        todo: Support tags deletion
         storageProviderManager.deleteFile(dataStorage, path, version, totally);
+        if (dataStorage.isVersioningEnabled()) {
+            if (totally) {
+                tagManager.bulkDeleteAll(dataStorage.getId(), new DataStorageTagDeleteAllBulkRequest(
+                        Collections.singletonList(new DataStorageTagDeleteAllRequest(path))));
+            } else if (version != null) {
+                final String latestVersion = getDataStorageFileLatestVersion(dataStorage, path);
+                tagManager.bulkCopy(dataStorage.getId(), new DataStorageTagCopyBulkRequest(Collections.singletonList(
+                        new DataStorageTagCopyRequest(
+                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(path, latestVersion),
+                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(path, null)
+                        )
+                )));
+                tagManager.delete(new DataStorageObject(dataStorage.getId(), path, version));
+            }
+        } else {
+            tagManager.delete(new DataStorageObject(dataStorage.getId(), path));
+        }
     }
 
     private void deleteDataStorageItem(final AbstractDataStorage dataStorage, UpdateDataStorageItemVO item,

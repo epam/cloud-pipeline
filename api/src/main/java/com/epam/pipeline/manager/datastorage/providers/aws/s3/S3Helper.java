@@ -112,6 +112,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Util class providing methods to interact with AWS S3 API.
@@ -326,6 +327,14 @@ public class S3Helper {
         }
     }
 
+    public Stream<DataStorageFile> listDataStorageFiles(final String bucket, final String path) {
+        return S3ListingHelper.files(getDefaultS3Client(), bucket, path);
+    }
+
+    public Stream<DataStorageFile> listDataStorageFileVersions(final String bucket, final String path) {
+        return S3ListingHelper.fileVersions(getDefaultS3Client(), bucket, path);
+    }
+
     public DataStorageListing getItems(String bucket, String path, Boolean showVersion,
             Integer pageSize, String marker, String prefix) {
         String requestPath = Optional.ofNullable(path).orElse("");
@@ -496,6 +505,18 @@ public class S3Helper {
         }
     }
 
+    public void deleteFiles(final String bucket, final List<DataStorageFile> files) {
+        try (S3ObjectDeleter s3ObjectDeleter = new S3ObjectDeleter(getDefaultS3Client(), bucket)) {
+            for (final DataStorageFile file : files) {
+                if (file.getVersion() != null) {
+                    s3ObjectDeleter.deleteKey(file.getPath(), file.getVersion());
+                } else {
+                    s3ObjectDeleter.deleteKey(file.getPath());
+                }
+            }
+        }
+    }
+
     public void deleteFile(String bucket, String path, String version, Boolean totally) {
         if (StringUtils.isNullOrEmpty(path)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
@@ -556,6 +577,27 @@ public class S3Helper {
             if (noFiles) {
                 deleteAllVersions(client, bucket, path);
             }
+        }
+    }
+
+    private void deleteAllVersions(AmazonS3 client, String bucket, String path) {
+        try(S3ObjectDeleter s3ObjectDeleter = new S3ObjectDeleter(client, bucket)) {
+            ListVersionsRequest request = new ListVersionsRequest().withBucketName(bucket);
+            if (path != null) {
+                request = request.withPrefix(path);
+            }
+            VersionListing versionListing;
+            do {
+                versionListing = client.listVersions(request);
+                for (S3VersionSummary versionSummary : versionListing.getVersionSummaries()) {
+                    if (!pathMatch(path, versionSummary.getKey())) {
+                        continue;
+                    }
+                    s3ObjectDeleter.deleteKey(versionSummary.getKey(), versionSummary.getVersionId());
+                }
+                request.setKeyMarker(versionListing.getNextKeyMarker());
+                request.setVersionIdMarker(versionListing.getNextVersionIdMarker());
+            } while (versionListing.isTruncated());
         }
     }
 
@@ -842,27 +884,6 @@ public class S3Helper {
 
     private String buildOwnerTag(String owner) {
         return ProviderUtils.OWNER_TAG_KEY + "=" + owner;
-    }
-
-    private void deleteAllVersions(AmazonS3 client, String bucket, String path) {
-        try(S3ObjectDeleter s3ObjectDeleter = new S3ObjectDeleter(client, bucket)) {
-            ListVersionsRequest request = new ListVersionsRequest().withBucketName(bucket);
-            if (path != null) {
-                request = request.withPrefix(path);
-            }
-            VersionListing versionListing;
-            do {
-                versionListing = client.listVersions(request);
-                for (S3VersionSummary versionSummary : versionListing.getVersionSummaries()) {
-                    if (!pathMatch(path, versionSummary.getKey())) {
-                        continue;
-                    }
-                    s3ObjectDeleter.deleteKey(versionSummary.getKey(), versionSummary.getVersionId());
-                }
-                request.setKeyMarker(versionListing.getNextKeyMarker());
-                request.setVersionIdMarker(versionListing.getNextVersionIdMarker());
-            } while (versionListing.isTruncated());
-        }
     }
 
     private boolean pathMatch(String path, String key) {

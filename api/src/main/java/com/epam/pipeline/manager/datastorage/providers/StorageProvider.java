@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
@@ -51,6 +52,10 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     void restoreFileVersion(T dataStorage, String path, String version)
             throws DataStorageException;
 
+    Stream<DataStorageFile> listDataStorageFiles(T dataStorage, String path);
+
+    Stream<DataStorageFile> listDataStorageFileVersions(T dataStorage, String path);
+
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);
 
@@ -69,6 +74,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
 
     DataStorageFolder createFolder(T dataStorage, String path)
             throws DataStorageException;
+    
+    void deleteFiles(T dataStorage, List<DataStorageFile> files);
 
     void deleteFile(T dataStorage, String path, String version, Boolean totally)
             throws DataStorageException;

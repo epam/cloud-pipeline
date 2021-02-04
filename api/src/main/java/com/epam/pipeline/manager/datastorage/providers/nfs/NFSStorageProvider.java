@@ -283,6 +283,44 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final NFSDataStorage dataStorage, final String path) {
+        final File dataStorageRoot = mount(dataStorage);
+        final File dir = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
+        try (Stream<Path> dirStream = Files.walk(dir.toPath(), 1)) {
+            return dirStream
+                    .map(p -> {
+                        File file = p.toFile();
+
+                        AbstractDataStorageItem item;
+                        if (file.isDirectory()) {
+                            item = new DataStorageFolder();
+                        } else {
+                            //set size if it's a file
+                            DataStorageFile dataStorageFile = new DataStorageFile();
+                            dataStorageFile.setSize(file.length());
+                            dataStorageFile.setChanged(S3Constants.getAwsDateFormat()
+                                    .format(new Date(file.lastModified())));
+                            item = dataStorageFile;
+                        }
+
+                        item.setName(file.getName());
+                        item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
+
+                        return item;
+                    })
+                    .filter(DataStorageFile.class::isInstance)
+                    .map(DataStorageFile.class::cast);
+        } catch (IOException e) {
+            throw new DataStorageException(e);
+        }
+    }
+
+    @Override
+    public Stream<DataStorageFile> listDataStorageFileVersions(final NFSDataStorage dataStorage, final String path) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public DataStorageListing getItems(NFSDataStorage dataStorage, String path, Boolean showVersion,
                                        Integer pageSize, String marker) {
         File dataStorageRoot = mount(dataStorage);
@@ -416,6 +454,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                     MessageConstants.ERROR_DATASTORAGE_CANNOT_CREATE_FILE, folder.getPath()), e);
         }
         return new DataStorageFolder(path, folder);
+    }
+
+    @Override
+    public void deleteFiles(NFSDataStorage dataStorage, List<DataStorageFile> files) {
+        files.forEach(file -> deleteFile(dataStorage, file.getPath(), null, null));
     }
 
     @Override
