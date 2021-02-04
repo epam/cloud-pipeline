@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,29 @@
 
 package com.epam.pipeline.dao.tool;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.controller.vo.IssueVO;
+import com.epam.pipeline.dao.docker.DockerRegistryDao;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.ToolWithIssuesCount;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.issue.IssueManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StreamUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,34 +49,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.controller.vo.IssueVO;
-import com.epam.pipeline.dao.docker.DockerRegistryDao;
-import com.epam.pipeline.entity.pipeline.DockerRegistry;
-import com.epam.pipeline.entity.pipeline.Tool;
-import com.epam.pipeline.entity.pipeline.ToolGroup;
-import com.epam.pipeline.entity.pipeline.ToolWithIssuesCount;
-import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.manager.issue.IssueManager;
-import com.epam.pipeline.manager.notification.NotificationManager;
-import com.epam.pipeline.manager.security.AuthManager;
-import org.springframework.util.StreamUtils;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
-public class ToolDaoTest extends AbstractSpringTest {
+public class ToolDaoTest extends AbstractJdbcTest {
 
     private static final String ISSUE_NAME = "Issue name";
     private static final String ISSUE_NAME2 = "Issue name2";
@@ -109,11 +108,12 @@ public class ToolDaoTest extends AbstractSpringTest {
     private ToolGroupDao toolGroupDao;
     @Autowired
     private IssueManager issueManager;
-
-    @SpyBean
+    @Autowired
     private AuthManager authManager;
-    @MockBean
+    @Autowired
     private NotificationManager notificationManager;
+    @Autowired
+    private EntityManager entityManager;
 
     @Before
     public void setUp() {
@@ -176,6 +176,7 @@ public class ToolDaoTest extends AbstractSpringTest {
         Tool tool = generateTool();
         tool.setRegistryId(firstRegistry.getId());
         tool.setToolGroupId(library1.getId());
+        doReturn(tool).when(entityManager).load(any(), any());
         toolDao.createTool(tool);
         //create issues
         createIssue(tool, ISSUE_NAME);
@@ -302,6 +303,7 @@ public class ToolDaoTest extends AbstractSpringTest {
     public void testSymlinkWithIssuesCountCanBeLoaded() {
         final Tool tool = createTool();
         final Tool symlink = createSymlink(tool);
+        doReturn(tool).when(entityManager).load(any(), any());
         createIssue(tool, ISSUE_NAME);
         createIssue(tool, ISSUE_NAME2);
 

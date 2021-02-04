@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.user;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -24,6 +23,7 @@ import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,10 +36,14 @@ import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class RoleDaoTest extends AbstractSpringTest {
+public class RoleDaoTest extends AbstractJdbcTest {
 
     private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 11;
     private static final String TEST_USER1 = "test_user1";
