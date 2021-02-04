@@ -512,6 +512,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
                                'for GCP cloud provider.')
         prefix = StorageOperations.get_prefix(relative_path)
         check_file = True
+        found_file = False
         if prefix.endswith(self.delimiter):
             prefix = prefix[:-1]
             check_file = False
@@ -519,8 +520,10 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         if not recursive and not hard_delete:
             deleting_blob = bucket.blob(prefix, generation=version)
             self._delete_blob(deleting_blob, exclude, include)
-            if version or not self.bucket.policy.versioning_enabled:
-                self._delete_object_tags([deleting_blob], versions=self.bucket.policy.versioning_enabled)
+            if not self.bucket.policy.versioning_enabled or version:
+                version = deleting_blob.generation if self.bucket.policy.versioning_enabled else None
+                DataStorage.bulk_delete_object_tags(self.bucket.identifier,
+                                                    [{'path': deleting_blob.name, 'version': version}])
         else:
             blobs_for_deletion = []
             listing_manager = self._get_listing_manager(show_versions=version is not None or hard_delete)
@@ -533,29 +536,15 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
                             blobs_for_deletion = [bucket.blob(item.name, generation=matching_item_versions[0].version)]
                     else:
                         blobs_for_deletion.extend(self._item_blobs_for_deletion(bucket, item, hard_delete))
+                    found_file = True
                     break
                 if self._file_under_folder(item.name, prefix):
                     blobs_for_deletion.extend(self._item_blobs_for_deletion(bucket, item, hard_delete))
             for blob in blobs_for_deletion:
                 self._delete_blob(blob, exclude, include, prefix)
-            if hard_delete:
-                self._delete_all_object_tags(blobs_for_deletion)
-            if not self.bucket.policy.versioning_enabled:
-                self._delete_object_tags(blobs_for_deletion, versions=False)
-
-    def _delete_all_object_tags(self, blobs_for_deletion, chunk_size=100):
-        for blobs_for_deletion_chunk in [blobs_for_deletion[i:i + chunk_size]
-                                         for i in range(0, len(blobs_for_deletion), chunk_size)]:
-            blob_names = set(blob.name for blob in blobs_for_deletion_chunk)
-            DataStorage.bulk_delete_all_object_tags(self.bucket.identifier,
-                                                    [{'path': blob_name} for blob_name in blob_names])
-
-    def _delete_object_tags(self, blobs_for_deletion, versions, chunk_size=100):
-        for blobs_for_deletion_chunk in [blobs_for_deletion[i:i + chunk_size]
-                                         for i in range(0, len(blobs_for_deletion), chunk_size)]:
-            DataStorage.bulk_delete_object_tags(self.bucket.identifier,
-                                                [{'path': blob.name, 'version': blob.generation if versions else None}
-                                                 for blob in blobs_for_deletion_chunk])
+            if not self.bucket.policy.versioning_enabled or hard_delete:
+                DataStorage.bulk_delete_all_object_tags(self.bucket.identifier,
+                                                        [{'path': prefix, 'type': 'FILE' if found_file else 'FOLDER'}])
 
     def _item_blobs_for_deletion(self, bucket, item, hard_delete):
         if hard_delete:
