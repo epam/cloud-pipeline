@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,20 @@
 
 package com.epam.pipeline.manager.notification;
 
-import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
+import com.epam.pipeline.test.aspect.AbstractAspectTest;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,9 +37,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-@DirtiesContext
-@ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
-public class RunStatusReasonTest extends AbstractManagerTest {
+
+public class RunStatusReasonTest extends AbstractAspectTest {
 
     private static final String RESUME_RUN_FAILED_MESSAGE =
             "Could not resume run. Operation failed with message 'InsufficientInstanceCapacity'";
@@ -90,7 +86,4 @@ public class RunStatusReasonTest extends AbstractManagerTest {
         Assert.assertEquals(RESUME_RUN_FAILED_MESSAGE, runStatus.getReason());
 
     }
-
-
-
 }
