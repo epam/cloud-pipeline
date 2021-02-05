@@ -40,6 +40,7 @@ import RoleCreate from '../../models/user/RoleCreate';
 import RoleRemove from '../../models/user/RoleRemove';
 import UserCreate from '../../models/user/UserCreate';
 import UserDelete from '../../models/user/UserDelete';
+import {AssignCredentialProfiles} from '../../models/cloudCredentials';
 import EditUserRolesDialog from './forms/EditUserRolesDialog';
 import ExportUserForm, {doExport, DefaultValues} from './forms/ExportUserForm';
 import CreateUserForm from './forms/CreateUserForm';
@@ -49,11 +50,12 @@ import ImportUsersButton from './components/import-users';
 import ImportResult from './components/import-result';
 import styles from './UserManagementForm.css';
 import roleModel from '../../utils/roleModel';
+import AWSRegionTag from '../special/AWSRegionTag';
 
 const PAGE_SIZE = 20;
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'users', 'userMetadataKeys')
+@inject('dataStorages', 'users', 'userMetadataKeys', 'cloudCredentialProfiles')
 @inject(({users, authenticatedUserInfo, userMetadataKeys}) => ({
   users,
   authenticatedUserInfo,
@@ -88,6 +90,8 @@ export default class UserManagementForm extends React.Component {
     createGroupName: null,
     createGroupDefault: false,
     createGroupDefaultDataStorage: null,
+    createGroupProfiles: [],
+    createGroupDefaultProfile: undefined,
     operationInProgress: false,
     userDataToExport: [],
     metadataKeys: [],
@@ -95,14 +99,14 @@ export default class UserManagementForm extends React.Component {
     importLogsVisible: false
   };
 
-  get isAdmin () {
+  get isAdmin() {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
   };
 
-  get isReader () {
+  get isReader() {
     return roleModel.hasRole('ROLE_USER_READER')(this);
   };
 
@@ -176,6 +180,15 @@ export default class UserManagementForm extends React.Component {
     return [];
   }
 
+  @computed
+  get cloudCredentialProfiles () {
+    if (this.props.cloudCredentialProfiles.loaded) {
+      return (this.props.cloudCredentialProfiles.value || [])
+        .map(o => o);
+    }
+    return [];
+  }
+
   onCloseImportLogsDialog = () => {
     this.setState({
       importLogs: [],
@@ -239,7 +252,7 @@ export default class UserManagementForm extends React.Component {
   };
 
   @computed
-  get users () {
+  get users() {
     if (this.state.userSearchText &&
       this.state.userSearchText.trim().length &&
       this._findUsers &&
@@ -256,7 +269,7 @@ export default class UserManagementForm extends React.Component {
   }
 
   @computed
-  get usersPending () {
+  get usersPending() {
     return this.props.users.pending || (!!this._findUsers && this._findUsers.pending);
   }
 
@@ -347,11 +360,11 @@ export default class UserManagementForm extends React.Component {
         onClick={this.handleExportUsersMenu}
       >
         <Menu.Item key="default">
-          <Icon type="download" style={{marginRight: 10}} />
+          <Icon type="download" style={{marginRight: 10}}/>
           Default configuration
         </Menu.Item>
         <Menu.Item key="custom">
-          <Icon type="bars" style={{marginRight: 10}} />
+          <Icon type="bars" style={{marginRight: 10}}/>
           Custom configuration
         </Menu.Item>
       </Menu>
@@ -364,7 +377,7 @@ export default class UserManagementForm extends React.Component {
           style={{flex: 1}}
           value={this.state.userSearchText}
           onPressEnter={this.fetchUsers}
-          onChange={this.onUserSearchChanged} />
+          onChange={this.onUserSearchChanged}/>
         {
           this.isAdmin && (
             <Button
@@ -372,7 +385,7 @@ export default class UserManagementForm extends React.Component {
               style={{marginLeft: 5}}
               onClick={this.openCreateUserDialog}
             >
-              <Icon type="plus" />Create user
+              <Icon type="plus"/>Create user
             </Button>
           )
         }
@@ -397,7 +410,7 @@ export default class UserManagementForm extends React.Component {
               style={{marginLeft: 5}}
               onClick={() => doExport()}
               overlay={exportUserMenu}
-              icon={<Icon type="download" />}
+              icon={<Icon type="download"/>}
             >
               Export users
             </Dropdown.Button>
@@ -405,7 +418,7 @@ export default class UserManagementForm extends React.Component {
         }
       </Row>
     );
-  }
+  };
 
   renderUsersTable = () => {
     const renderTagsList = (tags, tagClassName, maxTagItems) => {
@@ -580,7 +593,7 @@ export default class UserManagementForm extends React.Component {
       style: {
         wordWrap: 'break-word'
       },
-      onOk () {
+      onOk() {
         return deleteRole();
       }
     });
@@ -588,7 +601,7 @@ export default class UserManagementForm extends React.Component {
 
   renderRolesTable = () => {
     if (!this.props.roles.loaded) {
-      return <LoadingView />;
+      return <LoadingView/>;
     }
     const columns = [
       {
@@ -622,7 +635,7 @@ export default class UserManagementForm extends React.Component {
             return (
               <Row className={styles.roleActions} type="flex" justify="end">
                 <Button size="small" onClick={() => this.openEditRoleDialog(role)}>
-                  <Icon type="edit" />
+                  <Icon type="edit"/>
                 </Button>
               </Row>
             );
@@ -635,8 +648,8 @@ export default class UserManagementForm extends React.Component {
       .map(r => r)
       .filter(r => r.predefined)
       .filter(r => !this.state.rolesSearchText ||
-      !this.state.rolesSearchText.length ||
-      r.name.toLowerCase().indexOf(this.state.rolesSearchText.toLowerCase()) >= 0);
+        !this.state.rolesSearchText.length ||
+        r.name.toLowerCase().indexOf(this.state.rolesSearchText.toLowerCase()) >= 0);
 
     return (
       <Table
@@ -648,13 +661,13 @@ export default class UserManagementForm extends React.Component {
         onChange={this.handleRolesTableChange}
         onRowClick={(role) => this.openEditRoleDialog(role)}
         pagination={{total: roles.length, PAGE_SIZE, current: this.state.rolesTableCurrentPage}}
-        size="small" />
+        size="small"/>
     );
   };
 
   renderGroupsTable = () => {
     if (!this.props.roles.loaded) {
-      return <LoadingView />;
+      return <LoadingView/>;
     }
     const columns = [
       {
@@ -688,10 +701,10 @@ export default class UserManagementForm extends React.Component {
             return (
               <Row className={styles.roleActions} type="flex" justify="end">
                 <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
-                  <Icon type="edit" />
+                  <Icon type="edit"/>
                 </Button>
                 <Button size="small" type="danger" onClick={(e) => this.deleteRoleConfirm(e, role)}>
-                  <Icon type="delete" />
+                  <Icon type="delete"/>
                 </Button>
               </Row>
             );
@@ -716,8 +729,8 @@ export default class UserManagementForm extends React.Component {
       })
       .filter(r => !r.predefined)
       .filter(r => !this.state.groupsSearchText ||
-      !this.state.groupsSearchText.length ||
-      r.displayName.toLowerCase().indexOf(this.state.groupsSearchText.toLowerCase()) >= 0);
+        !this.state.groupsSearchText.length ||
+        r.displayName.toLowerCase().indexOf(this.state.groupsSearchText.toLowerCase()) >= 0);
 
     return (
       <Table
@@ -729,7 +742,7 @@ export default class UserManagementForm extends React.Component {
         onChange={this.handleGroupsTableChange}
         onRowClick={(group) => this.openEditGroupDialog(group)}
         pagination={{total: roles.length, PAGE_SIZE, current: this.state.groupsTableCurrentPage}}
-        size="small" />
+        size="small"/>
     );
   };
 
@@ -770,14 +783,35 @@ export default class UserManagementForm extends React.Component {
     this.setState({userDataToExport: checkedValues, metadataKeys});
   };
 
-  createUser = async ({userName, defaultStorageId, roleIds}) => {
+  createUser = async (opts) => {
+    const {
+      userName,
+      defaultStorageId,
+      roleIds,
+      credentialProfiles,
+      defaultProfile
+    } = opts || {};
     const hide = message.loading('Creating user...', 0);
     const request = new UserCreate();
     await request.send({userName, defaultStorageId, roleIds: roleIds.map(r => +r)});
-    hide();
     if (request.error) {
+      hide();
       message.error(request.error, 5);
     } else {
+      if (defaultProfile || (credentialProfiles || []).length) {
+        const {id} = request.value;
+        const assignRequest = new AssignCredentialProfiles(
+          id,
+          true,
+          credentialProfiles,
+          defaultProfile
+        );
+        await assignRequest.send();
+        if (assignRequest.error) {
+          message.error(assignRequest.error, 5);
+        }
+      }
+      hide();
       await this.props.dataStorages.fetch();
       this.setState({
         createUserDialogVisible: false
@@ -807,7 +841,9 @@ export default class UserManagementForm extends React.Component {
     this.setState({
       createGroupDialogVisible: false,
       createGroupDefaultDataStorage: null,
-      createGroupName: null
+      createGroupName: null,
+      createGroupProfiles: [],
+      createGroupDefaultProfile: undefined,
     });
   };
 
@@ -819,16 +855,31 @@ export default class UserManagementForm extends React.Component {
       this.state.createGroupDefaultDataStorage
     );
     await request.send({});
-    hide();
     if (request.error) {
+      hide();
       message.error(request.error, 5);
     } else {
+      if (this.state.createGroupProfiles.length || this.state.createGroupDefaultProfile) {
+        const assignRequest = new AssignCredentialProfiles(
+          request.value.id,
+          false,
+          this.state.createGroupProfiles,
+          this.state.createGroupDefaultProfile
+        );
+        await assignRequest.send();
+        if (assignRequest.error) {
+          message.error(assignRequest.error, 5);
+        }
+      }
+      hide();
       await this.props.dataStorages.fetch();
       this.setState({
         createGroupDialogVisible: false,
         createGroupName: null,
         createGroupDefaultDataStorage: null,
-        createGroupDefault: false
+        createGroupDefault: false,
+        createGroupProfiles: [],
+        createGroupDefaultProfile: undefined,
       }, this.reload);
     }
   };
@@ -851,13 +902,33 @@ export default class UserManagementForm extends React.Component {
     });
   };
 
-  render () {
+  createGroupDefaultProfileChanged = id => {
+    this.setState({
+      createGroupDefaultProfile: +id
+    });
+  }
+
+  createGroupProfilesChanged = (ids) => {
+    let {createGroupDefaultProfile} = this.state;
+    if (
+      createGroupDefaultProfile &&
+      (ids || []).map(id => +id).indexOf(+createGroupDefaultProfile) === -1
+    ) {
+      createGroupDefaultProfile = undefined;
+    }
+    this.setState({
+      createGroupDefaultProfile,
+      createGroupProfiles: (ids || [])
+    });
+  };
+
+  render() {
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return null;
     }
     if (!this.isReader && !this.isAdmin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" message="Access is denied"/>
       );
     }
     const {
@@ -895,7 +966,7 @@ export default class UserManagementForm extends React.Component {
             pending={this.state.operationInProgress}
             onCancel={this.closeCreateUserDialog}
             onSubmit={this.operationWrapper(this.createUser)}
-            visible={this.state.createUserDialogVisible} />
+            visible={this.state.createUserDialogVisible}/>
         </Tabs.TabPane>
         <Tabs.TabPane tab="Groups" key="groups">
           <Row type="flex" style={{marginBottom: 10}}>
@@ -905,13 +976,13 @@ export default class UserManagementForm extends React.Component {
                 size="small"
                 style={{width: '100%'}}
                 value={this.state.groupsSearchText}
-                onChange={this.onGroupSearchChanged} />
+                onChange={this.onGroupSearchChanged}/>
             </div>
             {
               this.isAdmin && (
                 <div style={{paddingLeft: 10}}>
                   <Button size="small" type="primary" onClick={this.openCreateGroupDialog}>
-                    <Icon type="plus" /> Create group
+                    <Icon type="plus"/> Create group
                   </Button>
                 </div>
               )
@@ -946,7 +1017,8 @@ export default class UserManagementForm extends React.Component {
                 <Input
                   placeholder="Enter group name"
                   value={this.state.createGroupName}
-                  onChange={this.createGroupNameChanged} />
+                  onChange={this.createGroupNameChanged}
+                />
               </div>
               <div style={{paddingLeft: 10}}>
                 <Checkbox
@@ -988,6 +1060,88 @@ export default class UserManagementForm extends React.Component {
                 }
               </Select>
             </Row>
+            <Row style={{marginTop: 15, paddingLeft: 2, marginBottom: 2}}>
+              Cloud Credential Profiles:
+            </Row>
+            <Row type="flex" style={{marginBottom: 10}} align="middle">
+              <Select
+                allowClear
+                showSearch
+                mode="multiple"
+                disabled={this.state.operationInProgress}
+                style={{flex: 1}}
+                value={(this.state.createGroupProfiles || []).map(o => `${o}`)}
+                onChange={this.createGroupProfilesChanged}
+                filterOption={(input, option) =>
+                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              >
+                {
+                  this.cloudCredentialProfiles.map(d => (
+                    <Select.Option
+                      key={`${d.id}`}
+                      value={`${d.id}`}
+                      name={d.profileName}
+                      title={d.profileName}
+                    >
+                      <AWSRegionTag
+                        provider={d.cloudProvider}
+                        showProvider
+                        displayName={false}
+                        displayFlag={false}
+                      />
+                      <span>{d.profileName}</span>
+                    </Select.Option>
+                  ))
+                }
+              </Select>
+            </Row>
+            <Row style={{marginTop: 15, paddingLeft: 2, marginBottom: 2}}>
+              Default Credentials Profiles:
+            </Row>
+            <Row type="flex" style={{marginBottom: 10}} align="middle">
+              <Select
+                allowClear
+                showSearch
+                disabled={
+                  this.state.operationInProgress ||
+                  this.state.createGroupProfiles.length === 0
+                }
+                style={{flex: 1}}
+                value={
+                  this.state.createGroupDefaultProfile
+                    ? `${this.state.createGroupDefaultProfile}`
+                    : undefined
+                }
+                onChange={this.createGroupDefaultProfileChanged}
+                filterOption={(input, option) =>
+                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              >
+                {
+                  this.cloudCredentialProfiles
+                    .filter(p => (this.state.createGroupProfiles || [])
+                      .map(o => +o).indexOf(+p.id) >= 0
+                    )
+                    .map(d => (
+                      <Select.Option
+                        key={`${d.id}`}
+                        value={`${d.id}`}
+                        name={d.profileName}
+                        title={d.profileName}
+                      >
+                        <AWSRegionTag
+                          provider={d.cloudProvider}
+                          showProvider
+                          displayName={false}
+                          displayFlag={false}
+                        />
+                        <span>{d.profileName}</span>
+                      </Select.Option>
+                    ))
+                }
+              </Select>
+            </Row>
           </Modal>
         </Tabs.TabPane>
         <Tabs.TabPane tab="Roles" key="roles">
@@ -997,7 +1151,7 @@ export default class UserManagementForm extends React.Component {
               size="small"
               style={{width: '100%'}}
               value={this.state.rolesSearchText}
-              onChange={this.onRoleSearchChanged} />
+              onChange={this.onRoleSearchChanged}/>
           </Row>
           {this.renderRolesTable()}
           <EditRoleDialog
@@ -1011,7 +1165,7 @@ export default class UserManagementForm extends React.Component {
     );
   }
 
-  componentDidMount () {
+  componentDidMount() {
     this.props.onInitialized && this.props.onInitialized(this);
   }
-}
+};
