@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -105,8 +106,8 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
-    public DataStorageFile getFileMetadata(AbstractDataStorage dataStorage, String path) {
-        return getStorageProvider(dataStorage).getFileMetadata(dataStorage, path);
+    public Optional<DataStorageFile> findFile(AbstractDataStorage dataStorage, String path) {
+        return getStorageProvider(dataStorage).findFile(dataStorage, path);
     }
 
     public Stream<DataStorageFile> listFiles(AbstractDataStorage dataStorage, String path) {

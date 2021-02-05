@@ -173,8 +173,11 @@ public class AzureStorageHelper {
         return !StringUtils.endsWithIgnoreCase(item.getName(), ProviderUtils.FOLDER_TOKEN_FILE.toLowerCase());
     }
 
-    public DataStorageFile getFileMetadata(final AzureBlobStorage dataStorage, final String path) {
-        return getDataStorageFile(dataStorage, path);
+    public Optional<DataStorageFile> findFile(final AzureBlobStorage storage, final String path) {
+        return list(AbstractListingIterator.flat(getContainerURL(storage), path, null, 1))
+                .findFirst()
+                .filter(DataStorageFile.class::isInstance)
+                .map(DataStorageFile.class::cast);
     }
 
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
@@ -598,10 +601,7 @@ public class AzureStorageHelper {
     }
 
     private DataStorageFile getDataStorageFile(final AzureBlobStorage storage, final String path) {
-        return list(AbstractListingIterator.flat(getContainerURL(storage), path, null, 1))
-                .findFirst()
-                .filter(DataStorageFile.class::isInstance)
-                .map(DataStorageFile.class::cast)
+        return findFile(storage, path)
                 .orElseThrow(() -> new DataStorageException(messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_AZURE_CREATE_FILE, storage.getPath())));
     }

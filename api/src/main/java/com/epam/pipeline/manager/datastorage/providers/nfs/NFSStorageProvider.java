@@ -76,6 +76,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -371,15 +372,18 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public DataStorageFile getFileMetadata(final NFSDataStorage dataStorage, final String path) {
+    public Optional<DataStorageFile> findFile(final NFSDataStorage dataStorage, final String path) {
         final File dataStorageRoot = mount(dataStorage);
-        final File file = new File(dataStorageRoot, path);
-        final DataStorageFile item = new DataStorageFile();
-        item.setSize(file.length());
-        item.setChanged(S3Constants.getAwsDateFormat().format(new Date(file.lastModified())));
-        item.setName(file.getName());
-        item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
-        return item;
+        return Optional.of(new File(dataStorageRoot, path))
+                .filter(File::exists)
+                .map(file -> {
+                    final DataStorageFile item = new DataStorageFile();
+                    item.setSize(file.length());
+                    item.setChanged(S3Constants.getAwsDateFormat().format(new Date(file.lastModified())));
+                    item.setName(file.getName());
+                    item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
+                    return item;   
+                });
     }
 
     @Override

@@ -352,28 +352,41 @@ public class S3Helper {
         return result;
     }
 
-    public DataStorageFile getFile(final String bucket, final String path) {
-        final AmazonS3 client = getDefaultS3Client();
-        return getFile(client, bucket, path);
+    private DataStorageFile getFile(final AmazonS3 client, final String bucket, final String path) {
+        return findFile(client, bucket, path)
+                .orElseThrow(() -> new DataStorageException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket)));
     }
 
-    private DataStorageFile getFile(final AmazonS3 client, final String bucket, final String path) {
-        final ObjectMetadata metadata = client.getObjectMetadata(new GetObjectMetadataRequest(bucket, path));
-        final TimeZone tz = TimeZone.getTimeZone("UTC");
-        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        final DataStorageFile file = new DataStorageFile();
-        file.setName(path);
-        file.setPath(path);
-        file.setSize(metadata.getContentLength());
-        file.setChanged(df.format(metadata.getLastModified()));
-        file.setVersion(metadata.getVersionId());
-        final Map<String, String> labels = new HashMap<>();
-        if (metadata.getStorageClass() != null) {
-            labels.put("StorageClass", metadata.getStorageClass());
+    public Optional<DataStorageFile> findFile(final String bucket, final String path) {
+        final AmazonS3 client = getDefaultS3Client();
+        return findFile(client, bucket, path);
+    }
+
+    private Optional<DataStorageFile> findFile(final AmazonS3 client, final String bucket, final String path) {
+        try {
+            final ObjectMetadata metadata = client.getObjectMetadata(new GetObjectMetadataRequest(bucket, path));
+            final TimeZone tz = TimeZone.getTimeZone("UTC");
+            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            df.setTimeZone(tz);
+            final DataStorageFile file = new DataStorageFile();
+            file.setName(path);
+            file.setPath(path);
+            file.setSize(metadata.getContentLength());
+            file.setChanged(df.format(metadata.getLastModified()));
+            file.setVersion(metadata.getVersionId());
+            final Map<String, String> labels = new HashMap<>();
+            if (metadata.getStorageClass() != null) {
+                labels.put("StorageClass", metadata.getStorageClass());
+            }
+            file.setLabels(labels);
+            return Optional.of(file);
+        } catch (AmazonS3Exception e) {
+            if (e.getStatusCode() == 404) {
+                return Optional.empty();
+            }
+            throw e;
         }
-        file.setLabels(labels);
-        return file;
     }
 
     public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path,
@@ -438,7 +451,7 @@ public class S3Helper {
         putObjectRequest.withTagging(new ObjectTagging(tags));
         putObjectRequest.withCannedAcl(DEFAULT_CANNED_ACL);
         client.putObject(putObjectRequest);
-        return this.getFile(client, bucket, path);
+        return getFile(client, bucket, path);
     }
 
     private boolean itemExists(AmazonS3 client, String bucket, String path, boolean isFolder) {

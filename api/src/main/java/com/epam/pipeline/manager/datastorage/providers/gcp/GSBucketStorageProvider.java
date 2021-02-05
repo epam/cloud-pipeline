@@ -43,6 +43,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -106,8 +107,8 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public DataStorageFile getFileMetadata(final GSBucketStorage dataStorage, final String path) {
-        return getHelper(dataStorage).getFile(dataStorage, path);
+    public Optional<DataStorageFile> findFile(final GSBucketStorage dataStorage, final String path) {
+        return getHelper(dataStorage).findFile(dataStorage, path);
     }
 
     @Override

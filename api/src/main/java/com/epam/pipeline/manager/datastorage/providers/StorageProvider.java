@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -59,7 +60,7 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);
 
-    DataStorageFile getFileMetadata(T dataStorage, String path);
+    Optional<DataStorageFile> findFile(T dataStorage, String path);
 
     DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
                                                    ContentDisposition contentDisposition);
