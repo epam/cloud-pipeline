@@ -97,10 +97,12 @@ class CloudCredentialsProfileForm extends React.Component {
     const {
       isNew,
       cloudCredentialProfiles,
-      credentialsIdentifier
+      credentialsIdentifier,
+      provider
     } = this.props;
     if (cloudCredentialProfiles.loaded) {
       return (cloudCredentialProfiles.value || [])
+        .filter(p => !provider || p.cloudProvider === provider)
         .filter(p => isNew || +(p.id) !== +credentialsIdentifier);
     }
     return [];
