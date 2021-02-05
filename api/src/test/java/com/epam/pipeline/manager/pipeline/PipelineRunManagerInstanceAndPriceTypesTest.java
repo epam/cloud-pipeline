@@ -213,7 +213,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
-        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun(TEST_USER))),
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun())),
                 argThat(matches(Predicates.forConfiguration())),
                 eq(null), eq("0"), eq(null));
 
@@ -224,10 +224,11 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     public void testLaunchPipelineFailsOnNotAllowedToolInstanceType() {
         doReturn(false).when(instanceOfferManager)
                 .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(true));
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
+        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
+                eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
-                () -> launchTool(INSTANCE_TYPE));
+        Runnable task = () -> launchTool(INSTANCE_TYPE);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
@@ -242,7 +243,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
     @Test
     public void testLaunchPipelineDoesNotValidateToolInstanceTypeIfItIsNotSpecified() {
-        launchTool((String) null);
+        launchTool(null);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
@@ -263,7 +264,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
-        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun(TEST_USER))),
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun())),
                 argThat(matches(Predicates.forConfiguration())),
                 eq(null), eq("0"), eq(null));
 
@@ -273,10 +274,11 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     @Test
     public void testLaunchPipelineValidatesToolInstanceTypeInTheSpecifiedRegion() {
         configuration.setCloudRegionId(NOT_ALLOWED_REGION_ID);
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
+        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
+                eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
-                () -> launchTool(INSTANCE_TYPE));
+        Runnable task = () -> launchTool(INSTANCE_TYPE);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
@@ -310,7 +312,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
-        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun(TEST_USER))),
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun())),
                 argThat(matches(Predicates.forConfiguration())),
                 eq(null), eq("0"), eq(null));
 
@@ -320,10 +322,10 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     @Test
     public void testLaunchPipelineValidatesPipelineInstanceTypeInTheSpecifiedRegion() {
         configuration.setCloudRegionId(NOT_ALLOWED_REGION_ID);
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
+        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
+                eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
-                () -> launchPipeline(INSTANCE_TYPE));
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), () -> launchPipeline(INSTANCE_TYPE));
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
@@ -337,10 +339,10 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     @Test
     public void testLaunchPipelineFailsOnNotAllowedInstanceType() {
         doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
+        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
+                eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
-                () -> launchPipeline(INSTANCE_TYPE));
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), () -> launchPipeline(INSTANCE_TYPE));
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
@@ -353,7 +355,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
     @Test
     public void testLaunchPipelineDoesNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
-        launchPipeline((String) null);
+        launchPipeline(null);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
@@ -372,7 +374,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
-        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun(TEST_USER))),
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun())),
                 argThat(matches(Predicates.forConfiguration())),
                 eq(null), eq("0"), eq(null));
 
@@ -402,7 +404,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
         verify(pipelineLauncher).launch(
-                argThat(matches(Predicates.forPipelineRun(TEST_USER))),
+                argThat(matches(Predicates.forPipelineRun())),
                 argThat(matches(Predicates.forConfiguration())),
                 eq(null), eq("0"), eq(null));
 
@@ -412,10 +414,11 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     @Test
     public void testLaunchPipelineFailsOnNotAllowedPriceType() {
         doReturn(false).when(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(eq(ERROR_PRICE_TYPE_IS_NOT_ALLOWED), eq(PriceType.SPOT));
+        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
+                eq(ERROR_PRICE_TYPE_IS_NOT_ALLOWED), eq(PriceType.SPOT));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
-                () -> launchPipeline(INSTANCE_TYPE));
+        Runnable task = () -> launchPipeline(INSTANCE_TYPE);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
@@ -430,9 +433,11 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     private void launchTool(final String instanceType) {
         launchPipeline(configuration, null, instanceType, null);
     }
+
     private void launchPipeline(final String instanceType) {
         launchPipeline(configuration, new Pipeline(), instanceType, null);
     }
+
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
                                        final String instanceType, final Long parentRunId) {
         return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null, null,
@@ -456,9 +461,9 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     }
 
     static class Predicates {
-        private static Predicate<PipelineRun> forPipelineRun(String owner) {
+        private static Predicate<PipelineRun> forPipelineRun() {
             return run -> TEST_IMAGE.equals(run.getDockerImage()) && DEFAULT_COMMAND.equals(run.getCmdTemplate()) &&
-                    owner.equals(run.getOwner());
+                    TEST_USER.equals(run.getOwner());
         }
 
         private static Predicate<PipelineConfiguration> forConfiguration() {
