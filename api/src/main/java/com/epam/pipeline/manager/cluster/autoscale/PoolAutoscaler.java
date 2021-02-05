@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
@@ -91,8 +92,9 @@ public class PoolAutoscaler {
         }
     }
 
-    private void updatePoolSize(final NodePool pool, final int decreasedSize) {
-        pool.setCount(decreasedSize);
-        poolManager.createOrUpdate(poolMapper.toVO(pool));
+    private void updatePoolSize(final NodePool pool, final int newSize) {
+        final NodePoolVO nodePoolVO = poolMapper.toVO(pool);
+        nodePoolVO.setCount(newSize);
+        poolManager.createOrUpdate(nodePoolVO);
     }
 }
