@@ -46,20 +46,19 @@ public class PoolAutoscaler {
     private final NodePoolMapper poolMapper;
     private final KubernetesManager kubernetesManager;
 
-    public void adjustPoolSizes(final Map<Long, Integer> poolNodeUpTaskInProgress) {
+    public void adjustPoolSizes() {
         try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
             final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
             final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
             poolManager.getActivePools()
                     .forEach(pool ->
-                            adjustPoolSize(pool, availableNodes, activePodIds, poolNodeUpTaskInProgress));
+                            adjustPoolSize(pool, availableNodes, activePodIds));
         }
     }
 
     private void adjustPoolSize(final NodePool pool,
                                 final List<Node> availableNodes,
-                                final Set<String> activePodIds,
-                                final Map<Long, Integer> poolNodeUpTaskInProgress) {
+                                final Set<String> activePodIds) {
         if (!pool.isAutoscaled()) {
             return;
         }
@@ -77,18 +76,18 @@ public class PoolAutoscaler {
                 .count();
         final double occupiedPercent = pool.getCount() == 0 ? PERCENT_MULTIPLIER :
                 (double)activePoolNodes / pool.getCount() * PERCENT_MULTIPLIER;
-        log.debug("{} active node(s) match pool {} of {}, {}% is occupied", activePoolNodes, pool.getId(),
-                pool.getCount(), occupiedPercent);
+        log.debug("{} occupied node(s) match pool[{}] with total size {}, {}% is occupied",
+                activePoolNodes, pool.getId(), pool.getCount(), occupiedPercent);
 
         if (pool.getCount() < pool.getMaxSize() &&
                 DoubleUtils.compare(occupiedPercent, pool.getScaleUpThreshold()) > 0) {
             final int increasedSize = Math.min(pool.getMaxSize(), pool.getCount() + pool.getScaleStep());
-            log.debug("Increasing pool {} size from {} to {}", pool.getId(), pool.getCount(), increasedSize);
+            log.debug("Increasing pool[{}] size from {} to {}", pool.getId(), pool.getCount(), increasedSize);
             updatePoolSize(pool, increasedSize);
         } else if (pool.getCount() > pool.getMinSize() &&
                 DoubleUtils.compare(occupiedPercent, pool.getScaleDownThreshold()) < 0) {
             final int decreasedSize = Math.max(pool.getMinSize(), pool.getCount() - pool.getScaleStep());
-            log.debug("Decreasing pool {} size from {} to {}", pool.getId(), pool.getCount(), decreasedSize);
+            log.debug("Decreasing pool[{}] size from {} to {}", pool.getId(), pool.getCount(), decreasedSize);
             updatePoolSize(pool, decreasedSize);
         }
     }

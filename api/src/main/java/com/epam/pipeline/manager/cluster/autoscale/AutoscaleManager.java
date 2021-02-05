@@ -168,7 +168,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             } catch (KubernetesClientException e) {
                 log.error(e.getMessage(), e);
             }
-            poolAutoscaler.adjustPoolSizes(poolNodeUpTaskInProgress);
+            poolAutoscaler.adjustPoolSizes();
         }
 
         private void checkPendingPods(Set<String> scheduledRuns, KubernetesClient client, Set<String> nodes) {

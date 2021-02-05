@@ -71,7 +71,7 @@ public class PoolAutoscalerTest {
         initKubeResources(RUN_ID_1, RUN_ID_2, RUN_ID_3, RUN_ID_4);
         final NodePool pool = initPool();
 
-        poolAutoscaler.adjustPoolSizes(Collections.emptyMap());
+        poolAutoscaler.adjustPoolSizes();
 
         final NodePoolVO vo = poolMapper.toVO(pool);
         vo.setCount(pool.getCount() + pool.getScaleStep());
@@ -83,7 +83,7 @@ public class PoolAutoscalerTest {
         initKubeResources(RUN_ID_1, RUN_ID_2, RUN_ID_3);
         initPool();
 
-        poolAutoscaler.adjustPoolSizes(Collections.emptyMap());
+        poolAutoscaler.adjustPoolSizes();
 
         verify(poolManager, times(0)).createOrUpdate(any());
     }
@@ -93,7 +93,7 @@ public class PoolAutoscalerTest {
         initKubeResources(RUN_ID_1);
         final NodePool pool = initPool();
 
-        poolAutoscaler.adjustPoolSizes(Collections.emptyMap());
+        poolAutoscaler.adjustPoolSizes();
 
         final NodePoolVO vo = poolMapper.toVO(pool);
         vo.setCount(pool.getCount() - pool.getScaleStep());
