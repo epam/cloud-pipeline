@@ -35,7 +35,6 @@ import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -161,13 +160,9 @@ public final class DockerCreatorUtils {
 
     public static DockerRegistry getDockerRegistry(final Long id, final String path,
                                                    final String owner, final String externalUrl) {
-        final DockerRegistry registry = new DockerRegistry();
-        registry.setId(id);
+        final DockerRegistry registry = getDockerRegistry(id, owner);
         registry.setPath(path);
-        registry.setOwner(owner);
-        if (!StringUtils.isEmpty(externalUrl)){
-            registry.setExternalUrl(externalUrl);
-        }
+        registry.setExternalUrl(externalUrl);
         return registry;
     }
 
@@ -222,9 +217,7 @@ public final class DockerCreatorUtils {
 
     public static ToolGroup getToolGroup(final Long id, final String name, final Long registryId, final String owner) {
         final ToolGroup toolGroup = new ToolGroup();
-        if (id != null) {
-            toolGroup.setId(id);
-        }
+        toolGroup.setId(id);
         toolGroup.setName(name);
         toolGroup.setRegistryId(registryId);
         toolGroup.setOwner(owner);

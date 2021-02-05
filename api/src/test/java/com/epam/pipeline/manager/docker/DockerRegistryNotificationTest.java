@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getClonedTool;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistry;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
@@ -55,6 +58,7 @@ import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getToolGr
 import static com.epam.pipeline.test.creator.security.SecurityCreatorUtils.getEntityVO;
 import static com.epam.pipeline.test.creator.security.SecurityCreatorUtils.getUserContext;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -64,8 +68,6 @@ import static org.mockito.Mockito.verify;
 
 public class DockerRegistryNotificationTest extends AbstractAclTest {
 
-    private static final String ADMIN = "ADMIN";
-    private static final String USER = "USER";
     private static final String REPO = "repository";
     private static final String REPO_EXTERNAL_PATH = "repository2";
     private static final String EXTERNAL_PATH = "external_repository";
@@ -78,26 +80,15 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     private static final String PULL_ACTION = "pull";
     private static final String LATEST = "latest";
     private static final String TEST_IDENTIFIER = REPO + "/" + IMAGE_GROUP_1;
-    private static final ImmutablePair<String, String> IMMUTABLE_PAIR_1 = new ImmutablePair(IMAGE_GROUP_1, "image");
-    private static final ImmutablePair<String, String> IMMUTABLE_PAIR_2 = new ImmutablePair(IMAGE_GROUP_2, "image");
-    private static final Long REG_ID_1 = 1L;
-    private static final Long REG_ID_2 = 2L;
-    private static final Long REG_ID_3 = 3L;
-    private static final Long TOOLGROUP_ID_1 = 4L;
-    private static final Long TOOL_ID_1 = 5L;
-    private static final Long TOOL_ID_2 = 6L;
-    private static final Long TOOL_ID_3 = 7L;
-    private static final Long CONTEXT_ID = 8L;
-    private static final Long ROLE_ID = 9L;
-    private static final CharSequence NOT_ALLOWED_MESSAGE = String.format("Permission is not granted for '%s' on '%S'",
-            REPO_NO_WRITE_ACCESS, AclPermission.WRITE_NAME);
-    private static final String ROLE_USER = "ROLE_USER";
+    private static final ImmutablePair<String, String> IMMUTABLE_PAIR_1 = ImmutablePair.of(IMAGE_GROUP_1, "image");
+    private static final ImmutablePair<String, String> IMMUTABLE_PAIR_2 = ImmutablePair.of(IMAGE_GROUP_2, "image");
+    private static final String NOT_ALLOWED_MESSAGE_PART = "not granted";
 
     @Autowired
     private DockerRegistryDao mockDockerRegistryDao;
 
     @Autowired
-    private GrantPermissionManager spyGrantPermissionManager;
+    private GrantPermissionManager spyPermissionManager;
 
     @Autowired
     private ToolManager mockToolManager;
@@ -128,38 +119,37 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     private DockerRegistry registry3;
     private ToolGroup toolGroup1;
     private ToolGroup toolGroup2;
-    private ToolGroup toolGroup3;
     private Tool tool1;
     private Tool tool2;
     private Tool tool3;
 
     @Before
     public void setUp() {
-        registry1 = getDockerRegistry(REG_ID_1, REPO, USER, "");
-        registry2 = getDockerRegistry(REG_ID_2, REPO_EXTERNAL_PATH, EXTERNAL_PATH, ADMIN);
-        registry3 = getDockerRegistry(REG_ID_3, REPO_NO_WRITE_ACCESS, ADMIN, "");
+        registry1 = getDockerRegistry(ID, REPO, SIMPLE_USER, "");
+        registry2 = getDockerRegistry(ID_2, REPO_EXTERNAL_PATH, EXTERNAL_PATH, ADMIN_ROLE);
+        registry3 = getDockerRegistry(ID_3, REPO_NO_WRITE_ACCESS, ADMIN_ROLE, "");
 
-        toolGroup1 = getToolGroup(TOOLGROUP_ID_1, "library", registry1.getId(), USER);
-        toolGroup2 = getToolGroup(null, "library2", registry1.getId(), USER);
-        toolGroup3 = getToolGroup(null, "library", registry2.getId(), USER);
+        toolGroup1 = getToolGroup(ID, "library", registry1.getId(), SIMPLE_USER);
+        toolGroup2 = getToolGroup(null, "library2", registry1.getId(), SIMPLE_USER);
+        ToolGroup toolGroup3 = getToolGroup(null, "library", registry2.getId(), SIMPLE_USER);
 
-        tool1 = getTool(toolGroup1, IMAGE, registry1, USER);
-        tool2 = getTool(toolGroup2, IMAGE_NEW_GROUP, registry1, USER);
-        tool3 = getTool(toolGroup3, IMAGE, registry2, USER);
+        tool1 = getTool(toolGroup1, IMAGE, registry1, SIMPLE_USER);
+        tool2 = getTool(toolGroup2, IMAGE_NEW_GROUP, registry1, SIMPLE_USER);
+        tool3 = getTool(toolGroup3, IMAGE, registry2, SIMPLE_USER);
 
+        mockUserContext();
         MockitoAnnotations.initMocks(this);
     }
 
     @Test
     public void testEventCanEnableToolInExistingGroupWithRightUserAccess() {
-        mockDockerRegistryDao(registry1, REPO);
-        mockMetadataManager(registry1);
-        mockToolGroupManager(IMMUTABLE_PAIR_1, IMAGE_GROUP_1, IMAGE, REPO, toolGroup1);
-        mockUserManager();
-        mockToolManager(Optional.empty(), IMAGE, TOOLGROUP_ID_1, tool1, TOOL_ID_1);
+        mockRegistryDao(registry1, REPO);
+        mockMetadataCheck(registry1);
+        mockToolGroupBehaviour();
+        mockToolCreation(IMAGE, ID, tool1, ID);
 
         final DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
-                Collections.singletonList(USER),
+                Collections.singletonList(SIMPLE_USER),
                 Collections.singletonList(REPO),
                 Collections.singletonList(IMAGE),
                 Collections.singletonList(PUSH_ACTION));
@@ -167,7 +157,8 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         final List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(REPO, eventsEnvelope);
         Assert.assertEquals(1, registeredTools.size());
 
-        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_1), eq(LATEST), eq(IMAGE),
+        verify(mockDockerClientFactory).getDockerClient(eq(registry1), eq(null));
+        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(ID), eq(LATEST), eq(IMAGE),
                 eq(registry1), eq(null));
         verify(mockDockerRegistryDao, times(2)).loadDockerRegistry(eq(REPO));
         verify(mockMetadataManager, times(2)).hasMetadata(
@@ -175,21 +166,20 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         verify(mockToolGroupManager).getGroupAndTool(eq(IMAGE));
         verify(mockToolGroupManager).doesToolGroupExist(eq(REPO), eq(IMAGE_GROUP_1));
         verify(mockToolGroupManager).loadByNameOrId(eq(TEST_IDENTIFIER));
-        verify(mockToolManager).loadToolInGroup(eq(IMAGE), eq(TOOLGROUP_ID_1));
-        verify(mockUserManager).loadUserContext(eq(USER));
+        verify(mockToolManager).loadToolInGroup(eq(IMAGE), eq(ID));
+        verify(mockUserManager).loadUserContext(eq(SIMPLE_USER));
         verify(mockToolManager).create(eq(tool1), eq(false));
     }
 
     @Test
     public void testEventCanCreateGroupIfItDoesntExist() {
-        mockDockerRegistryDao(registry1, REPO);
-        mockMetadataManager(registry1);
-        mockToolGroupManager(IMMUTABLE_PAIR_2, IMAGE_GROUP_2, IMAGE_NEW_GROUP, REPO, null);
-        mockUserManager();
-        mockToolManager(Optional.empty(), IMAGE_NEW_GROUP, null, tool2, TOOL_ID_2);
+        mockRegistryDao(registry1, REPO);
+        mockMetadataCheck(registry1);
+        mockToolGroupBehaviourWithoutGroup(IMMUTABLE_PAIR_2, IMAGE_GROUP_2, IMAGE_NEW_GROUP, REPO);
+        mockToolCreation(IMAGE_NEW_GROUP, null, tool2, ID_2);
 
         final DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
-                Collections.singletonList(USER),
+                Collections.singletonList(SIMPLE_USER),
                 Collections.singletonList(REPO),
                 Collections.singletonList(IMAGE_NEW_GROUP),
                 Collections.singletonList(PUSH_ACTION));
@@ -197,7 +187,8 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         final List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(REPO, eventsEnvelope);
         Assert.assertEquals(1, registeredTools.size());
 
-        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_2), eq(LATEST), eq(IMAGE_NEW_GROUP),
+        verify(mockDockerClientFactory).getDockerClient(eq(registry1), eq(null));
+        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(ID_2), eq(LATEST), eq(IMAGE_NEW_GROUP),
                 eq(registry1), eq(null));
         verify(mockDockerRegistryDao, times(2)).loadDockerRegistry(eq(REPO));
         verify(mockMetadataManager, times(2)).hasMetadata(
@@ -205,14 +196,14 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         verify(mockToolGroupManager).getGroupAndTool(eq(IMAGE_NEW_GROUP));
         verify(mockToolGroupManager).doesToolGroupExist(eq(REPO), eq(IMAGE_GROUP_2));
         verify(mockToolManager).loadToolInGroup(eq(IMAGE_NEW_GROUP), eq(null));
-        verify(mockUserManager, times(2)).loadUserContext(eq(USER));
+        verify(mockUserManager, times(2)).loadUserContext(eq(SIMPLE_USER));
         verify(mockToolManager).create(eq(tool2), eq(false));
     }
 
     @Test
     public void testEventWontProcessPullAction() {
         final DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
-                Collections.singletonList(USER),
+                Collections.singletonList(SIMPLE_USER),
                 Collections.singletonList(REPO),
                 Collections.singletonList(IMAGE),
                 Collections.singletonList(PULL_ACTION));
@@ -223,13 +214,12 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
 
     @Test
     public void testLoadRegistryFromEventHostIfHeaderNull() {
-        mockDockerRegistryDao(registry1, REPO);
-        mockMetadataManager(registry1);
-        mockToolGroupManager(IMMUTABLE_PAIR_1, IMAGE_GROUP_1, IMAGE, REPO, toolGroup1);
-        mockUserManager();
-        mockToolManager(Optional.empty(), IMAGE, TOOLGROUP_ID_1, tool1, TOOL_ID_1);
+        mockRegistryDao(registry1, REPO);
+        mockMetadataCheck(registry1);
+        mockToolGroupBehaviour();
+        mockToolCreation(IMAGE, ID, tool1, ID);
         final DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
-                Collections.singletonList(USER),
+                Collections.singletonList(SIMPLE_USER),
                 Collections.singletonList(REPO),
                 Collections.singletonList(IMAGE),
                 Collections.singletonList(PUSH_ACTION));
@@ -237,7 +227,8 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         final List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(null, eventsEnvelope);
         Assert.assertEquals(1, registeredTools.size());
 
-        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_1), eq(LATEST), eq(IMAGE),
+        verify(mockDockerClientFactory).getDockerClient(eq(registry1), eq(null));
+        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(ID), eq(LATEST), eq(IMAGE),
                 eq(registry1), eq(null));
         verify(mockDockerRegistryDao, times(2)).loadDockerRegistry(eq(REPO));
         verify(mockMetadataManager, times(2)).hasMetadata(
@@ -245,22 +236,21 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         verify(mockToolGroupManager).getGroupAndTool(eq(IMAGE));
         verify(mockToolGroupManager).doesToolGroupExist(eq(REPO), eq(IMAGE_GROUP_1));
         verify(mockToolGroupManager).loadByNameOrId(eq(TEST_IDENTIFIER));
-        verify(mockToolManager).loadToolInGroup(eq(IMAGE), eq(TOOLGROUP_ID_1));
-        verify(mockUserManager).loadUserContext(eq(USER));
+        verify(mockToolManager).loadToolInGroup(eq(IMAGE), eq(ID));
+        verify(mockUserManager).loadUserContext(eq(SIMPLE_USER));
         verify(mockToolManager).create(eq(tool1), eq(false));
     }
 
     @Test
     public void testLoadRegistryByExternalHostName() {
-        mockDockerRegistryDao(registry2, EXTERNAL_PATH);
-        mockMetadataManager(registry2);
-        mockToolGroupManager(IMMUTABLE_PAIR_1, IMAGE_GROUP_1, IMAGE, EXTERNAL_PATH, null);
-        mockUserManager();
-        mockToolManager(Optional.empty(), IMAGE, null, tool3, TOOL_ID_3);
+        mockDockerRegistryDaoWithExternalPath(registry2);
+        mockMetadataCheck(registry2);
+        mockToolGroupBehaviourWithoutGroup(IMMUTABLE_PAIR_1, IMAGE_GROUP_1, IMAGE, EXTERNAL_PATH);
+        mockToolCreation(IMAGE, null, tool3, ID_3);
 
         initAclEntity(registry2, getWritePermissions());
         final DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
-                Collections.singletonList(USER),
+                Collections.singletonList(SIMPLE_USER),
                 Collections.singletonList(EXTERNAL_PATH),
                 Collections.singletonList(IMAGE),
                 Collections.singletonList(PUSH_ACTION));
@@ -268,7 +258,8 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         final List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(EXTERNAL_PATH, eventsEnvelope);
         Assert.assertEquals(1, registeredTools.size());
 
-        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(TOOL_ID_3), eq(LATEST), eq(IMAGE),
+        verify(mockDockerClientFactory).getDockerClient(eq(registry2), eq(null));
+        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(ID_3), eq(LATEST), eq(IMAGE),
                 eq(registry2), eq(null));
         verify(mockDockerRegistryDao, times(2)).loadDockerRegistry(eq(EXTERNAL_PATH));
         verify(mockDockerRegistryDao, times(2)).loadDockerRegistryByExternalUrl(eq(EXTERNAL_PATH));
@@ -276,51 +267,48 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 eq(getEntityVO(registry2.getId(), AclClass.DOCKER_REGISTRY)));
         verify(mockToolGroupManager).getGroupAndTool(eq(IMAGE));
         verify(mockToolGroupManager).doesToolGroupExist(eq(REPO_EXTERNAL_PATH), eq(IMAGE_GROUP_1));
-        verify(mockUserManager, times(2)).loadUserContext(eq(USER));
+        verify(mockUserManager, times(2)).loadUserContext(eq(SIMPLE_USER));
         verify(mockToolManager).loadToolInGroup(eq(IMAGE), eq(null));
         verify(mockToolManager).create(eq(tool3), eq(false));
     }
 
     @Test
     public void testToolWontBeEnabledIfUserIsntPermittedToWriteToRegistryAndGroupDoesntExist() {
-        mockDockerRegistryDao(registry3, REPO_NO_WRITE_ACCESS);
-        mockMetadataManager(registry3);
-        mockToolGroupManager(IMMUTABLE_PAIR_2, IMAGE_GROUP_2, IMAGE_NEW_GROUP, REPO_NO_WRITE_ACCESS, null);
-        mockUserManager();
-        doReturn(NOT_ALLOWED_MESSAGE).when(mockMessageHelper).getMessage(
+        mockRegistryDao(registry3, REPO_NO_WRITE_ACCESS);
+        mockMetadataCheck(registry3);
+        mockToolGroupBehaviourWithoutGroup(IMMUTABLE_PAIR_2, IMAGE_GROUP_2, IMAGE_NEW_GROUP, REPO_NO_WRITE_ACCESS);
+        doReturn(NOT_ALLOWED_MESSAGE_PART).when(mockMessageHelper).getMessage(
                 eq(MessageConstants.ERROR_PERMISSION_IS_NOT_GRANTED),
                 eq(REPO_NO_WRITE_ACCESS), eq(AclPermission.WRITE_PERMISSION));
 
         initAclEntity(registry3);
         final DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
-                Collections.singletonList(USER),
+                Collections.singletonList(SIMPLE_USER),
                 Collections.singletonList(REPO_NO_WRITE_ACCESS),
                 Collections.singletonList(IMAGE_NEW_GROUP),
                 Collections.singletonList(PUSH_ACTION));
 
         Runnable task = () -> registryManager.notifyDockerRegistryEvents(REPO_NO_WRITE_ACCESS, eventsEnvelope);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), task);
+        assertThrows(e -> containsIgnoreCase(e.getMessage(), NOT_ALLOWED_MESSAGE_PART), task);
 
         verify(mockDockerRegistryDao).loadDockerRegistry(eq(REPO_NO_WRITE_ACCESS));
         verify(mockMetadataManager).hasMetadata(eq(getEntityVO(registry3.getId(), AclClass.DOCKER_REGISTRY)));
         verify(mockToolGroupManager).getGroupAndTool(eq(IMAGE_NEW_GROUP));
         verify(mockToolGroupManager).doesToolGroupExist(eq(REPO_NO_WRITE_ACCESS), eq(IMAGE_GROUP_2));
-        verify(mockUserManager).loadUserContext(eq(USER));
+        verify(mockUserManager).loadUserContext(eq(SIMPLE_USER));
         verify(mockMessageHelper).getMessage(eq(MessageConstants.ERROR_PERMISSION_IS_NOT_GRANTED),
                 eq(REPO_NO_WRITE_ACCESS), eq(AclPermission.WRITE_PERMISSION));
     }
 
     @Test
     public void testEventWontEnableAlreadyExistingTool() {
-        mockDockerRegistryDao(registry1, REPO);
-        mockMetadataManager(registry1);
-        mockToolGroupManager(IMMUTABLE_PAIR_1, IMAGE_GROUP_1, IMAGE, REPO, toolGroup1);
-        mockUserManager();
-        doReturn(Optional.of(getClonedTool(tool1, TOOL_ID_1)))
-                .when(mockToolManager).loadToolInGroup(eq(IMAGE), eq(TOOLGROUP_ID_1));
+        mockRegistryDao(registry1, REPO);
+        mockMetadataCheck(registry1);
+        mockToolGroupBehaviour();
+        doReturn(Optional.of(getClonedTool(tool1, ID))).when(mockToolManager).loadToolInGroup(eq(IMAGE), eq(ID));
 
         final DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
-                Arrays.asList(USER, USER),
+                Arrays.asList(SIMPLE_USER, SIMPLE_USER),
                 Arrays.asList(REPO, REPO),
                 Arrays.asList(IMAGE, IMAGE),
                 Arrays.asList(PUSH_ACTION, PUSH_ACTION));
@@ -329,55 +317,57 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         Assert.assertEquals(2, registeredTools.size());
         Assert.assertEquals(registeredTools.get(0).getId(), registeredTools.get(1).getId());
 
-        verify(mockToolManager, times(2)).updateToolVersionScanStatus(eq(TOOL_ID_1), eq(ToolScanStatus.NOT_SCANNED),
-                any(Date.class), eq(LATEST), eq(null), eq(null));
+        verify(mockDockerClientFactory, times(2)).getDockerClient(eq(registry1), eq(null));
+        verify(mockToolManager, times(2)).updateToolVersionScanStatus(
+                eq(ID), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), eq(LATEST), eq(null), eq(null));
         verify(mockDockerRegistryDao, times(4)).loadDockerRegistry(eq(REPO));
         verify(mockMetadataManager, times(4)).hasMetadata(
                 eq(getEntityVO(registry1.getId(), AclClass.DOCKER_REGISTRY)));
         verify(mockToolGroupManager, times(2)).getGroupAndTool(eq(IMAGE));
         verify(mockToolGroupManager, times(2)).doesToolGroupExist(eq(REPO), eq(IMAGE_GROUP_1));
         verify(mockToolGroupManager, times(2)).loadByNameOrId(eq(TEST_IDENTIFIER));
-        verify(mockToolManager, times(2)).loadToolInGroup(eq(IMAGE), eq(TOOLGROUP_ID_1));
+        verify(mockToolManager, times(2)).loadToolInGroup(eq(IMAGE), eq(ID));
     }
 
-    private void mockToolManager(final Optional<Tool> optional, final String image,
-                                 final Long groupId, final Tool tool, final Long toolId) {
-        doReturn(optional).when(mockToolManager).loadToolInGroup(eq(image), eq(groupId));
+    private void mockToolCreation(final String image, final Long groupId, final Tool tool, final Long toolId) {
+        doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(image), eq(groupId));
         doReturn(getClonedTool(tool, toolId)).when(mockToolManager).create(eq(tool), eq(false));
     }
 
-    private void mockUserManager() {
-        doReturn(getUserContext(CONTEXT_ID, USER, ROLE_ID, ROLE_USER)).when(mockUserManager).loadUserContext(eq(USER));
+    private void mockUserContext() {
+        doReturn(getUserContext(ID, SIMPLE_USER, ID, SIMPLE_USER_ROLE))
+                .when(mockUserManager).loadUserContext(eq(SIMPLE_USER));
     }
 
-    private void mockToolGroupManager(final ImmutablePair<String, String> pair, final String imageGroup,
-                                      final String image, final String repo, final ToolGroup group) {
-        boolean doesToolGroupExist = false;
-        if (group != null) {
-            doReturn(group).when(mockToolGroupManager).loadByNameOrId(eq(TEST_IDENTIFIER));
-            doesToolGroupExist = true;
-        }
+    private void mockToolGroupBehaviour() {
+        doReturn(IMMUTABLE_PAIR_1).when(mockToolGroupManager).getGroupAndTool(eq(IMAGE));
+        doReturn(true).when(mockToolGroupManager).doesToolGroupExist(eq(REPO), eq(IMAGE_GROUP_1));
+        doReturn(toolGroup1).when(mockToolGroupManager).loadByNameOrId(eq(TEST_IDENTIFIER));
+    }
+
+    private void mockToolGroupBehaviourWithoutGroup(final ImmutablePair<String, String> pair, final String imageGroup,
+                                                    final String image, final String repo) {
         doReturn(pair).when(mockToolGroupManager).getGroupAndTool(eq(image));
-        doReturn(doesToolGroupExist).when(mockToolGroupManager).doesToolGroupExist(eq(repo), eq(imageGroup));
+        doReturn(false).when(mockToolGroupManager).doesToolGroupExist(eq(repo), eq(imageGroup));
     }
 
-    private void mockMetadataManager(final DockerRegistry registry) {
+    private void mockMetadataCheck(final DockerRegistry registry) {
         doReturn(false).when(mockMetadataManager).hasMetadata(
                 eq(getEntityVO(registry.getId(), AclClass.DOCKER_REGISTRY)));
     }
 
-    private void mockDockerRegistryDao(final DockerRegistry registry, final String repo) {
-        if (EXTERNAL_PATH.equals(repo)) {
-            doReturn(registry).when(mockDockerRegistryDao).loadDockerRegistryByExternalUrl(eq(EXTERNAL_PATH));
-        } else {
-            doReturn(registry).when(mockDockerRegistryDao).loadDockerRegistry(eq(repo));
-        }
+    private void mockRegistryDao(final DockerRegistry registry, final String repo) {
+        doReturn(registry).when(mockDockerRegistryDao).loadDockerRegistry(eq(repo));
+    }
+
+    private void mockDockerRegistryDaoWithExternalPath(final DockerRegistry registry) {
+        doReturn(registry).when(mockDockerRegistryDao).loadDockerRegistryByExternalUrl(eq(EXTERNAL_PATH));
     }
 
     private List<AbstractGrantPermission> getWritePermissions() {
         final List<AbstractGrantPermission> permissions = new ArrayList<>();
-        permissions.add(new UserPermission(USER, AclPermission.WRITE.getMask()));
-        permissions.add(new UserPermission(ADMIN, AclPermission.WRITE.getMask()));
+        permissions.add(new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask()));
+        permissions.add(new UserPermission(ADMIN_ROLE, AclPermission.WRITE.getMask()));
         return permissions;
     }
 
