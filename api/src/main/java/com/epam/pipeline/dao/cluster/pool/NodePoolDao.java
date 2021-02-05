@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -105,7 +107,13 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         POOL_DOCKER_IMAGE,
         POOL_INSTANCE_IMAGE,
         POOL_INSTANCE_COUNT,
-        POOL_FILTER;
+        POOL_FILTER,
+        POOL_AUTOSCALED,
+        POOL_MIN_SIZE,
+        POOL_MAX_SIZE,
+        POOL_UP_THRESHOLD,
+        POOL_DOWN_THRESHOLD,
+        POOL_SCALE_STEP;
 
         public static final String DOCKER_IMAGE_DELIMITER = ",";
 
@@ -122,6 +130,12 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                     SetUtils.emptyIfNull(pool.getDockerImages())));
             params.addValue(POOL_INSTANCE_IMAGE.name(), pool.getInstanceImage());
             params.addValue(POOL_INSTANCE_COUNT.name(), pool.getCount());
+            params.addValue(POOL_AUTOSCALED.name(), pool.isAutoscaled());
+            params.addValue(POOL_MIN_SIZE.name(), pool.getMinSize());
+            params.addValue(POOL_MAX_SIZE.name(), pool.getMaxSize());
+            params.addValue(POOL_UP_THRESHOLD.name(), pool.getScaleUpThreshold());
+            params.addValue(POOL_DOWN_THRESHOLD.name(), pool.getScaleDownThreshold());
+            params.addValue(POOL_SCALE_STEP.name(), pool.getScaleStep());
             params.addValue(POOL_FILTER.name(),
                     Optional.ofNullable(pool.getFilter())
                             .map(JsonMapper::convertDataToJsonStringForQuery)
@@ -171,11 +185,40 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
             pool.setDockerImages(parseDockerImages(rs.getString(POOL_DOCKER_IMAGE.name())));
             pool.setInstanceImage(rs.getString(POOL_INSTANCE_IMAGE.name()));
             pool.setCount(rs.getInt(POOL_INSTANCE_COUNT.name()));
+            pool.setAutoscaled(rs.getBoolean(POOL_AUTOSCALED.name()));
+            applyIntValue(rs, POOL_MIN_SIZE.name(), pool::setMinSize);
+            applyIntValue(rs, POOL_MAX_SIZE.name(), pool::setMaxSize);
+            applyDoubleValue(rs, POOL_UP_THRESHOLD.name(), pool::setScaleUpThreshold);
+            applyDoubleValue(rs, POOL_DOWN_THRESHOLD.name(), pool::setScaleDownThreshold);
+            applyIntValue(rs, POOL_SCALE_STEP.name(), pool::setScaleStep);
             Optional.ofNullable(rs.getString(POOL_FILTER.name()))
                     .filter(StringUtils::isNotBlank)
                     .map(NodePoolParameters::parseFilter)
                     .ifPresent(pool::setFilter);
             return pool;
+        }
+
+        private static void applyIntValue(final ResultSet rs,
+                                          final String fieldName,
+                                          final Consumer<Integer> setter) {
+            applyValue(rs, Integer.class, fieldName, setter);
+        }
+
+        private static void applyDoubleValue(final ResultSet rs,
+                                             final String fieldName,
+                                             final Consumer<Double> setter) {
+            applyValue(rs, Double.class, fieldName, setter);
+        }
+
+        @SneakyThrows
+        private static <T> void applyValue(final ResultSet rs,
+                                           final Class<T> type,
+                                           final String fieldName,
+                                           final Consumer<T> setter) {
+            final T value = rs.getObject(fieldName, type);
+            if (!rs.wasNull()) {
+                setter.accept(value);
+            }
         }
 
         private static PoolFilter parseFilter(final String filter) {

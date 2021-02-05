@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -106,6 +106,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final ReassignHandler reassignHandler;
         private final ScaleDownHandler scaleDownHandler;
         private final List<RunCleaner> runCleaners;
+        private final PoolAutoscaler poolAutoscaler;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -123,7 +124,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final NodePoolManager nodePoolManager,
                              final ReassignHandler reassignHandler,
                              final ScaleDownHandler scaleDownHandler,
-                             final List<RunCleaner> runCleaners) {
+                             final List<RunCleaner> runCleaners,
+                             final PoolAutoscaler poolAutoscaler) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -136,6 +138,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.reassignHandler = reassignHandler;
             this.scaleDownHandler = scaleDownHandler;
             this.runCleaners = runCleaners;
+            this.poolAutoscaler = poolAutoscaler;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -165,6 +168,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             } catch (KubernetesClientException e) {
                 log.error(e.getMessage(), e);
             }
+            poolAutoscaler.adjustPoolSizes(poolNodeUpTaskInProgress);
         }
 
         private void checkPendingPods(Set<String> scheduledRuns, KubernetesClient client, Set<String> nodes) {

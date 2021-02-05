@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
   ~ You may obtain a copy of the License at
@@ -33,7 +33,13 @@
                         instance_image,
                         instance_count,
                         filter,
-                        schedule_id
+                        schedule_id,
+                        autoscaled,
+                        min_size,
+                        max_size,
+                        scale_up_threshold,
+                        scale_down_threshold,
+                        scale_step
                         )
                     VALUES (
                         :POOL_CREATED_DATE,
@@ -46,7 +52,13 @@
                         :POOL_INSTANCE_IMAGE,
                         :POOL_INSTANCE_COUNT,
                         :POOL_FILTER,
-                        :SCHEDULE_ID)
+                        :SCHEDULE_ID,
+                        :POOL_AUTOSCALED,
+                        :POOL_MIN_SIZE,
+                        :POOL_MAX_SIZE,
+                        :POOL_UP_THRESHOLD,
+                        :POOL_DOWN_THRESHOLD,
+                        :POOL_SCALE_STEP)
                 ]]>
             </value>
         </constructor-arg>
@@ -58,7 +70,13 @@
                         name = :POOL_NAME,
                         instance_count = :POOL_INSTANCE_COUNT,
                         filter = :POOL_FILTER,
-                        schedule_id = :SCHEDULE_ID
+                        schedule_id = :SCHEDULE_ID,
+                        autoscaled = :POOL_AUTOSCALED,
+                        min_size = :POOL_MIN_SIZE,
+                        max_size = :POOL_MAX_SIZE,
+                        scale_up_threshold = :POOL_UP_THRESHOLD,
+                        scale_down_threshold = :POOL_DOWN_THRESHOLD,
+                        scale_step = :POOL_SCALE_STEP
                     WHERE
                         id = :POOL_ID
                 ]]>
@@ -90,6 +108,12 @@
                         n.instance_count as POOL_INSTANCE_COUNT,
                         n.filter as POOL_FILTER,
                         n.schedule_id as SCHEDULE_ID,
+                        n.autoscaled as POOL_AUTOSCALED,
+                        n.min_size as POOL_MIN_SIZE,
+                        n.max_size as POOL_MAX_SIZE,
+                        n.scale_up_threshold as POOL_UP_THRESHOLD,
+                        n.scale_down_threshold as POOL_DOWN_THRESHOLD,
+                        n.scale_step as POOL_SCALE_STEP,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
                         e.from_day_of_week,
@@ -121,6 +145,12 @@
                         n.instance_image as POOL_INSTANCE_IMAGE,
                         n.instance_count as POOL_INSTANCE_COUNT,
                         n.filter as POOL_FILTER,
+                        n.autoscaled as POOL_AUTOSCALED,
+                        n.min_size as POOL_MIN_SIZE,
+                        n.max_size as POOL_MAX_SIZE,
+                        n.scale_up_threshold as POOL_UP_THRESHOLD,
+                        n.scale_down_threshold as POOL_DOWN_THRESHOLD,
+                        n.scale_step as POOL_SCALE_STEP,
                         n.schedule_id as SCHEDULE_ID,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
