@@ -11,15 +11,19 @@ import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagUpsertBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagUpsertRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,38 +34,62 @@ public class DataStorageTagManager {
 
     private final DataStorageTagDao tagDao;
 
+    @Transactional
     public List<DataStorageTag> bulkInsert(final Long storageId, final DataStorageTagInsertBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
         }
         final List<DataStorageTag> tags = request.getRequests().stream()
-                .map(tagRequest -> asTag(storageId, tagRequest))
+                .map(tagRequest -> tagFrom(storageId, tagRequest))
                 .collect(Collectors.toList());
         tagDao.bulkDelete(tags.stream().map(DataStorageTag::getObject));
         return tagDao.bulkUpsert(tags);
     }
 
-    private DataStorageTag asTag(final Long storageId, final DataStorageTagInsertRequest request) {
+    private DataStorageTag tagFrom(final Long storageId, final DataStorageTagInsertRequest request) {
         final DataStorageObject object = new DataStorageObject(storageId, request.getPath(), request.getVersion());
         return new DataStorageTag(object, request.getKey(), request.getValue());
     }
 
+    @Transactional
+    public List<DataStorageTag> bulkUpsert(final Long storageId, final DataStorageTagUpsertBulkRequest request) {
+        if (CollectionUtils.isEmpty(request.getRequests())) {
+            return Collections.emptyList();
+        }
+        final List<DataStorageTag> tags = request.getRequests().stream()
+                .map(tagRequest -> tagFrom(storageId, tagRequest))
+                .collect(Collectors.toList());
+        return tagDao.bulkUpsert(tags);
+    }
+
+    private DataStorageTag tagFrom(final Long storageId, final DataStorageTagUpsertRequest request) {
+        final DataStorageObject object = new DataStorageObject(storageId, request.getPath(), request.getVersion());
+        return new DataStorageTag(object, request.getKey(), request.getValue());
+    }
+
+    @Transactional
     public List<DataStorageTag> bulkCopy(final Long storageId, final DataStorageTagCopyBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
         }
-        final Map<DataStorageTagCopyRequest.DataStorageTagCopyRequestObject, List<DataStorageTag>> sourceTags = request.getRequests().stream()
-                .map(DataStorageTagCopyRequest::getSource)
-                .distinct()
-                .collect(Collectors.toMap(Function.identity(), it -> load(new DataStorageObject(storageId, it.getPath(), it.getVersion()))));
+        final Map<DataStorageTagCopyRequest.DataStorageTagCopyRequestObject, List<DataStorageTag>> sourceTagsMap =
+                request.getRequests().stream()
+                        .map(DataStorageTagCopyRequest::getSource)
+                        .distinct()
+                        .collect(Collectors.toMap(Function.identity(),
+                                it -> load(new DataStorageObject(storageId, it.getPath(), it.getVersion()))));
         final List<DataStorageTag> tags = request.getRequests().stream()
-                .flatMap(r -> sourceTags.get(r.getSource()).stream()
-                        .map(it -> it.withObject(new DataStorageObject(storageId, r.getDestination().getPath(), r.getDestination().getVersion()))))
+                .flatMap(r -> Optional.ofNullable(sourceTagsMap.get(r.getSource()))
+                        .map(sourceTags -> sourceTags.stream()
+                                .map(it -> it.withObject(new DataStorageObject(storageId,
+                                        r.getDestination().getPath(), r.getDestination().getVersion()))))
+                        .orElseGet(Stream::empty))
                 .collect(Collectors.toList());
         tagDao.bulkDelete(tags.stream().map(DataStorageTag::getObject));
         return tagDao.bulkUpsert(tags);
     }
 
+    @Transactional
     public List<DataStorageTag> bulkLoad(final Long storageId, final DataStorageTagBulkLoadRequest request) {
         if (CollectionUtils.isEmpty(request.getPaths())) {
             return Collections.emptyList();
@@ -69,6 +97,7 @@ public class DataStorageTagManager {
         return tagDao.bulkLoad(storageId, request.getPaths());
     }
 
+    @Transactional
     public void bulkDelete(final Long storageId, final DataStorageTagDeleteBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return;
@@ -77,6 +106,7 @@ public class DataStorageTagManager {
             .map(r -> new DataStorageObject(storageId, r.getPath(), r.getVersion())));
     }
 
+    @Transactional
     public void bulkDeleteAll(final Long storageId, final DataStorageTagDeleteAllBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return;
@@ -110,40 +140,33 @@ public class DataStorageTagManager {
         foldersToDelete.forEach(path -> tagDao.deleteAllInFolder(storageId, path));
     }
 
+    @Transactional
     public DataStorageTag upsert(final DataStorageTag tag) {
         return tagDao.upsert(tag);
     }
 
+    @Transactional
     public List<DataStorageTag> upsert(final Stream<DataStorageTag> tags) {
         return tagDao.bulkUpsert(tags);
     }
 
-    public Map<String, String> upsertFromMap(final DataStorageObject object, final Map<String, String> tags) {
-        return asMap(tagDao.bulkUpsert(tags.entrySet().stream()
-                .map(entry -> new DataStorageTag(object, entry.getKey(), entry.getValue()))));
-    }
-
+    @Transactional
     public List<DataStorageTag> load(final DataStorageObject object) {
         return tagDao.load(object);
     }
-    
-    public Map<String, String> loadAsMap(final DataStorageObject object) {
-        return asMap(tagDao.load(object));
-    }
 
+    @Transactional
     public void delete(final DataStorageObject object) {
         tagDao.delete(object);
     }
 
+    @Transactional
     public void delete(final DataStorageObject object, final List<String> keys) {
         tagDao.delete(object, keys);
     }
 
+    @Transactional
     public void delete(final DataStorageObject object, final Collection<String> keys) {
         tagDao.delete(object, new ArrayList<>(keys));
-    }
-
-    private Map<String, String> asMap(final List<DataStorageTag> tags) {
-        return tags.stream().collect(Collectors.toMap(DataStorageTag::getKey, DataStorageTag::getValue));
     }
 }

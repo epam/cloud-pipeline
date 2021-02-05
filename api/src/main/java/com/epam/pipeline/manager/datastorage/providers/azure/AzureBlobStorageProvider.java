@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -104,8 +105,8 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
-    public DataStorageFile getFileMetadata(final AzureBlobStorage dataStorage, final String path) {
-        return getAzureStorageHelper(dataStorage).getFileMetadata(dataStorage, path);
+    public Optional<DataStorageFile> findFile(final AzureBlobStorage dataStorage, final String path) {
+        return getAzureStorageHelper(dataStorage).findFile(dataStorage, path);
     }
 
     @Override

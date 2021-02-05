@@ -176,14 +176,16 @@ public class GSBucketStorageHelper {
         return new DataStorageListing(blobs.getNextPageToken(), items);
     }
 
-    public DataStorageFile getFile(final GSBucketStorage storage, final String path) {
+    public Optional<DataStorageFile> findFile(final GSBucketStorage storage, final String path) {
         final Storage client = gcpClient.buildStorageClient(region);
-        final Blob blob = client.get(storage.getPath(), path);
-        final DataStorageFile file = new DataStorageFile();
-        file.setName(blob.getName());
-        file.setPath(blob.getName());
-        file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
-        return file;
+        return Optional.ofNullable(client.get(storage.getPath(), path))
+                .map(blob -> {
+                    final DataStorageFile file = new DataStorageFile();
+                    file.setName(blob.getName());
+                    file.setPath(blob.getName());
+                    file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
+                    return file;
+                });
     }
 
     public DataStorageFile createFile(final GSBucketStorage storage, final String path,
