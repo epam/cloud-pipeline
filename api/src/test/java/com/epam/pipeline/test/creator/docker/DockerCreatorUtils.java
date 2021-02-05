@@ -123,7 +123,7 @@ public final class DockerCreatorUtils {
     }
 
     public static Tool getTool() {
-        return getTool(null, null);
+        return getTool((Long) null, null);
     }
 
     public static ToolSymlinkRequest getToolSymlinkRequest() {
@@ -260,6 +260,13 @@ public final class DockerCreatorUtils {
         tool.setRegistry(dockerRegistry.getPath());
         tool.setRegistryId(dockerRegistry.getId());
         tool.setOwner(owner);
+        return tool;
+    }
+
+    public static Tool getTool(final String image, final String defaultCommand) {
+        final Tool tool = getTool(TEST_STRING);
+        tool.setImage(image);
+        tool.setDefaultCommand(defaultCommand);
         return tool;
     }
 

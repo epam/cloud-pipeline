@@ -6,7 +6,6 @@ import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -37,8 +36,14 @@ import java.util.function.Predicate;
 
 import static com.epam.pipeline.common.MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED;
 import static com.epam.pipeline.common.MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED;
+import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getPipelineConfiguration;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
+import static java.lang.Integer.parseInt;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
@@ -47,17 +52,15 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class PipelineRunManagerInstanceAndPriceTypesTest {
-    private static final Long TOOL_ID = 1L;
     private static final String PERMISSION_NAME = "READ";
     private static final String TEST_USER = "user";
     private static final String DEFAULT_COMMAND = "sleep";
+    private static final String TEST_IMAGE = "testImage";
 
     private static final float PRICE_PER_HOUR = 12F;
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
@@ -65,9 +68,7 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     private static final String INSTANCE_TYPE = "m5.large";
     private static final String SPOT = PriceType.SPOT.getLiteral();
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
-    private static final long REGION_ID = 1L;
-    private static final long NOT_ALLOWED_REGION_ID = 2L;
-    private static final String NOT_ALLOWED_MESSAGE = "not allowed";
+    private static final String NOT_ALLOWED = "not allowed";
     private static final String INSTANCE_DISK = "1";
 
     @InjectMocks
@@ -118,7 +119,6 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     @Mock
     private PreferenceManager preferenceManager;
 
-    private static final String TEST_IMAGE = "testImage";
     private Tool notScannedTool;
     private PipelineConfiguration configuration;
     private InstancePrice price;
@@ -129,65 +129,25 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        notScannedTool = new Tool();
-        notScannedTool.setId(TOOL_ID);
-        notScannedTool.setImage(TEST_IMAGE);
-        notScannedTool.setDefaultCommand(DEFAULT_COMMAND);
+        notScannedTool = getTool(TEST_IMAGE, DEFAULT_COMMAND);
+        defaultAwsRegion = defaultRegion(ID);
+        nonAllowedAwsRegion = nonDefaultRegion();
+        configuration = getPipelineConfiguration(TEST_IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId());
+        price = new InstancePrice(configuration.getInstanceType(), parseInt(configuration.getInstanceDisk()),
+                PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
 
-        defaultAwsRegion = defaultRegion(REGION_ID);
-        nonAllowedAwsRegion = nonDefaultRegion(NOT_ALLOWED_REGION_ID);
+        mockCloudRegionManager();
+        mockInstanceOfferManager();
+        mockPreferenceManager();
+        mockPipelineConfigurationManager();
+        mockToolManager();
 
-        when(cloudRegionManager.load(eq(REGION_ID))).thenReturn(defaultAwsRegion);
-        when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultAwsRegion);
-        when(cloudRegionManager.load(eq(NOT_ALLOWED_REGION_ID))).thenReturn(nonAllowedAwsRegion);
-
-        configuration = new PipelineConfiguration();
-        configuration.setDockerImage(TEST_IMAGE);
-        configuration.setInstanceDisk(INSTANCE_DISK);
-        configuration.setIsSpot(true);
-        configuration.setCloudRegionId(defaultAwsRegion.getId());
-
-        price = new InstancePrice(
-                configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR,
-                COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
-
-        when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
-        when(toolManager.resolveSymlinks(TEST_IMAGE)).thenReturn(notScannedTool);
-        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(true))).thenReturn(true);
-        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(false))).thenReturn(true);
-        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(true))).thenReturn(true);
-        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(false))).thenReturn(true);
-        when(instanceOfferManager
-                .isInstanceAllowed(anyString(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
-        when(instanceOfferManager
-                .isToolInstanceAllowed(anyString(), any(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
-
-        when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
-        when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(BehaviorSubject.create());
-        when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
-                .thenReturn(price);
-        when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString(), anyString()))
-                .thenReturn("sleep");
-        when(toolManager.loadToolVersionScan(notScannedTool.getId(), null))
-                .thenReturn(Optional.empty());
-        when(toolVersionManager.loadToolVersion(anyLong(), anyString()))
-                .thenReturn(ToolVersion.builder().size(1L).build());
-        doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any());
-        doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
-        doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
-
+        doReturn(DEFAULT_COMMAND).when(pipelineLauncher).launch(
+                any(PipelineRun.class), any(), any(), anyString(), anyString());
+        doReturn(ToolVersion.builder().size(1L).build())
+                .when(toolVersionManager).loadToolVersion(anyLong(), anyString());
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
-
-        doReturn(3).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
-        doReturn(3).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        doReturn(true).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
-
         doReturn(TEST_USER).when(securityManager).getAuthorizedUser();
-
-        AwsRegion region = new AwsRegion();
-        region.setRegionCode("us-east-1");
-        doNothing().when(entityManager).setManagers(any());
-        doNothing().when(resourceMonitoringManager).monitorResourceUsage();
     }
 
     @Test
@@ -196,20 +156,17 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
         verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
 
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE),
-                eq(getContextualPreferenceExternalResource(notScannedTool)), eq(REGION_ID), eq(true));
+                eq(getExternalResource()), eq(ID), eq(true));
 
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT),
-                eq(getContextualPreferenceExternalResource(notScannedTool)), eq(false));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getExternalResource()), eq(false));
         verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+        verifyPreferenceManager();
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
@@ -223,22 +180,21 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     @Test
     public void testLaunchPipelineFailsOnNotAllowedToolInstanceType() {
         doReturn(false).when(instanceOfferManager)
-                .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(true));
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
-                eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(ID), eq(true));
+        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
         Runnable task = () -> launchTool(INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), task);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
         verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
 
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE),
-                eq(getContextualPreferenceExternalResource(notScannedTool)), eq(REGION_ID), eq(true));
+                eq(getExternalResource()), eq(ID), eq(true));
     }
 
     @Test
@@ -247,20 +203,17 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
         verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
 
-        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
-        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(ID), eq(true));
+        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(ID), eq(true));
 
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT),
-                eq(getContextualPreferenceExternalResource(notScannedTool)), eq(false));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getExternalResource()), eq(false));
         verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+        verifyPreferenceManager();
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
@@ -273,22 +226,21 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
     @Test
     public void testLaunchPipelineValidatesToolInstanceTypeInTheSpecifiedRegion() {
-        configuration.setCloudRegionId(NOT_ALLOWED_REGION_ID);
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
-                eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
+        configuration.setCloudRegionId(ID_2);
+        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
         Runnable task = () -> launchTool(INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), task);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(NOT_ALLOWED_REGION_ID));
+        verify(cloudRegionManager).load(eq(ID_2));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(nonAllowedAwsRegion));
         verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
 
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE),
-                eq(getContextualPreferenceExternalResource(notScannedTool)), eq(NOT_ALLOWED_REGION_ID), eq(true));
+                eq(getExternalResource()), eq(ID_2), eq(true));
     }
 
     @Test
@@ -297,18 +249,15 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT),
-                eq(null), eq(false));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
 
         verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+        verifyPreferenceManager();
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
@@ -321,36 +270,34 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
     @Test
     public void testLaunchPipelineValidatesPipelineInstanceTypeInTheSpecifiedRegion() {
-        configuration.setCloudRegionId(NOT_ALLOWED_REGION_ID);
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
-                eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
+        configuration.setCloudRegionId(ID_2);
+        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), () -> launchPipeline(INSTANCE_TYPE));
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(INSTANCE_TYPE));
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(NOT_ALLOWED_REGION_ID));
+        verify(cloudRegionManager).load(eq(ID_2));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(nonAllowedAwsRegion));
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(NOT_ALLOWED_REGION_ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID_2), eq(true));
     }
 
     @Test
     public void testLaunchPipelineFailsOnNotAllowedInstanceType() {
-        doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
-                eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
+        doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
+        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), () -> launchPipeline(INSTANCE_TYPE));
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(INSTANCE_TYPE));
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
     }
 
     @Test
@@ -359,18 +306,16 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
 
-        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
-        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(ID), eq(true));
+        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(ID), eq(true));
 
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
         verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+        verifyPreferenceManager();
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
@@ -389,17 +334,15 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(false));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(false));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(null), eq(false));
 
         verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+        verifyPreferenceManager();
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(1L));
         verify(securityManager).getAuthorizedUser();
@@ -414,34 +357,77 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
     @Test
     public void testLaunchPipelineFailsOnNotAllowedPriceType() {
         doReturn(false).when(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
-        doReturn(NOT_ALLOWED_MESSAGE).when(messageHelper).getMessage(
-                eq(ERROR_PRICE_TYPE_IS_NOT_ALLOWED), eq(PriceType.SPOT));
+        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_PRICE_TYPE_IS_NOT_ALLOWED), eq(PriceType.SPOT));
 
         Runnable task = () -> launchPipeline(INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), task);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
-        verify(cloudRegionManager).load(eq(REGION_ID));
+        verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
     }
 
+    private void mockToolManager() {
+        doReturn(notScannedTool).when(toolManager).loadByNameOrId(eq(TEST_IMAGE));
+        doReturn(notScannedTool).when(toolManager).resolveSymlinks(eq(TEST_IMAGE));
+        doReturn(Optional.empty()).when(toolManager).loadToolVersionScan(eq(notScannedTool.getId()), eq(null));
+    }
+
+
+    private void mockCloudRegionManager() {
+        doReturn(defaultAwsRegion).when(cloudRegionManager).load(eq(ID));
+        doReturn(defaultAwsRegion).when(cloudRegionManager).loadDefaultRegion();
+        doReturn(nonAllowedAwsRegion).when(cloudRegionManager).load(eq(ID_2));
+    }
+
+    private void mockPipelineConfigurationManager() {
+        doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any());
+        doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
+        doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+    }
+
+    private void mockPreferenceManager() {
+        doReturn(3).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
+        doReturn(3).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
+        doReturn(true).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+    }
+
+    private void mockInstanceOfferManager() {
+        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID), eq(true));
+        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID), eq(false));
+        doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID), eq(true));
+        doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID), eq(false));
+        doReturn(false).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID_2), eq(true));
+        doReturn(false).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID_2), eq(true));
+        doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
+        doReturn(BehaviorSubject.create()).when(instanceOfferManager).getAllInstanceTypesObservable();
+        doReturn(price).when(instanceOfferManager)
+                .getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong());
+    }
+
+    private void verifyPreferenceManager() {
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
+        verify(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+    }
+
     private void launchTool(final String instanceType) {
-        launchPipeline(configuration, null, instanceType, null);
+        launchPipeline(configuration, null, instanceType);
     }
 
     private void launchPipeline(final String instanceType) {
-        launchPipeline(configuration, new Pipeline(), instanceType, null);
+        launchPipeline(configuration, new Pipeline(), instanceType);
     }
 
-    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
-                                       final String instanceType, final Long parentRunId) {
-        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null, null,
-                parentRunId, null, null, null);
+    private void launchPipeline(final PipelineConfiguration configuration,
+                                final Pipeline pipeline, final String instanceType) {
+        pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null,
+                null, null, null, null, null, null);
     }
 
     private AwsRegion defaultRegion(final long id) {
@@ -450,14 +436,14 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
         return defaultAwsRegion;
     }
 
-    private AwsRegion nonDefaultRegion(final long id) {
-        final AwsRegion parentAwsRegion = defaultRegion(id);
+    private AwsRegion nonDefaultRegion() {
+        final AwsRegion parentAwsRegion = defaultRegion(ID_2);
         parentAwsRegion.setDefault(false);
         return parentAwsRegion;
     }
 
-    private ContextualPreferenceExternalResource getContextualPreferenceExternalResource(Tool tool) {
-        return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
+    private ContextualPreferenceExternalResource getExternalResource() {
+        return new ContextualPreferenceExternalResource(TOOL, notScannedTool.getId().toString());
     }
 
     static class Predicates {
