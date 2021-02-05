@@ -118,7 +118,14 @@ def pytest_sessionstart(session):
         storage_provider = os.environ['CP_PROVIDER']
         storage_type = _get_storage_type(config=session.config, storage_provider=storage_provider)
         session.config.storage_name = _generate_storage_name(storage_type=storage_type, storage_region=storage_region)
-        session.config.storage_path = session.config.storage_name
+        if storage_type in ['S3', 'AZ', 'GS'] and session.config.option.prefix:
+            session.config.storage_path = session.config.storage_name + '/prefix'
+            session.config.root_storage_name = session.config.storage_name + '-root'
+            session.config.root_storage_path = session.config.storage_name
+        else:
+            session.config.storage_path = session.config.storage_name
+            session.config.root_storage_name = ''
+            session.config.root_storage_path = ''
 
         mkdir(session.config.local_path, session.config.root_mount_path, session.config.logs_path)
 
@@ -126,11 +133,24 @@ def pytest_sessionstart(session):
                             format='%(levelname)s %(asctime)s %(module)s: %(message)s')
 
         if storage_type in ['S3', 'AZ', 'GS']:
-            if session.config.option.prefix:
-                session.config.storage_path += '/prefix'
             session.config.mount_path = session.config.root_mount_path
             execute("""
             head -c '{source_size}' /dev/urandom > '{source_path}'
+            
+            if [ '{root_storage_name}' ]
+            then
+                pipe storage create -c \
+                                    -n '{root_storage_name}' \
+                                    -p '{root_storage_path}' \
+                                    -d '' \
+                                    -sts '' \
+                                    -lts '' \
+                                    -b '' \
+                                    -t '{storage_type}' \
+                                    -r '{region}' \
+                                    -u '' \
+                                    -f '{folder}'
+            fi
             
             pipe storage create -c \
                                 -n '{storage_name}' \
@@ -158,6 +178,8 @@ def pytest_sessionstart(session):
             fi
             """.format(storage_name=session.config.storage_name,
                        storage_path=session.config.storage_path,
+                       root_storage_name=session.config.root_storage_name,
+                       root_storage_path=session.config.root_storage_path,
                        storage_type=storage_type,
                        region=storage_region,
                        folder=storage_folder or '',
@@ -241,13 +263,43 @@ def pytest_sessionfinish(session, exitstatus):
     try:
         execute("""
         EXIT_CODE=0
-        pipe storage umount '{root_mount_path}' || EXIT_CODE=$?
-        pipe storage delete -y -c -n '{storage_name}' || EXIT_CODE=$?
-        if [ -f "{source_path}" ]; then rm -f "{source_path}"; fi
-        if [ -d "{local_path}" ]; then rm -rf "{local_path}"; fi
-        if ! mount | grep '{root_mount_path}' > /dev/null && [ -d "{root_mount_path}" ]; then rm -rf "{root_mount_path}"; fi
+        
+        pipe storage umount '{root_mount_path}'
+        if [ $? != 0 ]
+        then
+            EXIT_CODE=1
+        fi
+        
+        pipe storage delete -y -c -n '{storage_path}'
+        if [ $? != 0 ]
+        then
+            EXIT_CODE=1
+        fi
+        
+        if [ '{root_storage_name}' ]
+        then
+            pipe storage delete -y -c -n '{root_storage_path}'
+            if [ $? != 0 ]
+            then
+                EXIT_CODE=1
+            fi
+        fi
+        
+        if [ -f "{source_path}" ]; then
+            rm -f "{source_path}"
+        fi
+        if [ -d "{local_path}" ]; then
+            rm -rf "{local_path}"
+        fi
+        if ! mount | grep '{root_mount_path}' > /dev/null && [ -d "{root_mount_path}" ]; then
+            rm -rf "{root_mount_path}"
+        fi
+        
         exit $EXIT_CODE
         """.format(storage_name=session.config.storage_name,
+                   storage_path=session.config.storage_path,
+                   root_storage_name=session.config.root_storage_name,
+                   root_storage_path=session.config.root_storage_path,
                    source_path=session.config.source_path,
                    local_path=session.config.local_path,
                    mount_path=session.config.mount_path,
