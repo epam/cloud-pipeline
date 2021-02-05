@@ -57,7 +57,9 @@ nav:
     - 8.7. Create shared file system: 'manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md'
     - 8.8. Data sharing: 'manual/08_Manage_Data_Storage/8.8._Data_sharing.md'
     - 8.9. Mapping storages: 'manual/08_Manage_Data_Storage/8.9._Mapping_storages.md'
-  - 9. Manage cluster nodes: 'manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md'
+  - 9. Manage cluster nodes:
+    - 9.0 Cluster nodes: 'manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md'
+    - 9.1 Hot node pools: 'manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md'
   - 10. Manage Tools:
     - 10.0. Overview: 'manual/10_Manage_Tools/10._Manage_Tools.md'
     - 10.1. Add and edit a Docker registry: 'manual/10_Manage_Tools/10.1._Add_Edit_a_Docker_registry.md'
@@ -100,6 +102,8 @@ nav:
     - 14.6. View cluster nodes: 'manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md'
     - 14.7. View and manage Permissions: 'manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI.md'
     - 14.8. View tools definitions: 'manual/14_CLI/14.8._View_tools_definitions_via_CLI.md'
+    - 14.9. User management: 'manual/14_CLI/14.9._User_management_via_CLI.md'
+    - 14.10. SSH tunnel: 'manual/14_CLI/14.10._SSH_tunnel.md'
   - 15. Interactive services:
     - 15.0. Overview: 'manual/15_Interactive_services/15._Interactive_services.md'
     - 15.1. Starting an interactive application: 'manual/15_Interactive_services/15.1._Starting_an_Interactive_application.md'
