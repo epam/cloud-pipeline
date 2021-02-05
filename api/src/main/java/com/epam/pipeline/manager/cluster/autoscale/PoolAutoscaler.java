@@ -75,10 +75,11 @@ public class PoolAutoscaler {
                             activePodIds.contains(labels.get(KubernetesConstants.RUN_ID_LABEL));
                 })
                 .count();
-        final long currentPoolSize = activePoolNodes + poolNodeUpTaskInProgress.getOrDefault(pool.getId(), 0);
         final double occupiedPercent = pool.getCount() == 0 ? PERCENT_MULTIPLIER :
-                (double)currentPoolSize / pool.getCount() * PERCENT_MULTIPLIER;
-        log.debug("{} active node(s) match pool {}, {}% is occupied", currentPoolSize, pool.getId(), occupiedPercent);
+                (double)activePoolNodes / pool.getCount() * PERCENT_MULTIPLIER;
+        log.debug("{} active node(s) match pool {} of {}, {}% is occupied", activePoolNodes, pool.getId(),
+                pool.getCount(), occupiedPercent);
+
         if (pool.getCount() < pool.getMaxSize() &&
                 DoubleUtils.compare(occupiedPercent, pool.getScaleUpThreshold()) > 0) {
             final int increasedSize = Math.min(pool.getMaxSize(), pool.getCount() + pool.getScaleStep());
