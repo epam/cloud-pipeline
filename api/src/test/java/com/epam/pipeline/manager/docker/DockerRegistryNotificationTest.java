@@ -87,6 +87,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     @Autowired
     private DockerRegistryDao mockDockerRegistryDao;
 
+    @SuppressWarnings("PMD.UnusedPrivateField")
     @Autowired
     private GrantPermissionManager spyPermissionManager;
 
