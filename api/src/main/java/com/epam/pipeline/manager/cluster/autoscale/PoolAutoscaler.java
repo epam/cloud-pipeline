@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,8 +19,9 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.utils.DoubleUtils;
 import io.fabric8.kubernetes.api.model.Node;
-import io.fabric8.kubernetes.api.model.NodeList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,20 +40,25 @@ import java.util.Set;
 @Slf4j
 public class PoolAutoscaler {
 
+    public static final int PERCENT_MULTIPLIER = 100;
     private final NodePoolManager poolManager;
+    private final NodePoolMapper poolMapper;
     private final KubernetesManager kubernetesManager;
 
-    public void adjustPoolSizes() {
-        try (final KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
-            final NodeList availableNodes = kubernetesManager.getAvailableNodes(kubernetesClient);
+    public void adjustPoolSizes(final Map<Long, Integer> poolNodeUpTaskInProgress) {
+        try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
+            final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
             final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
-            poolManager.getActivePools().forEach(pool -> adjustPoolSize(pool, availableNodes.getItems(), activePodIds));
+            poolManager.getActivePools()
+                    .forEach(pool ->
+                            adjustPoolSize(pool, availableNodes, activePodIds, poolNodeUpTaskInProgress));
         }
     }
 
     private void adjustPoolSize(final NodePool pool,
                                 final List<Node> availableNodes,
-                                final Set<String> activePodIds) {
+                                final Set<String> activePodIds,
+                                final Map<Long, Integer> poolNodeUpTaskInProgress) {
         if (!pool.isAutoscaled()) {
             return;
         }
@@ -68,6 +74,25 @@ public class PoolAutoscaler {
                             activePodIds.contains(labels.get(KubernetesConstants.RUN_ID_LABEL));
                 })
                 .count();
-        log.debug("{} active node(s) match pool {}", activePoolNodes, pool.getId());
+        final long currentPoolSize = activePoolNodes + poolNodeUpTaskInProgress.getOrDefault(pool.getId(), 0);
+        final double occupiedPercent = pool.getCount() == 0 ? PERCENT_MULTIPLIER :
+                (double)currentPoolSize / pool.getCount() * PERCENT_MULTIPLIER;
+        log.debug("{} active node(s) match pool {}, {}% is occupied", currentPoolSize, pool.getId(), occupiedPercent);
+        if (pool.getCount() < pool.getMaxSize() &&
+                DoubleUtils.compare(occupiedPercent, pool.getScaleUpThreshold()) > 0) {
+            final int increasedSize = Math.min(pool.getMaxSize(), pool.getCount() + pool.getScaleStep());
+            log.debug("Increasing pool {} size from {} to {}", pool.getId(), pool.getCount(), increasedSize);
+            updatePoolSize(pool, increasedSize);
+        } else if (pool.getCount() > pool.getMinSize() &&
+                DoubleUtils.compare(occupiedPercent, pool.getScaleDownThreshold()) < 0) {
+            final int decreasedSize = Math.max(pool.getMinSize(), pool.getCount() - pool.getScaleStep());
+            log.debug("Decreasing pool {} size from {} to {}", pool.getId(), pool.getCount(), decreasedSize);
+            updatePoolSize(pool, decreasedSize);
+        }
+    }
+
+    private void updatePoolSize(final NodePool pool, final int decreasedSize) {
+        pool.setCount(decreasedSize);
+        poolManager.createOrUpdate(poolMapper.toVO(pool));
     }
 }

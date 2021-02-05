@@ -565,6 +565,9 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED = "error.node.pool.instance.type.not.allowed";
     public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";
     public static final String ERROR_NODE_POOL_INVALID_COUNT = "error.node.pool.invalid.count";
+    public static final String ERROR_NODE_POOL_POSITIVE_INT_REQUIRED = "error.node.pool.positive.int.required";
+    public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
+    public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
