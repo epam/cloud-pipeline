@@ -58,6 +58,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
 
     private final DockerRegistryList dockerRegistryList = getDockerRegistryList();
     private final UserContext userContext = new UserContext(ID, SIMPLE_USER);
+    private static final AclSid USER_SID = new AclSid(SIMPLE_USER, true);
 
     @Autowired
     private HierarchicalEntityManager hierarchicalEntityManager;
@@ -90,7 +91,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(tool);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+                .loadAvailable(USER_SID, null);
 
         assertThat(available.size()).isEqualTo(3);
         assertThat(available.get(AclClass.TOOL).get(0).getMask()).isEqualTo(READ_PERMISSION);
@@ -115,7 +116,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(tool, AclPermission.READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+                .loadAvailable(USER_SID, null);
 
         assertThat(available.size()).isEqualTo(1);
         assertThat(available.get(AclClass.TOOL).get(0).getMask()).isEqualTo(READ_PERMISSION);
@@ -140,13 +141,11 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(folder);
         initAclEntity(registry);
         initAclEntity(toolGroup);
-        initAclEntity(tool,
-                Collections.singletonList(new UserPermission(DefaultRoles.ROLE_USER.getName(), READ_PERMISSION)));
-        initAclEntity(runConfiguration,
-                Collections.singletonList(new UserPermission(DefaultRoles.ROLE_USER.getName(), READ_PERMISSION)));
+        initAclEntity(tool, DefaultRoles.ROLE_USER.getName(), AclPermission.READ);
+        initAclEntity(runConfiguration, DefaultRoles.ROLE_USER.getName(), AclPermission.READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager.loadAvailable(
-                new AclSid(DefaultRoles.ROLE_USER.getName(), true), null);
+                new AclSid(DefaultRoles.ROLE_USER.getName(), false), null);
 
         assertThat(available.size()).isEqualTo(2);
         assertThat(available.get(AclClass.TOOL).get(0).getMask()).isEqualTo(READ_PERMISSION);
@@ -174,8 +173,8 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(tool, DefaultRoles.ROLE_USER.getName(), AclPermission.READ);
         initAclEntity(runConfiguration, DefaultRoles.ROLE_USER.getName(), AclPermission.READ);
 
-        final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager.loadAvailable(
-                new AclSid(SIMPLE_USER, true), null);
+        final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(USER_SID, null);
 
         assertThat(available.size()).isEqualTo(2);
         assertThat(available.get(AclClass.TOOL).get(0).getMask()).isEqualTo(READ_PERMISSION);
@@ -196,7 +195,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(runConfiguration);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+                .loadAvailable(USER_SID, null);
 
         assertThat(available.size()).isEqualTo(2);
         assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask()).isEqualTo(READ_PERMISSION);
@@ -217,7 +216,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(runConfiguration, AclPermission.WRITE);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+                .loadAvailable(USER_SID, null);
 
         assertThat(available.size()).isEqualTo(2);
         assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask())
@@ -239,7 +238,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(runConfiguration, AclPermission.READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+                .loadAvailable(USER_SID, null);
 
         assertThat(available.size()).isEqualTo(1);
         assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask()).isEqualTo(READ_PERMISSION);
@@ -260,7 +259,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(runConfiguration, AclPermission.NO_READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+                .loadAvailable(USER_SID, null);
 
         assertThat(available.size()).isEqualTo(1);
         assertThat(available.get(AclClass.FOLDER).get(0).getMask()).isEqualTo(READ_PERMISSION);
@@ -283,7 +282,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(runConfiguration, AclPermission.READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), null);
+                .loadAvailable(USER_SID, null);
 
         assertThat(available.size()).isEqualTo(1);
         assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask()).isEqualTo(READ_PERMISSION);
@@ -306,7 +305,7 @@ public class HierarchicalEntityManagerTest extends AbstractAclTest {
         initAclEntity(runConfiguration, AclPermission.READ);
 
         final Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(SIMPLE_USER, true), AclClass.CONFIGURATION);
+                .loadAvailable(USER_SID, AclClass.CONFIGURATION);
 
         assertThat(available.size()).isEqualTo(1);
         assertThat(available.get(AclClass.CONFIGURATION).get(0).getMask()).isEqualTo(READ_PERMISSION);
