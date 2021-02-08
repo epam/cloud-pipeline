@@ -87,7 +87,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class PipelineRunManagerCloudRegionTest {
+public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     private static final float PRICE_PER_HOUR = 12F;
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
     private static final float DISK_PRICE_PER_HOUR = 1F;
@@ -167,6 +167,7 @@ public class PipelineRunManagerCloudRegionTest {
 
         notScannedTool = getTool(TEST_IMAGE, DEFAULT_COMMAND);
         defaultAwsRegion = defaultRegion(ID);
+        nonAllowedAwsRegion = nonDefaultRegion(ID_2);
         notDefaultAwsRegion = nonDefaultRegion(ID_3);
         configuration = getPipelineConfiguration(TEST_IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId());
         configurationWithoutRegion = configurationWithoutRegion();
