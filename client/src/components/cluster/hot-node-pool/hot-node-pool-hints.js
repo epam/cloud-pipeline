@@ -18,39 +18,45 @@ import React from 'react';
 
 const autoScaledHint = (
   <div>
-    Indicates that size of this pool shall be <b>autoscaled</b> up and down
+    If enabled, the Pool's capacity will be automatically managed, based on a current usage.<br />
+    A number of thresholds can be configured to increase to reduce a number of spare nodes<br />
+    available for the jobs execution. This allows to keep a certain amount of the hot nodes free<br />
+    and guarantee fast initialization times for the runs' instances.
   </div>
 );
 
 const minSizeHint = (
   <div>
-    Minimum pool nodes count
+    Defines the minimal size of the pool. Pool capacity will not decrease lower than this value.<br />
+    This parameter defines the initial pool size as well.
   </div>
 );
 
 const maxSizeHint = (
   <div>
-    Maximum pool nodes count
+    Defines the maximum size of the pool during the scale-up process.<br />
+    Capacity of the pool will not go above this value.
   </div>
 );
 
 const scaleDownThresholdHint = (
   <div>
-    If percent of occupied instances of the pool is lower than this value,<br />
-    pool size shall be decreased
+    If a percent of occupied instances of the pool is lower than this value,<br />
+    pool capacity will be decreased
   </div>
 );
 
 const scaleUpThresholdHint = (
   <div>
-    If percent of occupied instances of the pool is higher than this value,<br />
-    pool size shall be increased
+    If a percent of occupied instances of the pool is higher than this value,<br />
+    pool capacity will be increased
   </div>
 );
 
 const scaleStepHint = (
   <div>
-    Pool size shall be decreased/increased with this step
+    Defines a number of the nodes, that will be added or removed to/from the pool<br />
+    during the scaling process.
   </div>
 );
 
