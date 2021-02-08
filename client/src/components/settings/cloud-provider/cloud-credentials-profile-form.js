@@ -37,6 +37,8 @@ import LoadingView from '../../special/LoadingView';
 import CodeEditor from '../../special/CodeEditor';
 import styles from './cloud-credentials-profile-form.css';
 
+const APPEARANCE_TIMEOUT = 100;
+
 function formatJson (value, formatted = true) {
   if (!value) {
     return value;
@@ -142,7 +144,7 @@ class CloudCredentialsProfileForm extends React.Component {
         JSON.parse(policy);
         return undefined;
       } else {
-        return 'Policy is required';
+        return undefined;
       }
     } catch (_) {
       return 'Wrong policy format';
@@ -161,8 +163,12 @@ class CloudCredentialsProfileForm extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.visible !== this.props.visible && this.props.visible) {
-      this.fetchCredentialsProfile();
+    if (prevProps.visible !== this.props.visible) {
+      if (this.props.visible) {
+        this.fetchCredentialsProfile();
+      } else {
+        this.editor = undefined;
+      }
     }
   }
 
@@ -179,7 +185,10 @@ class CloudCredentialsProfileForm extends React.Component {
       initialPolicy: undefined,
       pending: false
     }, () => {
-      this.editor && this.editor.setValue('');
+      if (this.editor) {
+        this.editor.setValue('');
+        this.editor.reset();
+      }
     });
     if (!isNew && credentialsIdentifier) {
       this.profileRequest = new LoadCloudCredentialsProfiles({id: credentialsIdentifier});
@@ -197,7 +206,10 @@ class CloudCredentialsProfileForm extends React.Component {
               initialProfileName: this.profileRequest.value.profileName,
               initialPolicy: formatJson(this.profileRequest.value.policy)
             }, () => {
-              this.editor && this.editor.setValue(this.state.initialPolicy);
+              if (this.editor) {
+                this.editor.setValue(this.state.initialPolicy);
+                this.editor.reset();
+              }
             });
           }
         })
@@ -239,7 +251,12 @@ class CloudCredentialsProfileForm extends React.Component {
     const onChangeProvider = e => this.setState({cloudProvider: e});
     const onChangePolicy = e => this.setState({policy: e});
     const initializeEditor = (editor) => {
-      this.editor = editor;
+      if (editor && !this.editor) {
+        this.editor = editor;
+        setTimeout(() => editor.reset(), APPEARANCE_TIMEOUT);
+      } else if (this.editor) {
+        this.editor._updateEditor();
+      }
     };
     return (
       <div>
@@ -331,31 +348,41 @@ class CloudCredentialsProfileForm extends React.Component {
             </div>
           )
         }
-        <div
-          className={
-            classNames(
-              styles.row,
-              styles.policy,
-              {[styles.error]: !!this.policyError}
-            )
-          }
-        >
-          <span className={styles.label}>
-            Policy:
-          </span>
-          <div className={styles.content}>
-            <CodeEditor
-              readOnly={loading}
-              ref={initializeEditor}
-              className={styles.codeEditor}
-              language="application/json"
-              onChange={onChangePolicy}
-              lineWrapping
-              code={this.state.policy}
-              defaultCode={initialPolicy}
-            />
-          </div>
-        </div>
+        {
+          this.props.visible && (
+            <div
+              className={
+                classNames(
+                  styles.row,
+                  styles.policy,
+                  {[styles.error]: !!this.policyError}
+                )
+              }
+            >
+              <span className={styles.label}>
+                Policy:
+              </span>
+              <div
+                className={styles.content}
+                style={{
+                  display: 'block',
+                  position: 'relative',
+                  minWidth: 200
+                }}
+              >
+                <CodeEditor
+                  readOnly={loading}
+                  ref={initializeEditor}
+                  className={styles.codeEditor}
+                  language="application/json"
+                  onChange={onChangePolicy}
+                  lineWrapping
+                  defaultCode={initialPolicy}
+                />
+              </div>
+            </div>
+          )
+        }
         {
           this.policyError && (
             <div className={styles.errorDescription}>

@@ -18,15 +18,15 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Table, Icon, Select} from 'antd';
+import {Button, Modal, Form, Input, Row, Table, Icon, Select, message} from 'antd';
 import styles from './UserManagement.css';
 import roleModel from '../../../utils/roleModel';
-import AWSRegionTag from '../../special/AWSRegionTag';
 
 @Form.create()
-@inject('dataStorages', 'cloudCredentialProfiles')
+@inject('dataStorages')
 @observer
 export default class CreateUserForm extends React.Component {
+
   static propTypes = {
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -39,24 +39,13 @@ export default class CreateUserForm extends React.Component {
     selectedRole: null,
     selectedRoles: [],
     defaultRolesAssigned: false,
-    search: null,
-    profiles: []
+    search: null
   };
 
   @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
-      return (this.props.dataStorages.value || [])
-        .filter(d => roleModel.writeAllowed(d)).map(d => d);
-    }
-    return [];
-  }
-
-  @computed
-  get cloudCredentialProfiles () {
-    if (this.props.cloudCredentialProfiles.loaded) {
-      return (this.props.cloudCredentialProfiles.value || [])
-        .map(o => o);
+      return (this.props.dataStorages.value || []).filter(d => roleModel.writeAllowed(d)).map(d => d);
     }
     return [];
   }
@@ -68,9 +57,7 @@ export default class CreateUserForm extends React.Component {
         this.props.onSubmit({
           userName: values.name,
           roleIds: this.state.selectedRoles,
-          defaultStorageId: values.defaultStorageId,
-          credentialProfiles: values.credentialProfiles || [],
-          defaultProfile: values.defaultProfile
+          defaultStorageId: values.defaultStorageId
         });
       }
     });
@@ -151,12 +138,7 @@ export default class CreateUserForm extends React.Component {
       (role) => {
         return (
           <Row type="flex" justify="end">
-            <Button
-              id="delete-role-button"
-              size="small"
-              type="danger"
-              onClick={() => this.removeRole(role.id)}
-            >
+            <Button id="delete-role-button" size="small" type="danger" onClick={() => this.removeRole(role.id)}>
               <Icon type="delete" />
             </Button>
           </Row>
@@ -173,12 +155,7 @@ export default class CreateUserForm extends React.Component {
   };
 
   render () {
-    const {
-      getFieldDecorator,
-      resetFields,
-      getFieldValue,
-      setFieldsValue
-    } = this.props.form;
+    const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
         <Button
@@ -195,17 +172,9 @@ export default class CreateUserForm extends React.Component {
       this.setState({
         selectedRole: null,
         selectedRoles: [],
-        defaultRolesAssigned: false,
-        profiles: []
+        defaultRolesAssigned: false
       });
       resetFields();
-    };
-    const updateProfiles = (ids) => {
-      const defaultProfile = getFieldValue('defaultProfile');
-      if (!(ids || []).find(o => +o === +defaultProfile)) {
-        setFieldsValue({defaultProfile: undefined});
-      }
-      this.setState({profiles: (ids || []).map(o => +o)});
     };
     return (
       <Modal
@@ -244,10 +213,8 @@ export default class CreateUserForm extends React.Component {
                 disabled={this.props.pending}
                 style={{flex: 1}}
                 filterOption={(input, option) =>
-                  option.props.name.toLowerCase()
-                    .indexOf(input.toLowerCase()) >= 0 ||
-                  option.props.pathMask.toLowerCase()
-                    .indexOf(input.toLowerCase()) >= 0
+                option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+                option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }>
                 {
                   this.dataStorages.map(d => {
@@ -266,79 +233,6 @@ export default class CreateUserForm extends React.Component {
               </Select>
             )}
           </Form.Item>
-          <Form.Item
-            style={{marginBottom: 5}}
-            className="create-user-form-credential-profiles-container"
-            label="Cloud Credential Profiles">
-            {getFieldDecorator('credentialProfiles')(
-              <Select
-                allowClear
-                showSearch
-                mode="multiple"
-                disabled={this.props.pending}
-                style={{flex: 1}}
-                filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
-                onChange={updateProfiles}
-              >
-                {
-                  this.cloudCredentialProfiles.map(d => (
-                    <Select.Option
-                      key={`${d.id}`}
-                      value={`${d.id}`}
-                      name={d.profileName}
-                      title={d.profileName}
-                    >
-                      <AWSRegionTag
-                        provider={d.cloudProvider}
-                        showProvider
-                        displayName={false}
-                        displayFlag={false}
-                      />
-                      <span>{d.profileName}</span>
-                    </Select.Option>
-                  ))
-                }
-              </Select>
-            )}
-          </Form.Item>
-          <Form.Item
-            style={{marginBottom: 5}}
-            className="create-user-form-credential-profiles-container"
-            label="Default Credentials Profile">
-            {getFieldDecorator('defaultProfile')(
-              <Select
-                allowClear
-                showSearch
-                disabled={this.props.pending || this.state.profiles.length === 0}
-                style={{flex: 1}}
-                filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }>
-                {
-                  this.cloudCredentialProfiles
-                    .filter(p => this.state.profiles.indexOf(+p.id) >= 0)
-                    .map(d => (
-                      <Select.Option
-                        key={`${d.id}`}
-                        value={`${d.id}`}
-                        name={d.profileName}
-                        title={d.profileName}
-                      >
-                        <AWSRegionTag
-                          provider={d.cloudProvider}
-                          showProvider
-                          displayName={false}
-                          displayFlag={false}
-                        />
-                        <span>{d.profileName}</span>
-                      </Select.Option>
-                    ))
-                }
-              </Select>
-            )}
-          </Form.Item>
           <Row style={{marginTop: 15, paddingLeft: 2, marginBottom: 2}}>
             Assign group or role:
           </Row>
@@ -347,13 +241,12 @@ export default class CreateUserForm extends React.Component {
               value={this.state.selectedRole}
               showSearch
               style={{flex: 1}}
-              allowClear
+              allowClear={true}
               placeholder="Add role"
               optionFilterProp="children"
               onSelect={this.assignRole}
               filterOption={
-                (input, option) => option.props.children.toLowerCase()
-                  .indexOf(input.toLowerCase()) >= 0
+                (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }>
               {
                 this.availableRoles().map(t =>
@@ -366,15 +259,7 @@ export default class CreateUserForm extends React.Component {
               }
             </Select>
           </Row>
-          <Row
-            type="flex"
-            style={{
-              height: '30vh',
-              overflow: 'auto',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-          >
+          <Row type="flex" style={{height: '30vh', overflow: 'auto', display: 'flex', flexDirection: 'column'}}>
             {this.renderUserRolesList()}
           </Row>
         </Form>

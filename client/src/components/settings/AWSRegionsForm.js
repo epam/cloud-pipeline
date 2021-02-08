@@ -509,8 +509,8 @@ export default class AWSRegionsForm extends React.Component {
   };
 
   renderProviderForm = () => {
-    const {currentRegionId, currentProvider} = this.state;
-    if (currentProvider && !currentRegionId) {
+    const {currentRegionId, currentProvider, newRegion} = this.state;
+    if (currentProvider && !currentRegionId && !newRegion) {
       return (
         <ProviderForm
           provider={currentProvider}
@@ -521,8 +521,8 @@ export default class AWSRegionsForm extends React.Component {
   };
 
   renderRegionForm = () => {
-    const {currentRegionId} = this.state;
-    if (currentRegionId) {
+    const {currentRegionId, newRegion} = this.state;
+    if (currentRegionId || newRegion) {
       const AWSRegionFormComponent = this.awsRegionFormComponent;
       return (
         <AWSRegionFormComponent
@@ -632,10 +632,12 @@ export default class AWSRegionsForm extends React.Component {
 
   selectRegion = (region) => {
     if (region.isProvider) {
-      this.setState({
-        currentRegionId: null,
-        currentProvider: region.name
-      }, this.loadAvailableRegionIds);
+      if (/^aws$/i.test(region.name)) {
+        this.setState({
+          currentRegionId: null,
+          currentProvider: region.name
+        }, this.loadAvailableRegionIds);
+      }
     } else if (region) {
       this.setState({
         currentRegionId: region.id,

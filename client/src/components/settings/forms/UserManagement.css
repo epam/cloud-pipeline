@@ -22,3 +22,7 @@
   width: 100%;
   overflow: hidden auto;
 }
+
+.instance-types-management-form {
+  overflow: initial;
+}

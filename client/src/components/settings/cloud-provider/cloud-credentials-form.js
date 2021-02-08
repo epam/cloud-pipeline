@@ -133,7 +133,10 @@ class CloudCredentialsForm extends React.Component {
         <div>
           {
             !this.readOnly && (
-              <div className={styles.header} style={{justifyContent: 'flex-end'}}>
+              <div className={styles.header}>
+                <span style={{fontWeight: 'bold'}}>
+                  Cloud Credentials Profiles
+                </span>
                 <Button
                   size="small"
                   onClick={this.onCreateNewClicked}

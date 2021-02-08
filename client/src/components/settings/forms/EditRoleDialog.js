@@ -320,7 +320,7 @@ class EditRoleDialog extends React.Component {
                   type="danger"
                   onClick={() => this.removeRole(user.id)}
                 >
-                  <Icon type="delete"/>
+                  <Icon type="delete" />
                 </Button>
               </Row>
             );
@@ -753,86 +753,6 @@ class EditRoleDialog extends React.Component {
               </Select>
             </Row>
             <Row type="flex" style={{marginBottom: 10}} align="middle">
-              <span style={{marginRight: 5, fontWeight: 'bold', width: 150}}>
-                Cloud Credential Profiles:
-              </span>
-              <Select
-                allowClear
-                showSearch
-                mode="multiple"
-                disabled={
-                  this.state.operationInProgress ||
-                  readOnly ||
-                  pending
-                }
-                value={this.state.profiles.map(o => `${o}`)}
-                style={{flex: 1}}
-                onChange={this.onChangeCredentialProfiles}
-                filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }>
-                {
-                  this.cloudCredentialProfiles.map(d => (
-                    <Select.Option
-                      key={`${d.id}`}
-                      value={`${d.id}`}
-                      name={d.profileName}
-                      title={d.profileName}
-                    >
-                      <AWSRegionTag
-                        provider={d.cloudProvider}
-                        showProvider
-                        displayName={false}
-                        displayFlag={false}
-                      />
-                      <span>{d.profileName}</span>
-                    </Select.Option>
-                  ))
-                }
-              </Select>
-            </Row>
-            <Row type="flex" style={{marginBottom: 10}} align="middle">
-              <span style={{marginRight: 5, fontWeight: 'bold', width: 150}}>
-                Default Credentials Profile:
-              </span>
-              <Select
-                allowClear
-                showSearch
-                disabled={
-                  this.state.operationInProgress ||
-                  readOnly ||
-                  this.state.profiles.length === 0 ||
-                  pending
-                }
-                value={this.defaultProfileId}
-                style={{flex: 1}}
-                onChange={this.onChangeDefaultProfileId}
-                filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }>
-                {
-                  this.cloudCredentialProfiles
-                    .filter(d => this.state.profiles.indexOf(+d.id) >= 0)
-                    .map(d => (
-                      <Select.Option
-                        key={`${d.id}`}
-                        value={`${d.id}`}
-                        name={d.profileName}
-                        title={d.profileName}
-                      >
-                        <AWSRegionTag
-                          provider={d.cloudProvider}
-                          showProvider
-                          displayName={false}
-                          displayFlag={false}
-                        />
-                        <span>{d.profileName}</span>
-                      </Select.Option>
-                    ))
-                }
-              </Select>
-            </Row>
-            <Row type="flex" style={{marginBottom: 10}} align="middle">
               <div style={{flex: 1}} id="find-user-autocomplete-container">
                 <AutoComplete
                   disabled={this.state.operationInProgress || readOnly}
@@ -911,15 +831,110 @@ class EditRoleDialog extends React.Component {
               applyChanges={ApplyChanges.callback}
               onChange={this.onChangeMetadata}
             />
-            <InstanceTypesManagementForm
-              disabled={this.state.operationInProgress || readOnly}
+            <div
               key="INSTANCE_MANAGEMENT"
-              resourceId={this.props.roleId}
-              level="ROLE"
-              onInitialized={this.onInstanceTypesFormInitialized}
-              onModified={this.onInstanceTypesModified}
-              showApplyButton={false}
-            />
+            >
+              <Row
+                key="cloud credentials profiles"
+                type="flex"
+                style={{marginTop: 5, padding: 2}}
+                align="middle"
+              >
+                <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
+                  Cloud Credentials Profiles:
+                </span>
+                <Select
+                  allowClear
+                  showSearch
+                  mode="multiple"
+                  disabled={
+                    this.state.operationInProgress ||
+                    readOnly ||
+                    pending
+                  }
+                  value={this.state.profiles.map(o => `${o}`)}
+                  style={{flex: 1}}
+                  onChange={this.onChangeCredentialProfiles}
+                  filterOption={(input, option) =>
+                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }>
+                  {
+                    this.cloudCredentialProfiles.map(d => (
+                      <Select.Option
+                        key={`${d.id}`}
+                        value={`${d.id}`}
+                        name={d.profileName}
+                        title={d.profileName}
+                      >
+                        <AWSRegionTag
+                          provider={d.cloudProvider}
+                          showProvider
+                          displayName={false}
+                          displayFlag={false}
+                        />
+                        <span>{d.profileName}</span>
+                      </Select.Option>
+                    ))
+                  }
+                </Select>
+              </Row>
+              <Row
+                key="default credentials profiles"
+                type="flex"
+                style={{marginTop: 5, padding: 2}}
+                align="middle"
+              >
+                <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
+                  Default Credentials Profile:
+                </span>
+                <Select
+                  allowClear
+                  showSearch
+                  disabled={
+                    this.state.operationInProgress ||
+                    readOnly ||
+                    this.state.profiles.length === 0 ||
+                    pending
+                  }
+                  value={this.defaultProfileId}
+                  style={{flex: 1}}
+                  onChange={this.onChangeDefaultProfileId}
+                  filterOption={(input, option) =>
+                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }>
+                  {
+                    this.cloudCredentialProfiles
+                      .filter(d => this.state.profiles.indexOf(+d.id) >= 0)
+                      .map(d => (
+                        <Select.Option
+                          key={`${d.id}`}
+                          value={`${d.id}`}
+                          name={d.profileName}
+                          title={d.profileName}
+                        >
+                          <AWSRegionTag
+                            provider={d.cloudProvider}
+                            showProvider
+                            displayName={false}
+                            displayFlag={false}
+                          />
+                          <span>{d.profileName}</span>
+                        </Select.Option>
+                      ))
+                  }
+                </Select>
+              </Row>
+              <InstanceTypesManagementForm
+                className={styles.instanceTypesManagementForm}
+                key="instance types management form"
+                disabled={this.state.operationInProgress || readOnly}
+                resourceId={this.props.roleId}
+                level="ROLE"
+                onInitialized={this.onInstanceTypesFormInitialized}
+                onModified={this.onInstanceTypesModified}
+                showApplyButton={false}
+              />
+            </div>
           </SplitPanel>
         </SplitPanel>
       </Modal>

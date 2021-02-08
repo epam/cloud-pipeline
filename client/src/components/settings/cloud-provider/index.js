@@ -17,9 +17,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  Collapse
-} from 'antd';
 import CloudCredentialsForm from './cloud-credentials-form';
 import styles from './cloud-provider.css';
 
@@ -35,17 +32,7 @@ class ProviderForm extends React.Component {
           )
         }
       >
-        <Collapse
-          bordered={false}
-          defaultActiveKey={['credentials']}
-        >
-          <Collapse.Panel
-            key="credentials"
-            header="Credential Profiles"
-          >
-            <CloudCredentialsForm provider={provider} />
-          </Collapse.Panel>
-        </Collapse>
+        <CloudCredentialsForm provider={provider} />
       </div>
     );
   }

@@ -190,6 +190,11 @@ export default class CodeEditor extends React.Component {
       this.codeMirrorInstance.setValue(this.props.code || '');
     }
     this.codeMirrorInstance.on('change', this._onCodeChange);
+    process.nextTick(() => {
+      if (this.codeMirrorInstance) {
+        this.codeMirrorInstance.refresh();
+      }
+    });
   };
 
   render () {
