@@ -102,7 +102,8 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<? extends AbstractCloudProfileCredentials>> assignProfiles(
             @RequestParam final Long sidId, @RequestParam final boolean principal,
-            @RequestParam final Set<Long> profileIds, @RequestParam(required = false) final Long defaultProfileId) {
+            @RequestParam(required = false) final Set<Long> profileIds,
+            @RequestParam(required = false) final Long defaultProfileId) {
         return Result.success(cloudProfileCredentialsApiService.assignProfiles(sidId, principal, profileIds,
                 defaultProfileId));
     }
