@@ -397,9 +397,6 @@ public class AclTestBeans {
     protected NotificationManager mockNotificationManager;
 
     @MockBean
-    protected Pipeline mockPipeline;
-
-    @MockBean
     protected PipelineManager mockPipelineManager;
 
     @MockBean
