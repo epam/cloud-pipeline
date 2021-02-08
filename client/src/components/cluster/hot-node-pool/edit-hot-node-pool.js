@@ -1006,6 +1006,7 @@ class EditHotNodePool extends React.Component {
             Autoscaled:
           </span>
           <Checkbox
+            style={autoscaled ? {marginLeft: 11} : {}}
             className={classNames(styles.formItem, styles.small)}
             disabled={disabled}
             checked={autoscaled}
@@ -1071,7 +1072,7 @@ class EditHotNodePool extends React.Component {
       return null;
     }
     return (
-      <div>
+      <div style={{paddingLeft: 10}}>
         <div
           className={styles.formRow}
         >
@@ -1112,7 +1113,7 @@ class EditHotNodePool extends React.Component {
       return null;
     }
     return (
-      <div>
+      <div style={{paddingLeft: 10}}>
         <div
           className={styles.formRow}
         >
@@ -1153,7 +1154,7 @@ class EditHotNodePool extends React.Component {
       return null;
     }
     return (
-      <div>
+      <div style={{paddingLeft: 10}}>
         <div
           className={styles.formRow}
         >
@@ -1195,7 +1196,7 @@ class EditHotNodePool extends React.Component {
       return null;
     }
     return (
-      <div>
+      <div style={{paddingLeft: 10}}>
         <div
           className={styles.formRow}
         >
@@ -1237,7 +1238,7 @@ class EditHotNodePool extends React.Component {
       return null;
     }
     return (
-      <div>
+      <div style={{paddingLeft: 10}}>
         <div
           className={styles.formRow}
         >
