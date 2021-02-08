@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
@@ -83,6 +84,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
+import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
@@ -468,6 +470,12 @@ public class AclTestBeans {
 
     @MockBean
     protected RoleManager mockRoleManager;
+
+    @MockBean
+    protected CloudProfileCredentialsManagerProvider mockCloudProfileCredentialsManagerProvider;
+
+    @MockBean
+    protected OntologyManager mockOntologyManager;
 
     @SpyBean
     protected HierarchicalEntityManager spyHierarchicalEntityManager;
