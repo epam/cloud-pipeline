@@ -612,9 +612,7 @@ class DataStorageOperations(object):
                         'key': key,
                         'value': value
                     })
-        for tag_objects_chunk in [tag_objects[i:i + chunk_size]
-                                  for i in range(0, len(tag_objects), chunk_size)]:
-            DataStorage.bulk_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects_chunk)
+        DataStorage.bulk_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects)
         return []
 
     @staticmethod
