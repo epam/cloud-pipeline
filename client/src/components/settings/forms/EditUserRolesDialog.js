@@ -26,6 +26,10 @@ import RoleAssign from '../../../models/user/RoleAssign';
 import RoleRemove from '../../../models/user/RoleRemoveFromUser';
 import UserUpdate from '../../../models/user/UserUpdate';
 import UserBlock from '../../../models/user/UserBlock';
+import {
+  AssignCredentialProfiles,
+  LoadEntityCredentialProfiles
+} from '../../../models/cloudCredentials';
 import styles from './UserManagement.css';
 import roleModel from '../../../utils/roleModel';
 import {
@@ -35,13 +39,17 @@ import {
 } from '../../special/splitPanel';
 import Metadata, {ApplyChanges} from '../../special/metadata/Metadata';
 import InstanceTypesManagementForm from './InstanceTypesManagementForm';
+import AWSRegionTag from '../../special/AWSRegionTag';
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'metadataCache')
+@inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles')
 @inject((common, params) => ({
   userInfo: params.user ? new User(params.user.id) : null,
   userId: params.user ? params.user.id : null,
-  roles: new Roles()
+  roles: new Roles(),
+  credentialProfiles: params.user
+    ? new LoadEntityCredentialProfiles(params.user.id, true)
+    : null
 }))
 @observer
 export default class EditUserRolesDialog extends React.Component {
@@ -69,7 +77,13 @@ export default class EditUserRolesDialog extends React.Component {
     rolesInitial: [],
     rolesInitialized: false,
     instanceTypesChanged: false,
-    operationInProgress: false
+    operationInProgress: false,
+    profiles: [],
+    profilesInitial: [],
+    profilesInitialized: false,
+    defaultProfileId: undefined,
+    defaultProfileIdInitial: undefined,
+    defaultProfileIdInitialized: false
   };
 
   instanceTypesForm;
@@ -91,17 +105,36 @@ export default class EditUserRolesDialog extends React.Component {
   };
 
   updateValues = () => {
-    const {defaultStorageInitialized, rolesInitialized} = this.state;
+    const {
+      defaultStorageInitialized,
+      defaultProfileIdInitialized,
+      rolesInitialized,
+      profilesInitialized
+    } = this.state;
     const state = {};
     if (!defaultStorageInitialized && this.props.userInfo && this.props.userInfo.loaded) {
       state.defaultStorageId = this.props.userInfo.value.defaultStorageId;
       state.defaultStorageIdInitial = this.props.userInfo.value.defaultStorageId;
       state.defaultStorageInitialized = true;
     }
+    if (!defaultProfileIdInitialized && this.props.userInfo && this.props.userInfo.loaded) {
+      state.defaultProfileId = this.props.userInfo.value.defaultProfileId;
+      state.defaultProfileIdInitial = this.props.userInfo.value.defaultProfileId;
+      state.defaultProfileIdInitialized = true;
+    }
     if (!rolesInitialized && this.props.userInfo && this.props.userInfo.loaded) {
       state.roles = (this.props.userInfo.value.roles || []).map(r => r);
       state.rolesInitial = (this.props.userInfo.value.roles || []).map(r => r);
       state.rolesInitialized = true;
+    }
+    if (
+      !profilesInitialized &&
+      this.props.credentialProfiles &&
+      this.props.credentialProfiles.loaded
+    ) {
+      state.profiles = (this.props.credentialProfiles.value || []).map(o => o.id);
+      state.profilesInitial = (this.props.credentialProfiles.value || []).map(o => o.id);
+      state.profilesInitialized = true;
     }
     if (Object.keys(state).length > 0) {
       this.setState(state);
@@ -214,7 +247,13 @@ export default class EditUserRolesDialog extends React.Component {
       roles: [],
       rolesInitial: [],
       rolesInitialized: false,
-      instanceTypesChanged: false
+      instanceTypesChanged: false,
+      profiles: [],
+      profilesInitial: [],
+      profilesInitialized: false,
+      defaultProfileId: undefined,
+      defaultProfileIdInitial: undefined,
+      defaultProfileIdInitialized: false
     }, this.props.onClose);
   };
 
@@ -240,11 +279,35 @@ export default class EditUserRolesDialog extends React.Component {
       .filter(rI => roles.filter(r => r.id === rI.id).length === 0);
   }
 
+  get profilesModified () {
+    const {profiles, profilesInitial} = this.state;
+    const initial = [...(new Set(profilesInitial))];
+    const current = [...(new Set(profiles))];
+    if (initial.length === current.length) {
+      for (let i = 0; i < initial.length; i++) {
+        if (current.indexOf(initial[i]) === -1) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return true;
+  }
+
   @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
         .filter(d => roleModel.writeAllowed(d)).map(d => d);
+    }
+    return [];
+  }
+
+  @computed
+  get cloudCredentialProfiles () {
+    if (this.props.cloudCredentialProfiles.loaded) {
+      return (this.props.cloudCredentialProfiles.value || [])
+        .map(o => o);
     }
     return [];
   }
@@ -262,12 +325,35 @@ export default class EditUserRolesDialog extends React.Component {
     return undefined;
   }
 
+  get defaultProfileId () {
+    const {readOnly, cloudCredentialProfiles} = this.props;
+    const {defaultProfileId} = this.state;
+    if (cloudCredentialProfiles.loaded) {
+      const profile = (cloudCredentialProfiles.value || [])
+        .find(d => d.id === +defaultProfileId);
+      if (!profile) {
+        return readOnly ? `Access is denied` : undefined;
+      }
+      return `${defaultProfileId}`;
+    }
+    return undefined;
+  }
+
   get modified () {
-    const {metadata, defaultStorageId, defaultStorageIdInitial, instanceTypesChanged} = this.state;
+    const {
+      metadata,
+      defaultStorageId,
+      defaultStorageIdInitial,
+      instanceTypesChanged,
+      defaultProfileId,
+      defaultProfileIdInitial
+    } = this.state;
     return !!metadata ||
       defaultStorageId !== defaultStorageIdInitial ||
+      defaultProfileId !== defaultProfileIdInitial ||
       this.addedRoles.length > 0 ||
       this.removedRoles.length > 0 ||
+      this.profilesModified ||
       instanceTypesChanged;
   }
 
@@ -339,7 +425,9 @@ export default class EditUserRolesDialog extends React.Component {
         defaultStorageId,
         defaultStorageIdInitial,
         metadata,
-        instanceTypesChanged
+        instanceTypesChanged,
+        defaultProfileId,
+        defaultProfileIdInitial
       } = this.state;
       if (defaultStorageId !== defaultStorageIdInitial) {
         const hide = message.loading('Updating default data storage...', -1);
@@ -389,7 +477,28 @@ export default class EditUserRolesDialog extends React.Component {
           return;
         }
       }
-      if (this.addedRoles.length > 0 || this.removedRoles.length > 0) {
+      if (this.profilesModified || defaultProfileId !== defaultProfileIdInitial) {
+        const hide = message.loading('Assigning credential profiles...', 0);
+        const request = new AssignCredentialProfiles(
+          this.props.userInfo.value.id,
+          true,
+          this.state.profiles,
+          defaultProfileId
+        );
+        await request.send();
+        hide();
+        if (request.error) {
+          message.error(request.error, 5);
+          mainHide();
+          return;
+        }
+      }
+      if (
+        this.addedRoles.length > 0 ||
+        this.removedRoles.length > 0 ||
+        this.profilesModified ||
+        defaultProfileId !== defaultProfileIdInitial
+      ) {
         await this.props.userInfo.fetch();
         await roleModel.refreshAuthenticationInfo(this);
       }
@@ -427,6 +536,21 @@ export default class EditUserRolesDialog extends React.Component {
     this.setState({defaultStorageId: id ? +id : undefined});
   };
 
+  onChangeDefaultProfileId = (id) => {
+    this.setState({defaultProfileId: id ? +id : undefined});
+  };
+
+  onChangeCredentialProfiles = (ids) => {
+    let {defaultProfileId} = this.state;
+    if (defaultProfileId && (ids || []).map(o => +o).indexOf(+defaultProfileId) === -1) {
+      defaultProfileId = undefined;
+    }
+    this.setState({
+      profiles: (ids || []).map(id => +id),
+      defaultProfileId
+    });
+  };
+
   onInstanceTypesModified = (modified) => {
     this.setState({instanceTypesChanged: modified});
   };
@@ -437,12 +561,16 @@ export default class EditUserRolesDialog extends React.Component {
     }
     const {
       defaultStorageIdInitial,
-      rolesInitial
+      defaultProfileIdInitial,
+      rolesInitial,
+      profilesInitial
     } = this.state;
     this.setState({
       defaultStorageId: defaultStorageIdInitial,
+      defaultProfileId: defaultProfileIdInitial,
       roles: rolesInitial.map(r => r),
-      metadata: undefined
+      metadata: undefined,
+      profiles: profilesInitial.slice()
     }, callback);
   };
 
@@ -453,7 +581,11 @@ export default class EditUserRolesDialog extends React.Component {
       roles: [],
       rolesInitial: [],
       rolesInitialized: false,
-      instanceTypesChanged: false
+      instanceTypesChanged: false,
+      profiles: [],
+      profilesInitial: [],
+      profilesInitialized: false,
+      defaultProfileIdInitialized: false
     }, () => this.revertChanges(this.updateValues));
   };
 
@@ -467,6 +599,7 @@ export default class EditUserRolesDialog extends React.Component {
       blocked = this.props.userInfo.value.blocked;
     }
     const {metadata} = this.state;
+    const pending = this.props.credentialProfiles ? this.props.credentialProfiles.pending : false;
     return (
       <Modal
         width="80%"
@@ -512,10 +645,9 @@ export default class EditUserRolesDialog extends React.Component {
             </div>
             <div>
               <Button
-                disabled={readOnly}
                 id="revert-changes-edit-user-form"
                 onClick={() => this.revertChanges()}
-                disabled={!this.modified}
+                disabled={readOnly || !this.modified}
               >
                 REVERT
               </Button>
@@ -559,7 +691,7 @@ export default class EditUserRolesDialog extends React.Component {
             style={{display: 'flex', flexDirection: 'column', height: '100%'}}
             key={CONTENT_PANEL_KEY}>
             <Row type="flex" style={{marginBottom: 10}} align="middle">
-              <span style={{marginRight: 5, fontWeight: 'bold', width: 130}}>
+              <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
                 Default data storage:
               </span>
               <Select
@@ -591,7 +723,7 @@ export default class EditUserRolesDialog extends React.Component {
               </Select>
             </Row>
             <Row type="flex" style={{marginBottom: 10}} align="middle">
-              <span style={{marginRight: 5, fontWeight: 'bold', width: 130}}>
+              <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
                 Add role or group:
               </span>
               <div style={{flex: 1}} id="find-role-select-container">
@@ -660,7 +792,7 @@ export default class EditUserRolesDialog extends React.Component {
                 containerStyle: {
                   display: 'flex',
                   flexDirection: 'column',
-                  overflow: 'initial'
+                  overflow: 'auto'
                 },
                 size: {
                   keepPreviousSize: true,
@@ -679,15 +811,104 @@ export default class EditUserRolesDialog extends React.Component {
               onChange={this.onChangeMetadata}
               value={metadata}
             />
-            <InstanceTypesManagementForm
-              disabled={this.state.operationInProgress || readOnly}
+            <div
               key="INSTANCE_MANAGEMENT"
-              resourceId={this.props.userId}
-              level="USER"
-              onInitialized={this.onInstanceTypesFormInitialized}
-              onModified={this.onInstanceTypesModified}
-              showApplyButton={false}
-            />
+            >
+              <InstanceTypesManagementForm
+                className={styles.instanceTypesManagementForm}
+                key="instance types management form"
+                disabled={this.state.operationInProgress || readOnly}
+                resourceId={this.props.userId}
+                level="USER"
+                onInitialized={this.onInstanceTypesFormInitialized}
+                onModified={this.onInstanceTypesModified}
+                showApplyButton={false}
+              />
+              <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
+                Cloud Credentials Profiles
+              </div>
+              <div
+                style={{padding: '0 2px'}}
+              >
+                <Select
+                  allowClear
+                  showSearch
+                  mode="multiple"
+                  disabled={
+                    this.state.operationInProgress ||
+                    readOnly ||
+                    pending
+                  }
+                  value={this.state.profiles.map(o => `${o}`)}
+                  style={{width: '100%'}}
+                  onChange={this.onChangeCredentialProfiles}
+                  filterOption={(input, option) =>
+                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }>
+                  {
+                    this.cloudCredentialProfiles.map(d => (
+                      <Select.Option
+                        key={`${d.id}`}
+                        value={`${d.id}`}
+                        name={d.profileName}
+                        title={d.profileName}
+                      >
+                        <AWSRegionTag
+                          provider={d.cloudProvider}
+                          showProvider
+                          displayName={false}
+                          displayFlag={false}
+                        />
+                        <span>{d.profileName}</span>
+                      </Select.Option>
+                    ))
+                  }
+                </Select>
+              </div>
+              <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
+                Default Credentials Profile
+              </div>
+              <div
+                style={{padding: '0 2px'}}
+              >
+                <Select
+                  allowClear
+                  showSearch
+                  disabled={
+                    this.state.operationInProgress ||
+                    readOnly ||
+                    this.state.profiles.length === 0 ||
+                    pending
+                  }
+                  value={this.defaultProfileId}
+                  style={{width: '100%'}}
+                  onChange={this.onChangeDefaultProfileId}
+                  filterOption={(input, option) =>
+                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }>
+                  {
+                    this.cloudCredentialProfiles
+                      .filter(d => this.state.profiles.indexOf(+d.id) >= 0)
+                      .map(d => (
+                        <Select.Option
+                          key={`${d.id}`}
+                          value={`${d.id}`}
+                          name={d.profileName}
+                          title={d.profileName}
+                        >
+                          <AWSRegionTag
+                            provider={d.cloudProvider}
+                            showProvider
+                            displayName={false}
+                            displayFlag={false}
+                          />
+                          <span>{d.profileName}</span>
+                        </Select.Option>
+                      ))
+                  }
+                </Select>
+              </div>
+            </div>
           </SplitPanel>
         </SplitPanel>
       </Modal>
