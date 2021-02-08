@@ -20,10 +20,12 @@ import {inject, observer, Provider} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Button,
+  Checkbox,
   Icon,
   Input,
   InputNumber,
   Modal,
+  Popover,
   Select
 } from 'antd';
 import classNames from 'classnames';
@@ -35,6 +37,7 @@ import AWSRegionTag from '../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import AllowedInstanceTypes from '../../../models/utils/AllowedInstanceTypes';
 import Roles from '../../../models/user/Roles';
+import * as hints from './hot-node-pool-hints';
 import styles from './edit-hot-node-pool.css';
 
 function arraysAreEqual (a, b) {
@@ -93,6 +96,18 @@ class EditHotNodePool extends React.Component {
     allowedInstanceTypes: [],
     allowedPriceTypes: ['SPOT', 'ON_DEMAND'],
     allowedInstanceTypesPending: false,
+    autoscaled: false,
+    initialAutoScaled: false,
+    minSize: undefined,
+    initialMinSize: undefined,
+    maxSize: undefined,
+    initialMaxSize: undefined,
+    scaleDownThreshold: undefined,
+    initialScaleDownThreshold: undefined,
+    scaleUpThreshold: undefined,
+    initialScaleUpThreshold: undefined,
+    scaleStep: undefined,
+    initialScaleStep: undefined,
     validation: {
       disk: undefined,
       instanceType: undefined,
@@ -101,7 +116,12 @@ class EditHotNodePool extends React.Component {
       count: undefined,
       name: undefined,
       region: undefined,
-      filters: undefined
+      filters: undefined,
+      minSize: undefined,
+      maxSize: undefined,
+      scaleDownThreshold: undefined,
+      scaleUpThreshold: undefined,
+      scaleStep: undefined
     },
     touched: {
       disk: false,
@@ -111,7 +131,12 @@ class EditHotNodePool extends React.Component {
       count: false,
       name: false,
       region: false,
-      filters: false
+      filters: false,
+      minSize: false,
+      maxSize: false,
+      scaleDownThreshold: undefined,
+      scaleUpThreshold: undefined,
+      scaleStep: undefined
     }
   };
 
@@ -180,7 +205,13 @@ class EditHotNodePool extends React.Component {
         instanceImage,
         name,
         regionId,
-        filter: filters
+        filter: filters,
+        autoscaled,
+        minSize,
+        maxSize,
+        scaleDownThreshold,
+        scaleUpThreshold,
+        scaleStep
       } = pool;
       const {
         scheduleEntries: schedule = []
@@ -210,6 +241,18 @@ class EditHotNodePool extends React.Component {
         prevSpot: -1,
         allowedInstanceTypes: [],
         allowedPriceTypes: ['SPOT', 'ON_DEMAND'],
+        autoscaled,
+        initialAutoScaled: autoscaled,
+        minSize,
+        initialMinSize: minSize,
+        maxSize,
+        initialMaxSize: maxSize,
+        scaleDownThreshold,
+        initialScaleDownThreshold: scaleDownThreshold,
+        scaleUpThreshold,
+        initialScaleUpThreshold: scaleUpThreshold,
+        scaleStep,
+        initialScaleStep: scaleStep,
         touched: {
           disk: false,
           instanceType: false,
@@ -217,7 +260,13 @@ class EditHotNodePool extends React.Component {
           schedule: false,
           count: false,
           name: false,
-          region: false
+          region: false,
+          autoscaled: false,
+          minSize: false,
+          maxSize: false,
+          scaleDownThreshold: false,
+          scaleUpThreshold: false,
+          scaleStep: false
         }
       }, this.onChange);
     } else {
@@ -246,6 +295,18 @@ class EditHotNodePool extends React.Component {
         prevSpot: -1,
         allowedInstanceTypes: [],
         allowedPriceTypes: ['SPOT', 'ON_DEMAND'],
+        autoscaled: false,
+        initialAutoScaled: false,
+        minSize: undefined,
+        initialMinSize: undefined,
+        maxSize: undefined,
+        initialMaxSize: undefined,
+        scaleDownThreshold: undefined,
+        initialScaleDownThreshold: undefined,
+        scaleUpThreshold: undefined,
+        initialScaleUpThreshold: undefined,
+        scaleStep: undefined,
+        initialScaleStep: undefined,
         touched: {
           disk: false,
           instanceType: false,
@@ -254,7 +315,13 @@ class EditHotNodePool extends React.Component {
           count: false,
           name: false,
           region: false,
-          filters: false
+          filters: false,
+          autoscaled: false,
+          minSize: false,
+          maxSize: false,
+          scaleDownThreshold: false,
+          scaleUpThreshold: false,
+          scaleStep: false
         }
       }, this.onChange);
     }
@@ -325,7 +392,13 @@ class EditHotNodePool extends React.Component {
       count,
       name,
       region,
-      filters
+      filters,
+      autoscaled,
+      minSize,
+      maxSize,
+      scaleDownThreshold,
+      scaleUpThreshold,
+      scaleStep
     } = this.state;
     let diskError,
       instanceTypeError,
@@ -334,19 +407,18 @@ class EditHotNodePool extends React.Component {
       countError,
       nameError,
       regionError,
-      filtersError;
+      filtersError,
+      minSizeError,
+      maxSizeError,
+      scaleDownThresholdError,
+      scaleUpThresholdError,
+      scaleStepError;
     if (
       Number.isNaN(Number(disk)) ||
       Number(disk) < DISK_MIN_SIZE ||
       Number(disk) > DISK_MAX_SIZE
     ) {
       diskError = `Disk should be a positive integer (${DISK_MIN_SIZE}...${DISK_MAX_SIZE})`;
-    }
-    if (
-      Number.isNaN(Number(count)) ||
-      Number(count) < COUNT_MIN_SIZE
-    ) {
-      countError = `Count should be a positive value or zero (pool is disabled)`;
     }
     if (!instanceType) {
       instanceTypeError = 'Instance type is required';
@@ -372,6 +444,73 @@ class EditHotNodePool extends React.Component {
       regionError = 'Region is required';
     }
     filtersError = getFiltersError(filters);
+    if (autoscaled) {
+      if (
+        !minSize ||
+        Number.isNaN(minSize) ||
+        Number(minSize) < 1
+      ) {
+        minSizeError = 'Min Size should be a positive integer larger than or equal 1';
+      }
+      if (
+        !maxSize ||
+        Number.isNaN(maxSize) ||
+        Number(maxSize) < 1
+      ) {
+        maxSizeError = 'Max Size should be a positive integer larger than or equal 1';
+      }
+      if (
+        !Number.isNaN(minSize) &&
+        !Number.isNaN(maxSize) &&
+        Number(minSize) > Number(maxSize)
+      ) {
+        if (!minSizeError) {
+          minSizeError = 'Min Size should not be greater than Max Size';
+        }
+        if (!maxSizeError) {
+          maxSizeError = 'Min Size should not be greater than Max Size';
+        }
+      }
+      if (
+        Number.isNaN(scaleUpThreshold) ||
+        Number(scaleUpThreshold) < 0 ||
+        Number(scaleUpThreshold) > 100
+      ) {
+        scaleUpThresholdError = 'Scale Up Threshold should be a positive (0..100%)';
+      }
+      if (
+        Number.isNaN(scaleDownThreshold) ||
+        Number(scaleDownThreshold) < 0 ||
+        Number(scaleDownThreshold) > 100
+      ) {
+        scaleDownThresholdError = 'Scale Down Threshold should be a positive (0..100%)';
+      }
+      if (
+        !Number.isNaN(scaleDownThreshold) &&
+        !Number.isNaN(scaleUpThreshold) &&
+        Number(scaleDownThreshold) >= Number(scaleUpThreshold)
+      ) {
+        if (!scaleDownThresholdError) {
+          scaleDownThresholdError = 'Scale Up Threshold should be larger than Scale Down Threshold';
+        }
+        if (!scaleUpThresholdError) {
+          scaleUpThresholdError = 'Scale Up Threshold should be larger than Scale Down Threshold';
+        }
+      }
+      if (
+        Number.isNaN(scaleStep) ||
+        Number(scaleStep) < 1
+      ) {
+        scaleStepError = 'Scale Step should be a positive integer larger than or equal 1';
+      }
+    } else {
+      if (
+        Number.isNaN(Number(count)) ||
+        Number(count) < COUNT_MIN_SIZE
+      ) {
+        countError = `Count should be a positive value or zero (pool is disabled)`;
+      }
+    }
     const valid = !diskError &&
       !instanceTypeError &&
       !dockerImagesError &&
@@ -379,7 +518,12 @@ class EditHotNodePool extends React.Component {
       !countError &&
       !nameError &&
       !regionError &&
-      !filtersError;
+      !filtersError &&
+      !minSizeError &&
+      !maxSizeError &&
+      !scaleDownThresholdError &&
+      !scaleUpThresholdError &&
+      !scaleStepError;
     return {
       valid,
       errors: {
@@ -390,7 +534,12 @@ class EditHotNodePool extends React.Component {
         count: countError,
         name: nameError,
         region: regionError,
-        filters: filtersError
+        filters: filtersError,
+        minSize: minSizeError,
+        maxSize: maxSizeError,
+        scaleDownThreshold: scaleDownThresholdError,
+        scaleUpThreshold: scaleUpThresholdError,
+        scaleStep: scaleStepError
       }
     };
   };
@@ -416,7 +565,19 @@ class EditHotNodePool extends React.Component {
       region,
       initialRegion,
       filters,
-      initialFilters
+      initialFilters,
+      autoscaled,
+      initialAutoScaled,
+      minSize,
+      initialMinSize,
+      maxSize,
+      initialMaxSize,
+      scaleDownThreshold,
+      initialScaleDownThreshold,
+      scaleUpThreshold,
+      initialScaleUpThreshold,
+      scaleStep,
+      initialScaleStep
     } = this.state;
     return Number(disk) !== Number(initialDisk) ||
       Number(count) !== Number(initialCount) ||
@@ -430,7 +591,13 @@ class EditHotNodePool extends React.Component {
       instanceImage !== initialInstanceImage ||
       name !== initialName ||
       region !== initialRegion ||
-      !filtersAreEqual(filters, initialFilters);
+      !filtersAreEqual(filters, initialFilters) ||
+      autoscaled !== initialAutoScaled ||
+      (autoscaled && Number(minSize) !== Number(initialMinSize)) ||
+      (autoscaled && Number(maxSize) !== Number(initialMaxSize)) ||
+      (autoscaled && Number(scaleDownThreshold) !== Number(initialScaleDownThreshold)) ||
+      (autoscaled && Number(scaleUpThreshold) !== Number(initialScaleUpThreshold)) ||
+      (autoscaled && Number(scaleStep) !== Number(initialScaleStep));
   };
 
   onChange = () => {
@@ -456,7 +623,12 @@ class EditHotNodePool extends React.Component {
           count: true,
           name: true,
           region: true,
-          filters: true
+          filters: true,
+          minSize: false,
+          maxSize: false,
+          scaleDownThreshold: false,
+          scaleUpThreshold: false,
+          scaleStep: false
         }
       });
     } else if (onSave) {
@@ -471,7 +643,13 @@ class EditHotNodePool extends React.Component {
         spot: priceType,
         region: regionId,
         instanceImage,
-        filters
+        filters,
+        autoscaled,
+        minSize,
+        maxSize,
+        scaleDownThreshold,
+        scaleUpThreshold,
+        scaleStep
       } = this.state;
       const payload = {
         count,
@@ -484,7 +662,13 @@ class EditHotNodePool extends React.Component {
         priceType,
         regionId,
         instanceImage,
-        filter: filters
+        filter: filters,
+        autoscaled,
+        minSize: autoscaled ? minSize : undefined,
+        maxSize: autoscaled ? maxSize : undefined,
+        scaleDownThreshold: autoscaled ? scaleDownThreshold : undefined,
+        scaleUpThreshold: autoscaled ? scaleUpThreshold : undefined,
+        scaleStep: autoscaled ? scaleStep : undefined
       };
       const scheduleModified = !compareSchedulesArray(schedule, initialSchedule);
       onSave(
@@ -522,6 +706,77 @@ class EditHotNodePool extends React.Component {
     touched.count = true;
     this.setState({
       count: e,
+      touched
+    }, this.onChange);
+  };
+
+  onChangeAutoScaled = (e) => {
+    const {
+      count,
+      touched
+    } = this.state;
+    const autoscaled = e.target.checked;
+    const newState = {
+      autoscaled
+    };
+    if (autoscaled) {
+      newState.minSize = count;
+      newState.maxSize = undefined;
+      newState.scaleDownThreshold = 20;
+      newState.scaleUpThreshold = 80;
+      newState.scaleStep = 2;
+    } else {
+      newState.minSize = undefined;
+      newState.maxSize = undefined;
+      newState.scaleDownThreshold = undefined;
+      newState.scaleUpThreshold = undefined;
+      newState.scaleStep = undefined;
+    }
+    newState.touched = touched;
+    this.setState(newState, this.onChange);
+  };
+
+  onChangeMinSize = (e) => {
+    const {touched} = this.state;
+    touched.minSize = true;
+    this.setState({
+      minSize: e,
+      touched
+    }, this.onChange);
+  };
+
+  onChangeMaxSize = (e) => {
+    const {touched} = this.state;
+    touched.maxSize = true;
+    this.setState({
+      maxSize: e,
+      touched
+    }, this.onChange);
+  };
+
+  onChangeScaleDownThreshold = (e) => {
+    const {touched} = this.state;
+    touched.scaleDownThreshold = true;
+    this.setState({
+      scaleDownThreshold: e,
+      touched
+    }, this.onChange);
+  };
+
+  onChangeScaleUpThreshold = (e) => {
+    const {touched} = this.state;
+    touched.scaleUpThreshold = true;
+    this.setState({
+      scaleUpThreshold: e,
+      touched
+    }, this.onChange);
+  };
+
+  onChangeScaleStep = (e) => {
+    const {touched} = this.state;
+    touched.scaleStep = true;
+    this.setState({
+      scaleStep: e,
       touched
     }, this.onChange);
   };
@@ -634,6 +889,23 @@ class EditHotNodePool extends React.Component {
     }
   };
 
+  renderHintControl = (hint) => {
+    if (hint) {
+      return (
+        <Popover
+          content={hint}
+          placement="right"
+        >
+          <Icon
+            type="question-circle"
+            style={{marginLeft: 5}}
+          />
+        </Popover>
+      );
+    }
+    return null;
+  };
+
   renderScheduleControls = () => {
     const {
       validation,
@@ -718,15 +990,47 @@ class EditHotNodePool extends React.Component {
     );
   };
 
+  renderAutoScaledControl = () => {
+    const {
+      disabled
+    } = this.props;
+    const {
+      autoscaled
+    } = this.state;
+    return (
+      <div>
+        <div
+          className={styles.formRow}
+        >
+          <span className={styles.label}>
+            Autoscaled:
+          </span>
+          <Checkbox
+            style={autoscaled ? {marginLeft: 11} : {}}
+            className={classNames(styles.formItem, styles.small)}
+            disabled={disabled}
+            checked={autoscaled}
+            onChange={this.onChangeAutoScaled}
+          />
+          {this.renderHintControl(hints.autoScaledHint)}
+        </div>
+      </div>
+    );
+  };
+
   renderNodeCountControl = () => {
     const {
       disabled
     } = this.props;
     const {
+      autoscaled,
       validation,
       touched,
       count
     } = this.state;
+    if (autoscaled) {
+      return null;
+    }
     return (
       <div>
         <div
@@ -747,6 +1051,214 @@ class EditHotNodePool extends React.Component {
           validation.count && touched.count && (
             <div className={classNames(styles.formRow, styles.error)}>
               {validation.count}
+            </div>
+          )
+        }
+      </div>
+    );
+  };
+
+  renderMinSizeControl = () => {
+    const {
+      disabled
+    } = this.props;
+    const {
+      autoscaled,
+      validation,
+      touched,
+      minSize
+    } = this.state;
+    if (!autoscaled) {
+      return null;
+    }
+    return (
+      <div style={{paddingLeft: 10}}>
+        <div
+          className={styles.formRow}
+        >
+          <span className={styles.label}>
+            Min Size:
+          </span>
+          <InputNumber
+            className={classNames(styles.formItem, styles.small)}
+            disabled={disabled}
+            value={minSize}
+            min={1}
+            onChange={this.onChangeMinSize}
+          />
+          {this.renderHintControl(hints.minSizeHint)}
+        </div>
+        {
+          validation.minSize && touched.minSize && (
+            <div className={classNames(styles.formRow, styles.error)}>
+              {validation.minSize}
+            </div>
+          )
+        }
+      </div>
+    );
+  };
+
+  renderMaxSizeControl = () => {
+    const {
+      disabled
+    } = this.props;
+    const {
+      autoscaled,
+      validation,
+      touched,
+      maxSize
+    } = this.state;
+    if (!autoscaled) {
+      return null;
+    }
+    return (
+      <div style={{paddingLeft: 10}}>
+        <div
+          className={styles.formRow}
+        >
+          <span className={styles.label}>
+            Max Size:
+          </span>
+          <InputNumber
+            className={classNames(styles.formItem, styles.small)}
+            disabled={disabled}
+            value={maxSize}
+            min={1}
+            onChange={this.onChangeMaxSize}
+          />
+          {this.renderHintControl(hints.maxSizeHint)}
+        </div>
+        {
+          validation.maxSize && touched.maxSize && (
+            <div className={classNames(styles.formRow, styles.error)}>
+              {validation.maxSize}
+            </div>
+          )
+        }
+      </div>
+    );
+  };
+
+  renderScaleDownThresholdControl = () => {
+    const {
+      disabled
+    } = this.props;
+    const {
+      autoscaled,
+      validation,
+      touched,
+      scaleDownThreshold
+    } = this.state;
+    if (!autoscaled) {
+      return null;
+    }
+    return (
+      <div style={{paddingLeft: 10}}>
+        <div
+          className={styles.formRow}
+        >
+          <span className={styles.label}>
+            Scale Down Threshold:
+          </span>
+          <InputNumber
+            className={classNames(styles.formItem, styles.small)}
+            disabled={disabled}
+            value={scaleDownThreshold}
+            min={0}
+            max={100}
+            onChange={this.onChangeScaleDownThreshold}
+          />
+          {this.renderHintControl(hints.scaleDownThresholdHint)}
+        </div>
+        {
+          validation.scaleDownThreshold && touched.scaleDownThreshold && (
+            <div className={classNames(styles.formRow, styles.error)}>
+              {validation.scaleDownThreshold}
+            </div>
+          )
+        }
+      </div>
+    );
+  };
+
+  renderScaleUpThresholdControl = () => {
+    const {
+      disabled
+    } = this.props;
+    const {
+      autoscaled,
+      validation,
+      touched,
+      scaleUpThreshold
+    } = this.state;
+    if (!autoscaled) {
+      return null;
+    }
+    return (
+      <div style={{paddingLeft: 10}}>
+        <div
+          className={styles.formRow}
+        >
+          <span className={styles.label}>
+            Scale Up Threshold:
+          </span>
+          <InputNumber
+            className={classNames(styles.formItem, styles.small)}
+            disabled={disabled}
+            value={scaleUpThreshold}
+            min={0}
+            max={100}
+            onChange={this.onChangeScaleUpThreshold}
+          />
+          {this.renderHintControl(hints.scaleUpThresholdHint)}
+        </div>
+        {
+          validation.scaleUpThreshold && touched.scaleUpThreshold && (
+            <div className={classNames(styles.formRow, styles.error)}>
+              {validation.scaleUpThreshold}
+            </div>
+          )
+        }
+      </div>
+    );
+  };
+
+  renderScaleStepControl = () => {
+    const {
+      disabled
+    } = this.props;
+    const {
+      autoscaled,
+      validation,
+      touched,
+      scaleStep
+    } = this.state;
+    if (!autoscaled) {
+      return null;
+    }
+    return (
+      <div style={{paddingLeft: 10}}>
+        <div
+          className={styles.formRow}
+        >
+          <span className={styles.label}>
+            Scale Step:
+          </span>
+          <InputNumber
+            className={classNames(styles.formItem, styles.small)}
+            disabled={disabled}
+            value={scaleStep}
+            min={0}
+            max={100}
+            onChange={this.onChangeScaleStep}
+          />
+          {this.renderHintControl(hints.scaleStepHint)}
+        </div>
+        {
+          validation.scaleStep && touched.scaleStep && (
+            <div className={classNames(styles.formRow, styles.error)}>
+              {validation.scaleStep}
             </div>
           )
         }
@@ -1133,7 +1645,13 @@ class EditHotNodePool extends React.Component {
         <div className={styles.sectionHeader}>
           <h2>Configuration</h2>
         </div>
+        {this.renderAutoScaledControl()}
         {this.renderNodeCountControl()}
+        {this.renderMinSizeControl()}
+        {this.renderMaxSizeControl()}
+        {this.renderScaleUpThresholdControl()}
+        {this.renderScaleDownThresholdControl()}
+        {this.renderScaleStepControl()}
         {this.renderRegionControl(!isNew)}
         {this.renderSpotControl(!isNew)}
         {this.renderInstanceTypeControl(!isNew)}
