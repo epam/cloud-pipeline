@@ -28,10 +28,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.manager.EntityManager;
-import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
@@ -66,6 +63,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
 import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getPipelineConfiguration;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
+import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getDefaultAwsRegion;
+import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getNonDefaultAwsRegion;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
 import static java.lang.Integer.parseInt;
@@ -89,7 +88,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     private static final float DISK_PRICE_PER_HOUR = 1F;
     private static final String INSTANCE_TYPE = "m5.large";
     private static final String NOT_ALLOWED = "not allowed";
-    private static final String NO_PERMISSIONS_MESSAGE = "doesn't have sufficient permissions";
+    private static final String NO_PERMISSIONS = "no permissions";
     private static final long PARENT_RUN_ID = 5L;
     private static final String INSTANCE_DISK = "1";
     private static final String PARENT_RUN_ID_PARAMETER = "parent-id";
@@ -130,12 +129,6 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     private CloudRegionManager cloudRegionManager;
 
     @Mock
-    private EntityManager entityManager;
-
-    @Mock
-    private ResourceMonitoringManager resourceMonitoringManager;
-
-    @Mock
     private ToolVersionManager toolVersionManager;
 
     @Mock
@@ -148,7 +141,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     private PreferenceManager preferenceManager;
 
     private static final String TEST_IMAGE = "testImage";
-    private Tool notScannedTool;
+    private Tool tool;
     private PipelineConfiguration configuration;
     private PipelineConfiguration configurationWithoutRegion;
     private InstancePrice price;
@@ -161,15 +154,14 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        notScannedTool = getTool(TEST_IMAGE, DEFAULT_COMMAND);
-        defaultAwsRegion = defaultRegion(ID);
-        nonAllowedAwsRegion = nonDefaultRegion(ID_2);
-        notDefaultAwsRegion = nonDefaultRegion(ID_3);
+        tool = getTool(TEST_IMAGE, DEFAULT_COMMAND);
+        defaultAwsRegion = getDefaultAwsRegion(ID);
+        nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
+        notDefaultAwsRegion = getNonDefaultAwsRegion(ID_3);
         configuration = getPipelineConfiguration(TEST_IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId());
         configurationWithoutRegion = getPipelineConfiguration(TEST_IMAGE, INSTANCE_DISK);
         price = new InstancePrice(configuration.getInstanceType(), parseInt(configuration.getInstanceDisk()),
                 PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
-
         parentRun = PipelineCreatorUtils.getPipelineRunWithInstance(PARENT_RUN_ID, TEST_USER, ID_3);
 
         mockCloudRegionManager();
@@ -190,10 +182,10 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void testLaunchPipelineValidatesToolInstanceTypeAndPriceType() {
-        launchTool(INSTANCE_TYPE);
+        launchTool(configuration, INSTANCE_TYPE);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -221,11 +213,11 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
                 .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(ID), eq(true));
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        Runnable task = () -> launchTool(INSTANCE_TYPE);
+        Runnable task = () ->  launchTool(configuration, INSTANCE_TYPE);
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -237,10 +229,10 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void testLaunchPipelineDoesNotValidateToolInstanceTypeIfItIsNotSpecified() {
-        launchTool((String) null);
+        launchTool(configuration, null);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -267,11 +259,11 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         configuration.setCloudRegionId(ID_2);
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        Runnable task = () -> launchTool(INSTANCE_TYPE);
+        Runnable task = () ->  launchTool(configuration, INSTANCE_TYPE);
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID_2));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(nonAllowedAwsRegion));
@@ -283,10 +275,10 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void testLaunchPipelineValidatesPipelineInstanceType() {
-        launchPipeline(INSTANCE_TYPE);
+        launchPipeline(configuration, INSTANCE_TYPE);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -311,10 +303,10 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         configuration.setCloudRegionId(ID_2);
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(INSTANCE_TYPE));
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(configuration, INSTANCE_TYPE));
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID_2));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(nonAllowedAwsRegion));
@@ -327,10 +319,10 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(INSTANCE_TYPE));
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(configuration, INSTANCE_TYPE));
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -340,10 +332,10 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void testLaunchPipelineDoesNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
-        launchPipeline((String) null);
+        launchPipeline(configuration, null);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -368,10 +360,10 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     public void testLaunchPipelineValidatesPriceTypeAsOnDemandIfItIsNotSpecified() {
         configuration.setIsSpot(null);
 
-        launchPipeline(INSTANCE_TYPE);
+        launchPipeline(configuration, INSTANCE_TYPE);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -397,11 +389,11 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         doReturn(false).when(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_PRICE_TYPE_IS_NOT_ALLOWED), eq(PriceType.SPOT));
 
-        Runnable task = () -> launchPipeline(INSTANCE_TYPE);
+        Runnable task = () -> launchPipeline(configuration, INSTANCE_TYPE);
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -418,12 +410,12 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(
                 eq(ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED), eq("US East"), eq("US East"));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), this::launchPipeline);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), this::launchTool);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(configuration, null));
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchTool(configuration, null));
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager, times(2))
-                .getConfigurationForTool(eq(notScannedTool), eq(configuration));
+                .getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager, times(2)).load(eq(ID));
         verify(cloudRegionManager, times(2)).load(eq(ID_3));
         verify(permissionHelper, times(2)).isAdmin();
@@ -435,12 +427,12 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         toolConfiguration.setCloudRegionId(ID_3);
         doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
 
-        launchPipeline(configurationWithoutRegion);
-        launchTool(configurationWithoutRegion);
+        launchPipeline(configurationWithoutRegion, null);
+        launchTool(configurationWithoutRegion, null);
 
         verify(toolManager, times(4)).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager, times(2))
-                .getConfigurationForTool(eq(notScannedTool), eq(configurationWithoutRegion));
+                .getConfigurationForTool(eq(tool), eq(configurationWithoutRegion));
         verify(cloudRegionManager, times(4)).load(eq(ID_3));
         verify(permissionHelper, times(2)).isAdmin();
         verify(permissionHelper, times(2)).isAllowed(eq(PERMISSION_NAME), eq(notDefaultAwsRegion));
@@ -468,14 +460,15 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     @Test
     public void testLaunchPipelineFailsIfCloudRegionIsNotAllowed() {
         doReturn(false).when(permissionHelper).isAllowed(any(), any());
-        doReturn(NO_PERMISSIONS_MESSAGE).when(messageHelper).getMessage(
+        doReturn(NO_PERMISSIONS).when(messageHelper).getMessage(
                 eq(ERROR_RUN_CLOUD_REGION_NOT_ALLOWED), eq("US East"));
 
-        assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS_MESSAGE), this::launchPipeline);
+        Runnable task = () -> launchPipeline(configuration, null);
+        assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS), task);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager)
-                .getConfigurationForTool(eq(notScannedTool), eq(configuration));
+                .getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -483,12 +476,12 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void runShouldUseCloudRegionFromConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configuration, null);
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -510,14 +503,14 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void workerRunShouldUseCloudRegionFromConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configuration, PARENT_RUN_ID);
+        final PipelineRun pipelineRun = launchPipelineWithParentId(configuration);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
 
         verify(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
         verify(permissionManager).isRunSshAllowed(eq(parentRun));
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
         verify(cloudRegionManager).load(eq(ID));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -526,7 +519,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
 
         verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
-        verifyPreferenceManagerWithCommitTimeout(1);
+        verifyPreferenceManagerWithCommitTimeout();
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(ID));
         verify(securityManager).getAuthorizedUser();
@@ -539,12 +532,12 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void runShouldUseDefaultCloudRegionIfThereIsNoParentRunAndNoRegionConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, null);
+        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, INSTANCE_TYPE);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configurationWithoutRegion));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configurationWithoutRegion));
         verify(cloudRegionManager).loadDefaultRegion();
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
@@ -566,14 +559,14 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedExplicitlyIfThereIsNoRegionConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, PARENT_RUN_ID);
+        final PipelineRun pipelineRun = launchPipelineWithParentId(configurationWithoutRegion);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID_3));
 
         verify(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
         verify(permissionManager).isRunSshAllowed(eq(parentRun));
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configurationWithoutRegion));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configurationWithoutRegion));
         verify(cloudRegionManager).load(eq(ID_3));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(notDefaultAwsRegion));
@@ -582,7 +575,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(null), eq(false));
 
         verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
-        verifyPreferenceManagerWithCommitTimeout(1);
+        verifyPreferenceManagerWithCommitTimeout();
 
         verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(ID_3));
         verify(securityManager).getAuthorizedUser();
@@ -606,7 +599,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         verify(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
         verify(permissionManager).isRunSshAllowed(eq(parentRun));
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
-        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configurationWithoutRegion));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configurationWithoutRegion));
         verify(cloudRegionManager).load(eq(ID_3));
         verify(permissionHelper).isAdmin();
         verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(notDefaultAwsRegion));
@@ -627,11 +620,10 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     private void mockToolManager() {
-        doReturn(notScannedTool).when(toolManager).loadByNameOrId(eq(TEST_IMAGE));
-        doReturn(notScannedTool).when(toolManager).resolveSymlinks(eq(TEST_IMAGE));
-        doReturn(Optional.empty()).when(toolManager).loadToolVersionScan(eq(notScannedTool.getId()), eq(null));
+        doReturn(tool).when(toolManager).loadByNameOrId(eq(TEST_IMAGE));
+        doReturn(tool).when(toolManager).resolveSymlinks(eq(TEST_IMAGE));
+        doReturn(Optional.empty()).when(toolManager).loadToolVersionScan(eq(tool.getId()), eq(null));
     }
-
 
     private void mockCloudRegionManager() {
         doReturn(defaultAwsRegion).when(cloudRegionManager).load(eq(ID));
@@ -674,60 +666,31 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         verify(preferenceManager, times(times)).getPreference(eq(CLUSTER_SPOT));
     }
 
-    private void verifyPreferenceManagerWithCommitTimeout(int times) {
-        verifyPreferenceManager(times);
-        verify(preferenceManager, times(times)).getPreference(eq(COMMIT_TIMEOUT));
+    private void verifyPreferenceManagerWithCommitTimeout() {
+        verifyPreferenceManager(1);
+        verify(preferenceManager).getPreference(eq(COMMIT_TIMEOUT));
     }
 
-
-    private void launchTool() {
-        launchPipeline(configuration, null, null, null);
-    }
-
-    private void launchTool(final PipelineConfiguration configuration) {
-        launchPipeline(configuration, null, null, null);
-    }
-
-    private void launchTool(final String instanceType) {
+    private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
         launchPipeline(configuration, null, instanceType, null);
     }
 
-    private void launchPipeline() {
-        launchPipeline(configuration, new Pipeline(), null, null);
+    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType) {
+        return launchPipeline(configuration, new Pipeline(), instanceType, null);
     }
 
-    private void launchPipeline(final PipelineConfiguration configuration) {
-        launchPipeline(configuration, new Pipeline(), null, null);
-    }
-
-    private void launchPipeline(final String instanceType) {
-        launchPipeline(configuration, new Pipeline(), instanceType, null);
-    }
-
-    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Long parentRunId) {
-        return launchPipeline(configuration, new Pipeline(), INSTANCE_TYPE, parentRunId);
+    private PipelineRun launchPipelineWithParentId(final PipelineConfiguration configuration) {
+        return launchPipeline(configuration, new Pipeline(), INSTANCE_TYPE, PARENT_RUN_ID);
     }
 
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
                                        final String instanceType, final Long parentRunId) {
-        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null, null,
-                parentRunId, null, null, null);
+        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null,
+                null, null, parentRunId, null, null, null);
     }
 
     private ContextualPreferenceExternalResource getExternalResource() {
-        return new ContextualPreferenceExternalResource(TOOL, notScannedTool.getId().toString());
-    }
-
-    private AwsRegion defaultRegion(final long id) {
-        final AwsRegion defaultAwsRegion = ObjectCreatorUtils.getDefaultAwsRegion();
-        defaultAwsRegion.setId(id);
-        return defaultAwsRegion;
-    }
-
-    private AwsRegion nonDefaultRegion(final long id) {
-        final AwsRegion parentAwsRegion = defaultRegion(id);
-        parentAwsRegion.setDefault(false);
-        return parentAwsRegion;
+        return new ContextualPreferenceExternalResource(TOOL, tool.getId().toString());
     }
 
     static class Predicates {
