@@ -7,7 +7,7 @@ import {
   message,
   Row,
   Modal,
-  Table
+  Table, Alert
 } from 'antd';
 import EditSystemNotificationForm from './forms/EditSystemNotificationForm';
 import Notifications from '../../models/notifications/Notifications';
@@ -121,6 +121,14 @@ export default class SystemEvents extends Component {
   };
 
   render () {
+    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+      return null;
+    }
+    if (!this.props.authenticatedUserInfo.value.admin) {
+      return (
+        <Alert type="error" message="Access is denied" />
+      );
+    }
     const {notifications} = this.props;
     const data = (
       notifications.loaded

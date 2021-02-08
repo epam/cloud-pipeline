@@ -60,12 +60,14 @@ const valueNames = {
 @observer
 export default class InstanceTypesManagementForm extends React.Component {
   static propTypes = {
+    className: PropTypes.string,
     disabled: PropTypes.bool,
     level: PropTypes.oneOf(['USER', 'TOOL', 'ROLE']),
     resourceId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     onModified: PropTypes.func,
     showApplyButton: PropTypes.bool,
-    onInitialized: PropTypes.func
+    onInitialized: PropTypes.func,
+    style: PropTypes.object
   };
 
   static defaultProps = {
@@ -268,9 +270,13 @@ export default class InstanceTypesManagementForm extends React.Component {
     if (this.pending || this.state.operationInProgress) {
       return <LoadingView />;
     }
-    const {disabled} = this.props;
+    const {className, disabled, style} = this.props;
     return (
-      <Row type="flex" style={{flex: 1, overflow: 'auto'}}>
+      <Row
+        className={className}
+        type="flex"
+        style={Object.assign({flex: 1, overflow: 'auto'}, style)}
+      >
         <div style={{padding: 2, width: '100%'}}>
           {
             this.props.level !== 'TOOL' &&

@@ -28,7 +28,7 @@ import {Alert, message, Modal, Table} from 'antd';
 import EditEmailNotification from './forms/EditEmailNotification';
 import styles from './EmailNotificationSettings.css';
 
-@inject('router')
+@inject('router', 'authenticatedUserInfo')
 @inject(() => {
   return {
     notificationSettings: new NotificationSettings(),
@@ -38,7 +38,6 @@ import styles from './EmailNotificationSettings.css';
 })
 @observer
 export default class EmailNotificationSettings extends React.Component {
-
   state = {
     selectedTemplateId: null,
     changesCanBeSkipped: false
@@ -262,6 +261,14 @@ export default class EmailNotificationSettings extends React.Component {
   };
 
   render () {
+    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+      return null;
+    }
+    if (!this.props.authenticatedUserInfo.value.admin) {
+      return (
+        <Alert type="error" message="Access is denied" />
+      );
+    }
     if (!this.props.notificationSettings.loaded && this.props.notificationSettings.pending) {
       return <LoadingView />;
     }

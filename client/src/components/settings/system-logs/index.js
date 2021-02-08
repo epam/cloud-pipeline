@@ -15,6 +15,8 @@
  */
 
 import React from 'react';
+import {inject, observer} from 'mobx-react';
+import {Alert} from 'antd';
 import styles from './system-logs.css';
 import Filters, {DATE_FORMAT} from './filters';
 import Logs from './logs';
@@ -106,6 +108,14 @@ class SystemLogs extends React.Component {
   };
 
   render () {
+    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+      return null;
+    }
+    if (!this.props.authenticatedUserInfo.value.admin) {
+      return (
+        <Alert type="error" message="Access is denied" />
+      );
+    }
     const {
       filters,
       logContainerSize
@@ -134,4 +144,4 @@ class SystemLogs extends React.Component {
   }
 }
 
-export default SystemLogs;
+export default inject('authenticatedUserInfo')(observer(SystemLogs));

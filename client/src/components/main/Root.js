@@ -56,6 +56,7 @@ import SystemDictionariesLoadAll from '../../models/systemDictionaries/SystemDic
 import GetMetadataKeys from '../../models/metadata/GetMetadataKeys';
 import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
+import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
 
 const routing = new RouterStore();
@@ -139,6 +140,7 @@ const Root = () =>
       billingCenters: new billing.FetchBillingCenters(),
       systemDictionaries,
       userMetadataKeys,
+      cloudCredentialProfiles,
       [HiddenObjects.injectionName]: hiddenObjects
     }}>
     <AppRouter />
