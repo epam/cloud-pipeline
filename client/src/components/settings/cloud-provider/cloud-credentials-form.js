@@ -75,7 +75,10 @@ class CloudCredentialsForm extends React.Component {
             <div className={styles.actions}>
               <Button
                 size="small"
-                onClick={e => e.stopPropagation() && this.onEditCredentialsClicked(credentials)}
+                onClick={e => {
+                  e.stopPropagation();
+                  this.onEditCredentialsClicked(credentials);
+                }}
               >
                 <Icon type="edit" />
               </Button>

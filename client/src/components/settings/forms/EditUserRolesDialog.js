@@ -814,15 +814,22 @@ export default class EditUserRolesDialog extends React.Component {
             <div
               key="INSTANCE_MANAGEMENT"
             >
-              <Row
-                key="cloud credentials profiles"
-                type="flex"
-                style={{marginTop: 5, padding: 2}}
-                align="middle"
+              <InstanceTypesManagementForm
+                className={styles.instanceTypesManagementForm}
+                key="instance types management form"
+                disabled={this.state.operationInProgress || readOnly}
+                resourceId={this.props.userId}
+                level="USER"
+                onInitialized={this.onInstanceTypesFormInitialized}
+                onModified={this.onInstanceTypesModified}
+                showApplyButton={false}
+              />
+              <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
+                Cloud Credentials Profiles
+              </div>
+              <div
+                style={{padding: '0 2px'}}
               >
-                <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
-                  Cloud Credentials Profiles:
-                </span>
                 <Select
                   allowClear
                   showSearch
@@ -833,7 +840,7 @@ export default class EditUserRolesDialog extends React.Component {
                     pending
                   }
                   value={this.state.profiles.map(o => `${o}`)}
-                  style={{flex: 1}}
+                  style={{width: '100%'}}
                   onChange={this.onChangeCredentialProfiles}
                   filterOption={(input, option) =>
                     option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -857,16 +864,13 @@ export default class EditUserRolesDialog extends React.Component {
                     ))
                   }
                 </Select>
-              </Row>
-              <Row
-                key="default credentials profiles"
-                type="flex"
-                style={{marginTop: 5, padding: 2}}
-                align="middle"
+              </div>
+              <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
+                Default Credentials Profile
+              </div>
+              <div
+                style={{padding: '0 2px'}}
               >
-                <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
-                  Default Credentials Profile:
-                </span>
                 <Select
                   allowClear
                   showSearch
@@ -877,7 +881,7 @@ export default class EditUserRolesDialog extends React.Component {
                     pending
                   }
                   value={this.defaultProfileId}
-                  style={{flex: 1}}
+                  style={{width: '100%'}}
                   onChange={this.onChangeDefaultProfileId}
                   filterOption={(input, option) =>
                     option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -903,17 +907,7 @@ export default class EditUserRolesDialog extends React.Component {
                       ))
                   }
                 </Select>
-              </Row>
-              <InstanceTypesManagementForm
-                className={styles.instanceTypesManagementForm}
-                key="instance types management form"
-                disabled={this.state.operationInProgress || readOnly}
-                resourceId={this.props.userId}
-                level="USER"
-                onInitialized={this.onInstanceTypesFormInitialized}
-                onModified={this.onInstanceTypesModified}
-                showApplyButton={false}
-              />
+              </div>
             </div>
           </SplitPanel>
         </SplitPanel>
