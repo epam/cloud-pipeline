@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
@@ -70,7 +71,6 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
-import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
@@ -84,6 +84,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
+import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
@@ -121,9 +122,9 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -160,9 +161,6 @@ public class AclTestBeans {
 
     @MockBean
     protected EntityManager mockEntityManager;
-
-    @MockBean
-    protected HierarchicalEntityManager mockHierarchicalEntityManager;
 
     @MockBean
     protected IssueManager mockIssueManager;
@@ -327,9 +325,6 @@ public class AclTestBeans {
     protected PreferenceManager mockPreferenceManager;
 
     @MockBean
-    protected RoleManager mockRoleManager;
-
-    @MockBean
     protected NodeDiskManager mockNodeDiskManager;
 
     @MockBean
@@ -462,27 +457,28 @@ public class AclTestBeans {
     protected MetadataDownloadManager mockMetadataDownloadManager;
 
     @MockBean
-    protected UsersFileImportManager usersFileImportManager;
+    protected UsersFileImportManager mockUsersFileImportManager;
 
-    @Bean
-    protected TemplatesScanner mockTemplatesScanner() {
-        return Mockito.mock(TemplatesScanner.class);
-    }
+    @MockBean
+    protected JsonService mockJsonService;
 
-    @Bean
-    protected JsonService mockJsonService() {
-        return Mockito.mock(JsonService.class);
-    }
+    @MockBean
+    protected DataStorageManager mockDataStorageManager;
 
-    @Bean
-    protected DataStorageManager mockDataStorageManager() {
-        return Mockito.mock(DataStorageManager.class);
-    }
+    @MockBean
+    protected FolderCrudManager mockFolderCrudManager;
 
-    @Bean
-    protected FolderCrudManager mockFolderCrudManager() {
-        return Mockito.mock(FolderCrudManager.class);
-    }
+    @MockBean
+    protected RoleManager mockRoleManager;
+
+    @MockBean
+    protected CloudProfileCredentialsManagerProvider mockCloudProfileCredentialsManagerProvider;
+
+    @MockBean
+    protected OntologyManager mockOntologyManager;
+
+    @SpyBean
+    protected HierarchicalEntityManager spyHierarchicalEntityManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
@@ -498,5 +494,4 @@ public class AclTestBeans {
         grantPermissionManager.setPermissionFactory(permissionFactory);
         return spy(grantPermissionManager);
     }
-
 }

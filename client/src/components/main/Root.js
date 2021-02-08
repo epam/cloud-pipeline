@@ -56,6 +56,7 @@ import SystemDictionariesLoadAll from '../../models/systemDictionaries/SystemDic
 import GetMetadataKeys from '../../models/metadata/GetMetadataKeys';
 import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
+import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -136,7 +137,8 @@ const Root = () =>
       quotaTemplates: billing.quotas.templates.list,
       billingCenters: new billing.FetchBillingCenters(),
       systemDictionaries,
-      userMetadataKeys
+      userMetadataKeys,
+      cloudCredentialProfiles
     }}>
     <AppRouter />
   </Provider>;

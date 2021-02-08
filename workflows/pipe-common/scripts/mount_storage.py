@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
 READ_ONLY_MOUNT_OPT = 'ro'
 MOUNT_LIMITS_NONE = 'none'
+SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
 
 
 class PermissionHelper:
@@ -120,28 +121,37 @@ class MountStorageTask:
                 return
             Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
+            sensitive_policy = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)['value']
             for mounter in [mounter for mounter in self.mounters.values()]:
                 storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
                 if storage_count_by_type > 0:
-                    mounter.check_or_install(self.task_name)
+                    mounter.check_or_install(self.task_name, sensitive_policy)
                     mounter.init_tmp_dir(tmp_dir, self.task_name)
 
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
                 Logger.success('Mounting of remote storages is not available for this image', task_name=self.task_name)
                 return
+            initialized_mounters = []
             for storage_and_mount in available_storages_with_mounts:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
                     continue
-                mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage, storage_and_mount.file_share_mount) \
+                mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
+                                                                                storage_and_mount.file_share_mount,
+                                                                                sensitive_policy) \
                     if storage_and_mount.storage.storage_type in self.mounters else None
                 if not mounter:
                     Logger.warn('Unsupported storage type {}.'.format(storage_and_mount.storage.storage_type), task_name=self.task_name)
                 elif mounter.is_available():
-                    try:
-                        mounter.mount(mount_root, self.task_name)
-                    except RuntimeError as e:
-                        Logger.warn('Data storage {} mounting has failed: {}'.format(storage_and_mount.storage.name, e.message),
-                                    task_name=self.task_name)
+                    initialized_mounters.append(mounter)
+
+            initialized_mounters.sort(key=lambda mnt: mnt.build_mount_point(mount_root))
+            for mnt in initialized_mounters:
+                try:
+                    mnt.mount(mount_root, self.task_name)
+                except RuntimeError as e:
+                    Logger.warn(
+                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, e.message),
+                        task_name=self.task_name)
             Logger.success('Finished data storage mounting', task_name=self.task_name)
         except Exception as e:
             Logger.fail('Unhandled error during mount task: {}.'.format(str(e.message)), task_name=self.task_name)
@@ -152,10 +162,11 @@ class StorageMounter:
     __metaclass__ = ABCMeta
     _cached_regions = []
 
-    def __init__(self, api, storage, share_mount):
+    def __init__(self, api, storage, share_mount, sensitive_policy):
         self.api = api
         self.storage = storage
         self.share_mount = share_mount
+        self.sensitive_policy = sensitive_policy
 
     @staticmethod
     @abstractmethod
@@ -169,7 +180,7 @@ class StorageMounter:
 
     @staticmethod
     @abstractmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, sensitive_policy):
         pass
 
     @staticmethod
@@ -257,7 +268,7 @@ class AzureMounter(StorageMounter):
         return AZ_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, sensitive_policy):
         AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse', task_name=task_name)
 
     @staticmethod
@@ -320,7 +331,7 @@ class S3Mounter(StorageMounter):
         return S3_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, sensitive_policy):
         S3Mounter.fuse_type = S3Mounter._check_or_install(task_name)
 
     @staticmethod
@@ -434,7 +445,7 @@ class GCPMounter(StorageMounter):
         return GCP_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, sensitive_policy):
         GCPMounter.fuse_type = GCPMounter._check_or_install(task_name)
 
     @staticmethod
@@ -523,8 +534,9 @@ class NFSMounter(StorageMounter):
         return NFS_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
-        NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
+    def check_or_install(task_name, sensitive_policy):
+        NFSMounter.available = False if PermissionHelper.is_run_sensitive() and sensitive_policy == "SKIP" \
+            else StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):
@@ -586,12 +598,29 @@ class NFSMounter(StorageMounter):
                 mount_options = file_mode_options
             else:
                 mount_options += ',' + file_mode_options
+        mount_options = self.append_timeout_options(mount_options)
         if mount_options:
             command += ' -o {}'.format(mount_options)
         command += ' {path} {mount}'.format(**params)
         if PermissionHelper.is_storage_writable(self.storage):
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
         return command
+
+    def append_timeout_options(self, mount_options):
+        if self.share_mount.mount_type == 'SMB' or not PermissionHelper.is_run_sensitive() \
+                or self.sensitive_policy != "TIMEOUT":
+            return mount_options
+        if not mount_options or 'retry' not in mount_options:
+            mount_retry = os.getenv('CP_FS_MOUNT_ATTEMPT', 0)
+            retry_option = 'retry={}'.format(mount_retry)
+            mount_options = retry_option if not mount_options else mount_options + ',' + retry_option
+        if self.share_mount.mount_type == 'LUSTRE':
+            return mount_options
+        if not mount_options or 'timeo' not in mount_options:
+            mount_timeo = os.getenv('CP_FS_MOUNT_TIMEOUT', 7)
+            timeo_option = 'timeo={}'.format(mount_timeo)
+            mount_options = timeo_option if not mount_options else mount_options + ',' + timeo_option
+        return mount_options
 
 
 def main():

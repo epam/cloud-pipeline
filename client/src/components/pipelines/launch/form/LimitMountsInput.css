@@ -25,7 +25,8 @@
   padding-right: 20px;
 }
 
-.limit-mounts-input:focus, .limit-mounts-input:hover {
+.limit-mounts-input:focus,
+.limit-mounts-input:hover {
   border-color: #49a9ee;
   outline: 0;
 }

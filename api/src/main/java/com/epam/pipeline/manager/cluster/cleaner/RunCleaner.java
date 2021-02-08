@@ -20,4 +20,5 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 public interface RunCleaner {
 
     void cleanResources(PipelineRun run);
+    void cleanResources(Long runId);
 }

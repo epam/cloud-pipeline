@@ -241,6 +241,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         ATTRIBUTES,
         PREFIX,
         USER_DEFAULT_STORAGE_ID,
+        USER_DEFAULT_PROFILE_ID,
         USER_DEFAULT_STORAGE_PATH,
         USER_BLOCKED,
         REGISTRATION_DATE,
@@ -338,6 +339,10 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             long defaultStorageId = rs.getLong(USER_DEFAULT_STORAGE_ID.name());
             if (!rs.wasNull()) {
                 user.setDefaultStorageId(defaultStorageId);
+            }
+            long defaultProfileId = rs.getLong(USER_DEFAULT_PROFILE_ID.name());
+            if (!rs.wasNull()) {
+                user.setDefaultProfileId(defaultProfileId);
             }
             return user;
         }

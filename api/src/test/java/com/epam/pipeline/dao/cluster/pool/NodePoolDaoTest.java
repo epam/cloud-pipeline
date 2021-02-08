@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,11 +15,11 @@
 
 package com.epam.pipeline.dao.cluster.pool;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
-import com.epam.pipeline.test.creator.cluster.schedule.NodePoolCreatorUtils;
-import com.epam.pipeline.test.creator.cluster.schedule.NodeScheduleCreatorUtils;
+import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
+import com.epam.pipeline.test.creator.cluster.pool.NodeScheduleCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
-public class NodePoolDaoTest extends AbstractSpringTest {
+public class NodePoolDaoTest extends AbstractJdbcTest {
 
     private static final String NEW_VALUE = "new";
 

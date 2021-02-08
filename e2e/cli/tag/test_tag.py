@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ ERROR_MESSAGE = "An error occurred in case "
 PIPELINE = 'pipeline'
 FOLDER = 'folder'
 DATA_STORAGE = 'data_storage'
+COMMON_TEST_CASE_PREFIX = 'TC-PIPE-'
 
 
 class TestMetadataOperations(object):
@@ -31,23 +32,23 @@ class TestMetadataOperations(object):
     user = os.environ['TEST_USER']
 
     """
-    1. epam test case
+    1. test case
     2. entity class
     3. true if command runs by object id, otherwise by name
     """
     test_case_for_crud = [
-        ("epmcmbibpc-918", PIPELINE, True),
-        ("epmcmbibpc-922", PIPELINE, False),
-        ("epmcmbibpc-924", FOLDER, True),
-        ("epmcmbibpc-925", FOLDER, False),
-        ("epmcmbibpc-926", DATA_STORAGE, True),
-        ("epmcmbibpc-930", DATA_STORAGE, False)
+        ("TC-PIPE-TAG-1", PIPELINE, True),
+        ("TC-PIPE-TAG-2", PIPELINE, False),
+        ("TC-PIPE-TAG-3", FOLDER, True),
+        ("TC-PIPE-TAG-4", FOLDER, False),
+        ("TC-PIPE-TAG-5", DATA_STORAGE, True),
+        ("TC-PIPE-TAG-6", DATA_STORAGE, False)
     ]
 
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_crud)
     def test_crud_metadata(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = format_name("".join([test_case, get_test_prefix()]))
+        object_name = self._build_object_name(test_case)
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:
@@ -61,23 +62,23 @@ class TestMetadataOperations(object):
         manager.delete(object_id)
 
     """
-    1. epam test case
+    1. test case
     2. entity class
     3. true if command runs by object id, otherwise by name
     """
     test_case_for_permissions = [
-        ("epmcmbibpc-965", PIPELINE, True),
-        ("epmcmbibpc-966", PIPELINE, False),
-        ("epmcmbibpc-967", FOLDER, True),
-        ("epmcmbibpc-968", FOLDER, False),
-        ("epmcmbibpc-969", DATA_STORAGE, True),
-        ("epmcmbibpc-970", DATA_STORAGE, False)
+        ("TC-PIPE-TAG-7", PIPELINE, True),
+        ("TC-PIPE-TAG-8", PIPELINE, False),
+        ("TC-PIPE-TAG-9", FOLDER, True),
+        ("TC-PIPE-TAG-10", FOLDER, False),
+        ("TC-PIPE-TAG-11", DATA_STORAGE, True),
+        ("TC-PIPE-TAG-12", DATA_STORAGE, False)
     ]
 
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_permissions)
     def test_metadata_permissions(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = format_name("".join([get_test_prefix(), "-", test_case]))
+        object_name = self._build_object_name(test_case)
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:
@@ -104,7 +105,8 @@ class TestMetadataOperations(object):
 
     @pytest.mark.parametrize("entity_class", test_case_for_non_existing_object)
     def test_metadata_non_existing_object(self, entity_class):
-        test_case = "epmcmbibpc-999"
+        """TC-PIPE-TAG-13"""
+        test_case = "TC-PIPE-TAG-13"
         entity_identifier = 'non_existing-' + test_case
         try:
             tags_to_set = list()
@@ -126,23 +128,24 @@ class TestMetadataOperations(object):
             raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
 
     """
-            1. epam test case
+            1. test case
             2. entity class
             3. true if command runs by object id, otherwise by name
     """
     test_case_for_non_existing_class = [
-        ("epmcmbibpc-1000-1", PIPELINE, True),
-        ("epmcmbibpc-1000-2", PIPELINE, False),
-        ("epmcmbibpc-1000-3", FOLDER, True),
-        ("epmcmbibpc-1000-4", FOLDER, False),
-        ("epmcmbibpc-1000-5", DATA_STORAGE, True),
-        ("epmcmbibpc-1000-6", DATA_STORAGE, False)
+        ("TC-PIPE-TAG-14-1", PIPELINE, True),
+        ("TC-PIPE-TAG-14-2", PIPELINE, False),
+        ("TC-PIPE-TAG-14-3", FOLDER, True),
+        ("TC-PIPE-TAG-14-4", FOLDER, False),
+        ("TC-PIPE-TAG-14-5", DATA_STORAGE, True),
+        ("TC-PIPE-TAG-14-6", DATA_STORAGE, False)
     ]
 
-    @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_non_existing_class)
-    def test_metadata_non_existing_class(self, test_case, entity_class, by_id):
+    @pytest.mark.parametrize("case,entity_class,by_id", test_case_for_non_existing_class)
+    def test_metadata_non_existing_class(self, case, entity_class, by_id):
+        """TC-PIPE-TAG-14"""
         manager = EntityManager.get_manager(entity_class)
-        object_name = format_name("".join([test_case, get_test_prefix()]))
+        object_name = self._build_object_name(case)
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         non_existing = 'non-existing'
@@ -162,30 +165,31 @@ class TestMetadataOperations(object):
             assert "Error: Class '{}' does not exist.".format(non_existing) == delete_result[1][0]
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + case + ":" + e.message)
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + case + ":" + e.message)
         manager.delete(object_id)
 
     """
-    1. epam test case
+    1. test case
     2. entity class
     3. true if command runs by object id, otherwise by name
     """
     test_case_for_set_incorrect_key_value_pair = [
-        ("epmcmbibpc-1001-1", PIPELINE, True),
-        ("epmcmbibpc-1001-2", PIPELINE, False),
-        ("epmcmbibpc-1001-3", FOLDER, True),
-        ("epmcmbibpc-1001-4", FOLDER, False),
-        ("epmcmbibpc-1001-5", DATA_STORAGE, True),
-        ("epmcmbibpc-1001-6", DATA_STORAGE, False)
+        ("TC-PIPE-TAG-15-1", PIPELINE, True),
+        ("TC-PIPE-TAG-15-2", PIPELINE, False),
+        ("TC-PIPE-TAG-15-3", FOLDER, True),
+        ("TC-PIPE-TAG-15-4", FOLDER, False),
+        ("TC-PIPE-TAG-15-5", DATA_STORAGE, True),
+        ("TC-PIPE-TAG-15-6", DATA_STORAGE, False)
     ]
 
-    @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
-    def test_metadata_set_incorrect_key_value_pair(self, test_case, entity_class, by_id):
+    @pytest.mark.parametrize("case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
+    def test_metadata_set_incorrect_key_value_pair(self, case, entity_class, by_id):
+        """TC-PIPE-TAG-15"""
         manager = EntityManager.get_manager(entity_class)
-        object_name = format_name("".join([test_case, get_test_prefix()]))
+        object_name = self._build_object_name(case)
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:
@@ -193,30 +197,31 @@ class TestMetadataOperations(object):
             assert "Error: Tags must be specified as KEY=VALUE pair." == set_result[1][0]
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + case + ":" + e.message)
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + case + ":" + e.message)
         manager.delete(object_id)
 
     """
-        1. epam test case
+        1. test case
         2. entity class
         3. true if command runs by object id, otherwise by name
         """
     test_case_for_set_incorrect_key_value_pair = [
-        ("epmcmbibpc-1003-1", PIPELINE, True),
-        ("epmcmbibpc-1003-2", PIPELINE, False),
-        ("epmcmbibpc-1003-3", FOLDER, True),
-        ("epmcmbibpc-1003-4", FOLDER, False),
-        ("epmcmbibpc-1003-5", DATA_STORAGE, True),
-        ("epmcmbibpc-1003-6", DATA_STORAGE, False)
+        ("TC-PIPE-TAG-17-1", PIPELINE, True),
+        ("TC-PIPE-TAG-17-2", PIPELINE, False),
+        ("TC-PIPE-TAG-17-3", FOLDER, True),
+        ("TC-PIPE-TAG-17-4", FOLDER, False),
+        ("TC-PIPE-TAG-17-5", DATA_STORAGE, True),
+        ("TC-PIPE-TAG-17-6", DATA_STORAGE, False)
     ]
 
-    @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
-    def test_delete_keys_from_empty_metadata(self, test_case, entity_class, by_id):
+    @pytest.mark.parametrize("case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
+    def test_delete_keys_from_empty_metadata(self, case, entity_class, by_id):
+        """TC-PIPE-TAG-17"""
         manager = EntityManager.get_manager(entity_class)
-        object_name = format_name("".join([test_case, get_test_prefix()]))
+        object_name = self._build_object_name(case)
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:
@@ -231,30 +236,31 @@ class TestMetadataOperations(object):
             assert "not found.".format(entity_identifier, entity_class) in delete_result[1][0]
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + case + ":" + e.message)
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + case + ":" + e.message)
         manager.delete(object_id)
 
     """
-    1. epam test case
+    1. test case
     2. entity class
     3. true if command runs by object id, otherwise by name
     """
     test_case_for_set_incorrect_key_value_pair = [
-        ("epmcmbibpc-1002-1", PIPELINE, True),
-        ("epmcmbibpc-1002-2", PIPELINE, False),
-        ("epmcmbibpc-1002-3", FOLDER, True),
-        ("epmcmbibpc-1002-4", FOLDER, False),
-        ("epmcmbibpc-1002-5", DATA_STORAGE, True),
-        ("epmcmbibpc-1002-6", DATA_STORAGE, False)
+        ("TC-PIPE-TAG-16-1", PIPELINE, True),
+        ("TC-PIPE-TAG-16-2", PIPELINE, False),
+        ("TC-PIPE-TAG-16-3", FOLDER, True),
+        ("TC-PIPE-TAG-16-4", FOLDER, False),
+        ("TC-PIPE-TAG-16-5", DATA_STORAGE, True),
+        ("TC-PIPE-TAG-16-6", DATA_STORAGE, False)
     ]
 
-    @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
-    def test_delete_non_existing_key(self, test_case, entity_class, by_id):
+    @pytest.mark.parametrize("case,entity_class,by_id", test_case_for_set_incorrect_key_value_pair)
+    def test_delete_non_existing_key(self, case, entity_class, by_id):
+        """TC-PIPE-TAG-16"""
         manager = EntityManager.get_manager(entity_class)
-        object_name = format_name("".join([test_case, get_test_prefix()]))
+        object_name = self._build_object_name(case)
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         non_existing = 'non-existing'
@@ -270,8 +276,12 @@ class TestMetadataOperations(object):
             assert result_tags == tags_to_set
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + case + ":" + e.message)
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + case + ":" + e.message)
         manager.delete(object_id)
+
+    @staticmethod
+    def _build_object_name(test_case):
+        return format_name("".join([test_case.replace(COMMON_TEST_CASE_PREFIX, ""), get_test_prefix()]).lower())

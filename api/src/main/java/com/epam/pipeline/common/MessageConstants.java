@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -454,6 +454,7 @@ public final class MessageConstants {
     public static final String ERROR_REGION_DEFAULT_UNDEFINED = "error.region.default.undefined";
     public static final String ERROR_REGION_NAME_MISSING = "error.region.name.missing";
     public static final String ERROR_REGION_MOUNT_RULE_MISSING = "error.region.mount.rule.missing";
+    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING = "error.region.mont.credentials.missing";
     public static final String ERROR_REGION_PROVIDER_MISMATCH = "error.region.provider.mismatch";
     public static final String ERROR_REGION_REGIONID_MISSING = "error.region.regionid.missing";
     public static final String ERROR_REGION_REGIONID_INVALID = "error.region.regionid.invalid";
@@ -564,6 +565,9 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED = "error.node.pool.instance.type.not.allowed";
     public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";
     public static final String ERROR_NODE_POOL_INVALID_COUNT = "error.node.pool.invalid.count";
+    public static final String ERROR_NODE_POOL_POSITIVE_INT_REQUIRED = "error.node.pool.positive.int.required";
+    public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
+    public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
@@ -572,6 +576,13 @@ public final class MessageConstants {
     public static final String EVENT_ROLE_CREATION_NOT_ALLOWED = "user.import.event.role.creation.not.allowed";
     public static final String EVENT_ROLE_ASSIGNED = "user.import.event.role.assigned";
     public static final String EVENT_METADATA_ASSIGNED = "user.import.event.metadata.assigned";
+
+    // Cloud profiles
+    public static final String ERROR_PROFILE_ID_NOT_FOUND = "error.profile.id.not.found";
+    public static final String ERROR_PROFILE_HAS_LINKS = "error.profile.has.links";
+    public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
+    public static final String ERROR_PROFILE_POLICY_NOT_FOUND = "error.profile.policy.not.found";
+    public static final String ERROR_PROFILE_NAME_NOT_FOUND = "error.profile.name.not.found";
 
     private MessageConstants() {
         // no-op

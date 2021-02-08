@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,6 +108,11 @@ public abstract class AbstractAclTest {
                 .map(p -> initAclEntity(p.getLeft(), p.getRight()))
                 .collect(Collectors.toMap(AclImpl::getObjectIdentity, Function.identity()));
         doReturn(acls).when(aclService).getObjectIdentities(anySet());
+    }
+
+    protected void initAclEntity(AbstractSecuredEntity entity, String role, Permission permission) {
+        initAclEntity(entity,
+                Collections.singletonList(new AuthorityPermission(permission.getMask(), role)));
     }
 
     protected AclImpl initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions) {

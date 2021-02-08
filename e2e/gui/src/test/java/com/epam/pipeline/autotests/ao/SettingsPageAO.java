@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -784,6 +784,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(2, SECONDS);
+                searchGroupBySubstring(group);
                 performIf(context().$$(byText(group)).filterBy(visible).first().exists(), t -> deleteGroup(group));
                 return this;
             }
@@ -800,7 +801,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public GroupsTabAO searchGroupBySubstring(final String part) {
-                click(SEARCH);
                 setValue(SEARCH, part);
                 return this;
             }
@@ -1001,6 +1001,33 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 eye.click();
             }
             return this;
+        }
+
+        public PreferencesAO setCheckboxPreference(String preference, boolean checkboxIsEnable, boolean eyeIsChecked) {
+            searchPreference(preference);
+            final SelenideElement checkBox = context().shouldBe(visible)
+                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
+            if ((checkBox.has(cssClass("ant-checkbox-checked")) && !checkboxIsEnable) ||
+                    (!checkBox.has(cssClass("ant-checkbox-checked")) && checkboxIsEnable)) {
+                checkBox.click();
+            }
+            final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
+                    .find(byClassName("anticon"));
+            if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
+                    (eye.has(cssClass("anticon-eye")) && !eyeIsChecked)) {
+                eye.click();
+            }
+            return this;
+        }
+
+        public boolean[] getCheckboxPreferenceState(String preference) {
+            boolean[] checkboxState = new boolean[2];
+            searchPreference(preference);
+            checkboxState[0] = context().shouldBe(visible)
+                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span")).has(cssClass("ant-checkbox-checked"));
+            checkboxState[1] = context().find(byClassName("preference-group__preference-row"))
+                    .find(byClassName("anticon")).has(cssClass("anticon-eye"));
+            return checkboxState;
         }
 
         private By getByField(final String variable) {

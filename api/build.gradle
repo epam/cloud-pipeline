@@ -89,6 +89,7 @@ dependencies {
     }
     compile("org.springframework.boot:spring-boot-starter-actuator")
     compile group: "org.springframework.boot", name: "spring-boot-starter-web", version: project.ext.versionSpringBoot
+    compile group: "org.springframework.boot", name: "spring-boot-starter-data-jpa", version: project.ext.versionSpringSession
     compile group: "org.springframework.session", name: "spring-session-jdbc", version: project.ext.versionSpringSession
     compile("org.springframework.boot:spring-boot-starter-tomcat")
     compile("org.aspectj:aspectjweaver:1.8.8")

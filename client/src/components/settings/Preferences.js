@@ -24,10 +24,9 @@ import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel/SplitPanel';
 import styles from './Preferences.css';
 
-@inject('preferences', 'router')
+@inject('preferences', 'router', 'authenticatedUserInfo')
 @observer
 export default class Preferences extends React.Component {
-
   state = {
     selectedPreferenceGroup: null,
     operationInProgress: false,
@@ -226,6 +225,14 @@ export default class Preferences extends React.Component {
   };
 
   render () {
+    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+      return null;
+    }
+    if (!this.props.authenticatedUserInfo.value.admin) {
+      return (
+        <Alert type="error" message="Access is denied" />
+      );
+    }
     if (!this.props.preferences.loaded && this.props.preferences.pending) {
       return <LoadingView />;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,6 @@ import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,6 +50,7 @@ import static com.epam.pipeline.autotests.ao.RunsMenuAO.runOf;
 import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static com.epam.pipeline.autotests.utils.Utils.getFile;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -726,14 +724,6 @@ public class SamplesMetadataTest
 
     private Runnable ensureSamplesCountIs(final int count) {
         return () -> SelenideElements.of(rows).shouldHaveSize(count);
-    }
-
-    private File getFile(String filename) {
-        try {
-            return Paths.get(ClassLoader.getSystemResource(filename).toURI()).toFile();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Unable to get resource file");
-        }
     }
 
     private Consumer<StorageContentAO> loadFiles(final String... files) {

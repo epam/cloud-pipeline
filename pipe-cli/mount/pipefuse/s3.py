@@ -239,7 +239,10 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
             'Bucket': self.bucket,
             'Key': old_path
         }
-        self._s3.copy(source, self.bucket, path)
+        extra_args = {
+            'ACL': 'bucket-owner-full-control'
+        }
+        self._s3.copy(source, self.bucket, path, ExtraArgs=extra_args)
         self._s3.delete_object(**source)
 
     def download_range(self, fh, buf, path, offset=0, length=0):

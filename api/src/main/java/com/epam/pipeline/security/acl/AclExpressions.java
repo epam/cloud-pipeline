@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,6 +125,9 @@ public final class AclExpressions {
 
     public static final String TOOL_READ = ADMIN_ONLY + OR +
             "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')";
+
+    public static final String OR_HAS_ASSIGNED_USER_OR_ROLE =
+            " OR @grantPermissionManager.hasCloudProfilePermissions(#profileId)";
 
     private AclExpressions() {
         // no op

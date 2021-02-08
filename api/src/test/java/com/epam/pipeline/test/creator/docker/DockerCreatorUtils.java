@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,6 +179,14 @@ public final class DockerCreatorUtils {
 
     public static DockerRegistryList getDockerRegistryList(final DockerRegistry dockerRegistry) {
         return new DockerRegistryList(Collections.singletonList(dockerRegistry));
+    }
+
+    public static DockerRegistryList getDockerRegistryList(final Long id, final String owner,
+                                                           final DockerRegistry dockerRegistry) {
+        final DockerRegistryList dockerRegistryList = getDockerRegistryList(dockerRegistry);
+        dockerRegistryList.setId(id);
+        dockerRegistryList.setOwner(owner);
+        return dockerRegistryList;
     }
 
     public static DockerRegistryEventEnvelope getDockerRegistryEventEnvelope() {
