@@ -23,8 +23,6 @@ import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
-import com.epam.pipeline.entity.cluster.PriceType;
-import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
@@ -80,7 +78,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -106,16 +103,11 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
     private static final float DISK_PRICE_PER_HOUR = 1F;
     private static final String INSTANCE_TYPE = "m5.large";
-    private static final String SPOT = PriceType.SPOT.getLiteral();
-    private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
     private static final long REGION_ID = 1L;
     private static final long NOT_ALLOWED_REGION_ID = 2L;
     private static final long NON_DEFAULT_REGION_ID = 3L;
-    private static final String NOT_ALLOWED_MESSAGE = "not allowed";
-    private static final String NO_PERMISSIONS_MESSAGE = "doesn't have sufficient permissions";
     private static final long PARENT_RUN_ID = 5L;
     private static final String INSTANCE_DISK = "1";
-    private static final String PARENT_RUN_ID_PARAMETER = "parent-id";
     private static final LocalDateTime SYNC_PERIOD_START = LocalDateTime.of(2019, 4, 2, 0, 0);
     private static final LocalDateTime SYNC_PERIOD_END = LocalDateTime.of(2019, 4, 3, 0, 0);
     private static final int HOURS_12 = 12;
@@ -363,34 +355,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
     }
 
-    @Test
-    @WithMockUser
-    public void runShouldUseDefaultCloudRegionIfThereIsNoParentRunAndNoRegionConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion(), INSTANCE_TYPE, null);
-
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
-    }
-
-    @Test
-    @WithMockUser
-    public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedExplicitlyIfThereIsNoRegionConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion(), INSTANCE_TYPE, PARENT_RUN_ID);
-
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
-    }
-
-    @Test
-    @WithMockUser
-    public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedAsParameterIfThereIsNoRegionConfiguration() {
-        final PipelineConfiguration configurationWithParentId = configurationWithoutRegion();
-        final HashMap<String, PipeConfValueVO> parameters = new HashMap<>();
-        parameters.put(PARENT_RUN_ID_PARAMETER, new PipeConfValueVO(Long.toString(PARENT_RUN_ID)));
-        configurationWithParentId.setParameters(parameters);
-        final PipelineRun pipelineRun = launchPipeline(configurationWithParentId, new Pipeline(), INSTANCE_TYPE, null);
-
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
-    }
-
     @Test (expected = IllegalArgumentException.class)
     @WithMockUser
     public void shouldThrowExceptionOnInexistentRunTagUpdate() {
@@ -481,30 +445,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         Assert.assertEquals(paramValue, actualParameters.get(0).getValue());
     }
 
-    private void launchTool() {
-        launchPipeline(configuration, null, null, null);
-    }
-
-    private void launchTool(final PipelineConfiguration configuration) {
-        launchPipeline(configuration, null, null, null);
-    }
-
-    private void launchTool(final String instanceType) {
-        launchPipeline(configuration, null, instanceType, null);
-    }
-
-    private void launchPipeline() {
-        launchPipeline(configuration, new Pipeline(), null, null);
-    }
-
-    private void launchPipeline(final PipelineConfiguration configuration) {
-        launchPipeline(configuration, new Pipeline(), null, null);
-    }
-
-    private void launchPipeline(final String instanceType) {
-        launchPipeline(configuration, new Pipeline(), instanceType, null);
-    }
-
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType,
                                        final Long parentRunId) {
         return launchPipeline(configuration, new Pipeline(), instanceType, parentRunId);
@@ -526,12 +466,5 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         final AwsRegion parentAwsRegion = defaultRegion(id);
         parentAwsRegion.setDefault(false);
         return parentAwsRegion;
-    }
-
-    private PipelineConfiguration configurationWithoutRegion() {
-        final PipelineConfiguration configurationWithoutRegion = new PipelineConfiguration();
-        configurationWithoutRegion.setDockerImage(TEST_IMAGE);
-        configurationWithoutRegion.setInstanceDisk(INSTANCE_DISK);
-        return configurationWithoutRegion;
     }
 }

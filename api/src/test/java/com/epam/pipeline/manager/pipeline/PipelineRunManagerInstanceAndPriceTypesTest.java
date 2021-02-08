@@ -419,7 +419,6 @@ public class PipelineRunManagerInstanceAndPriceTypesTest {
         doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID), eq(true));
         doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID), eq(false));
         doReturn(false).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID_2), eq(true));
-        doReturn(false).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID_2), eq(true));
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(BehaviorSubject.create()).when(instanceOfferManager).getAllInstanceTypesObservable();
         doReturn(price).when(instanceOfferManager)
