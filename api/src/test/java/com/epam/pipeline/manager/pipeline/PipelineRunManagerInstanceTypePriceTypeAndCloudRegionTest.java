@@ -24,15 +24,10 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -45,6 +40,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import io.reactivex.subjects.BehaviorSubject;
 import org.junit.Before;
 import org.junit.Test;
@@ -170,22 +166,11 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         nonAllowedAwsRegion = nonDefaultRegion(ID_2);
         notDefaultAwsRegion = nonDefaultRegion(ID_3);
         configuration = getPipelineConfiguration(TEST_IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId());
-        configurationWithoutRegion = configurationWithoutRegion();
+        configurationWithoutRegion = getPipelineConfiguration(TEST_IMAGE, INSTANCE_DISK);
         price = new InstancePrice(configuration.getInstanceType(), parseInt(configuration.getInstanceDisk()),
                 PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
 
-        parentRun = new PipelineRun();
-        parentRun.setId(PARENT_RUN_ID);
-        RunInstance parentRunInstance = new RunInstance();
-        parentRunInstance.setCloudRegionId(ID_3);
-        parentRunInstance.setCloudProvider(CloudProvider.AWS);
-        parentRun.setInstance(parentRunInstance);
-        parentRun.setStatus(TaskStatus.RUNNING);
-        parentRun.setCommitStatus(CommitStatus.NOT_COMMITTED);
-        parentRun.setStartDate(DateUtils.now());
-        parentRun.setPodId("podId");
-        parentRun.setOwner("owner");
-        parentRun.setLastChangeCommitTime(DateUtils.now());
+        parentRun = PipelineCreatorUtils.getPipelineRunWithInstance(PARENT_RUN_ID, TEST_USER, ID_3);
 
         mockCloudRegionManager();
         mockInstanceOfferManager();
@@ -498,7 +483,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void runShouldUseCloudRegionFromConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, null);
+        final PipelineRun pipelineRun = launchPipeline(configuration, null);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
 
@@ -525,7 +510,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void workerRunShouldUseCloudRegionFromConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, PARENT_RUN_ID);
+        final PipelineRun pipelineRun = launchPipeline(configuration, PARENT_RUN_ID);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
 
@@ -554,7 +539,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void runShouldUseDefaultCloudRegionIfThereIsNoParentRunAndNoRegionConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, INSTANCE_TYPE, null);
+        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, null);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
 
@@ -581,7 +566,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
     @Test
     public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedExplicitlyIfThereIsNoRegionConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, INSTANCE_TYPE, PARENT_RUN_ID);
+        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, PARENT_RUN_ID);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID_3));
 
@@ -719,9 +704,8 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         launchPipeline(configuration, new Pipeline(), instanceType, null);
     }
 
-    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType,
-                                       final Long parentRunId) {
-        return launchPipeline(configuration, new Pipeline(), instanceType, parentRunId);
+    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Long parentRunId) {
+        return launchPipeline(configuration, new Pipeline(), INSTANCE_TYPE, parentRunId);
     }
 
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
@@ -744,13 +728,6 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         final AwsRegion parentAwsRegion = defaultRegion(id);
         parentAwsRegion.setDefault(false);
         return parentAwsRegion;
-    }
-
-    private PipelineConfiguration configurationWithoutRegion() {
-        final PipelineConfiguration configurationWithoutRegion = new PipelineConfiguration();
-        configurationWithoutRegion.setDockerImage(TEST_IMAGE);
-        configurationWithoutRegion.setInstanceDisk(INSTANCE_DISK);
-        return configurationWithoutRegion;
     }
 
     static class Predicates {
