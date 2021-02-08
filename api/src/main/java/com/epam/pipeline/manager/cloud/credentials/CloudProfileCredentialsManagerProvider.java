@@ -114,7 +114,7 @@ public class CloudProfileCredentialsManagerProvider {
     public List<? extends AbstractCloudProfileCredentials> assignProfiles(final Long sidId, final boolean principal,
                                                                           final Set<Long> profileIds,
                                                                           final Long defaultProfileId) {
-        if (CollectionUtils.isNotEmpty(profileIds) && Objects.nonNull(defaultProfileId)) {
+        if (Objects.nonNull(defaultProfileId)) {
             profileIds.add(defaultProfileId);
         }
         final List<CloudProfileCredentialsEntity> profiles = SetUtils.emptyIfNull(profileIds).stream()
