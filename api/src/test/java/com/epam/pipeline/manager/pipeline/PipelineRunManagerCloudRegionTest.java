@@ -41,10 +41,10 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import io.reactivex.subjects.BehaviorSubject;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,8 +57,13 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import static com.epam.pipeline.common.MessageConstants.ERROR_RUN_CLOUD_REGION_NOT_ALLOWED;
 import static com.epam.pipeline.common.MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
+import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
+import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
+import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
+import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
@@ -111,6 +116,9 @@ public class PipelineRunManagerCloudRegionTest {
     private AuthManager securityManager;
 
     @Mock
+    private RunPermissionManager permissionManager;
+
+    @Mock
     private DataStorageManager dataStorageManager;
 
     @Mock
@@ -155,6 +163,7 @@ public class PipelineRunManagerCloudRegionTest {
     private AwsRegion defaultAwsRegion;
     private AwsRegion nonAllowedAwsRegion;
     private AwsRegion notDefaultAwsRegion;
+    private PipelineRun parentRun;
 
     @Before
     public void setUp() throws Exception {
@@ -169,25 +178,12 @@ public class PipelineRunManagerCloudRegionTest {
         price = new InstancePrice(configuration.getInstanceType(), parseInt(configuration.getInstanceDisk()),
                 PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
 
-        mockCloudRegionManager();
-        mockInstanceOfferManager();
-        mockPreferenceManager();
-        mockPipelineConfigurationManager();
-        mockToolManager();
-
-        doReturn(DEFAULT_COMMAND).when(pipelineLauncher).launch(
-                any(PipelineRun.class), any(), any(), anyString(), anyString());
-        doReturn(ToolVersion.builder().size(1L).build())
-                .when(toolVersionManager).loadToolVersion(anyLong(), anyString());
-        doReturn(true).when(permissionHelper).isAllowed(any(), any());
-        doReturn(TEST_USER).when(securityManager).getAuthorizedUser();
-
         AwsRegion region = new AwsRegion();
         region.setRegionCode("us-east-1");
         doNothing().when(entityManager).setManagers(any());
         doNothing().when(resourceMonitoringManager).monitorResourceUsage();
 
-        PipelineRun parentRun = new PipelineRun();
+        parentRun = new PipelineRun();
         parentRun.setId(PARENT_RUN_ID);
         RunInstance parentRunInstance = new RunInstance();
         parentRunInstance.setCloudRegionId(NON_DEFAULT_REGION_ID);
@@ -199,7 +195,20 @@ public class PipelineRunManagerCloudRegionTest {
         parentRun.setPodId("podId");
         parentRun.setOwner("owner");
         parentRun.setLastChangeCommitTime(DateUtils.now());
-        pipelineRunDao.createPipelineRun(parentRun);
+
+        mockCloudRegionManager();
+        mockInstanceOfferManager();
+        mockPreferenceManager();
+        mockPipelineConfigurationManager();
+        mockToolManager();
+
+        doReturn(parentRun).when(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
+        doReturn(DEFAULT_COMMAND).when(pipelineLauncher).launch(
+                any(PipelineRun.class), any(), any(), anyString(), anyString());
+        doReturn(ToolVersion.builder().size(1L).build())
+                .when(toolVersionManager).loadToolVersion(anyLong(), anyString());
+        doReturn(true).when(permissionHelper).isAllowed(any(), any());
+        doReturn(TEST_USER).when(securityManager).getAuthorizedUser();
     }
 
     @Test
@@ -237,13 +246,13 @@ public class PipelineRunManagerCloudRegionTest {
         verify(permissionHelper, times(2)).isAdmin();
         verify(permissionHelper, times(2)).isAllowed(eq(PERMISSION_NAME), eq(notDefaultAwsRegion));
 
-        // for launchPipeline()
+        // <-- for launchPipeline()
         verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(null), eq(false));
-        //------------------
-        // for launchTool()
+        // ----------------->
+        // <-- for launchTool()
         verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(getExternalResource()), eq(false));
-        //__________________
+        // _________________>
 
         verify(toolManager, times(2)).getCurrentImageSize(eq(TEST_IMAGE));
         verifyPreferenceManager(2);
@@ -258,35 +267,103 @@ public class PipelineRunManagerCloudRegionTest {
     }
 
     @Test
-    @WithMockUser
     public void testLaunchPipelineFailsIfCloudRegionIsNotAllowed() {
         doReturn(false).when(permissionHelper).isAllowed(any(), any());
+        doReturn(NO_PERMISSIONS_MESSAGE).when(messageHelper).getMessage(
+                eq(ERROR_RUN_CLOUD_REGION_NOT_ALLOWED), eq("US East"));
 
         assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS_MESSAGE), this::launchPipeline);
+
+        verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager)
+                .getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(cloudRegionManager).load(eq(ID));
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
     }
 
     @Test
-    @WithMockUser
     public void runShouldUseCloudRegionFromConfiguration() {
         final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, null);
 
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
+
+        verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(cloudRegionManager).load(eq(ID));
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
+
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
+
+        verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
+        verifyPreferenceManager(1);
+
+        verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(ID));
+        verify(securityManager).getAuthorizedUser();
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun())),
+                argThat(matches(Predicates.forConfiguration())),
+                eq(null), eq("0"), eq(null));
+
+        verify(dataStorageManager).analyzePipelineRunsParameters(anyListOf(PipelineRun.class));
     }
 
     @Test
-    @WithMockUser
     public void workerRunShouldUseCloudRegionFromConfiguration() {
         final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, PARENT_RUN_ID);
+        doReturn(false).when(permissionManager).isRunSshAllowed(eq(parentRun));
 
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
+
+        verify(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
+        verify(permissionManager).isRunSshAllowed(eq(parentRun));
+        verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configuration));
+        verify(cloudRegionManager).load(eq(ID));
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
+
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
+
+        verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
+        verifyPreferenceManagerWithCommitTimeout(1);
+
+        verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(ID));
+        verify(securityManager).getAuthorizedUser();
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun())),
+                argThat(matches(Predicates.forConfiguration())),
+                eq(null), eq("0"), eq(null));
+
+        verify(dataStorageManager, times(2)).analyzePipelineRunsParameters(anyListOf(PipelineRun.class));
     }
 
     @Test
-    @WithMockUser
     public void runShouldUseDefaultCloudRegionIfThereIsNoParentRunAndNoRegionConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion(), INSTANCE_TYPE, null);
+        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, INSTANCE_TYPE, null);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
+
+        verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
+        verify(pipelineConfigurationManager).getConfigurationForTool(eq(notScannedTool), eq(configurationWithoutRegion));
+        verify(cloudRegionManager).loadDefaultRegion();
+        verify(permissionHelper).isAdmin();
+        verify(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
+
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(false));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(null), eq(false));
+
+        verify(toolManager).getCurrentImageSize(eq(TEST_IMAGE));
+        verifyPreferenceManager(1);
+
+        verify(instanceOfferManager).getInstanceEstimatedPrice(eq(null), eq(1), eq(true), eq(ID));
+        verify(securityManager).getAuthorizedUser();
+        verify(pipelineLauncher).launch(argThat(matches(Predicates.forPipelineRun())),
+                argThat(matches(Predicates.forConfiguration())),
+                eq(null), eq("0"), eq(null));
+
+        verify(dataStorageManager).analyzePipelineRunsParameters(anyListOf(PipelineRun.class));
     }
 
     @Test
@@ -330,9 +407,12 @@ public class PipelineRunManagerCloudRegionTest {
     }
 
     private void mockPreferenceManager() {
-        doReturn(3).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
-        doReturn(3).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        doReturn(true).when(preferenceManager).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+        doReturn(CLUSTER_DOCKER_EXTRA_MULTI.getDefaultValue())
+                .when(preferenceManager).getPreference(eq(CLUSTER_DOCKER_EXTRA_MULTI));
+        doReturn(CLUSTER_INSTANCE_HDD_EXTRA_MULTI.getDefaultValue())
+                .when(preferenceManager).getPreference(eq(CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
+        doReturn(CLUSTER_SPOT.getDefaultValue()).when(preferenceManager).getPreference(eq(CLUSTER_SPOT));
+        doReturn(COMMIT_TIMEOUT.getDefaultValue()).when(preferenceManager).getPreference(eq(COMMIT_TIMEOUT));
     }
 
     private void mockInstanceOfferManager() {
@@ -349,9 +429,14 @@ public class PipelineRunManagerCloudRegionTest {
     }
 
     private void verifyPreferenceManager(int times) {
-        verify(preferenceManager, times(times)).getPreference(eq(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI));
-        verify(preferenceManager, times(times)).getPreference(eq(SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        verify(preferenceManager, times(times)).getPreference(eq(SystemPreferences.CLUSTER_SPOT));
+        verify(preferenceManager, times(times)).getPreference(eq(CLUSTER_DOCKER_EXTRA_MULTI));
+        verify(preferenceManager, times(times)).getPreference(eq(CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
+        verify(preferenceManager, times(times)).getPreference(eq(CLUSTER_SPOT));
+    }
+
+    private void verifyPreferenceManagerWithCommitTimeout(int times) {
+        verifyPreferenceManager(times);
+        verify(preferenceManager, times(times)).getPreference(eq(COMMIT_TIMEOUT));
     }
 
 

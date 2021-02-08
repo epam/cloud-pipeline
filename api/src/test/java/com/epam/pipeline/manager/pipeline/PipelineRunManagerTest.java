@@ -80,7 +80,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -362,30 +361,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         Assert.assertEquals(2, projectFilter.getPipelineIds().size());
         Assert.assertEquals(2, projectFilter.getConfigurationIds().size());
 
-    }
-
-    @Test
-    @WithMockUser
-    public void testLaunchPipelineFailsIfCloudRegionIsNotAllowed() {
-        doReturn(false).when(permissionHelper).isAllowed(any(), any());
-
-        assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS_MESSAGE), this::launchPipeline);
-    }
-
-    @Test
-    @WithMockUser
-    public void runShouldUseCloudRegionFromConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, null);
-
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
-    }
-
-    @Test
-    @WithMockUser
-    public void workerRunShouldUseCloudRegionFromConfiguration() {
-        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, PARENT_RUN_ID);
-
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
     }
 
     @Test
