@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,6 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -363,30 +362,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         Assert.assertEquals(2, projectFilter.getPipelineIds().size());
         Assert.assertEquals(2, projectFilter.getConfigurationIds().size());
 
-    }
-
-    @Test
-    @WithMockUser
-    public void testLaunchPipelineFailsIfToolCloudRegionIsConfiguredAndItDiffersFromRunConfigurationOne() {
-        final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
-        toolConfiguration.setCloudRegionId(NON_DEFAULT_REGION_ID);
-        doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
-
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), this::launchPipeline);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), this::launchTool);
-        verify(pipelineConfigurationManager, times(2)).getConfigurationForTool(any(), any());
-    }
-
-    @Test
-    @WithMockUser
-    public void testLaunchPipelineDoesNotFailIfToolCloudRegionIsConfiguredAndItDiffersFromDefaultOne() {
-        final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
-        toolConfiguration.setCloudRegionId(NON_DEFAULT_REGION_ID);
-        doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
-
-        launchPipeline(configurationWithoutRegion());
-        launchTool(configurationWithoutRegion());
-        verify(pipelineConfigurationManager, times(2)).getConfigurationForTool(any(), any());
     }
 
     @Test
