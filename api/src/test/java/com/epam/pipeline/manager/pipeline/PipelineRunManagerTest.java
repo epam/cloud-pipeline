@@ -64,7 +64,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,8 +89,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@DirtiesContext //TODO: find a better workaround, this may make tests slower. Maybe, create a special package for
-                // integration tests, so they will be executed one after another and the context will remain?
+// TODO: find a better workaround, this may make tests slower. Maybe, create a special package for
+// integration tests, so they will be executed one after another and the context will remain?
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 @Transactional
 @SuppressWarnings("PMD.TooManyStaticImports")
