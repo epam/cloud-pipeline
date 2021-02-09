@@ -71,6 +71,7 @@ export default class CodeEditor extends React.Component {
     supportsFullScreen: PropTypes.bool,
     lineNumbers: PropTypes.bool,
     placeholder: PropTypes.string,
+    scrollbarStyle: PropTypes.oneOf([null, 'native']),
     // 'delayedUpdate': if set to true,
     // updates CodeMirror control after a small delay
     // (after Modal container appearance animation finished).
@@ -79,7 +80,8 @@ export default class CodeEditor extends React.Component {
   };
 
   static defaultProps = {
-    lineNumbers: true
+    lineNumbers: true,
+    scrollbarStyle: 'native'
   };
 
   codeMirrorInstance;
@@ -165,7 +167,8 @@ export default class CodeEditor extends React.Component {
       spellcheck: true,
       lineNumbers: this.props.lineNumbers,
       extraKeys: extraKeys,
-      placeholder: this.props.placeholder
+      placeholder: this.props.placeholder,
+      scrollbarStyle: this.props.scrollbarStyle
     });
     this.codeMirrorInstance.setValue(this.props.defaultCode || '');
     this._updateEditor();

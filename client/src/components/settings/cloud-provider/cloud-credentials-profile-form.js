@@ -378,6 +378,7 @@ class CloudCredentialsProfileForm extends React.Component {
                   onChange={onChangePolicy}
                   lineWrapping
                   defaultCode={initialPolicy}
+                  scrollbarStyle={null}
                 />
               </div>
             </div>
