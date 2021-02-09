@@ -89,6 +89,8 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -434,7 +436,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
-        AbstractDataStorage dataStorage = load(id);
+        final AbstractDataStorage dataStorage = load(id);
 
         validateStorageIsNotUsedAsDefault(id, roleManager.loadRolesByDefaultStorage(id));
         validateStorageIsNotUsedAsDefault(id, userManager.loadUsersByDeafultStorage(id));
@@ -445,6 +447,12 @@ public class DataStorageManager implements SecuredEntityManager {
             } catch (DataStorageException e) {
                 LOGGER.error(e.getMessage(), e);
             }
+            final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, "");
+            final String rootPath = rootAndRelativePaths.getLeft();
+            final String relativePath = rootAndRelativePaths.getRight();
+            tagManager.bulkDeleteAll(rootPath, new DataStorageTagDeleteAllBulkRequest(
+                    Collections.singletonList(new DataStorageTagDeleteAllRequest(
+                            relativePath, DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FOLDER))));
         }
         dataStorageDao.deleteDataStorage(id);
         return dataStorage;
@@ -475,23 +483,26 @@ public class DataStorageManager implements SecuredEntityManager {
     public void restoreVersion(Long id, String path, String version) throws DataStorageException {
         Assert.notNull(path, "Path is required to restore file version");
         Assert.notNull(version, "Version is required to restore file version");
-        AbstractDataStorage dataStorage = load(id);
+        final AbstractDataStorage dataStorage = load(id);
         if (!dataStorage.isVersioningEnabled()) {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
-        storageProviderManager.restoreFileVersion(dataStorage, path, version);
-        storageProviderManager.findFile(dataStorage, path)
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final String rootPath = rootAndRelativePaths.getLeft();
+        final String relativePath = rootAndRelativePaths.getRight();
+        storageProviderManager.restoreFileVersion(dataStorage, relativePath, version);
+        storageProviderManager.findFile(dataStorage, relativePath)
                 .map(DataStorageFile::getVersion)
-                .ifPresent(latestVersion -> tagManager.bulkCopy(id, new DataStorageTagCopyBulkRequest(Arrays.asList(
+                .ifPresent(latestVersion -> tagManager.bulkCopy(rootPath, new DataStorageTagCopyBulkRequest(Arrays.asList(
                         new DataStorageTagCopyRequest(
-                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(path, version),
-                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(path, null)),
+                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(relativePath, version),
+                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(relativePath, null)),
                         new DataStorageTagCopyRequest(
-                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(path, version),
-                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(path, latestVersion))))));
-        tagManager.bulkDelete(id, new DataStorageTagDeleteBulkRequest(Collections.singletonList(
-                new DataStorageTagDeleteRequest(path, version))));
+                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(relativePath, version),
+                                new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(relativePath, latestVersion))))));
+        tagManager.bulkDelete(rootPath, new DataStorageTagDeleteBulkRequest(Collections.singletonList(
+                new DataStorageTagDeleteRequest(relativePath, version))));
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUrl(final Long dataStorageId,
@@ -676,7 +687,10 @@ public class DataStorageManager implements SecuredEntityManager {
     public Map<String, String> loadDataStorageObjectTags(Long id, String path, String version) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        final DataStorageObject object = new DataStorageObject(id, path, version);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final String rootPath = rootAndRelativePaths.getLeft();
+        final String relativePath = rootAndRelativePaths.getRight();
+        final DataStorageObject object = new DataStorageObject(rootPath, relativePath, version);
         return mapFrom(tagManager.load(object));
     }
 
@@ -685,7 +699,10 @@ public class DataStorageManager implements SecuredEntityManager {
                                                            Set<String> tags) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        final DataStorageObject object = new DataStorageObject(id, path, version);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final String rootPath = rootAndRelativePaths.getLeft();
+        final String relativePath = rootAndRelativePaths.getRight();
+        final DataStorageObject object = new DataStorageObject(rootPath, relativePath, version);
         final List<DataStorageTag> existingTags = tagManager.load(object);
         tags.forEach(tag -> Assert.isTrue(existingTags.stream().anyMatch(it -> it.getKey().equals(tag)),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag)));
@@ -697,19 +714,23 @@ public class DataStorageManager implements SecuredEntityManager {
     public AbstractDataStorageItem getDataStorageItemWithTags(final Long dataStorageId,
                                                               final String path,
                                                               final Boolean showVersion) {
-        List<AbstractDataStorageItem> dataStorageItems = getDataStorageItems(dataStorageId, path, showVersion,
+        final List<AbstractDataStorageItem> dataStorageItems = getDataStorageItems(dataStorageId, path, showVersion,
                 null, null).getResults();
         if (CollectionUtils.isEmpty(dataStorageItems)) {
             return null;
         }
-        DataStorageFile dataStorageFile = (DataStorageFile) dataStorageItems.get(0);
+        final DataStorageFile dataStorageFile = (DataStorageFile) dataStorageItems.get(0);
+        final AbstractDataStorage dataStorage = load(dataStorageId);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final String rootPath = rootAndRelativePaths.getLeft();
+        final String relativePath = rootAndRelativePaths.getRight();
         if (MapUtils.isEmpty(dataStorageFile.getVersions())) {
-            dataStorageFile.setTags(mapFrom(tagManager.load(new DataStorageObject(dataStorageId, path))));
+            dataStorageFile.setTags(mapFrom(tagManager.load(new DataStorageObject(rootPath, relativePath))));
         } else {
             dataStorageFile
                     .getVersions()
                     .forEach((version, item) -> item.setTags(
-                            mapFrom(tagManager.load(new DataStorageObject(dataStorageId, path, version)))));
+                            mapFrom(tagManager.load(new DataStorageObject(rootPath, relativePath, version)))));
         }
         return dataStorageFile;
     }
@@ -720,14 +741,17 @@ public class DataStorageManager implements SecuredEntityManager {
                                                            Boolean rewrite) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final String rootPath = rootAndRelativePaths.getLeft();
+        final String relativePath = rootAndRelativePaths.getRight();
         return mapFrom(rewrite
-                ? tagManager.bulkInsert(id,
+                ? tagManager.bulkInsert(rootPath,
                 new DataStorageTagInsertBulkRequest(tagsToAdd.entrySet().stream()
-                        .map(e -> new DataStorageTagInsertRequest(path, version, e.getKey(), e.getValue()))
+                        .map(e -> new DataStorageTagInsertRequest(relativePath, version, e.getKey(), e.getValue()))
                         .collect(Collectors.toList())))
-                : tagManager.bulkUpsert(id,
+                : tagManager.bulkUpsert(rootPath,
                 new DataStorageTagUpsertBulkRequest(tagsToAdd.entrySet().stream()
-                        .map(e -> new DataStorageTagUpsertRequest(path, version, e.getKey(), e.getValue()))
+                        .map(e -> new DataStorageTagUpsertRequest(relativePath, version, e.getKey(), e.getValue()))
                         .collect(Collectors.toList()))));
     }
 
@@ -901,8 +925,11 @@ public class DataStorageManager implements SecuredEntityManager {
                                              final String path,
                                              final Boolean totally) {
         if (!dataStorage.isVersioningEnabled() || totally) {
-            tagManager.bulkDeleteAll(dataStorage.getId(), new DataStorageTagDeleteAllBulkRequest(
-                    Collections.singletonList(new DataStorageTagDeleteAllRequest(path,
+            final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+            final String rootPath = rootAndRelativePaths.getLeft();
+            final String relativePath = rootAndRelativePaths.getRight();
+            tagManager.bulkDeleteAll(rootPath, new DataStorageTagDeleteAllBulkRequest(
+                    Collections.singletonList(new DataStorageTagDeleteAllRequest(relativePath,
                             DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FOLDER))));
         }
     }
@@ -919,32 +946,35 @@ public class DataStorageManager implements SecuredEntityManager {
                                            final String path,
                                            final String version,
                                            final Boolean totally) {
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final String rootPath = rootAndRelativePaths.getLeft();
+        final String relativePath = rootAndRelativePaths.getRight();
         if (dataStorage.isVersioningEnabled()) {
             if (version != null) {
-                final Optional<String> latestVersion = storageProviderManager.findFile(dataStorage, path)
+                final Optional<String> latestVersion = storageProviderManager.findFile(dataStorage, relativePath)
                         .map(DataStorageFile::getVersion);
                 if (latestVersion.isPresent()) {
-                    tagManager.bulkCopy(dataStorage.getId(), new DataStorageTagCopyBulkRequest(
+                    tagManager.bulkCopy(rootPath, new DataStorageTagCopyBulkRequest(
                             Collections.singletonList(new DataStorageTagCopyRequest(
                                     new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(
-                                            path, latestVersion.get()),
+                                            relativePath, latestVersion.get()),
                                     new DataStorageTagCopyRequest.DataStorageTagCopyRequestObject(
-                                            path, null)))));
-                    tagManager.bulkDelete(dataStorage.getId(), new DataStorageTagDeleteBulkRequest(
-                            Collections.singletonList(new DataStorageTagDeleteRequest(path, version))));
+                                            relativePath, null)))));
+                    tagManager.bulkDelete(rootPath, new DataStorageTagDeleteBulkRequest(
+                            Collections.singletonList(new DataStorageTagDeleteRequest(relativePath, version))));
                 } else {
-                    tagManager.bulkDelete(dataStorage.getId(), new DataStorageTagDeleteBulkRequest(Arrays.asList(
-                            new DataStorageTagDeleteRequest(path, version),
-                            new DataStorageTagDeleteRequest(path, null))));
+                    tagManager.bulkDelete(rootPath, new DataStorageTagDeleteBulkRequest(Arrays.asList(
+                            new DataStorageTagDeleteRequest(relativePath, version),
+                            new DataStorageTagDeleteRequest(relativePath, null))));
                 }
             } else if (totally) {
-                tagManager.bulkDeleteAll(dataStorage.getId(), new DataStorageTagDeleteAllBulkRequest(
-                        Collections.singletonList(new DataStorageTagDeleteAllRequest(path,
+                tagManager.bulkDeleteAll(rootPath, new DataStorageTagDeleteAllBulkRequest(
+                        Collections.singletonList(new DataStorageTagDeleteAllRequest(relativePath,
                                 DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FILE))));
             }
         } else {
-            tagManager.bulkDeleteAll(dataStorage.getId(), new DataStorageTagDeleteAllBulkRequest(
-                    Collections.singletonList(new DataStorageTagDeleteAllRequest(path,
+            tagManager.bulkDeleteAll(rootPath, new DataStorageTagDeleteAllBulkRequest(
+                    Collections.singletonList(new DataStorageTagDeleteAllRequest(relativePath,
                             DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FILE))));
         }
     }
@@ -1060,11 +1090,28 @@ public class DataStorageManager implements SecuredEntityManager {
                                            final String version) {
         final ArrayList<DataStorageTagInsertRequest> requests = new ArrayList<>(2);
         final String authorizedUser = authManager.getAuthorizedUser();
-        requests.add(new DataStorageTagInsertRequest(path, null, ProviderUtils.OWNER_TAG_KEY, authorizedUser));
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(storage, path);
+        final String rootPath = rootAndRelativePaths.getLeft();
+        final String relativePath = rootAndRelativePaths.getRight();
+        requests.add(new DataStorageTagInsertRequest(relativePath, null, 
+                ProviderUtils.OWNER_TAG_KEY, authorizedUser));
         if (storage.isVersioningEnabled()) {
-            requests.add(new DataStorageTagInsertRequest(path, version, ProviderUtils.OWNER_TAG_KEY, authorizedUser));
+            requests.add(new DataStorageTagInsertRequest(relativePath, version, 
+                    ProviderUtils.OWNER_TAG_KEY, authorizedUser));
         }
-        tagManager.bulkInsert(storage.getId(), new DataStorageTagInsertBulkRequest(requests));
+        tagManager.bulkInsert(rootPath, new DataStorageTagInsertBulkRequest(requests));
+    }
+
+    private Pair<String, String> getRootAndRelativePath(final AbstractDataStorage storage, final String path) {
+        return Optional.ofNullable(storage.getPath())
+                .map(storagePath -> StringUtils.split(storagePath, "/"))
+                .map(storagePathItems -> storagePathItems.length == 1
+                        ? new ImmutablePair<>(storagePathItems[0], path)
+                        : new ImmutablePair<>(storagePathItems[0],
+                        Arrays.stream(storagePathItems)
+                                .skip(1)
+                                .collect(Collectors.joining("/", "", StringUtils.isBlank(path) ? "" : "/" + path))))
+                .orElse(new ImmutablePair<>(storage.getName(), path));
     }
 
     private AbstractDataStorageItem updateDataStorageItem(final AbstractDataStorage storage,

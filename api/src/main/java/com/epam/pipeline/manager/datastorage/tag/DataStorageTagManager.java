@@ -1,6 +1,8 @@
 package com.epam.pipeline.manager.datastorage.tag;
 
+import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBulkRequest;
@@ -33,42 +35,88 @@ import java.util.stream.Stream;
 public class DataStorageTagManager {
 
     private final DataStorageTagDao tagDao;
+    private final DataStorageDao storageDao;
 
     @Transactional
     public List<DataStorageTag> bulkInsert(final Long storageId, final DataStorageTagInsertBulkRequest request) {
+        final AbstractDataStorage dataStorage = storageDao.loadDataStorage(storageId);
+        if (dataStorage == null) {
+            return Collections.emptyList();
+        }
+        return bulkInsert(Optional.ofNullable(dataStorage.getPath()).orElse(dataStorage.getName()), request);
+    }
+
+    @Transactional
+    public List<DataStorageTag> bulkCopy(final Long storageId, final DataStorageTagCopyBulkRequest request) {
+        final AbstractDataStorage dataStorage = storageDao.loadDataStorage(storageId);
+        if (dataStorage == null) {
+            return Collections.emptyList();
+        }
+        return bulkCopy(Optional.ofNullable(dataStorage.getPath()).orElse(dataStorage.getName()), request);
+    }
+    
+    @Transactional
+    public List<DataStorageTag> bulkLoad(final Long storageId, final DataStorageTagBulkLoadRequest request) {
+        final AbstractDataStorage dataStorage = storageDao.loadDataStorage(storageId);
+        if (dataStorage == null) {
+            return Collections.emptyList();
+        }
+        return bulkLoad(Optional.ofNullable(dataStorage.getPath()).orElse(dataStorage.getName()), request);
+    }
+
+    @Transactional
+    public void bulkDelete(final Long storageId, final DataStorageTagDeleteBulkRequest request) {
+        final AbstractDataStorage dataStorage = storageDao.loadDataStorage(storageId);
+        if (dataStorage == null) {
+            return;
+        }
+        bulkDelete(Optional.ofNullable(dataStorage.getPath()).orElse(dataStorage.getName()), request);
+    }
+
+    @Transactional
+    public void bulkDeleteAll(final Long storageId, final DataStorageTagDeleteAllBulkRequest request) {
+        final AbstractDataStorage dataStorage = storageDao.loadDataStorage(storageId);
+        if (dataStorage == null) {
+            return;
+        }
+        bulkDeleteAll(Optional.ofNullable(dataStorage.getPath()).orElse(dataStorage.getName()), request);
+    }
+
+    @Transactional
+    public List<DataStorageTag> bulkInsert(final String root, final DataStorageTagInsertBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
         }
         final List<DataStorageTag> tags = request.getRequests().stream()
-                .map(tagRequest -> tagFrom(storageId, tagRequest))
+                .map(tagRequest -> tagFrom(root, tagRequest))
                 .collect(Collectors.toList());
         tagDao.bulkDelete(tags.stream().map(DataStorageTag::getObject));
         return tagDao.bulkUpsert(tags);
     }
 
-    private DataStorageTag tagFrom(final Long storageId, final DataStorageTagInsertRequest request) {
-        final DataStorageObject object = new DataStorageObject(storageId, request.getPath(), request.getVersion());
+    private DataStorageTag tagFrom(final String root, final DataStorageTagInsertRequest request) {
+        final DataStorageObject object = new DataStorageObject(root, request.getPath(), request.getVersion());
         return new DataStorageTag(object, request.getKey(), request.getValue());
     }
 
     @Transactional
-    public List<DataStorageTag> bulkUpsert(final Long storageId, final DataStorageTagUpsertBulkRequest request) {
+    public List<DataStorageTag> bulkUpsert(final String root, final DataStorageTagUpsertBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
         }
         final List<DataStorageTag> tags = request.getRequests().stream()
-                .map(tagRequest -> tagFrom(storageId, tagRequest))
+                .map(tagRequest -> tagFrom(root, tagRequest))
                 .collect(Collectors.toList());
         return tagDao.bulkUpsert(tags);
     }
 
-    private DataStorageTag tagFrom(final Long storageId, final DataStorageTagUpsertRequest request) {
-        final DataStorageObject object = new DataStorageObject(storageId, request.getPath(), request.getVersion());
+    private DataStorageTag tagFrom(final String root, final DataStorageTagUpsertRequest request) {
+        final DataStorageObject object = new DataStorageObject(root, request.getPath(), request.getVersion());
         return new DataStorageTag(object, request.getKey(), request.getValue());
     }
 
     @Transactional
-    public List<DataStorageTag> bulkCopy(final Long storageId, final DataStorageTagCopyBulkRequest request) {
+    public List<DataStorageTag> bulkCopy(final String root, final DataStorageTagCopyBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
         }
@@ -77,11 +125,11 @@ public class DataStorageTagManager {
                         .map(DataStorageTagCopyRequest::getSource)
                         .distinct()
                         .collect(Collectors.toMap(Function.identity(),
-                                it -> load(new DataStorageObject(storageId, it.getPath(), it.getVersion()))));
+                                it -> load(new DataStorageObject(root, it.getPath(), it.getVersion()))));
         final List<DataStorageTag> tags = request.getRequests().stream()
                 .flatMap(r -> Optional.ofNullable(sourceTagsMap.get(r.getSource()))
                         .map(sourceTags -> sourceTags.stream()
-                                .map(it -> it.withObject(new DataStorageObject(storageId,
+                                .map(it -> it.withObject(new DataStorageObject(root,
                                         r.getDestination().getPath(), r.getDestination().getVersion()))))
                         .orElseGet(Stream::empty))
                 .collect(Collectors.toList());
@@ -90,45 +138,45 @@ public class DataStorageTagManager {
     }
 
     @Transactional
-    public List<DataStorageTag> bulkLoad(final Long storageId, final DataStorageTagBulkLoadRequest request) {
+    public List<DataStorageTag> bulkLoad(final String root, final DataStorageTagBulkLoadRequest request) {
         if (CollectionUtils.isEmpty(request.getPaths())) {
             return Collections.emptyList();
         }
-        return tagDao.bulkLoad(storageId, request.getPaths());
+        return tagDao.bulkLoad(root, request.getPaths());
     }
 
     @Transactional
-    public void bulkDelete(final Long storageId, final DataStorageTagDeleteBulkRequest request) {
+    public void bulkDelete(final String root, final DataStorageTagDeleteBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return;
         }
         tagDao.bulkDelete(request.getRequests().stream()
-            .map(r -> new DataStorageObject(storageId, r.getPath(), r.getVersion())));
+            .map(r -> new DataStorageObject(root, r.getPath(), r.getVersion())));
     }
 
     @Transactional
-    public void bulkDeleteAll(final Long storageId, final DataStorageTagDeleteAllBulkRequest request) {
+    public void bulkDeleteAll(final String root, final DataStorageTagDeleteAllBulkRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return;
         }
-        bulkDeleteAllFiles(storageId, request.getRequests());
-        bulkDeleteAllFolders(storageId, request.getRequests());
+        bulkDeleteAllFiles(root, request.getRequests());
+        bulkDeleteAllFolders(root, request.getRequests());
     }
 
-    private void bulkDeleteAllFiles(final Long storageId, final List<DataStorageTagDeleteAllRequest> requests) {
+    private void bulkDeleteAllFiles(final String root, final List<DataStorageTagDeleteAllRequest> requests) {
         final List<String> filesToDelete = requests.stream()
                 .filter(r -> r.getType() == null
                         || r.getType() == DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FILE)
-                .map(r -> new DataStorageObject(storageId, r.getPath()))
+                .map(r -> new DataStorageObject(root, r.getPath()))
                 .map(DataStorageObject::getPath)
                 .collect(Collectors.toList());
         if (CollectionUtils.isEmpty(filesToDelete)) {
             return;
         }
-        tagDao.bulkDeleteAll(storageId, filesToDelete);
+        tagDao.bulkDeleteAll(root, filesToDelete);
     }
 
-    private void bulkDeleteAllFolders(final Long storageId, final List<DataStorageTagDeleteAllRequest> requests) {
+    private void bulkDeleteAllFolders(final String root, final List<DataStorageTagDeleteAllRequest> requests) {
         final List<String> foldersToDelete = requests.stream()
                 .filter(r -> r.getType() != null
                         && r.getType() == DataStorageTagDeleteAllRequest.DataStorageTagDeleteAllRequestType.FOLDER)
@@ -137,7 +185,7 @@ public class DataStorageTagManager {
         if (CollectionUtils.isEmpty(foldersToDelete)) {
             return;
         }
-        foldersToDelete.forEach(path -> tagDao.deleteAllInFolder(storageId, path));
+        foldersToDelete.forEach(path -> tagDao.deleteAllInFolder(root, path));
     }
 
     @Transactional

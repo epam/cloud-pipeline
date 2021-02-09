@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
+import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -45,7 +46,10 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
         final List<DataStorageTag> upsertingTags = tags
                 .map(tag -> tag.withCreatedDate(now))
                 .collect(Collectors.toList());
-        getNamedParameterJdbcTemplate().batchUpdate(upsertTagQuery, Parameters.getParameters(upsertingTags));
+        final int[] numbersOfUpsertedTags = getNamedParameterJdbcTemplate()
+                .batchUpdate(upsertTagQuery, Parameters.getParameters(upsertingTags));
+        Assert.isTrue(Arrays.stream(numbersOfUpsertedTags).allMatch(numberOfUpsertedTags -> numberOfUpsertedTags == 1), 
+                "Some of the tags corresponding data storage root paths don't exist.");
         return upsertingTags;
     }
 
@@ -59,7 +63,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
 
     public List<DataStorageTag> bulkLoad(final Stream<DataStorageObject> objects) {
         return objects.collect(
-                Collectors.groupingBy(DataStorageObject::getStorageId,
+                Collectors.groupingBy(DataStorageObject::getRoot,
                         Collectors.mapping(DataStorageObject::getPath,
                                 Collectors.toList())))
                 .entrySet()
@@ -69,9 +73,9 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                 .collect(Collectors.toList());
     }
 
-    public List<DataStorageTag> bulkLoad(final Long storageId, final List<String> paths) {
+    public List<DataStorageTag> bulkLoad(final String root, final List<String> paths) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(Parameters.DATASTORAGE_ID.name(), storageId);
+        params.addValue(Parameters.DATASTORAGE_ROOT_PATH.name(), root);
         params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);
         params.addValue(Parameters.DATASTORAGE_VERSION.name(), Collections.singletonList(LATEST));
         return getNamedParameterJdbcTemplate().query(bulkLoadTagsQuery, params, Parameters.getRowMapper());
@@ -99,23 +103,24 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
 
     public void bulkDeleteAll(final Stream<DataStorageObject> objects) {
         objects.collect(
-                Collectors.groupingBy(DataStorageObject::getStorageId,
+                Collectors.groupingBy(DataStorageObject::getRoot,
                         Collectors.mapping(DataStorageObject::getPath,
                                 Collectors.toList())))
                 .forEach(this::bulkDeleteAll);
     }
 
-    public void bulkDeleteAll(final Long storageId, final List<String> paths) {
+    public void bulkDeleteAll(final String root, final List<String> paths) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(Parameters.DATASTORAGE_ID.name(), storageId);
+        params.addValue(Parameters.DATASTORAGE_ROOT_PATH.name(), root);
         params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);
         getNamedParameterJdbcTemplate().update(bulkDeleteAllTagsQuery, params);
     }
 
     public DataStorageTag upsert(final DataStorageTag tag) {
         final DataStorageTag upsertingTag = tag.withCreatedDate(DateUtils.nowUTC());
-        getNamedParameterJdbcTemplate().update(upsertTagQuery,
+        final int updatedCount = getNamedParameterJdbcTemplate().update(upsertTagQuery,
                 Parameters.getParameters(upsertingTag));
+        Assert.isTrue(updatedCount == 1, "Tag corresponding data storage root path doesn't exist.");
         return upsertingTag;
     }
 
@@ -149,16 +154,17 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                 .addValue(Parameters.TAG_KEY.name(), keys));
     }
     
-    public void deleteAllInFolder(final Long storageId, final String path) {
-        final String pathWithTrailingDelimiter = path.endsWith("/") ? path : String.format("%s/", path);
-        final String pathPattern = String.format("%s%%", pathWithTrailingDelimiter);
+    public void deleteAllInFolder(final String root, final String path) {
+        final String pathPattern = StringUtils.isNotBlank(path) 
+                ? String.format("%s/%%", StringUtils.removeEnd(path, "/"))
+                : "%%";
         getNamedParameterJdbcTemplate().update(deleteAllTagsByPathPatternQuery, Parameters.getParameters()
-                .addValue(Parameters.DATASTORAGE_ID.name(), storageId)
+                .addValue(Parameters.DATASTORAGE_ROOT_PATH.name(), root)
                 .addValue(Parameters.DATASTORAGE_PATH.name(), pathPattern));
     }
 
     enum Parameters {
-        DATASTORAGE_ID,
+        DATASTORAGE_ROOT_PATH,
         DATASTORAGE_PATH,
         DATASTORAGE_VERSION,
         TAG_KEY,
@@ -186,7 +192,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
 
         public static MapSqlParameterSource getParameters(final DataStorageObject object) {
             return getParameters()
-                    .addValue(DATASTORAGE_ID.name(), object.getStorageId())
+                    .addValue(DATASTORAGE_ROOT_PATH.name(), object.getRoot())
                     .addValue(DATASTORAGE_PATH.name(), object.getPath())
                     .addValue(DATASTORAGE_VERSION.name(), Optional.ofNullable(object.getVersion()).orElse(LATEST));
         }
@@ -197,7 +203,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
 
         public static RowMapper<DataStorageTag> getRowMapper() {
             return (rs, rowNum) -> {
-                final Long storageId = rs.getLong(DATASTORAGE_ID.name());
+                final String root = rs.getString(DATASTORAGE_ROOT_PATH.name());
                 final String path = rs.getString(DATASTORAGE_PATH.name());
                 final String version = Optional.of(rs.getString(DATASTORAGE_VERSION.name()))
                         .filter(StringUtils::isNotEmpty).orElse(null);
@@ -205,7 +211,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                 final String value = rs.getString(TAG_VALUE.name());
                 final LocalDateTime createdDate = DateUtils.convertEpochMilliToLocalDateTime(
                         rs.getTimestamp(CREATED_DATE.name()).getTime());
-                final DataStorageObject object = new DataStorageObject(storageId, path, version);
+                final DataStorageObject object = new DataStorageObject(root, path, version);
                 return new DataStorageTag(object, key, value, createdDate);
             };
         }

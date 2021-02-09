@@ -25,20 +25,23 @@
                 <!--upsertTagQuery-->
                 <![CDATA[
                     INSERT INTO pipeline.datastorage_tag (
-                        datastorage_id,
+                        datastorage_root_id,
                         datastorage_path,
                         datastorage_version,
                         tag_key,
                         tag_value,
-                        created_date)
-                    VALUES (
-                        :DATASTORAGE_ID,
+                        created_date
+                    )
+                    SELECT
+                        datastorage_root_id,
                         :DATASTORAGE_PATH,
                         :DATASTORAGE_VERSION,
                         :TAG_KEY,
                         :TAG_VALUE,
-                        :CREATED_DATE)
-                    ON CONFLICT (datastorage_id, datastorage_path, datastorage_version, tag_key) DO UPDATE SET
+                        :CREATED_DATE
+                    FROM datastorage_root
+                    WHERE datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    ON CONFLICT (datastorage_root_id, datastorage_path, datastorage_version, tag_key) DO UPDATE SET
                         tag_value = :TAG_VALUE,
                         created_date = :CREATED_DATE
                 ]]>
@@ -49,17 +52,19 @@
                 <!--loadTagQuery-->
                 <![CDATA[
                     SELECT
-                        datastorage_id,
-                        datastorage_path,
-                        datastorage_version,
-                        tag_key,
-                        tag_value,
-                        created_date
-                    FROM pipeline.datastorage_tag
-                    WHERE datastorage_id = :DATASTORAGE_ID
-                    AND datastorage_path = :DATASTORAGE_PATH
-                    AND datastorage_version = :DATASTORAGE_VERSION
-                    AND tag_key = :TAG_KEY
+                        r.datastorage_root_path,
+                        t.datastorage_path,
+                        t.datastorage_version,
+                        t.tag_key,
+                        t.tag_value,
+                        t.created_date
+                    FROM pipeline.datastorage_root r
+                    JOIN pipeline.datastorage_tag t
+                    ON r.datastorage_root_id = t.datastorage_root_id
+                    WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    AND t.datastorage_path = :DATASTORAGE_PATH
+                    AND t.datastorage_version = :DATASTORAGE_VERSION
+                    AND t.tag_key = :TAG_KEY
                 ]]>
             </value>
         </constructor-arg>
@@ -68,16 +73,18 @@
                 <!--loadTagsQuery-->
                 <![CDATA[
                     SELECT
-                        datastorage_id,
-                        datastorage_path,
-                        datastorage_version,
-                        tag_key,
-                        tag_value,
-                        created_date
-                    FROM pipeline.datastorage_tag
-                    WHERE datastorage_id = :DATASTORAGE_ID
-                    AND datastorage_path = :DATASTORAGE_PATH
-                    AND datastorage_version = :DATASTORAGE_VERSION
+                        r.datastorage_root_path,
+                        t.datastorage_path,
+                        t.datastorage_version,
+                        t.tag_key,
+                        t.tag_value,
+                        t.created_date
+                    FROM pipeline.datastorage_root r
+                    JOIN pipeline.datastorage_tag t
+                    ON r.datastorage_root_id = t.datastorage_root_id
+                    WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    AND t.datastorage_path = :DATASTORAGE_PATH
+                    AND t.datastorage_version = :DATASTORAGE_VERSION
                 ]]>
             </value>
         </constructor-arg>
@@ -86,16 +93,18 @@
                 <!--bulkLoadTagsQuery-->
                 <![CDATA[
                     SELECT
-                        datastorage_id,
-                        datastorage_path,
-                        datastorage_version,
-                        tag_key,
-                        tag_value,
-                        created_date
-                    FROM pipeline.datastorage_tag
-                    WHERE datastorage_id = :DATASTORAGE_ID
-                    AND datastorage_path IN (:DATASTORAGE_PATH)
-                    AND datastorage_version IN (:DATASTORAGE_VERSION)
+                        r.datastorage_root_path,
+                        t.datastorage_path,
+                        t.datastorage_version,
+                        t.tag_key,
+                        t.tag_value,
+                        t.created_date
+                    FROM pipeline.datastorage_root r
+                    JOIN pipeline.datastorage_tag t
+                    ON r.datastorage_root_id = t.datastorage_root_id
+                    WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    AND t.datastorage_path IN (:DATASTORAGE_PATH)
+                    AND t.datastorage_version IN (:DATASTORAGE_VERSION)
                 ]]>
             </value>
         </constructor-arg>
@@ -103,10 +112,15 @@
             <value>
                 <!--deleteTagsQuery-->
                 <![CDATA[
-                    DELETE FROM pipeline.datastorage_tag
-                    WHERE datastorage_id = :DATASTORAGE_ID
-                    AND datastorage_path = :DATASTORAGE_PATH
-                    AND datastorage_version = :DATASTORAGE_VERSION
+                    DELETE
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.datastorage_root_id IN (
+                        SELECT r.datastorage_root_id
+                        FROM pipeline.datastorage_root r
+                        WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    )
+                    AND t.datastorage_path = :DATASTORAGE_PATH
+                    AND t.datastorage_version = :DATASTORAGE_VERSION
                 ]]>
             </value>
         </constructor-arg>
@@ -114,11 +128,16 @@
             <value>
                 <!--deleteSpecificTagsQuery-->
                 <![CDATA[
-                    DELETE FROM pipeline.datastorage_tag
-                    WHERE datastorage_id = :DATASTORAGE_ID
-                    AND datastorage_path = :DATASTORAGE_PATH
-                    AND datastorage_version = :DATASTORAGE_VERSION
-                    AND tag_key IN (:TAG_KEY)
+                    DELETE
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.datastorage_root_id IN (
+                        SELECT r.datastorage_root_id
+                        FROM pipeline.datastorage_root r
+                        WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    )
+                    AND t.datastorage_path = :DATASTORAGE_PATH
+                    AND t.datastorage_version = :DATASTORAGE_VERSION
+                    AND t.tag_key IN (:TAG_KEY)
                 ]]>
             </value>
         </constructor-arg>
@@ -126,9 +145,14 @@
             <value>
                 <!--bulkDeleteAllTagsQuery-->
                 <![CDATA[
-                    DELETE FROM pipeline.datastorage_tag
-                    WHERE datastorage_id = :DATASTORAGE_ID
-                    AND datastorage_path IN (:DATASTORAGE_PATH)
+                    DELETE
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.datastorage_root_id IN (
+                        SELECT r.datastorage_root_id
+                        FROM pipeline.datastorage_root r
+                        WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    )
+                    AND t.datastorage_path IN (:DATASTORAGE_PATH)
                 ]]>
             </value>
         </constructor-arg>
@@ -136,9 +160,14 @@
             <value>
                 <!--deleteAllTagsByPathPatternQuery-->
                 <![CDATA[
-                    DELETE FROM pipeline.datastorage_tag
-                    WHERE datastorage_id = :DATASTORAGE_ID
-                    AND datastorage_path LIKE :DATASTORAGE_PATH
+                    DELETE
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.datastorage_root_id IN (
+                        SELECT r.datastorage_root_id
+                        FROM pipeline.datastorage_root r
+                        WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    )
+                    AND t.datastorage_path LIKE :DATASTORAGE_PATH
                 ]]>
             </value>
         </constructor-arg>
