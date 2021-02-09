@@ -713,7 +713,10 @@ class EditHotNodePool extends React.Component {
   onChangeAutoScaled = (e) => {
     const {
       count,
-      touched
+      touched,
+      scaleDownThreshold,
+      scaleUpThreshold,
+      scaleStep
     } = this.state;
     const autoscaled = e.target.checked;
     const newState = {
@@ -721,16 +724,9 @@ class EditHotNodePool extends React.Component {
     };
     if (autoscaled) {
       newState.minSize = count;
-      newState.maxSize = undefined;
-      newState.scaleDownThreshold = 20;
-      newState.scaleUpThreshold = 80;
-      newState.scaleStep = 2;
-    } else {
-      newState.minSize = undefined;
-      newState.maxSize = undefined;
-      newState.scaleDownThreshold = undefined;
-      newState.scaleUpThreshold = undefined;
-      newState.scaleStep = undefined;
+      newState.scaleDownThreshold = scaleDownThreshold || 20;
+      newState.scaleUpThreshold = scaleUpThreshold || 80;
+      newState.scaleStep = scaleStep || 2;
     }
     newState.touched = touched;
     this.setState(newState, this.onChange);
