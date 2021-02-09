@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
@@ -25,6 +26,7 @@ import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -36,13 +38,17 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
+import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
+import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.util.TestUtils;
@@ -57,13 +63,19 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.*;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_ID;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_PATH;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.ID;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.ROLES;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.USER_NAME;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -109,20 +121,33 @@ public class UserManagerTest extends AbstractSpringTest {
     @Autowired
     private GrantPermissionManager permissionManager;
 
-    @SpyBean
-    private DataStorageManager dataStorageManager;
+    @Autowired
+    private AuthManager authManager;
+
+    @Autowired
+    private MessageHelper messageHelper;
+
+    @Autowired
+    private S3TemporaryCredentialsGenerator stsCredentialsGenerator;
 
     @SpyBean
-    private StorageProviderManager storageProviderManager;
+    private DataStorageManager dataStorageManager;
 
     @SpyBean
     private PreferenceManager preferenceManager;
 
     @MockBean
-    protected DataStorageValidator storageValidator;
+    private StorageProviderManager storageProviderManager;
+
+    @MockBean
+    private DataStorageValidator storageValidator;
 
     @Before
     public void setUpPreferenceManager() {
+        final StorageProvider<S3bucketDataStorage> storageProvider = new S3StorageProvider(authManager, messageHelper,
+                                                      cloudRegionManager, preferenceManager, stsCredentialsGenerator);
+        doReturn(storageProvider).when(storageProviderManager).getStorageProvider(any());
+
         ReflectionTestUtils.setField(userManager, "preferenceManager", preferenceManager);
         Mockito.when(preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED))
             .thenReturn(false);
