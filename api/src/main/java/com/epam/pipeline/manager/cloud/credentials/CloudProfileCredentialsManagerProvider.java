@@ -33,6 +33,7 @@ import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -116,7 +117,7 @@ public class CloudProfileCredentialsManagerProvider {
         if (Objects.nonNull(defaultProfileId)) {
             profileIds.add(defaultProfileId);
         }
-        final List<CloudProfileCredentialsEntity> profiles = profileIds.stream()
+        final List<CloudProfileCredentialsEntity> profiles = SetUtils.emptyIfNull(profileIds).stream()
                 .map(this::findEntity)
                 .collect(Collectors.toList());
         if (principal) {

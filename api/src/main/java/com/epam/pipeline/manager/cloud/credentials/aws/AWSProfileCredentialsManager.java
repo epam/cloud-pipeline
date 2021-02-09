@@ -78,11 +78,10 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
         final Integer duration = preferenceManager.getPreference(SystemPreferences.PROFILE_TEMP_CREDENTIALS_DURATION);
 
         final String role = credentials.getAssumedRole();
-        final String profile = credentials.getProfileName();
         final String policy = credentials.getPolicy();
         final String regionCode = getRegionCode(region);
 
-        return AWSUtils.generate(duration, policy, role, profile, regionCode);
+        return AWSUtils.generate(duration, policy, role, null, regionCode);
     }
 
     private AWSProfileCredentialsEntity findEntity(final Long id) {
@@ -94,8 +93,6 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
     private void validateProfileCredentials(final AWSProfileCredentials credentials) {
         Assert.state(StringUtils.isNotBlank(credentials.getAssumedRole()),
                 messageHelper.getMessage(MessageConstants.ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND));
-        Assert.state(StringUtils.isNotBlank(credentials.getPolicy()),
-                messageHelper.getMessage(MessageConstants.ERROR_PROFILE_POLICY_NOT_FOUND));
         Assert.state(StringUtils.isNotBlank(credentials.getProfileName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PROFILE_NAME_NOT_FOUND));
     }
