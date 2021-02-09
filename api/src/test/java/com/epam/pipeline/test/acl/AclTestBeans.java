@@ -69,6 +69,7 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
@@ -86,6 +87,7 @@ import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
@@ -471,6 +473,14 @@ public class AclTestBeans {
 
     @SpyBean
     protected HierarchicalEntityManager spyHierarchicalEntityManager;
+
+    @Bean
+    protected FolderTemplateManager folderTemplateManager() {
+        return new FolderTemplateManager();
+    }
+
+    @MockBean
+    protected TemplatesScanner mockTemplatesScanner;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

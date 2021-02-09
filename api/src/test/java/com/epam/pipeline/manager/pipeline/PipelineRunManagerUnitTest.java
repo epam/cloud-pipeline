@@ -23,17 +23,14 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.function.Predicate;
-
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static com.epam.pipeline.util.CustomMatchers.matches;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
@@ -165,21 +162,5 @@ public class PipelineRunManagerUnitTest {
 
     private DiskAttachRequest diskAttachRequest(final Long size) {
         return new DiskAttachRequest(size);
-    }
-
-    private <T> BaseMatcher<T> matches(final Predicate<T> test) {
-        return new BaseMatcher<T>() {
-
-            @Override
-            public void describeTo(final Description description) {
-                description.appendText("custom matcher");
-            }
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public boolean matches(final Object item) {
-                return test.test((T) item);
-            }
-        };
     }
 }
