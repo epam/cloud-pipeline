@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.transaction.Transactional;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,8 +32,8 @@ import static org.junit.Assert.assertTrue;
 @Transactional
 public class DataStorageTagDaoTest extends AbstractSpringTest {
 
-    private static final String STORAGE_PATH = "storage/relative/path";
-    private static final String ANOTHER_STORAGE_PATH = "another/storage/relative/path";
+    private static final String STORAGE_PATH = "relative/path";
+    private static final String ANOTHER_STORAGE_PATH = "another/relative/path";
     private static final String KEY = "KEY";
     private static final String ANOTHER_KEY = "ANOTHER_KEY";
     private static final String VALUE = "VALUE";
@@ -92,18 +93,18 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void upsertShouldFailIfCorrespondingDataStorageDoesNotExist() {
-        assertThrows(() -> dataStorageTagDao.upsert(
-                new DataStorageTag(new DataStorageObject(NON_EXISTING_STORAGE_PATH, STORAGE_PATH), KEY, VALUE)));
+        assertThrows(() -> dataStorageTagDao.upsert(NON_EXISTING_STORAGE_PATH,
+                new DataStorageTag(new DataStorageObject(STORAGE_PATH), KEY, VALUE)));
     }
 
     @Test
     @Transactional
     public void upsertShouldCreateDataStorageTag() {
-        final DataStorageObject object = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
         
-        final DataStorageTag tag = dataStorageTagDao.upsert(new DataStorageTag(object, KEY, VALUE));
+        final DataStorageTag tag = dataStorageTagDao.upsert(TEST_STORAGE_PATH, new DataStorageTag(object, KEY, VALUE));
 
-        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(object, KEY);
+        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(TEST_STORAGE_PATH, object, KEY);
         assertTrue(loadedTag.isPresent());
         assertThat(loadedTag.get(), is(tag));
     }
@@ -111,13 +112,13 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void upsertShouldUpdateDataStorageTagValueIfItAlreadyExists() {
-        final DataStorageObject object = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
         final DataStorageTag tag = new DataStorageTag(object, KEY, VALUE);
         
-        dataStorageTagDao.upsert(tag);
-        dataStorageTagDao.upsert(tag.withValue(ANOTHER_VALUE));
+        dataStorageTagDao.upsert(TEST_STORAGE_PATH, tag);
+        dataStorageTagDao.upsert(TEST_STORAGE_PATH, tag.withValue(ANOTHER_VALUE));
 
-        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(object, KEY);
+        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(TEST_STORAGE_PATH, object, KEY);
         assertTrue(loadedTag.isPresent());
         assertThat(loadedTag.get().getValue(), is(ANOTHER_VALUE));
     }
@@ -125,12 +126,12 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void upsertShouldSetCreatedDateWhileCreatingDataStorageTag() {
-        final DataStorageObject object = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
         final DataStorageTag tag = new DataStorageTag(object, KEY, VALUE);
 
-        dataStorageTagDao.upsert(tag);
+        dataStorageTagDao.upsert(TEST_STORAGE_PATH, tag);
 
-        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(object, KEY);
+        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(TEST_STORAGE_PATH, object, KEY);
         assertTrue(loadedTag.isPresent());
         assertNotNull(loadedTag.get().getCreatedDate());
     }
@@ -138,22 +139,23 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void loadShouldReturnEmptyOptionalIfDataStorageDoesNotExist() {
-        assertFalse(dataStorageTagDao.load(new DataStorageObject(NON_EXISTING_STORAGE_PATH, STORAGE_PATH), KEY).isPresent());
+        assertFalse(dataStorageTagDao.load(NON_EXISTING_STORAGE_PATH, new DataStorageObject(STORAGE_PATH), KEY)
+                .isPresent());
     }
 
     @Test
     @Transactional
     public void loadShouldReturnEmptyOptionalIfTagDoesNotExist() {
-        assertFalse(dataStorageTagDao.load(new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH), KEY).isPresent());
+        assertFalse(dataStorageTagDao.load(TEST_STORAGE_PATH, new DataStorageObject(STORAGE_PATH), KEY).isPresent());
     }
 
     @Test
     @Transactional
     public void loadShouldReturnTag() {
-        final DataStorageObject object = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageTag tag = dataStorageTagDao.upsert(new DataStorageTag(object, KEY, VALUE));
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
+        final DataStorageTag tag = dataStorageTagDao.upsert(TEST_STORAGE_PATH, new DataStorageTag(object, KEY, VALUE));
         
-        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(object, KEY);
+        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(TEST_STORAGE_PATH, object, KEY);
         
         assertTrue(loadedTag.isPresent());
         assertThat(loadedTag.get(), is(tag));
@@ -162,24 +164,24 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void loadAllShouldReturnEmptyListIfDataStorageDoesNotExist() {
-        assertTrue(dataStorageTagDao.load(new DataStorageObject(NON_EXISTING_STORAGE_PATH, STORAGE_PATH)).isEmpty());
+        assertTrue(dataStorageTagDao.load(NON_EXISTING_STORAGE_PATH, new DataStorageObject(STORAGE_PATH)).isEmpty());
     }
 
     @Test
     @Transactional
     public void loadAllShouldReturnEmptyListIfTagsDoNotExist() {
-        assertTrue(dataStorageTagDao.load(new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH)).isEmpty());
+        assertTrue(dataStorageTagDao.load(TEST_STORAGE_PATH, new DataStorageObject(STORAGE_PATH)).isEmpty());
     }
 
     @Test
     @Transactional
     public void loadAllShouldReturnTags() {
-        final DataStorageObject object = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
         final DataStorageTag firstTag = new DataStorageTag(object, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(object, ANOTHER_KEY, VALUE);
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(firstTag, secondTag);
+        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
 
-        final List<DataStorageTag> loadedTags = dataStorageTagDao.load(object);
+        final List<DataStorageTag> loadedTags = dataStorageTagDao.load(TEST_STORAGE_PATH, object);
 
         assertThat(loadedTags.size(), is(2));
         assertThat(loadedTags, containsInAnyOrder(tags.toArray()));
@@ -188,79 +190,45 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void bulkLoadShouldReturnNothingIfDataStorageDoesNotExist() {
-        assertFalse(dataStorageTagDao.load(new DataStorageObject(NON_EXISTING_STORAGE_PATH, STORAGE_PATH), STORAGE_PATH).isPresent());
+        assertFalse(dataStorageTagDao.load(NON_EXISTING_STORAGE_PATH, new DataStorageObject(STORAGE_PATH), STORAGE_PATH)
+                .isPresent());
     }
     
     @Test
     @Transactional
     public void bulkLoadShouldReturnNothingIfTagsDoNotExist() {
-        assertFalse(dataStorageTagDao.load(new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH), STORAGE_PATH).isPresent());
+        assertFalse(dataStorageTagDao.load(TEST_STORAGE_PATH, new DataStorageObject(STORAGE_PATH), STORAGE_PATH)
+                .isPresent());
     }
     
     @Test
     @Transactional
     public void bulkLoadShouldReturnTags() {
-        final DataStorageObject firstObject = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageObject secondObject = new DataStorageObject(TEST_STORAGE_PATH, ANOTHER_STORAGE_PATH);
+        final DataStorageObject firstObject = new DataStorageObject(STORAGE_PATH);
+        final DataStorageObject secondObject = new DataStorageObject(ANOTHER_STORAGE_PATH);
         final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(firstTag, secondTag);
+        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
 
-        final List<DataStorageTag> loadedTags = dataStorageTagDao.bulkLoad(firstObject, secondObject);
+        final List<DataStorageTag> loadedTags = dataStorageTagDao.bulkLoad(TEST_STORAGE_PATH, 
+                Arrays.asList(STORAGE_PATH, ANOTHER_STORAGE_PATH));
         
         assertThat(loadedTags.size(), is(2));
         assertThat(loadedTags, containsInAnyOrder(tags.toArray()));
-    }
-    
-    @Test
-    @Transactional
-    public void bulkLoadShouldReturnTagsForMultipleDataStorage() {
-        final DataStorageObject firstObject = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageObject secondObject = new DataStorageObject(ANOTHER_TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
-        final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(firstTag, secondTag);
-        
-        final List<DataStorageTag> loadedTags = dataStorageTagDao.bulkLoad(firstObject, secondObject);
-        
-        assertThat(loadedTags.size(), is(2));
-        assertThat(loadedTags, containsInAnyOrder(tags.toArray()));
-    }
-
-    @Test
-    @Transactional
-    public void bulkUpsertShouldFailIfCorrespondingDataStoragesDoNotExist() {
-        assertThrows(() -> dataStorageTagDao.bulkUpsert(
-                new DataStorageTag(new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH), KEY, VALUE),
-                new DataStorageTag(new DataStorageObject(NON_EXISTING_STORAGE_PATH, STORAGE_PATH), KEY, VALUE)));
     }
 
     @Test
     @Transactional
     public void bulkUpsertShouldCreateTags() {
-        final DataStorageObject firstObject = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageObject secondObject = new DataStorageObject(TEST_STORAGE_PATH, ANOTHER_STORAGE_PATH);
+        final DataStorageObject firstObject = new DataStorageObject(STORAGE_PATH);
+        final DataStorageObject secondObject = new DataStorageObject(ANOTHER_STORAGE_PATH);
         final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
 
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(firstTag, secondTag);
+        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
 
-        final List<DataStorageTag> loadedTags = dataStorageTagDao.bulkLoad(firstObject, secondObject);
-        assertThat(loadedTags.size(), is(2));
-        assertThat(loadedTags, containsInAnyOrder(tags.toArray()));
-    }
-
-    @Test
-    @Transactional
-    public void bulkUpsertShouldCreateTagsForMultipleDataStorages() {
-        final DataStorageObject firstObject = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageObject secondObject = new DataStorageObject(ANOTHER_TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
-        final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
-        
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(firstTag, secondTag);
-
-        final List<DataStorageTag> loadedTags = dataStorageTagDao.bulkLoad(firstObject, secondObject);
+        final List<DataStorageTag> loadedTags = dataStorageTagDao.bulkLoad(TEST_STORAGE_PATH, 
+                Arrays.asList(STORAGE_PATH, ANOTHER_STORAGE_PATH));
         assertThat(loadedTags.size(), is(2));
         assertThat(loadedTags, containsInAnyOrder(tags.toArray()));
     }
@@ -268,24 +236,25 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void deleteShouldRemoveObjectTag() {
-        final DataStorageObject object = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        dataStorageTagDao.upsert(new DataStorageTag(object, KEY, VALUE));
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
+        dataStorageTagDao.upsert(TEST_STORAGE_PATH, new DataStorageTag(object, KEY, VALUE));
         
-        dataStorageTagDao.delete(object, KEY);
+        dataStorageTagDao.delete(TEST_STORAGE_PATH, object, KEY);
         
-        assertFalse(dataStorageTagDao.load(object, KEY).isPresent());
+        assertFalse(dataStorageTagDao.load(TEST_STORAGE_PATH, object, KEY).isPresent());
     }
 
     @Test
     @Transactional
     public void deleteShouldRemoveAllSpecifiedObjectTags() {
-        final DataStorageObject object = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(new DataStorageTag(object, KEY, VALUE),
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
+        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, 
+                new DataStorageTag(object, KEY, VALUE),
                 new DataStorageTag(object, ANOTHER_KEY, VALUE));
 
-        dataStorageTagDao.delete(object, ANOTHER_KEY);
+        dataStorageTagDao.delete(TEST_STORAGE_PATH, object, ANOTHER_KEY);
 
-        final List<DataStorageTag> loadedTags = dataStorageTagDao.load(object);
+        final List<DataStorageTag> loadedTags = dataStorageTagDao.load(TEST_STORAGE_PATH, object);
         assertThat(loadedTags.size(), is(1));
         assertThat(loadedTags, containsInAnyOrder(tags.get(0)));
     }
@@ -293,40 +262,28 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void deleteShouldRemoveAllObjectTags() {
-        final DataStorageObject object = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        dataStorageTagDao.bulkUpsert(new DataStorageTag(object, KEY, VALUE), 
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
+        dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, 
+                new DataStorageTag(object, KEY, VALUE), 
                 new DataStorageTag(object, ANOTHER_KEY, VALUE));
         
-        dataStorageTagDao.delete(object);
+        dataStorageTagDao.delete(TEST_STORAGE_PATH, object);
         
-        assertTrue(dataStorageTagDao.load(object).isEmpty());
+        assertTrue(dataStorageTagDao.load(TEST_STORAGE_PATH, object).isEmpty());
     }
 
     @Test
     @Transactional
     public void bulkDeleteShouldRemoveObjectTags() {
-        final DataStorageObject firstObject = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageObject secondObject = new DataStorageObject(TEST_STORAGE_PATH, ANOTHER_STORAGE_PATH);
+        final DataStorageObject firstObject = new DataStorageObject(STORAGE_PATH);
+        final DataStorageObject secondObject = new DataStorageObject(ANOTHER_STORAGE_PATH);
         final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
-        dataStorageTagDao.bulkUpsert(firstTag, secondTag);
+        dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
 
-        dataStorageTagDao.bulkDelete(firstObject, secondObject);
+        dataStorageTagDao.bulkDelete(TEST_STORAGE_PATH, firstObject, secondObject);
 
-        assertTrue(dataStorageTagDao.bulkLoad(firstObject, secondObject).isEmpty());
-    }
-
-    @Test
-    @Transactional
-    public void bulkDeleteShouldRemoveObjectTagsForMultipleDataStorages() {
-        final DataStorageObject firstObject = new DataStorageObject(TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageObject secondObject = new DataStorageObject(ANOTHER_TEST_STORAGE_PATH, STORAGE_PATH);
-        final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
-        final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
-        dataStorageTagDao.bulkUpsert(firstTag, secondTag);
-
-        dataStorageTagDao.bulkDelete(firstObject, secondObject);
-
-        assertTrue(dataStorageTagDao.bulkLoad(firstObject, secondObject).isEmpty());
+        assertTrue(dataStorageTagDao.bulkLoad(TEST_STORAGE_PATH, Arrays.asList(STORAGE_PATH, ANOTHER_STORAGE_PATH))
+                .isEmpty());
     }
 }

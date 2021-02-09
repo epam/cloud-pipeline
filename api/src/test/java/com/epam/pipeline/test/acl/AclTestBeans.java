@@ -267,7 +267,7 @@ public class AclTestBeans {
     protected DataStorageRuleManager mockDataStorageRuleManager;
 
     @MockBean
-    protected DataStorageTagManager mockDataStorageTagManager;
+    protected DataStorageTagBatchManager mockDataStorageTagBatchManager;
 
     @MockBean
     protected ToolScanScheduler mockToolScanScheduler;

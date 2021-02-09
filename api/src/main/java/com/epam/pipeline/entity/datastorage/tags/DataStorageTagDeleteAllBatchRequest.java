@@ -5,7 +5,7 @@ import lombok.Value;
 import java.util.List;
 
 @Value
-public class DataStorageTagCopyBulkRequest {
-
-    List<DataStorageTagCopyRequest> requests;
+public class DataStorageTagDeleteAllBatchRequest {
+    
+    List<DataStorageTagDeleteAllRequest> requests;
 }

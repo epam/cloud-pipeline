@@ -104,7 +104,7 @@
                     ON r.datastorage_root_id = t.datastorage_root_id
                     WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
                     AND t.datastorage_path IN (:DATASTORAGE_PATH)
-                    AND t.datastorage_version IN (:DATASTORAGE_VERSION)
+                    AND t.datastorage_version = :DATASTORAGE_VERSION
                 ]]>
             </value>
         </constructor-arg>

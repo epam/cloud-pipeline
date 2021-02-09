@@ -28,11 +28,11 @@ import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBulkRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBatchRequest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -604,7 +604,7 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.updateDataStorageObjectTags(id, path, tags, version, rewrite));
     }
 
-    @RequestMapping(value = "/datastorage/{id}/tags/bulk", method = RequestMethod.PUT)
+    @RequestMapping(value = "/datastorage/{id}/tags/batch", method = RequestMethod.PUT)
     @ResponseBody
     @ApiOperation(
             value = "Inserts or replaces data storage item tags.",
@@ -613,13 +613,13 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result bulkInsertTags(@PathVariable(value = ID) final Long id,
-                                 @RequestBody final DataStorageTagInsertBulkRequest request) {
-        dataStorageApiService.bulkInsertDataStorageObjectTags(id, request);
+    public Result batchInsertTags(@PathVariable(value = ID) final Long id,
+                                  @RequestBody final DataStorageTagInsertBatchRequest request) {
+        dataStorageApiService.batchInsertDataStorageObjectTags(id, request);
         return Result.success();
     }
 
-    @RequestMapping(value = "/datastorage/{id}/tags/copy/bulk", method = RequestMethod.PUT)
+    @RequestMapping(value = "/datastorage/{id}/tags/batch/copy", method = RequestMethod.PUT)
     @ResponseBody
     @ApiOperation(
             value = "Inserts or replaces data storage item tags from existing data storage item.",
@@ -628,9 +628,9 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result bulkCopyTags(@PathVariable(value = ID) final Long id,
-                               @RequestBody final DataStorageTagCopyBulkRequest request) {
-        dataStorageApiService.bulkCopyDataStorageObjectTags(id, request);
+    public Result batchCopyTags(@PathVariable(value = ID) final Long id,
+                                @RequestBody final DataStorageTagCopyBatchRequest request) {
+        dataStorageApiService.batchCopyDataStorageObjectTags(id, request);
         return Result.success();
     }
 
@@ -651,7 +651,7 @@ public class DataStorageController extends AbstractRestController {
                 Result.success(dataStorageApiService.loadDataStorageObjectTags(id, path, version));
     }
 
-    @RequestMapping(value = "/datastorage/{id}/tags/bulk", method = RequestMethod.GET)
+    @RequestMapping(value = "/datastorage/{id}/tags/batch", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
             value = "Returns data storage item tags, specified by datastorage id and object path.",
@@ -660,9 +660,9 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<DataStorageTag>> bulkLoadTags(@PathVariable(value = ID) final Long id,
-                                                     @RequestBody final DataStorageTagBulkLoadRequest request) {
-        return Result.success(dataStorageApiService.bulkLoadDataStorageObjectTags(id, request));
+    public Result<List<DataStorageTag>> batchLoadTags(@PathVariable(value = ID) final Long id,
+                                                      @RequestBody final DataStorageTagLoadBatchRequest request) {
+        return Result.success(dataStorageApiService.batchLoadDataStorageObjectTags(id, request));
     }
 
     @DeleteMapping(value = "/datastorage/{id}/tags")
@@ -681,7 +681,7 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, version, tags));
     }
 
-    @DeleteMapping(value = "/datastorage/{id}/tags/bulk")
+    @DeleteMapping(value = "/datastorage/{id}/tags/batch")
     @ResponseBody
     @ApiOperation(
             value = "Deletes data storage item tags, specified by datastorage id and object path.",
@@ -690,13 +690,13 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result bulkDeleteTags(@PathVariable(value = ID) final Long id,
-                                 @RequestBody final DataStorageTagDeleteBulkRequest request) {
-        dataStorageApiService.bulkDeleteDataStorageObjectTags(id, request);
+    public Result batchDeleteTags(@PathVariable(value = ID) final Long id,
+                                  @RequestBody final DataStorageTagDeleteBatchRequest request) {
+        dataStorageApiService.batchDeleteDataStorageObjectTags(id, request);
         return Result.success();
     }
 
-    @DeleteMapping(value = "/datastorage/{id}/tags/all/bulk")
+    @DeleteMapping(value = "/datastorage/{id}/tags/batch/all")
     @ResponseBody
     @ApiOperation(
             value = "Deletes all data storage item tags, specified by datastorage id and object path.",
@@ -705,9 +705,9 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result bulkDeleteAllTags(@PathVariable(value = ID) final Long id,
-                                    @RequestBody final DataStorageTagDeleteAllBulkRequest request) {
-        dataStorageApiService.bulkDeleteAllDataStorageObjectTags(id, request);
+    public Result batchDeleteAllTags(@PathVariable(value = ID) final Long id,
+                                     @RequestBody final DataStorageTagDeleteAllBatchRequest request) {
+        dataStorageApiService.batchDeleteAllDataStorageObjectTags(id, request);
         return Result.success();
     }
 

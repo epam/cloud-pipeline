@@ -27,11 +27,11 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteRequest;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
@@ -543,12 +543,12 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
     public void shouldBulkInsertTags() {
         final List<DataStorageTagInsertRequest> tagRequests = Collections.singletonList(
                 new DataStorageTagInsertRequest(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING));
-        final DataStorageTagInsertBulkRequest request = new DataStorageTagInsertBulkRequest(tagRequests);
-        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).bulkInsertDataStorageObjectTags(ID, request);
+        final DataStorageTagInsertBatchRequest request = new DataStorageTagInsertBatchRequest(tagRequests);
+        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).batchInsertDataStorageObjectTags(ID, request);
 
         final MvcResult mvcResult = performRequest(post(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
 
-        Mockito.verify(mockStorageApiService).bulkInsertDataStorageObjectTags(ID, request);
+        Mockito.verify(mockStorageApiService).batchInsertDataStorageObjectTags(ID, request);
         assertResponse(mvcResult, null, OBJECT_TYPE);
     }
 
@@ -593,13 +593,13 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
     @Test
     @WithMockUser
     public void shouldBulkLoadTags() {
-        final DataStorageTagBulkLoadRequest request =
-                new DataStorageTagBulkLoadRequest(Collections.singletonList(TEST));
-        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).bulkLoadDataStorageObjectTags(ID, request);
+        final DataStorageTagLoadBatchRequest request =
+                new DataStorageTagLoadBatchRequest(Collections.singletonList(TEST));
+        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).batchLoadDataStorageObjectTags(ID, request);
 
         final MvcResult mvcResult = performRequest(get(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
 
-        Mockito.verify(mockStorageApiService).bulkLoadDataStorageObjectTags(ID, request);
+        Mockito.verify(mockStorageApiService).batchLoadDataStorageObjectTags(ID, request);
         assertResponse(mvcResult, OBJECT_TAGS, DATA_STORAGE_TAG_LIST_TYPE);
     }
 
@@ -632,12 +632,12 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
     @Test
     @WithMockUser
     public void shouldBulkDeleteTags() {
-        final DataStorageTagDeleteBulkRequest request = new DataStorageTagDeleteBulkRequest(
+        final DataStorageTagDeleteBatchRequest request = new DataStorageTagDeleteBatchRequest(
                         Collections.singletonList(new DataStorageTagDeleteRequest(TEST, TEST)));
 
         final MvcResult mvcResult = performRequest(delete(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
 
-        Mockito.verify(mockStorageApiService).bulkDeleteDataStorageObjectTags(ID, request);
+        Mockito.verify(mockStorageApiService).batchDeleteDataStorageObjectTags(ID, request);
         assertResponse(mvcResult, null, OBJECT_TYPE);
     }
 }
