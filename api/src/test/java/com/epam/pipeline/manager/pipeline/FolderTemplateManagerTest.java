@@ -69,7 +69,6 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
     private static final Long FOLDER_ID = 1L;
     private static final Long FOLDER_CHILD_ID = 2L;
 
-    private Folder folder;
     private Folder childFolder;
     private AbstractDataStorage folderDataStorage;
     private AbstractDataStorage childFolderDataStorage;
@@ -90,25 +89,25 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
     private JdbcMutableAclServiceImpl aclService;
 
     @Test
-    public void createFolderFromTemplateTest() {
-        Map<String, PipeConfValue> metadata = getMetadata();
-        Map<String, PipeConfValue> childMetadata = getChildMetadata();
-        DataStorageWithMetadataVO dataStorageVO = getS3BucketDataStorageWithMetadataNameAndPath(metadata,
+    public void shouldCreateFolderFromTemplate() {
+        final Map<String, PipeConfValue> metadata = getMetadata();
+        final Map<String, PipeConfValue> childMetadata = getChildMetadata();
+        final DataStorageWithMetadataVO dataStorageVO = getS3BucketDataStorageWithMetadataNameAndPath(metadata,
                 DATASTORAGE_NAME, TEST_PATH);
-        DataStorageWithMetadataVO dataStorageForChild = getS3BucketDataStorageWithMetadataNameAndPath(childMetadata,
-                DATASTORAGE_NAME_2, TEST_PATH_2);
-        PermissionVO permissionVO = getPermissionVO(PERMISSION_NAME);
-        PermissionVO childPermissionVO = getPermissionVO(PERMISSION_NAME_2);
-        FolderTemplate childFolderTemplate = getFolderTemplate(dataStorageForChild, null,
+        final DataStorageWithMetadataVO dataStorageForChild = getS3BucketDataStorageWithMetadataNameAndPath(
+                childMetadata, DATASTORAGE_NAME_2, TEST_PATH_2);
+        final PermissionVO permissionVO = getPermissionVO(PERMISSION_NAME);
+        final PermissionVO childPermissionVO = getPermissionVO(PERMISSION_NAME_2);
+        final FolderTemplate childFolderTemplate = getFolderTemplate(dataStorageForChild, null,
                 childMetadata, childPermissionVO, TEST_NAME_2);
-        FolderTemplate folderTemplate = getFolderTemplate(dataStorageVO, childFolderTemplate,
+        final FolderTemplate folderTemplate = getFolderTemplate(dataStorageVO, childFolderTemplate,
                 metadata, permissionVO, TEST_NAME);
 
         folderDataStorage = new S3bucketDataStorage(FOLDER_ID, DATASTORAGE_NAME, TEST_PATH);
         childFolderDataStorage = new S3bucketDataStorage(FOLDER_CHILD_ID, DATASTORAGE_NAME_2, TEST_PATH_2);
 
         childFolder = getFolderChild(childFolderDataStorage);
-        folder = getFolder(folderDataStorage);
+        final Folder folder = getFolder(folderDataStorage);
 
         doReturn(folder).when(mockFolderCrudManager)
                 .create(argThat(matches(Predicates.forFolderTemplate(folderTemplate.getName()))));
@@ -170,8 +169,8 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
         return action;
     }
 
-    private Folder getFolder(AbstractDataStorage dataStorage) {
-        Folder folder = new Folder();
+    private Folder getFolder(final AbstractDataStorage dataStorage) {
+        final Folder folder = new Folder();
         folder.setId(FOLDER_ID);
         folder.setOwner(SIMPLE_USER);
         folder.setChildFolders(Collections.singletonList(childFolder));
@@ -179,8 +178,8 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
         return folder;
     }
 
-    private Folder getFolderChild(AbstractDataStorage dataStorage) {
-        Folder folder = new Folder();
+    private Folder getFolderChild(final AbstractDataStorage dataStorage) {
+        final Folder folder = new Folder();
         folder.setId(FOLDER_CHILD_ID);
         folder.setOwner(SIMPLE_USER);
         folder.setName(CHILD_TEMPLATE_FOLDER_NAME);
@@ -190,13 +189,13 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
     }
 
     private Map<String, PipeConfValue> getMetadata() {
-        Map<String, PipeConfValue> metadata = new HashMap<>();
+        final Map<String, PipeConfValue> metadata = new HashMap<>();
         metadata.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
         return metadata;
     }
 
     private Map<String, PipeConfValue> getChildMetadata() {
-        Map<String, PipeConfValue> metadata = new HashMap<>();
+        final Map<String, PipeConfValue> metadata = new HashMap<>();
         metadata.put(DATA_KEY_2, new PipeConfValue(DATA_TYPE_2, DATA_VALUE_2));
         return metadata;
     }
