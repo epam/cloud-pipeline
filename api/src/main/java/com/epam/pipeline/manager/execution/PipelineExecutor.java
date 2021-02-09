@@ -77,6 +77,10 @@ public class PipelineExecutor {
             .name("host-cgroups")
             .hostPath("/sys/fs/cgroup")
             .mountPath("/sys/fs/cgroup").build();
+    private static final DockerMount HOST_SYS_MOUNT = DockerMount.builder()
+            .name("sys")
+            .hostPath("/sys")
+            .mountPath("/sys").build();
     private static final String DOMAIN_DELIMITER = "@";
 
     private final PreferenceManager preferenceManager;
@@ -259,6 +263,7 @@ public class PipelineExecutor {
         volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
         volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
         volumes.add(createEmptyVolume(EMPTY_MOUNT, "Memory"));
+        volumes.add(createVolume(HOST_SYS_MOUNT.getName(), HOST_SYS_MOUNT.getMountPath()));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
         if (isDockerInDockerEnabled &&
@@ -276,6 +281,7 @@ public class PipelineExecutor {
         mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
         mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
         mounts.add(getVolumeMount(EMPTY_MOUNT, "/dev/shm"));
+        mounts.add(getVolumeMount(HOST_SYS_MOUNT.getName(), HOST_SYS_MOUNT.getMountPath()));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
         if (isDockerInDockerEnabled &&
