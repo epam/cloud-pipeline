@@ -181,7 +181,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineValidatesToolInstanceTypeAndPriceType() {
+    public void shouldLaunchPipelineValidatesToolInstanceTypeAndPriceType() {
         launchTool(configuration, INSTANCE_TYPE);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
@@ -208,13 +208,13 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineFailsOnNotAllowedToolInstanceType() {
+    public void shouldLaunchPipelineFailsOnNotAllowedToolInstanceType() {
         doReturn(false).when(instanceOfferManager)
                 .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(ID), eq(true));
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        Runnable task = () ->  launchTool(configuration, INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
+        final Runnable result = () -> launchTool(configuration, INSTANCE_TYPE);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), result);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
@@ -228,7 +228,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineDoesNotValidateToolInstanceTypeIfItIsNotSpecified() {
+    public void shouldLaunchPipelineNotValidateToolInstanceTypeIfItIsNotSpecified() {
         launchTool(configuration, null);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
@@ -255,12 +255,12 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineValidatesToolInstanceTypeInTheSpecifiedRegion() {
+    public void shouldLaunchPipelineValidateToolInstanceTypeInTheSpecifiedRegion() {
         configuration.setCloudRegionId(ID_2);
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        Runnable task = () ->  launchTool(configuration, INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
+        final Runnable result = () -> launchTool(configuration, INSTANCE_TYPE);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), result);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
@@ -274,7 +274,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineValidatesPipelineInstanceType() {
+    public void shouldLaunchPipelineValidatePipelineInstanceType() {
         launchPipeline(configuration, INSTANCE_TYPE);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
@@ -299,7 +299,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineValidatesPipelineInstanceTypeInTheSpecifiedRegion() {
+    public void shouldLaunchPipelineValidatePipelineInstanceTypeInTheSpecifiedRegion() {
         configuration.setCloudRegionId(ID_2);
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
@@ -315,7 +315,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineFailsOnNotAllowedInstanceType() {
+    public void shouldLaunchPipelineFailOnNotAllowedInstanceType() {
         doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
@@ -331,7 +331,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineDoesNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
+    public void shouldLaunchPipelineNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
         launchPipeline(configuration, null);
 
         verify(toolManager, times(2)).resolveSymlinks(eq(TEST_IMAGE));
@@ -357,7 +357,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineValidatesPriceTypeAsOnDemandIfItIsNotSpecified() {
+    public void shouldLaunchPipelineValidatePriceTypeAsOnDemandIfItIsNotSpecified() {
         configuration.setIsSpot(null);
 
         launchPipeline(configuration, INSTANCE_TYPE);
@@ -385,12 +385,12 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineFailsOnNotAllowedPriceType() {
+    public void shouldLaunchPipelineFailOnNotAllowedPriceType() {
         doReturn(false).when(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
         doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_PRICE_TYPE_IS_NOT_ALLOWED), eq(PriceType.SPOT));
 
-        Runnable task = () -> launchPipeline(configuration, INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), task);
+        final Runnable result = () -> launchPipeline(configuration, INSTANCE_TYPE);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), result);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager).getConfigurationForTool(eq(tool), eq(configuration));
@@ -403,7 +403,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineFailsIfToolCloudRegionIsConfiguredAndItDiffersFromRunConfigurationOne() {
+    public void shouldLaunchPipelineFailIfToolCloudRegionIsConfiguredAndItDiffersFromRunConfigurationOne() {
         final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
         toolConfiguration.setCloudRegionId(ID_3);
         doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
@@ -422,7 +422,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineDoesNotFailIfToolCloudRegionIsConfiguredAndItDiffersFromDefaultOne() {
+    public void shouldLaunchPipelineNotFailIfToolCloudRegionIsConfiguredAndItDiffersFromDefaultOne() {
         final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
         toolConfiguration.setCloudRegionId(ID_3);
         doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
@@ -458,13 +458,13 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void testLaunchPipelineFailsIfCloudRegionIsNotAllowed() {
+    public void shouldLaunchPipelineFailIfCloudRegionIsNotAllowed() {
         doReturn(false).when(permissionHelper).isAllowed(any(), any());
         doReturn(NO_PERMISSIONS).when(messageHelper).getMessage(
                 eq(ERROR_RUN_CLOUD_REGION_NOT_ALLOWED), eq("US East"));
 
-        Runnable task = () -> launchPipeline(configuration, null);
-        assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS), task);
+        final Runnable result = () -> launchPipeline(configuration, null);
+        assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS), result);
 
         verify(toolManager).resolveSymlinks(eq(TEST_IMAGE));
         verify(pipelineConfigurationManager)
@@ -475,7 +475,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void runShouldUseCloudRegionFromConfiguration() {
+    public void shouldRunUseCloudRegionFromConfiguration() {
         final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
@@ -502,7 +502,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void workerRunShouldUseCloudRegionFromConfiguration() {
+    public void shouldWorkerRunUseCloudRegionFromConfiguration() {
         final PipelineRun pipelineRun = launchPipelineWithParentId(configuration);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
@@ -531,7 +531,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void runShouldUseDefaultCloudRegionIfThereIsNoParentRunAndNoRegionConfiguration() {
+    public void shouldRunUseDefaultCloudRegionIfThereIsNoParentRunAndNoRegionConfiguration() {
         final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, INSTANCE_TYPE);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
@@ -558,7 +558,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedExplicitlyIfThereIsNoRegionConfiguration() {
+    public void shouldWorkerRunUseParentRunCloudRegionWithParentRunIdPassedExplicitlyIfThereIsNoRegionConfiguration() {
         final PipelineRun pipelineRun = launchPipelineWithParentId(configurationWithoutRegion);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID_3));
@@ -587,7 +587,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedAsParameterIfThereIsNoRegionConfiguration() {
+    public void shouldWorkerRunUseParentRunCloudRegionWithParentRunIdPassedAsParameterIfThereIsNoRegionConfiguration() {
         final PipelineConfiguration configurationWithParentId = configurationWithoutRegion;
         final HashMap<String, PipeConfValueVO> parameters = new HashMap<>();
         parameters.put(PARENT_RUN_ID_PARAMETER, new PipeConfValueVO(Long.toString(PARENT_RUN_ID)));
