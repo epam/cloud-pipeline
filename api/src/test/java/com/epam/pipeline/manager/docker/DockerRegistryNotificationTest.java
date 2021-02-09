@@ -297,7 +297,8 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         assertThrows(e -> containsIgnoreCase(e.getMessage(), NOT_ALLOWED_MESSAGE_PART), result);
 
         verify(mockDockerRegistryDao).loadDockerRegistry(eq(REPO_NO_WRITE_ACCESS));
-        verify(mockMetadataManager).hasMetadata(eq(getEntityVO(registryWithoutWriteAccess.getId(), AclClass.DOCKER_REGISTRY)));
+        verify(mockMetadataManager)
+                .hasMetadata(eq(getEntityVO(registryWithoutWriteAccess.getId(), AclClass.DOCKER_REGISTRY)));
         verify(mockToolGroupManager).getGroupAndTool(eq(IMAGE_NEW_GROUP));
         verify(mockToolGroupManager).doesToolGroupExist(eq(REPO_NO_WRITE_ACCESS), eq(IMAGE_GROUP_2));
         verify(mockUserManager).loadUserContext(eq(SIMPLE_USER));
