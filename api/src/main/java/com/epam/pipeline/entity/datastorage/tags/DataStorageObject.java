@@ -9,11 +9,11 @@ import lombok.experimental.Wither;
 @AllArgsConstructor
 public class DataStorageObject {
     
-    Long storageId;
+    String root;
     String path;
     String version;
 
-    public DataStorageObject(final Long storageId, final String path) {
-        this(storageId, path, null);
+    public DataStorageObject(final String root, final String path) {
+        this(root, path, null);
     }
 }
