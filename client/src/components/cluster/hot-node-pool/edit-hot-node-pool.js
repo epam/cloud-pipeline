@@ -624,11 +624,11 @@ class EditHotNodePool extends React.Component {
           name: true,
           region: true,
           filters: true,
-          minSize: false,
-          maxSize: false,
-          scaleDownThreshold: false,
-          scaleUpThreshold: false,
-          scaleStep: false
+          minSize: true,
+          maxSize: true,
+          scaleDownThreshold: true,
+          scaleUpThreshold: true,
+          scaleStep: true
         }
       });
     } else if (onSave) {
@@ -652,7 +652,7 @@ class EditHotNodePool extends React.Component {
         scaleStep
       } = this.state;
       const payload = {
-        count,
+        count: autoscaled ? minSize : count,
         instanceDisk,
         dockerImages: dockerImages
           .filter(image => !image.removed)
