@@ -5,7 +5,7 @@ import lombok.Value;
 import java.util.List;
 
 @Value
-public class DataStorageTagUpsertBulkRequest {
+public class DataStorageTagUpsertBatchRequest {
     
     List<DataStorageTagUpsertRequest> requests;
 }

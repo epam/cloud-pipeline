@@ -338,7 +338,7 @@ class DataStorage(API):
         data = json.dumps({
             'requests': requests
         })
-        endpoint = 'datastorage/{}/tags/bulk'.format(identifier)
+        endpoint = 'datastorage/{}/tags/batch'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='PUT')
         if 'payload' in response_data:
             return response_data['payload']
@@ -355,7 +355,7 @@ class DataStorage(API):
         data = json.dumps({
             'requests': requests
         })
-        endpoint = 'datastorage/{}/tags/copy/bulk'.format(identifier)
+        endpoint = 'datastorage/{}/tags/batch/copy'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='PUT')
         if 'payload' in response_data:
             return response_data['payload']
@@ -372,7 +372,7 @@ class DataStorage(API):
         data = json.dumps({
             'requests': requests
         })
-        endpoint = 'datastorage/{}/tags/bulk'.format(identifier)
+        endpoint = 'datastorage/{}/tags/batch'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='DELETE')
         if 'payload' in response_data:
             return response_data['payload']
@@ -389,7 +389,7 @@ class DataStorage(API):
         data = json.dumps({
             'requests': requests
         })
-        endpoint = 'datastorage/{}/tags/all/bulk'.format(identifier)
+        endpoint = 'datastorage/{}/tags/batch/all'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='DELETE')
         if 'payload' in response_data:
             return response_data['payload']

@@ -219,7 +219,7 @@ public final class DatastorageCreatorUtils {
     }
 
     private static DataStorageObject getDataStorageObject() {
-        return new DataStorageObject(TEST_STRING, TEST_STRING, TEST_STRING);
+        return new DataStorageObject(TEST_STRING, TEST_STRING);
     }
 
     public static TemporaryCredentials getTemporaryCredentials() {

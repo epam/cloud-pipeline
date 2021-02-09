@@ -5,7 +5,7 @@ import lombok.Value;
 import java.util.List;
 
 @Value
-public class DataStorageTagInsertBulkRequest {
+public class DataStorageTagLoadBatchRequest {
     
-    List<DataStorageTagInsertRequest> requests;
+    List<String> paths;
 }

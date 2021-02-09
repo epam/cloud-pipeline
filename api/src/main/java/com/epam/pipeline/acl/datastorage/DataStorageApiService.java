@@ -39,17 +39,17 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBulkRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBulkRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagBulkLoadRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBulkRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBulkRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
-import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
+import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
@@ -76,7 +76,7 @@ public class DataStorageApiService {
 
     private final DataStorageManager dataStorageManager;
     private final DataStorageRuleManager dataStorageRuleManager;
-    private final DataStorageTagManager dataStorageTagManager;
+    private final DataStorageTagBatchManager dataStorageTagBatchManager;
     private final GrantPermissionManager grantPermissionManager;
     private final MessageHelper messageHelper;
     private final TemporaryCredentialsManager temporaryCredentialsManager;
@@ -349,32 +349,32 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public List<DataStorageTag> bulkInsertDataStorageObjectTags(final Long id,
-                                                                final DataStorageTagInsertBulkRequest request) {
-        return dataStorageTagManager.bulkInsert(id, request);
+    public List<DataStorageTag> batchInsertDataStorageObjectTags(final Long id,
+                                                                 final DataStorageTagInsertBatchRequest request) {
+        return dataStorageTagBatchManager.insert(id, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public List<DataStorageTag> bulkCopyDataStorageObjectTags(final Long id,
-                                                              final DataStorageTagCopyBulkRequest request) {
-        return dataStorageTagManager.bulkCopy(id, request);
+    public List<DataStorageTag> batchCopyDataStorageObjectTags(final Long id,
+                                                               final DataStorageTagCopyBatchRequest request) {
+        return dataStorageTagBatchManager.copy(id, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<DataStorageTag> bulkLoadDataStorageObjectTags(final Long id,
-                                                              final DataStorageTagBulkLoadRequest request) {
-        return dataStorageTagManager.bulkLoad(id, request);
+    public List<DataStorageTag> batchLoadDataStorageObjectTags(final Long id,
+                                                               final DataStorageTagLoadBatchRequest request) {
+        return dataStorageTagBatchManager.load(id, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public void bulkDeleteDataStorageObjectTags(final Long id,
-                                                final DataStorageTagDeleteBulkRequest request) {
-        dataStorageTagManager.bulkDelete(id, request);
+    public void batchDeleteDataStorageObjectTags(final Long id,
+                                                 final DataStorageTagDeleteBatchRequest request) {
+        dataStorageTagBatchManager.delete(id, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public void bulkDeleteAllDataStorageObjectTags(final Long id,
-                                                   final DataStorageTagDeleteAllBulkRequest request) {
-        dataStorageTagManager.bulkDeleteAll(id, request);
+    public void batchDeleteAllDataStorageObjectTags(final Long id,
+                                                    final DataStorageTagDeleteAllBatchRequest request) {
+        dataStorageTagBatchManager.deleteAll(id, request);
     }
 }
