@@ -136,29 +136,21 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     @Mock
     private PreferenceManager preferenceManager;
 
-    private static final String TEST_IMAGE = "testImage";
-    private Tool tool;
-    private PipelineConfiguration configuration;
-    private PipelineConfiguration configurationWithoutRegion;
-    private InstancePrice price;
-    private AwsRegion defaultAwsRegion;
-    private AwsRegion nonAllowedAwsRegion;
-    private AwsRegion notDefaultAwsRegion;
-    private PipelineRun parentRun;
+    private static final String IMAGE = "testImage";
+    private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
+    private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
+    private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
+    private final AwsRegion notDefaultAwsRegion = getNonDefaultAwsRegion(ID_3);
+    private final PipelineConfiguration configuration = getPipelineConfiguration(
+            IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId());
+    private final PipelineConfiguration configurationWithoutRegion = getPipelineConfiguration(IMAGE, INSTANCE_DISK);
+    private final InstancePrice price = new InstancePrice(configuration.getInstanceType(),
+            parseInt(configuration.getInstanceDisk()), PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
+    private final PipelineRun parentRun = getPipelineRunWithInstance(PARENT_RUN_ID, TEST_USER, ID_3);
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-
-        tool = getTool(TEST_IMAGE, DEFAULT_COMMAND);
-        defaultAwsRegion = getDefaultAwsRegion(ID);
-        nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
-        notDefaultAwsRegion = getNonDefaultAwsRegion(ID_3);
-        configuration = getPipelineConfiguration(TEST_IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId());
-        configurationWithoutRegion = getPipelineConfiguration(TEST_IMAGE, INSTANCE_DISK);
-        price = new InstancePrice(configuration.getInstanceType(), parseInt(configuration.getInstanceDisk()),
-                PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
-        parentRun = getPipelineRunWithInstance(PARENT_RUN_ID, TEST_USER, ID_3);
 
         mockCloudRegionManager();
         mockInstanceOfferManager();
@@ -174,7 +166,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     public void launchPipelineShouldValidateToolInstanceTypeAndPriceType() {
         launchTool(configuration, INSTANCE_TYPE);
 
-        verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
+        verify(toolManager).loadByNameOrId(eq(IMAGE));
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getResource()), eq(false));
     }
@@ -188,7 +180,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         final Runnable result = () -> launchTool(configuration, INSTANCE_TYPE);
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), result);
 
-        verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
+        verify(toolManager).loadByNameOrId(eq(IMAGE));
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
     }
 
@@ -196,7 +188,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     public void launchPipelineShouldNotValidateToolInstanceTypeIfItIsNotSpecified() {
         launchTool(configuration, null);
 
-        verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
+        verify(toolManager).loadByNameOrId(eq(IMAGE));
         verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(ID), eq(true));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getResource()), eq(false));
     }
@@ -209,7 +201,7 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         final Runnable result = () -> launchTool(configuration, INSTANCE_TYPE);
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), result);
 
-        verify(toolManager).loadByNameOrId(eq(TEST_IMAGE));
+        verify(toolManager).loadByNameOrId(eq(IMAGE));
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID_2), eq(true));
     }
 
@@ -367,8 +359,8 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     private void mockToolManager() {
-        doReturn(tool).when(toolManager).loadByNameOrId(eq(TEST_IMAGE));
-        doReturn(tool).when(toolManager).resolveSymlinks(eq(TEST_IMAGE));
+        doReturn(tool).when(toolManager).loadByNameOrId(eq(IMAGE));
+        doReturn(tool).when(toolManager).resolveSymlinks(eq(IMAGE));
         doReturn(Optional.empty()).when(toolManager).loadToolVersionScan(eq(tool.getId()), eq(null));
     }
 
