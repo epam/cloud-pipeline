@@ -1105,44 +1105,47 @@ if [ -d $COMMON_REPO_DIR/shell ]; then
 fi
 
 # Install pipe CLI
-if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
-      install_pip_package PipelineCLI
-else
-      echo "Installing 'pipe' CLI"
-      echo "-"
-      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
-        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_TARBALL_NAME:-pipe.tar.gz}"
+CP_PIPE_CLI_ENABLED=${CP_PIPE_CLI_ENABLED:-"true"}
+if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
+      if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
+            install_pip_package PipelineCLI
       else
-        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
-      fi
+            echo "Installing 'pipe' CLI"
+            echo "-"
+            if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+            CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_TARBALL_NAME:-pipe.tar.gz}"
+            else
+            CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+            fi
 
-      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_NAME}"
+            download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_NAME}"
 
-      if [ $? -ne 0 ]; then
-            echo "[ERROR] 'pipe' CLI download failed. Exiting"
-            exit 1
-      fi
+            if [ $? -ne 0 ]; then
+                  echo "[ERROR] 'pipe' CLI download failed. Exiting"
+                  exit 1
+            fi
 
-      # Clean any known locations, where previous verssion of the pipe might reside (E.g. committed by the user)
-      rm -f /bin/pipe
-      rm -f /usr/bin/pipe
-      rm -f /usr/local/bin/pipe
-      rm -f /sbin/pipe
-      rm -f /usr/sbin/pipe
-      rm -f /usr/local/sbin/pipe
-      rm -rf ${CP_USR_BIN}/pipe
+            # Clean any known locations, where previous verssion of the pipe might reside (E.g. committed by the user)
+            rm -f /bin/pipe
+            rm -f /usr/bin/pipe
+            rm -f /usr/local/bin/pipe
+            rm -f /sbin/pipe
+            rm -f /usr/sbin/pipe
+            rm -f /usr/local/sbin/pipe
+            rm -rf ${CP_USR_BIN}/pipe
 
 
-      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
-        tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
-        rm -f "$CP_PIPELINE_CLI_NAME"
-        ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
-      else
-        # Install into the PATH locationse
-        cp pipe /usr/bin/
-        cp pipe ${CP_USR_BIN}/
-        chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
-        rm -f pipe
+            if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+            tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
+            rm -f "$CP_PIPELINE_CLI_NAME"
+            ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
+            else
+            # Install into the PATH locationse
+            cp pipe /usr/bin/
+            cp pipe ${CP_USR_BIN}/
+            chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
+            rm -f pipe
+            fi
       fi
 fi
 
@@ -1312,29 +1315,31 @@ echo "------"
 echo
 ######################################################
 
+CP_DATA_LOCALIZATION_ENABLED=${CP_DATA_LOCALIZATION_ENABLED:-"true"}
+if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
+      if [ "$RESUMED_RUN" == true ];
+      then
+      echo "Skipping data localization for resumed run"
+      else
+      ######################################################
+      echo "Checking if remote data needs localizing"
+      echo "-"
+      ######################################################
+      LOCALIZATION_TASK_NAME="InputData"
+      INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
 
-if [ "$RESUMED_RUN" == true ];
-then
-    echo "Skipping data localization for resumed run"
-else
-    ######################################################
-    echo "Checking if remote data needs localizing"
-    echo "-"
-    ######################################################
-    LOCALIZATION_TASK_NAME="InputData"
-    INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
+      upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
 
-    upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
+      if [ $? -ne 0 ];
+      then
+            echo "Failed to upload input data"
+            exit 1
+      fi
+      echo
 
-    if [ $? -ne 0 ];
-    then
-        echo "Failed to upload input data"
-        exit 1
-    fi
-    echo
+      [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
 
-    [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
-
+      fi
 fi
 echo "------"
 echo

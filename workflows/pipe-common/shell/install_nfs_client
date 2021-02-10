@@ -15,6 +15,10 @@
 
 NFS_INSTALL_TASK="InstallNFSClient"
 
+if [ "$CP_CAP_NFS_PREINSTALLED" == "true" ]; then
+    pipe_log_success "NFS client is PRE-installed, skipping installation" "$NFS_INSTALL_TASK"
+    exit 0
+fi
 ######################################################
 # Check if NFS client is already installed
 ######################################################
