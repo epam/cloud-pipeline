@@ -93,9 +93,6 @@ import static org.mockito.Mockito.when;
 @Transactional
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class PipelineRunManagerTest extends AbstractManagerTest {
-    private static final String PARAM_NAME_1 = "param-1";
-    private static final String ENV_VAR_NAME = "TEST_ENV";
-    private static final String ENV_VAR_VALUE = "value";
     private static final float PRICE_PER_HOUR = 12F;
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
     private static final float DISK_PRICE_PER_HOUR = 1F;
@@ -238,6 +235,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     /**
      * Tests that Aspect will deny PipelineRunManager::runCmd method execution
      */
+    // Не нужно ничего
     @Test(expected = ToolExecutionDeniedException.class)
     public void testRunCmdFailed() {
         PipelineStart startVO = new PipelineStart();
@@ -252,6 +250,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
      */
     @WithMockUser(roles = "ADMIN")
     @Test
+    //Нужен userContext, но можно замокать 1 метод
     public void testAdminRunForce() {
         PipelineStart startVO = new PipelineStart();
         startVO.setDockerImage(TEST_IMAGE);
@@ -264,113 +263,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testEnvVarsReplacement() {
-        List<PipelineRunParameter> parameters = new ArrayList<>();
-        Map<String, String> envVars = new HashMap<>();
-        // case: empty collections
-        List<PipelineRunParameter> actualParameters =
-            pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertTrue(CollectionUtils.isEmpty(actualParameters));
-        // case: empty env_vars
-        String paramValue = "simple";
-        parameters.add(new PipelineRunParameter(PARAM_NAME_1, paramValue));
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertEquals(parameters, actualParameters);
-        // case: empty params
-        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), envVars);
-        Assert.assertTrue(CollectionUtils.isEmpty(actualParameters));
-        // case: replacement no needed
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertEquals(paramValue, actualParameters.get(0).getValue());
-        // case: ${TEST_ENV}
-        paramValue = String.format("test/${%s}", ENV_VAR_NAME);
-        String expectedValue = String.format("test/%s", ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-            Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-
-        // case: $TEST_ENV at the end of the line
-        paramValue = String.format("test/$%s", ENV_VAR_NAME);
-        expectedValue = String.format("test/%s", ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-            Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-
-        // case: $TEST_ENV at the middle of the line
-        paramValue = String.format("test/$%s/", ENV_VAR_NAME);
-        expectedValue = String.format("test/%s/", ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-            Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-
-        // case: several variables
-        paramValue = String.format("test/$%s/${%s}/$%s/", ENV_VAR_NAME, ENV_VAR_NAME, ENV_VAR_NAME);
-        expectedValue = String.format("test/%s/%s/%s/", ENV_VAR_VALUE, ENV_VAR_VALUE, ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-            Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    public void testResolveProjectFiltering() {
-        Folder project = new Folder();
-        project.setId(1L);
-
-        Folder child = new Folder();
-        project.setId(2L);
-        project.getChildFolders().add(child);
-
-        Pipeline pipeline1 = new Pipeline();
-        pipeline1.setId(2L);
-        project.getPipelines().add(pipeline1);
-
-        Pipeline pipeline2 = new Pipeline();
-        pipeline2.setId(3L);
-        child.getPipelines().add(pipeline2);
-
-        RunConfiguration configuration1 = new RunConfiguration();
-        configuration1.setId(4L);
-        project.getConfigurations().add(configuration1);
-
-        RunConfiguration configuration2 = new RunConfiguration();
-        configuration2.setId(5L);
-        child.getConfigurations().add(configuration2);
-
-        when(folderManager.load(project.getId())).thenReturn(project);
-
-        PagingRunFilterVO filterVO = new PagingRunFilterVO();
-        filterVO.setProjectIds(Collections.singletonList(project.getId()));
-
-        PipelineRunFilterVO.ProjectFilter projectFilter = pipelineRunManager.resolveProjectFiltering(filterVO);
-        Assert.assertEquals(2, projectFilter.getPipelineIds().size());
-        Assert.assertEquals(2, projectFilter.getConfigurationIds().size());
-
-    }
-
-    @Test (expected = IllegalArgumentException.class)
-    @WithMockUser
-    public void shouldThrowExceptionOnInexistentRunTagUpdate() {
-        pipelineRunManager.updateTags(-1L, new TagsVO(null));
-    }
-
-    @Test
-    @WithMockUser
-    public void testUpdateRunTags() {
-        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, PARENT_RUN_ID);
-        loadRunAndAssertTags(pipelineRun.getId(), Collections.emptyMap());
-
-        final Map<String, String> tags = new HashMap<>();
-        tags.put("newKey", "newValue");
-        updateTagsForRunAndAssertWithExpected(pipelineRun, tags, tags);
-        tags.clear();
-        updateTagsForRunAndAssertWithExpected(pipelineRun, tags, Collections.emptyMap());
-        pipelineRun.setTags(null);
-        updateTagsForRunAndAssertWithExpected(pipelineRun, null, Collections.emptyMap());
-    }
-
-    @Test
+    // Ничего не нужно.
     public void testLoadRunsActivityStats() {
         final LocalDateTime beforeSyncStart = SYNC_PERIOD_START.minusHours(HOURS_12);
         final LocalDateTime afterSyncStart = SYNC_PERIOD_START.plusHours(HOURS_12);
