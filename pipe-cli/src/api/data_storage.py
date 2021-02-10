@@ -371,6 +371,23 @@ class DataStorage(API):
             raise RuntimeError('Failed to bulk copy tags: {}.'.format(requests))
 
     @classmethod
+    def bulk_load_object_tags(cls, identifier, paths):
+        api = cls.instance()
+        data = json.dumps({
+            'paths': paths
+        })
+        endpoint = 'datastorage/{}/tags/batch/load'.format(identifier)
+        response_data = api.call(endpoint, data=data, http_method='POST')
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError('Failed to bulk load tags for paths: {}.'.format(paths))
+
+    @classmethod
     def bulk_delete_object_tags(cls, identifier, requests):
         api = cls.instance()
         data = json.dumps({

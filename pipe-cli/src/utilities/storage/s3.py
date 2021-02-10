@@ -38,7 +38,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import StorageOperations, AbstractListingManager, AbstractDeleteManager, \
-    AbstractRestoreManager, AbstractTransferManager
+    AbstractRestoreManager, AbstractTransferManager, TransferResult, UploadResult
 from src.config import Config
 
 
@@ -169,7 +169,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             source_wrapper.delete_item(source_key)
         tags = StorageOperations.parse_tags(tags)
         version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
-        return destination_key, version, tags
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
+                            tags=tags)
 
 
 class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManager):
@@ -212,7 +213,8 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
             self.bucket.upload_fileobj(file_stream, destination_key, ExtraArgs=extra_args)
         tags = StorageOperations.parse_tags(tags)
         version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
-        return destination_key, version, tags
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
+                            tags=tags)
 
 
 class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager):
@@ -241,17 +243,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (path, destination_key))
                 return
-        object_tags = ObjectTaggingManager.get_object_tagging(
-            ObjectTaggingManager(self.session, source_bucket, source_region), path)
-        if not tags and object_tags:
-            tags = self.convert_object_tags(object_tags)
-        if not self.has_required_tag(tags, 'CP_SOURCE'):
-            tags += ('CP_SOURCE=s3://{}/{}'.format(source_bucket, path),)
-        if not self.has_required_tag(tags, 'CP_OWNER'):
-            tags += ('CP_OWNER={}'.format(self._get_user()),)
-        TransferManager.ALLOWED_COPY_ARGS.append('Tagging')
         extra_args = {
-            'Tagging': self._convert_tags_to_url_string(tags),
             'ACL': 'bucket-owner-full-control'
         }
         if StorageItemManager.show_progress(quiet, size, lock):
@@ -261,9 +253,9 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
             self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
         if clean:
             source_wrapper.delete_item(path)
-        tags = StorageOperations.parse_tags(tags)
         version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
-        return destination_key, version, tags
+        return TransferResult(source_key=path, destination_key=destination_key, destination_version=version,
+                              tags=StorageOperations.parse_tags(tags))
 
     def build_source_client(self, source_region):
         source_s3 = self.session.resource('s3',
