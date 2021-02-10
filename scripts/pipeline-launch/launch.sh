@@ -602,6 +602,35 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function configureHyperThreading() {
+    if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
+      _current_processor=-1
+      declare -a used_cores
+      cat /proc/cpuinfo | while read line; do
+        if [[ "$line" == *"processor"* ]]; then
+          _current_processor=`echo "$line" | awk '{ print $3 }'`
+        elif [[ "$line" == *"core id"* ]]; then
+          _current_core=`echo "$line" | awk '{ print $4 }'`
+          if [[  "${used_cores}" == *"${_current_core}"* ]]; then
+            if [ -f /sys/devices/system/cpu/cpu${_current_processor}/online ]; then
+              echo 0 > /sys/devices/system/cpu/cpu${_current_processor}/online
+            else
+              echo "Processor $_current_processor marked as hyper-threaded, but file /sys/devices/system/cpu/cpu${_current_processor}/online doesn't exists"
+            fi
+          else
+              used_cores="${used_cores} ${_current_core}"
+          fi
+        fi
+      done
+    else
+      for cpu in `ls /sys/devices/system/cpu/ | grep -E 'cpu[0-9]+'`; do
+        if [ -f /sys/devices/system/cpu/${cpu}/online ]; then
+          echo 1 > /sys/devices/system/cpu/${cpu}/online
+        fi
+      done
+    fi
+}
+
 ######################################################
 
 
@@ -625,6 +654,12 @@ else
     echo "Running a child job on the node"
     SINGLE_RUN=false;
 fi
+
+
+######################################################
+# Configure Hyperthreading
+######################################################
+configureHyperThreading
 
 
 ######################################################
