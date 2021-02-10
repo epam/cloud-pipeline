@@ -437,7 +437,7 @@ public class DataStorageManager implements SecuredEntityManager {
             } catch (DataStorageException e) {
                 LOGGER.error(e.getMessage(), e);
             }
-            final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, "");
+            final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, "");
             tagManager.deleteAllInFolder(rootAndRelativePaths.getLeft(), rootAndRelativePaths.getRight());
         }
         dataStorageDao.deleteDataStorage(id);
@@ -474,7 +474,7 @@ public class DataStorageManager implements SecuredEntityManager {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
-        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
         storageProviderManager.restoreFileVersion(dataStorage, relativePath, version);
@@ -673,7 +673,7 @@ public class DataStorageManager implements SecuredEntityManager {
     public Map<String, String> loadDataStorageObjectTags(Long id, String path, String version) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
         final DataStorageObject object = new DataStorageObject(relativePath, version);
@@ -685,7 +685,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                                            Set<String> tags) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
         final DataStorageObject object = new DataStorageObject(relativePath, version);
@@ -707,7 +707,7 @@ public class DataStorageManager implements SecuredEntityManager {
         }
         final DataStorageFile dataStorageFile = (DataStorageFile) dataStorageItems.get(0);
         final AbstractDataStorage dataStorage = load(dataStorageId);
-        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
         if (MapUtils.isEmpty(dataStorageFile.getVersions())) {
@@ -727,7 +727,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                                            Boolean rewrite) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
-        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
         return mapFrom(rewrite
@@ -905,7 +905,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                              final String path,
                                              final Boolean totally) {
         if (!dataStorage.isVersioningEnabled() || totally) {
-            final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+            final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
             final String rootPath = rootAndRelativePaths.getLeft();
             final String relativePath = rootAndRelativePaths.getRight();
             tagManager.deleteAllInFolder(rootPath, relativePath);
@@ -924,7 +924,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                            final String path,
                                            final String version,
                                            final Boolean totally) {
-        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(dataStorage, path);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
         if (dataStorage.isVersioningEnabled()) {
@@ -1058,7 +1058,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                            final String path,
                                            final String version) {
         final String authorizedUser = authManager.getAuthorizedUser();
-        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePath(storage, path);
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(storage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
         final Map<String, String> defaultTags = Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, authorizedUser);
@@ -1068,16 +1068,17 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
-    private Pair<String, String> getRootAndRelativePath(final AbstractDataStorage storage, final String path) {
-        return Optional.ofNullable(storage.getPath())
-                .map(storagePath -> StringUtils.split(storagePath, "/"))
-                .map(storagePathItems -> storagePathItems.length == 1
-                        ? new ImmutablePair<>(storagePathItems[0], path)
-                        : new ImmutablePair<>(storagePathItems[0],
-                        Arrays.stream(storagePathItems)
-                                .skip(1)
-                                .collect(Collectors.joining("/", "", StringUtils.isBlank(path) ? "" : "/" + path))))
-                .orElse(new ImmutablePair<>(storage.getName(), path));
+    private Pair<String, String> getRootAndRelativePaths(final AbstractDataStorage storage, final String path) {
+        final String rootPath = storage.getRoot();
+        final String storagePathWithoutRoot = StringUtils.removeEnd(
+                StringUtils.removeStart(storage.getPath(), rootPath), storage.getDelimiter());
+        final String pathWithoutHeadingDelimiter = StringUtils.removeStart(path, storage.getDelimiter());
+        final String pathWithHeadingDelimiter = StringUtils.isBlank(pathWithoutHeadingDelimiter) 
+                ? "" 
+                : "/" + pathWithoutHeadingDelimiter;
+        return StringUtils.isBlank(storagePathWithoutRoot) 
+                ? new ImmutablePair<>(rootPath, pathWithoutHeadingDelimiter) 
+                : new ImmutablePair<>(rootPath, storagePathWithoutRoot + pathWithHeadingDelimiter);
     }
 
     private AbstractDataStorageItem updateDataStorageItem(final AbstractDataStorage storage,
