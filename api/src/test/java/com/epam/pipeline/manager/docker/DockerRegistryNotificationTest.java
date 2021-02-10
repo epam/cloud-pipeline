@@ -157,19 +157,6 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
 
         final List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(REPO, eventsEnvelope);
         Assert.assertEquals(1, registeredTools.size());
-
-        verify(mockDockerClientFactory).getDockerClient(eq(registry), eq(null));
-        verify(mockToolVersionManager).updateOrCreateToolVersion(eq(ID), eq(LATEST), eq(IMAGE),
-                eq(registry), eq(null));
-        verify(mockDockerRegistryDao, times(2)).loadDockerRegistry(eq(REPO));
-        verify(mockMetadataManager, times(2)).hasMetadata(
-                eq(getEntityVO(registry.getId(), AclClass.DOCKER_REGISTRY)));
-        verify(mockToolGroupManager).getGroupAndTool(eq(IMAGE));
-        verify(mockToolGroupManager).doesToolGroupExist(eq(REPO), eq(IMAGE_GROUP_1));
-        verify(mockToolGroupManager).loadByNameOrId(eq(TEST_IDENTIFIER));
-        verify(mockToolManager).loadToolInGroup(eq(IMAGE), eq(ID));
-        verify(mockUserManager).loadUserContext(eq(SIMPLE_USER));
-        verify(mockToolManager).create(eq(tool1), eq(false));
     }
 
     @Test
