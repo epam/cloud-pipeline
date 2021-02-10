@@ -89,8 +89,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// TODO: find a better workaround, this may make tests slower. Maybe, create a special package for
-// integration tests, so they will be executed one after another and the context will remain?
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 @Transactional
 @SuppressWarnings("PMD.TooManyStaticImports")
@@ -146,7 +144,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @MockBean
     private ResourceMonitoringManager resourceMonitoringManager; // mock out this bean, because it depends on
                                                                     // instanceOfferManager during initialization
-
     @MockBean
     private ToolVersionManager toolVersionManager;
 
@@ -163,15 +160,13 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private PreferenceManager preferenceManager;
 
     private static final String TEST_IMAGE = "testImage";
-    private Tool notScannedTool;
     private PipelineConfiguration configuration;
-    private InstancePrice price;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        notScannedTool = new Tool();
+        Tool notScannedTool = new Tool();
         notScannedTool.setId(1L);
         notScannedTool.setImage(TEST_IMAGE);
         notScannedTool.setDefaultCommand("sleep");
@@ -188,8 +183,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         configuration.setIsSpot(true);
         configuration.setCloudRegionId(defaultAwsRegion.getId());
 
-        price = new InstancePrice(
-                configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR, 
+        InstancePrice price = new InstancePrice(
+                configuration.getInstanceType(), Integer.parseInt(configuration.getInstanceDisk()), PRICE_PER_HOUR,
                 COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
