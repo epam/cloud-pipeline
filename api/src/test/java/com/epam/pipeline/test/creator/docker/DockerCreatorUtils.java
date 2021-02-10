@@ -262,21 +262,6 @@ public final class DockerCreatorUtils {
         return tool;
     }
 
-    public static Tool getClonedTool(final Tool tool, final Long id) {
-        final Tool clonedTool = new Tool();
-        clonedTool.setToolGroup(tool.getToolGroup());
-        clonedTool.setToolGroupId(tool.getToolGroupId());
-        clonedTool.setImage(tool.getImage());
-        clonedTool.setCpu(tool.getCpu());
-        clonedTool.setRam(tool.getRam());
-        clonedTool.setRegistry(tool.getRegistry());
-        clonedTool.setRegistryId(tool.getRegistryId());
-        clonedTool.setOwner(tool.getOwner());
-        clonedTool.setId(id);
-        clonedTool.setParent(tool.getParent());
-        return clonedTool;
-    }
-
     public static ToolGroupWithIssues getToolGroupWithIssues(final Long id, final String owner) {
         final ToolGroupWithIssues toolGroupWithIssues = new ToolGroupWithIssues();
         toolGroupWithIssues.setId(id);
