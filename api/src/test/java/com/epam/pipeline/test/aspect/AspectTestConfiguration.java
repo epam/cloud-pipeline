@@ -18,14 +18,11 @@ package com.epam.pipeline.test.aspect;
 
 import com.epam.pipeline.app.DBConfiguration;
 import com.epam.pipeline.test.CommonTestContext;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureJdbc;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -36,11 +33,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {AspectTestBeans.class, CommonTestContext.class})
 @Import({DBConfiguration.class})
-@ComponentScan(basePackages = {"com.epam.pipeline.manager", "com.epam.pipeline.dao"})
-@AutoConfigureJdbc
-@Transactional
+@ComponentScan(basePackages = {"com.epam.pipeline.manager"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @TestPropertySource(value = {"classpath:test-application.properties"})
 public @interface AspectTestConfiguration {
 
