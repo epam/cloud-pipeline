@@ -172,13 +172,7 @@ public class DataStorageTagBatchManager {
     }
 
     private Optional<String> getRootPath(final Long storageId) {
-        final AbstractDataStorage dataStorage = storageDao.loadDataStorage(storageId);
-        if (dataStorage == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(dataStorage.getPath())
-                .map(path -> StringUtils.split(path, "/")[0])
-                .map(Optional::of)
-                .orElse(Optional.ofNullable(dataStorage.getName()));
+        return Optional.ofNullable(storageDao.loadDataStorage(storageId))
+                .map(AbstractDataStorage::getRoot);
     }
 }
