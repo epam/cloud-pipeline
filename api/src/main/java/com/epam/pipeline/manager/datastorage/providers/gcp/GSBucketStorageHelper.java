@@ -128,13 +128,7 @@ public class GSBucketStorageHelper {
                 Storage.BlobListOption.prefix(folderPath));
         final Spliterator<Blob> spliterator = blobs.iterateAll().spliterator();
         return StreamSupport.stream(spliterator, false)
-                .map(blob -> {
-                    final DataStorageFile file = new DataStorageFile();
-                    file.setName(blob.getName());
-                    file.setPath(blob.getName());
-                    file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
-                    return file;
-                });
+                .map(this::createDataStorageFile);
     }
 
     public Stream<DataStorageFile> listDataStorageFileVersions(final GSBucketStorage storage, final String path) {
@@ -146,13 +140,7 @@ public class GSBucketStorageHelper {
                 Storage.BlobListOption.prefix(folderPath));
         final Spliterator<Blob> spliterator = blobs.iterateAll().spliterator();
         return StreamSupport.stream(spliterator, false)
-                .map(blob -> {
-                    final DataStorageFile file = new DataStorageFile();
-                    file.setName(blob.getName());
-                    file.setPath(blob.getName());
-                    file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
-                    return file;
-                });
+                .map(this::createDataStorageFile);
     }
 
     public DataStorageListing listItems(final GSBucketStorage storage, final String path, final Boolean showVersion,
