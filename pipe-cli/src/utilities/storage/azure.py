@@ -37,7 +37,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import StorageOperations, AbstractTransferManager, AbstractListingManager, \
-    AbstractDeleteManager
+    AbstractDeleteManager, UploadResult, TransferResult
 from src.utilities.progress_bar import ProgressPercentage
 from src.config import Config
 
@@ -221,7 +221,6 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         source_credentials = source_service.credentials
         source_blob_url = self.service.make_blob_url(source_wrapper.bucket.path, full_path,
                                                      sas_token=source_credentials.session_token.lstrip('?'))
-        destination_tags = self._destination_tags(source_wrapper, full_path, tags)
         destination_bucket = destination_wrapper.bucket.path
         sync_copy = size < TransferBetweenAzureBucketsManager._SYNC_COPY_SIZE_LIMIT
         if not size or size == 0:
@@ -230,7 +229,6 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         if progress_callback:
             progress_callback(0, size)
         self.service.copy_blob(destination_bucket, destination_path, source_blob_url,
-                               metadata=destination_tags,
                                requires_sync=sync_copy)
         if not sync_copy:
             self._wait_for_copying(destination_bucket, destination_path, full_path)
@@ -238,7 +236,8 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
             progress_callback(size, size)
         if clean:
             source_service.delete_blob(source_wrapper.bucket.path, full_path)
-        return destination_path, None, destination_tags
+        return TransferResult(source_key=full_path, destination_key=destination_path, destination_version=None,
+                              tags=StorageOperations.parse_tags(tags))
 
     def _wait_for_copying(self, destination_bucket, destination_path, full_path):
         for _ in range(0, TransferBetweenAzureBucketsManager._POLLS_ATTEMPTS):
@@ -254,12 +253,6 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
     def _get_copying_status(self, destination_bucket, destination_path):
         blob = self.service.get_blob_properties(destination_bucket, destination_path)
         return blob.properties.copy.status
-
-    def _destination_tags(self, source_wrapper, full_path, raw_tags):
-        tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
-            else source_wrapper.get_list_manager().get_file_tags(full_path)
-        tags.update(StorageOperations.source_tags(tags, full_path, source_wrapper))
-        return tags
 
 
 class AzureDownloadManager(AzureManager, AbstractTransferManager):
@@ -312,7 +305,8 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
                                            progress_callback=progress_callback)
         if clean:
             source_wrapper.delete_item(source_key)
-        return destination_key, None, destination_tags
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=destination_tags)
 
 
 class _SourceUrlIO(io.BytesIO):
@@ -352,7 +346,8 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
                                              progress_callback=progress_callback)
-        return destination_key, None, destination_tags
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=destination_tags)
 
 
 class AzureTemporaryCredentials:

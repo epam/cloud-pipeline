@@ -651,7 +651,7 @@ public class DataStorageController extends AbstractRestController {
                 Result.success(dataStorageApiService.loadDataStorageObjectTags(id, path, version));
     }
 
-    @RequestMapping(value = "/datastorage/{id}/tags/batch", method = RequestMethod.GET)
+    @RequestMapping(value = "/datastorage/{id}/tags/batch/load", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
             value = "Returns data storage item tags, specified by datastorage id and object path.",

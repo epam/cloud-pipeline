@@ -57,8 +57,7 @@ from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsMod
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import AbstractRestoreManager, AbstractListingManager, StorageOperations, \
-    AbstractDeleteManager, AbstractTransferManager
-
+    AbstractDeleteManager, AbstractTransferManager, TransferResult, UploadResult
 
 KB = 1024
 MB = KB * KB
@@ -695,7 +694,6 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         source_blob = source_bucket.blob(full_path)
         destination_bucket = self.client.bucket(destination_wrapper.bucket.path)
         destination_blob = source_bucket.copy_blob(source_blob, destination_bucket, destination_path, client=self.client)
-        destination_tags = self._destination_tags(source_wrapper, full_path, tags)
         # Transfer between buckets in GCP is almost an instant operation. Therefore the progress bar can be updated
         # only once.
         if StorageOperations.show_progress(quiet, size, lock):
@@ -706,13 +704,9 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
             progress_callback(size)
         if clean:
             source_blob.delete()
-        return destination_path, destination_blob.generation, destination_tags
-
-    def _destination_tags(self, source_wrapper, full_path, raw_tags):
-        tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
-            else source_wrapper.get_list_manager().get_file_tags(full_path)
-        tags.update(StorageOperations.source_tags(tags, full_path, source_wrapper))
-        return tags
+        return TransferResult(source_key=full_path, destination_key=destination_path,
+                              destination_version=destination_blob.generation,
+                              tags=StorageOperations.parse_tags(tags))
 
 
 class GsDownloadManager(GsManager, AbstractTransferManager):
@@ -858,7 +852,8 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             generation = blob.generation
         if clean:
             source_wrapper.delete_item(source_key)
-        return destination_key, generation, destination_tags
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=generation,
+                            tags=destination_tags)
 
     def _get_upload_config(self, size):
         multipart_threshold, multipart_chunksize = self._get_adjusted_parameters(size,
@@ -932,7 +927,8 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         blob.metadata = destination_tags
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
-        return destination_key, blob.generation, destination_tags
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=blob.generation,
+                            tags=destination_tags)
 
 
 class GsTemporaryCredentials:
