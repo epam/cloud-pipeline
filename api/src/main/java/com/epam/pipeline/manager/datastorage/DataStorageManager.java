@@ -49,6 +49,8 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBatchRequest;
+import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyRequest;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -59,6 +61,7 @@ import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
@@ -99,6 +102,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -110,8 +114,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Service
@@ -170,6 +176,9 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private DataStorageTagManager tagManager;
+
+    @Autowired
+    private DataStorageTagBatchManager tagBatchManager;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -883,15 +892,69 @@ public class DataStorageManager implements SecuredEntityManager {
     private DataStorageFolder moveDataStorageFolder(final AbstractDataStorage dataStorage,
                                                     final String oldPath,
                                                     final String newPath) throws DataStorageException {
-//        todo: Support tags moving
-        return storageProviderManager.moveFolder(dataStorage, oldPath, newPath);
+        final DataStorageFolder folder = storageProviderManager.moveFolder(dataStorage, oldPath, newPath);
+        moveDataStorageFolderTags(dataStorage, oldPath, newPath);
+        return folder;
+    }
+
+    private void moveDataStorageFolderTags(final AbstractDataStorage dataStorage,
+                                           final String oldPath,
+                                           final String newPath) {
+        final Pair<String, String> oldRootAndRelativePaths = getRootAndRelativePaths(dataStorage, oldPath);
+        final Pair<String, String> newRootAndRelativePaths = getRootAndRelativePaths(dataStorage, newPath);
+        final String rootPath = oldRootAndRelativePaths.getLeft();
+        final String oldRelativePath = oldRootAndRelativePaths.getRight();
+        final String newRelativePath = newRootAndRelativePaths.getRight();
+        tagManager.copyFolder(rootPath, oldRelativePath, newRelativePath);
+        if (dataStorage.isVersioningEnabled()) {
+            processInChunks(storageProviderManager.listFiles(dataStorage, newPath + dataStorage.getDelimiter()),
+                    chunk -> tagBatchManager.copy(dataStorage.getId(), new DataStorageTagCopyBatchRequest(
+                            chunk.stream()
+                                    .map(file -> new DataStorageTagCopyRequest(
+                                            DataStorageTagCopyRequest.object(file.getPath(), null),
+                                            DataStorageTagCopyRequest.object(file.getPath(), file.getVersion())))
+                                    .collect(Collectors.toList()))));
+        } else {
+            tagManager.deleteAllInFolder(rootPath, oldRelativePath);
+        }
+    }
+
+    private <T> void processInChunks(final Stream<T> stream, final Consumer<List<T>> consumer) {
+        final int chunkSize = 100;
+        final Iterator<T> iterator = stream.iterator();
+        final List<T> chunk = new ArrayList<>(chunkSize);
+        while (iterator.hasNext()) {
+            while (iterator.hasNext() && chunk.size() < chunkSize) {
+                chunk.add(iterator.next());
+            }
+            consumer.accept(chunk);
+            chunk.clear();
+        }
     }
 
     private DataStorageFile moveDataStorageFile(final AbstractDataStorage dataStorage,
                                                 final String oldPath,
                                                 final String newPath) throws DataStorageException {
-//        todo: Support tags moving
-        return storageProviderManager.moveFile(dataStorage, oldPath, newPath);
+        final DataStorageFile file = storageProviderManager.moveFile(dataStorage, oldPath, newPath);
+        moveDataStorageFileTags(dataStorage, oldPath, newPath, file);
+        return file;
+    }
+
+    private void moveDataStorageFileTags(final AbstractDataStorage dataStorage,
+                                         final String oldPath,
+                                         final String newPath,
+                                         final DataStorageFile file) {
+        final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, oldPath);
+        final String rootPath = rootAndRelativePaths.getLeft();
+        final String oldRelativePath = rootAndRelativePaths.getRight();
+        final String newRelativePath = getRootAndRelativePaths(dataStorage, newPath).getRight();
+        final Map<String, String> tagMap = mapFrom(tagManager.load(rootPath, new DataStorageObject(oldRelativePath)));
+        tagManager.upsert(rootPath, new DataStorageObject(newRelativePath), tagMap);
+        if (dataStorage.isVersioningEnabled()) {
+            tagManager.upsert(rootPath, new DataStorageObject(newRelativePath, file.getVersion()), tagMap);
+        } else {
+            tagManager.delete(rootPath, new DataStorageObject(oldRelativePath));
+        }
     }
 
     private void deleteDataStorageFolder(final AbstractDataStorage dataStorage,

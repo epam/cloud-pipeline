@@ -32,8 +32,10 @@ import static org.junit.Assert.assertTrue;
 @Transactional
 public class DataStorageTagDaoTest extends AbstractSpringTest {
 
-    private static final String STORAGE_PATH = "relative/path";
-    private static final String ANOTHER_STORAGE_PATH = "another/relative/path";
+    private static final String STORAGE_FOLDER_PATH = "folder";
+    private static final String STORAGE_PATH = STORAGE_FOLDER_PATH + "/path";
+    private static final String ANOTHER_STORAGE_FOLDER_PATH = "another/folder";
+    private static final String ANOTHER_STORAGE_PATH = ANOTHER_STORAGE_FOLDER_PATH + "/path";
     private static final String KEY = "KEY";
     private static final String ANOTHER_KEY = "ANOTHER_KEY";
     private static final String VALUE = "VALUE";
@@ -125,6 +127,31 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
         final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(TEST_STORAGE_PATH, object, KEY);
         assertTrue(loadedTag.isPresent());
         assertNotNull(loadedTag.get().getCreatedDate());
+    }
+
+    @Test
+    public void copyFolderShouldCopyKeepOriginalDataStorageTags() {
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
+        final DataStorageTag tag = new DataStorageTag(object, KEY, VALUE);
+        dataStorageTagDao.upsert(TEST_STORAGE_PATH, tag);
+
+        dataStorageTagDao.copyFolder(TEST_STORAGE_PATH, STORAGE_FOLDER_PATH, ANOTHER_STORAGE_FOLDER_PATH);
+
+        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(TEST_STORAGE_PATH, object, KEY);
+        assertTrue(loadedTag.isPresent());
+    }
+
+    @Test
+    public void copyFolderShouldCopyAllDataStorageTags() {
+        final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
+        final DataStorageTag tag = new DataStorageTag(object, KEY, VALUE);
+        dataStorageTagDao.upsert(TEST_STORAGE_PATH, tag);
+        
+        dataStorageTagDao.copyFolder(TEST_STORAGE_PATH, STORAGE_FOLDER_PATH, ANOTHER_STORAGE_FOLDER_PATH);
+
+        final DataStorageObject copiedObject = new DataStorageObject(ANOTHER_STORAGE_PATH);
+        final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(TEST_STORAGE_PATH, copiedObject, KEY);
+        assertTrue(loadedTag.isPresent());
     }
 
     @Test

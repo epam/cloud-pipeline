@@ -98,7 +98,7 @@ public class DataStorageTagBatchManager {
                                         r.getDestination().getVersion()))))
                         .orElseGet(Stream::empty))
                 .collect(Collectors.toList());
-        tagDao.batchDelete(rootPath.get(), tags.stream().map(DataStorageTag::getObject));
+        tagDao.batchDelete(rootPath.get(), tags.stream().map(DataStorageTag::getObject).distinct());
         return tagDao.batchUpsert(rootPath.get(), tags);
     }
 

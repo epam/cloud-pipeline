@@ -47,6 +47,11 @@ public class DataStorageTagManager {
     }
 
     @Transactional
+    public void copyFolder(final String rootPath, final String oldPath, final String newPath) {
+        tagDao.copyFolder(rootPath, oldPath, newPath);
+    }
+
+    @Transactional
     public List<DataStorageTag> load(final String rootPath, final DataStorageObject object) {
         return tagDao.load(rootPath, object);
     }

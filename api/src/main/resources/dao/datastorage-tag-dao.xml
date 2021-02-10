@@ -49,6 +49,36 @@
         </constructor-arg>
         <constructor-arg>
             <value>
+                <!--copyTagsByPathPatternQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_tag (
+                        datastorage_root_id,
+                        datastorage_path,
+                        datastorage_version,
+                        tag_key,
+                        tag_value,
+                        created_date
+                    )
+                    SELECT
+                        t.datastorage_root_id,
+                        regexp_replace(t.datastorage_path, :OLD_DATASTORAGE_PATH, :NEW_DATASTORAGE_PATH),
+                        t.datastorage_version,
+                        t.tag_key,
+                        t.tag_value,
+                        t.created_date
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.datastorage_root_id IN (
+                        SELECT r.datastorage_root_id
+                        FROM pipeline.datastorage_root r
+                        WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                    )
+                    AND t.datastorage_version = :DATASTORAGE_VERSION
+                    AND t.datastorage_path LIKE :DATASTORAGE_PATH
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
                 <!--loadTagQuery-->
                 <![CDATA[
                     SELECT

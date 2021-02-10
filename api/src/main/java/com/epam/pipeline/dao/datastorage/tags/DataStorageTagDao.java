@@ -24,6 +24,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     private static final String LATEST = "";
 
     private final String upsertTagQuery;
+    private final String copyTagsByPathPatternQuery;
     private final String loadTagQuery;
     private final String loadTagsQuery;
     private final String batchLoadTagsQuery;
@@ -73,10 +74,8 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     }
 
     public void batchDeleteAll(final String root, final List<String> paths) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(Parameters.DATASTORAGE_ROOT_PATH.name(), root);
-        params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);
-        getNamedParameterJdbcTemplate().update(batchDeleteAllTagsQuery, params);
+        getNamedParameterJdbcTemplate().update(batchDeleteAllTagsQuery, Parameters.getParameters(root)
+            .addValue(Parameters.DATASTORAGE_PATH.name(), paths));
     }
 
     public DataStorageTag upsert(final String root, final DataStorageTag tag) {
@@ -85,6 +84,17 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                 Parameters.getParameters(root, upsertingTag));
         Assert.isTrue(updatedCount == 1, "Tag corresponding data storage root path doesn't exist.");
         return upsertingTag;
+    }
+
+    public void copyFolder(final String rootPath, final String oldPath, final String newPath) {
+        final String oldPathPattern = StringUtils.isNotBlank(oldPath)
+                ? String.format("%s/%%", StringUtils.removeEnd(oldPath, "/"))
+                : "%%";
+        getNamedParameterJdbcTemplate().update(copyTagsByPathPatternQuery, Parameters.getParameters(rootPath)
+                .addValue(Parameters.DATASTORAGE_PATH.name(), oldPathPattern)
+                .addValue(Parameters.DATASTORAGE_VERSION.name(), LATEST)
+                .addValue("OLD_DATASTORAGE_PATH", StringUtils.removeEnd(oldPath, "/"))
+                .addValue("NEW_DATASTORAGE_PATH", StringUtils.removeEnd(newPath, "/")));
     }
 
     public Optional<DataStorageTag> load(final String root, final DataStorageObject object, final String key) {
