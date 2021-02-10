@@ -332,7 +332,7 @@
         "name": "CP_POD_PULL_POLICY",
         "type": "string",
         "description": "Allows to specify pod image pull policy. Valid values are 'Always', 'Never', 'IfNotPresent'",
-        "defaultValue": "ALWAYS",
+        "defaultValue": "Always",
         "passToWorkers": true
     }
 ]

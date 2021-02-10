@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
+import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -111,13 +112,7 @@ public class PipelineLauncher {
                          List<String> endpoints, String nodeIdLabel, boolean useLaunch,
                          String pipelineId, String clusterId) {
         return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId,
-                getImagePullPolicy(run));
-    }
-
-    private ImagePullPolicy getImagePullPolicy(final PipelineRun run) {
-        return run.getParameterValue(CP_POD_PULL_POLICY)
-                .map(ImagePullPolicy::getByNameOrDefault)
-                .orElse(ImagePullPolicy.ALWAYS);
+                getImagePullPolicy(configuration));
     }
 
     public String launch(PipelineRun run, PipelineConfiguration configuration,
@@ -309,5 +304,14 @@ public class PipelineLauncher {
         if (StringUtils.hasText(value)) {
             params.put(parameter, value);
         }
+    }
+
+    private ImagePullPolicy getImagePullPolicy(final PipelineConfiguration configuration) {
+        final PipeConfValueVO value = MapUtils.emptyIfNull(configuration.getParameters())
+                .get(CP_POD_PULL_POLICY);
+        if (value == null) {
+            return ImagePullPolicy.ALWAYS;
+        }
+        return ImagePullPolicy.getByNameOrDefault(value.getValue());
     }
 }
