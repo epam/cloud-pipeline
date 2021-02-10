@@ -273,4 +273,14 @@ public final class PipelineCreatorUtils {
         pipelineRunScheduleVO.setTimeZone(TEST_STRING);
         return pipelineRunScheduleVO;
     }
+
+    public static PipelineRunScheduleVO getPipelineRunScheduleVO(final RunScheduledAction action,
+                                                                 final String cronExpression,
+                                                                 final String timeZone) {
+        final PipelineRunScheduleVO pipelineRunScheduleVO = new PipelineRunScheduleVO();
+        pipelineRunScheduleVO.setTimeZone(timeZone);
+        pipelineRunScheduleVO.setCronExpression(cronExpression);
+        pipelineRunScheduleVO.setAction(action);
+        return pipelineRunScheduleVO;
+    }
 }
