@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -249,7 +250,7 @@ public class DockerContainerOperationManager {
             if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
                 launcher.launch(run, configuration, endpoints,  run.getId().toString(),
-                        true, run.getPodId(), null, false);
+                        true, run.getPodId(), null, ImagePullPolicy.NEVER);
             }
 
             kubernetesManager.removeNodeLabel(run.getInstance().getNodeName(),

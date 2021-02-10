@@ -191,7 +191,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         verifyResumeProcessing(1);
         verify(cloudFacade).startInstance(REGION_ID, NODE_ID);
         verify(pipelineLauncher)
-                .launch(any(), any(), any(), anyString(), anyBoolean(), anyString(), anyString(), anyBoolean());
+                .launch(any(), any(), any(), anyString(), anyBoolean(), anyString(), anyString(), any());
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
@@ -225,7 +225,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         verifyResumeProcessing(1);
         verify(cloudFacade, never()).startInstance(REGION_ID, NODE_ID);
         verify(pipelineLauncher)
-                .launch(any(), any(), any(), anyString(), anyBoolean(), anyString(), anyString(), anyBoolean());
+                .launch(any(), any(), any(), anyString(), anyBoolean(), anyString(), anyString(), any());
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
@@ -242,7 +242,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
 
         verifyResumeProcessing(1);
         verify(pipelineLauncher, never())
-                .launch(any(), any(), any(), anyString(), anyBoolean(), anyString(), anyString(), anyBoolean());
+                .launch(any(), any(), any(), anyString(), anyBoolean(), anyString(), anyString(), any());
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
