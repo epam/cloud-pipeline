@@ -15,6 +15,7 @@
 - [Home storage for each user](#home-storage-for-each-user)
 - [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
+- [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
 ***
@@ -574,6 +575,53 @@ pipe tunnel start 12345 -lp 4567 -rp 22 --ssh
 Here: `12345` is the _Run ID_, `4567` is just a random free _local port_ and `22` is the **Cloud Pipeline** run _SSH port_. Additional `--ssh` flag enables passwordless SSH access.
 
 For more details and examples see [here](../../manual/14_CLI/14.10._SSH_tunnel.md).
+
+## AWS: seamless authentication
+
+In some cases, users are faced with the following scenarios:
+
+1. Some jobs are running in the **Cloud Pipeline** and accessing data/services located in the external accounts (e.g. `Amazon S3`, `Amazon DynamoDB`). This requires the user to specify the authentication keys explicitly (either in the shell session or in the `R`/`Python` scripts). This is not user-friendly and not secure, if the users include the credentials into the scripts.
+2. There are also users who would like to leverage `R`/`Python` libraries, that have embedded `Amazon S3` support. Users have to download data locally first (via `pipe`) and then perform the processing.
+
+In the current version, a new mechanism of the seamless `AWS` authentication was implemented.  
+It allows users to execute any request to the `AWS` API, from inside the **Cloud Pipeline** environment, without an authentication request.  
+
+The following mechanism automates the _Cloud Provider_ authentication for the user’s scripts:
+
+- Administrator is able to configure the user’s access permissions in the **Cloud Pipeline** account of the _Cloud Provider_ or provide credentials for the external _Cloud Provider_ account
+- All the requests to the _Cloud Provider_ authentication are handled by the certain **Cloud Pipeline** service, which authenticates the user with the configured credentials
+- Users are able to use the _Cloud Provider_ API without the authentication request
+
+Administrator can create specific interfaces - _Cloud Credentials Profiles_, that contain the following fields:
+
+- **Provider** - to specify the _Cloud Provider_
+- **Name** - to specify the profile name
+- **Assumed Role** - to specify the role received from the _Cloud Provider_ that will be used for the authentication to the _Cloud Provider_ API
+- **Policy** - to specify the _Cloud Provider_ policy of the objects access
+
+It could be configured in _Cloud Provider_ settings, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SeamlessAuthentication_01.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SeamlessAuthentication_02.png)  
+
+Administrator can assign profiles to User/Role/Group entity.  
+For each entity many profiles can be assigned.  
+Also, from the profiles assigned to the certain User/Role/Group the one can be selected as _default_. If the _default_ profile isn't selected - during the authentication operation there shall be selected the profile to use.
+
+It could be configured via the _User management_ panel, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SeamlessAuthentication_03.png)
+
+Usage of the assigned profiles is being configured via the new Cloud Region option - "**Mount Credentials Rule**" with the following allowed values:
+
+- **NONE** - for runs in this region, credentials will not be configured
+- **SAME CLOUD** - for runs in this region, the set user credentials will be configured only allowed for the same _Cloud Provider_
+- **ALL** - for runs in this region, the all user credentials will be configured
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_SeamlessAuthentication_04.png)
+
+As example, if for the user such `AWS` credential profile is assigned and the mount rule is allowed - he/she can use `AWS` CLI directly to the bucket (defined and allowed by profile policy) without extra-authentication:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SeamlessAuthentication_05.png)
+
+For details and example see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#seamless-authentication-in-cloud-provider).
 
 ## AWS: transfer objects between AWS regions using `pipe storage cp`/`mv` commands
 
