@@ -40,6 +40,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -155,6 +156,15 @@ public class PipelineRun extends AbstractSecuredEntity {
         return CollectionUtils.emptyIfNull(this.pipelineRunParameters).stream()
                 .anyMatch(p -> p.getName().equals(parameterName) && p.getValue() != null
                                && p.getValue().equalsIgnoreCase("true"));
+    }
+
+    @JsonIgnore
+    public Optional<String> getParameterValue(final String parameterName) {
+        return ListUtils.emptyIfNull(pipelineRunParameters)
+                .stream()
+                .filter(param -> parameterName.equals(param.getName()) && param.getValue() != null)
+                .map(PipelineRunParameter::getValue)
+                .findFirst();
     }
 
     public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {

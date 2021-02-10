@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
+import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -69,6 +70,7 @@ public class PipelineLauncher {
     private static final String EMPTY_PARAMETER = "";
     private static final String DEFAULT_CLUSTER_NAME = "CLOUD_PIPELINE";
     private static final String ENV_DELIMITER = ",";
+    private static final String CP_POD_PULL_POLICY = "CP_POD_PULL_POLICY";
 
     @Autowired
     private PipelineExecutor executor;
@@ -108,12 +110,19 @@ public class PipelineLauncher {
     public String launch(PipelineRun run, PipelineConfiguration configuration,
                          List<String> endpoints, String nodeIdLabel, boolean useLaunch,
                          String pipelineId, String clusterId) {
-        return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId, true);
+        return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId,
+                getImagePullPolicy(run));
+    }
+
+    private ImagePullPolicy getImagePullPolicy(final PipelineRun run) {
+        return run.getParameterValue(CP_POD_PULL_POLICY)
+                .map(ImagePullPolicy::getByNameOrDefault)
+                .orElse(ImagePullPolicy.ALWAYS);
     }
 
     public String launch(PipelineRun run, PipelineConfiguration configuration,
                          List<String> endpoints, String nodeIdLabel, boolean useLaunch,
-                         String pipelineId, String clusterId, boolean pullImage) {
+                         String pipelineId, String clusterId, ImagePullPolicy imagePullPolicy) {
         GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
         Map<SystemParams, String> systemParams = matchSystemParams(
@@ -136,7 +145,7 @@ public class PipelineLauncher {
                 : pipelineCommand;
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars,
-                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, pullImage);
+                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, imagePullPolicy);
         return pipelineCommand;
     }
 

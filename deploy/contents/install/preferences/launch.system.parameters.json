@@ -327,5 +327,12 @@
         "description": "Allows to specify the time in deciseconds the NFS client waits for a response before it retries an NFS request",
         "defaultValue": "7",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_POD_PULL_POLICY",
+        "type": "string",
+        "description": "Allows to specify pod image pull policy. Valid values are 'Always', 'Never', 'IfNotPresent'",
+        "defaultValue": "ALWAYS",
+        "passToWorkers": true
     }
 ]

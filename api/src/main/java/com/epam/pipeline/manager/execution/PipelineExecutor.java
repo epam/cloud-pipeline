@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.execution;
 
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
+import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
@@ -97,11 +98,13 @@ public class PipelineExecutor {
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
                               String pipelineId, String nodeIdLabel, String secretName, String clusterId) {
-        launchRootPod(command, run, envVars, endpoints, pipelineId, nodeIdLabel, secretName, clusterId, true);
+        launchRootPod(command, run, envVars, endpoints, pipelineId, nodeIdLabel, secretName, clusterId,
+                ImagePullPolicy.ALWAYS);
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-            String pipelineId, String nodeIdLabel, String secretName, String clusterId, boolean pullImage) {
+            String pipelineId, String nodeIdLabel, String secretName, String clusterId,
+                              ImagePullPolicy imagePullPolicy) {
         try (KubernetesClient client = new DefaultKubernetesClient()) {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
@@ -131,7 +134,7 @@ public class PipelineExecutor {
             OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
             ObjectMeta metadata = getObjectMeta(run, labels);
             PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getActualDockerImage(), command,
-                    pullImage, nodeIdLabel.equals(runIdLabel));
+                    imagePullPolicy, nodeIdLabel.equals(runIdLabel));
             Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
             LOGGER.debug("Created POD: {}", created.toString());
@@ -160,7 +163,7 @@ public class PipelineExecutor {
 
     private PodSpec getPodSpec(PipelineRun run, List<EnvVar> envVars, String secretName,
                                Map<String, String> nodeSelector, String dockerImage,
-                               String command, boolean pullImage, boolean isParentPod) {
+                               String command, ImagePullPolicy imagePullPolicy, boolean isParentPod) {
         PodSpec spec = new PodSpec();
         spec.setRestartPolicy("Never");
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
@@ -179,7 +182,8 @@ public class PipelineExecutor {
         }
 
         spec.setContainers(Collections.singletonList(getContainer(run,
-                envVars, dockerImage, command, pullImage, isDockerInDockerEnabled, isSystemdEnabled, isParentPod)));
+                envVars, dockerImage, command, imagePullPolicy,
+                isDockerInDockerEnabled, isSystemdEnabled, isParentPod)));
         return spec;
     }
 
@@ -194,7 +198,7 @@ public class PipelineExecutor {
                                    List<EnvVar> envVars,
                                    String dockerImage,
                                    String command,
-                                   boolean pullImage,
+                                   ImagePullPolicy imagePullPolicy,
                                    boolean isDockerInDockerEnabled,
                                    boolean isSystemdEnabled, boolean isParentPod) {
         Container container = new Container();
@@ -209,7 +213,7 @@ public class PipelineExecutor {
             container.setArgs(Arrays.asList("-c", command));
         }
         container.setTerminationMessagePath("/dev/termination-log");
-        container.setImagePullPolicy(pullImage ? "Always" : "Never");
+        container.setImagePullPolicy(imagePullPolicy.getName());
         container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled));
         if (isParentPod) {
             buildContainerResources(run, envVars, container);
