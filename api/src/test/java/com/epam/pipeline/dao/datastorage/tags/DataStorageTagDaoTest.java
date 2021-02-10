@@ -4,14 +4,13 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
-import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
 import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,7 +39,6 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     private static final String VALUE = "VALUE";
     private static final String ANOTHER_VALUE = "UPDATED_VALUE";
     
-    private static final String TEST_OWNER = "testOwner";
     private static final String TEST_STORAGE_NAME = "test-storage-name";
     private static final String TEST_STORAGE_PATH = "test-storage-path";
     private static final String ANOTHER_TEST_STORAGE_NAME = "another-test-storage-name";
@@ -57,36 +56,28 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
 
     @Autowired
     private CloudRegionDao cloudRegionDao;
-    
-    private Folder testFolder;
-    private S3bucketDataStorage objectStorage;
-    private S3bucketDataStorage anotherObjectStorage;
-    private NFSDataStorage nfsStorage;
-    private AwsRegion awsRegion;
-    private StoragePolicy policy;
 
     @Before
     public void setUp() throws Exception {
-        testFolder = ObjectCreatorUtils.createFolder("testFolder", null);
-        testFolder.setOwner(TEST_OWNER);
-        folderDao.createFolder(testFolder);
-
-        awsRegion = new AwsRegion();
-        awsRegion.setName("Default");
-        awsRegion.setDefault(true);
-        awsRegion.setRegionCode("us-east-1");
+        final Folder folder = ObjectCreatorUtils.createFolder(TEST_STRING, null);
+        folder.setOwner(TEST_STRING);
+        folderDao.createFolder(folder);
+        
+        final AwsRegion awsRegion = RegionCreatorUtils.getDefaultAwsRegion();
         cloudRegionDao.create(awsRegion);
 
-        objectStorage = new S3bucketDataStorage(null, TEST_STORAGE_NAME, TEST_STORAGE_PATH);
-        objectStorage.setParentFolderId(testFolder.getId());
+        final S3bucketDataStorage objectStorage = 
+                new S3bucketDataStorage(null, TEST_STORAGE_NAME, TEST_STORAGE_PATH);
+        objectStorage.setParentFolderId(folder.getId());
         objectStorage.setRegionId(awsRegion.getId());
-        objectStorage.setOwner(TEST_OWNER);
+        objectStorage.setOwner(TEST_STRING);
         dataStorageDao.createDataStorage(objectStorage);
 
-        anotherObjectStorage = new S3bucketDataStorage(null, ANOTHER_TEST_STORAGE_NAME, ANOTHER_TEST_STORAGE_PATH);
-        anotherObjectStorage.setParentFolderId(testFolder.getId());
+        final S3bucketDataStorage anotherObjectStorage = 
+                new S3bucketDataStorage(null, ANOTHER_TEST_STORAGE_NAME, ANOTHER_TEST_STORAGE_PATH);
+        anotherObjectStorage.setParentFolderId(folder.getId());
         anotherObjectStorage.setRegionId(awsRegion.getId());
-        anotherObjectStorage.setOwner(TEST_OWNER);
+        anotherObjectStorage.setOwner(TEST_STRING);
         dataStorageDao.createDataStorage(anotherObjectStorage);
     }
 
@@ -179,7 +170,7 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
         final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
         final DataStorageTag firstTag = new DataStorageTag(object, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(object, ANOTHER_KEY, VALUE);
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
+        final List<DataStorageTag> tags = dataStorageTagDao.batchUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
 
         final List<DataStorageTag> loadedTags = dataStorageTagDao.load(TEST_STORAGE_PATH, object);
 
@@ -208,9 +199,9 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
         final DataStorageObject secondObject = new DataStorageObject(ANOTHER_STORAGE_PATH);
         final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
+        final List<DataStorageTag> tags = dataStorageTagDao.batchUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
 
-        final List<DataStorageTag> loadedTags = dataStorageTagDao.bulkLoad(TEST_STORAGE_PATH, 
+        final List<DataStorageTag> loadedTags = dataStorageTagDao.batchLoad(TEST_STORAGE_PATH, 
                 Arrays.asList(STORAGE_PATH, ANOTHER_STORAGE_PATH));
         
         assertThat(loadedTags.size(), is(2));
@@ -225,9 +216,9 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
         final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
 
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
+        final List<DataStorageTag> tags = dataStorageTagDao.batchUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
 
-        final List<DataStorageTag> loadedTags = dataStorageTagDao.bulkLoad(TEST_STORAGE_PATH, 
+        final List<DataStorageTag> loadedTags = dataStorageTagDao.batchLoad(TEST_STORAGE_PATH, 
                 Arrays.asList(STORAGE_PATH, ANOTHER_STORAGE_PATH));
         assertThat(loadedTags.size(), is(2));
         assertThat(loadedTags, containsInAnyOrder(tags.toArray()));
@@ -248,7 +239,7 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Transactional
     public void deleteShouldRemoveAllSpecifiedObjectTags() {
         final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
-        final List<DataStorageTag> tags = dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, 
+        final List<DataStorageTag> tags = dataStorageTagDao.batchUpsert(TEST_STORAGE_PATH, 
                 new DataStorageTag(object, KEY, VALUE),
                 new DataStorageTag(object, ANOTHER_KEY, VALUE));
 
@@ -263,7 +254,7 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
     @Transactional
     public void deleteShouldRemoveAllObjectTags() {
         final DataStorageObject object = new DataStorageObject(STORAGE_PATH);
-        dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, 
+        dataStorageTagDao.batchUpsert(TEST_STORAGE_PATH, 
                 new DataStorageTag(object, KEY, VALUE), 
                 new DataStorageTag(object, ANOTHER_KEY, VALUE));
         
@@ -279,11 +270,11 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
         final DataStorageObject secondObject = new DataStorageObject(ANOTHER_STORAGE_PATH);
         final DataStorageTag firstTag = new DataStorageTag(firstObject, KEY, VALUE);
         final DataStorageTag secondTag = new DataStorageTag(secondObject, KEY, VALUE);
-        dataStorageTagDao.bulkUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
+        dataStorageTagDao.batchUpsert(TEST_STORAGE_PATH, firstTag, secondTag);
 
-        dataStorageTagDao.bulkDelete(TEST_STORAGE_PATH, firstObject, secondObject);
+        dataStorageTagDao.batchDelete(TEST_STORAGE_PATH, firstObject, secondObject);
 
-        assertTrue(dataStorageTagDao.bulkLoad(TEST_STORAGE_PATH, Arrays.asList(STORAGE_PATH, ANOTHER_STORAGE_PATH))
+        assertTrue(dataStorageTagDao.batchLoad(TEST_STORAGE_PATH, Arrays.asList(STORAGE_PATH, ANOTHER_STORAGE_PATH))
                 .isEmpty());
     }
 }

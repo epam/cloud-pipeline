@@ -38,18 +38,11 @@ import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagLoadBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
-import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
@@ -76,7 +69,6 @@ public class DataStorageApiService {
 
     private final DataStorageManager dataStorageManager;
     private final DataStorageRuleManager dataStorageRuleManager;
-    private final DataStorageTagBatchManager dataStorageTagBatchManager;
     private final GrantPermissionManager grantPermissionManager;
     private final MessageHelper messageHelper;
     private final TemporaryCredentialsManager temporaryCredentialsManager;
@@ -346,35 +338,5 @@ public class DataStorageApiService {
     @PreAuthorize(AclExpressions.RUN_ID_OWNER)
     public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public List<DataStorageTag> batchInsertDataStorageObjectTags(final Long id,
-                                                                 final DataStorageTagInsertBatchRequest request) {
-        return dataStorageTagBatchManager.insert(id, request);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public List<DataStorageTag> batchCopyDataStorageObjectTags(final Long id,
-                                                               final DataStorageTagCopyBatchRequest request) {
-        return dataStorageTagBatchManager.copy(id, request);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<DataStorageTag> batchLoadDataStorageObjectTags(final Long id,
-                                                               final DataStorageTagLoadBatchRequest request) {
-        return dataStorageTagBatchManager.load(id, request);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public void batchDeleteDataStorageObjectTags(final Long id,
-                                                 final DataStorageTagDeleteBatchRequest request) {
-        dataStorageTagBatchManager.delete(id, request);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public void batchDeleteAllDataStorageObjectTags(final Long id,
-                                                    final DataStorageTagDeleteAllBatchRequest request) {
-        dataStorageTagBatchManager.deleteAll(id, request);
     }
 }

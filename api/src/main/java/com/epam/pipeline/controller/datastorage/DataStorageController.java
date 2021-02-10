@@ -604,36 +604,6 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.updateDataStorageObjectTags(id, path, tags, version, rewrite));
     }
 
-    @RequestMapping(value = "/datastorage/{id}/tags/batch", method = RequestMethod.PUT)
-    @ResponseBody
-    @ApiOperation(
-            value = "Inserts or replaces data storage item tags.",
-            notes = "Inserts or replaces data storage item tags.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result batchInsertTags(@PathVariable(value = ID) final Long id,
-                                  @RequestBody final DataStorageTagInsertBatchRequest request) {
-        dataStorageApiService.batchInsertDataStorageObjectTags(id, request);
-        return Result.success();
-    }
-
-    @RequestMapping(value = "/datastorage/{id}/tags/batch/copy", method = RequestMethod.PUT)
-    @ResponseBody
-    @ApiOperation(
-            value = "Inserts or replaces data storage item tags from existing data storage item.",
-            notes = "Inserts or replaces data storage item tags from existing data storage item.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result batchCopyTags(@PathVariable(value = ID) final Long id,
-                                @RequestBody final DataStorageTagCopyBatchRequest request) {
-        dataStorageApiService.batchCopyDataStorageObjectTags(id, request);
-        return Result.success();
-    }
-
     @RequestMapping(value = "/datastorage/{id}/tags", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
@@ -651,20 +621,6 @@ public class DataStorageController extends AbstractRestController {
                 Result.success(dataStorageApiService.loadDataStorageObjectTags(id, path, version));
     }
 
-    @RequestMapping(value = "/datastorage/{id}/tags/batch/load", method = RequestMethod.POST)
-    @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage item tags, specified by datastorage id and object path.",
-            notes = "Returns data storage item tags, specified by datastorage id and object path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<DataStorageTag>> batchLoadTags(@PathVariable(value = ID) final Long id,
-                                                      @RequestBody final DataStorageTagLoadBatchRequest request) {
-        return Result.success(dataStorageApiService.batchLoadDataStorageObjectTags(id, request));
-    }
-
     @DeleteMapping(value = "/datastorage/{id}/tags")
     @ResponseBody
     @ApiOperation(
@@ -679,36 +635,6 @@ public class DataStorageController extends AbstractRestController {
                                                       @RequestParam(value = VERSION, required = false) String version,
                                                       @RequestBody final Set<String> tags) {
         return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, version, tags));
-    }
-
-    @DeleteMapping(value = "/datastorage/{id}/tags/batch")
-    @ResponseBody
-    @ApiOperation(
-            value = "Deletes data storage item tags, specified by datastorage id and object path.",
-            notes = "Deletes data storage item tags, specified by datastorage id and object path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result batchDeleteTags(@PathVariable(value = ID) final Long id,
-                                  @RequestBody final DataStorageTagDeleteBatchRequest request) {
-        dataStorageApiService.batchDeleteDataStorageObjectTags(id, request);
-        return Result.success();
-    }
-
-    @DeleteMapping(value = "/datastorage/{id}/tags/batch/all")
-    @ResponseBody
-    @ApiOperation(
-            value = "Deletes all data storage item tags, specified by datastorage id and object path.",
-            notes = "Deletes all data storage item tags, specified by datastorage id and object path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result batchDeleteAllTags(@PathVariable(value = ID) final Long id,
-                                     @RequestBody final DataStorageTagDeleteAllBatchRequest request) {
-        dataStorageApiService.batchDeleteAllDataStorageObjectTags(id, request);
-        return Result.success();
     }
 
     @GetMapping(value = "/datastorage/{id}/tags/list")

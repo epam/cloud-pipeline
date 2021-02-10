@@ -173,9 +173,9 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
     def _delete_all_object_tags(self, blob_names_for_deletion, chunk_size=100):
         for blob_names_for_deletion_chunk in [blob_names_for_deletion[i:i + chunk_size]
                                               for i in range(0, len(blob_names_for_deletion), chunk_size)]:
-            DataStorage.bulk_delete_all_object_tags(self.bucket.identifier,
-                                                    [{'path': blob_name, 'type': 'FILE'}
-                                                     for blob_name in blob_names_for_deletion_chunk])
+            DataStorage.batch_delete_all_object_tags(self.bucket.identifier,
+                                                     [{'path': blob_name}
+                                                      for blob_name in blob_names_for_deletion_chunk])
 
     def __file_under_folder(self, file_path, folder_path):
         return StorageOperations.without_prefix(file_path, folder_path).startswith(self.delimiter)

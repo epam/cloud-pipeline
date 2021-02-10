@@ -477,8 +477,8 @@ public class DataStorageManager implements SecuredEntityManager {
         final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
-        storageProviderManager.restoreFileVersion(dataStorage, relativePath, version);
-        storageProviderManager.findFile(dataStorage, relativePath)
+        storageProviderManager.restoreFileVersion(dataStorage, path, version);
+        storageProviderManager.findFile(dataStorage, path)
                 .map(DataStorageFile::getVersion)
                 .ifPresent(latestVersion -> {
                     tagManager.copy(rootPath,
@@ -929,7 +929,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final String relativePath = rootAndRelativePaths.getRight();
         if (dataStorage.isVersioningEnabled()) {
             if (version != null) {
-                final Optional<String> latestVersion = storageProviderManager.findFile(dataStorage, relativePath)
+                final Optional<String> latestVersion = storageProviderManager.findFile(dataStorage, path)
                         .map(DataStorageFile::getVersion);
                 if (latestVersion.isPresent()) {
                     tagManager.copy(rootPath, 
@@ -1070,15 +1070,16 @@ public class DataStorageManager implements SecuredEntityManager {
 
     private Pair<String, String> getRootAndRelativePaths(final AbstractDataStorage storage, final String path) {
         final String rootPath = storage.getRoot();
-        final String storagePathWithoutRoot = StringUtils.removeEnd(
-                StringUtils.removeStart(storage.getPath(), rootPath), storage.getDelimiter());
-        final String pathWithoutHeadingDelimiter = StringUtils.removeStart(path, storage.getDelimiter());
-        final String pathWithHeadingDelimiter = StringUtils.isBlank(pathWithoutHeadingDelimiter) 
-                ? "" 
-                : "/" + pathWithoutHeadingDelimiter;
-        return StringUtils.isBlank(storagePathWithoutRoot) 
-                ? new ImmutablePair<>(rootPath, pathWithoutHeadingDelimiter) 
-                : new ImmutablePair<>(rootPath, storagePathWithoutRoot + pathWithHeadingDelimiter);
+        final String storagePath = StringUtils.strip(StringUtils.removeStart(storage.getPath(), rootPath), 
+                storage.getDelimiter());
+        final String relativePath = StringUtils.strip(path, storage.getDelimiter());
+        if (StringUtils.isBlank(storagePath)) {
+            return new ImmutablePair<>(rootPath, relativePath);
+        }
+        if (StringUtils.isBlank(relativePath)) {
+            return new ImmutablePair<>(rootPath, storagePath);
+        }
+        return new ImmutablePair<>(rootPath, storagePath + storage.getDelimiter() + relativePath);
     }
 
     private AbstractDataStorageItem updateDataStorageItem(final AbstractDataStorage storage,

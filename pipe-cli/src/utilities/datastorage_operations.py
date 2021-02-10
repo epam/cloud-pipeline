@@ -605,8 +605,9 @@ class DataStorageOperations(object):
         tag_objects = []
         source_tags_map = {}
         if transfer_results and isinstance(transfer_results[0], TransferResult):
-            source_keys = [transfer_result.source_key for transfer_result in transfer_results]
-            source_tags = DataStorage.bulk_load_object_tags(source_wrapper.bucket.identifier, source_keys)
+            source_tags = DataStorage.batch_load_object_tags(source_wrapper.bucket.identifier,
+                                                             [{'path': transfer_result.source_key}
+                                                              for transfer_result in transfer_results])
             for source_tag in source_tags:
                 source_object_path = source_tag.get('object', {}).get('path', '')
                 source_object_tags = source_tags_map.get(source_object_path, {})
@@ -629,11 +630,11 @@ class DataStorageOperations(object):
                         'key': key,
                         'value': value
                     })
-        DataStorage.bulk_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects)
+        DataStorage.batch_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects)
         if clean and not source_wrapper.is_local() and not source_wrapper.bucket.policy.versioning_enabled:
-            DataStorage.bulk_delete_all_object_tags(source_wrapper.bucket.identifier,
-                                                    [{'path': transfer_result.source_key, 'type': 'FILE'}
-                                                     for transfer_result in transfer_results])
+            DataStorage.batch_delete_all_object_tags(source_wrapper.bucket.identifier,
+                                                     [{'path': transfer_result.source_key}
+                                                      for transfer_result in transfer_results])
         return []
 
     @staticmethod
