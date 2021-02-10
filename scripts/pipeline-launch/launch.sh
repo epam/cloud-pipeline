@@ -184,7 +184,7 @@ function cp_cap_publish {
 
             sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
-            
+
             sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
@@ -306,7 +306,7 @@ function check_installed {
 # Verifies that a package is installed into the package manager's db (might not be an executable and exposed to $PATH)
 function check_package_installed {
       local _PACKAGE_TO_CHECK="$1"
-      
+
       if [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'true' ] || [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'yes' ]; then
             return 1
       fi
@@ -317,7 +317,7 @@ function check_package_installed {
       elif check_installed "rpm"; then
             rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
             return $?
-      else 
+      else
             # For the "unknown" managers - report that a package is not installed
             return 1
       fi
@@ -563,7 +563,7 @@ function install_private_packages {
       #    We can probably keep it, but it will fail if we need to update a resumed run
       rm -rf "${_install_path}/conda"
       CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
-      
+
       # Download the distro from a public bucket
       echo "Getting python distro from $CP_CONDA_DISTRO_URL"
       wget -q "${CP_CONDA_DISTRO_URL}" -O "${_tmp_install_dir}/conda.tgz" &> /dev/null
@@ -597,6 +597,36 @@ function add_self_to_no_proxy() {
       local _kube_no_proxy="${CP_CAP_KUBE_DOMAIN:-.cp}"
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
+
+function configureHyperThreading() {
+    if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
+      _current_processor=-1
+      declare -a used_cores
+      cat /proc/cpuinfo | while read line; do
+        if [[ "$line" == *"processor"* ]]; then
+          _current_processor=`echo "$line" | awk '{ print $3 }'`
+        elif [[ "$line" == *"core id"* ]]; then
+          _current_core=`echo "$line" | awk '{ print $4 }'`
+          if [[  "${used_cores}" == *"${_current_core}"* ]]; then
+            if [ -f /sys/devices/system/cpu/cpu${_current_processor}/online ]; then
+              echo 0 > /sys/devices/system/cpu/cpu${_current_processor}/online
+            else
+              echo "Processor $_current_processor marked as hyper-threaded, but file /sys/devices/system/cpu/cpu${_current_processor}/online doesn't exists"
+            fi
+          else
+              used_cores="${used_cores} ${_current_core}"
+          fi
+        fi
+      done
+    else
+      for cpu in `ls /sys/devices/system/cpu/ | grep -E 'cpu[0-9]+'`; do
+        if [ -f /sys/devices/system/cpu/${cpu}/online ]; then
+          echo 1 > /sys/devices/system/cpu/${cpu}/online
+        fi
+      done
+    fi
+}
+
 ######################################################
 
 
@@ -621,6 +651,11 @@ else
     SINGLE_RUN=false;
 fi
 
+
+######################################################
+# Configure Hyperthreading
+######################################################
+configureHyperThreading
 
 ######################################################
 # Install runtime dependencies
@@ -660,7 +695,7 @@ eval "$_DEPS_INSTALL_COMMAND"
 
 ### Then Setup directory for any CP-specific binaries/wrapper
 ### and install any "private"/preferred packages
-if [ -z "$CP_USR_BIN" ]; then 
+if [ -z "$CP_USR_BIN" ]; then
         export CP_USR_BIN="/usr/cpbin"
         echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
@@ -689,7 +724,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
                   echo "[ERROR] python2 environment not found, exiting."
                   exit 1
             fi
-      fi    
+      fi
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
@@ -1422,13 +1457,13 @@ for _GLOBAL_BASHRC_PATH in "${_GLOBAL_BASHRC_PATHS[@]}"
 do
     sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_UMASK" "$_GLOBAL_BASHRC_PATH"
-    
+
     sed -i "\|ulimit|d" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_ULIMIT" "$_GLOBAL_BASHRC_PATH"
-    
+
     sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" "$_GLOBAL_BASHRC_PATH"
-    
+
     sed -i "\|$_CP_ENV_SUDO_ALIAS|d" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_SUDO_ALIAS" "$_GLOBAL_BASHRC_PATH"
 done
