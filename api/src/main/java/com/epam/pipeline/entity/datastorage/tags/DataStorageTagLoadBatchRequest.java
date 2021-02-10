@@ -7,5 +7,5 @@ import java.util.List;
 @Value
 public class DataStorageTagLoadBatchRequest {
     
-    List<String> paths;
+    List<DataStorageTagLoadRequest> requests;
 }

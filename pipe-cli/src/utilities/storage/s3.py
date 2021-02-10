@@ -311,7 +311,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             delete_us = dict(Objects=[])
             delete_us['Objects'].append(dict(Key=relative_path, VersionId=version))
             client.delete_objects(Bucket=bucket, Delete=delete_us)
-            DataStorage.bulk_copy_object_tags(self.bucket.bucket.identifier, [{
+            DataStorage.batch_copy_object_tags(self.bucket.bucket.identifier, [{
                 'source': {
                     'path': relative_path,
                     'version': version
@@ -329,7 +329,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
                     'version': copied_object['VersionId']
                 }
             }])
-            DataStorage.bulk_delete_object_tags(self.bucket.bucket.identifier, [{
+            DataStorage.batch_delete_object_tags(self.bucket.bucket.identifier, [{
                 'path': relative_path,
                 'version': version
             }])
@@ -459,7 +459,7 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
                 if version:
                     latest_version = self.get_s3_file_version(bucket, prefix)
                     if latest_version:
-                        DataStorage.bulk_copy_object_tags(self.bucket.bucket.identifier, [{
+                        DataStorage.batch_copy_object_tags(self.bucket.bucket.identifier, [{
                             'source': {
                                 'path': relative_path,
                                 'version': latest_version
@@ -505,16 +505,16 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         item_names = list(set(item['Key'] for item in delete_us['Objects']))
         for item_names_chunk in [item_names[i:i + chunk_size]
                                  for i in range(0, len(item_names), chunk_size)]:
-            DataStorage.bulk_delete_all_object_tags(self.bucket.bucket.identifier,
-                                                    [{'path': item_name, 'type': 'FILE'}
-                                                     for item_name in item_names_chunk])
+            DataStorage.batch_delete_all_object_tags(self.bucket.bucket.identifier,
+                                                     [{'path': item_name}
+                                                      for item_name in item_names_chunk])
 
     def _delete_object_tags(self, delete_us, chunk_size=100):
         for items_chunk in [delete_us['Objects'][i:i + chunk_size]
                             for i in range(0, len(delete_us['Objects']), chunk_size)]:
-            DataStorage.bulk_delete_object_tags(self.bucket.bucket.identifier,
-                                                [{'path': item['Key'], 'version': item.get('VersionId')}
-                                                 for item in items_chunk])
+            DataStorage.batch_delete_object_tags(self.bucket.bucket.identifier,
+                                                 [{'path': item['Key'], 'version': item.get('VersionId')}
+                                                  for item in items_chunk])
 
 
 class ListingManager(StorageItemManager, AbstractListingManager):

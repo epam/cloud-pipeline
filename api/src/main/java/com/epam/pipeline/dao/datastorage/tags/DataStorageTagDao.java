@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,21 +26,21 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     private final String upsertTagQuery;
     private final String loadTagQuery;
     private final String loadTagsQuery;
-    private final String bulkLoadTagsQuery;
+    private final String batchLoadTagsQuery;
     private final String deleteTagsQuery;
     private final String deleteSpecificTagsQuery;
-    private final String bulkDeleteAllTagsQuery;
+    private final String batchDeleteAllTagsQuery;
     private final String deleteAllTagsByPathPatternQuery;
     
-    public List<DataStorageTag> bulkUpsert(final String root, final DataStorageTag... tags) {
-        return bulkUpsert(root, Arrays.stream(tags));
+    public List<DataStorageTag> batchUpsert(final String root, final DataStorageTag... tags) {
+        return batchUpsert(root, Arrays.stream(tags));
     }
 
-    public List<DataStorageTag> bulkUpsert(final String root, final List<DataStorageTag> tags) {
-        return bulkUpsert(root, tags.stream());
+    public List<DataStorageTag> batchUpsert(final String root, final List<DataStorageTag> tags) {
+        return batchUpsert(root, tags.stream());
     }
 
-    public List<DataStorageTag> bulkUpsert(final String root, final Stream<DataStorageTag> tags) {
+    public List<DataStorageTag> batchUpsert(final String root, final Stream<DataStorageTag> tags) {
         final LocalDateTime now = DateUtils.nowUTC();
         final List<DataStorageTag> upsertingTags = tags
                 .map(tag -> tag.withCreatedDate(now))
@@ -53,31 +52,31 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
         return upsertingTags;
     }
 
-    public List<DataStorageTag> bulkLoad(final String root, final List<String> paths) {
+    public List<DataStorageTag> batchLoad(final String root, final List<String> paths) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(Parameters.DATASTORAGE_ROOT_PATH.name(), root);
         params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);
         params.addValue(Parameters.DATASTORAGE_VERSION.name(), LATEST);
-        return getNamedParameterJdbcTemplate().query(bulkLoadTagsQuery, params, Parameters.getRowMapper());
+        return getNamedParameterJdbcTemplate().query(batchLoadTagsQuery, params, Parameters.getRowMapper());
     }
 
-    public void bulkDelete(final String root, final DataStorageObject... objects) {
-        bulkDelete(root, Arrays.stream(objects));
+    public void batchDelete(final String root, final DataStorageObject... objects) {
+        batchDelete(root, Arrays.stream(objects));
     }
 
-    public void bulkDelete(final String root, final List<DataStorageObject> objects) {
-        bulkDelete(root, objects.stream());
+    public void batchDelete(final String root, final List<DataStorageObject> objects) {
+        batchDelete(root, objects.stream());
     }
 
-    public void bulkDelete(final String root, final Stream<DataStorageObject> objects) {
+    public void batchDelete(final String root, final Stream<DataStorageObject> objects) {
         getNamedParameterJdbcTemplate().batchUpdate(deleteTagsQuery, Parameters.getParameters(root, objects));
     }
 
-    public void bulkDeleteAll(final String root, final List<String> paths) {
+    public void batchDeleteAll(final String root, final List<String> paths) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(Parameters.DATASTORAGE_ROOT_PATH.name(), root);
         params.addValue(Parameters.DATASTORAGE_PATH.name(), paths);
-        getNamedParameterJdbcTemplate().update(bulkDeleteAllTagsQuery, params);
+        getNamedParameterJdbcTemplate().update(batchDeleteAllTagsQuery, params);
     }
 
     public DataStorageTag upsert(final String root, final DataStorageTag tag) {

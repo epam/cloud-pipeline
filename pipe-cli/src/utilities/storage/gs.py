@@ -552,16 +552,16 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         blob_names = list(set(blob.name for blob in blobs_for_deletion))
         for blob_names_chunk in [blob_names[i:i + chunk_size]
                                  for i in range(0, len(blob_names), chunk_size)]:
-            DataStorage.bulk_delete_all_object_tags(self.bucket.identifier,
-                                                    [{'path': blob_name, 'type': 'FILE'}
-                                                     for blob_name in blob_names_chunk])
+            DataStorage.batch_delete_all_object_tags(self.bucket.identifier,
+                                                     [{'path': blob_name}
+                                                      for blob_name in blob_names_chunk])
 
     def _delete_object_tags(self, blobs_for_deletion, versions, chunk_size=100):
         for blobs_for_deletion_chunk in [blobs_for_deletion[i:i + chunk_size]
                                          for i in range(0, len(blobs_for_deletion), chunk_size)]:
-            DataStorage.bulk_delete_object_tags(self.bucket.identifier,
-                                                [{'path': blob.name, 'version': blob.generation if versions else None}
-                                                 for blob in blobs_for_deletion_chunk])
+            DataStorage.batch_delete_object_tags(self.bucket.identifier,
+                                                 [{'path': blob.name, 'version': blob.generation if versions else None}
+                                                  for blob in blobs_for_deletion_chunk])
 
     def _item_blobs_for_deletion(self, bucket, item, hard_delete):
         if hard_delete:
@@ -666,7 +666,7 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
             })
         for copy_requests_chunk in [copy_requests[i:i + chunk_size]
                                     for i in range(0, len(copy_requests), chunk_size)]:
-            DataStorage.bulk_copy_object_tags(self.wrapper.bucket.identifier, copy_requests_chunk)
+            DataStorage.batch_copy_object_tags(self.wrapper.bucket.identifier, copy_requests_chunk)
         return []
 
     def _restore_latest_archived_version(self, bucket, item):

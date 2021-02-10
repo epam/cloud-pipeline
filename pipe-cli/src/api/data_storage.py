@@ -337,12 +337,10 @@ class DataStorage(API):
             raise RuntimeError("Failed to update tags for object {}.".format(path))
 
     @classmethod
-    def bulk_insert_object_tags(cls, identifier, requests):
+    def batch_insert_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({
-            'requests': requests
-        })
-        endpoint = 'datastorage/{}/tags/batch'.format(identifier)
+        data = json.dumps({'requests': requests})
+        endpoint = 'datastorage/{}/tags/batch/insert'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='PUT')
         if 'payload' in response_data:
             return response_data['payload']
@@ -354,11 +352,9 @@ class DataStorage(API):
             raise RuntimeError('Failed to bulk upsert tags: {}.'.format(requests))
 
     @classmethod
-    def bulk_copy_object_tags(cls, identifier, requests):
+    def batch_copy_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({
-            'requests': requests
-        })
+        data = json.dumps({'requests': requests})
         endpoint = 'datastorage/{}/tags/batch/copy'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='PUT')
         if 'payload' in response_data:
@@ -371,11 +367,9 @@ class DataStorage(API):
             raise RuntimeError('Failed to bulk copy tags: {}.'.format(requests))
 
     @classmethod
-    def bulk_load_object_tags(cls, identifier, paths):
+    def batch_load_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({
-            'paths': paths
-        })
+        data = json.dumps({'requests': requests})
         endpoint = 'datastorage/{}/tags/batch/load'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='POST')
         if 'payload' in response_data:
@@ -385,15 +379,13 @@ class DataStorage(API):
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
         else:
-            raise RuntimeError('Failed to bulk load tags for paths: {}.'.format(paths))
+            raise RuntimeError('Failed to bulk load tags: {}.'.format(requests))
 
     @classmethod
-    def bulk_delete_object_tags(cls, identifier, requests):
+    def batch_delete_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({
-            'requests': requests
-        })
-        endpoint = 'datastorage/{}/tags/batch'.format(identifier)
+        data = json.dumps({'requests': requests})
+        endpoint = 'datastorage/{}/tags/batch/delete'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='DELETE')
         if 'payload' in response_data:
             return response_data['payload']
@@ -405,12 +397,10 @@ class DataStorage(API):
             raise RuntimeError('Failed to bulk delete tags for paths {}.'.format(requests))
 
     @classmethod
-    def bulk_delete_all_object_tags(cls, identifier, requests):
+    def batch_delete_all_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({
-            'requests': requests
-        })
-        endpoint = 'datastorage/{}/tags/batch/all'.format(identifier)
+        data = json.dumps({'requests': requests})
+        endpoint = 'datastorage/{}/tags/batch/deleteAll'.format(identifier)
         response_data = api.call(endpoint, data=data, http_method='DELETE')
         if 'payload' in response_data:
             return response_data['payload']

@@ -534,25 +534,6 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
     }
 
     @Test
-    public void shouldFailBulkUpsertTagsForUnauthorizedUser() {
-        performUnauthorizedRequest(post(String.format(TAGS_BULK_URL, ID)));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldBulkInsertTags() {
-        final List<DataStorageTagInsertRequest> tagRequests = Collections.singletonList(
-                new DataStorageTagInsertRequest(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING));
-        final DataStorageTagInsertBatchRequest request = new DataStorageTagInsertBatchRequest(tagRequests);
-        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).batchInsertDataStorageObjectTags(ID, request);
-
-        final MvcResult mvcResult = performRequest(post(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
-
-        Mockito.verify(mockStorageApiService).batchInsertDataStorageObjectTags(ID, request);
-        assertResponse(mvcResult, null, OBJECT_TYPE);
-    }
-
-    @Test
     public void shouldFailLoadTagsByIdForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(TAGS_URL, ID)));
     }
@@ -586,24 +567,6 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
     }
 
     @Test
-    public void shouldFailBulkLoadTagsForUnauthorizedUser() {
-        performUnauthorizedRequest(get(String.format(TAGS_BULK_URL, ID)));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldBulkLoadTags() {
-        final DataStorageTagLoadBatchRequest request =
-                new DataStorageTagLoadBatchRequest(Collections.singletonList(TEST));
-        Mockito.doReturn(OBJECT_TAGS).when(mockStorageApiService).batchLoadDataStorageObjectTags(ID, request);
-
-        final MvcResult mvcResult = performRequest(get(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
-
-        Mockito.verify(mockStorageApiService).batchLoadDataStorageObjectTags(ID, request);
-        assertResponse(mvcResult, OBJECT_TAGS, DATA_STORAGE_TAG_LIST_TYPE);
-    }
-
-    @Test
     public void shouldFailDeleteTagsByIdForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(TAGS_URL, ID)));
     }
@@ -622,22 +585,5 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
 
         Mockito.verify(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, TEST, setTags);
         assertResponse(mvcResult, TAGS, STRING_MAP_INSTANCE_TYPE);
-    }
-
-    @Test
-    public void shouldFailBulkDeleteTagsForUnauthorizedUser() {
-        performUnauthorizedRequest(delete(String.format(TAGS_BULK_URL, ID)));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldBulkDeleteTags() {
-        final DataStorageTagDeleteBatchRequest request = new DataStorageTagDeleteBatchRequest(
-                        Collections.singletonList(new DataStorageTagDeleteRequest(TEST, TEST)));
-
-        final MvcResult mvcResult = performRequest(delete(String.format(TAGS_BULK_URL, ID)).content(stringOf(request)));
-
-        Mockito.verify(mockStorageApiService).batchDeleteDataStorageObjectTags(ID, request);
-        assertResponse(mvcResult, null, OBJECT_TYPE);
     }
 }

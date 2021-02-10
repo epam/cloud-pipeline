@@ -32,7 +32,7 @@ public class DataStorageTagManager {
     public List<DataStorageTag> upsert(final String rootPath,
                                        final DataStorageObject object,
                                        final Map<String, String> tags) {
-        return tagDao.bulkUpsert(rootPath, tags.entrySet().stream()
+        return tagDao.batchUpsert(rootPath, tags.entrySet().stream()
                 .map(e -> new DataStorageTag(object, e.getKey(), e.getValue()))
                 .collect(Collectors.toList()));
     }
@@ -43,7 +43,7 @@ public class DataStorageTagManager {
                                      final DataStorageObject destination) {
         final List<DataStorageTag> sourceTags = tagDao.load(rootPath, source);
         tagDao.delete(rootPath, destination);
-        return tagDao.bulkUpsert(rootPath, sourceTags.stream().map(it -> it.withObject(destination)));
+        return tagDao.batchUpsert(rootPath, sourceTags.stream().map(it -> it.withObject(destination)));
     }
 
     @Transactional
@@ -68,6 +68,6 @@ public class DataStorageTagManager {
 
     @Transactional
     public void deleteAll(final String rootPath, final String path) {
-        tagDao.bulkDeleteAll(rootPath, Collections.singletonList(path));   
+        tagDao.batchDeleteAll(rootPath, Collections.singletonList(path));   
     }
 }
