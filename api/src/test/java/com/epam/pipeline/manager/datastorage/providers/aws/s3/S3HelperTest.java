@@ -35,6 +35,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,6 +139,7 @@ public class S3HelperTest {
         singleFileListing.setCommonPrefixes(Collections.singletonList(OLD_PATH));
         when(amazonS3.listObjects(any(ListObjectsRequest.class))).thenReturn(singleFileListing);
         final ObjectMetadata fileMetadata = new ObjectMetadata();
+        fileMetadata.setLastModified(new Date());
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
         helper.moveFile(BUCKET, OLD_PATH, NEW_PATH);

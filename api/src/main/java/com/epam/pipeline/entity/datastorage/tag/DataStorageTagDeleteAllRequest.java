@@ -1,4 +1,4 @@
-package com.epam.pipeline.entity.datastorage.tags;
+package com.epam.pipeline.entity.datastorage.tag;
 
 import lombok.Value;
 

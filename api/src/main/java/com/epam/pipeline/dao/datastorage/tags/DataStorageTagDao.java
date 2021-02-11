@@ -1,7 +1,7 @@
 package com.epam.pipeline.dao.datastorage.tags;
 
-import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;

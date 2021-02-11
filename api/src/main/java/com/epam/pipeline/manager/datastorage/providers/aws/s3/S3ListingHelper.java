@@ -19,8 +19,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-@RequiredArgsConstructor
-public class S3ListingHelper {
+public final class S3ListingHelper {
+
+    private S3ListingHelper() { }
     
     public static Stream<DataStorageFile> files(AmazonS3 client, String bucket, String path) {
         return new S3ListingBulkIterator(client, bucket, path)

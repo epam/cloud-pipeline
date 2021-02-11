@@ -19,7 +19,6 @@ package com.epam.pipeline.dao.contextual;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
@@ -43,7 +42,6 @@ public class ContextualPreferenceDaoTest extends AbstractSpringTest {
     private static final String ANOTHER_NAME = "anotherName";
     private static final String VALUE = "value";
     private static final String ANOTHER_VALUE = "anotherValue";
-    private static final int TWO_SEC = 2000;
     private static final PreferenceType TYPE = PreferenceType.INTEGER;
     private static final ContextualPreferenceLevel LEVEL = ContextualPreferenceLevel.USER;
     private static final ContextualPreferenceLevel ANOTHER_LEVEL = ContextualPreferenceLevel.TOOL;

@@ -1,5 +1,3 @@
-DROP TABLE pipeline.datastorage_tag;
-
 CREATE TABLE IF NOT EXISTS pipeline.datastorage_root (
     datastorage_root_id      SERIAL                   NOT NULL,
     datastorage_root_path    TEXT                     NOT NULL,
