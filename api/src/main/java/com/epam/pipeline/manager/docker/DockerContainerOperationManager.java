@@ -268,12 +268,15 @@ public class DockerContainerOperationManager {
     //method is synchronized to prevent double pod creation
     private void launchPodIfRequired(final PipelineRun run, final List<String> endpoints) {
         resumeLock.lock();
-        if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
-            final PipelineConfiguration configuration = getResumeConfiguration(run);
-            launcher.launch(run, configuration, endpoints,  run.getId().toString(),
-                    true, run.getPodId(), null, ImagePullPolicy.NEVER);
+        try {
+            if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
+                final PipelineConfiguration configuration = getResumeConfiguration(run);
+                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
+                        true, run.getPodId(), null, ImagePullPolicy.NEVER);
+            }
+        } finally {
+            resumeLock.unlock();
         }
-        resumeLock.unlock();
     }
 
     private PipelineConfiguration getResumeConfiguration(final PipelineRun run) {
