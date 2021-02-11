@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -81,13 +80,6 @@ public class DataStorageTagDaoTest extends AbstractSpringTest {
         anotherObjectStorage.setRegionId(awsRegion.getId());
         anotherObjectStorage.setOwner(TEST_STRING);
         dataStorageDao.createDataStorage(anotherObjectStorage);
-    }
-
-    @Test
-    @Transactional
-    public void upsertShouldFailIfCorrespondingDataStorageDoesNotExist() {
-        assertThrows(() -> dataStorageTagDao.upsert(NON_EXISTING_STORAGE_PATH,
-                new DataStorageTag(new DataStorageObject(STORAGE_PATH), KEY, VALUE)));
     }
 
     @Test

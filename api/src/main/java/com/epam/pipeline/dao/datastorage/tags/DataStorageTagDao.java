@@ -8,7 +8,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -46,10 +45,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
         final List<DataStorageTag> upsertingTags = tags
                 .map(tag -> tag.withCreatedDate(now))
                 .collect(Collectors.toList());
-        final int[] numbersOfUpsertedTags = getNamedParameterJdbcTemplate()
-                .batchUpdate(upsertTagQuery, Parameters.getParameters(root, upsertingTags));
-        Assert.isTrue(Arrays.stream(numbersOfUpsertedTags).allMatch(numberOfUpsertedTags -> numberOfUpsertedTags == 1), 
-                "Some of the tags corresponding data storage root paths don't exist.");
+        getNamedParameterJdbcTemplate().batchUpdate(upsertTagQuery, Parameters.getParameters(root, upsertingTags));
         return upsertingTags;
     }
 
@@ -80,9 +76,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
 
     public DataStorageTag upsert(final String root, final DataStorageTag tag) {
         final DataStorageTag upsertingTag = tag.withCreatedDate(DateUtils.nowUTC());
-        final int updatedCount = getNamedParameterJdbcTemplate().update(upsertTagQuery,
-                Parameters.getParameters(root, upsertingTag));
-        Assert.isTrue(updatedCount == 1, "Tag corresponding data storage root path doesn't exist.");
+        getNamedParameterJdbcTemplate().update(upsertTagQuery, Parameters.getParameters(root, upsertingTag));
         return upsertingTag;
     }
 
