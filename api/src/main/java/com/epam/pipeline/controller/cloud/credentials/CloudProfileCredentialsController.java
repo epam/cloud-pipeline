@@ -87,7 +87,7 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<? extends AbstractCloudProfileCredentials>> findAll(
             @RequestParam(required = false) final Long userId) {
-        return Result.success(Objects.nonNull(userId)
+        return Result.success(Objects.isNull(userId)
                 ? cloudProfileCredentialsApiService.findAll()
                 : cloudProfileCredentialsApiService.findAllForUser(userId));
     }
