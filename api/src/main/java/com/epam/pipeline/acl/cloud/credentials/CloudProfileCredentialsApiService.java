@@ -20,6 +20,7 @@ import com.epam.pipeline.dto.cloud.credentials.AbstractCloudProfileCredentials;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -55,8 +56,13 @@ public class CloudProfileCredentialsApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<? extends AbstractCloudProfileCredentials> findAll(final Long userId) {
-        return manager.findAll(userId);
+    public List<? extends AbstractCloudProfileCredentials> findAll() {
+        return manager.findAll();
+    }
+
+    @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.hasCloudProfilePermissions(filterObject.id)")
+    public List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long userId) {
+        return manager.findAllForUser(userId);
     }
 
     @PreAuthorize(ADMIN_ONLY)

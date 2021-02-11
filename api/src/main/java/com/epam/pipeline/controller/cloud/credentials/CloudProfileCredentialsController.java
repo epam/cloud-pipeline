@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @RestController
@@ -86,7 +87,9 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<? extends AbstractCloudProfileCredentials>> findAll(
             @RequestParam(required = false) final Long userId) {
-        return Result.success(cloudProfileCredentialsApiService.findAll(userId));
+        return Result.success(Objects.nonNull(userId)
+                ? cloudProfileCredentialsApiService.findAll()
+                : cloudProfileCredentialsApiService.findAllForUser(userId));
     }
 
     @GetMapping("/assigners")

@@ -103,11 +103,20 @@ public class CloudProfileCredentialsManagerProvider {
         return mapper.toDto(entity);
     }
 
-    public List<? extends AbstractCloudProfileCredentials> findAll(final Long userId) {
-        if (Objects.nonNull(userId)) {
-            return findAllForUser(userId);
-        }
+    public List<? extends AbstractCloudProfileCredentials> findAll() {
         return toDtos(repository.findAll());
+    }
+
+    public List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long userId) {
+        final PipelineUser user = findUserEntity(userId);
+        final List<? extends AbstractCloudProfileCredentials> userProfiles = toDtos(user.getCloudProfiles());
+        final List<Role> roles = user.getRoles();
+        final List<? extends AbstractCloudProfileCredentials> rolesProfiles = roles.stream()
+                .flatMap(role -> toDtos(role.getCloudProfiles()).stream())
+                .collect(Collectors.toList());
+        return Stream.concat(userProfiles.stream(), rolesProfiles.stream())
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -208,17 +217,5 @@ public class CloudProfileCredentialsManagerProvider {
     private List<? extends AbstractCloudProfileCredentials> findUserProfiles(final Long id) {
         final PipelineUser user = findUserEntity(id);
         return toDtos(user.getCloudProfiles());
-    }
-
-    private List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long id) {
-        final PipelineUser user = findUserEntity(id);
-        final List<? extends AbstractCloudProfileCredentials> userProfiles = toDtos(user.getCloudProfiles());
-        final List<Role> roles = user.getRoles();
-        final List<? extends AbstractCloudProfileCredentials> rolesProfiles = roles.stream()
-                .flatMap(role -> toDtos(role.getCloudProfiles()).stream())
-                .collect(Collectors.toList());
-        return Stream.concat(userProfiles.stream(), rolesProfiles.stream())
-                .distinct()
-                .collect(Collectors.toList());
     }
 }
