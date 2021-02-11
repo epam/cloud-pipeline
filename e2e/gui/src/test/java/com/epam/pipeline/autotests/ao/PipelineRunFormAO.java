@@ -133,10 +133,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO setDisk(String disk) {
-        $(byId("exec.disk"))
-                .shouldBe(enabled)
-                .setValue(String.valueOf(disk));
-        return this;
+        return setValue(DISK, disk);
     }
 
     public PipelineRunFormAO setCommand(String command) {
