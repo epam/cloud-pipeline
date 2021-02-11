@@ -687,7 +687,7 @@ class EditHotNodePool extends React.Component {
     const {touched} = this.state;
     touched.instanceType = true;
     this.setState({
-      instanceType: e,
+      instanceType: e || undefined,
       touched
     }, this.onChange);
   };
@@ -781,14 +781,14 @@ class EditHotNodePool extends React.Component {
     const {touched} = this.state;
     touched.name = true;
     this.setState({
-      name: e.target.value,
+      name: e.target.value || undefined,
       touched
     }, this.onChange);
   };
 
   onChangeInstanceImage = (e) => {
     this.setState({
-      instanceImage: e.target.value
+      instanceImage: e.target.value || undefined
     }, this.onChange);
   };
 
