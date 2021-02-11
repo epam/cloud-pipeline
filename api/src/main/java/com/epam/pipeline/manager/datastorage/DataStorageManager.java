@@ -47,10 +47,10 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyRequest;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -908,12 +908,12 @@ public class DataStorageManager implements SecuredEntityManager {
         tagManager.copyFolder(rootPath, oldRelativePath, newRelativePath);
         if (dataStorage.isVersioningEnabled()) {
             processInChunks(storageProviderManager.listFiles(dataStorage, newPath + dataStorage.getDelimiter()),
-                    chunk -> tagBatchManager.copy(dataStorage.getId(), new DataStorageTagCopyBatchRequest(
-                            chunk.stream()
-                                    .map(file -> new DataStorageTagCopyRequest(
-                                            DataStorageTagCopyRequest.object(file.getPath(), null),
-                                            DataStorageTagCopyRequest.object(file.getPath(), file.getVersion())))
-                                    .collect(Collectors.toList()))));
+                chunk -> tagBatchManager.copy(dataStorage.getId(), new DataStorageTagCopyBatchRequest(
+                        chunk.stream()
+                                .map(file -> new DataStorageTagCopyRequest(
+                                        DataStorageTagCopyRequest.object(file.getPath(), null),
+                                        DataStorageTagCopyRequest.object(file.getPath(), file.getVersion())))
+                                .collect(Collectors.toList()))));
         } else {
             tagManager.deleteAllInFolder(rootPath, oldRelativePath);
         }

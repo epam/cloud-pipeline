@@ -1,11 +1,11 @@
 package com.epam.pipeline.acl.datastorage.tag;
 
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteAllBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;

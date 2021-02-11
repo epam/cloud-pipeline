@@ -1,8 +1,8 @@
 package com.epam.pipeline.manager.datastorage.tag;
 
 import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

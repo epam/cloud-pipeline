@@ -3,18 +3,16 @@ package com.epam.pipeline.manager.datastorage.tag;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageObject;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTag;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteAllBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagDeleteBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagLoadBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagCopyRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagInsertBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagLoadRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagUpsertBatchRequest;
-import com.epam.pipeline.entity.datastorage.tags.DataStorageTagUpsertRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteAllBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
@@ -57,26 +55,6 @@ public class DataStorageTagBatchManager {
     }
 
     @Transactional
-    public List<DataStorageTag> upsert(final Long storageId, final DataStorageTagUpsertBatchRequest request) {
-        if (CollectionUtils.isEmpty(request.getRequests())) {
-            return Collections.emptyList();
-        }
-        final Optional<String> rootPath = getRootPath(storageId);
-        if (!rootPath.isPresent()) {
-            return Collections.emptyList();
-        }
-        final List<DataStorageTag> tags = request.getRequests().stream()
-                .map(this::tagFrom)
-                .collect(Collectors.toList());
-        return tagDao.batchUpsert(rootPath.get(), tags);
-    }
-
-    private DataStorageTag tagFrom(final DataStorageTagUpsertRequest request) {
-        final DataStorageObject object = new DataStorageObject(request.getPath(), request.getVersion());
-        return new DataStorageTag(object, request.getKey(), request.getValue());
-    }
-
-    @Transactional
     public List<DataStorageTag> copy(final Long storageId, final DataStorageTagCopyBatchRequest request) {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
@@ -90,7 +68,7 @@ public class DataStorageTagBatchManager {
                         .map(DataStorageTagCopyRequest::getSource)
                         .distinct()
                         .collect(Collectors.toMap(Function.identity(),
-                                it -> tagDao.load(rootPath.get(), new DataStorageObject(it.getPath(), it.getVersion()))));
+                            it -> tagDao.load(rootPath.get(), new DataStorageObject(it.getPath(), it.getVersion()))));
         final List<DataStorageTag> tags = request.getRequests().stream()
                 .flatMap(r -> Optional.ofNullable(sourceTagsMap.get(r.getSource()))
                         .map(sourceTags -> sourceTags.stream()

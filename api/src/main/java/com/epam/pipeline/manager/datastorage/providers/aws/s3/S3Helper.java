@@ -386,7 +386,7 @@ public class S3Helper {
             file.setLabels(labels);
             return Optional.of(file);
         } catch (AmazonS3Exception e) {
-            if (e.getStatusCode() == 404) {
+            if (e.getStatusCode() == NOT_FOUND) {
                 return Optional.empty();
             }
             throw e;
