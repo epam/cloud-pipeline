@@ -200,7 +200,7 @@ class PipelineAPI:
     LOAD_ALLOWED_INSTANCE_TYPES = '/cluster/instance/allowed?regionId=%s&spot=%s'
     LOAD_PROFILE_CREDENTIALS = 'cloud/credentials/generate/%d'
     LOAD_PROFILES = 'cloud/credentials'
-    LOAD_USER_BY_NAME = 'user?name=%s'
+    LOAD_CURRENT_USER = 'whoami'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -872,9 +872,9 @@ class PipelineAPI:
             raise RuntimeError("Failed to get region by ID '{}'. Error message: {}".format(str(region_id),
                                                                                            str(e.message)))
 
-    def load_user_by_name(self, user_name):
+    def load_current_user(self):
         try:
-            url = str(self.api_url) + self.LOAD_USER_BY_NAME % user_name
+            url = str(self.api_url) + self.LOAD_CURRENT_USER
             return self.execute_request(url, method='get')
         except Exception as e:
-            raise RuntimeError("Failed to load profile credentials. Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))

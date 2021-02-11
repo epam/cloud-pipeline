@@ -104,10 +104,9 @@ public class CloudProfileCredentialsManagerProvider {
     }
 
     public List<? extends AbstractCloudProfileCredentials> findAll(final Long userId) {
-        if (Objects.nonNull(userId)) {
-            return findAllForUser(userId);
-        }
-        return toDtos(repository.findAll());
+        return Objects.isNull(userId)
+                ? toDtos(repository.findAll())
+                : findAllForUser(userId);
     }
 
     @Transactional
@@ -210,8 +209,8 @@ public class CloudProfileCredentialsManagerProvider {
         return toDtos(user.getCloudProfiles());
     }
 
-    private List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long id) {
-        final PipelineUser user = findUserEntity(id);
+    private List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long userId) {
+        final PipelineUser user = findUserEntity(userId);
         final List<? extends AbstractCloudProfileCredentials> userProfiles = toDtos(user.getCloudProfiles());
         final List<Role> roles = user.getRoles();
         final List<? extends AbstractCloudProfileCredentials> rolesProfiles = roles.stream()
