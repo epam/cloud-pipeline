@@ -63,6 +63,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -134,6 +136,8 @@ public class DockerContainerOperationManager {
 
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
+
+    private Lock resumeLock = new ReentrantLock();
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
@@ -247,11 +251,7 @@ public class DockerContainerOperationManager {
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
 
-            if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
-                final PipelineConfiguration configuration = getResumeConfiguration(run);
-                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
-                        true, run.getPodId(), null, ImagePullPolicy.NEVER);
-            }
+            launchPodIfRequired(run, endpoints);
 
             kubernetesManager.removeNodeLabel(run.getInstance().getNodeName(),
                     KubernetesConstants.PAUSED_NODE_LABEL);
@@ -263,6 +263,17 @@ public class DockerContainerOperationManager {
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
         }
+    }
+
+    //method is synchronized to prevent double pod creation
+    private void launchPodIfRequired(final PipelineRun run, final List<String> endpoints) {
+        resumeLock.lock();
+        if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
+            final PipelineConfiguration configuration = getResumeConfiguration(run);
+            launcher.launch(run, configuration, endpoints,  run.getId().toString(),
+                    true, run.getPodId(), null, ImagePullPolicy.NEVER);
+        }
+        resumeLock.unlock();
     }
 
     private PipelineConfiguration getResumeConfiguration(final PipelineRun run) {
