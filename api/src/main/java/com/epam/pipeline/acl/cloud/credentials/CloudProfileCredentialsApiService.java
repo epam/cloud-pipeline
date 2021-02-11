@@ -55,14 +55,9 @@ public class CloudProfileCredentialsApiService {
         return manager.delete(id);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
-    public List<? extends AbstractCloudProfileCredentials> findAll() {
-        return manager.findAll();
-    }
-
     @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.hasCloudProfilePermissions(filterObject.id)")
-    public List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long userId) {
-        return manager.findAllForUser(userId);
+    public List<? extends AbstractCloudProfileCredentials> findAll(final Long userId) {
+        return manager.findAll(userId);
     }
 
     @PreAuthorize(ADMIN_ONLY)

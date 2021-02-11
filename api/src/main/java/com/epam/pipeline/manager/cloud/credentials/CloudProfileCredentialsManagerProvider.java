@@ -103,20 +103,10 @@ public class CloudProfileCredentialsManagerProvider {
         return mapper.toDto(entity);
     }
 
-    public List<? extends AbstractCloudProfileCredentials> findAll() {
-        return toDtos(repository.findAll());
-    }
-
-    public List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long userId) {
-        final PipelineUser user = findUserEntity(userId);
-        final List<? extends AbstractCloudProfileCredentials> userProfiles = toDtos(user.getCloudProfiles());
-        final List<Role> roles = user.getRoles();
-        final List<? extends AbstractCloudProfileCredentials> rolesProfiles = roles.stream()
-                .flatMap(role -> toDtos(role.getCloudProfiles()).stream())
-                .collect(Collectors.toList());
-        return Stream.concat(userProfiles.stream(), rolesProfiles.stream())
-                .distinct()
-                .collect(Collectors.toList());
+    public List<? extends AbstractCloudProfileCredentials> findAll(final Long userId) {
+        return Objects.isNull(userId)
+                ? toDtos(repository.findAll())
+                : findAllForUser(userId);
     }
 
     @Transactional
@@ -217,5 +207,17 @@ public class CloudProfileCredentialsManagerProvider {
     private List<? extends AbstractCloudProfileCredentials> findUserProfiles(final Long id) {
         final PipelineUser user = findUserEntity(id);
         return toDtos(user.getCloudProfiles());
+    }
+
+    private List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long userId) {
+        final PipelineUser user = findUserEntity(userId);
+        final List<? extends AbstractCloudProfileCredentials> userProfiles = toDtos(user.getCloudProfiles());
+        final List<Role> roles = user.getRoles();
+        final List<? extends AbstractCloudProfileCredentials> rolesProfiles = roles.stream()
+                .flatMap(role -> toDtos(role.getCloudProfiles()).stream())
+                .collect(Collectors.toList());
+        return Stream.concat(userProfiles.stream(), rolesProfiles.stream())
+                .distinct()
+                .collect(Collectors.toList());
     }
 }
