@@ -225,11 +225,7 @@ public final class DockerCreatorUtils {
     }
 
     public static ToolGroup getToolGroup(final Long id, final String owner) {
-        final ToolGroup toolGroup = new ToolGroup();
-        toolGroup.setId(id);
-        toolGroup.setRegistryId(id);
-        toolGroup.setOwner(owner);
-        return toolGroup;
+        return getToolGroup(id, null, id, owner);
     }
 
     public static ToolGroup getToolGroup(final String owner) {
@@ -249,7 +245,7 @@ public final class DockerCreatorUtils {
     }
 
     public static Tool getTool(final ToolGroup toolGroup, final String image,
-                               final DockerRegistry dockerRegistry, final String actor) {
+                               final DockerRegistry dockerRegistry, final String owner) {
         final Tool tool = new Tool();
         tool.setToolGroup(toolGroup.getName());
         tool.setToolGroupId(toolGroup.getId());
@@ -258,7 +254,7 @@ public final class DockerCreatorUtils {
         tool.setRam(TEST_STRING);
         tool.setRegistry(dockerRegistry.getPath());
         tool.setRegistryId(dockerRegistry.getId());
-        tool.setOwner(actor);
+        tool.setOwner(owner);
         return tool;
     }
 

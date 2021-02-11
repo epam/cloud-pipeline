@@ -54,10 +54,10 @@ public final class SecurityCreatorUtils {
         return context;
     }
 
-    public static UserContext getUserContext(final Long contextId, final String userName,
+    public static UserContext getUserContext(final Long userId, final String userName,
                                              final Long roleId, final String roleName) {
         final UserContext context = new UserContext();
-        context.setUserId(contextId);
+        context.setUserId(userId);
         context.setUserName(userName);
         final Role role = new Role();
         role.setId(roleId);

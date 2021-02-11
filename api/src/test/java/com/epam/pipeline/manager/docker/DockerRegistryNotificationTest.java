@@ -60,6 +60,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class DockerRegistryNotificationTest extends AbstractAclTest {
     private static final String REPO = "repository";
     private static final String REPO_EXTERNAL_PATH = "repository2";
@@ -80,7 +81,6 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     @Autowired
     private DockerRegistryDao mockDockerRegistryDao;
 
-    @SuppressWarnings("PMD.UnusedPrivateField")
     @Autowired
     private GrantPermissionManager spyPermissionManager;
 
