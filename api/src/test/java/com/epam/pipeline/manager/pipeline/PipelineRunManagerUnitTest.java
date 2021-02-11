@@ -39,7 +39,6 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import org.apache.commons.collections.CollectionUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -246,8 +245,8 @@ public class PipelineRunManagerUnitTest {
         filterVO.setProjectIds(Collections.singletonList(project.getId()));
 
         final PipelineRunFilterVO.ProjectFilter projectFilter = pipelineRunManager.resolveProjectFiltering(filterVO);
-        Assert.assertEquals(2, projectFilter.getPipelineIds().size());
-        Assert.assertEquals(2, projectFilter.getConfigurationIds().size());
+        assertEquals(2, projectFilter.getPipelineIds().size());
+        assertEquals(2, projectFilter.getConfigurationIds().size());
     }
 
     @Test
@@ -259,14 +258,14 @@ public class PipelineRunManagerUnitTest {
     }
 
     @Test
-    public void testEnvVarsReplacementWithEmptyCollections() {
+    public void shouldReplaceEnvVarsWithEmptyCollections() {
         final List<PipelineRunParameter> actualParameters =
                 pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), new HashMap<>());
         assertTrue(CollectionUtils.isEmpty(actualParameters));
     }
 
     @Test
-    public void testEnvVarsReplacementWithEmptyEnvVars() {
+    public void shouldReplaceEnvVarsWithEmptyEnvVars() {
         final List<PipelineRunParameter> parameters = new ArrayList<>();
         parameters.add(new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
 
@@ -276,7 +275,7 @@ public class PipelineRunManagerUnitTest {
     }
 
     @Test
-    public void testEnvVarsReplacementWithEmptyParams() {
+    public void shouldReplaceEnvVarsWithEmptyParams() {
         final Map<String, String> envVars = new HashMap<>();
         envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
 
@@ -286,7 +285,7 @@ public class PipelineRunManagerUnitTest {
     }
 
     @Test
-    public void testEnvVarsReplacementNoNeeded() {
+    public void shouldNotReplaceEnvVarsIfNoNeeded() {
         final List<PipelineRunParameter> parameters = new ArrayList<>();
         parameters.add(new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
         final Map<String, String> envVars = new HashMap<>();
@@ -298,22 +297,22 @@ public class PipelineRunManagerUnitTest {
     }
 
     @Test
-    public void testEnvVarsReplacementWithTestEnv() {
+    public void shouldReplaceEnvVarsWithTestEnv() {
         testEnvVarsReplacement("test/${%s}", "test/%s");
     }
 
     @Test
-    public void testEnvVarsReplacementWithTestEnvAtTheEndOfTheLine() {
+    public void shouldReplaceEnvVarsWithTestEnvAtTheEndOfTheLine() {
         testEnvVarsReplacement("test/$%s", "test/%s");
     }
 
     @Test
-    public void testEnvVarsReplacementWithTestEnvAtTheMiddleOfTheLine() {
+    public void shouldReplaceEnvVarsWithTestEnvAtTheMiddleOfTheLine() {
         testEnvVarsReplacement("test/$%s/", "test/%s/");
     }
 
     @Test
-    public void testEnvVarsReplacementWithTestEnvWithSeveralVariables() {
+    public void shouldReplaceEnvVarsWithTestEnvWithSeveralVariables() {
         final Map<String, String> envVars = new HashMap<>();
         envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
 

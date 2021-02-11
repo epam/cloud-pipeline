@@ -17,25 +17,15 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
-import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.pipeline.CommitStatus;
-import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.entity.pipeline.run.RunStatus;
-import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolExecutionDeniedException;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.EntityManager;
@@ -49,10 +39,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
-import com.epam.pipeline.util.TestUtils;
 import io.reactivex.subjects.BehaviorSubject;
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
@@ -62,30 +49,22 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 @Transactional
-@SuppressWarnings("PMD.TooManyStaticImports")
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.UnusedPrivateField"})
 public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final float PRICE_PER_HOUR = 12F;
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
