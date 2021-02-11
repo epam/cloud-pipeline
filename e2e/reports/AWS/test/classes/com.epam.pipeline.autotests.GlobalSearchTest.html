@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">7</div>
+<div class="counter">4</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">7</div>
+<div class="counter">6</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">32m43.95s</div>
+<div class="counter">40m16.34s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">50%</div>
+<div class="percent">73%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,80 +73,13 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="folderSearch - EPMCMBIBPC-2654"></a>
-<h3 class="failures">folderSearch - EPMCMBIBPC-2654</h3>
-<span class="code">
-<pre>ListSizeMismatch : expected: = 1, actual: 0, collection: By.id: search-results/.earch__search-result-item
-Elements: []
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612965636696.57.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612965636696.57.html
-Timeout: 6 s.
-	at com.codeborne.selenide.collections.ListSize.fail(ListSize.java:24)
-	at com.codeborne.selenide.ElementsCollection.waitUntil(ElementsCollection.java:98)
-	at com.codeborne.selenide.ElementsCollection.should(ElementsCollection.java:57)
-	at com.codeborne.selenide.ElementsCollection.shouldHave(ElementsCollection.java:48)
-	at com.codeborne.selenide.ElementsCollection.shouldHaveSize(ElementsCollection.java:33)
-	at com.epam.pipeline.autotests.ao.GlobalSearchAO.validateSearchResults(GlobalSearchAO.java:139)
-	at com.epam.pipeline.autotests.GlobalSearchTest.folderSearch(GlobalSearchTest.java:630)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="folderSearchByEnterKey - EPMCMBIBPC-2655"></a>
-<h3 class="failures">folderSearchByEnterKey - EPMCMBIBPC-2655</h3>
-<span class="code">
-<pre>Element should be visible {By.id: search-results}
-Element: '&lt;div class=&quot;earch__search-results&quot; id=&quot;search-results&quot; displayed:false&gt;&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612965722932.58.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612965722932.58.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.hover(AccessObject.java:177)
-	at com.epam.pipeline.autotests.GlobalSearchTest.folderSearchByEnterKey(GlobalSearchTest.java:647)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="issueSearch - EPMCMBIBPC-2670"></a>
-<h3 class="failures">issueSearch - EPMCMBIBPC-2670</h3>
+<a name="searchAfterDeleting - EPMCMBIBPC-2676"></a>
+<h3 class="failures">searchAfterDeleting - EPMCMBIBPC-2676</h3>
 <span class="code">
 <pre>Element not found {By.id: navigation-button-pipelines}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612965803733.59.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612965803733.59.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1613057611750.95.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1613057611750.95.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-pipelines&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -161,7 +94,7 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
 	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
 	at com.epam.pipeline.autotests.mixins.Navigation.library(Navigation.java:49)
-	at com.epam.pipeline.autotests.GlobalSearchTest.issueSearch(GlobalSearchTest.java:549)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchAfterDeleting(GlobalSearchTest.java:744)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -181,10 +114,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'e01e5ad78046', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '80da37fb746f', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: b13189fd367299c412004106703b4941
+Session ID: f2d765f60926a76edfd3e110e97e2b4b
 *** Element info: {Using=id, value=navigation-button-pipelines}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -209,13 +142,83 @@ Session ID: b13189fd367299c412004106703b4941
 </span>
 </div>
 <div class="test">
-<a name="negativeFolderSearch - EPMCMBIBPC-2656"></a>
-<h3 class="failures">negativeFolderSearch - EPMCMBIBPC-2656</h3>
+<a name="searchForCompletedToolRun - EPMCMBIBPC-2669"></a>
+<h3 class="failures">searchForCompletedToolRun - EPMCMBIBPC-2669</h3>
+<span class="code">
+<pre>Element should be visible {By.id: search-results}
+Element: '&lt;div class=&quot;earch__search-results&quot; id=&quot;search-results&quot; displayed:false&gt;&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1613057531049.94.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1613057531049.94.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.hover(AccessObject.java:177)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForCompletedToolRun(GlobalSearchTest.java:525)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchForPipeline - EPMCMBIBPC-2658"></a>
+<h3 class="failures">searchForPipeline - EPMCMBIBPC-2658</h3>
+<span class="code">
+<pre>Element should text 'Job definition' {By.className: review__content-preview}
+Element: '&lt;div class=&quot;review__content-preview&quot;&gt;TypeError: Failed to fetch&lt;/div&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1613055922657.84.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1613055922657.84.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForPipeline(GlobalSearchTest.java:203)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="searchForStorage - EPMCMBIBPC-2660"></a>
+<h3 class="failures">searchForStorage - EPMCMBIBPC-2660</h3>
 <span class="code">
 <pre>Element not found {By.id: navigation-button-search}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612965884037.60.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612965884037.60.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1613056003384.85.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1613056003384.85.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-search&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -230,7 +233,7 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
 	at com.epam.pipeline.autotests.ao.NavigationMenuAO.search(NavigationMenuAO.java:77)
 	at com.epam.pipeline.autotests.GlobalSearchTest.search(GlobalSearchTest.java:766)
-	at com.epam.pipeline.autotests.GlobalSearchTest.negativeFolderSearch(GlobalSearchTest.java:660)
+	at com.epam.pipeline.autotests.GlobalSearchTest.searchForStorage(GlobalSearchTest.java:309)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -250,10 +253,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'e01e5ad78046', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '80da37fb746f', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: b13189fd367299c412004106703b4941
+Session ID: f2d765f60926a76edfd3e110e97e2b4b
 *** Element info: {Using=id, value=navigation-button-search}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -277,171 +280,6 @@ Session ID: b13189fd367299c412004106703b4941
 </pre>
 </span>
 </div>
-<div class="test">
-<a name="searchForDetachConfigByConfiguration - EPMCMBIBPC-2673"></a>
-<h3 class="failures">searchForDetachConfigByConfiguration - EPMCMBIBPC-2673</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-home}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612965964363.61.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612965964363.61.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-home&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.mixins.Navigation.home(Navigation.java:43)
-	at com.epam.pipeline.autotests.GlobalSearchTest.searchForDetachConfigByConfiguration(GlobalSearchTest.java:720)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-home&quot;}
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'e01e5ad78046', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: b13189fd367299c412004106703b4941
-*** Element info: {Using=id, value=navigation-button-home}
-	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
-	at org.openqa.selenium.By$ById.findElement(By.java:218)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="searchForPipeline - EPMCMBIBPC-2658"></a>
-<h3 class="failures">searchForPipeline - EPMCMBIBPC-2658</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-pipelines}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612966079266.62.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612966079266.62.html
-Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.NavigationMenuAO.library(NavigationMenuAO.java:37)
-	at com.epam.pipeline.autotests.mixins.Navigation.library(Navigation.java:49)
-	at com.epam.pipeline.autotests.GlobalSearchTest.searchForPipeline(GlobalSearchTest.java:181)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'e01e5ad78046', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: b13189fd367299c412004106703b4941
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 18 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="searchForStorage - EPMCMBIBPC-2660"></a>
-<h3 class="failures">searchForStorage - EPMCMBIBPC-2660</h3>
-<span class="code">
-<pre>Element should text '2 DATA' {[unknown locator]}
-Element: '&lt;div class=&quot;earch__type-button  &quot;&gt;1 DATA&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1612966165045.63.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1612966165045.63.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
-	at com.epam.pipeline.autotests.GlobalSearchTest.searchForStorage(GlobalSearchTest.java:313)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
 </div>
 <div id="tab1" class="tab">
 <h2>Tests</h2>
@@ -454,48 +292,48 @@ Timeout: 80 s.
 </tr>
 </thead>
 <tr>
-<td class="failures">folderSearch - EPMCMBIBPC-2654</td>
-<td>13.704s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="failures">folderSearchByEnterKey - EPMCMBIBPC-2655</td>
-<td>1m25.68s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="skipped">identicalNamesSearch</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="failures">issueSearch - EPMCMBIBPC-2670</td>
-<td>1m20.31s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="failures">negativeFolderSearch - EPMCMBIBPC-2656</td>
-<td>1m20.21s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="success">searchAfterDeleting - EPMCMBIBPC-2676</td>
-<td>5m17.48s</td>
+<td class="success">folderSearch - EPMCMBIBPC-2654</td>
+<td>12.559s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">searchForCompletedToolRun - EPMCMBIBPC-2669</td>
-<td>5m29.27s</td>
+<td class="success">folderSearchByEnterKey - EPMCMBIBPC-2655</td>
+<td>7.434s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">searchForDetachConfigByConfiguration - EPMCMBIBPC-2673</td>
-<td>1m20.19s</td>
+<td class="success">identicalNamesSearch - EPMCMBIBPC-2671</td>
+<td>5m20.60s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">issueSearch - EPMCMBIBPC-2670</td>
+<td>7m25.78s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">negativeFolderSearch - EPMCMBIBPC-2656</td>
+<td>6.904s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">searchAfterDeleting - EPMCMBIBPC-2676</td>
+<td>1m20.22s</td>
 <td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">searchForCompletedToolRun - EPMCMBIBPC-2669</td>
+<td>6m30.54s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="success">searchForDetachConfigByConfiguration - EPMCMBIBPC-2673</td>
+<td>14.498s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForDetachConfigByName - EPMCMBIBPC-2672</td>
-<td>14.172s</td>
+<td>14.016s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -505,7 +343,7 @@ Timeout: 80 s.
 </tr>
 <tr>
 <td class="failures">searchForPipeline - EPMCMBIBPC-2658</td>
-<td>1m37.91s</td>
+<td>3m53.00s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -530,7 +368,7 @@ Timeout: 80 s.
 </tr>
 <tr>
 <td class="failures">searchForStorage - EPMCMBIBPC-2660</td>
-<td>1m24.67s</td>
+<td>1m20.31s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -540,22 +378,22 @@ Timeout: 80 s.
 </tr>
 <tr>
 <td class="success">searchForTool - EPMCMBIBPC-2667</td>
-<td>17.900s</td>
+<td>1m37.59s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForToolRun - EPMCMBIBPC-2668</td>
-<td>7m16.46s</td>
+<td>6m26.59s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchResultCancel - EPMCMBIBPC-2657</td>
-<td>10.466s</td>
+<td>10.863s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchWithSpecialExpressions - EPMCMBIBPC-2675</td>
-<td>5m15.53s</td>
+<td>5m15.45s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -563,7 +401,7 @@ Timeout: 80 s.
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 58232 from [58232]
+<pre>Returns latest run with runId 58393 from [58393]
 </pre>
 </span>
 </div>
@@ -575,7 +413,7 @@ Timeout: 80 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 10, 2021 5:22:32 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 11, 2021 6:23:06 PM</p>
 </div>
 </div>
 </body>
