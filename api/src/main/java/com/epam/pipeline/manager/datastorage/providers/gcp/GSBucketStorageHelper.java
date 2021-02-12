@@ -131,18 +131,6 @@ public class GSBucketStorageHelper {
                 .map(this::createDataStorageFile);
     }
 
-    public Stream<DataStorageFile> listDataStorageFileVersions(final GSBucketStorage storage, final String path) {
-        final String folderPath = normalizeFolderPath(path);
-        final Storage client = gcpClient.buildStorageClient(region);
-        final String bucketName = storage.getPath();
-        final Page<Blob> blobs = client.list(bucketName,
-                Storage.BlobListOption.versions(true),
-                Storage.BlobListOption.prefix(folderPath));
-        final Spliterator<Blob> spliterator = blobs.iterateAll().spliterator();
-        return StreamSupport.stream(spliterator, false)
-                .map(this::createDataStorageFile);
-    }
-
     public DataStorageListing listItems(final GSBucketStorage storage, final String path, final Boolean showVersion,
                                         final Integer pageSize, final String marker) {
         String requestPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);

@@ -55,8 +55,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
 
     Stream<DataStorageFile> listDataStorageFiles(T dataStorage, String path);
 
-    Stream<DataStorageFile> listDataStorageFileVersions(T dataStorage, String path);
-
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);
 

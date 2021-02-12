@@ -317,11 +317,6 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public Stream<DataStorageFile> listDataStorageFileVersions(final NFSDataStorage dataStorage, final String path) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public DataStorageListing getItems(NFSDataStorage dataStorage, String path, Boolean showVersion,
                                        Integer pageSize, String marker) {
         File dataStorageRoot = mount(dataStorage);

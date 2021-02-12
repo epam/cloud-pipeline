@@ -96,11 +96,6 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public Stream<DataStorageFile> listDataStorageFileVersions(final GSBucketStorage dataStorage, final String path) {
-        return getHelper(dataStorage).listDataStorageFileVersions(dataStorage, path);
-    }
-
-    @Override
     public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, String marker) {
         return getHelper(dataStorage).listItems(dataStorage, path, showVersion, pageSize, marker);
