@@ -701,6 +701,19 @@ public class DataStorageManager implements SecuredEntityManager {
         final List<DataStorageTag> existingTags = tagManager.load(rootPath, object);
         tags.forEach(tag -> Assert.isTrue(existingTags.stream().anyMatch(it -> it.getKey().equals(tag)),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag)));
+        if (dataStorage.isVersioningEnabled()) {
+            storageProviderManager.findFile(dataStorage, path)
+                    .map(DataStorageFile::getVersion)
+                    .map(latestVersion -> {
+                        if (StringUtils.isBlank(version)) {
+                            return new DataStorageObject(relativePath, latestVersion);
+                        }
+                        return latestVersion.equals(version) ? new DataStorageObject(relativePath) : null;
+                    })
+                    .ifPresent(obj -> {
+                        tagManager.delete(rootPath, obj, tags);
+                    });
+        }
         tagManager.delete(rootPath, object, tags);
         return mapFrom(tagManager.load(rootPath, object));
     }
@@ -739,9 +752,21 @@ public class DataStorageManager implements SecuredEntityManager {
         final Pair<String, String> rootAndRelativePaths = getRootAndRelativePaths(dataStorage, path);
         final String rootPath = rootAndRelativePaths.getLeft();
         final String relativePath = rootAndRelativePaths.getRight();
-        return mapFrom(rewrite
-                ? tagManager.insert(rootPath, new DataStorageObject(relativePath, version), tagsToAdd)
-                : tagManager.upsert(rootPath, new DataStorageObject(relativePath, version), tagsToAdd));
+        final Function<DataStorageObject, List<DataStorageTag>> updateTags = rewrite
+                ? object -> tagManager.insert(rootPath, object, tagsToAdd)
+                : object -> tagManager.upsert(rootPath, object, tagsToAdd);
+        if (dataStorage.isVersioningEnabled()) {
+            storageProviderManager.findFile(dataStorage, path)
+                    .map(DataStorageFile::getVersion)
+                    .map(latestVersion -> {
+                        if (StringUtils.isBlank(version)) {
+                            return new DataStorageObject(relativePath, latestVersion);
+                        }
+                        return latestVersion.equals(version) ? new DataStorageObject(relativePath) : null;
+                    })
+                    .ifPresent(updateTags::apply);
+        }
+        return mapFrom(updateTags.apply(new DataStorageObject(relativePath, version)));
     }
 
     private Map<String, String> mapFrom(final List<DataStorageTag> tags) {
