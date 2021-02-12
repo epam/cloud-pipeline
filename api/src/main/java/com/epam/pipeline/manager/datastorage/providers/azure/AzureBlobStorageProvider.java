@@ -94,11 +94,6 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
-    public Stream<DataStorageFile> listDataStorageFileVersions(final AzureBlobStorage dataStorage, final String path) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker) {
         return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, pageSize, marker);

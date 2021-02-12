@@ -74,6 +74,9 @@
                     )
                     AND t.datastorage_version = :DATASTORAGE_VERSION
                     AND t.datastorage_path LIKE :DATASTORAGE_PATH
+                    ON CONFLICT (datastorage_root_id, datastorage_path, datastorage_version, tag_key) DO UPDATE SET
+                        tag_value = excluded.tag_value,
+                        created_date = excluded.created_date
                 ]]>
             </value>
         </constructor-arg>

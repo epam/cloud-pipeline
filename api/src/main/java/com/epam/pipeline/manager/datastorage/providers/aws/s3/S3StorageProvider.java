@@ -239,13 +239,6 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public Stream<DataStorageFile> listDataStorageFileVersions(final S3bucketDataStorage dataStorage,
-                                                               final String path) {
-        return getS3Helper(dataStorage).listDataStorageFileVersions(dataStorage.getRoot(),
-                ProviderUtils.buildPath(dataStorage, path));
-    }
-
-    @Override
     public void deleteFile(S3bucketDataStorage dataStorage, String path, String version, Boolean totally) {
         getS3Helper(dataStorage).deleteFile(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version,

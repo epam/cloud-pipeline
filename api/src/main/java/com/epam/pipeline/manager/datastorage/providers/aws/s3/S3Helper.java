@@ -329,14 +329,7 @@ public class S3Helper {
 
     public Stream<DataStorageFile> listDataStorageFiles(final String bucket, final String path) {
         final AmazonS3 client = getDefaultS3Client();
-        return S3ListingHelper.files(client, bucket, path)
-                .map(file -> findFile(client, bucket, file.getPath()))
-                .filter(Optional::isPresent)
-                .map(Optional::get);
-    }
-
-    public Stream<DataStorageFile> listDataStorageFileVersions(final String bucket, final String path) {
-        return S3ListingHelper.fileVersions(getDefaultS3Client(), bucket, path);
+        return S3ListingHelper.files(client, bucket, path);
     }
 
     public DataStorageListing getItems(String bucket, String path, Boolean showVersion,

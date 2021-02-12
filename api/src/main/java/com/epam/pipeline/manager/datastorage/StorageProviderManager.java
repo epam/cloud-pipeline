@@ -114,10 +114,6 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).listDataStorageFiles(dataStorage, path);
     }
 
-    public Stream<DataStorageFile> listFileVersions(AbstractDataStorage dataStorage, String path) {
-        return getStorageProvider(dataStorage).listDataStorageFileVersions(dataStorage, path);
-    }
-
     @SensitiveStorageOperation
     public DataStorageDownloadFileUrl generateDownloadURL(AbstractDataStorage dataStorage,
                                                           String path, String version,

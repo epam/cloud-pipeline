@@ -1,12 +1,10 @@
 package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ListVersionsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3VersionSummary;
 import com.amazonaws.services.s3.model.VersionListing;
 import com.amazonaws.util.StringUtils;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import lombok.RequiredArgsConstructor;
@@ -23,76 +21,14 @@ public final class S3ListingHelper {
 
     private S3ListingHelper() { }
     
-    public static Stream<DataStorageFile> files(AmazonS3 client, String bucket, String path) {
-        return new S3ListingBulkIterator(client, bucket, path)
-                .stream()
-                .flatMap(List::stream)
-                .filter(DataStorageFile.class::isInstance)
-                .map(DataStorageFile.class::cast);
-    }
-    
-    public static Stream<DataStorageFile> fileVersions(AmazonS3 client, String bucket, String path) {
-        return new S3VersionsListingBulkIterator(client, bucket, path)
-                .stream()
-                .flatMap(List::stream)
-                .filter(DataStorageFile.class::isInstance)
-                .map(DataStorageFile.class::cast);
+    public static Stream<DataStorageFile> files(final AmazonS3 client, final String bucket, final String path) {
+        final PageIterator iterator = new PageIterator(client, bucket, path);
+        final Spliterator<List<DataStorageFile>> spliterator = Spliterators.spliteratorUnknownSize(iterator, 0);
+        return StreamSupport.stream(spliterator, false).flatMap(List::stream);
     }
     
     @RequiredArgsConstructor
-    public static class S3ListingBulkIterator implements Iterator<List<AbstractDataStorageItem>> {
-
-        private final AmazonS3 client;
-        private final String bucket;
-        private final String path;
-
-        private String nextMarker;
-        private List<AbstractDataStorageItem> items;
-
-        @Override
-        public boolean hasNext() {
-            return items == null
-                    || org.apache.commons.lang3.StringUtils.isNotBlank(nextMarker);
-        }
-
-        @Override
-        public List<AbstractDataStorageItem> next() {
-            final ObjectListing objectsListing = client.listObjects(new ListObjectsRequest()
-                    .withBucketName(bucket)
-                    .withPrefix(path)
-                    .withMarker(nextMarker));
-            if (objectsListing.isTruncated()) {
-                nextMarker = null;
-            } else {
-                nextMarker = objectsListing.getNextMarker();
-            }
-            items = objectsListing.getObjectSummaries()
-                    .stream()
-                    .filter(it -> pathMatch(path, it.getKey()))
-                    .map(it -> {
-                        final DataStorageFile file = new DataStorageFile();
-                        file.setName(it.getKey());
-                        file.setPath(it.getKey());
-                        return file;
-                    })
-                    .collect(Collectors.toList());
-            return items;
-        }
-
-        private boolean pathMatch(final String path, final String key) {
-            return StringUtils.isNullOrEmpty(path)
-                    || (path.endsWith(ProviderUtils.DELIMITER) && key.startsWith(path))
-                    || key.equals(path);
-        }
-
-        public Stream<List<AbstractDataStorageItem>> stream() {
-            final Spliterator<List<AbstractDataStorageItem>> spliterator = Spliterators.spliteratorUnknownSize(this, 0);
-            return StreamSupport.stream(spliterator, false);
-        }
-    }
-
-    @RequiredArgsConstructor
-    public static class S3VersionsListingBulkIterator implements Iterator<List<AbstractDataStorageItem>> {
+    private static class PageIterator implements Iterator<List<DataStorageFile>> {
 
         private final AmazonS3 client;
         private final String bucket;
@@ -100,7 +36,7 @@ public final class S3ListingHelper {
 
         private String nextKeyMarker;
         private String nextVersionIdMarker;
-        private List<AbstractDataStorageItem> items;
+        private List<DataStorageFile> items;
 
         @Override
         public boolean hasNext() {
@@ -110,7 +46,7 @@ public final class S3ListingHelper {
         }
 
         @Override
-        public List<AbstractDataStorageItem> next() {
+        public List<DataStorageFile> next() {
             final VersionListing versionListing = client.listVersions(new ListVersionsRequest()
                     .withBucketName(bucket)
                     .withKeyMarker(nextKeyMarker)
@@ -124,27 +60,31 @@ public final class S3ListingHelper {
             }
             items = versionListing.getVersionSummaries()
                     .stream()
-                    .filter(it -> pathMatch(path, it.getKey()))
-                    .map(it -> {
-                        final DataStorageFile file = new DataStorageFile();
-                        file.setName(it.getKey());
-                        file.setPath(it.getKey());
-                        file.setVersion(it.getVersionId());
-                        return file;
-                    })
+                    .filter(summary -> matchesPath(summary) && isLatest(summary))
+                    .map(this::toDataStorageFile)
                     .collect(Collectors.toList());
             return items;
         }
 
-        private boolean pathMatch(final String path, final String key) {
-            return StringUtils.isNullOrEmpty(path)
-                    || (path.endsWith(ProviderUtils.DELIMITER) && key.startsWith(path))
-                    || key.equals(path);
+        private DataStorageFile toDataStorageFile(final S3VersionSummary summary) {
+            final DataStorageFile file = new DataStorageFile();
+            file.setName(summary.getKey());
+            file.setPath(summary.getKey());
+            if (summary.getVersionId() != null && !summary.getVersionId().equals("null")) {
+                file.setVersion(summary.getVersionId());
+            }
+            return file;
         }
 
-        public Stream<List<AbstractDataStorageItem>> stream() {
-            final Spliterator<List<AbstractDataStorageItem>> spliterator = Spliterators.spliteratorUnknownSize(this, 0);
-            return StreamSupport.stream(spliterator, false);
+        private boolean matchesPath(final S3VersionSummary summary) {
+            return StringUtils.isNullOrEmpty(path)
+                    || (path.endsWith(ProviderUtils.DELIMITER) && summary.getKey().startsWith(path))
+                    || summary.getKey().equals(path);
+        }
+
+        private boolean isLatest(final S3VersionSummary summary) {
+            return summary.isLatest()
+                    && !summary.isDeleteMarker();
         }
     }
 }
