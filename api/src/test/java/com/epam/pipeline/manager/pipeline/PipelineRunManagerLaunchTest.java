@@ -29,14 +29,12 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
-import io.reactivex.subjects.BehaviorSubject;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -44,12 +42,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.HashMap;
-import java.util.Optional;
 
-import static com.epam.pipeline.common.MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED;
-import static com.epam.pipeline.common.MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED;
-import static com.epam.pipeline.common.MessageConstants.ERROR_RUN_CLOUD_REGION_NOT_ALLOWED;
-import static com.epam.pipeline.common.MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
@@ -78,13 +71,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("PMD.UnusedPrivateField")
-public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
+public class PipelineRunManagerLaunchTest {
     private static final float PRICE_PER_HOUR = 12F;
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
     private static final float DISK_PRICE_PER_HOUR = 1F;
     private static final String INSTANCE_TYPE = "m5.large";
-    private static final String NOT_ALLOWED = "not allowed";
-    private static final String NO_PERMISSIONS = "no permissions";
     private static final long PARENT_RUN_ID = 5L;
     private static final String INSTANCE_DISK = "1";
     private static final String PARENT_RUN_ID_PARAMETER = "parent-id";
@@ -125,9 +116,6 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     private CloudRegionManager cloudRegionManager;
 
     @Mock
-    private ToolVersionManager toolVersionManager;
-
-    @Mock
     private CheckPermissionHelper permissionHelper;
 
     @Mock
@@ -163,11 +151,18 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     @Test
-    public void launchPipelineShouldValidateToolInstanceTypeAndPriceType() {
+    public void launchPipelineShouldValidateToolInstanceType() {
         launchTool(configuration, INSTANCE_TYPE);
 
         verify(toolManager).loadByNameOrId(eq(IMAGE));
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
+    }
+
+    @Test
+    public void launchPipelineShouldValidatePriceType() {
+        launchTool(configuration, INSTANCE_TYPE);
+
+        verify(toolManager).loadByNameOrId(eq(IMAGE));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getResource()), eq(false));
     }
 
@@ -175,10 +170,8 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     public void launchPipelineShouldFailOnNotAllowedToolInstanceType() {
         doReturn(false).when(instanceOfferManager)
                 .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
-        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        final Runnable result = () -> launchTool(configuration, INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), result);
+        assertThrows(() -> launchTool(configuration, INSTANCE_TYPE));
 
         verify(toolManager).loadByNameOrId(eq(IMAGE));
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
@@ -196,10 +189,8 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     @Test
     public void launchPipelineShouldValidateToolInstanceTypeInTheSpecifiedRegion() {
         configuration.setCloudRegionId(ID_2);
-        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        final Runnable result = () -> launchTool(configuration, INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), result);
+        assertThrows(() -> launchTool(configuration, INSTANCE_TYPE));
 
         verify(toolManager).loadByNameOrId(eq(IMAGE));
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID_2), eq(true));
@@ -216,9 +207,8 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     @Test
     public void launchPipelineShouldValidatePipelineInstanceTypeInTheSpecifiedRegion() {
         configuration.setCloudRegionId(ID_2);
-        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(configuration, INSTANCE_TYPE));
+        assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
 
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID_2), eq(true));
     }
@@ -226,9 +216,8 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     @Test
     public void launchPipelineShouldFailOnNotAllowedInstanceType() {
         doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
-        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED), eq(INSTANCE_TYPE));
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(configuration, INSTANCE_TYPE));
+        assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
 
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
     }
@@ -247,19 +236,15 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
 
         launchPipeline(configuration, INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(false));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(null), eq(false));
     }
 
     @Test
     public void launchPipelineShouldFailOnNotAllowedPriceType() {
         doReturn(false).when(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
-        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_PRICE_TYPE_IS_NOT_ALLOWED), eq(PriceType.SPOT));
 
-        final Runnable result = () -> launchPipeline(configuration, INSTANCE_TYPE);
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), result);
+        assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
     }
 
@@ -269,14 +254,9 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
         toolConfiguration.setCloudRegionId(ID_3);
         doReturn(toolConfiguration).when(pipelineConfigurationManager)
                 .getConfigurationForTool(eq(tool), eq(configuration));
-        doReturn(NOT_ALLOWED).when(messageHelper).getMessage(eq(ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED), any(), any());
 
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchPipeline(configuration, null));
-        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED), () -> launchTool(configuration, null));
-
-        verify(cloudRegionManager, times(2)).load(eq(ID));
-        verify(permissionHelper, times(2)).isAdmin();
-        verify(cloudRegionManager, times(2)).load(eq(ID_3));
+        assertThrows(() -> launchPipeline(configuration, null));
+        assertThrows(() -> launchTool(configuration, null));
     }
 
     @Test
@@ -297,10 +277,8 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     @Test
     public void launchPipelineShouldFailIfCloudRegionIsNotAllowed() {
         doReturn(false).when(permissionHelper).isAllowed(eq(PERMISSION_NAME), eq(defaultAwsRegion));
-        doReturn(NO_PERMISSIONS).when(messageHelper).getMessage(eq(ERROR_RUN_CLOUD_REGION_NOT_ALLOWED), any());
 
-        final Runnable result = () -> launchPipeline(configuration, null);
-        assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS), result);
+        assertThrows(() -> launchPipeline(configuration, null));
     }
 
     @Test
@@ -361,7 +339,6 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     private void mockToolManager() {
         doReturn(tool).when(toolManager).loadByNameOrId(eq(IMAGE));
         doReturn(tool).when(toolManager).resolveSymlinks(eq(IMAGE));
-        doReturn(Optional.empty()).when(toolManager).loadToolVersionScan(eq(tool.getId()), eq(null));
     }
 
     private void mockCloudRegionManager() {
@@ -387,21 +364,17 @@ public class PipelineRunManagerInstanceTypePriceTypeAndCloudRegionTest {
     }
 
     private void mockInstanceOfferManager() {
-        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID), eq(true));
-        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID), eq(false));
-        doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID), eq(true));
-        doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID), eq(false));
+        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID), anyBoolean());
+        doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID), anyBoolean());
         doReturn(false).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID_2), eq(true));
         doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID_3), eq(false));
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
-        doReturn(BehaviorSubject.create()).when(instanceOfferManager).getAllInstanceTypesObservable();
         doReturn(price).when(instanceOfferManager)
                 .getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong());
     }
 
     private void mockParentRun() {
         doReturn(parentRun).when(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
-        doReturn(false).when(permissionManager).isRunSshAllowed(eq(parentRun));
     }
 
     private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
