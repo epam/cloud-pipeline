@@ -375,7 +375,7 @@ class PipelineRunOperations(object):
         return cls.get_pipeline_status(identifier, hanging_statuses=['RUNNING', 'PAUSING'])
 
     @classmethod
-    def get_pipeline_status(cls, identifier, hanging_statuses: list):
+    def get_pipeline_status(cls, identifier, hanging_statuses):
         status = cls.pipeline_run_get(identifier).status
         while status.upper() in hanging_statuses:
             sleep(DELAY)
