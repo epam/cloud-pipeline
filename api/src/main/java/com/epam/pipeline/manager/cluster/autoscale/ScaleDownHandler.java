@@ -68,14 +68,32 @@ public class ScaleDownHandler {
             log.debug("Node {} is paused.", nodeLabel);
             return;
         }
+        //TODO: refactor this
+        final boolean poolNode = nodeLabel.startsWith(AutoscaleContants.NODE_POOL_PREFIX);
+        if (kubernetesManager.isNodeUnavailable(node)) {
+            if (poolNode) {
+                log.debug("Scaling down unavailable {} pool node.", nodeLabel);
+                cloudFacade.scaleDownPoolNode(nodeLabel);
+            } else {
+                final Long currentRunId = Long.parseLong(nodeLabel);
+                if (autoscalerService.getPreviousRunInstance(nodeLabel, client) != null) {
+                    log.debug("Trying to set failure status for run {}.", nodeLabel);
+                    pipelineRunManager.updatePipelineStatusIfNotFinal(currentRunId, TaskStatus.FAILURE);
+                    updatePodStatus(node, currentRunId);
+                }
+                log.debug("Scaling down unavailable {} node.", nodeLabel);
+                cloudFacade.scaleDownNode(currentRunId);
+            }
+            return;
+        }
         if (scheduledRuns.contains(nodeLabel) || pods.contains(nodeLabel)) {
             log.debug("Node is already assigned to run {}.", nodeLabel);
             return;
         }
-        if (nodeLabel.startsWith(AutoscaleContants.NODE_POOL_PREFIX)) {
+        if (poolNode) {
             scaleDownPoolNodeIfNotRequired(nodeLabel, client, node, requiredInstances);
         } else {
-            scaleDownRunNodeIfNotRequired(nodeLabel, client, node, requiredInstances);
+            scaleDownRunNodeIfNotRequired(nodeLabel, client, requiredInstances);
         }
     }
 
@@ -89,11 +107,6 @@ public class ScaleDownHandler {
 
         if (nodePool == null) {
             log.debug("Scaling down pool node {} for a deleted pool.", nodeLabel);
-            cloudFacade.scaleDownPoolNode(nodeLabel);
-            return;
-        }
-        if (kubernetesManager.isNodeUnavailable(node)) {
-            log.debug("Scaling down unavailable {} pool node.", nodeLabel);
             cloudFacade.scaleDownPoolNode(nodeLabel);
             return;
         }
@@ -114,21 +127,10 @@ public class ScaleDownHandler {
 
     private void scaleDownRunNodeIfNotRequired(final String nodeLabel,
                                                final KubernetesClient client,
-                                               final Node node,
                                                final List<InstanceRequest> requiredInstances) {
         final Long currentRunId = Long.parseLong(nodeLabel);
         final RunningInstance previousConfiguration = autoscalerService.getPreviousRunInstance(nodeLabel, client);
 
-        if (kubernetesManager.isNodeUnavailable(node)) {
-            if (previousConfiguration != null) {
-                log.debug("Trying to set failure status for run {}.", nodeLabel);
-                pipelineRunManager.updatePipelineStatusIfNotFinal(currentRunId, TaskStatus.FAILURE);
-                updatePodStatus(node, currentRunId);
-            }
-            log.debug("Scaling down unavailable {} node.", nodeLabel);
-            cloudFacade.scaleDownNode(currentRunId);
-            return;
-        }
         if (previousConfiguration == null) {
             log.debug("Scaling down {} node for deleted pipeline.", nodeLabel);
             cloudFacade.scaleDownNode(currentRunId);
