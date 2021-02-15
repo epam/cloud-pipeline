@@ -52,7 +52,7 @@ ILM_POLICY="{
         }
       },
       \"delete\": {
-        \"min_age\": \"${CP_SECURITY_LOGS_ROLLOVER_DAYS:-20}d\",
+        \"min_age\": \"${CP_APPLICATION_LOGS_ROLLOVER_DAYS:-20}d\",
         \"actions\": {
           \"delete\": {}
         }
@@ -61,15 +61,23 @@ ILM_POLICY="{
   }
 }"
 
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ilm/policy/security_log_policy -d "$ILM_POLICY"
+curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ilm/policy/application_log_policy -d "$ILM_POLICY"
 
 INDEX_TEMPLATE="{
-  \"index_patterns\": [\"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-*\"],
+  \"index_patterns\": [\"${CP_APPLICATION_LOGS_ELASTIC_PREFIX:-application_log}-*\"],
   \"settings\": {
     \"number_of_shards\": 1,
     \"number_of_replicas\": 0,
-    \"index.lifecycle.name\": \"security_log_policy\",
-    \"index.lifecycle.rollover_alias\": \"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}\"
+    \"index.lifecycle.name\": \"application_log_policy\",
+    \"index.lifecycle.rollover_alias\": \"${CP_APPLICATION_LOGS_ELASTIC_PREFIX:-application_log}\",
+    \"analysis\": {
+      \"analyzer\": {
+        \"class_name_analyzer\": { \"tokenizer\": \"class_name_tokenizer\" }
+      },
+      \"tokenizer\": {
+        \"class_name_tokenizer\": { \"type\": \"simple_pattern_split\", \"pattern\": \"\\\\.\"}
+      }
+    }
   },
   \"mappings\": {
     \"doc\" : {
@@ -106,11 +114,7 @@ INDEX_TEMPLATE="{
         },
         \"loggerName\": {
           \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
+          \"analyzer\": \"class_name_analyzer\"
         },
         \"message\": {
           \"type\": \"text\",
@@ -210,15 +214,15 @@ INDEX_TEMPLATE="{
   }
 }"
 
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/_template/security_log_template -d "$INDEX_TEMPLATE"
+curl -H 'Content-Type: application/json' -XPUT localhost:9200/_template/application_log_template -d "$INDEX_TEMPLATE"
 
 INDEX="{
   \"aliases\": {
-    \"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}\": {}
+    \"${CP_APPLICATION_LOGS_ELASTIC_PREFIX:-application_log}\": {}
   }
 }"
 
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
+curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_APPLICATION_LOGS_ELASTIC_PREFIX:-application_log}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
 
 EDGE_PIPELINE="{
 

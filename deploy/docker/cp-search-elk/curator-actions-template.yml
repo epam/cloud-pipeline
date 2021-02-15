@@ -2,7 +2,7 @@ actions:
   1:
     action: snapshot
     description: >-
-      Snapshot security_log- prefixed indices older than 1 day (based on index
+      Snapshot application_log- prefixed indices older than 1 day (based on index
       creation_date).
     options:
       allow_ilm_indices: True
@@ -17,7 +17,7 @@ actions:
     filters:
       - filtertype: pattern
         kind: prefix
-        value: ${CP_SECURITY_LOGS_ELASTIC_PREFIX}
+        value: ${CP_APPLICATION_LOGS_ELASTIC_PREFIX}
       - filtertype: age
         source: creation_date
         direction: older
@@ -26,7 +26,7 @@ actions:
   2:
     action: delete_snapshots
     description: >-
-      Delete snapshots from the selected repository older than CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS days
+      Delete snapshots from the selected repository older than CP_APPLICATION_LOGS_ELASTIC_BACKUP_DAYS days
       (based on creation_date), for 'snapshot-' prefixed snapshots.
     options:
       repository: log_backup_repo
@@ -40,4 +40,4 @@ actions:
         source: creation_date
         direction: older
         unit: days
-        unit_count: ${CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS}
+        unit_count: ${CP_APPLICATION_LOGS_ELASTIC_BACKUP_DAYS}

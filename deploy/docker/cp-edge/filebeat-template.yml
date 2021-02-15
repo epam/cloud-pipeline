@@ -1,10 +1,10 @@
-setup.template.name: "security_log_template"
-setup.template.pattern: "security_log*"
+setup.template.name: "application_log_template"
+setup.template.pattern: "application_log*"
 setup.tempalte.enabled: false
 output.elasticsearch:
   hosts: ["http://${CP_SEARCH_ELK_INTERNAL_HOST}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}"]
   pipeline: "edge"
-  index: "security_log"
+  index: "application_log"
 filebeat:
   inputs:
     - paths:
