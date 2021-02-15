@@ -334,10 +334,10 @@ public class DockerContainerOperationManager {
 
     private void failRunAndTerminateNode(PipelineRun run, Exception e) {
         LOGGER.error(e.getMessage());
+        nodesManager.terminateNode(run.getInstance().getNodeName(), false);
         run.setEndDate(DateUtils.now());
         run.setStatus(TaskStatus.FAILURE);
         runManager.updatePipelineStatus(run);
-        nodesManager.terminateNode(run.getInstance().getNodeName());
     }
 
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName) {
