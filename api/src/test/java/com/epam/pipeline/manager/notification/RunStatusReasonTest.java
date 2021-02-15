@@ -40,7 +40,6 @@ import com.epam.pipeline.test.creator.notification.NotificationCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.util.TestUtils;
 import java.util.Arrays;
-import java.util.Collections;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,9 +52,10 @@ public class RunStatusReasonTest extends AbstractAspectTest {
     private static final String PAUSED_STATUS = "PAUSED";
 
     private final NotificationSettings settings =
-        NotificationCreatorUtils.getNotificationSettings(ID, Arrays.asList(TaskStatus.RESUMING, TaskStatus.PAUSED));
+        NotificationCreatorUtils.getNotificationSettings(ID,
+            Arrays.asList(TaskStatus.RESUMING, TaskStatus.PAUSED));
     private final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser(TEST_STRING);
-    private final ExtendedRole extendedRole = UserCreatorUtils.getExtendedRole();
+    private final ExtendedRole extendedRole = UserCreatorUtils.getExtendedRole(pipelineUser);
     private final PipelineRun run = TestUtils.createPipelineRun(null, null, TaskStatus.PAUSED,
         pipelineUser.getUserName(), null, null, true, null, null, "pod-id", 1L);
 
@@ -76,7 +76,6 @@ public class RunStatusReasonTest extends AbstractAspectTest {
 
     @Test
     public void testNotifyRunStatusChangedWithReason() {
-        extendedRole.setUsers(Collections.singletonList(pipelineUser));
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
@@ -90,7 +89,8 @@ public class RunStatusReasonTest extends AbstractAspectTest {
                .createMonitoringNotification(captor.capture());
         final NotificationMessage firstCapturedMessage = captor.getValue();
         assertThat(firstCapturedMessage.getTemplateParameters()
-                                       .get("status")).isEqualTo(RESUMING_STATUS);
+                                       .get("status"))
+                                       .isEqualTo(RESUMING_STATUS);
 
         run.setStatus(TaskStatus.PAUSED);
         pipelineRunManager.updateStateReasonMessage(run, RESUME_RUN_FAILED_MESSAGE);
