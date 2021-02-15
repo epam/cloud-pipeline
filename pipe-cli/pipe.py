@@ -698,6 +698,17 @@ def stop(run_id, yes):
     PipelineRunOperations.stop(run_id, yes)
 
 
+@cli.command(name='resume')
+@click.argument('run-id', required=True, type=int)
+@click.option('-s', '--sync', is_flag=True, help='Perform operation in a sync mode. When set - terminal will be blocked'
+                                                 ' until the finish status of the operation won\'t be returned')
+@Config.validate_access_token
+def stop(run_id, sync):
+    """Resumes a running pipeline
+    """
+    PipelineRunOperations.resume(run_id, sync)
+
+
 @cli.command(name='terminate-node')
 @click.argument('node-name', required=True, type=str)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')

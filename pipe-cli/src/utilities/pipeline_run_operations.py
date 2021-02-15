@@ -290,6 +290,32 @@ class PipelineRunOperations(object):
                 click.echo(str(value_error), err=True)
                 sys.exit(2)
 
+    @classmethod
+    def resume(cls, run_id, sync):
+        try:
+            pipeline_run_model = Pipeline.resume_pipeline(run_id)
+            pipeline_run_id = pipeline_run_model.identifier
+            click.echo('Resuming pipeline \'RunID={}\''.format(pipeline_run_id))
+            if sync:
+                status = cls.get_paused_pipeline_status(pipeline_run_id).status
+                if status == 'RUNNING':
+                    click.echo('Pipeline \'RunID={}\' is resumed'.format(pipeline_run_id))
+                    sys.exit(1)
+                else:
+                    click.echo('Failed resuming pipeline \'RunID={}\''.format(pipeline_run_id))
+        except click.exceptions.Abort:
+            click.echo('Operation abortion... Note: the resume operation can\'t be stopped'
+                       ' and it will continue to run in the background')
+            sys.exit(0)
+        except ConfigNotFoundError as config_not_found_error:
+            click.echo(str(config_not_found_error), err=True)
+        except requests.exceptions.RequestException as http_error:
+            click.echo('Http error: {}'.format(str(http_error)), err=True)
+        except RuntimeError as runtime_error:
+            click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        except ValueError as value_error:
+            click.echo('Error: {}'.format(str(value_error)), err=True)
+
     @staticmethod
     @wait_for_server_enabling_if_needed()
     def pipeline_run_get(identifier):
@@ -312,8 +338,16 @@ class PipelineRunOperations(object):
 
     @classmethod
     def get_pipeline_processed_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['SCHEDULED', 'RUNNING'])
+
+    @classmethod
+    def get_paused_pipeline_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['PAUSED', 'RESUMING'])
+
+    @classmethod
+    def get_pipeline_status(cls, identifier, hanging_statuses: list):
         status = cls.pipeline_run_get(identifier).status
-        while status.upper() == 'SCHEDULED' or status.upper() == 'RUNNING':
+        while status.upper() in hanging_statuses:
             sleep(DELAY)
             status = cls.pipeline_run_get(identifier).status
         return status
