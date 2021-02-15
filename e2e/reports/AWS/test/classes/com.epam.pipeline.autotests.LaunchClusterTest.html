@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3h1m58.01s</div>
+<div class="counter">3h9m9.50s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">92%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,91 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validationOfSlurmCluster - EPMCMBIBPC-3151"></a>
+<h3 class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</h3>
+<span class="code">
+<pre>Element should contains messages {By.className: ReactVirtualized__List}
+Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;042:[2021-02-15 07:32:58] Waiting for execution hosts to connect. 0 out of 1 are ready
+043:[2021-02-15 07:33:08] Waiting for execution hosts to connect. 0 out of 1 are ready
+044:[2021-02-15 07:33:19] Waiting for execution hosts to connect. 0 out of 1 are ready
+045:[2021-02-15 07:33:29] Waiting for execution hosts to connect. 0 out of 1 are ready
+046:[2021-02-15 07:33:40] Waiting for execution hosts to connect. 0 out of 1 are ready
+047:[2021-02-15 07:33:50] Waiting for execution hosts to connect. 0 out of 1 are ready
+048:[2021-02-15 07:34:01] Waiting for execution hosts to connect. 0 out of 1 are ready
+049:[2021-02-15 07:34:11] Waiting for execution hosts to connect. 0 out of 1 are ready
+050:[2021-02-15 07:34:22] Waiting for execution hosts to connect. 0 out of 1 are ready
+051:[2021-02-15 07:34:32] Waiting for execution hosts to connect. 0 out of 1 are ready
+052:[2021-02-15 07:34:43] Waiting for execution hosts to connect. 0 out of 1 are ready
+053:[2021-02-15 07:34:53] Waiting for execution hosts to connect. 0 out of 1 are ready
+054:[2021-02-15 07:35:04] Waiting for execution hosts to connect. 0 out of 1 are ready
+055:[2021-02-15 07:35:14] Waiting for execution hosts to connect. 0 out of 1 are ready
+056:[2021-02-15 07:35:25] Waiting for execution hosts to connect. 0 out of 1 are ready
+057:[2021-02-15 07:35:35] Waiting for execution hosts to connect. 0 out of 1 are ready
+058:[2021-02-15 07:35:46] Waiting for execution hosts to connect. 0 out of 1 are ready
+059:[2021-02-15 07:35:57] Waiting for execution hosts to connect. 0 out of 1 are ready
+060:[2021-02-15 07:36:07] Waiting for execution hosts to connect. 0 out of 1 are ready
+061:[2021-02-15 07:36:18] NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached&lt;/div&gt;'
+Actual value: Following messages wasn't found in log:
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1613374664567.64.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1613374664567.64.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
+	at com.epam.pipeline.autotests.LaunchClusterTest.validationOfSlurmCluster(LaunchClusterTest.java:329)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,81 +157,81 @@
 </thead>
 <tr>
 <td class="success">autoScaledClusterWithDefaultChildNodesValidationTest - EPMCMBIBPC-2628</td>
-<td>1h8m34.10s</td>
+<td>1h7m46.41s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeMastersConfig - EPMCMBIBPC-3161</td>
-<td>10m14.34s</td>
+<td>9m57.38s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeOnDemand - EPMCMBIBPC-3160</td>
-<td>8m59.50s</td>
+<td>8m24.42s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</td>
-<td>9m6.29s</td>
+<td>8m57.48s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledCluster - EPMCMBIBPC-3153</td>
-<td>13m37.07s</td>
+<td>13m29.87s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlock - EPMCMBIBPC-3154</td>
-<td>9m2.89s</td>
+<td>8m58.28s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions - EPMCMBIBPC-3159</td>
-<td>7m42.83s</td>
+<td>7m54.47s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterInstanceTypeFamily - EPMCMBIBPC-3155</td>
-<td>11m39.48s</td>
+<td>8m55.00s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">invalidValuesOnConfigureClusterPopUp - EPMCMBIBPC-2620</td>
-<td>22.515s</td>
+<td>22.617s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchAutoScaledClusterTest - EPMCMBIBPC-2618</td>
-<td>10m36.56s</td>
+<td>9m5.73s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchPipelineWithLaunchFlag - EPMCMBIBPC-975</td>
-<td>6m39.83s</td>
+<td>6m51.48s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfApacheSparkCluster - EPMCMBIBPC-3152</td>
-<td>8m34.50s</td>
+<td>8m34.59s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfGECluster - EPMCMBIBPC-3150</td>
-<td>7m20.30s</td>
+<td>9m31.00s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
-<td>9m27.81s</td>
-<td class="success">passed</td>
+<td class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
+<td>20m20.78s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Run with id 58642 has been stopped.
-Run with id 58641 has been stopped.
+<pre>Run with id 58757 has been stopped.
+Run with id 58756 has been stopped.
 </pre>
 </span>
 </div>
@@ -165,7 +243,7 @@ Run with id 58641 has been stopped.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 13, 2021 7:12:13 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 15, 2021 8:18:00 PM</p>
 </div>
 </div>
 </body>
