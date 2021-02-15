@@ -299,7 +299,7 @@ class PipelineRunOperations(object):
             pipeline_run_id = pipeline_run_model.identifier
             click.echo('Resuming pipeline \'RunID={}\''.format(pipeline_run_id))
             if sync:
-                status = cls.get_paused_pipeline_status(pipeline_run_id).status
+                status = cls.get_resuming_pipeline_status(pipeline_run_id).status
                 if status == 'RUNNING':
                     click.echo('Pipeline \'RunID={}\' is resumed'.format(pipeline_run_id))
                     sys.exit(1)
@@ -324,7 +324,7 @@ class PipelineRunOperations(object):
             pipeline_run_id = pipeline_run_model.identifier
             click.echo('Pausing pipeline \'RunID={}\''.format(pipeline_run_id))
             if sync:
-                status = cls.get_running_pipeline_status(pipeline_run_id).status
+                status = cls.get_pausing_pipeline_status(pipeline_run_id).status
                 if status == 'PAUSED':
                     click.echo('Pipeline \'RunID={}\' is paused'.format(pipeline_run_id))
                     sys.exit(1)
@@ -367,11 +367,11 @@ class PipelineRunOperations(object):
         return cls.get_pipeline_status(identifier, hanging_statuses=['SCHEDULED', 'RUNNING'])
 
     @classmethod
-    def get_paused_pipeline_status(cls, identifier):
+    def get_resuming_pipeline_status(cls, identifier):
         return cls.get_pipeline_status(identifier, hanging_statuses=['PAUSED', 'RESUMING'])
 
     @classmethod
-    def get_running_pipeline_status(cls, identifier):
+    def get_pausing_pipeline_status(cls, identifier):
         return cls.get_pipeline_status(identifier, hanging_statuses=['RUNNING', 'PAUSING'])
 
     @classmethod
