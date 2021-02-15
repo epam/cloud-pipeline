@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import com.epam.pipeline.entity.notification.SystemNotificationState;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -86,7 +85,8 @@ public final class NotificationCreatorUtils {
         return notificationSettings;
     }
 
-    public static NotificationSettings getNotificationSettings(final Long id) {
+    public static NotificationSettings getNotificationSettings(final Long id,
+                                                              final List<TaskStatus> taskStatuses) {
         final NotificationSettings settings = new NotificationSettings();
         settings.setId(id);
         settings.setType(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS);
@@ -97,9 +97,10 @@ public final class NotificationCreatorUtils {
         settings.setEnabled(true);
         settings.setResendDelay(null);
         settings.setKeepInformedOwner(true);
-        settings.setStatusesToInform(Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
+        settings.setStatusesToInform(taskStatuses);
         return settings;
     }
+
     public static NotificationTemplate getNotificationTemplate() {
         final NotificationTemplate notificationTemplate = new NotificationTemplate();
         notificationTemplate.setBody(TEST_STRING);
