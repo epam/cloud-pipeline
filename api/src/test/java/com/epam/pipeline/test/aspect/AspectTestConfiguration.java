@@ -16,11 +16,9 @@
 
 package com.epam.pipeline.test.aspect;
 
-import com.epam.pipeline.app.DBConfiguration;
 import com.epam.pipeline.test.CommonTestContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
@@ -32,7 +30,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {AspectTestBeans.class, CommonTestContext.class})
-@Import({DBConfiguration.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.manager"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @TestPropertySource(value = {"classpath:test-application.properties"})

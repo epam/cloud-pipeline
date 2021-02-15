@@ -23,23 +23,36 @@ import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.dao.cluster.NodeDiskDao;
+import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
+import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao;
 import com.epam.pipeline.dao.configuration.RunConfigurationDao;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.FileShareMountDao;
+import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.dts.DtsRegistryDao;
+import com.epam.pipeline.dao.event.EventDao;
+import com.epam.pipeline.dao.filter.FilterDao;
+import com.epam.pipeline.dao.issue.AttachmentDao;
 import com.epam.pipeline.dao.issue.IssueCommentDao;
 import com.epam.pipeline.dao.issue.IssueDao;
+import com.epam.pipeline.dao.metadata.CategoricalAttributeDao;
 import com.epam.pipeline.dao.metadata.MetadataClassDao;
 import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.dao.metadata.MetadataEntityDao;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
+import com.epam.pipeline.dao.notification.NotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
+import com.epam.pipeline.dao.notification.NotificationTemplateDao;
+import com.epam.pipeline.dao.pipeline.DocumentGenerationPropertyDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
+import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
+import com.epam.pipeline.dao.pipeline.RunLogDao;
+import com.epam.pipeline.dao.pipeline.RunScheduleDao;
 import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.tool.ToolDao;
@@ -47,6 +60,7 @@ import com.epam.pipeline.dao.tool.ToolGroupDao;
 import com.epam.pipeline.dao.tool.ToolVersionDao;
 import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
+import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
@@ -61,6 +75,7 @@ import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
@@ -286,4 +301,49 @@ public class AspectTestBeans {
 
     @MockBean
     protected NotificationSettingsDao mockNotificationSettingsDao;
+
+    @MockBean
+    protected RoleDao mockRoleDao;
+
+    @MockBean
+    protected AttachmentDao mockAttachmentDao;
+
+    @MockBean
+    protected EventDao mockEventDao;
+
+    @MockBean
+    protected RunScheduleDao mockRunScheduleDao;
+
+    @MockBean
+    protected NodePoolDao mockNodePoolDao;
+
+    @MockBean
+    protected NodeScheduleDao nodeScheduleDao;
+
+    @MockBean
+    protected RunLogDao mockRunLogDao;
+
+    @MockBean
+    protected DataStorageRuleDao mockDataStorageRuleDao;
+
+    @MockBean
+    protected FilterDao mockFilterDao;
+
+    @MockBean
+    protected CategoricalAttributeDao mockCategoricalAttributeDao;
+
+    @MockBean
+    protected NotificationTemplateDao mockNotificationTemplateDao;
+
+    @MockBean
+    protected NotificationDao mockNotificationDao;
+
+    @MockBean
+    protected DocumentGenerationPropertyDao mockDocumentGenerationPropertyDao;
+
+    @MockBean
+    protected PipelineDao mockPipelineDao;
+
+    @MockBean
+    protected RoleManager mockRoleManager;
 }

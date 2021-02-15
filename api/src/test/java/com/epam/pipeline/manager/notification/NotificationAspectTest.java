@@ -23,8 +23,10 @@ import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.test.aspect.AbstractAspectTest;
 import com.epam.pipeline.test.creator.notification.NotificationCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
@@ -46,7 +48,8 @@ import static org.mockito.Mockito.verify;
 
 public class NotificationAspectTest extends AbstractAspectTest {
 
-    final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser(TEST_STRING);
+    private final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser(TEST_STRING);
+    private final ExtendedRole extendedRole = UserCreatorUtils.getExtendedRole(pipelineUser);
 
     @Autowired
     private PipelineRunManager pipelineRunManager;
@@ -60,13 +63,15 @@ public class NotificationAspectTest extends AbstractAspectTest {
     @Autowired
     private UserDao mockUserDao;
 
+    @Autowired
+    private RoleManager mockRoleManager;
+
     @Test
     public void testNotifyRunStatusChanged() {
         final NotificationSettings settings = NotificationCreatorUtils.getNotificationSettings(ID);
-        final PipelineRun run = PipelineCreatorUtils.getPipelineRun();
-        run.setStatus(TaskStatus.SUCCESS);
-        run.setOwner(TEST_STRING);
+        final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.SUCCESS);
         run.setStartDate(new Date());
+        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(any());
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
 
@@ -82,10 +87,9 @@ public class NotificationAspectTest extends AbstractAspectTest {
     @Test
     public void testNotifyRunStatusChangedNotActiveIfStatusNotConfiguredForNotification() {
         final NotificationSettings settings = NotificationCreatorUtils.getNotificationSettings(ID);
-        final PipelineRun run = PipelineCreatorUtils.getPipelineRun();
-        run.setStatus(TaskStatus.PAUSED);
-        run.setOwner(TEST_STRING);
+        final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.PAUSED);
         run.setStartDate(new Date());
+        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(any());
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
 
         pipelineRunManager.updatePipelineStatus(run);
@@ -96,12 +100,11 @@ public class NotificationAspectTest extends AbstractAspectTest {
     @Test
     public void testNotifyRunStatusChangedActiveIfSettingsDoesntHaveStatusesConfigured() {
         final NotificationSettings settings = NotificationCreatorUtils.getNotificationSettings(ID);
-        final PipelineRun run = PipelineCreatorUtils.getPipelineRun();
-        run.setStatus(TaskStatus.PAUSED);
-        run.setOwner(TEST_STRING);
+        final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.PAUSED);
         run.setStartDate(new Date());
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
+        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(any());
         settings.setStatusesToInform(Collections.emptyList());
         doReturn(settings).when(mockNotificationSettingsDao).updateNotificationSettings(any());
 

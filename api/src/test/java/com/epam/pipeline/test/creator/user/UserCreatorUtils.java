@@ -138,6 +138,12 @@ public final class UserCreatorUtils {
         return new ExtendedRole();
     }
 
+    public static ExtendedRole getExtendedRole(final PipelineUser user) {
+        final ExtendedRole extendedRole = new ExtendedRole();
+        extendedRole.setUsers(Collections.singletonList(user));
+        return extendedRole;
+    }
+
     public static PipelineUserEvent getPipelineUserEvent(final String name) {
         return PipelineUserEvent.builder()
                 .message(TEST_STRING)
