@@ -30,6 +30,8 @@ from src.api.pipeline import Pipeline
 from src.config import ConfigNotFoundError
 
 DELAY = 30
+SYNC_OPERATION_DESCRIPTION_TEMPLATE = 'Operation abortion... Note: the {} operation can\'t be stopped ' \
+                                      'and it will continue to run in the background.'
 
 
 class PipelineRunOperations(object):
@@ -304,8 +306,32 @@ class PipelineRunOperations(object):
                 else:
                     click.echo('Failed resuming pipeline \'RunID={}\''.format(pipeline_run_id))
         except click.exceptions.Abort:
-            click.echo('Operation abortion... Note: the resume operation can\'t be stopped'
-                       ' and it will continue to run in the background')
+            click.echo(click.echo(SYNC_OPERATION_DESCRIPTION_TEMPLATE.format('resume')))
+            sys.exit(0)
+        except ConfigNotFoundError as config_not_found_error:
+            click.echo(str(config_not_found_error), err=True)
+        except requests.exceptions.RequestException as http_error:
+            click.echo('Http error: {}'.format(str(http_error)), err=True)
+        except RuntimeError as runtime_error:
+            click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        except ValueError as value_error:
+            click.echo('Error: {}'.format(str(value_error)), err=True)
+
+    @classmethod
+    def pause(cls, run_id, check_size, sync):
+        try:
+            pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
+            pipeline_run_id = pipeline_run_model.identifier
+            click.echo('Pausing pipeline \'RunID={}\''.format(pipeline_run_id))
+            if sync:
+                status = cls.get_running_pipeline_status(pipeline_run_id).status
+                if status == 'PAUSED':
+                    click.echo('Pipeline \'RunID={}\' is paused'.format(pipeline_run_id))
+                    sys.exit(1)
+                else:
+                    click.echo('Failed pausing pipeline \'RunID={}\''.format(pipeline_run_id))
+        except click.exceptions.Abort:
+            click.echo(SYNC_OPERATION_DESCRIPTION_TEMPLATE.format('pause'))
             sys.exit(0)
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
@@ -343,6 +369,10 @@ class PipelineRunOperations(object):
     @classmethod
     def get_paused_pipeline_status(cls, identifier):
         return cls.get_pipeline_status(identifier, hanging_statuses=['PAUSED', 'RESUMING'])
+
+    @classmethod
+    def get_running_pipeline_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['RUNNING', 'PAUSING'])
 
     @classmethod
     def get_pipeline_status(cls, identifier, hanging_statuses: list):

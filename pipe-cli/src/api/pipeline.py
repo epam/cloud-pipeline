@@ -193,6 +193,12 @@ class Pipeline(API):
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
+    def pause_pipeline(cls, run_id, check_size):
+        api = cls.instance()
+        response_data = api.call('/run/{}/pause?checkSize={} '.format(run_id, check_size), method='post')
+        return PipelineRunModel.load(response_data['payload'])
+
+    @classmethod
     def get_estimated_price(cls, pipeline_id, version, instance_type, instance_disk, config_name=None,
                             price_type=None, region_id=None):
         api = cls.instance()

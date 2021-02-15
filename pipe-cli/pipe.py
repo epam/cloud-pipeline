@@ -48,6 +48,8 @@ MAX_CORES_COUNT = 10000
 USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only'
 RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10'
 TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying'
+SYNC_FLAG_DESCRIPTION = 'Perform operation in a sync mode. When set - terminal will be blocked' \
+                        ' until the expected status of the operation won\'t be returned'
 
 
 def silent_print_api_version():
@@ -698,10 +700,20 @@ def stop(run_id, yes):
     PipelineRunOperations.stop(run_id, yes)
 
 
+@cli.command(name='pause')
+@click.argument('run-id', required=True, type=int)
+@click.option('--check-size', is_flag=True, help='Checks if free disk space is enough for the commit operation')
+@click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
+@Config.validate_access_token
+def pause(run_id, check_size, sync):
+    """Pauses a running pipeline
+    """
+    PipelineRunOperations.pause(run_id, check_size, sync)
+
+
 @cli.command(name='resume')
 @click.argument('run-id', required=True, type=int)
-@click.option('-s', '--sync', is_flag=True, help='Perform operation in a sync mode. When set - terminal will be blocked'
-                                                 ' until the finish status of the operation won\'t be returned')
+@click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
 @Config.validate_access_token
 def stop(run_id, sync):
     """Resumes a running pipeline
