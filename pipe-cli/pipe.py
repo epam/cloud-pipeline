@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from src.api.pipeline import Pipeline
 from src.api.pipeline_run import PipelineRun
 from src.api.user import User
 from src.config import Config, ConfigNotFoundError, silent_print_config_info, is_frozen
+from src.utilities.click_configurable_standalone_group import GroupWithConfigurableStandalone
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
@@ -77,7 +78,7 @@ def set_user_token(ctx, param, value):
         UserTokenOperations().set_user_token(value)
 
 
-@click.group()
+@click.group(cls=GroupWithConfigurableStandalone)
 @click.option(
     '--version',
     is_eager=False,
@@ -715,7 +716,7 @@ def pause(run_id, check_size, sync):
 @click.argument('run-id', required=True, type=int)
 @click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
 @Config.validate_access_token
-def stop(run_id, sync):
+def resume(run_id, sync):
     """Resumes a running pipeline
     """
     PipelineRunOperations.resume(run_id, sync)

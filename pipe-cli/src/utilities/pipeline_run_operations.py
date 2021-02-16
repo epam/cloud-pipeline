@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,8 +30,6 @@ from src.api.pipeline import Pipeline
 from src.config import ConfigNotFoundError
 
 DELAY = 30
-SYNC_OPERATION_DESCRIPTION_TEMPLATE = 'Operation abortion... Note: the {} operation can\'t be stopped ' \
-                                      'and it will continue to run in the background.'
 
 
 class PipelineRunOperations(object):
@@ -305,9 +303,6 @@ class PipelineRunOperations(object):
                     sys.exit(1)
                 else:
                     click.echo('Failed resuming pipeline \'RunID={}\''.format(pipeline_run_id))
-        except click.exceptions.Abort:
-            click.echo(click.echo(SYNC_OPERATION_DESCRIPTION_TEMPLATE.format('resume')))
-            sys.exit(0)
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:
@@ -330,9 +325,6 @@ class PipelineRunOperations(object):
                     sys.exit(1)
                 else:
                     click.echo('Failed pausing pipeline \'RunID={}\''.format(pipeline_run_id))
-        except click.exceptions.Abort:
-            click.echo(SYNC_OPERATION_DESCRIPTION_TEMPLATE.format('pause'))
-            sys.exit(0)
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:
