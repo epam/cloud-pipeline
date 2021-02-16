@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResultView;
@@ -68,6 +69,7 @@ public class ToolController extends AbstractRestController {
     public static final String LABELS_PARAM = "labels";
     private static final Set<String> ALLOWED_ICON_EXTENSIONS = new HashSet<>(
         Arrays.asList("jpg", "jpeg", "png", "gif"));
+    private static final String VERSION = "version";
 
     @Autowired
     private ToolApiService toolApiService;
@@ -145,7 +147,7 @@ public class ToolController extends AbstractRestController {
             })
     public Result<Tool> deleteTool(@RequestParam(required = false, value = REGISTRY_PARAM) final String registry,
                                    @RequestParam(value = IMAGE_PARAM) final String image,
-                                   @RequestParam(value = "version", required = false) final String version,
+                                   @RequestParam(value = VERSION, required = false) final String version,
                                    @RequestParam(value = "hard", defaultValue = "false") boolean hard) {
         if (version == null) {
             return Result.success(toolApiService.delete(registry, image, hard));
@@ -191,7 +193,7 @@ public class ToolController extends AbstractRestController {
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
     public Result<List<ImageHistoryLayer>> loadImageHistory(@PathVariable final Long id,
-                                                            @RequestParam(value = "version") final String version) {
+                                                            @RequestParam(value = VERSION) final String version) {
         return Result.success(toolApiService.getImageHistory(id, version));
     }
 
@@ -205,7 +207,7 @@ public class ToolController extends AbstractRestController {
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
     public Result<String> loadDefaultImageCmd(@PathVariable final Long id,
-                                              @RequestParam(value = "version") final String version) {
+                                              @RequestParam(value = VERSION) final String version) {
         return Result.success(toolApiService.getImageDefaultCommand(id, version));
     }
 
@@ -273,14 +275,28 @@ public class ToolController extends AbstractRestController {
     @GetMapping(value = "/tool/{toolId}/attributes")
     @ResponseBody
     @ApiOperation(
-            value = "Loads tool attributes for each tool version, specified by tool ID.",
-            notes = "Loads tool attributes for each tool version, specified by tool ID.",
+            value = "Loads tool attributes for all tool versions, specified by tool ID.",
+            notes = "Loads tool attributes for all tool versions, specified by tool ID.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<ToolDescription> loadToolAttributes(@PathVariable Long toolId) {
         return Result.success(toolApiService.loadToolAttributes(toolId));
+    }
+
+    @GetMapping(value = "/tool/{toolId}/attributes", params = VERSION)
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads tool attributes for a tool version, specified by tool ID.",
+            notes = "Loads tool attributes for a tool version, specified by tool ID.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<ToolVersionAttributes> loadToolVersionAttributes(@PathVariable final Long toolId,
+                                                                   @RequestParam final String version) {
+        return Result.success(toolApiService.loadToolVersionAttributes(toolId, version));
     }
 
     @PostMapping(value = "/tool/{toolId}/settings")
