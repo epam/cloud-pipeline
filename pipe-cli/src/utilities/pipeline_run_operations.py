@@ -299,7 +299,7 @@ class PipelineRunOperations(object):
             pipeline_run_id = pipeline_run_model.identifier
             click.echo('Resuming pipeline \'RunID={}\''.format(pipeline_run_id))
             if sync:
-                status = cls.get_resuming_pipeline_status(pipeline_run_id).status
+                status = cls.get_resuming_pipeline_status(pipeline_run_id)
                 if status == 'RUNNING':
                     click.echo('Pipeline \'RunID={}\' is resumed'.format(pipeline_run_id))
                     sys.exit(1)
@@ -324,7 +324,7 @@ class PipelineRunOperations(object):
             pipeline_run_id = pipeline_run_model.identifier
             click.echo('Pausing pipeline \'RunID={}\''.format(pipeline_run_id))
             if sync:
-                status = cls.get_pausing_pipeline_status(pipeline_run_id).status
+                status = cls.get_pausing_pipeline_status(pipeline_run_id)
                 if status == 'PAUSED':
                     click.echo('Pipeline \'RunID={}\' is paused'.format(pipeline_run_id))
                     sys.exit(1)
