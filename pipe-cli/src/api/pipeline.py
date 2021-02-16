@@ -189,13 +189,13 @@ class Pipeline(API):
     @classmethod
     def resume_pipeline(cls, run_id):
         api = cls.instance()
-        response_data = api.call('/run/{}/resume'.format(run_id), method='post')
+        response_data = api.call('/run/{}/resume'.format(run_id), None, http_method='post')
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
     def pause_pipeline(cls, run_id, check_size):
         api = cls.instance()
-        response_data = api.call('/run/{}/pause?checkSize={} '.format(run_id, check_size), method='post')
+        response_data = api.call('/run/{}/pause?checkSize={} '.format(run_id, check_size), None, http_method='post')
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
