@@ -35,11 +35,9 @@ import java.io.IOException;
 public class RequestLoggingFilter implements Filter {
     private static final String USER = "user";
 
-    private FilterConfig filterConfig;
-
     @Override
-    public void init(final FilterConfig filterConfig) throws ServletException {
-        this.filterConfig = filterConfig;
+    public void init(final FilterConfig filterConfig) {
+
     }
 
     @Override
