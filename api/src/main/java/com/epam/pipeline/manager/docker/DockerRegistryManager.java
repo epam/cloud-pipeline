@@ -619,8 +619,10 @@ public class DockerRegistryManager implements SecuredEntityManager {
         if (registry.isPipelineAuth()) {
             List<DockerRegistryClaim> claims = claim == null ? Collections.emptyList() :
                     Collections.singletonList(claim);
+//            token = dockerAuthService.issueDockerToken(
+//                    authManager.getUserContext(), registry.getPath(), claims).getToken();
             token = dockerAuthService.issueDockerToken(
-                    authManager.getUserContext(), registry.getPath(), claims).getToken();
+                    authManager.getUserContext(), registry.getExternalUrl(), claims).getToken();
         }
         return token;
     }
