@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ package com.epam.pipeline.security.acl;
 
 public final class AclExpressions {
 
-    private static final String OR = " OR ";
+    public static final String OR = " OR ";
+    public static final String AND = " AND ";
 
     public static final String ADMIN_ONLY = "hasRole('ADMIN')";
 
@@ -119,6 +120,15 @@ public final class AclExpressions {
     
     public static final String NODE_STOP = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodeStopPermission(#name, 'EXECUTE')";
+
+    public static final String TOOL_READ = ADMIN_ONLY + OR +
+            "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')";
+
+    public static final String TOOL_WRITE = ADMIN_ONLY + OR +
+            "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'WRITE')";
+
+    public static final String OR_HAS_ASSIGNED_USER_OR_ROLE =
+            " OR @grantPermissionManager.hasCloudProfilePermissions(#profileId)";
 
     private AclExpressions() {
         // no op

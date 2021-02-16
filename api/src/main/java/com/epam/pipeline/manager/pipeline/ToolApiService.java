@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResult;
@@ -162,41 +163,40 @@ public class ToolApiService {
         return toolScanManager.getPolicy();
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'WRITE')")
-    public long updateToolIcon(long toolId, String fileName, byte[] image) {
-        return toolManager.updateToolIcon(toolId, fileName, image);
+    @PreAuthorize(AclExpressions.TOOL_WRITE)
+    public long updateToolIcon(long id, String fileName, byte[] image) {
+        return toolManager.updateToolIcon(id, fileName, image);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'WRITE')")
-    public void deleteToolIcon(long toolId) {
-        toolManager.deleteToolIcon(toolId);
+    @PreAuthorize(AclExpressions.TOOL_WRITE)
+    public void deleteToolIcon(long id) {
+        toolManager.deleteToolIcon(id);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
-    public Pair<String, InputStream> loadToolIcon(long toolId) {
-        return toolManager.loadToolIcon(toolId);
+    @PreAuthorize(AclExpressions.TOOL_READ)
+    public Pair<String, InputStream> loadToolIcon(long id) {
+        return toolManager.loadToolIcon(id);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
-    public ToolDescription loadToolAttributes(Long toolId) {
-        return toolManager.loadToolAttributes(toolId);
+    @PreAuthorize(AclExpressions.TOOL_READ)
+    public ToolDescription loadToolAttributes(Long id) {
+        return toolManager.loadToolAttributes(id);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'WRITE')")
-    public ToolVersion createToolVersionSettings(final Long toolId, final String version,
+    @PreAuthorize(AclExpressions.TOOL_READ)
+    public ToolVersionAttributes loadToolVersionAttributes(final Long id, final String version) {
+        return toolManager.loadToolVersionAttributes(id, version);
+    }
+
+    @PreAuthorize(AclExpressions.TOOL_WRITE)
+    public ToolVersion createToolVersionSettings(final Long id, final String version,
                                                  final List<ConfigurationEntry> settings) {
-        return toolVersionManager.createToolVersionSettings(toolId, version, settings);
+        return toolVersionManager.createToolVersionSettings(id, version, settings);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
-    public List<ToolVersion> loadToolVersionSettings(final Long toolId, final String version) {
-        return toolVersionManager.loadToolVersionSettings(toolId, version);
+    @PreAuthorize(AclExpressions.TOOL_READ)
+    public List<ToolVersion> loadToolVersionSettings(final Long id, final String version) {
+        return toolVersionManager.loadToolVersionSettings(id, version);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY +
