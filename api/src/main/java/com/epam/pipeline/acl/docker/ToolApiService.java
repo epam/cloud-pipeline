@@ -185,11 +185,10 @@ public class ToolApiService {
         return toolManager.loadToolVersionAttributes(id, version);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR +
-            "hasPermission(#toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'WRITE')")
-    public ToolVersion createToolVersionSettings(final Long toolId, final String version,
+    @PreAuthorize(AclExpressions.TOOL_WRITE)
+    public ToolVersion createToolVersionSettings(final Long id, final String version,
                                                  final List<ConfigurationEntry> settings) {
-        return toolVersionManager.createToolVersionSettings(toolId, version, settings);
+        return toolVersionManager.createToolVersionSettings(id, version, settings);
     }
 
     @PreAuthorize(AclExpressions.TOOL_READ)
