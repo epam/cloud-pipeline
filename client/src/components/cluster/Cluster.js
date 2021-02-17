@@ -19,6 +19,7 @@ import moment from 'moment-timezone';
 import {
   Alert,
   Button,
+  Checkbox,
   Col,
   Input,
   message,
@@ -85,7 +86,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         value: null,
         finalValue: null
       }
-    }
+    },
+    selection: []
   };
 
   @computed
@@ -197,6 +199,38 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
   };
 
+  terminateNodes = async () => {
+    const hide = message.loading('Terminating...', 0);
+    const requests = this.state.selection.map(name => new TerminateNodeRequest(name));
+    const promises = requests.map(r => new Promise((resolve) => {
+      r.fetch()
+        .then(() => {
+          resolve(r.message);
+        })
+        .catch(e => resolve(e.message));
+    }));
+    Promise.all(promises)
+      .then(results => {
+        hide();
+        const errors = results.filter(Boolean);
+        if (errors.length > 0) {
+          message.error(
+            (
+              <div>
+                {errors.map(e => (<div>{e}</div>))}
+              </div>
+            ),
+            5
+          );
+        } else {
+          this.refreshCluster();
+        }
+      })
+      .then(() => {
+        this.setState({selection: []});
+      });
+  };
+
   nodeTerminationConfirm = (item, event) => {
     event.stopPropagation();
     const terminateNode = this.terminateNode;
@@ -213,6 +247,23 @@ export default class Cluster extends localization.LocalizedReactComponent {
     });
   };
 
+  nodesTerminationConfirm = (event) => {
+    const {selection} = this.state;
+    event.stopPropagation();
+    const terminateNodes = this.terminateNodes;
+    Modal.confirm({
+      title: `Are you sure you want to terminate ${selection.length} node${selection.length > 1 ? 's' : ''}?`,
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk () {
+        (async () => {
+          await terminateNodes();
+        })();
+      }
+    });
+  };
+
   renderPipelineName = (run) => {
     if (run) {
       if (run.pipelineName && run.version) {
@@ -224,6 +275,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
     return null;
   };
+
+  canTerminateNode = (node) => {
+    return roleModel.executeAllowed(node) && roleModel.isOwner(node) && this.nodeIsSlave(node);
+  }
 
   renderTerminateButton = (item) => {
     if (roleModel.executeAllowed(item) && roleModel.isOwner(item) && this.nodeIsSlave(item)) {
@@ -377,6 +432,36 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   generateNodeInstancesTable = (nodes, isLoading, pools) => {
+    const {selection = []} = this.state;
+    const nodesAllowedToTerminate = nodes
+      .filter(node => this.canTerminateNode(node));
+    const nodeIsSelected = node => selection.indexOf(node.name) >= 0;
+    const toggleNode = node => {
+      const index = selection.indexOf(node.name);
+      if (index >= 0) {
+        selection.splice(index, 1);
+      } else {
+        selection.push(node.name);
+      }
+      this.setState({selection});
+    };
+    const selectAll = (select = true) => {
+      if (select) {
+        this.setState({
+          selection: nodesAllowedToTerminate.map(node => node.name)
+        });
+      } else {
+        this.setState({selection: []});
+      }
+    };
+    const allSelected = nodesAllowedToTerminate.length > 0 &&
+      nodesAllowedToTerminate
+        .filter(nodeIsSelected)
+        .length === nodesAllowedToTerminate.length;
+    const indeterminate = nodesAllowedToTerminate.length > 0 &&
+      nodes
+        .filter(node => this.canTerminateNode(node) && nodeIsSelected(node))
+        .length > 0 && !allSelected;
     const createdCellContent = (date) => (
       <div className={styles.clusterNodeCellCreated}>
         <span className={styles.clusterNodeContentCreated}>
@@ -404,18 +489,45 @@ export default class Cluster extends localization.LocalizedReactComponent {
     );
     const columns = [
       {
+        key: 'selection',
+        className: styles.clusterNodeSelection,
+        title: (
+          <span>
+            <Checkbox
+              disabled={nodesAllowedToTerminate.length === 0}
+              checked={allSelected}
+              indeterminate={indeterminate}
+              onChange={e => selectAll(e.target.checked)}
+            />
+          </span>
+        ),
+        render: (item) => {
+          if (this.canTerminateNode(item)) {
+            return (
+              <Checkbox
+                checked={nodeIsSelected(item)}
+                onChange={e => toggleNode(item)}
+              />
+            );
+          }
+          return null;
+        }
+      },
+      {
         dataIndex: 'name',
         key: 'name',
         title: 'Name',
         sorter: this.alphabeticNameSorter,
-        className: styles.clusterNodeRowName
+        className: styles.clusterNodeRowName,
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         dataIndex: 'pipelineRun',
         key: 'pipelineRun',
         title: this.localizedString('Pipeline'),
         render: pipelineRun => this.renderPipelineName(pipelineRun),
-        className: styles.clusterNodeRowPipeline
+        className: styles.clusterNodeRowPipeline,
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         dataIndex: 'labels',
@@ -424,7 +536,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         render: (labels, item) => this.renderLabels(labels, item, pools),
         ...this.getInputFilter('runId', 'Run Id'),
         sorter: this.runSorter,
-        className: styles.clusterNodeRowLabels
+        className: styles.clusterNodeRowLabels,
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         dataIndex: 'addresses',
@@ -432,7 +545,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: 'Addresses',
         ...this.getInputFilter('address', 'IP'),
         className: styles.clusterNodeRowAddresses,
-        render: (addresses) => addressesCellContent(addresses)
+        render: (addresses) => addressesCellContent(addresses),
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         dataIndex: 'created',
@@ -440,7 +554,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: 'Created',
         sorter: this.dateSorter,
         className: styles.clusterNodeRowCreated,
-        render: (date) => createdCellContent(date)
+        render: (date) => createdCellContent(date),
+        onCellClick: this.onNodeInstanceSelect
       },
       {
         key: 'terminate',
@@ -471,7 +586,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
         loading={isLoading}
         pagination={{pageSize: 25}}
         rowClassName={(item) => `cluster-row-${item.name}`}
-        onRowClick={this.onNodeInstanceSelect}
         size="small"
       />
     );
@@ -521,7 +635,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     return (
       <div>
         <Row type="flex" align="middle">
-          <Col span={22}>
+          <Col span={19}>
             <span className={styles.nodeMainInfo}>
               {
                 this.currentNodePool
@@ -531,7 +645,20 @@ export default class Cluster extends localization.LocalizedReactComponent {
               {description}
             </span>
           </Col>
-          <Col span={2} className={styles.refreshButtonContainer}>
+          <Col span={5} className={styles.refreshButtonContainer}>
+            {
+              this.state.selection.length > 0 && (
+                <Button
+                  id="cluster-batch-terminate-button"
+                  type="danger"
+                  disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}
+                  style={{marginRight: 5}}
+                  onClick={this.nodesTerminationConfirm}
+                >
+                  Terminate {this.state.selection.length} node{this.state.selection.length > 1 ? 's' : ''}
+                </Button>
+              )
+            }
             <Button
               id="cluster-refresh-button"
               onClick={this.refreshCluster}
