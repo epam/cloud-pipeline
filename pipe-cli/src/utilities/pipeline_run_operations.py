@@ -40,14 +40,7 @@ class PipelineRunOperations(object):
             click.confirm('Are you sure you want to stop run {}?'.format(run_id), abort=True)
         try:
             pipeline_run_model = Pipeline.stop_pipeline(run_id)
-            pipeline_name = pipeline_run_model.pipeline
-            if not pipeline_name:
-                try:
-                    pipeline_model = Pipeline.get(pipeline_run_model.pipeline_id, load_versions=False,
-                                                  load_storage_rules=False, load_run_parameters=False)
-                    pipeline_name = pipeline_model.name
-                except RuntimeError:
-                    pass
+            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
             click.echo('RunID {} of "{}@{}" stopped'.format(run_id, pipeline_name, pipeline_run_model.version))
 
         except ConfigNotFoundError as config_not_found_error:
@@ -294,15 +287,16 @@ class PipelineRunOperations(object):
     def resume(cls, run_id, sync):
         try:
             pipeline_run_model = Pipeline.resume_pipeline(run_id)
-            pipeline_run_id = pipeline_run_model.identifier
-            click.echo('Resuming pipeline \'RunID={}\''.format(pipeline_run_id))
+            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+            pipeline_version = pipeline_run_model.version
+            click.echo('Resuming RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version))
             if sync:
-                status = cls.get_resuming_pipeline_status(pipeline_run_id)
+                status = cls.get_resuming_pipeline_status(run_id)
                 if status == 'RUNNING':
-                    click.echo('Pipeline \'RunID={}\' is resumed'.format(pipeline_run_id))
+                    click.echo('RunID {} of "{}@{}" is resumed'.format(run_id, pipeline_name, pipeline_version))
                     sys.exit(1)
                 else:
-                    click.echo('Failed resuming pipeline \'RunID={}\''.format(pipeline_run_id))
+                    click.echo('Failed resuming RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version))
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:
@@ -316,15 +310,16 @@ class PipelineRunOperations(object):
     def pause(cls, run_id, check_size, sync):
         try:
             pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
-            pipeline_run_id = pipeline_run_model.identifier
-            click.echo('Pausing pipeline \'RunID={}\''.format(pipeline_run_id))
+            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+            pipeline_version = pipeline_run_model.version
+            click.echo('Pausing RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version))
             if sync:
-                status = cls.get_pausing_pipeline_status(pipeline_run_id)
+                status = cls.get_pausing_pipeline_status(run_id)
                 if status == 'PAUSED':
-                    click.echo('Pipeline \'RunID={}\' is paused'.format(pipeline_run_id))
+                    click.echo('RunID {} of "{}@{}" is paused'.format(run_id, pipeline_name, pipeline_version))
                     sys.exit(1)
                 else:
-                    click.echo('Failed pausing pipeline \'RunID={}\''.format(pipeline_run_id))
+                    click.echo('Failed pausing RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version))
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:
@@ -426,3 +421,14 @@ class PipelineRunOperations(object):
             return '{"path":"%s"}' % parts[0]
         return '{"domain":"%s","path":"%s"}' % (parts[0], parts[1])
 
+    @classmethod
+    def extract_pipeline_name(cls, pipeline_run_model):
+        pipeline_name = pipeline_run_model.pipeline
+        if not pipeline_name:
+            try:
+                pipeline_model = Pipeline.get(pipeline_run_model.pipeline_id, load_versions=False,
+                                              load_storage_rules=False, load_run_parameters=False)
+                pipeline_name = pipeline_model.name
+            except RuntimeError:
+                pass
+        return pipeline_name
