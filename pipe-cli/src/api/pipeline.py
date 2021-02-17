@@ -195,7 +195,7 @@ class Pipeline(API):
     @classmethod
     def pause_pipeline(cls, run_id, check_size):
         api = cls.instance()
-        response_data = api.call('/run/{}/pause?checkSize={} '.format(run_id, check_size), None, http_method='post')
+        response_data = api.call('/run/{}/pause?checkSize={}'.format(run_id, check_size), None, http_method='post')
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
