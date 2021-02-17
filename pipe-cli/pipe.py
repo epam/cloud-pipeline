@@ -25,7 +25,7 @@ from src.api.pipeline import Pipeline
 from src.api.pipeline_run import PipelineRun
 from src.api.user import User
 from src.config import Config, ConfigNotFoundError, silent_print_config_info, is_frozen
-from src.utilities.click_configurable_standalone_group import GroupWithConfigurableStandalone
+from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
@@ -78,7 +78,7 @@ def set_user_token(ctx, param, value):
         UserTokenOperations().set_user_token(value)
 
 
-@click.group(cls=GroupWithConfigurableStandalone)
+@click.group(cls=CustomAbortHandlingGroup, uninterruptible_cmd_list=['resume', 'pause'])
 @click.option(
     '--version',
     is_eager=False,
