@@ -15,17 +15,19 @@
  */
 
 import React, {Component} from 'react';
-import {Alert, Menu, Row, Col, Button} from 'antd';
+import {Alert, Menu, Row, Col, Button, Modal, message} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
 import clusterNodes from '../../models/cluster/ClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
+import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
-import {PIPELINE_INFO_LABEL} from './node-roles';
+import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
+import roleModel from '../../utils/roleModel';
 
 @inject((stores, {params, location}) => {
   const {from, to} = location?.query;
@@ -135,6 +137,39 @@ class ClusterNode extends Component {
       });
   };
 
+  terminateNode = async () => {
+    const hide = message.loading('Terminating...', 0);
+    const request = new TerminateNodeRequest(this.props.name);
+    await request.fetch();
+    hide();
+    if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      this.props.router.push('/cluster');
+    }
+  };
+
+  nodeTerminationConfirm = (event) => {
+    event.stopPropagation();
+    const terminateNode = this.terminateNode;
+    Modal.confirm({
+      title: `Are you sure you want to terminate '${this.props.name}' node?`,
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk () {
+        (async () => {
+          await terminateNode();
+        })();
+      }
+    });
+  };
+
+  nodeIsSlave = (node) => {
+    const roles = getRoles(node.labels);
+    return !testRole(roles, nodeRoles.master) && !testRole(roles, nodeRoles.cloudPipelineRole);
+  };
+
   render () {
     const result = [
       this.renderError(),
@@ -150,6 +185,10 @@ class ClusterNode extends Component {
       )
     ];
     const nodeLabels = this.renderNodeLabels();
+    const allowToTerminate = this.props.node.loaded &&
+      roleModel.executeAllowed(this.props.node.value) &&
+      roleModel.isOwner(this.props.node.value) &&
+      this.nodeIsSlave(this.props.node.value);
     return (
       <div
         key={this.props.name}
@@ -159,11 +198,24 @@ class ClusterNode extends Component {
           <Col span={1}>
             <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
           </Col>
-          <Col span={21}>
+          <Col span={18}>
             <span className={parentStyles.nodeMainInfo}>
               Node: {this.props.name}{nodeLabels}</span>
           </Col>
-          <Col span={2} className={parentStyles.refreshButtonContainer}>
+          <Col span={5} className={parentStyles.refreshButtonContainer}>
+            {
+              allowToTerminate && (
+                <Button
+                  id="terminate-cluster-node-button"
+                  type="danger"
+                  disabled={this.props.node.pending || this.props.chartsData.pending}
+                  style={{marginRight: 5}}
+                  onClick={this.nodeTerminationConfirm}
+                >
+                  Terminate
+                </Button>
+              )
+            }
             <Button
               id="refresh-cluster-node-button"
               onClick={this.refreshNodeInstance}
