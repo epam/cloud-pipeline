@@ -14,7 +14,6 @@
 
 import argparse
 import base64
-import random
 import socket
 from datetime import datetime, timedelta
 from time import sleep
@@ -223,6 +222,7 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
         return default_object
+
     for image_config in instance_images_config:
         instance_masks = image_config["instance_mask"] if type(image_config["instance_mask"]) is list else [image_config["instance_mask"]]
         instance_mask_ami = image_config["ami"]
@@ -371,20 +371,13 @@ def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_en
     return ins_id, ins_ip
 
 
-def get_random_subnet(ec2):
-    subnets = ec2.describe_subnets()
-    if "Subnets" in subnets:
-        return random.choice(subnets['Subnets'])['SubnetId']
-    return None
-
-
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep,
                            swap_size, kube_client):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     additional_args = {}
-    subnet_id = get_random_subnet(ec2)
+    subnet_id = None
     network_interfaces = []
     if allowed_networks and len(allowed_networks) > 0:
         az_num = randint(0, len(allowed_networks)-1)
@@ -397,17 +390,21 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
         additional_args = { 'SecurityGroupIds': get_security_groups(aws_region)}
 
     if get_performance_network_config(aws_region, ins_type):
-        network_interfaces = [
-            {
-                'DeleteOnTermination': True,
-                'DeviceIndex': 0,
-                'SubnetId': subnet_id,
-                'Groups': get_security_groups(aws_region),
-                'InterfaceType': 'efa'
-            }
+        efa_subnet_id = get_efa_subnet(aws_region, ins_type)
+        if efa_subnet_id:
+            network_interfaces = [
+                {
+                    'DeleteOnTermination': True,
+                    'DeviceIndex': 0,
+                    'SubnetId': efa_subnet_id,
+                    'Groups': get_security_groups(aws_region),
+                    'InterfaceType': 'efa'
+                }
 
-        ]
-        additional_args = {}
+            ]
+            additional_args = {}
+        else:
+            pipe_log_warn('- EFA interface are ordered but network_subnet_id value in cluster.networks.config for this instance type could not be found')
 
     response = {}
     try:
@@ -920,6 +917,19 @@ def exit_if_spot_unavailable(run_id, last_status):
                  status=TaskStatus.FAILURE)
         sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
 
+
+def get_efa_subnet(cloud_region, instance_type):
+    instance_images_config = get_instance_images_config(cloud_region)
+    if not instance_images_config:
+        return None
+    for image_config in instance_images_config:
+        instance_masks = image_config["instance_mask"] if type(image_config["instance_mask"]) is list else [image_config["instance_mask"]]
+        if any(fnmatch.fnmatch(instance_type, instance_mask) for instance_mask in instance_masks):
+            return image_config['network_subnet_id'] if 'network_subnet_id' in image_config else subnet_id
+
+    return None
+
+
 def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
                        swap_size, kube_client):
@@ -944,8 +954,6 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
             'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
         }
-
-    subnet_id = get_random_subnet(ec2)
     if allowed_networks and cheapest_zone in allowed_networks:
         subnet_id = allowed_networks[cheapest_zone]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, cheapest_zone))
@@ -957,17 +965,21 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
         specifications['SecurityGroupIds'] = get_security_groups(aws_region)
 
     if get_performance_network_config(aws_region, ins_type):
-        specifications['NetworkInterfaces'] = [
-            {
-                'DeleteOnTermination': True,
-                'DeviceIndex': 0,
-                'Groups': get_security_groups(aws_region),
-                'SubnetId': subnet_id,
-                'InterfaceType': 'efa'
-            }
-        ]
-        specifications.pop('SubnetId', None)
-        specifications.pop('SecurityGroupIds', None)
+        efa_subnet_id = get_efa_subnet(aws_region, ins_type)
+        if efa_subnet_id:
+            specifications['NetworkInterfaces'] = [
+                {
+                    'DeleteOnTermination': True,
+                    'DeviceIndex': 0,
+                    'Groups': get_security_groups(aws_region),
+                    'SubnetId': efa_subnet_id,
+                    'InterfaceType': 'efa'
+                }
+            ]
+            specifications.pop('SubnetId', None)
+            specifications.pop('SecurityGroupIds', None)
+        else:
+            pipe_log_warn('- EFA interface are ordered but network_subnet_id value in cluster.networks.config for this instance type could not be found')
 
     current_time = datetime.now(pytz.utc) + timedelta(seconds=10)
 
