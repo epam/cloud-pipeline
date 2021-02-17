@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
+import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
@@ -25,18 +26,18 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.test.aspect.AbstractAspectTest;
 import com.epam.pipeline.test.creator.notification.NotificationCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
+import java.util.Collections;
+import java.util.Optional;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.Collections;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -63,15 +64,15 @@ public class NotificationAspectTest extends AbstractAspectTest {
     private UserDao mockUserDao;
 
     @Autowired
-    private RoleManager mockRoleManager;
+    private RoleDao mockRoleDao;
 
     @Test
     public void testNotifyRunStatusChanged() {
         final NotificationSettings settings = NotificationCreatorUtils.getNotificationSettings(ID);
         final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.SUCCESS);
-        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(any());
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
+        mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
         final ArgumentCaptor<NotificationMessage> captor =
@@ -88,8 +89,8 @@ public class NotificationAspectTest extends AbstractAspectTest {
     public void testNotifyRunStatusChangedNotActiveIfStatusNotConfiguredForNotification() {
         final NotificationSettings settings = NotificationCreatorUtils.getNotificationSettings(ID);
         final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.PAUSED);
-        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(any());
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
+        mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
 
@@ -102,9 +103,9 @@ public class NotificationAspectTest extends AbstractAspectTest {
         final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.PAUSED);
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
-        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(any());
         settings.setStatusesToInform(Collections.emptyList());
         doReturn(settings).when(mockNotificationSettingsDao).updateNotificationSettings(any());
+        mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
 
@@ -114,5 +115,10 @@ public class NotificationAspectTest extends AbstractAspectTest {
 
         final NotificationMessage capturedMessage = captor.getValue();
         Assert.assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
+    }
+
+    private void mockRole() {
+        doReturn(Optional.of(new Role())).when(mockRoleDao).loadRole(any());
+        doReturn(extendedRole).when(mockRoleDao).loadExtendedRole(any());
     }
 }

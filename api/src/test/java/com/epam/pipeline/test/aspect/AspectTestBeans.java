@@ -53,7 +53,9 @@ import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.dao.pipeline.RunScheduleDao;
+import com.epam.pipeline.dao.pipeline.RunStatusDao;
 import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
+import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolGroupDao;
@@ -62,20 +64,11 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
-import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
-import com.epam.pipeline.manager.cluster.autoscale.AutoscaleManager;
-import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
-import com.epam.pipeline.manager.docker.scan.AggregatingToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
-import com.epam.pipeline.manager.pipeline.RunStatusManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
-import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
@@ -85,12 +78,22 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
+import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
+import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
+import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
+import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
+import com.epam.pipeline.repository.ontology.OntologyRepository;
+import com.epam.pipeline.repository.role.RoleRepository;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
+import java.util.concurrent.Executor;
+import org.flywaydb.core.Flyway;
+import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
@@ -99,13 +102,14 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
 
-import java.util.concurrent.Executor;
-
 @Configuration
 public class AspectTestBeans {
 
-    @MockBean
-    protected PipelineManager mockPipelineManager;
+    @MockBean(name = "flyway")
+    protected Flyway mockFlyway;
+
+    @MockBean(name = "flywayInitializer")
+    protected FlywayMigrationInitializer mockFlywayMigrationInitializer;
 
     @MockBean
     protected JwtTokenGenerator mockJwtTokenGenerator;
@@ -124,9 +128,6 @@ public class AspectTestBeans {
 
     @MockBean
     protected MetadataClassDao mockMetadataClassDao;
-
-    @MockBean
-    protected PreferenceManager mockPreferenceManager;
 
     @MockBean
     protected CloudRegionDao mockCloudRegionDao;
@@ -174,9 +175,6 @@ public class AspectTestBeans {
     protected ToolVersionDao mockToolVersionDao;
 
     @MockBean
-    protected AggregatingToolScanManager mockAggregatingToolScanManager;
-
-    @MockBean
     protected InstanceOfferDao mockInstanceOfferDao;
 
     @MockBean
@@ -219,9 +217,6 @@ public class AspectTestBeans {
     protected StopServerlessRunDao mockStopServerlessRunDao;
 
     @MockBean
-    protected InstanceOfferManager mockInstanceOfferManager;
-
-    @MockBean
     protected IssueDao mockIssueDao;
 
     @MockBean
@@ -261,9 +256,6 @@ public class AspectTestBeans {
     protected TaskScheduler mockTaskScheduler;
 
     @MockBean
-    protected AutoscaleManager mockAutoscaleManager;
-
-    @MockBean
     protected InstanceOfferScheduler mockInstanceOfferScheduler;
 
     @MockBean
@@ -273,22 +265,13 @@ public class AspectTestBeans {
     protected PodMonitor mockPodMonitor;
 
     @MockBean
-    protected ServerlessConfigurationManager mockServerlessConfigurationManager;
-
-    @MockBean
     protected ToolScanScheduler mockToolScanScheduler;
-
-    @MockBean
-    protected FirecloudManager mockFirecloudManager;
 
     @MockBean
     protected SchedulerFactoryBean mockSchedulerFactoryBean;
 
     @MockBean
     protected RunScheduler mockRunScheduler;
-
-    @MockBean
-    protected RunStatusManager mockRunStatusManager;
 
     @MockBean
     protected PipelineRunDao mockPipelineRunDao;
@@ -345,5 +328,29 @@ public class AspectTestBeans {
     protected PipelineDao mockPipelineDao;
 
     @MockBean
-    protected RoleManager mockRoleManager;
+    protected AWSProfileCredentialsRepository mockAWSProfileCredentialsRepository;
+
+    @MockBean
+    protected CloudProfileCredentialsMapper mockCloudProfileCredentialsMapper;
+
+    @MockBean
+    protected CloudProfileCredentialsRepository mockCloudProfileCredentialsRepository;
+
+    @MockBean
+    protected PipelineUserRepository mockPipelineUserRepository;
+
+    @MockBean
+    protected RoleRepository mockRoleRepository;
+
+    @MockBean
+    protected OntologyMapper mockOntologyMapper;
+
+    @MockBean
+    protected OntologyRepository mockOntologyRepository;
+
+    @MockBean
+    protected PreferenceDao mockPreferenceDao;
+
+    @MockBean
+    protected RunStatusDao mockRunStatusDao;
 }
