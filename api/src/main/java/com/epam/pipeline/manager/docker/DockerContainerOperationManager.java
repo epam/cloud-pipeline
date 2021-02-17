@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,7 @@ public class DockerContainerOperationManager {
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
-        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
                 run.getActualDockerImage());
 
         final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
@@ -249,7 +249,7 @@ public class DockerContainerOperationManager {
 
             if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
-                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
+                launcher.launch(run, configuration, endpoints, run.getId().toString(),
                         true, run.getPodId(), null, ImagePullPolicy.NEVER);
             }
 
@@ -296,7 +296,7 @@ public class DockerContainerOperationManager {
     }
 
     Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {
-        String kubePipelineNodeUserName  = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
+        String kubePipelineNodeUserName = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
         String pemKeyPath = preferenceManager.getPreference(SystemPreferences.COMMIT_DEPLOY_KEY);
 
         String sshCommand = String.format("%s %s %s %s %s %s %s %s %s %s %s",
@@ -345,9 +345,9 @@ public class DockerContainerOperationManager {
 
     private void removeUtilizationLevelTags(final PipelineRun run) {
         Stream.of(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH)
-            .filter(run::hasTag)
-            .forEach(run::removeTag);
+                ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH)
+                .filter(run::hasTag)
+                .forEach(run::removeTag);
     }
 
     private void stopInstanceIfNeed(final Long runId, final RunInstance instance) {

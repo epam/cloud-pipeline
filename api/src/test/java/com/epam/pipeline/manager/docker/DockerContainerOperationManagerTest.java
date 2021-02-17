@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
@@ -69,7 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DockerContainerOperationManagerTest extends AbstractManagerTest {
+public class DockerContainerOperationManagerTest {
 
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String NODE_NAME = "node-1";
@@ -114,6 +113,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
     private PipelineConfigurationManager pipelineConfigurationManager;
 
     @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
     private MessageHelper messageHelper;
 
     @Mock
@@ -136,7 +136,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
                         .message(INSUFFICIENT_INSTANCE_CAPACITY).build());
         doReturn(CloudInstanceState.STOPPED).when(cloudFacade).getInstanceState(anyLong());
 
-        PipelineRun run = pipelineRun();
+        final PipelineRun run = pipelineRun();
         operationManager.resumeRun(run, Collections.emptyList());
 
         assertEquals(run.getStatus(), TaskStatus.PAUSED);
