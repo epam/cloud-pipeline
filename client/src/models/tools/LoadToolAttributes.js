@@ -20,9 +20,13 @@ import {computed} from 'mobx';
 const repeatInterval = 5000;
 
 export default class LoadToolAttributes extends Remote {
-  constructor (id) {
+  constructor (id, version) {
     super();
-    this.url = `/tool/${id}/attributes`;
+    if (version) {
+      this.url = `/tool/${id}/attributes?version=${version}`;
+    } else {
+      this.url = `/tool/${id}/attributes`;
+    }
   }
 
   refreshData;

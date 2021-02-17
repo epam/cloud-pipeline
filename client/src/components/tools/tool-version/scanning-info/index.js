@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react/index';
 import LoadTool from '../../../../models/tools/LoadTool';
-import LoadToolScanTags from '../../../../models/tools/LoadToolScanTags';
+import LoadToolAttributes from '../../../../models/tools/LoadToolAttributes';
 import {
   Alert,
   Table,
@@ -41,7 +41,7 @@ const PAGE_SIZE = 40;
     toolId: params.id,
     version: params.version,
     tool: new LoadTool(params.id),
-    versions: new LoadToolScanTags(params.id)
+    versions: new LoadToolAttributes(params.id, params.version)
   };
 })
 @observer
@@ -64,8 +64,8 @@ export default class ToolScanningInfo extends React.Component {
   get scanningInfo () {
     if (this.props.versions.loaded &&
       this.props.versions.value &&
-      this.props.versions.value.toolVersionScanResults) {
-      return this.props.versions.value.toolVersionScanResults[this.props.version];
+      this.props.versions.value.scanResult) {
+      return this.props.versions.value.scanResult;
     }
     return null;
   }
