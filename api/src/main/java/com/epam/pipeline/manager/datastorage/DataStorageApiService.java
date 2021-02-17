@@ -178,7 +178,7 @@ public class DataStorageApiService {
         return dataStorageManager.generateDataStorageItemUrl(id, path, version, contentDisposition);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_PERMISSIONS)
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<DataStorageDownloadFileUrl> generateDataStorageItemUrl(final Long id,
             final List<String> paths) {
         return dataStorageManager.generateDataStorageItemUrl(id, paths);
