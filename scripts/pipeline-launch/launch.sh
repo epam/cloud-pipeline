@@ -603,6 +603,7 @@ function add_self_to_no_proxy() {
 }
 
 function configureHyperThreading() {
+    mount -o rw,remount /sys
     if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
       _current_processor=-1
       declare -a used_cores
