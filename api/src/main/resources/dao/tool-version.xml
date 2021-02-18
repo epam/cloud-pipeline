@@ -131,8 +131,9 @@
                         DISTINCT tv.id,
                         tv.tool_id,
                         tv.version,
-                        tv.settings,
-                        tv.size
+                        tv.digest,
+                        tv.size,
+                        tv.modified_date
                     FROM pipeline.tool_version AS tv
                     INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
