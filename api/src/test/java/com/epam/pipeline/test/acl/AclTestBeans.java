@@ -103,6 +103,7 @@ import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -481,6 +482,9 @@ public class AclTestBeans {
 
     @MockBean
     protected TemplatesScanner mockTemplatesScanner;
+
+    @MockBean
+    protected ToolScanInfoManager toolScanInfoManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

@@ -1,11 +1,10 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
- *
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,20 +13,4 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.docker;
-
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.List;
-
-@Data
-@NoArgsConstructor
-public class ToolDescription {
-    private Long toolId;
-    private List<ToolVersionAttributes> versions;
-
-    public ToolDescription(final long toolId) {
-        this.toolId = toolId;
-    }
-}
+ALTER TABLE tool_version_scan ADD COLUMN vulnerabilities_count TEXT NULL;
