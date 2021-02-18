@@ -429,7 +429,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
                 vulnerability.setSeverity(v.getSeverity());
                 vulnerability.setFeature(f.getName());
                 vulnerability.setFeatureVersion(f.getVersion());
-                vulnerabilitiesCount.merge(v.getSeverity(), 1,  (oldVal, newVal) -> oldVal++);
+                vulnerabilitiesCount.merge(v.getSeverity(), 1,  (oldVal, newVal) -> oldVal + 1);
                 return vulnerability;
             }) : Stream.empty())
             .collect(Collectors.toList());
