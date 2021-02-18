@@ -184,7 +184,8 @@ public class SearchRequestBuilder {
     }
 
     private QueryBuilder getBasicQuery(final String searchQuery) {
-        QueryStringQueryBuilder query = QueryBuilders.queryStringQuery(searchQuery);
+        QueryStringQueryBuilder query = QueryBuilders
+            .queryStringQuery(escapeUnsupportedSpecialCharacters(searchQuery));
         ListUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SEARCH_FIELDS))
                 .forEach(query::field);
         return query;
@@ -264,5 +265,18 @@ public class SearchRequestBuilder {
 
     private String buildKeywordName(final String fieldName) {
         return String.format("%s.keyword", fieldName);
+    }
+
+    private String escapeUnsupportedSpecialCharacters(final String string) {
+        final StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < string.length(); i++) {
+            final char c = string.charAt(i);
+            if (c == '\\' || c == '!' || c == ':' || c == '^' || c == '[' || c == ']' || c == '{' || c == '}'
+                || c == '?' || c == '&' || c == '/') {
+                sb.append('\\');
+            }
+            sb.append(c);
+        }
+        return sb.toString();
     }
 }
