@@ -34,7 +34,10 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
 
@@ -46,61 +49,12 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
     private String loadToolVersionQuery;
     private String loadToolVersionSettingsQuery;
     private String loadToolSettingsQuery;
+    private String loadToolVersionListSettingsQuery;
     private String createToolVersionWithSettingsQuery;
     private String updateToolVersionWithSettingsQuery;
 
     @Autowired
     private DaoHelper daoHelper;
-
-    @Required
-    public void setToolVersionSequenceQuery(String toolVersionSequenceQuery) {
-        this.toolVersionSequenceQuery = toolVersionSequenceQuery;
-    }
-
-    @Required
-    public void setCreateToolVersionQuery(String createToolVersionQuery) {
-        this.createToolVersionQuery = createToolVersionQuery;
-    }
-
-    @Required
-    public void setUpdateToolVersionQuery(String updateToolVersionQuery) {
-        this.updateToolVersionQuery = updateToolVersionQuery;
-    }
-
-    @Required
-    public void setDeleteToolVersionsQuery(String deleteToolVersionsQuery) {
-        this.deleteToolVersionsQuery = deleteToolVersionsQuery;
-    }
-
-    @Required
-    public void setDeleteToolVersionQuery(String deleteToolVersionQuery) {
-        this.deleteToolVersionQuery = deleteToolVersionQuery;
-    }
-
-    @Required
-    public void setLoadToolVersionQuery(String loadToolVersionQuery) {
-        this.loadToolVersionQuery = loadToolVersionQuery;
-    }
-
-    @Required
-    public void setLoadToolVersionSettingsQuery(String loadToolVersionSettingsQuery) {
-        this.loadToolVersionSettingsQuery = loadToolVersionSettingsQuery;
-    }
-
-    @Required
-    public void setCreateToolVersionWithSettingsQuery(String createToolVersionWithSettingsQuery) {
-        this.createToolVersionWithSettingsQuery = createToolVersionWithSettingsQuery;
-    }
-
-    @Required
-    public void setUpdateToolVersionWithSettingsQuery(String updateToolVersionWithSettingsQuery) {
-        this.updateToolVersionWithSettingsQuery = updateToolVersionWithSettingsQuery;
-    }
-
-    @Required
-    public void setLoadToolSettingsQuery(final String loadToolSettingsQuery) {
-        this.loadToolSettingsQuery = loadToolSettingsQuery;
-    }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createToolVersion(ToolVersion toolVersion) {
@@ -155,6 +109,16 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
     public void updateToolVersionWithSettings(ToolVersion toolVersion) {
         getNamedParameterJdbcTemplate().update(updateToolVersionWithSettingsQuery,
                         ToolVersionParameters.getParametersWithSettings(toolVersion));
+    }
+
+    public Map<String, ToolVersion> loadToolVersions(final Long toolId, final List<String> versions) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(ToolVersionParameters.TOOL_ID.name(), toolId);
+        params.addValue("VERSIONS", versions);
+        return getNamedParameterJdbcTemplate()
+                .query(loadToolVersionListSettingsQuery, params, ToolVersionParameters.getRowMapper())
+                .stream()
+                .collect(Collectors.toMap(ToolVersion::getVersion, Function.identity()));
     }
 
     enum ToolVersionParameters {
@@ -219,5 +183,60 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
         private static List<ConfigurationEntry> parseData(String data) {
             return JsonMapper.parseData(data, new TypeReference<List<ConfigurationEntry>>() {});
         }
+    }
+
+    @Required
+    public void setToolVersionSequenceQuery(String toolVersionSequenceQuery) {
+        this.toolVersionSequenceQuery = toolVersionSequenceQuery;
+    }
+
+    @Required
+    public void setCreateToolVersionQuery(String createToolVersionQuery) {
+        this.createToolVersionQuery = createToolVersionQuery;
+    }
+
+    @Required
+    public void setUpdateToolVersionQuery(String updateToolVersionQuery) {
+        this.updateToolVersionQuery = updateToolVersionQuery;
+    }
+
+    @Required
+    public void setDeleteToolVersionsQuery(String deleteToolVersionsQuery) {
+        this.deleteToolVersionsQuery = deleteToolVersionsQuery;
+    }
+
+    @Required
+    public void setDeleteToolVersionQuery(String deleteToolVersionQuery) {
+        this.deleteToolVersionQuery = deleteToolVersionQuery;
+    }
+
+    @Required
+    public void setLoadToolVersionQuery(String loadToolVersionQuery) {
+        this.loadToolVersionQuery = loadToolVersionQuery;
+    }
+
+    @Required
+    public void setLoadToolVersionSettingsQuery(String loadToolVersionSettingsQuery) {
+        this.loadToolVersionSettingsQuery = loadToolVersionSettingsQuery;
+    }
+
+    @Required
+    public void setCreateToolVersionWithSettingsQuery(String createToolVersionWithSettingsQuery) {
+        this.createToolVersionWithSettingsQuery = createToolVersionWithSettingsQuery;
+    }
+
+    @Required
+    public void setUpdateToolVersionWithSettingsQuery(String updateToolVersionWithSettingsQuery) {
+        this.updateToolVersionWithSettingsQuery = updateToolVersionWithSettingsQuery;
+    }
+
+    @Required
+    public void setLoadToolSettingsQuery(final String loadToolSettingsQuery) {
+        this.loadToolSettingsQuery = loadToolSettingsQuery;
+    }
+
+    @Required
+    public void setLoadToolVersionListSettingsQuery(final String loadToolVersionListSettingsQuery) {
+        this.loadToolVersionListSettingsQuery = loadToolVersionListSettingsQuery;
     }
 }

@@ -48,20 +48,45 @@ public class ToolScanInfoManager {
     private final ToolVersionManager toolVersionManager;
     private final ToolVulnerabilityDao toolVulnerabilityDao;
 
+    public ToolDescription loadToolInfo(final Long toolId) {
+        final Tool tool = toolManager.loadExisting(toolId);
+        return tool.isSymlink() ? loadToolInfo(tool.getLink()) : loadToolInfo(tool);
+    }
+
     public Optional<ToolVersionScanResult> loadToolVersionScanInfo(final Long toolId, final String version) {
         final Tool tool = toolManager.loadExisting(toolId);
         return tool.isSymlink() ? loadToolVersionScanInfo(tool.getLink(), version) :
                 loadToolVersionScanInfo(tool, version);
     }
 
-    public Optional<ToolVersionScanResult> loadToolVersionScanInfoByImageName(final String image) {
-        final String version = toolManager.getTagFromImageName(image);
-        Tool tool = toolManager.loadByNameOrId(image);
-        return tool.isSymlink() ? loadToolVersionScanInfo(tool.getLink(), version) :
-                loadToolVersionScanInfo(tool, version);
+    private ToolDescription loadToolInfo(final Tool tool) {
+        final ToolDescription result = new ToolDescription(tool.getId());
+        final List<String> activeVersions = toolManager.loadTags(tool);
+        if (StringUtils.isEmpty(activeVersions)) {
+            return result;
+        }
+        final Map<String, ToolVersionScanResult> scanInfo = loadScanInfo(tool, activeVersions);
+        final Map<String, ToolVersion> versionInfo = toolVersionManager.loadToolVersions(tool.getId(), activeVersions);
+        final List<ToolVersionAttributes> versionsAttributes = activeVersions.stream()
+                .map(version -> {
+                    final ToolVersionScanResult scanResult = scanInfo.get(version);
+                    return ToolVersionAttributes.builder()
+                            .version(version)
+                            .attributes(versionInfo.get(version))
+                            .scanResult(ToolVersionScanResultView.from(scanResult,
+                                    toolManager.isToolOSVersionAllowed(scanResult.getToolOSVersion())))
+                            .build();
+                })
+                .collect(Collectors.toList());
+        result.setVersions(versionsAttributes);
+        return result;
     }
 
-
+    private Map<String, ToolVersionScanResult> loadScanInfo(final Tool tool, final List<String> versions) {
+        final Map<String, ToolVersionScanResult> scanInfo = loadScanInfoForVersions(tool, versions);
+        scanInfo.forEach((version, scan) -> toolManager.setExecutePermission(tool, version, scan));
+        return scanInfo;
+    }
 
     private Map<String, ToolVersionScanResult> loadScanInfoForVersions(final Tool tool, final List<String> versions) {
         final Map<String, ToolVersionScanResult> scanInfo =
