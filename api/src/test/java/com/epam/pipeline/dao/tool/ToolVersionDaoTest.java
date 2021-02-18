@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -182,6 +183,10 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
         validateToolVersion(actual, TEST_DIGEST, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
         validateToolVersion(actual, TEST_DIGEST_2, TEST_SIZE, TEST_VERSION_2, TEST_LAST_MODIFIED_DATE, toolId);
+
+        final Map<String, ToolVersion> versions = toolVersionDao.loadToolVersions(toolId,
+                Arrays.asList(TEST_VERSION, TEST_VERSION_2));
+        assertThat(versions).hasSize(2);
 
         toolVersionDao.deleteToolVersions(toolId);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
