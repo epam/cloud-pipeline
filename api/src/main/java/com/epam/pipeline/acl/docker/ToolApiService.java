@@ -33,10 +33,11 @@ import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.security.acl.AclExpressions;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -47,19 +48,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ToolApiService {
 
-    @Autowired
-    private ToolManager toolManager;
-
-    @Autowired
-    private ToolScanScheduler toolScanScheduler;
-
-    @Autowired
-    private ToolScanManager toolScanManager;
-
-    @Autowired
-    private ToolVersionManager toolVersionManager;
+    private final ToolManager toolManager;
+    private final ToolScanScheduler toolScanScheduler;
+    private final ToolScanManager toolScanManager;
+    private final ToolVersionManager toolVersionManager;
+    private final ToolScanInfoManager toolScanInfoManager;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY +
             "OR hasPermission(#tool.toolGroupId, 'com.epam.pipeline.entity.pipeline.ToolGroup', 'WRITE')")
@@ -178,6 +174,11 @@ public class ToolApiService {
     @PreAuthorize(AclExpressions.TOOL_READ)
     public ToolDescription loadToolAttributes(Long id) {
         return toolManager.loadToolAttributes(id);
+    }
+
+    @PreAuthorize(AclExpressions.TOOL_READ)
+    public ToolDescription loadToolInfo(Long id) {
+        return toolScanInfoManager.loadToolInfo(id);
     }
 
     @PreAuthorize(AclExpressions.TOOL_READ)

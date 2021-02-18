@@ -285,6 +285,19 @@ public class ToolController extends AbstractRestController {
         return Result.success(toolApiService.loadToolAttributes(toolId));
     }
 
+    @GetMapping(value = "/tool/{toolId}/info")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads tool and info for all its versions",
+            notes = "Loads tool and info for all its versions",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<ToolDescription> loadToolInfo(@PathVariable Long toolId) {
+        return Result.success(toolApiService.loadToolInfo(toolId));
+    }
+
     @GetMapping(value = "/tool/{toolId}/attributes", params = VERSION)
     @ResponseBody
     @ApiOperation(

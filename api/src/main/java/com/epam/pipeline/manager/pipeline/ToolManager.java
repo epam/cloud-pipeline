@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import com.epam.pipeline.entity.scan.Vulnerability;
+import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -74,6 +75,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -177,7 +179,7 @@ public class ToolManager implements SecuredEntityManager {
                 String digest = dockerRegistryManager.getDockerClient(registry, tool.getImage())
                         .getVersionAttributes(registry, tool.getImage(), tag).getDigest();
                 updateToolVersionScanStatus(tool.getId(), ToolScanStatus.NOT_SCANNED,
-                        DateUtils.now(), tag, null, digest);
+                        DateUtils.now(), tag, null, digest, new HashMap<>());
             }
         } catch (DockerConnectionException e) {
             throw new IllegalArgumentException(
@@ -233,6 +235,12 @@ public class ToolManager implements SecuredEntityManager {
     @Override
     public Tool load(Long id) {
         return toolDao.loadTool(id);
+    }
+
+    public Tool loadExisting(final Long id) {
+        final Tool tool = toolDao.loadTool(id);
+        validateToolNotNull(tool, id);
+        return tool;
     }
 
     @Override
@@ -464,7 +472,7 @@ public class ToolManager implements SecuredEntityManager {
         return tool.isSymlink() ? loadTags(tool.getLink()) : loadTags(tool);
     }
 
-    private List<String> loadTags(final Tool tool) {
+    public List<String> loadTags(final Tool tool) {
         return dockerRegistryManager.loadImageTags(dockerRegistryManager.load(tool.getRegistryId()), tool);
     }
 
@@ -567,7 +575,8 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
                                             String version, ToolOSVersion toolOSVersion,
-                                            String layerRef, String digest) {
+                                            String layerRef, String digest,
+                                            Map<VulnerabilitySeverity, Integer> vulnerabilityCount) {
         final Tool tool = load(toolId);
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
@@ -580,17 +589,19 @@ public class ToolManager implements SecuredEntityManager {
                 whiteList = false;
             }
             toolVulnerabilityDao.updateToolVersionScan(toolId, version, toolOSVersion, layerRef, digest, newStatus,
-                    scanDate, whiteList);
+                    scanDate, whiteList, vulnerabilityCount);
         } else {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, toolOSVersion, layerRef,
-                    digest, newStatus, scanDate);
+                    digest, newStatus, scanDate, vulnerabilityCount);
         }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
-                                            String version, String layerRef, String digest) {
-        updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef, digest);
+                                            String version, String layerRef, String digest,
+                                            Map<VulnerabilitySeverity, Integer> vulnerabilityCount) {
+        updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef, digest,
+                vulnerabilityCount);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -602,7 +613,7 @@ public class ToolManager implements SecuredEntityManager {
         Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
         if (!toolVersionScanResult.isPresent()) {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
-                    DateUtils.now());
+                    DateUtils.now(), new HashMap<>());
         }
         toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
         return loadToolVersionScan(tool, version).orElse(null);
@@ -875,10 +886,10 @@ public class ToolManager implements SecuredEntityManager {
         return setExecutePermission(tool, tag, versionScan);
     }
 
-    private ToolVersionScanResult setExecutePermission(final Tool tool,
-                                                       final String tag,
-                                                       final ToolVersionScanResult versionScan) {
-        versionScan.setAllowedToExecute(toolScanManager.checkTool(tool, tag).isAllowed());
+    public ToolVersionScanResult setExecutePermission(final Tool tool,
+                                                      final String tag,
+                                                      final ToolVersionScanResult versionScan) {
+        versionScan.setAllowedToExecute(toolScanManager.checkScan(tool, tag, versionScan).isAllowed());
         if (versionScan.getScanDate() != null) {
             int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
             versionScan.setGracePeriod(
