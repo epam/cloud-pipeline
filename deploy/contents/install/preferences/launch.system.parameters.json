@@ -18,12 +18,6 @@
         "defaultValue": "true"
     },
     {
-        "name": "CP_CAP_EFA",
-        "type": "boolean",
-        "description": "Enables AWS EFA for a current run",
-        "defaultValue": "false"
-    },
-    {
         "name": "CP_CAP_SGE_QUEUE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine queue",
