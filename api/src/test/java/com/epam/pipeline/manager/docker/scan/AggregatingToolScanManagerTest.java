@@ -42,6 +42,7 @@ import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanS
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -125,6 +126,9 @@ public class AggregatingToolScanManagerTest {
 
     @Mock
     private PreferenceManager preferenceManager;
+
+    @Mock
+    private ToolScanInfoManager toolScanInfoManager;
 
     private ToolVersionScanResult toolScanResult = new ToolVersionScanResult();
     private ToolVersionScanResult actual = new ToolVersionScanResult();
@@ -234,6 +238,10 @@ public class AggregatingToolScanManagerTest {
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(testTool);
         when(toolManager.loadToolVersionScan(testTool.getId(), LATEST_VERSION)).thenReturn(Optional.of(toolScanResult));
         when(toolManager.loadToolVersionScan(testTool.getId(), ACTUAL_SCANNED_VERSION)).thenReturn(Optional.of(actual));
+        when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), LATEST_VERSION))
+                .thenReturn(Optional.of(toolScanResult));
+        when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), ACTUAL_SCANNED_VERSION))
+                .thenReturn(Optional.of(actual));
 
         ToolVersion actual = new ToolVersion();
         actual.setDigest(DIGEST_3);
@@ -327,7 +335,8 @@ public class AggregatingToolScanManagerTest {
         scanResult.setFromWhiteList(true);
         scanResult.setScanDate(DateUtils.now());
         scanResult.setVulnerabilities(Collections.emptyList());
-        when(toolManager.loadToolVersionScan(testTool.getId(), LATEST_VERSION)).thenReturn(Optional.of(scanResult));
+        when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), LATEST_VERSION))
+                .thenReturn(Optional.of(scanResult));
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 

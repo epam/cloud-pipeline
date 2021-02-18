@@ -22,6 +22,8 @@ import lombok.Getter;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Getter
 @Builder
@@ -38,22 +40,24 @@ public class ToolVersionScanResultView {
     private boolean isAllowedToExecute;
     private boolean fromWhiteList;
     private Date gracePeriod;
+    private Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount;
 
     public static ToolVersionScanResultView from(final ToolVersionScanResult scanResult, final boolean isOSAllowed) {
-        return scanResult != null
-                ? ToolVersionScanResultView.builder()
-                    .toolId(scanResult.getToolId())
-                    .version(scanResult.getVersion())
-                    .toolOSVersion(ToolOSVersionView.from(scanResult.getToolOSVersion(), isOSAllowed))
-                    .status(scanResult.getStatus())
-                    .scanDate(scanResult.getScanDate())
-                    .successScanDate(scanResult.getSuccessScanDate())
-                    .vulnerabilities(scanResult.getVulnerabilities())
-                    .dependencies(scanResult.getDependencies())
-                    .isAllowedToExecute(scanResult.isAllowedToExecute())
-                    .fromWhiteList(scanResult.isFromWhiteList())
-                    .gracePeriod(scanResult.getGracePeriod()).build()
-                : null;
+        return Optional.ofNullable(scanResult).map(scan ->
+            ToolVersionScanResultView.builder()
+                    .toolId(scan.getToolId())
+                    .version(scan.getVersion())
+                    .toolOSVersion(ToolOSVersionView.from(scan.getToolOSVersion(), isOSAllowed))
+                    .status(scan.getStatus())
+                    .scanDate(scan.getScanDate())
+                    .successScanDate(scan.getSuccessScanDate())
+                    .vulnerabilities(scan.getVulnerabilities())
+                    .dependencies(scan.getDependencies())
+                    .isAllowedToExecute(scan.isAllowedToExecute())
+                    .fromWhiteList(scan.isFromWhiteList())
+                    .gracePeriod(scan.getGracePeriod())
+                    .vulnerabilitiesCount(scan.getVulnerabilitiesCount())
+                    .build()
+        ).orElse(null);
     }
-
 }

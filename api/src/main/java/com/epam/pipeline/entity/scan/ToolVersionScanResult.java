@@ -25,7 +25,9 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -43,6 +45,7 @@ public class ToolVersionScanResult {
     private boolean isAllowedToExecute;
     private boolean fromWhiteList;
     private Date gracePeriod;
+    private Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
 
     @JsonIgnore
     private String lastLayerRef;

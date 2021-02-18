@@ -96,6 +96,7 @@ import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -457,6 +458,9 @@ public class AclTestBeans {
     protected FolderCrudManager mockFolderCrudManager() {
         return Mockito.mock(FolderCrudManager.class);
     }
+
+    @MockBean
+    protected ToolScanInfoManager toolScanInfoManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
