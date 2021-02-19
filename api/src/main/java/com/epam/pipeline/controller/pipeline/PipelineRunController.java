@@ -33,6 +33,7 @@ import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitie
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
@@ -529,5 +530,16 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<String> generateLaunchCommand(@RequestBody final PipeRunCmdStartVO runVO) {
         return Result.success(runApiService.generateLaunchCommand(runVO));
+    }
+
+    @GetMapping(value = "/runs")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns runs with associated tools",
+            notes = "Returns runs with associated tools",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineRunWithTool>> getRunsWithTools(@RequestParam final List<Long> runIds) {
+        return Result.success(runApiService.getRunsWithTools(runIds));
     }
 }

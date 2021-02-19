@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -1629,6 +1629,66 @@
                         pipeline.pipeline_run
                     WHERE
                         status IN (:list)
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllRunsByIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        docker_image,
+                        actual_docker_image,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        service_url,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        run_id IN (:list)
                     ORDER BY
                         start_date
                 ]]>

@@ -80,9 +80,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
 
 @Slf4j
 @Service
@@ -874,6 +877,10 @@ public class ToolManager implements SecuredEntityManager {
         return load(tool.getId());
     }
 
+    public List<Tool> loadAllByRegistryAndImageIn(final Long registryId, final Set<String> images) {
+        return toolDao.loadAllByRegistryAndImageIn(registryId, images);
+    }
+
     private String getSymlinkTargetImage(final Tool sourceTool, final ToolGroup targetGroup) {
         return targetGroup.getName() + TOOL_DELIMETER +
                 toolGroupManager.getGroupAndTool(sourceTool.getImage()).getRight();
@@ -911,10 +918,6 @@ public class ToolManager implements SecuredEntityManager {
         Tool tool = toolDao.loadTool(registryId, getImageWithoutTag(image));
         validateToolNotNull(tool, image);
         return tool;
-    }
-
-    private String getImageWithoutTag(String imageWithTag) {
-        return imageWithTag.split(TAG_DELIMITER)[0];
     }
 
     private String getImageTag(String imageWithTag) {

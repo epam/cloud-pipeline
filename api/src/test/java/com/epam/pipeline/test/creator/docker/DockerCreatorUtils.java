@@ -44,6 +44,10 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class DockerCreatorUtils {
+    public static final String IMAGE1 = "library/image1";
+    public static final String IMAGE2 = "library/image2";
+    public static final String REGISTRY1 = "registry1:8080";
+    public static final String REGISTRY2 = "registry2:8080";
 
     public static final TypeReference<Result<ImageDescription>> IMAGE_DESCRIPTION_INSTANCE_TYPE =
             new TypeReference<Result<ImageDescription>>() {};
