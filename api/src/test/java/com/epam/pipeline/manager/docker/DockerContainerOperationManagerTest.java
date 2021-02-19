@@ -50,7 +50,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -82,7 +81,6 @@ public class DockerContainerOperationManagerTest {
 
     @InjectMocks
     @Spy
-    @Autowired
     private DockerContainerOperationManager operationManager;
 
     @Mock
@@ -179,8 +177,8 @@ public class DockerContainerOperationManagerTest {
         when(sshConnection.waitFor(anyLong(), any())).thenReturn(true);
         when(sshConnection.exitValue()).thenReturn(CANNOT_EXECUTE_EXIT_CODE);
         final PipelineRun run = pipelineRun();
-        doReturn(null).when(preferenceManager).getPreference(SystemPreferences.BASE_API_HOST);
         doReturn(PAUSE_TIMEOUT).when(preferenceManager).getPreference(SystemPreferences.PAUSE_TIMEOUT);
+
         operationManager.pauseRun(run, false);
 
         verify(operationManager).submitCommandViaSSH(anyString(), anyString());
