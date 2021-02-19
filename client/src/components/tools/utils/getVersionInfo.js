@@ -41,13 +41,10 @@ export default function getVersionRunningInfo (
       return false;
     };
     const checkVulnerabilitiesNumber = (currentVersion) => {
-      const vulnerabilities = currentVersion.vulnerabilities || [];
-      const countCriticalVulnerabilities =
-        vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Critical').length;
-      const countHighVulnerabilities =
-        vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'High').length;
-      const countMediumVulnerabilities =
-        vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Medium').length;
+      const vulnerabilities = currentVersion.vulnerabilitiesCount || {};
+      const countCriticalVulnerabilities = vulnerabilities.Critical || 0;
+      const countHighVulnerabilities = vulnerabilities.High || 0;
+      const countMediumVulnerabilities = vulnerabilities.Medium || 0;
       return countCriticalVulnerabilities > scanPolicy.maxCriticalVulnerabilities ||
         countHighVulnerabilities > scanPolicy.maxHighVulnerabilities ||
         countMediumVulnerabilities > scanPolicy.maxMediumVulnerabilities;
