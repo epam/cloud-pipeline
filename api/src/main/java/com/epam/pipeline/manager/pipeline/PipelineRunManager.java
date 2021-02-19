@@ -1109,7 +1109,7 @@ public class PipelineRunManager {
         return runs.stream()
                 .map(run -> PipelineRunWithTool.builder()
                         .pipelineRun(run)
-                        .tool(tools.get(run.getDockerImage()))
+                        .tool(tools.get(trimToolVersion(run.getDockerImage())))
                         .build())
                 .collect(Collectors.toList());
     }
@@ -1442,6 +1442,17 @@ public class PipelineRunManager {
     }
 
     private String buildRegistryPath(final Tool tool) {
-        return String.format("%s/%s", tool.getRegistry(), tool.getImage());
+        return formatRegistryPath(tool.getRegistry(), tool.getImage());
+    }
+
+    private String formatRegistryPath(final String registry, final String image) {
+        return String.format("%s/%s", registry, image);
+    }
+
+    private String trimToolVersion(final String docketImage) {
+        final Pair<String, String> parsedImage = parseDockerImage(docketImage);
+        return Objects.isNull(parsedImage)
+                ? null
+                : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
     }
 }

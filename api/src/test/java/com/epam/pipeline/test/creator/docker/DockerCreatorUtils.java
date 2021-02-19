@@ -48,6 +48,7 @@ public final class DockerCreatorUtils {
     public static final String IMAGE2 = "library/image2";
     public static final String REGISTRY1 = "registry1:8080";
     public static final String REGISTRY2 = "registry2:8080";
+    public static final String VERSION = ":latest";
 
     public static final TypeReference<Result<ImageDescription>> IMAGE_DESCRIPTION_INSTANCE_TYPE =
             new TypeReference<Result<ImageDescription>>() {};
