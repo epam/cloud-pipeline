@@ -51,11 +51,13 @@ import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE2;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.REGISTRY1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.REGISTRY2;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.VERSION;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistry;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -161,7 +163,7 @@ public class PipelineRunManagerUnitTest {
         doReturn(Arrays.asList(dockerRegistry(ID, REGISTRY1), dockerRegistry(ID_2, REGISTRY2)))
                 .when(dockerRegistryManager).loadAllDockerRegistry();
         doReturn(Arrays.asList(
-                pipelineRun(ID, buildDockerImage(REGISTRY1, IMAGE1)),
+                pipelineRun(ID, buildDockerImage(REGISTRY1, IMAGE1 + VERSION)),
                 pipelineRun(ID_2, buildDockerImage(REGISTRY2, IMAGE1)),
                 pipelineRun(ID_3, buildDockerImage(REGISTRY1, IMAGE2)),
                 pipelineRun(ID_4, buildDockerImage(REGISTRY1, IMAGE2))))
@@ -248,6 +250,7 @@ public class PipelineRunManagerUnitTest {
         assertThat(result.getPipelineRun().getDockerImage())
                 .contains(expectedRegistry)
                 .contains(expectedImage);
+        assertNotNull(result.getTool());
         assertThat(result.getTool().getImage()).contains(expectedImage);
     }
 
