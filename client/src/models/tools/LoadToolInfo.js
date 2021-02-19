@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ import {computed} from 'mobx';
 
 const repeatInterval = 5000;
 
-export default class LoadToolAttributes extends Remote {
+export default class LoadToolInfo extends Remote {
   constructor (id) {
     super();
-    this.url = `/tool/${id}/attributes`;
+    this.url = `/tool/${id}/info`;
   }
 
   refreshData;
