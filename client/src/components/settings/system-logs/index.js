@@ -16,14 +16,15 @@
 
 import React from 'react';
 import styles from './system-logs.css';
-import Filters from './filters';
+import Filters, {DATE_FORMAT} from './filters';
 import Logs from './logs';
+import moment from 'moment-timezone';
 
 const SIZE_UPDATER_DELAY = 500;
 
 class SystemLogs extends React.Component {
   state = {
-    filters: {},
+    filters: undefined,
     logContainerSize: {
       width: undefined,
       height: undefined
@@ -38,6 +39,9 @@ class SystemLogs extends React.Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     this.updateSize();
+    if (!this.state.filters) {
+      this.setDefaultFilter();
+    }
   }
 
   componentDidMount () {
@@ -50,6 +54,12 @@ class SystemLogs extends React.Component {
     clearInterval(this.sizeUpdater);
     window.removeEventListener('resize', this.updateSize);
   }
+
+  setDefaultFilter = () => {
+    this.onFiltersChange({
+      messageTimestampFrom: moment.utc().add(-1, 'd').format(DATE_FORMAT)
+    });
+  };
 
   onFiltersInitialized = (filters) => {
     this.filters = filters;
@@ -91,7 +101,7 @@ class SystemLogs extends React.Component {
 
   onFiltersChange = (newFilters) => {
     this.setState({
-      filters: newFilters
+      filters: {...newFilters}
     });
   };
 
