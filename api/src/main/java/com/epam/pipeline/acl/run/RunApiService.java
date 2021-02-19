@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
@@ -290,5 +291,10 @@ public class RunApiService {
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.hasPermissionToRun(#runVO.pipelineStart, 'EXECUTE')")
     public String generateLaunchCommand(final PipeRunCmdStartVO runVO) {
         return runManager.generateLaunchCommand(runVO);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PipelineRunWithTool> getRunsWithTools(final List<Long> runIds) {
+        return runManager.loadRunsWithTools(runIds);
     }
 }

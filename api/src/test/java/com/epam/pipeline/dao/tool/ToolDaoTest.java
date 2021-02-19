@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.dao.tool;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -28,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -72,6 +74,7 @@ public class ToolDaoTest extends AbstractSpringTest {
     private static final String TEST_ANOTHER_USER = "test2";
     private static final String TEST_IMAGE = "image";
     private static final String TEST_SOURCE_IMAGE = "library/image";
+    private static final String TEST_SOURCE_IMAGE2 = "library/image2";
     private static final String TEST_SYMLINK_IMAGE = "user/image";
     private static final String TEST_CPU = "500m";
     private static final String TEST_RAM = "1Gi";
@@ -367,6 +370,23 @@ public class ToolDaoTest extends AbstractSpringTest {
 
         assertThat(icon.getLeft(), is(TEST_FILE_NAME));
         assertThat(StreamUtils.copyToByteArray(icon.getRight()), is(BYTES));
+    }
+
+    @Test
+    @Transactional
+    public void shouldLoadAllByRegistryAndImageIn() {
+        final Tool tool1 = generateToolWithAllFields();
+        toolDao.createTool(tool1);
+
+        final Tool tool2 = generateToolWithAllFields();
+        tool2.setImage(TEST_SOURCE_IMAGE2);
+        toolDao.createTool(tool2);
+
+        final List<Tool> result = toolDao.loadAllByRegistryAndImageIn(firstRegistry.getId(),
+                new HashSet<>(Arrays.asList(TEST_SOURCE_IMAGE, TEST_SOURCE_IMAGE2)));
+        assertThat(result.size(), is(2));
+        assertThat(result, hasItems(tool1, tool2));
+        result.forEach(tool -> assertThat(tool.getEndpoints(), is(ENDPOINTS)));
     }
 
     private Tool createTool() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.util.TestUtils;
 import org.hamcrest.CoreMatchers;
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,13 +64,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -381,7 +385,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(1, runs.get(1).getChildRuns().size());
         assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
 
-        assertThat(runs.get(1).getTags(), CoreMatchers.is(parent.getTags()));
+        assertThat(runs.get(1).getTags(), is(parent.getTags()));
         assertEquals(2L, pipelineRunDao.countRootRuns(filterVO, null).longValue());
 
     }
@@ -571,16 +575,10 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     @Test
     public void runPipelineWithRunSids() {
         List<RunSid> runSids = new ArrayList<>();
-        RunSid runSid1 = new RunSid();
-        runSid1.setName(TEST_USER);
-        runSid1.setIsPrincipal(true);
+        RunSid runSid1 = runSid(TEST_USER, true);
         runSids.add(runSid1);
-        runSid1.setAccessType(RunAccessType.ENDPOINT);
 
-        RunSid runSid2 = new RunSid();
-        runSid2.setName(GROUP_NAME);
-        runSid2.setIsPrincipal(false);
-        runSid2.setAccessType(RunAccessType.ENDPOINT);
+        RunSid runSid2 = runSid(GROUP_NAME, false);
         runSids.add(runSid2);
 
         Pipeline testPipeline = getPipeline();
@@ -592,16 +590,10 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     @Test
     public void testUpdateWithRunSids() {
         List<RunSid> runSids = new ArrayList<>();
-        RunSid runSid1 = new RunSid();
-        runSid1.setName(TEST_USER);
-        runSid1.setIsPrincipal(true);
-        runSid1.setAccessType(RunAccessType.ENDPOINT);
+        RunSid runSid1 = runSid(TEST_USER, true);
         runSids.add(runSid1);
 
-        RunSid runSid2 = new RunSid();
-        runSid2.setName(GROUP_NAME);
-        runSid2.setIsPrincipal(false);
-        runSid2.setAccessType(RunAccessType.ENDPOINT);
+        RunSid runSid2 = runSid(GROUP_NAME, false);
 
         Pipeline testPipeline = getPipeline();
         PipelineRun run = createRunWithRunSids(testPipeline.getId(), null, runSids);
@@ -831,7 +823,36 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
 
         assertNotNull(loadedRun.getInstance());
-        assertThat(loadedRun.getInstance().getNodeImage(), CoreMatchers.is(TEST_NODE_IMAGE));
+        assertThat(loadedRun.getInstance().getNodeImage(), is(TEST_NODE_IMAGE));
+    }
+
+    @Test
+    public void shouldLoadRunByIdIn() {
+        final RunSid userSid = runSid(TEST_USER, true);
+        final RunSid groupSid = runSid(GROUP_NAME, false);
+        final List<RunSid> runSids = Arrays.asList(userSid, groupSid);
+        final PipelineRun run1 = buildRunWithTool(testPipeline.getId(),
+                PRETTY_URL + generateRandomString(3), runSids);
+        final PipelineRun run2 = buildRunWithTool(testPipeline.getId(),
+                PRETTY_URL + generateRandomString(3), runSids);
+        pipelineRunDao.createPipelineRun(run1);
+        pipelineRunDao.createPipelineRun(run2);
+
+        final List<PipelineRun> result = pipelineRunDao.loadRunByIdIn(Arrays.asList(run1.getId(), run2.getId()));
+
+        assertThat(result.size(), is(2));
+        assertThat(result, hasItems(run1, run2));
+        result.forEach(run -> {
+            assertThat(run.getStatus(), is(TaskStatus.RUNNING));
+            assertThat(run.getOwner(), is(USER));
+            assertThat(run.getDockerImage(), is(DOCKER_IMAGE));
+            assertNotNull(run.getRunSids());
+            assertThat(run.getRunSids().size(), is(2));
+            run.getRunSids().forEach(sid -> assertThat(sid.getRunId(), is(run.getId())));
+            assertNotNull(run.getPrettyUrl());
+            assertThat(run.getPrettyUrl(), startsWith(PRETTY_URL));
+            assertTrue(run.getSensitive());
+        });
     }
 
     private PipelineRun createTestPipelineRun() {
@@ -982,7 +1003,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
     private void loadTagsAndCompareWithExpected(final Long runId, final Map<String, String> tags) {
         final Map<String, String> loadedTags = pipelineRunDao.loadPipelineRun(runId).getTags();
-        assertThat(loadedTags, CoreMatchers.is(tags));
+        assertThat(loadedTags, is(tags));
     }
 
     private RunLog createLog(final PipelineRun run,
@@ -1025,5 +1046,22 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
             run.setStatus(TaskStatus.STOPPED);
         }
         pipelineRunDao.createPipelineRun(run);
+    }
+
+    private PipelineRun buildRunWithTool(final Long pipelineId, final String prettyUrl, final List<RunSid> sids) {
+        final PipelineRun pipelineRun = buildPipelineRun(pipelineId, null);
+        pipelineRun.setDockerImage(DOCKER_IMAGE);
+        pipelineRun.setPrettyUrl(prettyUrl);
+        pipelineRun.setSensitive(true);
+        pipelineRun.setRunSids(sids);
+        return pipelineRun;
+    }
+
+    private RunSid runSid(final String sidName, final boolean principal) {
+        final RunSid runSid = new RunSid();
+        runSid.setName(sidName);
+        runSid.setIsPrincipal(principal);
+        runSid.setAccessType(RunAccessType.ENDPOINT);
+        return runSid;
     }
 }

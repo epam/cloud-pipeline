@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -154,6 +154,40 @@
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
                     WHERE t.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllByRegistryAndImageInQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        t.id,
+                        t.image,
+                        COALESCE(tl.description, t.description) AS description,
+                        COALESCE(tl.short_description, t.short_description) AS short_description,
+                        COALESCE(tl.cpu, t.cpu) AS cpu,
+                        COALESCE(tl.ram, t.ram) AS ram,
+                        t.registry_id,
+                        t.tool_group_id,
+                        COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.labels, t.labels) AS labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS endpoints,
+                        t.owner,
+                        COALESCE(tl.disk, t.disk) AS disk,
+                        COALESCE(tl.instance_type, t.instance_type) AS instance_type,
+                        COALESCE(tl.icon_id, t.icon_id) AS icon_id,
+                        t.link,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
+                        dr.path as registry,
+                        dr.secret_name
+                    FROM
+                        pipeline.tool t
+                    INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
+                    WHERE
+                        t.image IN (:list)
+                        AND
+                        (:REGISTRY_ID IS NULL OR t.registry_id = :REGISTRY_ID)
                 ]]>
             </value>
         </property>

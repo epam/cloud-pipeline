@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,10 +18,14 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.util.Collections;
+import java.util.List;
 
 //TODO: Move all CRUD and DB persistence methods from PipelineRunManager to this class
 @Service
@@ -43,5 +47,12 @@ public class PipelineRunCRUDService {
             run.setPrettyUrl(null);
             pipelineRunDao.updateRun(run);
         }
+    }
+
+    public List<PipelineRun> loadRunsByIds(final List<Long> runIds) {
+        if (CollectionUtils.isEmpty(runIds)) {
+            return Collections.emptyList();
+        }
+        return pipelineRunDao.loadRunByIdIn(runIds);
     }
 }

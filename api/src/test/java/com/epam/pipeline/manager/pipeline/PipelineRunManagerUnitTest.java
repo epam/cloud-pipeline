@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,16 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -33,9 +37,29 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.function.Predicate;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE2;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.REGISTRY1;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.REGISTRY2;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistry;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +69,8 @@ public class PipelineRunManagerUnitTest {
     private static final long NOT_EXISTING_RUN_ID = -1L;
     private static final String NODE_NAME = "node_name";
     private static final Long SIZE = 10L;
+    private static final Long ID_4 = 4L;
+    private static final String OWNER = "USER";
 
     @Mock
     private NodesManager nodesManager;
@@ -57,8 +83,13 @@ public class PipelineRunManagerUnitTest {
     private MessageHelper messageHelper;
 
     @Mock
-    @SuppressWarnings("PMD.UnusedPrivateField")
     private PipelineRunCRUDService runCRUDService;
+
+    @Mock
+    private DockerRegistryManager dockerRegistryManager;
+
+    @Mock
+    private ToolManager toolManager;
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
@@ -124,6 +155,32 @@ public class PipelineRunManagerUnitTest {
         assertAttachSucceed(run(TaskStatus.RESUMING));
     }
 
+    @Test
+    public void shouldLoadRunsWithTools() {
+        final List<Long> runIds = Arrays.asList(ID, ID_2, ID_3, ID_4);
+        doReturn(Arrays.asList(dockerRegistry(ID, REGISTRY1), dockerRegistry(ID_2, REGISTRY2)))
+                .when(dockerRegistryManager).loadAllDockerRegistry();
+        doReturn(Arrays.asList(
+                pipelineRun(ID, buildDockerImage(REGISTRY1, IMAGE1)),
+                pipelineRun(ID_2, buildDockerImage(REGISTRY2, IMAGE1)),
+                pipelineRun(ID_3, buildDockerImage(REGISTRY1, IMAGE2)),
+                pipelineRun(ID_4, buildDockerImage(REGISTRY1, IMAGE2))))
+                .when(runCRUDService).loadRunsByIds(runIds);
+        doReturn(Arrays.asList(tool(ID, REGISTRY1, IMAGE1), tool(ID_2, REGISTRY1, IMAGE2))).when(toolManager)
+                .loadAllByRegistryAndImageIn(eq(ID), any());
+        doReturn(Collections.singletonList(tool(ID, REGISTRY2, IMAGE1))).when(toolManager)
+                .loadAllByRegistryAndImageIn(eq(ID_2), any());
+
+        final List<PipelineRunWithTool> result = pipelineRunManager.loadRunsWithTools(runIds);
+        assertThat(result).hasSize(4);
+        final Map<Long, PipelineRunWithTool> resultByRunId = result.stream()
+                .collect(Collectors.toMap(runWithTool -> runWithTool.getPipelineRun().getId(), Function.identity()));
+        verifyRunWithTool(resultByRunId.get(ID), REGISTRY1, IMAGE1);
+        verifyRunWithTool(resultByRunId.get(ID_2), REGISTRY2, IMAGE1);
+        verifyRunWithTool(resultByRunId.get(ID_3), REGISTRY1, IMAGE2);
+        verifyRunWithTool(resultByRunId.get(ID_4), REGISTRY1, IMAGE2);
+    }
+
     private void assertAttachFails(final DiskAttachRequest request) {
         assertAttachFails(RUN_ID, request);
     }
@@ -165,6 +222,37 @@ public class PipelineRunManagerUnitTest {
 
     private DiskAttachRequest diskAttachRequest(final Long size) {
         return new DiskAttachRequest(size);
+    }
+
+    private DockerRegistry dockerRegistry(final Long id, final String path) {
+        final DockerRegistry registry = getDockerRegistry(id, OWNER);
+        registry.setPath(path);
+        return registry;
+    }
+
+    private PipelineRun pipelineRun(final Long id, final String dockerImage) {
+        final PipelineRun pipelineRun = getPipelineRun(id, OWNER);
+        pipelineRun.setDockerImage(dockerImage);
+        return pipelineRun;
+    }
+
+    private Tool tool(final Long id, final String registry, final String image) {
+        final Tool tool = getTool(id, OWNER);
+        tool.setImage(image);
+        tool.setRegistry(registry);
+        return tool;
+    }
+
+    private void verifyRunWithTool(final PipelineRunWithTool result, final String expectedRegistry,
+                                   final String expectedImage) {
+        assertThat(result.getPipelineRun().getDockerImage())
+                .contains(expectedRegistry)
+                .contains(expectedImage);
+        assertThat(result.getTool().getImage()).contains(expectedImage);
+    }
+
+    private String buildDockerImage(final String registry, final String image) {
+        return String.format("%s/%s", registry, image);
     }
 
     private <T> BaseMatcher<T> matches(final Predicate<T> test) {
