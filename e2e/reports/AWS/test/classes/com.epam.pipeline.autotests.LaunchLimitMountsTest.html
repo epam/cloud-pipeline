@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">3</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">19m43.47s</div>
+<div class="counter">21m5.72s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">71%</div>
+<div class="percent">57%</div>
 <p>successful</p>
 </div>
 </td>
@@ -102,140 +102,181 @@
 </span>
 </div>
 <div class="test">
+<a name="rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683"></a>
+<h3 class="failures">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</h3>
+<span class="code">
+<pre>java.lang.IndexOutOfBoundsException: Index: 24, Size: 23
+	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
+	at java.util.ArrayList.get(ArrayList.java:435)
+	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.getSize(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.lambda$logMessages$0(LogAO.java:119)
+	at java.util.stream.ReferencePipeline$4$1.accept(ReferencePipeline.java:210)
+	at java.util.Iterator.forEachRemaining(Iterator.java:116)
+	at java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1801)
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
+	at java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:708)
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.util.stream.IntPipeline.reduce(IntPipeline.java:479)
+	at java.util.stream.IntPipeline.sum(IntPipeline.java:437)
+	at com.epam.pipeline.autotests.ao.LogAO.logMessages(LogAO.java:119)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.rerunPipelineWithoutLimitMounts(LaunchLimitMountsTest.java:204)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
 <a name="runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178"></a>
 <h3 class="failures">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</h3>
 <span class="code">
 <pre>Element should contains messages {By.className: ReactVirtualized__List}
-Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;001:[2021-02-19 17:28:58] Starting mounting remote data storages.
-002:[2021-02-19 17:28:58] Fetching list of allowed storages...
-003:[2021-02-19 17:28:58] Run is launched with mount limits (37035,37037) Only 2 storages will be mounted
-004:[2021-02-19 17:28:58] Found 2 available storage(s). Checking mount options.
-005:[2021-02-19 17:28:59] --&gt;launchlimitmountsstorage4599548557274332710 mounted to /cloud-data/launchlimitmountsstorage4599548557274332710
-006:[2021-02-19 17:29:01] --&gt;launchlimitmountsstorage4603283493114632959 mounted to /cloud-data/launchlimitmountsstorage4603283493114632959
-007:[2021-02-19 17:29:01] Finished data storage mounting&lt;/div&gt;'
+Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;001:[2021-02-20 18:51:51] Starting mounting remote data storages.
+002:[2021-02-20 18:51:51] Fetching list of allowed storages...
+003:[2021-02-20 18:51:51] Run is launched with mount limits (37124,37126) Only 2 storages will be mounted
+004:[2021-02-20 18:51:51] Found 2 available storage(s). Checking mount options.
+005:[2021-02-20 18:51:53] --&gt;launchlimitmountsstorage4604636741186600920 mounted to /cloud-data/launchlimitmountsstorage4604636741186600920
+006:[2021-02-20 18:51:55] --&gt;launchlimitmountsstorage4605210943367443907 mounted to /cloud-data/launchlimitmountsstorage4605210943367443907
+007:[2021-02-20 18:51:55] Finished data storage mounting&lt;/div&gt;'
 Actual value: Following messages wasn't found in log:
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Run is launched with mount limits (37037,37035) Only 2 storages will be mounted
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1613755825868.103.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1613755825868.103.html
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Run is launched with mount limits (37126,37124) Only 2 storages will be mounted
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1613847199291.112.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1613847199291.112.html
 Timeout: 80 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -276,37 +317,37 @@ Timeout: 80 s.
 </thead>
 <tr>
 <td class="failures">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
-<td>1m45.13s</td>
+<td>1m37.25s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
-<td>34.950s</td>
+<td>33.550s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareLimitMounts - EPMCMBIBPC-2681</td>
-<td>19.049s</td>
+<td>17.187s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
-<td>31.034s</td>
+<td>28.791s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
-<td>7m14.87s</td>
-<td class="success">passed</td>
+<td class="failures">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
+<td>2m48.45s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
-<td>6m47.19s</td>
+<td>7m0.07s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</td>
-<td>2m31.25s</td>
+<td>8m20.42s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -314,11 +355,10 @@ Timeout: 80 s.
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 59473 from [59473]
-Returns latest run with runId 59474 from [59473, 59474]
-Returns latest run with runId 59474 from [59473, 59474]
-Returns latest run with runId 59475 from [59473, 59474, 59475]
-Returns latest run with runId 59476 from [59473, 59474, 59475, 59476]
+<pre>Returns latest run with runId 59631 from [59631]
+Returns latest run with runId 59632 from [59631, 59632]
+Returns latest run with runId 59633 from [59631, 59632, 59633]
+Returns latest run with runId 59634 from [59631, 59632, 59633, 59634]
 </pre>
 </span>
 </div>
@@ -330,7 +370,7 @@ Returns latest run with runId 59476 from [59473, 59474, 59475, 59476]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 19, 2021 7:20:52 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 20, 2021 8:34:23 PM</p>
 </div>
 </div>
 </body>
