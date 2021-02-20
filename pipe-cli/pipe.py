@@ -717,7 +717,7 @@ def pause(run_id, check_size, sync):
 @click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
 @Config.validate_access_token
 def resume(run_id, sync):
-    """Resumes a running pipeline
+    """Resumes a paused pipeline
     """
     PipelineRunOperations.resume(run_id, sync)
 
