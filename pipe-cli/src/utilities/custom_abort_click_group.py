@@ -39,6 +39,10 @@ class CustomAbortHandlingGroup(click.Group):
             except click.exceptions.Abort:
                 click.echo(self.UNINTERRUPTIBLE_OPERATION_ABORT_MSG_TEMPLATE.format(command_name))
                 sys.exit(0)
+            except click.exceptions.MissingParameter as missing_parameter_exception:
+                click.echo('{}\n\n{}'.format(missing_parameter_exception.ctx.get_usage(),
+                                             missing_parameter_exception.format_message()),
+                           err=True)
             except click.exceptions.ClickException as click_exception:
                 click.echo('Error: {}'.format(str(click_exception)), err=True)
                 sys.exit(click_exception.exit_code)
