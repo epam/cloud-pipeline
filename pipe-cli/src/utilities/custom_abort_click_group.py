@@ -29,8 +29,8 @@ class CustomAbortHandlingGroup(click.Group):
 
     def __call__(self, *args, **kwargs):
         try:
-            if len(args) > 0 and len(args[0]) > 0:
-                command_name = args[0][0]
+            if sys.argv and len(sys.argv) > 1 and len(sys.argv[1]) > 0:
+                command_name = sys.argv[1]
             else:
                 command_name = None
             execute_in_standalone = command_name not in self.not_standalone_cmd_list
