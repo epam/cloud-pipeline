@@ -296,7 +296,8 @@ class PipelineRunOperations(object):
                     click.echo('RunID {} of "{}@{}" is resumed'.format(run_id, pipeline_name, pipeline_version))
                     sys.exit(1)
                 else:
-                    click.echo('Failed resuming RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version))
+                    click.echo('Failed resuming RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version),
+                               err=True)
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:
@@ -319,7 +320,8 @@ class PipelineRunOperations(object):
                     click.echo('RunID {} of "{}@{}" is paused'.format(run_id, pipeline_name, pipeline_version))
                     sys.exit(1)
                 else:
-                    click.echo('Failed pausing RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version))
+                    click.echo('Failed pausing RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version),
+                               err=True)
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:
