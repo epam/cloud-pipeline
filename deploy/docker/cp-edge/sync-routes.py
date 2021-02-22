@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import os
 import json
 import glob
@@ -41,8 +42,7 @@ EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
 RUN_ID = 'runid'
 API_UPDATE_SVC = 'run/{run_id}/serviceUrl'
-API_GET_RUN_DETAILS = 'run/{run_id}'
-API_GET_TOOL = 'tool/load?registry={registry}&image={image}'
+API_GET_RUNS_LIST_DETAILS = 'runs?runIds={run_ids}'
 NUMBER_OF_RETRIES = 10
 SECS_TO_WAIT_BEFORE_RETRY = 15
 
@@ -90,11 +90,14 @@ class ServiceEndpoint:
                 self.path = path
                 self.additional = additional
 
+def do_log(msg):
+        print('[{}] {}'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
+
 def call_api(method_url, data=None):
         result = None
         for n in range(NUMBER_OF_RETRIES):
                 try:
-                        print('Calling API {}'.format(method_url))
+                        do_log('Calling API {}'.format(method_url))
                         response = None
                         if data:
                                 response = requests.post(method_url, verify=False, data=data, headers=api_headers)
@@ -102,23 +105,23 @@ def call_api(method_url, data=None):
                                 response = requests.get(method_url, verify=False, headers=api_headers)
                         response_data = json.loads(response.text)
                         if response_data['status'] == 'OK':
-                                print('API call status OK')
+                                do_log('API call status OK')
                                 result = response_data
                         else:
                                 err_msg = 'No error message available'
                                 if 'message' in response_data:
                                         err_msg = response_data['message']
-                                print('Error ocurred while calling API ({})\n{}'.format(method_url, err_msg))
-                                print('As the API technically succeeded, it will not be retried')
+                                do_log('Error ocurred while calling API ({})\n{}'.format(method_url, err_msg))
+                                do_log('As the API technically succeeded, it will not be retried')
                         break
                 except Exception as api_exception:
-                        print('Error ocurred while calling API ({})\n{}'.format(method_url, str(api_exception)))
+                        do_log('Error ocurred while calling API ({})\n{}'.format(method_url, str(api_exception)))
 
                 if n < NUMBER_OF_RETRIES - 1:
-                        print('Sleep for {} sec and perform API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 2, NUMBER_OF_RETRIES))
+                        do_log('Sleep for {} sec and perform API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 2, NUMBER_OF_RETRIES))
                         sleep(SECS_TO_WAIT_BEFORE_RETRY)
                 else:
-                        print('All attempts failed. API call failed')
+                        do_log('All attempts failed. API call failed')
         return result
 
 
@@ -183,13 +186,13 @@ def add_custom_domain(domain, location_block, is_external_app=False):
         # Check if the location_block already added to the domain config
         existing_loc = substr_indices(domain_path_lines, location_block_include)
         if len(existing_loc) != 0:
-                print('Location block {} already exists for domain {}'.format(location_block, domain))
+                do_log('Location block {} already exists for domain {}'.format(location_block, domain))
                 return
 
         # If it's a new location entry - add it to the domain config after the {edge_route_location_block} line
         insert_loc = substr_indices(domain_path_lines, '# {edge_route_location_block}')
         if len(insert_loc) == 0:
-                print('Cannot find an insert location in the domain config {}'.format(domain_path))
+                do_log('Cannot find an insert location in the domain config {}'.format(domain_path))
                 return
         domain_path_lines.insert(insert_loc[-1] + 1, location_block_include)
 
@@ -215,7 +218,7 @@ def remove_custom_domain(domain, location_block, is_external_app=False):
         if (not is_external_app and sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
                 # If no more location block exist in the domain - delete the config file
                 # Do not delete if this is an "external application", where the server block is managed externally
-                print('No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
+                do_log('No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
                 os.remove(domain_path)
         else:
                 # Save the domain config back to file
@@ -229,7 +232,7 @@ def remove_custom_domain_all(location_block):
                         custom_domain = os.path.basename(domain_path).replace(nginx_custom_domain_config_ext, '')
                         is_external_app = domains_root_path == external_apps_domains_path
                         if remove_custom_domain(custom_domain, location_block, is_external_app=is_external_app):
-                                print('Removed {} location block from {} domain config'.format(location_block, custom_domain))
+                                do_log('Removed {} location block from {} domain config'.format(location_block, custom_domain))
 
 def search_custom_domain_cert(domain):
         domain_cert_list = [f for f in glob.glob(pki_search_path + '/*' + pki_search_suffix_cert)]
@@ -247,13 +250,13 @@ def search_custom_domain_cert(domain):
                 cert_path = os.path.join(pki_search_path, cert_name + pki_search_suffix_cert)
                 key_path = os.path.join(pki_search_path, cert_name + pki_search_suffix_key)
                 if not os.path.isfile(key_path):
-                        print('Certificate for {} is found at {}, but a key does not exist at {}'.format(domain, cert_path, key_path))
+                        do_log('Certificate for {} is found at {}, but a key does not exist at {}'.format(domain, cert_path, key_path))
                         key_path = None
         if not cert_path or not key_path:
                 cert_path = pki_default_cert
                 key_path = pki_default_cert_key
 
-        print('Certificate:Key for {} will be used: {}:{}'.format(domain, cert_path, key_path))
+        do_log('Certificate:Key for {} will be used: {}:{}'.format(domain, cert_path, key_path))
         return (cert_path, key_path)
 
 def read_system_endpoints():
@@ -345,15 +348,30 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
                         non_matching_tool_endpoints.append(endpoint)
         return non_matching_tool_endpoints, is_default_endpoint, is_ssl_backend
 
-def get_service_list(pod_id, pod_run_id, pod_ip):
-        service_list = {}
-        get_run_details_method = os.path.join(api_url, API_GET_RUN_DETAILS.format(run_id=pod_run_id))
-        response_data = call_api(get_run_details_method)
-        if response_data:
-                run_info = response_data["payload"]
+def get_active_runs(pods):
+        pod_run_ids = [x['metadata']['labels']['runid'] for x in pods]
+        get_runs_list_details_method = os.path.join(api_url, 
+                                                    API_GET_RUNS_LIST_DETAILS.format(run_ids=','.join(pod_run_ids)))
+        response_data = call_api(get_runs_list_details_method)
+        if not response_data:
+                do_log('Cannot get list of active runs from the API for the following IDs: {}'.format(pod_run_ids))
+                return []
 
+        return response_data["payload"]
+
+
+def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
+        service_list = {}
+        run_cache = [cached_run for cached_run in active_runs_list if str(cached_run['pipelineRun']['id']) == str(pod_run_id)]
+        run_cache = next(iter(run_cache), None)
+        if not run_cache:
+                do_log('Cannot find the RunID {} in the list of cached runs, skipping'.format(pod_run_id))
+                return {}
+
+        run_info = run_cache['pipelineRun']
+        if run_info:
                 if not run_info["status"] or run_info["status"] != 'RUNNING':
-                        print('Status for pipeline with id: {}, is not RUNNING. Service urls will not been proxied'.format(pod_run_id))
+                        do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not been proxied'.format(pod_run_id))
                         return {}
 
                 pod_owner = run_info["owner"]
@@ -367,31 +385,30 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                 sensitive = run_info.get("sensitive") or False
 
 
-                print('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
+                do_log('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
 
                 shared_users_sids = run_sids_to_str(runs_sids, True)
                 if shared_users_sids and len(shared_users_sids) > 0:
-                        print('Users {} are determined as shared sids of PodID ({}) - RunID ({})'.format(shared_users_sids, pod_id, pod_run_id))
+                        do_log('Users {} are determined as shared sids of PodID ({}) - RunID ({})'.format(shared_users_sids, pod_id, pod_run_id))
 
                 shared_groups_sids = run_sids_to_str(runs_sids, False)
                 if shared_groups_sids and len(shared_groups_sids) > 0:
-                        print('Groups {} are determined as shared sids of PodID ({}) - RunID ({})'.format(shared_groups_sids, pod_id, pod_run_id))
+                        do_log('Groups {} are determined as shared sids of PodID ({}) - RunID ({})'.format(shared_groups_sids, pod_id, pod_run_id))
 
                 registry, separator, image = docker_image.partition("/")
-                load_tool_method = os.path.join(api_url, API_GET_TOOL.format(registry=registry, image=image))
-                endpoints_response = call_api(load_tool_method)
-                if endpoints_response and "payload" in endpoints_response and "endpoints" in endpoints_response["payload"]:
-                        endpoints_data = endpoints_response["payload"]["endpoints"]
+
+                if "tool" in run_cache and "endpoints" in run_cache["tool"]:
+                        endpoints_data = run_cache["tool"]["endpoints"]
                 else:
                         endpoints_data = []
                 tool_endpoints_count = len(endpoints_data)
-                print('{} endpoints are set for the tool {} via settings'.format(tool_endpoints_count, docker_image))
+                do_log('{} endpoints are set for the tool {} via settings'.format(tool_endpoints_count, docker_image))
                 endpoints_data, overridden_endpoints_count = append_system_endpoints(endpoints_data, run_info)
                 additional_system_endpoints_count = len(endpoints_data) - tool_endpoints_count
-                print('{} additional system endpoints are set for the tool {} via run parameters'
+                do_log('{} additional system endpoints are set for the tool {} via run parameters'
                       .format(additional_system_endpoints_count, docker_image))
                 if overridden_endpoints_count != 0:
-                        print('{} endpoints are overridden by a system ones for the tool {} via run parameters'
+                        do_log('{} endpoints are overridden by a system ones for the tool {} via run parameters'
                               .format(overridden_endpoints_count, docker_image))
                 if endpoints_data:
                         endpoints_count = len(endpoints_data)
@@ -458,17 +475,19 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                                         "sensitive": sensitive,
                                                                         "external_app": is_external_app}
                 else:
-                        print('No endpoints required for the tool {}'.format(docker_image))
+                        do_log('No endpoints required for the tool {}'.format(docker_image))
         else:
-                print('Unable to get details of a RunID {} from API due to errors'.format(pod_run_id))
+                do_log('Unable to get details of a RunID {} from API due to errors'.format(pod_run_id))
         return service_list
+
+do_log('============ Started iteration ============')
 
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False
 
 edge_kube_service = Service.objects(kube_api).filter(selector={EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE})
 if len(edge_kube_service.response['items']) == 0:
-        print('EDGE service is not found by label: cloud-pipeline/role=EDGE')
+        do_log('EDGE service is not found by label: cloud-pipeline/role=EDGE')
         exit(1)
 else:
         edge_kube_service_object = edge_kube_service.response['items'][0]
@@ -484,8 +503,8 @@ else:
                 edge_service_external_ip = edge_kube_service_object['spec']['externalIPs'][0]
         if not edge_service_port:
                 edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
-        print('EDGE service port: ' + str(edge_service_port))
-        print('EDGE service ip: ' + edge_service_external_ip)
+        do_log('EDGE service port: ' + str(edge_service_port))
+        do_log('EDGE service ip: ' + edge_service_external_ip)
 
 # From each pod with a container, which has endpoints ("job-type=Service" or container's environment
 # has a parameter from SYSTEM_ENDPOINTS) we shall take:
@@ -520,6 +539,7 @@ def load_pods_for_runs_with_endpoints():
         return pods_with_endpoints
 
 pods_with_endpoints = load_pods_for_runs_with_endpoints()
+runs_with_endpoints = get_active_runs(pods_with_endpoints)
 
 services_list = {}
 for pod_spec in pods_with_endpoints:
@@ -528,12 +548,12 @@ for pod_spec in pods_with_endpoints:
         pod_run_id = pod_spec['metadata']['labels']['runid']
 
         if not pod_run_id:
-                print('RunID not found for pod: ' + pod_id + ', skipping')
+                do_log('RunID not found for pod: ' + pod_id + ', skipping')
                 continue
 
-        services_list.update(get_service_list(pod_id, pod_run_id, pod_ip))
+        services_list.update(get_service_list(runs_with_endpoints, pod_id, pod_run_id, pod_ip))
 
-print('Found ' + str(len(services_list)) + ' running PODs for interactive runs')
+do_log('Found ' + str(len(services_list)) + ' running PODs for interactive runs')
 
 routes_kube = set([x for x in services_list])
 
@@ -548,13 +568,13 @@ routes_current = set([x for x in nginx_modules_list])
 # If they do not match - nginx config will be deleted, thus it will be further recreated during "add" step
 # For now only users/groups sharing is checked
 routes_to_update = routes_current.intersection(routes_kube)
-print('Found ' + str(len(routes_to_update)) + ' routes with existing configs, they will be checked for updates')
+do_log('Found ' + str(len(routes_to_update)) + ' routes with existing configs, they will be checked for updates')
 
 routes_were_updated = False
 for update_route in routes_to_update:
         path_to_update_route = os.path.join(nginx_sites_path, nginx_modules_list[update_route])
 
-        print('Checking nginx config for updates: {}'.format(path_to_update_route))
+        do_log('Checking nginx config for updates: {}'.format(path_to_update_route))
         with open(path_to_update_route) as update_route_file:
                 update_route_file_contents = update_route_file.read()
 
@@ -570,27 +590,27 @@ for update_route in routes_to_update:
         shared_users_sids_to_update = service_spec["shared_users_sids"]
         shared_groups_sids_to_update = service_spec["shared_groups_sids"]
 
-        print('- Shared users found: "{}", while expected: "{}"'.format(shared_users_sids_to_check, shared_users_sids_to_update))
-        print('- Shared groups found: "{}", while expected: "{}"'.format(shared_groups_sids_to_check, shared_groups_sids_to_update))
+        do_log('- Shared users found: "{}", while expected: "{}"'.format(shared_users_sids_to_check, shared_users_sids_to_update))
+        do_log('- Shared groups found: "{}", while expected: "{}"'.format(shared_groups_sids_to_check, shared_groups_sids_to_update))
 
         # If nginx config and settings from API do not match - delete nginx config
         if shared_users_sids_to_check != shared_users_sids_to_update or shared_groups_sids_to_check != shared_groups_sids_to_update:
-                print('nginx config will be deleted {}'.format(path_to_update_route))
+                do_log('nginx config will be deleted {}'.format(path_to_update_route))
                 os.remove(path_to_update_route)
                 routes_current.remove(update_route)
                 routes_were_updated = True
 
 # Perform merge of the existing routes and pods
-print('Found out expired and new routes ...')
+do_log('Found out expired and new routes ...')
 routes_to_delete = routes_current - routes_kube
-print('Found ' + str(len(routes_to_delete)) + ' expired routes, this routes will be deleted')
+do_log('Found ' + str(len(routes_to_delete)) + ' expired routes, this routes will be deleted')
 routes_to_add = routes_kube - routes_current
-print('Found ' + str(len(routes_to_add)) + ' pods without routes, routes for this pods will be added')
+do_log('Found ' + str(len(routes_to_add)) + ' pods without routes, routes for this pods will be added')
 
 # For each of the routes that are not present in the list of pods - delete files from /etc/nginx/sites-enabled
 for obsolete_route in routes_to_delete:
         path_to_route = os.path.join(nginx_sites_path, nginx_modules_list[obsolete_route])
-        print('Deleting obsolete route: ' + path_to_route)
+        do_log('Deleting obsolete route: ' + path_to_route)
         os.remove(path_to_route)
         remove_custom_domain_all(path_to_route)
 
@@ -655,9 +675,9 @@ for added_route in routes_to_add:
 
         path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
         if service_spec["sensitive"]:
-                print('Adding new sensitive route: ' + path_to_route)
+                do_log('Adding new sensitive route: ' + path_to_route)
         else:
-                print('Adding new route: ' + path_to_route)
+                do_log('Adding new route: ' + path_to_route)
         with open(path_to_route, "w") as added_route_file:
                 added_route_file.write(nginx_route_definition)
                 if nginx_sensitive_route_definitions:
@@ -665,7 +685,7 @@ for added_route in routes_to_add:
                                 added_route_file.write(nginx_sensitive_route_definition)
 
         if has_custom_domain:
-                print('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
+                do_log('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
                 add_custom_domain(service_hostname, path_to_route, is_external_app=service_spec['external_app'])
 
         service_url = SVC_URL_TMPL.format(external_ip=service_hostname,
@@ -682,7 +702,7 @@ for added_route in routes_to_add:
 # Once all entries are added to the template - run "nginx -s reload"
 # TODO: Add error handling, if non-zero is returned - restore previous state
 if len(routes_to_add) > 0 or len(routes_to_delete) or routes_were_updated:
-        print('Reloading nginx config')
+        do_log('Reloading nginx config')
         check_output('nginx -s reload', shell=True)
 
 
@@ -694,11 +714,14 @@ for run_id in service_url_dict:
         # make array of json objects
         service_urls_json = '[' + service_url_dict[run_id] + ']'
         update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id))
-        print('Assigning service url ({}) to RunID: {}'.format(service_urls_json, run_id))
+        do_log('Assigning service url ({}) to RunID: {}'.format(service_urls_json, run_id))
 
         data = json.dumps({'serviceUrl': service_urls_json})
         response_data = call_api(update_svc_method, data=data)
         if response_data:
-                print('Service url ({}) assigned to RunID: {}'.format(service_urls_json, run_id))
+                do_log('Service url ({}) assigned to RunID: {}'.format(service_urls_json, run_id))
         else:
-                print('Service url was not assigned due to API errors')
+                do_log('Service url was not assigned due to API errors')
+
+do_log('============ Done iteration ============')
+print('')
