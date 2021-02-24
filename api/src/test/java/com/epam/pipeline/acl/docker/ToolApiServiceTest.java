@@ -77,7 +77,10 @@ public class ToolApiServiceTest extends AbstractAclTest {
     private final ToolSymlinkRequest toolSymlinkRequest = DockerCreatorUtils.getToolSymlinkRequest();
     private final ToolScanResult toolScanResult = DockerCreatorUtils.getToolScanResult();
     private final ToolScanResultView toolScanResultView = new ToolScanResultView(toolScanResult.getToolId(),
-            Collections.singletonMap(TEST_STRING, ToolVersionScanResultView.builder().version(TEST_STRING).build()));
+            Collections.singletonMap(TEST_STRING, ToolVersionScanResultView.builder()
+                    .version(TEST_STRING)
+                    .vulnerabilitiesCount(Collections.emptyMap())
+                    .build()));
     private final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
 
     @Autowired

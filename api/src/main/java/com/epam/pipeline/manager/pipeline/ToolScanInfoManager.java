@@ -70,12 +70,15 @@ public class ToolScanInfoManager {
         final List<ToolVersionAttributes> versionsAttributes = activeVersions.stream()
                 .map(version -> {
                     final ToolVersionScanResult scanResult = scanInfo.get(version);
-                    return ToolVersionAttributes.builder()
+                    final ToolVersionAttributes.ToolVersionAttributesBuilder builder = ToolVersionAttributes.builder()
                             .version(version)
-                            .attributes(versionInfo.get(version))
-                            .scanResult(ToolVersionScanResultView.from(scanResult,
-                                    toolManager.isToolOSVersionAllowed(scanResult.getToolOSVersion())))
-                            .build();
+                            .attributes(versionInfo.get(version));
+                    Optional.ofNullable(scanResult)
+                            .ifPresent(scan -> {
+                                builder.scanResult(ToolVersionScanResultView.from(scan,
+                                        toolManager.isToolOSVersionAllowed(scan.getToolOSVersion())));
+                            });
+                    return builder.build();
                 })
                 .collect(Collectors.toList());
         result.setVersions(versionsAttributes);
