@@ -41,7 +41,8 @@ class PipelineRunOperations(object):
         try:
             pipeline_run_model = Pipeline.stop_pipeline(run_id)
             pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
-            click.echo('RunID {} of "{}@{}" stopped'.format(run_id, pipeline_name, pipeline_run_model.version))
+            click.echo('RunID {} of "{}" stopped'.format(
+                run_id, cls.build_image_name(pipeline_name, pipeline_run_model.version)))
 
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
@@ -190,8 +191,9 @@ class PipelineRunOperations(object):
                                                                       friendly_url=friendly_url)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
-                            click.echo('"{}@{}" pipeline run scheduled with RunId: {}'
-                                       .format(pipeline_model.name, pipeline_run_parameters.version, pipeline_run_id))
+                            click.echo('"{}" pipeline run scheduled with RunId: {}'.format(
+                                cls.build_image_name(pipeline_model.name, pipeline_run_parameters.version),
+                                pipeline_run_id))
                             if sync:
                                 pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
                                 click.echo('Pipeline run {} completed with status {}'
@@ -289,15 +291,15 @@ class PipelineRunOperations(object):
             pipeline_run_model = Pipeline.resume_pipeline(run_id)
             pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
             pipeline_version = pipeline_run_model.version
-            click.echo('Resuming RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version))
+            image_name = cls.build_image_name(pipeline_name, pipeline_version)
+            click.echo('Resuming RunID {} of "{}"'.format(run_id, image_name))
             if sync:
                 status = cls.get_resuming_pipeline_status(run_id)
                 if status == 'RUNNING':
-                    click.echo('RunID {} of "{}@{}" is resumed'.format(run_id, pipeline_name, pipeline_version))
+                    click.echo('RunID {} of "{}" is resumed'.format(run_id, image_name))
                     sys.exit(1)
                 else:
-                    click.echo('Failed resuming RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version),
-                               err=True)
+                    click.echo('Failed resuming RunID {} of "{}"'.format(run_id, image_name), err=True)
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:
@@ -313,15 +315,15 @@ class PipelineRunOperations(object):
             pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
             pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
             pipeline_version = pipeline_run_model.version
-            click.echo('Pausing RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version))
+            image_name = cls.build_image_name(pipeline_name, pipeline_version)
+            click.echo('Pausing RunID {} of "{}"'.format(run_id, image_name))
             if sync:
                 status = cls.get_pausing_pipeline_status(run_id)
                 if status == 'PAUSED':
-                    click.echo('RunID {} of "{}@{}" is paused'.format(run_id, pipeline_name, pipeline_version))
+                    click.echo('RunID {} of "{}" is paused'.format(run_id, image_name))
                     sys.exit(1)
                 else:
-                    click.echo('Failed pausing RunID {} of "{}@{}"'.format(run_id, pipeline_name, pipeline_version),
-                               err=True)
+                    click.echo('Failed pausing RunID {} of "{}"'.format(run_id, image_name), err=True)
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:
@@ -338,7 +340,8 @@ class PipelineRunOperations(object):
 
     @staticmethod
     def print_pipeline_parameters_info(pipeline_model, pipeline_run_parameters):
-        click.echo('"{}@{}" pipeline arguments:'.format(pipeline_model.name, pipeline_run_parameters.version))
+        click.echo('"{}" pipeline arguments:'.format(
+            PipelineRunOperations.build_image_name(pipeline_model.name, pipeline_run_parameters.version)))
         if len(pipeline_run_parameters.parameters) > 0:
             for parameter in pipeline_run_parameters.parameters:
                 if parameter.required:
@@ -411,6 +414,15 @@ class PipelineRunOperations(object):
     @staticmethod
     def required_args_missing(parent_node, instance_type, instance_disk, cmd_template):
         return parent_node is None and (instance_type is None or instance_disk is None or cmd_template is None)
+
+    @staticmethod
+    def build_image_name(name, version):
+        if not name:
+            return '<unknown>'
+        elif not version:
+            return name
+        else:
+            return '{}@{}'.format(name, version)
 
     @classmethod
     def _build_pretty_url(cls, pretty_url):
