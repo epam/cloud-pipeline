@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
+import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
@@ -33,13 +34,14 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.test.aspect.AbstractAspectTest;
 import com.epam.pipeline.test.creator.notification.NotificationCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.util.TestUtils;
 import java.util.Arrays;
+import java.util.Optional;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,13 +74,15 @@ public class RunStatusReasonTest extends AbstractAspectTest {
     private MonitoringNotificationDao mockMonitoringNotificationDao;
 
     @Autowired
-    private RoleManager mockRoleManager;
+    private RoleDao mockRoleDao;
 
     @Test
     public void testNotifyRunStatusChangedWithReason() {
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
-        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
+        doReturn(Optional.of(new Role())).when(mockRoleDao).loadRole(any());
+        doReturn(extendedRole).when(mockRoleDao).loadExtendedRole(any());
+
         final ArgumentCaptor<NotificationMessage> captor =
             ArgumentCaptor.forClass(NotificationMessage.class);
 
