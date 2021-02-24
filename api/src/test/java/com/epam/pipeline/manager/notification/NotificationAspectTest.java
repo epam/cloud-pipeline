@@ -104,7 +104,6 @@ public class NotificationAspectTest extends AbstractAspectTest {
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
         settings.setStatusesToInform(Collections.emptyList());
-        doReturn(settings).when(mockNotificationSettingsDao).updateNotificationSettings(any());
         mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
