@@ -43,8 +43,8 @@ public class GSFileSyncConfiguration {
     private Integer bulkInsertSize;
 
     @Bean
-    public ObjectStorageFileManager gsFileManager() {
-        return new GsBucketFileManager();
+    public ObjectStorageFileManager gsFileManager(final CloudPipelineAPIClient apiClient) {
+        return new GsBucketFileManager(apiClient);
     }
 
     @Bean

@@ -18,19 +18,23 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
+import com.epam.pipeline.elasticsearchagent.utils.ChunkedIterator;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,9 +42,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
@@ -112,7 +120,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
             createDocuments(indexName, mountFolder, dataStorage, permissionsContainer);
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
-            if (StringUtils.hasText(currentIndexName)) {
+            if (StringUtils.isNotBlank(currentIndexName)) {
                 elasticsearchServiceClient.deleteIndex(currentIndexName);
             }
         } catch (Exception e) {
@@ -126,21 +134,39 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private void createDocuments(final String indexName, final Path mountFolder,
                                  final AbstractDataStorage dataStorage,
                                  final PermissionsContainer permissionsContainer) {
-        try (Stream<Path> files = Files.walk(mountFolder);
-             IndexRequestContainer walker = new IndexRequestContainer(requests ->
-                     elasticsearchServiceClient.sendRequests(indexName, requests), bulkInsertSize)) {
-            files
-                    .filter(file -> file.toFile().isFile())
-                    .forEach(file -> {
-                        IndexRequest request = new IndexRequest(indexName, DOC_MAPPING_TYPE)
-                                .source(dataStorageToDocument(getLastModified(file), getSize(file),
-                                        getRelativePath(mountFolder, file),
-                                        dataStorage.getId(), dataStorage.getName(), permissionsContainer));
-                        walker.add(request);
-                    });
+        try (IndexRequestContainer walker = new IndexRequestContainer(requests ->
+                elasticsearchServiceClient.sendRequests(indexName, requests), bulkInsertSize)) {
+            consumeFilesInChunks(mountFolder, chunk -> {
+                final Map<String, Map<String, String>> pathTags = cloudPipelineAPIClient.loadDataStorageTagsMap(
+                        dataStorage.getId(),
+                        new DataStorageTagLoadBatchRequest(
+                                chunk.stream()
+                                        .map(path -> getRelativePath(mountFolder, path))
+                                        .map(DataStorageTagLoadRequest::new)
+                                        .collect(Collectors.toList())));
+                for (final Path path : chunk) {
+                    final Map<String, String> tags = pathTags.get(getRelativePath(mountFolder, path));
+                    final IndexRequest request = new IndexRequest(indexName, DOC_MAPPING_TYPE)
+                            .source(dataStorageToDocument(getLastModified(path), getSize(path),
+                                    getRelativePath(mountFolder, path), tags,
+                                    dataStorage.getId(), dataStorage.getName(), permissionsContainer));
+                    walker.add(request);
+                }
+            });
+        }
+    }
+
+    private void consumeFilesInChunks(final Path mountFolder, final Consumer<List<Path>> consumer) {
+        try (Stream<Path> files = Files.walk(mountFolder).filter(file -> file.toFile().isFile())) {
+            iterateFilesInChunks(files).forEachRemaining(consumer);
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred during creating document.", e);
         }
+    }
+
+    private Iterator<List<Path>> iterateFilesInChunks(final Stream<Path> paths) {
+        final int chunkSize = 100;
+        return new ChunkedIterator<>(paths.iterator(), chunkSize);
     }
 
     private String getRelativePath(final Path mountFolder, final Path path) {
@@ -197,25 +223,27 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     }
 
     private XContentBuilder dataStorageToDocument(final String lastModified, final Long size, final String path,
+                                                  final Map<String, String> tags,
                                                   final Long storageId, final String storageName,
                                                   final PermissionsContainer permissions) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            jsonBuilder
+            return jsonBuilder
                     .startObject()
                     .field("lastModified", lastModified)
                     .field("size", size)
                     .field("path", path)
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.NFS_FILE.name())
+                    .field("owner", MapUtils.emptyIfNull(tags).get("CP_OWNER"))
                     .field("storage_id", storageId)
-                    .field("storage_name", storageName);
-
-            jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
-            jsonBuilder.array("denied_users", permissions.getDeniedUsers().toArray());
-            jsonBuilder.array("allowed_groups", permissions.getAllowedGroups().toArray());
-            jsonBuilder.array("denied_groups", permissions.getDeniedGroups().toArray());
-
-            jsonBuilder.endObject();
-            return jsonBuilder;
+                    .field("storage_name", storageName)
+                    .field(DOC_TYPE_FIELD, SearchDocumentType.NFS_FILE.name())
+                    .array("tags", MapUtils.emptyIfNull(tags).entrySet().stream()
+                            .map(entry -> entry.getKey() + " " + entry.getValue())
+                            .toArray(String[]::new))
+                    .array("allowed_users", permissions.getAllowedUsers().toArray())
+                    .array("denied_users", permissions.getDeniedUsers().toArray())
+                    .array("allowed_groups", permissions.getAllowedGroups().toArray())
+                    .array("denied_groups", permissions.getDeniedGroups().toArray())
+                    .endObject();
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred while creating document: ", e);
         }

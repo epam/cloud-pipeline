@@ -12,6 +12,7 @@
         "storage_id": { "type": "long", "copy_to": "parentId"},
         "storage_name": { "type": "text" },
         "storage_region": { "type": "keyword" },
+        "owner": { "type" :  "keyword" },
         "tags": { "type": "text" },
         "allowed_users": { "type": "keyword" },
         "denied_users": { "type": "keyword" },

@@ -42,12 +42,10 @@ public class S3FileSyncConfiguration {
     private String indexSettingsPath;
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
-    @Value("${sync.s3-file.enable.tags}")
-    private Boolean enableTags;
 
     @Bean
-    public ObjectStorageFileManager s3FileManager() {
-        return new S3FileManager(enableTags);
+    public ObjectStorageFileManager s3FileManager(final CloudPipelineAPIClient apiClient) {
+        return new S3FileManager(apiClient);
     }
 
     @Bean

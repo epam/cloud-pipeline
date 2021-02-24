@@ -47,8 +47,8 @@ public class AzureFileSyncConfiguration {
     private String indexName;
 
     @Bean
-    public ObjectStorageFileManager azFileManager() {
-        return new AzureBlobManager();
+    public ObjectStorageFileManager azFileManager(final CloudPipelineAPIClient apiClient) {
+        return new AzureBlobManager(apiClient);
     }
 
     @Bean

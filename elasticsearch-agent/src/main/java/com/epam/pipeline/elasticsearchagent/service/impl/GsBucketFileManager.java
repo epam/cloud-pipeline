@@ -18,11 +18,14 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
+import com.epam.pipeline.elasticsearchagent.utils.ChunkedIterator;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import com.google.api.services.storage.StorageScopes;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -30,6 +33,7 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageClass;
 import com.google.cloud.storage.StorageOptions;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -40,15 +44,22 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Optional;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Spliterator;
 import java.util.TimeZone;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 
 @Slf4j
+@RequiredArgsConstructor
 public class GsBucketFileManager implements ObjectStorageFileManager {
+
+    private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     static {
@@ -62,20 +73,37 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
                                   final TemporaryCredentials credentials,
                                   final PermissionsContainer permissionsContainer,
                                   final IndexRequestContainer requestContainer) {
-        final Iterable<Blob> blobs = getAllBlobsFromStorage(dataStorage, credentials);
-        blobs.forEach(file -> indexFile(requestContainer,
-                                        file,
-                                        dataStorage,
-                                        credentials,
-                                        permissionsContainer,
-                                        indexName));
+        iterateFilesInChunks(dataStorage, credentials).forEachRemaining(chunk -> {
+            final Map<String, Map<String, String>> pathTags = cloudPipelineAPIClient.loadDataStorageTagsMap(
+                    dataStorage.getId(),
+                    new DataStorageTagLoadBatchRequest(
+                            chunk.stream()
+                                    .map(DataStorageFile::getPath)
+                                    .map(DataStorageTagLoadRequest::new)
+                                    .collect(Collectors.toList())));
+            for (final DataStorageFile file : chunk) {
+                file.setTags(pathTags.get(file.getPath()));
+                requestContainer.add(createIndexRequest(file, indexName, dataStorage, credentials.getRegion(),
+                        permissionsContainer));
+            }
+        });
     }
 
-    Iterable<Blob> getAllBlobsFromStorage(final AbstractDataStorage dataStorage,
-                                          final TemporaryCredentials credentials) {
+    private Iterator<List<DataStorageFile>> iterateFilesInChunks(final AbstractDataStorage dataStorage,
+                                                                 final TemporaryCredentials credentials) {
+        final int chunkSize = 100;
+        return new ChunkedIterator<>(iterateFiles(dataStorage, credentials), chunkSize);
+    }
+
+    Iterator<DataStorageFile> iterateFiles(final AbstractDataStorage dataStorage,
+                                           final TemporaryCredentials credentials) {
         final Storage googleStorage = getGoogleStorage(credentials);
         final String bucketName = dataStorage.getPath();
-        return googleStorage.list(bucketName).iterateAll();
+        final Spliterator<Blob> spliterator = googleStorage.list(bucketName).iterateAll().spliterator();
+        return StreamSupport.stream(spliterator, false)
+                .filter(blob -> !StringUtils.endsWithIgnoreCase(blob.getName(), ESConstants.HIDDEN_FILE_NAME))
+                .map(this::convertToStorageFile)
+                .iterator();
     }
 
     private Storage getGoogleStorage(final TemporaryCredentials credentials) {
@@ -101,26 +129,10 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
         }
     }
 
-    private void indexFile(final IndexRequestContainer indexContainer,
-                           final Blob file,
-                           final AbstractDataStorage storage,
-                           final TemporaryCredentials credentials,
-                           final PermissionsContainer permissions,
-                           final String indexName) {
-        convertToStorageFile(file)
-                .ifPresent(
-                    item -> indexContainer
-                            .add(createIndexRequest(item, indexName, storage, credentials.getRegion(), permissions)));
-    }
-
-    private Optional<DataStorageFile> convertToStorageFile(final Blob blob) {
-        final String relativePath = blob.getName();
-        if (StringUtils.endsWithIgnoreCase(relativePath, ESConstants.HIDDEN_FILE_NAME)) {
-            return Optional.empty();
-        }
+    private DataStorageFile convertToStorageFile(final Blob blob) {
         final DataStorageFile file = new DataStorageFile();
-        file.setName(relativePath);
-        file.setPath(relativePath);
+        file.setName(blob.getName());
+        file.setPath(blob.getName());
         file.setSize(blob.getSize());
         file.setChanged(ESConstants.FILE_DATE_FORMAT.format(Date.from(Instant.ofEpochMilli(blob.getUpdateTime()))));
         file.setVersion(null);
@@ -131,7 +143,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
             labels.put(ESConstants.STORAGE_CLASS_LABEL, storageClass.name());
         }
         file.setLabels(labels);
-        return Optional.of(file);
+        return file;
     }
 
     IndexRequest createIndexRequest(final DataStorageFile item,

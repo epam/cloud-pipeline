@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -48,6 +49,7 @@ import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
@@ -145,6 +147,10 @@ public interface CloudPipelineAPI {
 
     @GET("datastorage/{id}/load")
     Call<Result<AbstractDataStorage>> loadDataStorage(@Path(ID) Long storageId);
+
+    @POST("datastorage/{id}/tags/batch/load")
+    Call<Result<List<DataStorageTag>>> loadDataStorageObjectTags(@Path(ID) Long storageId,
+                                                                 @Body DataStorageTagLoadBatchRequest request);
 
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
