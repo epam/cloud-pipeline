@@ -21,7 +21,6 @@ import requests
 from subprocess import check_output
 import urllib3
 from time import sleep
-import datetime
 import time
 from multiprocessing.pool import ThreadPool as Pool
 
@@ -138,7 +137,7 @@ def call_api(method_url, data=None):
 
 def log_task_event(task_name, message, run_id, instance, status="RUNNING"):
         do_log("Log run log: " + message)
-        now = datetime.datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+        now = datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
         date = now[0:len(now) - 3]
         log_entry = json.dumps({"runId": run_id,
                              "date": date,
