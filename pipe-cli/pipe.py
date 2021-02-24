@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from src.api.pipeline import Pipeline
 from src.api.pipeline_run import PipelineRun
 from src.api.user import User
 from src.config import Config, ConfigNotFoundError, silent_print_config_info, is_frozen
+from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
@@ -48,6 +49,8 @@ MAX_CORES_COUNT = 10000
 USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only'
 RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10'
 TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying'
+SYNC_FLAG_DESCRIPTION = 'Perform operation in a sync mode. When set - terminal will be blocked' \
+                        ' until the expected status of the operation won\'t be returned'
 
 
 def silent_print_api_version():
@@ -75,7 +78,7 @@ def set_user_token(ctx, param, value):
         UserTokenOperations().set_user_token(value)
 
 
-@click.group()
+@click.group(cls=CustomAbortHandlingGroup, uninterruptible_cmd_list=['resume', 'pause'])
 @click.option(
     '--version',
     is_eager=False,
@@ -696,6 +699,27 @@ def stop(run_id, yes):
     """Stops a running pipeline
     """
     PipelineRunOperations.stop(run_id, yes)
+
+
+@cli.command(name='pause')
+@click.argument('run-id', required=True, type=int)
+@click.option('--check-size', is_flag=True, help='Checks if free disk space is enough for the commit operation')
+@click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
+@Config.validate_access_token
+def pause(run_id, check_size, sync):
+    """Pauses a running pipeline
+    """
+    PipelineRunOperations.pause(run_id, check_size, sync)
+
+
+@cli.command(name='resume')
+@click.argument('run-id', required=True, type=int)
+@click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
+@Config.validate_access_token
+def resume(run_id, sync):
+    """Resumes a paused pipeline
+    """
+    PipelineRunOperations.resume(run_id, sync)
 
 
 @cli.command(name='terminate-node')

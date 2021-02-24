@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -184,6 +184,18 @@ class Pipeline(API):
         api = cls.instance()
         data = json.dumps({'status': 'STOPPED', 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')})
         response_data = api.call('run/{}/status'.format(run_id), data)
+        return PipelineRunModel.load(response_data['payload'])
+
+    @classmethod
+    def resume_pipeline(cls, run_id):
+        api = cls.instance()
+        response_data = api.call('/run/{}/resume'.format(run_id), None, http_method='post')
+        return PipelineRunModel.load(response_data['payload'])
+
+    @classmethod
+    def pause_pipeline(cls, run_id, check_size):
+        api = cls.instance()
+        response_data = api.call('/run/{}/pause?checkSize={}'.format(run_id, check_size), None, http_method='post')
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
