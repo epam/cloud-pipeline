@@ -27,6 +27,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import com.microsoft.azure.storage.blob.AnonymousCredentials;
 import com.microsoft.azure.storage.blob.BlobListingDetails;
 import com.microsoft.azure.storage.blob.ContainerURL;
@@ -54,8 +56,10 @@ import java.sql.Date;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
@@ -68,6 +72,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     private static final String BLOB_URL_FORMAT = "https://%s.blob.core.windows.net%s";
     private static final int LIST_PAGE_SIZE = 1000;
 
+    private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
     
     @Getter
@@ -85,9 +90,25 @@ public class AzureBlobManager implements ObjectStorageFileManager {
                                   final TemporaryCredentials credentials,
                                   final PermissionsContainer permissions,
                                   final IndexRequestContainer indexContainer) {
-        files(storage, credentials)
+        chunkedFiles(storage, credentials)
+                .peek(chunk -> {
+                    final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
+                            storage.getId(),
+                            new DataStorageTagLoadBatchRequest(chunk.stream().map(DataStorageFile::getPath)
+                                    .map(DataStorageTagLoadRequest::new)
+                                    .collect(Collectors.toList())));
+                    for (final DataStorageFile file : chunk) {
+                        file.setTags(tags.get(file.getPath()));
+                    }
+                })
+                .flatMap(List::stream)
                 .map(file -> createIndexRequest(file, storage, credentials.getRegion(), permissions, indexName))
                 .forEach(indexContainer::add);
+    }
+
+    private Stream<List<DataStorageFile>> chunkedFiles(final AbstractDataStorage storage,
+                                                       final TemporaryCredentials credentials) {
+        return StreamUtils.chunked(files(storage, credentials));
     }
 
     private Stream<DataStorageFile> files(final AbstractDataStorage storage,

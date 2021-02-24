@@ -43,8 +43,8 @@ public class S3FileSyncConfiguration {
     private Integer bulkInsertSize;
 
     @Bean
-    public ObjectStorageFileManager s3FileManager() {
-        return new S3FileManager();
+    public ObjectStorageFileManager s3FileManager(final CloudPipelineAPIClient apiClient) {
+        return new S3FileManager(apiClient);
     }
 
     @Bean

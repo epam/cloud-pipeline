@@ -25,6 +25,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import com.google.api.services.storage.StorageScopes;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -45,11 +47,13 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.TimeZone;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.HashMap;
+import java.util.TimeZone;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
@@ -58,6 +62,7 @@ import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING
 @RequiredArgsConstructor
 public class GsBucketFileManager implements ObjectStorageFileManager {
 
+    private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Getter
@@ -80,7 +85,18 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
                                   final TemporaryCredentials credentials,
                                   final PermissionsContainer permissionsContainer,
                                   final IndexRequestContainer requestContainer) {
-        files(dataStorage, credentials)
+        StreamUtils.chunked(files(dataStorage, credentials))
+                .peek(chunk -> {
+                    final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
+                            dataStorage.getId(),
+                            new DataStorageTagLoadBatchRequest(chunk.stream().map(DataStorageFile::getPath)
+                                    .map(DataStorageTagLoadRequest::new)
+                                    .collect(Collectors.toList())));
+                    for (final DataStorageFile file : chunk) {
+                        file.setTags(tags.get(file.getPath()));
+                    }
+                })
+                .flatMap(List::stream)
                 .map(file -> createIndexRequest(file, indexName, dataStorage, credentials.getRegion(), 
                         permissionsContainer))
                 .forEach(requestContainer::add);

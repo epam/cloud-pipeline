@@ -52,10 +52,12 @@ public class GsBucketFileManagerTest {
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
 
-    @Spy
-    private final GsBucketFileManager manager = new GsBucketFileManager();
+    @Mock
+    private CloudPipelineAPIClient apiClient;
     @Mock
     private IndexRequestContainer requestContainer;
+    @Spy
+    private final GsBucketFileManager manager = new GsBucketFileManager(apiClient);
 
     private final AbstractDataStorage dataStorage = new GSBucketStorage();
     private final TemporaryCredentials temporaryCredentials = new TemporaryCredentials();

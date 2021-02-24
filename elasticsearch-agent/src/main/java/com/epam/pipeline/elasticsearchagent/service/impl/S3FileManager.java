@@ -38,6 +38,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +66,7 @@ public class S3FileManager implements ObjectStorageFileManager {
 
     private static final String DELIMITER = "/";
 
+    private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Getter
@@ -100,8 +103,20 @@ public class S3FileManager implements ObjectStorageFileManager {
                                   final TemporaryCredentials credentials,
                                   final PermissionsContainer permissions,
                                   final IndexRequestContainer requestContainer) {
-        listFiles(getS3Client(credentials), indexName, dataStorage, credentials,
-                permissions, requestContainer);
+        chunkedFiles(getS3Client(credentials), dataStorage)
+                .peek(chunk -> {
+                    final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
+                            dataStorage.getId(),
+                            new DataStorageTagLoadBatchRequest(chunk.stream().map(DataStorageFile::getPath)
+                                    .map(DataStorageTagLoadRequest::new)
+                                    .collect(Collectors.toList())));
+                    for (final DataStorageFile file : chunk) {
+                        file.setTags(tags.get(file.getPath()));
+                    }
+                })
+                .flatMap(List::stream)
+                .map(file -> createIndexRequest(file, indexName, dataStorage, credentials, permissions))
+                .forEach(requestContainer::add);
     }
 
     private AmazonS3 getS3Client(final TemporaryCredentials credentials) {
@@ -114,20 +129,13 @@ public class S3FileManager implements ObjectStorageFileManager {
                 .build();
     }
 
-    private void listFiles(final AmazonS3 client,
-                           final String indexName,
-                           final AbstractDataStorage dataStorage,
-                           final TemporaryCredentials credentials,
-                           final PermissionsContainer permissions,
-                           final IndexRequestContainer requestContainer) {
-        files(client, dataStorage)
-                .map(file -> createIndexRequest(file, indexName, dataStorage, credentials, permissions))
-                .forEach(requestContainer::add);
-    }
-
     private Stream<DataStorageFile> versions(final AmazonS3 client, final AbstractDataStorage dataStorage) {
         return StreamUtils.from(new S3VersionPageIterator(client, dataStorage.getPath(), ""))
                 .flatMap(List::stream);
+    }
+
+    private Stream<List<DataStorageFile>> chunkedFiles(final AmazonS3 client, final AbstractDataStorage dataStorage) {
+        return StreamUtils.chunked(files(client, dataStorage));
     }
 
     private Stream<DataStorageFile> files(final AmazonS3 client,
