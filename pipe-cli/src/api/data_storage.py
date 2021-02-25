@@ -48,7 +48,9 @@ class DataStorage(API):
                                'Expected scheme is "{}". '
                                'Actual scheme is "{}".'.format(expected_scheme, requested_scheme))
 
-        return storage, url.path[1:], full_path.replace(storage.path, '').lstrip(storage.delimiter)
+        return storage, \
+               full_path.replace(url.netloc, '').lstrip(storage.delimiter), \
+               full_path.replace(storage.path, '').lstrip(storage.delimiter)
 
     @classmethod
     def list(cls):
@@ -77,7 +79,8 @@ class DataStorage(API):
         if name is None:
             return None
         api = cls.instance()
-        response_data = api.call('datastorage/find?id={}'.format(name), None)
+        params = urlencode({'id': name})
+        response_data = api.call('datastorage/find?' + params, None)
         if 'payload' in response_data:
             return DataStorageModel.load(response_data['payload'])
         return None
@@ -87,7 +90,8 @@ class DataStorage(API):
         if path is None:
             return None
         api = cls.instance()
-        response_data = api.call('datastorage/findByPath?id={}'.format(path), None)
+        params = urlencode({'id': path})
+        response_data = api.call('datastorage/findByPath?' + params, None)
         if 'payload' in response_data:
             return DataStorageModel.load_with_region(response_data['payload'], cls.get_region_info())
         return None
