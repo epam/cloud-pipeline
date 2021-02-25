@@ -48,7 +48,9 @@ class DataStorage(API):
                                'Expected scheme is "{}". '
                                'Actual scheme is "{}".'.format(expected_scheme, requested_scheme))
 
-        return storage, url.path[1:], full_path.replace(storage.path, '').lstrip(storage.delimiter)
+        return storage, \
+               full_path.replace(url.netloc, '').lstrip(storage.delimiter), \
+               full_path.replace(storage.path, '').lstrip(storage.delimiter)
 
     @classmethod
     def list(cls):
