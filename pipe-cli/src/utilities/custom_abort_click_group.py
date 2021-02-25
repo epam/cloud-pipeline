@@ -17,7 +17,7 @@ import sys
 
 
 class CustomAbortHandlingGroup(click.Group):
-    UNINTERRUPTIBLE_OPERATION_ABORT_MSG_TEMPLATE = 'Operation abortion... Note: the `{}` operation can\'t be stopped ' \
+    UNINTERRUPTIBLE_OPERATION_ABORT_MSG_TEMPLATE = 'Operation aborted... Note: the `{}` operation can\'t be stopped ' \
                                                    'and it will continue running in the background.'
 
     def __init__(self, name=None, commands=None, uninterruptible_cmd_list=None, **attrs):
