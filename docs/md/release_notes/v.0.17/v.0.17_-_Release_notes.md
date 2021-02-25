@@ -399,7 +399,7 @@ This is useful to speed up the compute instances creation process (as the nodes 
 
 Admins can create node pools:
 
-- each pool contains _one or several identical nodes_ - admin specifies the node configuration (instance type, disk, **Cloud Region**, etc.) and a corresponding number of such nodes
+- each pool contains _one or several identical nodes_ - admin specifies the node configuration (instance type, disk, **Cloud Region**, etc.) and a corresponding number of such nodes. This count can be fixed or flexible ("autoscaled")
 - each pool has _the schedule of these nodes creation/termination_. E.g. the majority of the new compute jobs are started during the workday, so no need to keep these persistent instances over the weekends. For the pool, several schedules can be specified
 - for each pool can be configured additional filters - to restrict its usage by the specific users/groups or for the specific pipelines/tools etc.
 
