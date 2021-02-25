@@ -23,13 +23,13 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">27</div>
+<div class="counter">29</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">6m23.52s</div>
+<div class="counter">9m13.54s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">93%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,176 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="removeConfigurations"></a>
+<h3 class="failures">removeConfigurations</h3>
+<span class="code">
+<pre>Element not found {By.className: detached-configuration__action-buttons}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1614253301857.71.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1614253301857.71.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;detached-configuration__action-buttons&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:100)
+	at com.epam.pipeline.autotests.ao.Configuration.edit(Configuration.java:168)
+	at com.epam.pipeline.autotests.ao.Configuration.delete(Configuration.java:196)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.configuration(PipelinesLibraryAO.java:413)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.removeConfiguration(PipelinesLibraryAO.java:426)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.lambda$removeConfigurationIfExists$2(PipelinesLibraryAO.java:432)
+	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:345)
+	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:338)
+	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:327)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.removeConfigurationIfExists(PipelinesLibraryAO.java:431)
+	at com.epam.pipeline.autotests.DetachedConfigurationsTest.removeConfigurations(DetachedConfigurationsTest.java:195)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;detached-configuration__action-buttons&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'cee76d5180c9', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: b60fe5e95e6721dcb4af81aca75fcff2
+*** Element info: {Using=class name, value=detached-configuration__action-buttons}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
+	at org.openqa.selenium.remote.RemoteWebElement.findElementByClassName(RemoteWebElement.java:239)
+	at org.openqa.selenium.By$ByClassName.findElement(By.java:391)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 40 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="stopRuns"></a>
+<h3 class="failures">stopRuns</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-pipelines}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1614253384212.72.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1614253384212.72.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-pipelines&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
+	at com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest.lambda$stopRuns$1(AbstractSeveralPipelineRunningTest.java:65)
+	at java.util.ArrayList.forEach(ArrayList.java:1259)
+	at com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest.stopRuns(AbstractSeveralPipelineRunningTest.java:63)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-pipelines&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'cee76d5180c9', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: b60fe5e95e6721dcb4af81aca75fcff2
+*** Element info: {Using=id, value=navigation-button-pipelines}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
+	at org.openqa.selenium.By$ById.findElement(By.java:218)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 24 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,160 +242,170 @@
 </thead>
 <tr>
 <td class="success">addParameterToDetachedConfiguration - EPMCMBIBPC-1601</td>
-<td>14.177s</td>
+<td>13.458s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changeSecondConfigurationProfilePipeline - EPMCMBIBPC-1139</td>
-<td>17.642s</td>
+<td>17.588s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changesValidationInAttachedPipelineConfiguration - EPMCMBIBPC-1544</td>
-<td>24.721s</td>
+<td>24.449s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPipelineConfigAfterChangesInDetachedConfig - EPMCMBIBPC-1141</td>
-<td>7.005s</td>
+<td>6.665s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationChangingValidation - EPMCMBIBPC-1115</td>
-<td>12.223s</td>
+<td>11.835s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationProfileSetAsDefaultBehaviour - EPMCMBIBPC-1144</td>
-<td>13.821s</td>
+<td>13.366s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationRenamingValidation - EPMCMBIBPC-1130</td>
-<td>7.879s</td>
+<td>7.457s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationSavingValidation - EPMCMBIBPC-1114</td>
-<td>16.768s</td>
+<td>17.111s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">deleteDetachedConfigurationValidation - EPMCMBIBPC-1604</td>
-<td>4.324s</td>
+<td>4.147s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationCreatingPopupFocusValidation - EPMCMBIBPC-1493</td>
-<td>5.970s</td>
+<td>5.999s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationCreatingValidation - EPMCMBIBPC-1185</td>
-<td>14.455s</td>
+<td>14.271s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationEditionPopupFocusValidation - EPMCMBIBPC-1495</td>
-<td>16.487s</td>
+<td>16.143s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationProfileAdditionPopupFocusValidation - EPMCMBIBPC-1496</td>
-<td>3.238s</td>
+<td>3.317s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">dockerImageSelection - EPMCMBIBPC-1494</td>
-<td>18.256s</td>
+<td>17.552s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">exitWithoutSavingValidation - EPMCMBIBPC-1113</td>
-<td>2.660s</td>
+<td>2.700s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">fieldsEditingProhibitionValidation - EPMCMBIBPC-1132</td>
-<td>3.923s</td>
+<td>4.175s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">groupAdditionValidation - EPMCMBIBPC-1149</td>
-<td>11.047s</td>
+<td>10.816s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pipelineAdditionValidation - EPMCMBIBPC-1112</td>
-<td>9.974s</td>
+<td>9.399s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">priceTypeValidation - EPMCMBIBPC-1516</td>
-<td>4.568s</td>
+<td>4.409s</td>
 <td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">removeConfigurations</td>
+<td>1m35.42s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">secondConfigurationProfileAddition - EPMCMBIBPC-1129</td>
-<td>6.004s</td>
+<td>5.404s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
+<td class="failures">stopRuns</td>
+<td>1m22.38s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
 <td class="success">templatesListContainsAllProfiles - EPMCMBIBPC-1145</td>
-<td>4.343s</td>
+<td>4.411s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateDetachConfigBehaviorIfUserChangesBasePipelineConfig - EPMCMBIBPC-1151</td>
-<td>35.044s</td>
+<td>35.699s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateRunClusterFromDetachConfiguration - EPMCMBIBPC-1147</td>
-<td>25.236s</td>
+<td>24.246s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146</td>
-<td>17.811s</td>
+<td>17.014s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfConfigWithEmptyParametersInDetachConfiguration - EPMCMBIBPC-1140</td>
-<td>32.779s</td>
+<td>32.775s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfConfigWithNonEmptyParametersInDetachConfiguration - EPMCMBIBPC-1611</td>
-<td>23.127s</td>
+<td>21.921s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationPriceTypeFieldForClusterRun - EPMCMBIBPC-1545</td>
-<td>30.042s</td>
+<td>29.416s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 60025 from [60025]
-Returns latest run with runId 60025 from [60025]
-Returns latest run with runId 60025 from [60025]
-Returns latest run with runId 60025 from [60025]
-Returns latest run with runId 60025 from [60025]
-Returns latest run with runId 60025 from [60025]
-Returns latest run with runId 60027 from [60025, 60027]
-Returns latest run with runId 60027 from [60025, 60027]
-Returns latest run with runId 60028 from [60025, 60027, 60028]
-Returns latest run with runId 60028 from [60025, 60027, 60028]
-Returns latest run with runId 60028 from [60025, 60027, 60028]
-Returns latest run with runId 60028 from [60025, 60027, 60028]
-Returns latest run with runId 60030 from [60025, 60027, 60028, 60030]
-Returns latest run with runId 60030 from [60025, 60027, 60028, 60030]
-Returns latest run with runId 60030 from [60025, 60027, 60028, 60030]
-Returns latest run with runId 60030 from [60025, 60027, 60028, 60030]
+<pre>Returns latest run with runId 60223 from [60223]
+Returns latest run with runId 60223 from [60223]
+Returns latest run with runId 60223 from [60223]
+Returns latest run with runId 60223 from [60223]
+Returns latest run with runId 60223 from [60223]
+Returns latest run with runId 60223 from [60223]
+Returns latest run with runId 60225 from [60223, 60225]
+Returns latest run with runId 60225 from [60223, 60225]
+Returns latest run with runId 60226 from [60223, 60225, 60226]
+Returns latest run with runId 60226 from [60223, 60225, 60226]
+Returns latest run with runId 60226 from [60223, 60225, 60226]
+Returns latest run with runId 60226 from [60223, 60225, 60226]
+Returns latest run with runId 60228 from [60223, 60225, 60226, 60228]
+Returns latest run with runId 60228 from [60223, 60225, 60226, 60228]
+Returns latest run with runId 60228 from [60223, 60225, 60226, 60228]
+Returns latest run with runId 60228 from [60223, 60225, 60226, 60228]
 </pre>
 </span>
 </div>
@@ -244,7 +417,7 @@ Returns latest run with runId 60030 from [60025, 60027, 60028, 60030]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 24, 2021 8:44:41 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 25, 2021 9:05:10 PM</p>
 </div>
 </div>
 </body>
