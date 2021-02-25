@@ -43,10 +43,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import static org.mockito.Mockito.spy;
 
 @Configuration
+@DependsOn({"flyway", "flywayInitializer"})
 public class JdbcTestBeans {
 
     @MockBean
