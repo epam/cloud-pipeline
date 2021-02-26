@@ -14,6 +14,7 @@
 
 import argparse
 import base64
+import random
 import socket
 from datetime import datetime, timedelta
 from time import sleep
@@ -141,6 +142,18 @@ def load_cloud_config():
             if 'tags' in data:
                 __CLOUD_TAGS__ = data['tags']
     return __CLOUD_METADATA__, __CLOUD_TAGS__
+
+
+def load_run(run_id, retries=10):
+    try:
+        pipe_api = PipelineAPI(api_url, None)
+        return pipe_api.load_run(run_id)
+    except RuntimeError as e:
+        if retries == 0:
+            raise e
+        else:
+            sleep(5)
+            return load_run(run_id, retries - 1)
 
 
 def get_region_settings(aws_region):
@@ -353,7 +366,7 @@ def get_tags(run_id, cloud_region):
 def run_id_filter(run_id):
     return {
                 'Name': 'tag:Name',
-                'Values': [run_id]
+                'Values': [str(run_id)]
            }
 
 
@@ -369,6 +382,13 @@ def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_en
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
                                                 num_rep, time_rep, swap_size, kube_client)
     return ins_id, ins_ip
+
+
+def get_random_subnet(ec2):
+    subnets = ec2.describe_subnets()
+    if "Subnets" in subnets:
+        return random.choice(subnets['Subnets'])['SubnetId']
+    return None
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
@@ -390,13 +410,21 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
         additional_args = { 'SecurityGroupIds': get_security_groups(aws_region)}
 
     if get_performance_network_config(aws_region, ins_type):
-        efa_subnet_id = get_efa_subnet(aws_region, ins_type)
-        if efa_subnet_id:
+        subnet_id = None
+        run = load_run(run_id)
+        parent_id = run["parentRunId"] if "parentRunId" in run else None
+        if parent_id:
+            parent_ins = find_instance(ec2, parent_id)
+            if parent_ins and 'NetworkInterfaces' in parent_ins and parent_ins['NetworkInterfaces'][0]:
+                subnet_id = parent_ins['NetworkInterfaces'][0]['SubnetId']
+        else:
+            subnet_id = get_random_subnet(ec2)
+        if subnet_id:
             network_interfaces = [
                 {
                     'DeleteOnTermination': True,
                     'DeviceIndex': 0,
-                    'SubnetId': efa_subnet_id,
+                    'SubnetId': subnet_id,
                     'Groups': get_security_groups(aws_region),
                     'InterfaceType': 'efa'
                 }
@@ -404,7 +432,8 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             ]
             additional_args = {}
         else:
-            pipe_log_warn('- EFA interface are ordered but network_subnet_id value in cluster.networks.config for this instance type could not be found')
+            raise RuntimeError(
+                '- EFA interface are ordered but network_subnet_id value in cluster.networks.config for this instance type could not be found')
 
     response = {}
     try:
@@ -910,6 +939,28 @@ def get_spot_prices(ec2, aws_region, instance_type, hours=3):
         prices.append((zone, price))
     return sorted(prices, key=lambda t: t[1])
 
+
+def find_instance(ec2, run_id, retries=10):
+    response = ec2.describe_instances(
+        Filters=[
+            run_id_filter(run_id),
+            {
+                'Name': 'instance-state-name',
+                'Values': ['pending', 'running', 'rebooting']
+            }
+        ]
+    )
+    if len(response['Reservations']) > 0:
+        ins = response['Reservations'][0]['Instances'][0]
+    else:
+        if retries > 0:
+            sleep(5)
+            return find_instance(ec2, run_id, retries - 1)
+        else:
+            raise RuntimeError("Can't load an instance info from AWS")
+    return ins
+
+
 def exit_if_spot_unavailable(run_id, last_status):
     # will exit with code '5' if a spot request can't be fulfilled
     if last_status in ['capacity-not-available', 'capacity-oversubscribed', 'constraint-not-fulfillable']:
@@ -918,19 +969,7 @@ def exit_if_spot_unavailable(run_id, last_status):
         sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
 
 
-def get_efa_subnet(cloud_region, instance_type):
-    instance_images_config = get_instance_images_config(cloud_region)
-    if not instance_images_config:
-        return None
-    for image_config in instance_images_config:
-        instance_masks = image_config["instance_mask"] if type(image_config["instance_mask"]) is list else [image_config["instance_mask"]]
-        if any(fnmatch.fnmatch(instance_type, instance_mask) for instance_mask in instance_masks):
-            return image_config['network_subnet_id'] if 'network_subnet_id' in image_config else subnet_id
-
-    return None
-
-
-def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
+def find_spot_instance(ec2, aws_region, bid_price, run_id, parent_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
                        swap_size, kube_client):
     pipe_log('Creating spot request')
@@ -965,21 +1004,30 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
         specifications['SecurityGroupIds'] = get_security_groups(aws_region)
 
     if get_performance_network_config(aws_region, ins_type):
-        efa_subnet_id = get_efa_subnet(aws_region, ins_type)
-        if efa_subnet_id:
+        subnet_id = None
+        run = load_run(run_id)
+        parent_id = run["parentRunId"] if "parentRunId" in run else None
+        if parent_id:
+            parent_ins = find_instance(ec2, parent_id)
+            if parent_ins and 'NetworkInterfaces' in parent_ins and parent_ins['NetworkInterfaces'][0]:
+                subnet_id = parent_ins['NetworkInterfaces'][0]['SubnetId']
+        else:
+            subnet_id = get_random_subnet(ec2)
+        if subnet_id:
             specifications['NetworkInterfaces'] = [
                 {
                     'DeleteOnTermination': True,
                     'DeviceIndex': 0,
                     'Groups': get_security_groups(aws_region),
-                    'SubnetId': efa_subnet_id,
+                    'SubnetId': subnet_id,
                     'InterfaceType': 'efa'
                 }
             ]
             specifications.pop('SubnetId', None)
             specifications.pop('SecurityGroupIds', None)
         else:
-            pipe_log_warn('- EFA interface are ordered but network_subnet_id value in cluster.networks.config for this instance type could not be found')
+            raise RuntimeError(
+                '- EFA interface are ordered but network_subnet_id value in cluster.networks.config for this instance type could not be found')
 
     current_time = datetime.now(pytz.utc) + timedelta(seconds=10)
 
