@@ -126,7 +126,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     private AbstractSecuredEntity parent;
     private AclClass aclClass = AclClass.PIPELINE;
     private Map<String, String> tags;
-
+    private boolean kubeServiceEnabled;
 
     public PipelineRun() {
         this.terminating = false;

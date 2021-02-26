@@ -119,6 +119,10 @@ public final class PipelineCreatorUtils {
         return pipelineRun;
     }
 
+    public static PipelineRun getPipelineRun(final Long id) {
+        return getPipelineRun(id, TEST_STRING);
+    }
+
     public static PipelineRun getPipelineRun(final Long id, final String owner) {
         final PipelineRun pipelineRun = getPipelineRun();
         pipelineRun.setId(id);

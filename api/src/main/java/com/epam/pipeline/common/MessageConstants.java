@@ -202,6 +202,8 @@ public final class MessageConstants {
     public static final String ERROR_KUBE_SERVICE_PORT_UNDEFINED = "error.kube.service.port.undefined";
     public static final String ERROR_NODE_DOWN_TIMEOUT = "error.kube.node.down.timeout";
     public static final String LOG_WAS_TRUNCATED = "log.truncated";
+    public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
+    public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
 
     // Data storage messages
     public static final String ERROR_DATASTORAGE_NOT_FOUND = "error.datastorage.not.found";

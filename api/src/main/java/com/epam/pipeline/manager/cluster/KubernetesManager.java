@@ -111,17 +111,12 @@ public class KubernetesManager {
     @Value("${kube.current.pod.name}")
     private String kubePodName;
 
-    public ServiceDescription getServiceByLabel(String label) {
+    public ServiceDescription getServiceByLabel(final String label) {
         try (KubernetesClient client = getKubernetesClient()) {
-            List<Service> items =
-                    client.services().withLabel(SERVICE_ROLE_LABEL, label).list().getItems();
-            if (CollectionUtils.isEmpty(items)) {
+            final Service service = findServiceByLabel(client, SERVICE_ROLE_LABEL, label);
+            if (Objects.isNull(service)) {
                 return null;
             }
-            if (items.size() > 1) {
-                LOGGER.error("More than one service was found for label {}={}.", SERVICE_ROLE_LABEL, label);
-            }
-            Service service = items.get(0);
             return getServiceDescription(service);
         }
     }
@@ -716,5 +711,47 @@ public class KubernetesManager {
 
     public boolean isNodeUnavailable(final Node node) {
         return !isNodeAvailable(node);
+    }
+
+    public Service createService(final String serviceName, final Map<String, String> labels,
+                                 final List<ServicePort> ports) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Service service = client.services().createNew()
+                    .withNewMetadata()
+                    .withName(serviceName)
+                    .withNamespace(kubeNamespace)
+                    .withLabels(labels)
+                    .endMetadata()
+                    .withNewSpec()
+                    .withPorts(ports)
+                    .endSpec()
+                    .done();
+            Assert.notNull(service, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, serviceName));
+            return service;
+        }
+    }
+
+    public Service getService(final String labelName, final String labelValue) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Service service = findServiceByLabel(client, labelName, labelValue);
+            if (Objects.isNull(service)) {
+                return null;
+            }
+            return service;
+        }
+    }
+
+    private Service findServiceByLabel(final KubernetesClient client, final String labelName, final String labelValue) {
+        final List<Service> items = client.services()
+                .withLabel(labelName, labelValue)
+                .list()
+                .getItems();
+        if (CollectionUtils.isEmpty(items)) {
+            return null;
+        }
+        if (items.size() > 1) {
+            LOGGER.error("More than one service was found for label {}={}.", labelName, labelValue);
+        }
+        return items.get(0);
     }
 }
