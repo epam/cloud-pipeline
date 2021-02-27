@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">8m25.82s</div>
+<div class="counter">9m32.77s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">93%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,63 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validateViewDraftVersionsPipelineHistory - EPMCMBIBPC-1629"></a>
+<h3 class="failures">validateViewDraftVersionsPipelineHistory - EPMCMBIBPC-1629</h3>
+<span class="code">
+<pre>Element not found {visible(By.xpath: .//button[normalize-space(.) = 'STOP'])}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1614436002637.85.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1614436002637.85.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: Cannot locate an element using visible(By.xpath: .//button[normalize-space(.) = 'STOP'])
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.isEnabled(Unknown Source)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.stopRun(RunsMenuAO.java:108)
+	at com.epam.pipeline.autotests.PipelineDetailsTest.validateViewDraftVersionsPipelineHistory(PipelineDetailsTest.java:284)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using visible(By.xpath: .//button[normalize-space(.) = 'STOP'])
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'c8f722b4cc35', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: driver.version: RemoteWebDriver
+	at org.openqa.selenium.By.findElement(By.java:162)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
+	... 17 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,95 +129,95 @@
 </thead>
 <tr>
 <td class="success">documentShouldBeRenamed - EPMCMBIBPC-346</td>
-<td>2.594s</td>
+<td>2.658s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">documentTabShouldBeValid - EPMCMBIBPC-345</td>
-<td>2.913s</td>
+<td>2.841s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">luigiGraphTabShouldBeValid - EPMCMBIBPC-344</td>
-<td>3.801s</td>
+<td>3.594s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">luigiPipelineTabsShouldBeValid - EPMCMBIBPC-343</td>
-<td>15.174s</td>
+<td>15.088s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldCreateFileInSubfolder - EPMCMBIBPC-340</td>
-<td>4.364s</td>
+<td>4.232s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldCreateFolderInPipeline - EPMCMBIBPC-339</td>
-<td>3.730s</td>
+<td>3.761s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldCreateStorageRule - EPMCMBIBPC-354</td>
-<td>4.090s</td>
+<td>4.000s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldDeleteDocumentFile - EPMCMBIBPC-348</td>
-<td>2.117s</td>
+<td>2.241s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldDeleteStorageRule - EPMCMBIBPC-355</td>
-<td>1.521s</td>
+<td>1.449s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldDownloadCorrectDocumentFile - EPMCMBIBPC-347</td>
-<td>6.211s</td>
+<td>6.250s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldHaveEmptyHistory - EPMCMBIBPC-350</td>
-<td>2.991s</td>
+<td>2.965s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldHaveHistoryEntry - EPMCMBIBPC-350</td>
-<td>6m13.54s</td>
+<td>6m9.04s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldNotCreateACopyOfRule - EPMCMBIBPC-356</td>
-<td>1.745s</td>
+<td>1.699s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldUploadFile - EPMCMBIBPC-349</td>
-<td>3.816s</td>
+<td>3.587s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">storageRulesTabShouldBeValid - EPMCMBIBPC-353</td>
-<td>3.744s</td>
+<td>3.777s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateViewDraftVersionsPipelineHistory - EPMCMBIBPC-1629</td>
-<td>1m13.46s</td>
-<td class="success">passed</td>
+<td class="failures">validateViewDraftVersionsPipelineHistory - EPMCMBIBPC-1629</td>
+<td>2m25.60s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 60399 from [60399]
-Returns latest run with runId 60399 from [60399]
-Returns latest run with runId 60399 from [60399]
-Returns latest run with runId 60400 from [60399, 60400]
-Returns latest run with runId 60401 from [60399, 60400, 60401]
-Returns latest run with runId 60402 from [60399, 60400, 60401, 60402]
+<pre>Returns latest run with runId 60539 from [60539]
+Returns latest run with runId 60539 from [60539]
+Returns latest run with runId 60539 from [60539]
+Returns latest run with runId 60540 from [60539, 60540]
+Returns latest run with runId 60541 from [60539, 60540, 60541]
+Returns latest run with runId 60542 from [60539, 60540, 60541, 60542]
 </pre>
 </span>
 </div>
@@ -179,7 +229,7 @@ Returns latest run with runId 60402 from [60399, 60400, 60401, 60402]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 26, 2021 8:54:46 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 27, 2021 7:26:43 PM</p>
 </div>
 </div>
 </body>
