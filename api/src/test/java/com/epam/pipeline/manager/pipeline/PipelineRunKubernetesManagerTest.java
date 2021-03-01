@@ -20,7 +20,11 @@ import com.epam.pipeline.entity.pipeline.KubernetesService;
 import com.epam.pipeline.entity.pipeline.KubernetesServicePort;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServicePort;
+import io.fabric8.kubernetes.api.model.ServiceSpec;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -41,10 +45,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class PipelineRunKubernetesManagerTest {
-    private final static String RUN_ID_LABEL_NAME = "run-id";
-    private final static String SERVICE_NAME = "name";
-    private final static Integer PORT1 = 8080;
-    private final static Integer PORT2 = 1234;
+    private static final String RUN_ID_LABEL_NAME = "run-id";
+    private static final String SERVICE_NAME = "name";
+    private static final String DEFAULT_NAMESPACE = "default";
+    private static final Integer PORT1 = 8080;
+    private static final Integer PORT2 = 1234;
 
     private final PipelineRun run = getPipelineRun(ID);
 
@@ -52,7 +57,7 @@ public class PipelineRunKubernetesManagerTest {
     private final KubernetesManager kubernetesManager = mock(KubernetesManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final PipelineRunKubernetesManager pipelineRunKubernetesManager = new PipelineRunKubernetesManager(
-            pipelineRunCRUDService, kubernetesManager, messageHelper, RUN_ID_LABEL_NAME);
+            pipelineRunCRUDService, kubernetesManager, messageHelper, RUN_ID_LABEL_NAME, DEFAULT_NAMESPACE);
 
     @Test
     public void shouldCreateKubernetesService() {
@@ -81,7 +86,7 @@ public class PipelineRunKubernetesManagerTest {
         assertThat(resultPorts.stream().map(ServicePort::getPort).collect(Collectors.toSet()))
                 .hasSize(2)
                 .contains(PORT1, PORT2);
-        verify(pipelineRunCRUDService).enableKubernetesService(run);
+        verify(pipelineRunCRUDService).updateKubernetesService(run, true);
     }
 
     @Test

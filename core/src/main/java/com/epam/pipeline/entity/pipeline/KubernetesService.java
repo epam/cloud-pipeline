@@ -27,5 +27,6 @@ import java.util.List;
 @Builder
 public class KubernetesService {
     private String name;
+    private String hostName;
     private List<KubernetesServicePort> ports;
 }

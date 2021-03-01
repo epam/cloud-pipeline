@@ -554,7 +554,7 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<KubernetesService> createKubernetesService(@RequestParam final String serviceName,
                                                              @PathVariable final Long runId,
-                                                             @RequestParam final List<KubernetesServicePort> ports) {
+                                                             @RequestBody final List<KubernetesServicePort> ports) {
         return Result.success(runApiService.createKubernetesService(serviceName, runId, ports));
     }
 

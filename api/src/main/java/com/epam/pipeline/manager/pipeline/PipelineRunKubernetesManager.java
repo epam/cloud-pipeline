@@ -24,6 +24,7 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
+import io.fabric8.kubernetes.api.model.ServiceSpec;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,19 +39,24 @@ import java.util.stream.Collectors;
 @org.springframework.stereotype.Service
 @Slf4j
 public class PipelineRunKubernetesManager {
+    private static final String SERVICE_POSTFIX = "svc.cluster.local";
+
     private final PipelineRunCRUDService pipelineRunCRUDService;
     private final KubernetesManager kubernetesManager;
     private final MessageHelper messageHelper;
     private final String runIdLabelName;
+    private final String namespace;
 
     public PipelineRunKubernetesManager(final PipelineRunCRUDService pipelineRunCRUDService,
                                         final KubernetesManager kubernetesManager,
                                         final MessageHelper messageHelper,
-                                        @Value("${kube.service.run.id.label:}") final String runIdLabelName) {
+                                        @Value("${kube.service.run.id.label:}") final String runIdLabelName,
+                                        @Value("${kube.namespace:}") final String namespace) {
         this.pipelineRunCRUDService = pipelineRunCRUDService;
         this.kubernetesManager = kubernetesManager;
         this.messageHelper = messageHelper;
         this.runIdLabelName = runIdLabelName;
+        this.namespace = namespace;
     }
 
     public KubernetesService createKubernetesService(final String serviceName, final Long runId,
@@ -62,7 +68,7 @@ public class PipelineRunKubernetesManager {
         final Service service = kubernetesManager
                 .createService(serviceName, buildLabels(runId), buildServicePorts(ports));
         final KubernetesService kubernetesService = parseService(service);
-        pipelineRunCRUDService.enableKubernetesService(pipelineRun);
+        pipelineRunCRUDService.updateKubernetesService(pipelineRun, true);
         return kubernetesService;
     }
 
@@ -76,12 +82,25 @@ public class PipelineRunKubernetesManager {
         return parseService(service);
     }
 
+    public KubernetesService deleteKubernetesService(final Long runId) {
+        final Service service = kubernetesManager.getService(runIdLabelName, String.valueOf(runId));
+        if (Objects.isNull(service)) {
+            log.debug("No kubernetes service available for run '{}'", runId);
+            return null;
+        }
+        final boolean deleted = kubernetesManager.deleteService(service);
+        if (!deleted) {
+            return null;
+        }
+        return parseService(service);
+    }
+
     private Map<String, String> buildLabels(final Long runId) {
         return Collections.singletonMap(runIdLabelName, String.valueOf(runId));
     }
 
-    private List<KubernetesServicePort> parseServicePorts(final Service service) {
-        return ListUtils.emptyIfNull(service.getSpec().getPorts()).stream()
+    private List<KubernetesServicePort> parseServicePorts(final ServiceSpec serviceSpec) {
+        return ListUtils.emptyIfNull(serviceSpec.getPorts()).stream()
                 .map(this::parseServicePort)
                 .collect(Collectors.toList());
     }
@@ -96,9 +115,12 @@ public class PipelineRunKubernetesManager {
     }
 
     private KubernetesService parseService(final Service service) {
+        final ServiceSpec serviceSpec = service.getSpec();
+        final String serviceName = service.getMetadata().getName();
         return KubernetesService.builder()
-                .name(service.getMetadata().getName())
-                .ports(parseServicePorts(service))
+                .name(serviceName)
+                .ports(parseServicePorts(serviceSpec))
+                .hostName(buildServiceHostName(serviceName))
                 .build();
     }
 
@@ -113,5 +135,9 @@ public class PipelineRunKubernetesManager {
         servicePort.setPort(port.getPort());
         servicePort.setTargetPort(new IntOrString(port.getTargetPort()));
         return servicePort;
+    }
+
+    private String buildServiceHostName(final String serviceName) {
+        return String.format("%s.%s.%s", serviceName, namespace, SERVICE_POSTFIX);
     }
 }

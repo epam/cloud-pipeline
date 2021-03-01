@@ -741,6 +741,16 @@ public class KubernetesManager {
         }
     }
 
+    public boolean deleteService(final Service service) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Boolean deleted = client.services().delete(service);
+            if (Objects.isNull(deleted) || !deleted) {
+                LOGGER.debug("Failed to delete service '{}'", service.getMetadata().getName());
+            }
+            return deleted;
+        }
+    }
+
     private Service findServiceByLabel(final KubernetesClient client, final String labelName, final String labelValue) {
         final List<Service> items = client.services()
                 .withLabel(labelName, labelValue)
