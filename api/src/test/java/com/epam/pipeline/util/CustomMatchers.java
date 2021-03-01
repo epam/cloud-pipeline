@@ -30,7 +30,8 @@ import static org.mockito.Matchers.anyMapOf;
 
 public final class CustomMatchers {
 
-    private CustomMatchers() {}
+    private CustomMatchers() {
+    }
 
     public static <T> Matcher<Collection<T>> isEmpty() {
         return new BaseMatcher<Collection<T>>() {
