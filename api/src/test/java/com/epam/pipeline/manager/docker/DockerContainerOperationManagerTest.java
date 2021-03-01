@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.docker;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -24,7 +25,6 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
@@ -34,6 +34,8 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
@@ -41,14 +43,13 @@ import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import io.fabric8.kubernetes.api.model.Pod;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -66,7 +67,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DockerContainerOperationManagerTest extends AbstractManagerTest {
+public class DockerContainerOperationManagerTest {
 
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String NODE_NAME = "node-1";
@@ -76,10 +77,10 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
     private static final long REGION_ID = 1L;
     private static final Long RUN_ID = 2L;
     private static final int CANNOT_EXECUTE_EXIT_CODE = 126;
+    private static final int PAUSE_TIMEOUT = 86400;
 
     @InjectMocks
     @Spy
-    @Autowired
     private DockerContainerOperationManager operationManager;
 
     @Mock
@@ -100,7 +101,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
     @Mock
     private NodesManager nodesManager;
 
-    @Mock (answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private AuthManager authManager;
 
     @Mock
@@ -109,23 +110,31 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
     @Mock
     private PipelineConfigurationManager pipelineConfigurationManager;
 
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private MessageHelper messageHelper;
+
+    @Mock
+    private PreferenceManager preferenceManager;
+
     @Before
     public void setUp() {
+        MockitoAnnotations.initMocks(this);
         when(runManager.updatePipelineStatus(any())).thenReturn(null);
     }
 
-    @Ignore("test will be fixed in a separate branch")
     @Test
     public void resumeRunRestorePausedStatusIfFail() {
-        AwsRegion region = new AwsRegion();
+        final AwsRegion region = new AwsRegion();
         region.setRegionCode("eu-central-1");
         region.setId(1L);
         when(regionManager.load(any())).thenReturn(region);
         when(cloudFacade.startInstance(Mockito.anyLong(), anyString()))
                 .thenReturn(CloudInstanceOperationResult.builder().status(Status.ERROR)
                         .message(INSUFFICIENT_INSTANCE_CAPACITY).build());
+        doReturn(CloudInstanceState.STOPPED).when(cloudFacade).getInstanceState(anyLong());
 
-        PipelineRun run = pipelineRun();
+        final PipelineRun run = pipelineRun();
         operationManager.resumeRun(run, Collections.emptyList());
 
         assertEquals(run.getStatus(), TaskStatus.PAUSED);
@@ -134,9 +143,9 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
     @Test
     public void pauseRun() throws IOException {
         final PipelineRun idledRun =
-            createPausingRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW, TEST_TAG);
+                createPausingRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW, TEST_TAG);
         final PipelineRun pressuredRun =
-            createPausingRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH, TEST_TAG);
+                createPausingRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH, TEST_TAG);
 
         when(kubernetesManager.getContainerIdFromKubernetesPod(anyString(), anyString())).thenReturn(TEST_TAG);
         when(nodesManager.terminateNode(NODE_NAME)).thenReturn(new NodeInstance());
@@ -145,6 +154,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         doReturn(sshConnection).when(operationManager).submitCommandViaSSH(anyString(), anyString());
         when(sshConnection.exitValue()).thenReturn(0);
         when(cloudFacade.getInstanceState(anyLong())).thenReturn(CloudInstanceState.RUNNING);
+        doReturn(PAUSE_TIMEOUT).when(preferenceManager).getPreference(SystemPreferences.PAUSE_TIMEOUT);
 
         operationManager.pauseRun(idledRun, false);
         operationManager.pauseRun(pressuredRun, false);
@@ -167,6 +177,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         when(sshConnection.waitFor(anyLong(), any())).thenReturn(true);
         when(sshConnection.exitValue()).thenReturn(CANNOT_EXECUTE_EXIT_CODE);
         final PipelineRun run = pipelineRun();
+        doReturn(PAUSE_TIMEOUT).when(preferenceManager).getPreference(SystemPreferences.PAUSE_TIMEOUT);
 
         operationManager.pauseRun(run, false);
 
@@ -247,7 +258,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
 
-    private void assertRunStateAfterPause(final PipelineRun run, final String ... expectedTags) {
+    private void assertRunStateAfterPause(final PipelineRun run, final String... expectedTags) {
         final Map<String, String> updatedTags = run.getTags();
         assertEquals(expectedTags.length, updatedTags.size());
         for (String expectedTag : expectedTags) {
@@ -256,7 +267,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         assertEquals(TaskStatus.PAUSED, run.getStatus());
     }
 
-    private PipelineRun createPausingRunWithTags(final String ... tags) {
+    private PipelineRun createPausingRunWithTags(final String... tags) {
         final PipelineRun result = pipelineRun();
         for (String tag : tags) {
             result.addTag(tag, ResourceMonitoringManager.TRUE_VALUE_STRING);
