@@ -713,17 +713,18 @@ public class KubernetesManager {
         return !isNodeAvailable(node);
     }
 
-    public Service createService(final String serviceName, final Map<String, String> labels,
+    public Service createService(final String serviceName, final Map<String, String> runIdMap,
                                  final List<ServicePort> ports) {
         try (KubernetesClient client = getKubernetesClient()) {
             final Service service = client.services().createNew()
                     .withNewMetadata()
                     .withName(serviceName)
                     .withNamespace(kubeNamespace)
-                    .withLabels(labels)
+                    .withLabels(runIdMap)
                     .endMetadata()
                     .withNewSpec()
                     .withPorts(ports)
+                    .withSelector(runIdMap)
                     .endSpec()
                     .done();
             Assert.notNull(service, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, serviceName));

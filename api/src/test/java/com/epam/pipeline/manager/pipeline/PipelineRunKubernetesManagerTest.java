@@ -45,7 +45,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class PipelineRunKubernetesManagerTest {
-    private static final String RUN_ID_LABEL_NAME = "run-id";
+    private static final String RUN_ID_LABEL_NAME = "runid";
     private static final String SERVICE_NAME = "name";
     private static final String DEFAULT_NAMESPACE = "default";
     private static final Integer PORT1 = 8080;
@@ -57,7 +57,7 @@ public class PipelineRunKubernetesManagerTest {
     private final KubernetesManager kubernetesManager = mock(KubernetesManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final PipelineRunKubernetesManager pipelineRunKubernetesManager = new PipelineRunKubernetesManager(
-            pipelineRunCRUDService, kubernetesManager, messageHelper, RUN_ID_LABEL_NAME, DEFAULT_NAMESPACE);
+            pipelineRunCRUDService, kubernetesManager, messageHelper, DEFAULT_NAMESPACE);
 
     @Test
     public void shouldCreateKubernetesService() {

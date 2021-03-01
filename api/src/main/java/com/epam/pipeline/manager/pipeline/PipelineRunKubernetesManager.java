@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.RUN_ID_LABEL;
+
 @org.springframework.stereotype.Service
 @Slf4j
 public class PipelineRunKubernetesManager {
@@ -44,18 +46,15 @@ public class PipelineRunKubernetesManager {
     private final PipelineRunCRUDService pipelineRunCRUDService;
     private final KubernetesManager kubernetesManager;
     private final MessageHelper messageHelper;
-    private final String runIdLabelName;
     private final String namespace;
 
     public PipelineRunKubernetesManager(final PipelineRunCRUDService pipelineRunCRUDService,
                                         final KubernetesManager kubernetesManager,
                                         final MessageHelper messageHelper,
-                                        @Value("${kube.service.run.id.label:}") final String runIdLabelName,
                                         @Value("${kube.namespace:}") final String namespace) {
         this.pipelineRunCRUDService = pipelineRunCRUDService;
         this.kubernetesManager = kubernetesManager;
         this.messageHelper = messageHelper;
-        this.runIdLabelName = runIdLabelName;
         this.namespace = namespace;
     }
 
@@ -74,7 +73,7 @@ public class PipelineRunKubernetesManager {
 
     public KubernetesService getKubernetesService(final Long runId) {
         pipelineRunCRUDService.loadRunById(runId);
-        final Service service = kubernetesManager.getService(runIdLabelName, String.valueOf(runId));
+        final Service service = kubernetesManager.getService(RUN_ID_LABEL, String.valueOf(runId));
         if (Objects.isNull(service)) {
             log.debug("No kubernetes service available for run '{}'", runId);
             return null;
@@ -83,7 +82,7 @@ public class PipelineRunKubernetesManager {
     }
 
     public KubernetesService deleteKubernetesService(final Long runId) {
-        final Service service = kubernetesManager.getService(runIdLabelName, String.valueOf(runId));
+        final Service service = kubernetesManager.getService(RUN_ID_LABEL, String.valueOf(runId));
         if (Objects.isNull(service)) {
             log.debug("No kubernetes service available for run '{}'", runId);
             return null;
@@ -96,7 +95,7 @@ public class PipelineRunKubernetesManager {
     }
 
     private Map<String, String> buildLabels(final Long runId) {
-        return Collections.singletonMap(runIdLabelName, String.valueOf(runId));
+        return Collections.singletonMap(RUN_ID_LABEL, String.valueOf(runId));
     }
 
     private List<KubernetesServicePort> parseServicePorts(final ServiceSpec serviceSpec) {
