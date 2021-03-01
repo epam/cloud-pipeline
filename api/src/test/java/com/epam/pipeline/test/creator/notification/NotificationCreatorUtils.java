@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.notification.SystemNotificationState;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -85,6 +86,20 @@ public final class NotificationCreatorUtils {
         return notificationSettings;
     }
 
+    public static NotificationSettings getNotificationSettings(final Long id) {
+        final NotificationSettings settings = new NotificationSettings();
+        settings.setId(id);
+        settings.setType(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS);
+        settings.setKeepInformedAdmins(true);
+        settings.setInformedUserIds(Collections.emptyList());
+        settings.setTemplateId(ID);
+        settings.setThreshold(null);
+        settings.setEnabled(true);
+        settings.setResendDelay(null);
+        settings.setKeepInformedOwner(true);
+        settings.setStatusesToInform(Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
+        return settings;
+    }
     public static NotificationTemplate getNotificationTemplate() {
         final NotificationTemplate notificationTemplate = new NotificationTemplate();
         notificationTemplate.setBody(TEST_STRING);

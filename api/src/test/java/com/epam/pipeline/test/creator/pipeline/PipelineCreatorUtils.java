@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Revision;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
@@ -109,6 +110,13 @@ public final class PipelineCreatorUtils {
 
     public static PipelineRun getPipelineRun() {
         return new PipelineRun();
+    }
+
+    public static PipelineRun getPipelineRun(final TaskStatus taskStatus) {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setStatus(taskStatus);
+        pipelineRun.setStartDate(new Date());
+        return pipelineRun;
     }
 
     public static PipelineRun getPipelineRun(final Long id, final String owner) {
