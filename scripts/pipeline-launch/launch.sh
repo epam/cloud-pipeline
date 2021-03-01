@@ -1697,8 +1697,7 @@ if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
       echo "Failure waiting timeout has been reached, proceeding with the cleanup and termination"
 fi
 
-if [ "$SINGLE_RUN" = true ] ;
-then
+if [ "$SINGLE_RUN" = true ] && [ "$cluster_role_type" != "additional" ]; then
     echo "Cleaning any data in a runs root directory at ${RUNS_ROOT}"
     rm -Rf $RUNS_ROOT/*
     echo "Cleaning any data in a common root directory at ${COMMON_ROOT}"
