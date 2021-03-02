@@ -32,6 +32,7 @@ import com.epam.pipeline.test.aspect.AbstractAspectTest;
 import com.epam.pipeline.test.creator.notification.NotificationCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.Assert;
@@ -68,7 +69,8 @@ public class NotificationAspectTest extends AbstractAspectTest {
 
     @Test
     public void testNotifyRunStatusChanged() {
-        final NotificationSettings settings = NotificationCreatorUtils.getNotificationSettings(ID);
+        final NotificationSettings settings = NotificationCreatorUtils
+            .getNotificationSettings(ID, Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
         final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.SUCCESS);
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
@@ -87,7 +89,8 @@ public class NotificationAspectTest extends AbstractAspectTest {
 
     @Test
     public void testNotifyRunStatusChangedNotActiveIfStatusNotConfiguredForNotification() {
-        final NotificationSettings settings = NotificationCreatorUtils.getNotificationSettings(ID);
+        final NotificationSettings settings = NotificationCreatorUtils
+            .getNotificationSettings(ID, Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
         final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.PAUSED);
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         mockRole();
@@ -99,7 +102,8 @@ public class NotificationAspectTest extends AbstractAspectTest {
 
     @Test
     public void testNotifyRunStatusChangedActiveIfSettingsDoesntHaveStatusesConfigured() {
-        final NotificationSettings settings = NotificationCreatorUtils.getNotificationSettings(ID);
+        final NotificationSettings settings = NotificationCreatorUtils
+            .getNotificationSettings(ID, Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
         final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.PAUSED);
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
