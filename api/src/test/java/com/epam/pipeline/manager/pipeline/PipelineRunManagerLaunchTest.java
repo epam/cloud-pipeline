@@ -48,9 +48,6 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOC
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
 import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getPipelineConfiguration;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRunWithInstance;
@@ -75,6 +72,9 @@ public class PipelineRunManagerLaunchTest {
     private static final float PRICE_PER_HOUR = 12F;
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
     private static final float DISK_PRICE_PER_HOUR = 1F;
+    private static final long REGION_ID = 1L;
+    private static final long NON_ALLOWED_REGION_ID = 2L;
+    private static final long NON_DEFAULT_REGION_ID = 3L;
     private static final String INSTANCE_TYPE = "m5.large";
     private static final long PARENT_RUN_ID = 5L;
     private static final String INSTANCE_DISK = "1";
@@ -84,6 +84,7 @@ public class PipelineRunManagerLaunchTest {
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
     private static final String DEFAULT_COMMAND = "sleep";
     private static final String TEST_USER = "user";
+    private static final String IMAGE = "testImage";
 
     @InjectMocks
     private final PipelineRunManager pipelineRunManager = new PipelineRunManager();
@@ -124,17 +125,18 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private PreferenceManager preferenceManager;
 
-    private static final String IMAGE = "testImage";
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
-    private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
-    private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
-    private final AwsRegion notDefaultAwsRegion = getNonDefaultAwsRegion(ID_3);
+    private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(REGION_ID);
+    private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(NON_ALLOWED_REGION_ID);
+    private final AwsRegion notDefaultAwsRegion = getNonDefaultAwsRegion(NON_DEFAULT_REGION_ID);
     private final PipelineConfiguration configuration = getPipelineConfiguration(
             IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId());
     private final PipelineConfiguration configurationWithoutRegion = getPipelineConfiguration(IMAGE, INSTANCE_DISK);
     private final InstancePrice price = new InstancePrice(configuration.getInstanceType(),
             parseInt(configuration.getInstanceDisk()), PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
-    private final PipelineRun parentRun = getPipelineRunWithInstance(PARENT_RUN_ID, TEST_USER, ID_3);
+    private final PipelineRun parentRun = getPipelineRunWithInstance(PARENT_RUN_ID, TEST_USER, NON_DEFAULT_REGION_ID);
+    private final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
+            TOOL, tool.getId().toString());
 
     @Before
     public void setUp() throws Exception {
@@ -154,80 +156,74 @@ public class PipelineRunManagerLaunchTest {
     public void launchPipelineShouldValidateToolInstanceType() {
         launchTool(configuration, INSTANCE_TYPE);
 
-        verify(toolManager).loadByNameOrId(eq(IMAGE));
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldValidatePriceType() {
         launchTool(configuration, INSTANCE_TYPE);
 
-        verify(toolManager).loadByNameOrId(eq(IMAGE));
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getResource()), eq(false));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(resource), eq(false));
     }
 
     @Test
     public void launchPipelineShouldFailOnNotAllowedToolInstanceType() {
         doReturn(false).when(instanceOfferManager)
-                .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(REGION_ID), eq(true));
 
         assertThrows(() -> launchTool(configuration, INSTANCE_TYPE));
 
-        verify(toolManager).loadByNameOrId(eq(IMAGE));
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldNotValidateToolInstanceTypeIfItIsNotSpecified() {
         launchTool(configuration, null);
 
-        verify(toolManager).loadByNameOrId(eq(IMAGE));
-        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(ID), eq(true));
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getResource()), eq(false));
+        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldValidateToolInstanceTypeInTheSpecifiedRegion() {
-        configuration.setCloudRegionId(ID_2);
+        configuration.setCloudRegionId(NON_ALLOWED_REGION_ID);
 
         assertThrows(() -> launchTool(configuration, INSTANCE_TYPE));
 
-        verify(toolManager).loadByNameOrId(eq(IMAGE));
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID_2), eq(true));
+        verify(instanceOfferManager)
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(NON_ALLOWED_REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldValidatePipelineInstanceType() {
         launchPipeline(configuration, INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldValidatePipelineInstanceTypeInTheSpecifiedRegion() {
-        configuration.setCloudRegionId(ID_2);
+        configuration.setCloudRegionId(NON_ALLOWED_REGION_ID);
 
         assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID_2), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(NON_ALLOWED_REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldFailOnNotAllowedInstanceType() {
-        doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
+        doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
 
         assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
         launchPipeline(configuration, null);
 
-        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(ID), eq(true));
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
+        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
     }
 
     @Test
@@ -251,7 +247,7 @@ public class PipelineRunManagerLaunchTest {
     @Test
     public void launchPipelineShouldFailIfToolCloudRegionIsConfiguredAndItDiffersFromRunConfigurationOne() {
         final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
-        toolConfiguration.setCloudRegionId(ID_3);
+        toolConfiguration.setCloudRegionId(NON_DEFAULT_REGION_ID);
         doReturn(toolConfiguration).when(pipelineConfigurationManager)
                 .getConfigurationForTool(eq(tool), eq(configuration));
 
@@ -262,14 +258,14 @@ public class PipelineRunManagerLaunchTest {
     @Test
     public void launchPipelineShouldNotFailIfToolCloudRegionIsConfiguredAndItDiffersFromDefaultOne() {
         final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
-        toolConfiguration.setCloudRegionId(ID_3);
+        toolConfiguration.setCloudRegionId(NON_DEFAULT_REGION_ID);
         doReturn(toolConfiguration).when(pipelineConfigurationManager)
                 .getConfigurationForTool(eq(tool), eq(configurationWithoutRegion));
 
         launchPipeline(configurationWithoutRegion, null);
         launchTool(configurationWithoutRegion, null);
 
-        verify(cloudRegionManager, times(4)).load(eq(ID_3));
+        verify(cloudRegionManager, times(4)).load(eq(NON_DEFAULT_REGION_ID));
         verify(permissionHelper, times(2)).isAdmin();
         verify(permissionHelper, times(2)).isAllowed(eq(PERMISSION_NAME), eq(notDefaultAwsRegion));
     }
@@ -285,27 +281,23 @@ public class PipelineRunManagerLaunchTest {
     public void runShouldUseCloudRegionFromConfiguration() {
         final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE);
 
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
 
-        verify(cloudRegionManager).load(eq(ID));
+        verify(cloudRegionManager).load(eq(REGION_ID));
     }
 
     @Test
     public void workerRunShouldUseCloudRegionFromConfiguration() {
         final PipelineRun pipelineRun = launchPipelineWithParentId(configuration);
 
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
-
-        verify(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
-        verify(permissionManager).isRunSshAllowed(eq(parentRun));
-        verify(cloudRegionManager).load(eq(ID));
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
     }
 
     @Test
     public void runShouldUseDefaultCloudRegionIfThereIsNoParentRunAndNoRegionConfiguration() {
         final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion, INSTANCE_TYPE);
 
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID));
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
 
         verify(cloudRegionManager).loadDefaultRegion();
     }
@@ -314,11 +306,7 @@ public class PipelineRunManagerLaunchTest {
     public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedExplicitlyIfThereIsNoRegionConfiguration() {
         final PipelineRun pipelineRun = launchPipelineWithParentId(configurationWithoutRegion);
 
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID_3));
-
-        verify(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
-        verify(permissionManager).isRunSshAllowed(eq(parentRun));
-        verify(cloudRegionManager).load(eq(ID_3));
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
     }
 
     @Test
@@ -329,11 +317,7 @@ public class PipelineRunManagerLaunchTest {
         configurationWithParentId.setParameters(parameters);
         final PipelineRun pipelineRun = launchPipeline(configurationWithParentId, INSTANCE_TYPE);
 
-        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(ID_3));
-
-        verify(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
-        verify(permissionManager).isRunSshAllowed(eq(parentRun));
-        verify(cloudRegionManager).load(eq(ID_3));
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
     }
 
     private void mockToolManager() {
@@ -342,10 +326,10 @@ public class PipelineRunManagerLaunchTest {
     }
 
     private void mockCloudRegionManager() {
-        doReturn(defaultAwsRegion).when(cloudRegionManager).load(eq(ID));
+        doReturn(defaultAwsRegion).when(cloudRegionManager).load(eq(REGION_ID));
         doReturn(defaultAwsRegion).when(cloudRegionManager).loadDefaultRegion();
-        doReturn(nonAllowedAwsRegion).when(cloudRegionManager).load(eq(ID_2));
-        doReturn(notDefaultAwsRegion).when(cloudRegionManager).load(eq(ID_3));
+        doReturn(nonAllowedAwsRegion).when(cloudRegionManager).load(eq(NON_ALLOWED_REGION_ID));
+        doReturn(notDefaultAwsRegion).when(cloudRegionManager).load(eq(NON_DEFAULT_REGION_ID));
     }
 
     private void mockPipelineConfigurationManager() {
@@ -364,10 +348,11 @@ public class PipelineRunManagerLaunchTest {
     }
 
     private void mockInstanceOfferManager() {
-        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID), anyBoolean());
-        doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(anyString(), any(), eq(ID), anyBoolean());
-        doReturn(false).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID_2), eq(true));
-        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(ID_3), eq(false));
+        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(REGION_ID), anyBoolean());
+        doReturn(true).when(instanceOfferManager)
+                .isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), anyBoolean());
+        doReturn(false).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(NON_ALLOWED_REGION_ID), eq(true));
+        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false));
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(price).when(instanceOfferManager)
                 .getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong());
@@ -393,9 +378,5 @@ public class PipelineRunManagerLaunchTest {
                                        final String instanceType, final Long parentRunId) {
         return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null,
                 null, null, parentRunId, null, null, null);
-    }
-
-    private ContextualPreferenceExternalResource getResource() {
-        return new ContextualPreferenceExternalResource(TOOL, tool.getId().toString());
     }
 }
