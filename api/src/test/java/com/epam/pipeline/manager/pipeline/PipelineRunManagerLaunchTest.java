@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -142,13 +143,14 @@ public class PipelineRunManagerLaunchTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        mockCloudRegionManager();
-        mockInstanceOfferManager();
-        mockPreferenceManager();
-        mockPipelineConfigurationManager();
-        mockToolManager();
-        mockParentRun();
+        mockCloudRegions();
+        mockPreferences();
+        mock(configuration);
+        mock(tool);
+        mock(parentRun);
+        mock(price);
 
+        doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
     }
 
@@ -320,46 +322,54 @@ public class PipelineRunManagerLaunchTest {
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
     }
 
-    private void mockToolManager() {
-        doReturn(tool).when(toolManager).loadByNameOrId(eq(IMAGE));
-        doReturn(tool).when(toolManager).resolveSymlinks(eq(IMAGE));
-    }
-
-    private void mockCloudRegionManager() {
-        doReturn(defaultAwsRegion).when(cloudRegionManager).load(eq(REGION_ID));
+    private void mockCloudRegions() {
+        mock(defaultAwsRegion);
+        mock(nonAllowedAwsRegion, false);
+        mock(notDefaultAwsRegion);
         doReturn(defaultAwsRegion).when(cloudRegionManager).loadDefaultRegion();
-        doReturn(nonAllowedAwsRegion).when(cloudRegionManager).load(eq(NON_ALLOWED_REGION_ID));
-        doReturn(notDefaultAwsRegion).when(cloudRegionManager).load(eq(NON_DEFAULT_REGION_ID));
     }
 
-    private void mockPipelineConfigurationManager() {
-        doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any());
-        doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
-        doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+    private void mockPreferences() {
+        mock(CLUSTER_DOCKER_EXTRA_MULTI);
+        mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
+        mock(CLUSTER_SPOT);
+        mock(COMMIT_TIMEOUT);
     }
 
-    private void mockPreferenceManager() {
-        doReturn(CLUSTER_DOCKER_EXTRA_MULTI.getDefaultValue())
-                .when(preferenceManager).getPreference(eq(CLUSTER_DOCKER_EXTRA_MULTI));
-        doReturn(CLUSTER_INSTANCE_HDD_EXTRA_MULTI.getDefaultValue())
-                .when(preferenceManager).getPreference(eq(CLUSTER_INSTANCE_HDD_EXTRA_MULTI));
-        doReturn(CLUSTER_SPOT.getDefaultValue()).when(preferenceManager).getPreference(eq(CLUSTER_SPOT));
-        doReturn(COMMIT_TIMEOUT.getDefaultValue()).when(preferenceManager).getPreference(eq(COMMIT_TIMEOUT));
-    }
-
-    private void mockInstanceOfferManager() {
-        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(REGION_ID), anyBoolean());
-        doReturn(true).when(instanceOfferManager)
-                .isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), anyBoolean());
-        doReturn(false).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(NON_ALLOWED_REGION_ID), eq(true));
-        doReturn(true).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false));
-        doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
+    private void mock(final InstancePrice price) {
         doReturn(price).when(instanceOfferManager)
                 .getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong());
     }
 
-    private void mockParentRun() {
+    private <T> void mock(final AbstractSystemPreference<T> preference) {
+        doReturn(preference.getDefaultValue()).when(preferenceManager).getPreference(eq(preference));
+    }
+
+    private void mock(final AwsRegion region, final boolean isInstanceAllowed) {
+        Long id = region.getId();
+        doReturn(region).when(cloudRegionManager).load(eq(id));
+        doReturn(isInstanceAllowed).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(id), anyBoolean());
+        doReturn(isInstanceAllowed).when(instanceOfferManager)
+                .isToolInstanceAllowed(anyString(), any(), eq(id), anyBoolean());
+    }
+
+    private void mock(final AwsRegion region) {
+        mock(region, true);
+    }
+
+    private void mock(final PipelineConfiguration config) {
+        doReturn(config).when(pipelineConfigurationManager).getPipelineConfiguration(any());
+        doReturn(config).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
+        doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+    }
+
+    private void mock(final PipelineRun parentRun) {
         doReturn(parentRun).when(pipelineRunDao).loadPipelineRun(eq(PARENT_RUN_ID));
+    }
+
+    private void mock(final Tool tool) {
+        doReturn(tool).when(toolManager).loadByNameOrId(eq(IMAGE));
+        doReturn(tool).when(toolManager).resolveSymlinks(eq(IMAGE));
     }
 
     private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
