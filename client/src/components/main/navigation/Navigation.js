@@ -109,7 +109,7 @@ export default class Navigation extends React.Component {
     {
       title: 'Search',
       icon: 'search',
-      path: '/search',
+      path: '/search/advanced',
       key: 'search',
       isDefault: false
     },
@@ -151,9 +151,7 @@ export default class Navigation extends React.Component {
   };
 
   navigate = ({key}) => {
-    if (key === 'search') {
-      this.props.openSearchDialog && this.props.openSearchDialog();
-    } else if (key === 'runs') {
+    if (key === 'runs') {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     } else if (key === 'logout') {
       let url = `${SERVER}/saml/logout`;
@@ -216,21 +214,22 @@ export default class Navigation extends React.Component {
           return null;
         }
         return (
-          <Tooltip
+          <Link
+            id={`navigation-button-${navigationItem.key}`}
             key={navigationItem.key}
-            placement="right"
-            text={navigationItem.title}
-            mouseEnterDelay={0.5}
-            overlay={navigationItem.title} >
-            <Button
-              id={`navigation-button-${navigationItem.key}`}
-              key={navigationItem.key}
-              className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-              onClick={() => this.navigate({key: navigationItem.key})}
-            >
-              <Icon type={navigationItem.icon} />
-            </Button>
-          </Tooltip>
+            style={{display: 'block', margin: '0 2px', textDecoration: 'none'}}
+            className={this.menuItemClassSelector(navigationItem, activeTabPath)}
+            to={navigationItem.path}>
+            <Tooltip
+              placement="right"
+              text={navigationItem.title}
+              mouseEnterDelay={0.5}
+              overlay={navigationItem.title}>
+              <Icon
+                style={{marginTop: 12}}
+                type={navigationItem.icon} />
+            </Tooltip>
+          </Link>
         );
       } else if (navigationItem.key === 'runs') {
         return (

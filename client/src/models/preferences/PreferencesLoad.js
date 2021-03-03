@@ -112,6 +112,19 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('storage.mounts.nfs.sensitive.policy');
   }
 
+  @computed
+  get facetedFiltersDictionaries () {
+    const value = this.getPreferenceValue('faceted.filter.dictionaries');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "faceted.filter.dictionaries" preference:', e);
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
