@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">25m31.12s</div>
+<div class="counter">22m26.44s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">95%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,10 +61,55 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="toolCustomSettingsRunWithoutDefaults - EPMCMBIBPC-1296"></a>
+<h3 class="failures">toolCustomSettingsRunWithoutDefaults - EPMCMBIBPC-1296</h3>
+<span class="code">
+<pre>Element should text '15 Gb' {By.xpath: .//*[contains(@class, 'log__node-parameter-name') and text() = 'Disk']/following-sibling::*[contains(@class, 'log__node-parameter-value')]}
+Element: '&lt;span class=&quot;log__node-parameter-value&quot;&gt;23 Gb&lt;/span&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1614738009031.12.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1614738009031.12.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
+	at com.epam.pipeline.autotests.ToolsTest.lambda$null$37(ToolsTest.java:458)
+	at com.epam.pipeline.autotests.ao.LogAO.instanceParameters(LogAO.java:308)
+	at com.epam.pipeline.autotests.ToolsTest.lambda$toolCustomSettingsRunWithoutDefaults$38(ToolsTest.java:454)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.log(RunsMenuAO.java:145)
+	at com.epam.pipeline.autotests.ToolsTest.toolCustomSettingsRunWithoutDefaults(ToolsTest.java:452)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -76,107 +121,107 @@
 </thead>
 <tr>
 <td class="success">addToolDescriptionAndChangeSettings - EPMCMBIBPC-1546</td>
-<td>6.994s</td>
+<td>7.192s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">createGroupWithInvalidName - EPMCMBIBPC-1576</td>
-<td>6.776s</td>
+<td>6.853s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">fullGroupNameSearch - EPMCMBIBPC-401</td>
-<td>2.091s</td>
+<td>2.111s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">fullToolNameSearch - EPMCMBIBPC-399</td>
-<td>3.490s</td>
+<td>3.560s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">groupCrudOperations - EPMCMBIBPC-433</td>
-<td>27.315s</td>
+<td>27.421s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">partToolNameSearch - EPMCMBIBPC-402</td>
-<td>7.745s</td>
+<td>7.963s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">personalGroupCrudOperations - EPMCMBIBPC-403</td>
-<td>33.659s</td>
+<td>33.166s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolCustomSettingsRun - EPMCMBIBPC-436</td>
-<td>10m2.57s</td>
+<td>10m2.74s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">toolCustomSettingsRunWithoutDefaults - EPMCMBIBPC-1296</td>
-<td>3m47.93s</td>
-<td class="success">passed</td>
+<td class="failures">toolCustomSettingsRunWithoutDefaults - EPMCMBIBPC-1296</td>
+<td>1m56.86s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">toolDefaultCommandAddition - EPMCMBIBPC-430</td>
-<td>22.810s</td>
+<td>22.366s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolDefaultCommandIsSavedOnlyForEditedTool - EPMCMBIBPC-434</td>
-<td>5.432s</td>
+<td>5.278s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolDefaultSettingsRun - EPMCMBIBPC-435</td>
-<td>7m39.99s</td>
+<td>6m44.69s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolDescriptionAddition - EPMCMBIBPC-432</td>
-<td>5.573s</td>
+<td>5.725s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolEditionMenu - EPMCMBIBPC-412</td>
-<td>6.790s</td>
+<td>6.864s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolExecutionParameters - EPMCMBIBPC-429</td>
-<td>22.762s</td>
+<td>22.737s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolLabelsAddition - EPMCMBIBPC-409</td>
-<td>6.868s</td>
+<td>6.918s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolVersionsTab - EPMCMBIBPC-427</td>
-<td>12.075s</td>
+<td>11.903s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolsPageValidation - EPMCMBIBPC-398</td>
-<td>5.215s</td>
+<td>5.121s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateEstimatedPriceAvailabilityForFilledTool - EPMCMBIBPC-1436</td>
-<td>16.446s</td>
-<td class="success">passed</td>
+<td class="skipped">validateEstimatedPriceAvailabilityForFilledTool</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">validateFirstGroupDefaultHasOpened - EPMCMBIBPC-1645</td>
-<td>36.010s</td>
+<td>34.640s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateSwitchBetweenGroups - EPMCMBIBPC-404</td>
-<td>12.576s</td>
+<td>12.334s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -189,7 +234,7 @@
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 2, 2021 9:42:00 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 3, 2021 8:01:07 PM</p>
 </div>
 </div>
 </body>
