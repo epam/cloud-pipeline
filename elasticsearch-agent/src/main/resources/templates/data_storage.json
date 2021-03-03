@@ -40,5 +40,20 @@
         "file_path_tokenizer": { "type": "simple_pattern_split", "pattern": "/"}
       }
     }
-  }
+  },
+  "dynamic_templates": [
+    {
+      "metadata": {
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type":  "keyword"
+            }
+          }
+        }
+      }
+    }
+  ]
 }

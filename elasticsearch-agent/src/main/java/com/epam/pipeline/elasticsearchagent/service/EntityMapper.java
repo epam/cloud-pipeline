@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,15 @@ public interface EntityMapper<T> {
 
     default XContentBuilder buildMetadata(final Map<String, String> metadata,
                                           final XContentBuilder jsonBuilder) throws IOException {
-        return buildMap(metadata, jsonBuilder, "metadata");
+        buildMap(metadata, jsonBuilder, "metadata");
+        MapUtils.emptyIfNull(metadata).forEach((key, value) -> {
+            try {
+                jsonBuilder.field(key, value);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Failed to add metadata to elasticsearch document: ", e);
+            }
+        });
+        return jsonBuilder;
     }
 
     default XContentBuilder buildMap(final Map<String, String> data,
