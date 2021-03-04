@@ -72,6 +72,9 @@ class FacetedSearch extends React.Component {
   }
 
   onChangeFilter = (group, name, active) => {
+    if (!group || !name) {
+      return;
+    }
     const {activeFilters} = this.state;
     const filter = {group, name, active};
     let newState = [...activeFilters];

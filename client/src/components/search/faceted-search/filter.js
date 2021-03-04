@@ -94,7 +94,7 @@ class FacetedFilter extends React.Component {
                 {[styles.expanded]: !menuCollapsed})
             }
           >
-            {menuCollapsed ? 'Show all' : 'Collapse menu'}
+            {menuCollapsed ? 'expand all...' : 'collapse...'}
           </Button>
         )}
       </div>

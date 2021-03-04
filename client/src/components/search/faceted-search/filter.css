@@ -67,10 +67,3 @@
   letter-spacing: 0.5px;
 }
 
-.filter .expand-btn > span {
-  border-bottom: 1px dashed #1890ff;
-}
-
-.filter .expand-btn.expanded > span {
-  border-bottom: 1px dashed #f5222d;
-}
