@@ -87,6 +87,7 @@ import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.RestartRunManager;
@@ -461,6 +462,9 @@ public class AclTestBeans {
 
     @MockBean
     protected ToolScanInfoManager toolScanInfoManager;
+
+    @MockBean
+    protected PipelineRunKubernetesManager pipelineRunKubernetesManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

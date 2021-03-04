@@ -53,6 +53,12 @@ public class PipelineRunCRUDService {
         }
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateKubernetesService(final PipelineRun run, final boolean enable) {
+        run.setKubeServiceEnabled(enable);
+        pipelineRunDao.updateRun(run);
+    }
+
     public List<PipelineRun> loadRunsByIds(final List<Long> runIds) {
         if (CollectionUtils.isEmpty(runIds)) {
             return Collections.emptyList();

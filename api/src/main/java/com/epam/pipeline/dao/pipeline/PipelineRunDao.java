@@ -736,7 +736,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         NODEUP_TASK,
         ACCESS_TYPE,
         TAGS,
-        SENSITIVE;
+        SENSITIVE,
+        KUBE_SERVICE_ENABLED;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -783,6 +784,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(NON_PAUSE.name(), run.isNonPause());
             params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
             params.addValue(SENSITIVE.name(), BooleanUtils.toBoolean(run.getSensitive()));
+            params.addValue(KUBE_SERVICE_ENABLED.name(), BooleanUtils.toBoolean(run.isKubeServiceEnabled()));
             addInstanceFields(run, params);
             return params;
         }
@@ -868,6 +870,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             run.setCmdTemplate(rs.getString(CMD_TEMPLATE.name()));
             run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
             run.setSensitive(rs.getBoolean(SENSITIVE.name()));
+            run.setKubeServiceEnabled(rs.getBoolean(KUBE_SERVICE_ENABLED.name()));
             RunInstance instance = new RunInstance();
             instance.setNodeDisk(rs.getInt(NODE_DISK.name()));
             instance.setEffectiveNodeDisk(rs.getInt(NODE_REAL_DISK.name()));

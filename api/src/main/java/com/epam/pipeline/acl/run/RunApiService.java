@@ -30,6 +30,8 @@ import com.epam.pipeline.dao.filter.FilterRunParameters;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.KubernetesService;
+import com.epam.pipeline.entity.pipeline.KubernetesServicePort;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
@@ -45,6 +47,7 @@ import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
@@ -83,6 +86,7 @@ public class RunApiService {
     private final UtilsManager utilsManager;
     private final ConfigurationRunner configurationLauncher;
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+    private final PipelineRunKubernetesManager pipelineRunKubernetesManager;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
@@ -298,5 +302,16 @@ public class RunApiService {
     @PreAuthorize(ADMIN_ONLY)
     public List<PipelineRunWithTool> getRunsWithTools(final List<Long> runIds) {
         return runManager.loadRunsWithTools(runIds);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    public KubernetesService createKubernetesService(final String serviceName, final Long runId,
+                                                     final List<KubernetesServicePort> ports) {
+        return pipelineRunKubernetesManager.createKubernetesService(serviceName, runId, ports);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    public KubernetesService getKubernetesService(final Long runId) {
+        return pipelineRunKubernetesManager.getKubernetesService(runId);
     }
 }

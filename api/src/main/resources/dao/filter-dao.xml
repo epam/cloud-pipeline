@@ -70,6 +70,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r
