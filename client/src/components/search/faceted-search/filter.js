@@ -16,17 +16,43 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox} from 'antd';
+import {Checkbox, Button} from 'antd';
 import classNames from 'classnames';
 import styles from './filter.css';
 
+const DEFAULT_ITEMS = 5;
+
 class FacetedFilter extends React.Component {
+  state = {
+    menuCollapsed: true
+  }
+  get showExpandButton () {
+    const {showAmount, values} = this.props;
+    if (!values || values.length === 0) {
+      return false;
+    }
+    return values.length > (showAmount || DEFAULT_ITEMS);
+  }
+  get filterGroup () {
+    const {activeFilters, name} = this.props;
+    return activeFilters.filter(f => f.group === name);
+  }
+  onFilterChange = (e) => {
+    const {changeFilter} = this.props;
+    changeFilter && changeFilter();
+  }
+  toggleMenu = () => {
+    this.setState(prevstate => ({menuCollapsed: !prevstate.menuCollapsed}));
+  }
   render () {
     const {
       className,
       name,
-      values
+      values,
+      changeFilter,
+      showAmount
     } = this.props;
+    const {menuCollapsed} = this.state;
     if (!values || values.length === 0) {
       return null;
     }
@@ -43,17 +69,34 @@ class FacetedFilter extends React.Component {
           {name}
         </div>
         {
-          values.map((v) => (
+          values.map((v, i) => (
             <div
               key={v.name}
-              className={styles.option}
+              className={
+                classNames(styles.option,
+                  {[styles.optionHidden]: menuCollapsed && (i + 1 > (showAmount || DEFAULT_ITEMS))
+                  })}
             >
-              <Checkbox>
+              <Checkbox
+                onChange={(e) => changeFilter(name, v.name, e.target.checked)}
+                checked={this.filterGroup.some(f => f.name === v.name)}
+              >
                 {v.name} ({v.count})
               </Checkbox>
             </div>
           ))
         }
+        {this.showExpandButton && (
+          <Button
+            onClick={this.toggleMenu}
+            className={
+              classNames(styles.expandBtn,
+                {[styles.expanded]: !menuCollapsed})
+            }
+          >
+            {menuCollapsed ? 'Show all' : 'Collapse menu'}
+          </Button>
+        )}
       </div>
     );
   }
@@ -63,7 +106,10 @@ FacetedFilter.propTypes = {
   className: PropTypes.string,
   name: PropTypes.string,
   values: PropTypes.array,
-  selection: PropTypes.array
+  selection: PropTypes.array,
+  showAmount: PropTypes.number,
+  activeFilters: PropTypes.array,
+  changeFilter: PropTypes.func
 };
 
 export default FacetedFilter;

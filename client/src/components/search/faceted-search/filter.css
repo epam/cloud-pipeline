@@ -21,14 +21,56 @@
   border-radius: 5px;
   padding: 4px;
   font-size: larger;
+  display: flex;
+  flex-direction: column;
 }
 
 .filter .title {
   font-weight: bold;
   min-width: 125px;
   margin-right: 5px;
+  margin-bottom: 5px;
 }
 
 .filter .option {
-  margin-top: 5px;
+  margin-bottom: 5px;
+  transition: all 0s ease;
+}
+
+.filter .option-hidden {
+  visibility: hidden;
+  height: 0px;
+  margin: 0px;
+  padding: 0px;
+}
+
+.filter .expand-btn {
+  border: none;
+  border-radius: 0;
+  color: #1890ff;
+  background-color: #fafafa;
+  border-top: 1px dashed #dfdfdf;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  line-height: 20px;
+  transition: letter-spacing 0.2s ease-in-out,
+              color 0.4s ease;
+}
+
+.filter .expand-btn.expanded {
+  color: #f5222d;
+}
+
+.filter .expand-btn:hover {
+  letter-spacing: 0.5px;
+}
+
+.filter .expand-btn > span {
+  border-bottom: 1px dashed #1890ff;
+}
+
+.filter .expand-btn.expanded > span {
+  border-bottom: 1px dashed #f5222d;
 }

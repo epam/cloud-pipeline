@@ -33,6 +33,10 @@ import styles from './FacetedSearch.css';
 @inject('systemDictionaries', 'preferences')
 @observer
 class FacetedSearch extends React.Component {
+  state = {
+    activeFilters: []
+  }
+
   @computed
   get configuredFacetedFilters () {
     const {systemDictionaries, preferences} = this.props;
@@ -67,8 +71,21 @@ class FacetedSearch extends React.Component {
       }));
   }
 
+  onChangeFilter = (group, name, active) => {
+    const {activeFilters} = this.state;
+    const filter = {group, name, active};
+    let newState = [...activeFilters];
+    if (active) {
+      newState.push(filter);
+    } else {
+      newState = newState.filter(f => !(f.group === group && f.name === name));
+    }
+    this.setState({activeFilters: newState});
+  }
+
   render () {
     const {systemDictionaries} = this.props;
+    const {activeFilters} = this.state;
     if (systemDictionaries.pending && !systemDictionaries.loaded) {
       return (
         <LoadingView />
@@ -123,6 +140,8 @@ class FacetedSearch extends React.Component {
                     name={filter.name}
                     className={styles.filter}
                     values={filter.values}
+                    activeFilters={activeFilters}
+                    changeFilter={this.onChangeFilter}
                   />
                 ))
               }
