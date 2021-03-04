@@ -18,11 +18,13 @@ package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchDocument;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.SearchResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -30,6 +32,7 @@ import org.elasticsearch.common.text.Text;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -41,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -74,6 +78,15 @@ public class SearchResultConverter {
                 .path(path)
                 .size(new Double(sumAggResult.getValue()).longValue())
                 .count(searchResponse.getHits().getTotalHits())
+                .build();
+    }
+
+    public FacetedSearchResult buildFacetedResult(final SearchResponse response, final String typeFieldName,
+                                                  final Set<String> aclFilterFields) {
+        return FacetedSearchResult.builder()
+                .totalHits(response.getHits().getTotalHits())
+                .documents(buildDocuments(response.getHits(), typeFieldName, aclFilterFields))
+                .facets(buildFacets(response.getAggregations()))
                 .build();
     }
 
@@ -141,5 +154,22 @@ public class SearchResultConverter {
                                 .collect(Collectors.toList()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private Map<String, Map<String, Long>> buildFacets(final Aggregations aggregations) {
+        if (Objects.isNull(aggregations)) {
+            return Collections.emptyMap();
+        }
+        return MapUtils.emptyIfNull(aggregations.asMap()).entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, this::buildFacetValues));
+    }
+
+    private Map<String, Long> buildFacetValues(final Map.Entry<String, Aggregation> entry) {
+        final Terms fieldAggregation = (Terms) entry.getValue();
+        if (Objects.isNull(fieldAggregation)) {
+            return Collections.emptyMap();
+        }
+        return ListUtils.emptyIfNull(fieldAggregation.getBuckets()).stream()
+                .collect(Collectors.toMap(Terms.Bucket::getKeyAsString, Terms.Bucket::getDocCount));
     }
 }
