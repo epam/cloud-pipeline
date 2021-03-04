@@ -175,6 +175,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -265,7 +266,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -325,7 +327,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -385,7 +388,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -483,7 +487,8 @@
                         non_pause = :NON_PAUSE,
                         node_real_disk =:NODE_REAL_DISK,
                         tags = to_jsonb(:TAGS::jsonb),
-                        sensitive = :SENSITIVE
+                        sensitive = :SENSITIVE,
+                        kube_service_enabled = :KUBE_SERVICE_ENABLED
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -593,6 +598,7 @@
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
+                      r.kube_service_enabled,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       p.pipeline_name
@@ -655,6 +661,7 @@
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
+                      r.kube_service_enabled,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       p.pipeline_name
@@ -716,7 +723,8 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
-                      r.sensitive
+                      r.sensitive,
+                      r.kube_service_enabled
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -769,7 +777,8 @@
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
                       active_run.tags,
-                      active_run.sensitive
+                      active_run.sensitive,
+                      active_run.kube_service_enabled
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -950,7 +959,8 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
-                        r.sensitive
+                        r.sensitive,
+                        r.kube_service_enabled
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1008,7 +1018,8 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
-                        r.sensitive
+                        r.sensitive,
+                        r.kube_service_enabled
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1067,6 +1078,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1161,6 +1173,7 @@
                         runs.node_cloud_provider,
                         runs.tags,
                         runs.sensitive,
+                        runs.kube_service_enabled,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1235,7 +1248,8 @@
                             p.node_real_disk,
                             p.node_cloud_provider,
                             p.tags,
-                            p.sensitive
+                            p.sensitive,
+                            p.kube_service_enabled
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1289,7 +1303,8 @@
                             c.node_real_disk,
                             c.node_cloud_provider,
                             c.tags,
-                            c.sensitive
+                            c.sensitive,
+                            c.kube_service_enabled
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1342,6 +1357,7 @@
                         runs.node_cloud_provider,
                         runs.tags,
                         runs.sensitive,
+                        runs.kube_service_enabled,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1490,7 +1506,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1550,7 +1567,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1624,7 +1642,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1684,7 +1703,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1744,7 +1764,8 @@
                         node_real_disk,
                         node_cloud_provider,
                         tags,
-                        sensitive
+                        sensitive,
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run
                     WHERE

@@ -868,6 +868,20 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         });
     }
 
+    @Test
+    public void shouldLoadAndUpdateKubeServiceFlag() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId(), null);
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertFalse(loadedRun.isKubeServiceEnabled());
+
+        run.setKubeServiceEnabled(true);
+        pipelineRunDao.updateRun(run);
+        final PipelineRun updatedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertTrue(updatedRun.isKubeServiceEnabled());
+    }
+
     private PipelineRun createTestPipelineRun() {
         return createTestPipelineRun(testPipeline.getId());
     }
