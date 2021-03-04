@@ -23,13 +23,20 @@
   font-size: larger;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 .filter .title {
   font-weight: bold;
   min-width: 125px;
-  margin-right: 5px;
   margin-bottom: 5px;
+  border-bottom: 1px dashed #dfdfdf;
+}
+
+.filter .options-container {
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
 }
 
 .filter .option {
@@ -38,13 +45,14 @@
 }
 
 .filter .option-hidden {
-  visibility: hidden;
-  height: 0px;
-  margin: 0px;
-  padding: 0px;
+  display: none;
 }
 
 .filter .expand-btn {
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  font-size: small;
   border: none;
   border-radius: 0;
   color: #1890ff;
@@ -54,7 +62,7 @@
   height: auto;
   padding: 0;
   margin: 0;
-  line-height: 20px;
+  line-height: 22px;
   transition: letter-spacing 0.2s ease-in-out,
               color 0.4s ease;
 }

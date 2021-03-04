@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, Button} from 'antd';
+import {Checkbox} from 'antd';
 import classNames from 'classnames';
 import styles from './filter.css';
 
@@ -36,10 +36,6 @@ class FacetedFilter extends React.Component {
   get filterGroup () {
     const {activeFilters, name} = this.props;
     return activeFilters.filter(f => f.group === name);
-  }
-  onFilterChange = (e) => {
-    const {changeFilter} = this.props;
-    changeFilter && changeFilter();
   }
   toggleMenu = () => {
     this.setState(prevstate => ({menuCollapsed: !prevstate.menuCollapsed}));
@@ -68,26 +64,28 @@ class FacetedFilter extends React.Component {
         <div className={styles.title}>
           {name}
         </div>
-        {
-          values.map((v, i) => (
-            <div
-              key={v.name}
-              className={
-                classNames(styles.option,
-                  {[styles.optionHidden]: menuCollapsed && (i + 1 > (showAmount || DEFAULT_ITEMS))
-                  })}
-            >
-              <Checkbox
-                onChange={(e) => changeFilter(name, v.name, e.target.checked)}
-                checked={this.filterGroup.some(f => f.name === v.name)}
+        <div className={styles.optionsContainer}>
+          {
+            values.map((v, i) => (
+              <div
+                key={v.name}
+                className={
+                  classNames(styles.option,
+                    {[styles.optionHidden]: menuCollapsed && (i + 1 > (showAmount || DEFAULT_ITEMS))
+                    })}
               >
-                {v.name} ({v.count})
-              </Checkbox>
-            </div>
-          ))
-        }
+                <Checkbox
+                  onChange={(e) => changeFilter(name, v.name, e.target.checked)}
+                  checked={this.filterGroup.some(f => f.name === v.name)}
+                >
+                  {v.name} ({v.count})
+                </Checkbox>
+              </div>
+            ))
+          }
+        </div>
         {this.showExpandButton && (
-          <Button
+          <div
             onClick={this.toggleMenu}
             className={
               classNames(styles.expandBtn,
@@ -95,7 +93,7 @@ class FacetedFilter extends React.Component {
             }
           >
             {menuCollapsed ? 'expand all...' : 'collapse...'}
-          </Button>
+          </div>
         )}
       </div>
     );
