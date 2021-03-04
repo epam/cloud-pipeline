@@ -143,12 +143,18 @@ public class PipelineRunManagerLaunchTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        mockCloudRegions();
-        mockPreferences();
+        mock(CLUSTER_DOCKER_EXTRA_MULTI);
+        mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
+        mock(CLUSTER_SPOT);
+        mock(COMMIT_TIMEOUT);
         mock(configuration);
         mock(tool);
         mock(parentRun);
         mock(price);
+        mock(defaultAwsRegion);
+        mockRestricted(nonAllowedAwsRegion);
+        mock(notDefaultAwsRegion);
+        doReturn(defaultAwsRegion).when(cloudRegionManager).loadDefaultRegion();
 
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
@@ -322,20 +328,6 @@ public class PipelineRunManagerLaunchTest {
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
     }
 
-    private void mockCloudRegions() {
-        mock(defaultAwsRegion);
-        mock(nonAllowedAwsRegion, false);
-        mock(notDefaultAwsRegion);
-        doReturn(defaultAwsRegion).when(cloudRegionManager).loadDefaultRegion();
-    }
-
-    private void mockPreferences() {
-        mock(CLUSTER_DOCKER_EXTRA_MULTI);
-        mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
-        mock(CLUSTER_SPOT);
-        mock(COMMIT_TIMEOUT);
-    }
-
     private void mock(final InstancePrice price) {
         doReturn(price).when(instanceOfferManager)
                 .getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong());
@@ -351,6 +343,10 @@ public class PipelineRunManagerLaunchTest {
         doReturn(isInstanceAllowed).when(instanceOfferManager).isInstanceAllowed(anyString(), eq(id), anyBoolean());
         doReturn(isInstanceAllowed).when(instanceOfferManager)
                 .isToolInstanceAllowed(anyString(), any(), eq(id), anyBoolean());
+    }
+
+    private void mockRestricted(final AwsRegion region) {
+        mock(region, false);
     }
 
     private void mock(final AwsRegion region) {
