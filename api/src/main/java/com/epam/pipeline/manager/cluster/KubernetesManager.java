@@ -113,11 +113,9 @@ public class KubernetesManager {
 
     public ServiceDescription getServiceByLabel(final String label) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Service service = findServiceByLabel(client, SERVICE_ROLE_LABEL, label);
-            if (Objects.isNull(service)) {
-                return null;
-            }
-            return getServiceDescription(service);
+            return findServiceByLabel(client, SERVICE_ROLE_LABEL, label)
+                    .map(this::getServiceDescription)
+                    .orElse(null);
         }
     }
 
@@ -732,13 +730,9 @@ public class KubernetesManager {
         }
     }
 
-    public Service getService(final String labelName, final String labelValue) {
+    public Optional<Service> getService(final String labelName, final String labelValue) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Service service = findServiceByLabel(client, labelName, labelValue);
-            if (Objects.isNull(service)) {
-                return null;
-            }
-            return service;
+            return findServiceByLabel(client, labelName, labelValue);
         }
     }
 
@@ -752,17 +746,18 @@ public class KubernetesManager {
         }
     }
 
-    private Service findServiceByLabel(final KubernetesClient client, final String labelName, final String labelValue) {
+    private Optional<Service> findServiceByLabel(final KubernetesClient client, final String labelName,
+                                                 final String labelValue) {
         final List<Service> items = client.services()
                 .withLabel(labelName, labelValue)
                 .list()
                 .getItems();
         if (CollectionUtils.isEmpty(items)) {
-            return null;
+            return Optional.empty();
         }
         if (items.size() > 1) {
             LOGGER.error("More than one service was found for label {}={}.", labelName, labelValue);
         }
-        return items.get(0);
+        return Optional.of(items.get(0));
     }
 }

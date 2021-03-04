@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.pipeline.KubernetesService;
 import com.epam.pipeline.entity.pipeline.KubernetesServicePort;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Service;
@@ -31,6 +32,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
@@ -50,29 +52,29 @@ public class PipelineRunKubernetesManagerTest {
     private static final String DEFAULT_NAMESPACE = "default";
     private static final Integer PORT1 = 8080;
     private static final Integer PORT2 = 1234;
+    private static final String KUBE_SVC_SUFFIX = "svc.cluster.local";
+    private static final String EXPECTED_HOST_NAME = String.format("%s.%s.%s", SERVICE_NAME, DEFAULT_NAMESPACE,
+            KUBE_SVC_SUFFIX);
 
     private final PipelineRun run = getPipelineRun(ID);
 
     private final PipelineRunCRUDService pipelineRunCRUDService = mock(PipelineRunCRUDService.class);
     private final KubernetesManager kubernetesManager = mock(KubernetesManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
+    private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final PipelineRunKubernetesManager pipelineRunKubernetesManager = new PipelineRunKubernetesManager(
-            pipelineRunCRUDService, kubernetesManager, messageHelper, DEFAULT_NAMESPACE);
+            pipelineRunCRUDService, kubernetesManager, messageHelper, preferenceManager, DEFAULT_NAMESPACE);
 
     @Test
     public void shouldCreateKubernetesService() {
         doReturn(run).when(pipelineRunCRUDService).loadRunById(anyLong());
         doReturn(new Pod()).when(kubernetesManager).findPodById(anyString());
         doReturn(service()).when(kubernetesManager).createService(anyString(), any(), any());
+        doReturn(KUBE_SVC_SUFFIX).when(preferenceManager).getPreference(any());
 
         final KubernetesService result = pipelineRunKubernetesManager
                 .createKubernetesService(SERVICE_NAME, ID, buildKubernetesPorts());
-        assertThat(result)
-                .hasFieldOrPropertyWithValue("name", SERVICE_NAME)
-                .hasFieldOrProperty("ports");
-        assertThat(result.getPorts().stream().map(KubernetesServicePort::getPort).collect(Collectors.toSet()))
-                .hasSize(2)
-                .contains(PORT1, PORT2);
+        assertService(result);
 
         final ArgumentCaptor<List<ServicePort>> portsCaptor = listCaptor();
         final ArgumentCaptor<Map<String, String>> mapCaptor = mapCaptor();
@@ -95,6 +97,33 @@ public class PipelineRunKubernetesManagerTest {
 
         assertThrows(IllegalArgumentException.class, () -> pipelineRunKubernetesManager
                 .createKubernetesService(SERVICE_NAME, ID, buildKubernetesPorts()));
+    }
+
+    @Test
+    public void shouldLoadKubernetesService() {
+        doReturn(Optional.of(service())).when(kubernetesManager).getService(anyString(), anyString());
+        doReturn(KUBE_SVC_SUFFIX).when(preferenceManager).getPreference(any());
+
+        final KubernetesService result = pipelineRunKubernetesManager.getKubernetesService(ID);
+        assertService(result);
+    }
+
+    @Test
+    public void shouldNotFailIfKubernetesServiceNotFound() {
+        doReturn(Optional.empty()).when(kubernetesManager).getService(anyString(), anyString());
+
+        final KubernetesService result = pipelineRunKubernetesManager.getKubernetesService(ID);
+        assertThat(result).isNull();
+    }
+
+    private void assertService(final KubernetesService result) {
+        assertThat(result)
+                .hasFieldOrPropertyWithValue("name", SERVICE_NAME)
+                .hasFieldOrPropertyWithValue("hostName", EXPECTED_HOST_NAME)
+                .hasFieldOrProperty("ports");
+        assertThat(result.getPorts().stream().map(KubernetesServicePort::getPort).collect(Collectors.toSet()))
+                .hasSize(2)
+                .contains(PORT1, PORT2);
     }
 
     private List<KubernetesServicePort> buildKubernetesPorts() {

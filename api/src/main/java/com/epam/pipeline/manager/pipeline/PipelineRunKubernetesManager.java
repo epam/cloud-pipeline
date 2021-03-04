@@ -21,6 +21,8 @@ import com.epam.pipeline.entity.pipeline.KubernetesService;
 import com.epam.pipeline.entity.pipeline.KubernetesServicePort;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
@@ -41,20 +43,21 @@ import static com.epam.pipeline.manager.cluster.KubernetesConstants.RUN_ID_LABEL
 @org.springframework.stereotype.Service
 @Slf4j
 public class PipelineRunKubernetesManager {
-    private static final String SERVICE_POSTFIX = "svc.cluster.local";
-
     private final PipelineRunCRUDService pipelineRunCRUDService;
     private final KubernetesManager kubernetesManager;
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
     private final String namespace;
 
     public PipelineRunKubernetesManager(final PipelineRunCRUDService pipelineRunCRUDService,
                                         final KubernetesManager kubernetesManager,
                                         final MessageHelper messageHelper,
+                                        final PreferenceManager preferenceManager,
                                         @Value("${kube.namespace:}") final String namespace) {
         this.pipelineRunCRUDService = pipelineRunCRUDService;
         this.kubernetesManager = kubernetesManager;
         this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
         this.namespace = namespace;
     }
 
@@ -73,25 +76,15 @@ public class PipelineRunKubernetesManager {
 
     public KubernetesService getKubernetesService(final Long runId) {
         pipelineRunCRUDService.loadRunById(runId);
-        final Service service = kubernetesManager.getService(RUN_ID_LABEL, String.valueOf(runId));
-        if (Objects.isNull(service)) {
-            log.debug("No kubernetes service available for run '{}'", runId);
-            return null;
-        }
-        return parseService(service);
+        return kubernetesManager.getService(RUN_ID_LABEL, String.valueOf(runId))
+                .map(this::parseService)
+                .orElseGet(() -> logServiceNotFoundAndReturn(runId));
     }
 
     public KubernetesService deleteKubernetesService(final Long runId) {
-        final Service service = kubernetesManager.getService(RUN_ID_LABEL, String.valueOf(runId));
-        if (Objects.isNull(service)) {
-            log.debug("No kubernetes service available for run '{}'", runId);
-            return null;
-        }
-        final boolean deleted = kubernetesManager.deleteService(service);
-        if (!deleted) {
-            return null;
-        }
-        return parseService(service);
+        return kubernetesManager.getService(RUN_ID_LABEL, String.valueOf(runId))
+                .map(this::deleteService)
+                .orElseGet(() -> logServiceNotFoundAndReturn(runId));
     }
 
     private Map<String, String> buildLabels(final Long runId) {
@@ -137,6 +130,20 @@ public class PipelineRunKubernetesManager {
     }
 
     private String buildServiceHostName(final String serviceName) {
-        return String.format("%s.%s.%s", serviceName, namespace, SERVICE_POSTFIX);
+        return String.format("%s.%s.%s", serviceName, namespace,
+                preferenceManager.getPreference(SystemPreferences.KUBE_SERVICE_SUFFIX));
+    }
+
+    private KubernetesService logServiceNotFoundAndReturn(final Long runId) {
+        log.debug("No kubernetes service available for run '{}'", runId);
+        return null;
+    }
+
+    private KubernetesService deleteService(final Service service) {
+        final boolean deleted = kubernetesManager.deleteService(service);
+        if (!deleted) {
+            return null;
+        }
+        return parseService(service);
     }
 }
