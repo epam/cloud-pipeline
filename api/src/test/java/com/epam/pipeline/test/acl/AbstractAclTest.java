@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.AclAuthorizationStrategy;
@@ -29,6 +30,9 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.PrincipalSid;
+
+import org.springframework.security.acls.model.Acl;
+import org.springframework.security.acls.model.ObjectIdentity;
 import org.springframework.security.acls.model.Permission;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
@@ -38,9 +42,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+
 import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
@@ -64,6 +73,8 @@ public abstract class AbstractAclTest {
     protected static final String ANOTHER_SIMPLE_USER = "ANOTHER_SIMPLE_USER";
     protected static final String TEST_NAME = "TEST_NAME";
     protected static final String TEST_NAME_2 = "TEST_NAME_2";
+    protected static final String TEST_PATH = "TEST_PATH";
+    protected static final String TEST_PATH_2 = "TEST_PATH_2";
     protected static final String PERMISSION_EXECUTE = "EXECUTE";
 
     @Autowired
@@ -90,7 +101,23 @@ public abstract class AbstractAclTest {
         initAclEntity(entity, Collections.emptyList());
     }
 
-    protected void initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions) {
+    protected void initAclEntity(AbstractSecuredEntity entity, AbstractGrantPermission permission) {
+        initAclEntity(entity, Collections.singletonList(permission));
+    }
+
+    protected void initAclEntity(List<Pair<AbstractSecuredEntity, List<AbstractGrantPermission>>> pairs) {
+        final Map<ObjectIdentity, Acl> acls = pairs.stream()
+                .map(p -> initAclEntity(p.getLeft(), p.getRight()))
+                .collect(Collectors.toMap(AclImpl::getObjectIdentity, Function.identity()));
+        doReturn(acls).when(aclService).getObjectIdentities(anySet());
+    }
+
+    protected void initAclEntity(AbstractSecuredEntity entity, String role, Permission permission) {
+        initAclEntity(entity,
+                Collections.singletonList(new AuthorityPermission(permission.getMask(), role)));
+    }
+
+    protected AclImpl initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions) {
         ObjectIdentityImpl objectIdentity = new ObjectIdentityImpl(entity);
         AclImpl acl = new AclImpl(objectIdentity, entity.getId(), aclAuthorizationStrategy,
                 grantingStrategy, null, null, true, new PrincipalSid(entity.getOwner()));
@@ -107,6 +134,8 @@ public abstract class AbstractAclTest {
         doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity));
         doReturn(acl).when(aclService).createAcl(eq(entity));
         doReturn(acl).when(aclService).updateAcl(acl);
+        doReturn(Collections.singletonMap(objectIdentity, acl)).when(aclService).getObjectIdentities(anySet());
+        return acl;
     }
 
     @AllArgsConstructor
@@ -142,6 +171,7 @@ public abstract class AbstractAclTest {
         public Sid toSid() {
             return new GrantedAuthoritySid(authorityName);
         }
+
     }
 
     @SafeVarargs

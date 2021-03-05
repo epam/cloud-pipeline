@@ -16,11 +16,11 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class StopServerlessRunDaoTest extends AbstractSpringTest {
+public class StopServerlessRunDaoTest extends AbstractJdbcTest {
 
     private static final Long TEST_STOP_AFTER = 60L;
 

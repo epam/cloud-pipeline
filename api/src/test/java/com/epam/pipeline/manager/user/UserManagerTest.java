@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
+import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -57,16 +58,23 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.*;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_ID;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_PATH;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.ID;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.ROLES;
+import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.USER_NAME;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 @Transactional
 public class UserManagerTest extends AbstractSpringTest {
@@ -113,16 +121,18 @@ public class UserManagerTest extends AbstractSpringTest {
     private DataStorageManager dataStorageManager;
 
     @SpyBean
-    private StorageProviderManager storageProviderManager;
-
-    @SpyBean
     private PreferenceManager preferenceManager;
 
     @MockBean
-    protected DataStorageValidator storageValidator;
+    private StorageProviderManager storageProviderManager;
+
+    @MockBean
+    private DataStorageValidator storageValidator;
 
     @Before
     public void setUpPreferenceManager() {
+        doReturn(mock(S3StorageProvider.class)).when(storageProviderManager).getStorageProvider(any());
+
         ReflectionTestUtils.setField(userManager, "preferenceManager", preferenceManager);
         Mockito.when(preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED))
             .thenReturn(false);
@@ -383,7 +393,7 @@ public class UserManagerTest extends AbstractSpringTest {
         Mockito.when(preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED))
             .thenReturn(true);
         doReturn(true).when(storageProviderManager).checkStorage(Mockito.any());
-        final JdbcMutableAclServiceImpl aclService = Mockito.mock(JdbcMutableAclServiceImpl.class);
+        final JdbcMutableAclServiceImpl aclService = mock(JdbcMutableAclServiceImpl.class);
         Mockito.doNothing().when(aclService).changeOwner(Mockito.any(), Mockito.anyString());
         ReflectionTestUtils.setField(permissionManager, "aclService", aclService);
         createAwsRegion(REGION_NAME, REGION_CODE);
@@ -395,7 +405,7 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     private void mockDataStorageManagerToExecuteTryInitDefaultStorage() {
-        final DataStorageManager dataStorageManagerMock = Mockito.mock(DataStorageManager.class);
+        final DataStorageManager dataStorageManagerMock = mock(DataStorageManager.class);
         ReflectionTestUtils.setField(userManager, "dataStorageManager", dataStorageManagerMock);
         Mockito.doAnswer(invocation -> {
             final Object[] args = invocation.getArguments();

@@ -26,6 +26,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -102,8 +104,10 @@ public class CloudProfileCredentialsController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<? extends AbstractCloudProfileCredentials>> assignProfiles(
             @RequestParam final Long sidId, @RequestParam final boolean principal,
-            @RequestParam final Set<Long> profileIds, @RequestParam(required = false) final Long defaultProfileId) {
-        return Result.success(cloudProfileCredentialsApiService.assignProfiles(sidId, principal, profileIds,
+            @RequestParam(required = false) final Set<Long> profileIds,
+            @RequestParam(required = false) final Long defaultProfileId) {
+        return Result.success(cloudProfileCredentialsApiService.assignProfiles(sidId, principal,
+                CollectionUtils.isEmpty(profileIds) ? new HashSet<>() : profileIds,
                 defaultProfileId));
     }
 

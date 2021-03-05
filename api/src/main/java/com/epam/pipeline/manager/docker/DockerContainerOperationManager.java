@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -62,6 +63,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -133,6 +136,8 @@ public class DockerContainerOperationManager {
 
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
+
+    private Lock resumeLock = new ReentrantLock();
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
@@ -246,11 +251,7 @@ public class DockerContainerOperationManager {
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
 
-            if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
-                final PipelineConfiguration configuration = getResumeConfiguration(run);
-                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
-                        true, run.getPodId(), null, false);
-            }
+            launchPodIfRequired(run, endpoints);
 
             kubernetesManager.removeNodeLabel(run.getInstance().getNodeName(),
                     KubernetesConstants.PAUSED_NODE_LABEL);
@@ -261,6 +262,20 @@ public class DockerContainerOperationManager {
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
+        }
+    }
+
+    //method is synchronized to prevent double pod creation
+    private void launchPodIfRequired(final PipelineRun run, final List<String> endpoints) {
+        resumeLock.lock();
+        try {
+            if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
+                final PipelineConfiguration configuration = getResumeConfiguration(run);
+                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
+                        true, run.getPodId(), null, ImagePullPolicy.NEVER);
+            }
+        } finally {
+            resumeLock.unlock();
         }
     }
 
@@ -295,7 +310,7 @@ public class DockerContainerOperationManager {
     }
 
     Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {
-        String kubePipelineNodeUserName  = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
+        String kubePipelineNodeUserName = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
         String pemKeyPath = preferenceManager.getPreference(SystemPreferences.COMMIT_DEPLOY_KEY);
 
         String sshCommand = String.format("%s %s %s %s %s %s %s %s %s %s %s",
@@ -319,10 +334,10 @@ public class DockerContainerOperationManager {
 
     private void failRunAndTerminateNode(PipelineRun run, Exception e) {
         LOGGER.error(e.getMessage());
+        nodesManager.terminateNode(run.getInstance().getNodeName(), false);
         run.setEndDate(DateUtils.now());
         run.setStatus(TaskStatus.FAILURE);
         runManager.updatePipelineStatus(run);
-        nodesManager.terminateNode(run.getInstance().getNodeName());
     }
 
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class RestartRunDaoTest extends AbstractSpringTest {
+public class RestartRunDaoTest extends AbstractJdbcTest {
 
     private static final long TEST_RUN_ID_1 = 1;
     private static final long TEST_RUN_ID_2 = 2;

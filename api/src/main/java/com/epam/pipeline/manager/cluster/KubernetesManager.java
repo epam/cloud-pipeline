@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,18 +111,11 @@ public class KubernetesManager {
     @Value("${kube.current.pod.name}")
     private String kubePodName;
 
-    public ServiceDescription getServiceByLabel(String label) {
+    public ServiceDescription getServiceByLabel(final String label) {
         try (KubernetesClient client = getKubernetesClient()) {
-            List<Service> items =
-                    client.services().withLabel(SERVICE_ROLE_LABEL, label).list().getItems();
-            if (CollectionUtils.isEmpty(items)) {
-                return null;
-            }
-            if (items.size() > 1) {
-                LOGGER.error("More than one service was found for label {}={}.", SERVICE_ROLE_LABEL, label);
-            }
-            Service service = items.get(0);
-            return getServiceDescription(service);
+            return findServiceByLabel(client, SERVICE_ROLE_LABEL, label)
+                    .map(this::getServiceDescription)
+                    .orElse(null);
         }
     }
 
@@ -555,6 +548,10 @@ public class KubernetesManager {
                 .orElse(true);
     }
 
+    public List<Node> getNodes(KubernetesClient client) {
+        return getAvailableNodes(client).getItems();
+    }
+
     public NodeList getAvailableNodes(KubernetesClient client) {
         return client.nodes().withLabel(KubernetesConstants.RUN_ID_LABEL)
                 .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL)
@@ -712,5 +709,55 @@ public class KubernetesManager {
 
     public boolean isNodeUnavailable(final Node node) {
         return !isNodeAvailable(node);
+    }
+
+    public Service createService(final String serviceName, final Map<String, String> runIdMap,
+                                 final List<ServicePort> ports) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Service service = client.services().createNew()
+                    .withNewMetadata()
+                    .withName(serviceName)
+                    .withNamespace(kubeNamespace)
+                    .withLabels(runIdMap)
+                    .endMetadata()
+                    .withNewSpec()
+                    .withPorts(ports)
+                    .withSelector(runIdMap)
+                    .endSpec()
+                    .done();
+            Assert.notNull(service, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, serviceName));
+            return service;
+        }
+    }
+
+    public Optional<Service> getService(final String labelName, final String labelValue) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return findServiceByLabel(client, labelName, labelValue);
+        }
+    }
+
+    public boolean deleteService(final Service service) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Boolean deleted = client.services().delete(service);
+            if (Objects.isNull(deleted) || !deleted) {
+                LOGGER.debug("Failed to delete service '{}'", service.getMetadata().getName());
+            }
+            return deleted;
+        }
+    }
+
+    private Optional<Service> findServiceByLabel(final KubernetesClient client, final String labelName,
+                                                 final String labelValue) {
+        final List<Service> items = client.services()
+                .withLabel(labelName, labelValue)
+                .list()
+                .getItems();
+        if (CollectionUtils.isEmpty(items)) {
+            return Optional.empty();
+        }
+        if (items.size() > 1) {
+            LOGGER.error("More than one service was found for label {}={}.", labelName, labelValue);
+        }
+        return Optional.of(items.get(0));
     }
 }

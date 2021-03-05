@@ -23,21 +23,25 @@ import {
   Button,
   Checkbox,
   DatePicker,
+  Icon,
   Input,
   Row,
-  Select
+  Select,
+  Tooltip
 } from 'antd';
 import moment from 'moment-timezone';
 import SystemLogsFilterDictionaries from '../../../models/system-logs/filter-dictionaries';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
+export {DATE_FORMAT};
 
-function Filter ({label, children, display = true}) {
+function Filter ({addonBefore, label, children, display = true}) {
   if (!display) {
     return null;
   }
   return (
     <div className={styles.filter}>
+      {addonBefore}
       {label && (<span className={styles.label}>{label}:</span>)}
       {children}
     </div>
@@ -92,7 +96,7 @@ class Filters extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.filters !== this.props.filters) {
+    if (prevProps.filters !== this.props.filters && this.props.filters) {
       this.updateFilters(this.props.filters);
     }
   }
@@ -168,6 +172,14 @@ class Filters extends React.Component {
       hostnames = [],
       includeServiceAccountEvents = false
     } = filters;
+    let durationWarningVisible = false;
+    if (messageTimestampFrom) {
+      const from = moment.utc(messageTimestampFrom, DATE_FORMAT);
+      const to = messageTimestampTo
+        ? moment.utc(messageTimestampTo, DATE_FORMAT)
+        : moment.utc();
+      durationWarningVisible = to.diff(from, 'w') >= 1;
+    }
     const onFieldChanged = (
       field,
       submit = false,
@@ -215,7 +227,28 @@ class Filters extends React.Component {
     };
     return (
       <div className={styles.filters}>
-        <Filter label="From">
+        <Filter
+          label="From"
+          addonBefore={
+            durationWarningVisible && (
+              <Tooltip
+                placement="right"
+                title={(
+                  <div>
+                    It's recommended to limit the logs retrieval
+                    duration to a maximum of a week.<br />
+                    Otherwise the request may timeout
+                  </div>
+                )}
+              >
+                <Icon
+                  type="info-circle"
+                  style={{marginRight: 5, color: 'orange'}}
+                />
+              </Tooltip>
+            )
+          }
+        >
           <DatePicker
             showTime
             format="YYYY-MM-DD HH:mm:ss"

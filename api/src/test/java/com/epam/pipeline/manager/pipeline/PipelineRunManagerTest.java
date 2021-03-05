@@ -164,6 +164,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @MockBean
     private CheckPermissionHelper permissionHelper;
 
+    @MockBean
+    private ToolScanInfoManager toolScanInfoManager;
+
     @Autowired
     private PipelineRunDao pipelineRunDao;
 
@@ -218,7 +221,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .thenReturn(price);
         when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString(), anyString()))
             .thenReturn("sleep");
-        when(toolManager.loadToolVersionScan(notScannedTool.getId(), null))
+        when(toolScanInfoManager.loadToolVersionScanInfo(notScannedTool.getId(), null))
                 .thenReturn(Optional.empty());
         when(toolVersionManager.loadToolVersion(anyLong(), anyString()))
                 .thenReturn(ToolVersion.builder().size(1L).build());

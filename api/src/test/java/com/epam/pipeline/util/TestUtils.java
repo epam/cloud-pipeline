@@ -39,11 +39,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -101,17 +100,11 @@ public final class TestUtils {
 
     public static void generateScanResult(int criticalVulnerabilitiesCount, int highVulnerabilitiesCount,
                                     int mediumVulnerabilitiesCount, ToolVersionScanResult versionScanResult) {
-        List<Vulnerability> testVulnerabilities = IntStream
-            .range(0, criticalVulnerabilitiesCount)
-            .mapToObj(i -> createVulnerability(VulnerabilitySeverity.Critical))
-            .collect(Collectors.toList());
-        testVulnerabilities.addAll(IntStream.range(0, highVulnerabilitiesCount)
-                                       .mapToObj(i -> createVulnerability(VulnerabilitySeverity.High))
-                                       .collect(Collectors.toList()));
-        testVulnerabilities.addAll(IntStream.range(0, mediumVulnerabilitiesCount)
-                                       .mapToObj(i -> createVulnerability(VulnerabilitySeverity.Medium))
-                                       .collect(Collectors.toList()));
-        versionScanResult.setVulnerabilities(testVulnerabilities);
+        final HashMap<VulnerabilitySeverity, Integer> count = new HashMap<>();
+        count.put(VulnerabilitySeverity.Critical, criticalVulnerabilitiesCount);
+        count.put(VulnerabilitySeverity.High, highVulnerabilitiesCount);
+        count.put(VulnerabilitySeverity.Medium, mediumVulnerabilitiesCount);
+        versionScanResult.setVulnerabilitiesCount(count);
         versionScanResult.setScanDate(new Date());
         versionScanResult.setSuccessScanDate(new Date());
         versionScanResult.setStatus(ToolScanStatus.COMPLETED);

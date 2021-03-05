@@ -46,6 +46,8 @@ public interface ToolScanManager {
 
     ToolExecutionCheckStatus checkTool(Tool tool, String tag);
 
+    ToolExecutionCheckStatus checkScan(Tool tool, String tag, ToolVersionScanResult scan);
+
     /**
      * Loads current security policy.
      * @return a {@link ToolScanPolicy}

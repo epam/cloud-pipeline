@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -106,6 +106,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final ReassignHandler reassignHandler;
         private final ScaleDownHandler scaleDownHandler;
         private final List<RunCleaner> runCleaners;
+        private final PoolAutoscaler poolAutoscaler;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -123,7 +124,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final NodePoolManager nodePoolManager,
                              final ReassignHandler reassignHandler,
                              final ScaleDownHandler scaleDownHandler,
-                             final List<RunCleaner> runCleaners) {
+                             final List<RunCleaner> runCleaners,
+                             final PoolAutoscaler poolAutoscaler) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -136,6 +138,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.reassignHandler = reassignHandler;
             this.scaleDownHandler = scaleDownHandler;
             this.runCleaners = runCleaners;
+            this.poolAutoscaler = poolAutoscaler;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -165,6 +168,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             } catch (KubernetesClientException e) {
                 log.error(e.getMessage(), e);
             }
+            poolAutoscaler.adjustPoolSizes();
         }
 
         private void checkPendingPods(Set<String> scheduledRuns, KubernetesClient client, Set<String> nodes) {
@@ -370,7 +374,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     checkedPods.add(pod);
                     priorityScore.put(pod, getParameterValue(runParameters, "priority-score", 0L));
                 } catch (IllegalArgumentException e) {
-                    cleanDeletedRun(client, pod, runId, e);
+                    log.error("Failed to load pipeline run {}.", runId);
+                    log.error(e.getMessage(), e);
+                    cleanDeletedRun(client, pod, runId);
                 }
             }
             if (!CollectionUtils.isEmpty(checkedPods)) {
@@ -390,15 +396,13 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             }
         }
 
-        private void cleanDeletedRun(final KubernetesClient client, final Pod pod, final Long runId, final IllegalArgumentException e) {
-            log.error("Failed to load pipeline run {}.", runId);
-            log.error(e.getMessage(), e);
+        private void cleanDeletedRun(final KubernetesClient client, final Pod pod, final Long runId) {
             // If we failed to load a matching pipeline run for a pod, we delete it here, since
             // PodMonitor wont't process it either
             log.debug("Trying to clear resources for run {}.", runId);
             try {
                 runCleaners.forEach(cleaner -> cleaner.cleanResources(runId));
-            } catch (Exception ex) {
+            } catch (Exception e) {
                 log.error("Error during resources clean up: {}", e.getMessage());
             }
             deletePod(pod, client);

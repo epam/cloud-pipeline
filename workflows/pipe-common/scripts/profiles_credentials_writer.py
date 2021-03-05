@@ -76,10 +76,10 @@ def write_to_config_file(profiles, region, path_to_script, path_to_config, pytho
             write_content(f, credentials_process, profile_name, region_field)
 
 
-def find_user(api, user_name):
-    user = api.load_user_by_name(user_name)
+def find_user(api):
+    user = api.load_current_user()
     if not user:
-        raise RuntimeError("Failed to load user by name '%s'" % user_name)
+        raise RuntimeError("Failed to load current user")
     return user
 
 
@@ -112,10 +112,9 @@ def main():
 
     api = PipelineAPI(os.environ['API'], log_dir)
     region_id = int(os.environ['CLOUD_REGION_ID'])
-    user_name = str(os.environ['OWNER']).upper()
 
     region = find_region(api, region_id)
-    user = find_user(api, user_name)
+    user = find_user(api)
     user_id = int(user.get('id'))
     default_profile_id = find_default_profile_id(user)
     profiles = filter_profiles_by_region(find_profiles_by_user(api, user_id), region)

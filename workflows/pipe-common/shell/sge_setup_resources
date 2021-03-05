@@ -23,10 +23,11 @@ function configure_consumable_sge_resource {
     RESOURCE_TYPE="$2"
     RESOURCE_DEFAULT="$3"
     RESOURCE_VALUE="$4"
+    RESOURCE_CONSUMABLE_TYPE="$5"
 
     # Add consumable resource if it is master node, this shall be done once
     if [[ "$cluster_role" = "master" ]]; then
-        add_consumable_sge_resource "$RESOURCE_NAME" "$RESOURCE_TYPE" "$RESOURCE_DEFAULT"
+        add_consumable_sge_resource "$RESOURCE_NAME" "$RESOURCE_TYPE" "$RESOURCE_DEFAULT" "$RESOURCE_CONSUMABLE_TYPE"
     fi
 
     # Add consumable resource capacity for a current execution host
@@ -37,13 +38,14 @@ function add_consumable_sge_resource {
     RESOURCE_NAME="$1"
     RESOURCE_TYPE="$2"
     RESOURCE_DEFAULT="$3"
+    RESOURCE_CONSUMABLE_TYPE="$4"
 
     _CONFIG_FILE=/tmp/complex_${_CURRENT_EXEC_NODE_NAME}.txt
     qconf -sc > "$_CONFIG_FILE"
     # First remove any line, which start with the resource name, in case it already exists
     # Otherwise - resource won't be added/modified
     sed -i "/^$RESOURCE_NAME /d" "$_CONFIG_FILE"
-    echo "$RESOURCE_NAME $RESOURCE_NAME $RESOURCE_TYPE <= YES YES $RESOURCE_DEFAULT 0" >> "$_CONFIG_FILE"
+    echo "$RESOURCE_NAME $RESOURCE_NAME $RESOURCE_TYPE <= YES $RESOURCE_CONSUMABLE_TYPE $RESOURCE_DEFAULT 0" >> "$_CONFIG_FILE"
     qconf -Mc "$_CONFIG_FILE"
     rm "$_CONFIG_FILE"
     pipe_log_info "Added GridEngine consumable resource: $RESOURCE_NAME" "$_SGE_RESOURCES_SETUP_TASK"
@@ -102,12 +104,16 @@ pipe_log_info "$_NODE_CPU_COUNT CPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
 pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_SETUP_TASK"
 
+# Changed consumable type of the "n_cpu" and "gpus" resources to "JOB" (see http://www.softpanorama.org/HPC/Grid_engine/Resources/sge_consumable_resources.shtml)
+# If it is set to "YES", the resource request is multiplied by "slots"
+# So we if we run "qsub -pe local 3 -l n_cpu=3", it will require 3*3=9 n_cpu per job
+# For the "ram" resource, keeping it as "YES", as it makes sense to request this resource per slot
 if (( _NODE_GPUS_COUNT > 0 ))
 then
-    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT"
+    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "JOB"
 fi
 
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT"
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT" "YES"
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "JOB"
 
 pipe_log_success "Finished GridEngine resources configuration" "$_SGE_RESOURCES_SETUP_TASK"

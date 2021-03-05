@@ -33,6 +33,7 @@ import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -103,10 +104,9 @@ public class CloudProfileCredentialsManagerProvider {
     }
 
     public List<? extends AbstractCloudProfileCredentials> findAll(final Long userId) {
-        if (Objects.nonNull(userId)) {
-            return findAllForUser(userId);
-        }
-        return toDtos(repository.findAll());
+        return Objects.isNull(userId)
+                ? toDtos(repository.findAll())
+                : findAllForUser(userId);
     }
 
     @Transactional
@@ -116,7 +116,7 @@ public class CloudProfileCredentialsManagerProvider {
         if (Objects.nonNull(defaultProfileId)) {
             profileIds.add(defaultProfileId);
         }
-        final List<CloudProfileCredentialsEntity> profiles = profileIds.stream()
+        final List<CloudProfileCredentialsEntity> profiles = SetUtils.emptyIfNull(profileIds).stream()
                 .map(this::findEntity)
                 .collect(Collectors.toList());
         if (principal) {
@@ -209,8 +209,8 @@ public class CloudProfileCredentialsManagerProvider {
         return toDtos(user.getCloudProfiles());
     }
 
-    private List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long id) {
-        final PipelineUser user = findUserEntity(id);
+    private List<? extends AbstractCloudProfileCredentials> findAllForUser(final Long userId) {
+        final PipelineUser user = findUserEntity(userId);
         final List<? extends AbstractCloudProfileCredentials> userProfiles = toDtos(user.getCloudProfiles());
         final List<Role> roles = user.getRoles();
         final List<? extends AbstractCloudProfileCredentials> rolesProfiles = roles.stream()

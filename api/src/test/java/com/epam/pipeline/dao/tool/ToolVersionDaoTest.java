@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.tool;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
@@ -25,6 +24,7 @@ import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 
 @Transactional
-public class ToolVersionDaoTest extends AbstractSpringTest {
+public class ToolVersionDaoTest extends AbstractJdbcTest {
     private static final String TEST_DIGEST = "sha256:aaa";
     private static final String TEST_DIGEST_2 = "sha256:bbb";
     private static final Long TEST_SIZE = 123L;
@@ -182,6 +183,10 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
         validateToolVersion(actual, TEST_DIGEST, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
         validateToolVersion(actual, TEST_DIGEST_2, TEST_SIZE, TEST_VERSION_2, TEST_LAST_MODIFIED_DATE, toolId);
+
+        final Map<String, ToolVersion> versions = toolVersionDao.loadToolVersions(toolId,
+                Arrays.asList(TEST_VERSION, TEST_VERSION_2));
+        assertThat(versions).hasSize(2);
 
         toolVersionDao.deleteToolVersions(toolId);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);

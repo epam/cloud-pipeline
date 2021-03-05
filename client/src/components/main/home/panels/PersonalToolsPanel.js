@@ -23,7 +23,7 @@ import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes'
 import {names} from '../../../../models/utils/ContextualPreference';
 import ToolImage from '../../../../models/tools/ToolImage';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
-import LoadToolScanTags from '../../../../models/tools/LoadToolScanTags';
+import LoadToolInfo from '../../../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../../../models/tools/LoadToolScanPolicy';
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import {getVersionRunningInfo} from '../../../tools/utils';
@@ -247,8 +247,8 @@ export default class PersonalToolsPanel extends React.Component {
     const hide = message.loading('Fetching tool info...', 0);
     const toolRequest = new LoadTool(tool.id);
     await toolRequest.fetch();
-    const toolTagRequest = new LoadToolScanTags(tool.id);
-    await toolTagRequest.fetch();
+    const toolTagsInfo = new LoadToolInfo(tool.id);
+    await toolTagsInfo.fetch();
     const scanPolicy = new LoadToolScanPolicy();
     const toolSettings = new LoadToolVersionSettings(tool.id);
     await toolSettings.fetch();
@@ -258,9 +258,9 @@ export default class PersonalToolsPanel extends React.Component {
     if (toolRequest.error) {
       hide();
       message.error(toolRequest.error);
-    } else if (toolTagRequest.error) {
+    } else if (toolTagsInfo.error) {
       hide();
-      message.error(toolTagRequest.error);
+      message.error(toolTagsInfo.error);
     } else if (scanPolicy.error) {
       hide();
       message.error(scanPolicy.error);
@@ -269,7 +269,9 @@ export default class PersonalToolsPanel extends React.Component {
       message.error(toolSettings.error);
     } else {
       const toolValue = toolRequest.value;
-      const versions = toolTagRequest.value.toolVersionScanResults;
+      const versions = (toolTagsInfo.value.versions || [])
+        .map(v => ({[v.version]: v.scanResult}))
+        .reduce((r, c) => ({...r, ...c}), {});
 
       let defaultTag;
       let anyTag;

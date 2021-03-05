@@ -177,6 +177,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
                         r.pipeline_name,
                         CASE
                             WHEN EXISTS (
@@ -267,6 +268,7 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
+                        kube_service_enabled,
                         pipeline_name
                     FROM
                         pipeline.pipeline_run
@@ -328,6 +330,7 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
+                        kube_service_enabled,
                         pipeline_name
                     FROM
                         pipeline.pipeline_run
@@ -389,6 +392,7 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
+                        kube_service_enabled,
                         pipeline_name
                     FROM
                         pipeline.pipeline_run
@@ -488,6 +492,7 @@
                         node_real_disk =:NODE_REAL_DISK,
                         tags = to_jsonb(:TAGS::jsonb),
                         sensitive = :SENSITIVE,
+                        kube_service_enabled = :KUBE_SERVICE_ENABLED,
                         pipeline_name = :PIPELINE_NAME
                     WHERE
                         run_id = :RUN_ID
@@ -598,6 +603,7 @@
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
+                      r.kube_service_enabled,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       r.pipeline_name
@@ -660,6 +666,7 @@
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
+                      r.kube_service_enabled,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       r.pipeline_name
@@ -722,6 +729,7 @@
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
+                      r.kube_service_enabled,
                       r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
@@ -776,6 +784,7 @@
                       active_run.node_cloud_provider,
                       active_run.tags,
                       active_run.sensitive,
+                      active_run.kube_service_enabled,
                       active_run.pipeline_name
                     FROM active_run
                     INNER JOIN
@@ -960,6 +969,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
                         r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
@@ -1019,6 +1029,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
                         r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
@@ -1078,6 +1089,7 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
+                        r.kube_service_enabled,
                         r.pipeline_name,
                         CASE
                             WHEN EXISTS (
@@ -1164,6 +1176,7 @@
                         runs.node_cloud_provider,
                         runs.tags,
                         runs.sensitive,
+                        runs.kube_service_enabled,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1238,6 +1251,7 @@
                             p.node_cloud_provider,
                             p.tags,
                             p.sensitive,
+                            p.kube_service_enabled,
                             p.pipeline_name
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
@@ -1293,6 +1307,7 @@
                             c.node_cloud_provider,
                             c.tags,
                             c.sensitive,
+                            c.kube_service_enabled,
                             c.pipeline_name
                         FROM
                             pipeline.pipeline_run c
@@ -1346,6 +1361,7 @@
                         runs.node_cloud_provider,
                         runs.tags,
                         runs.sensitive,
+                        runs.kube_service_enabled,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1493,6 +1509,7 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
+                        kube_service_enabled,
                         pipeline_name
                     FROM
                         pipeline.pipeline_run
@@ -1554,6 +1571,7 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
+                        kube_service_enabled,
                         pipeline_name
                     FROM
                         pipeline.pipeline_run r
@@ -1629,11 +1647,74 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
+                        kube_service_enabled,
                         pipeline_name
                     FROM
                         pipeline.pipeline_run
                     WHERE
                         status IN (:list)
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllRunsByIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        docker_image,
+                        actual_docker_image,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        service_url,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        run_id IN (:list)
                     ORDER BY
                         start_date
                 ]]>
@@ -1690,6 +1771,7 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
+                        kube_service_enabled,
                         pipeline_name
                     FROM
                         pipeline.pipeline_run

@@ -16,157 +16,209 @@
 
 package com.epam.pipeline.manager.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.app.TestApplicationWithAclSecurity;
-import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.controller.vo.data.storage.DataStorageWithMetadataVO;
-import com.epam.pipeline.dao.region.CloudRegionDao;
-import com.epam.pipeline.dao.util.AclTestDao;
+import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
-import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.templates.FolderTemplate;
-import com.epam.pipeline.manager.MockS3Helper;
+import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.metadata.MetadataManager;
-import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.security.acl.AclPermission;
-import org.junit.Assert;
-import org.junit.Before;
+import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.acls.domain.PrincipalSid;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Predicate;
 
-import static org.mockito.Matchers.any;
+import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils.getFolderTemplate;
+import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils.getS3BucketDataStorageWithMetadataNameAndPath;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVOFrom;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionVO;
+import static com.epam.pipeline.util.CustomMatchers.matches;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 
-@DirtiesContext
-@ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
-@Transactional
-public class FolderTemplateManagerTest extends AbstractSpringTest {
-    private static final String TEST_PATH = "path";
-    private static final String TEST_USER = "USER1";
-    private static final String TEST_ROLE = "TEST_ROLE";
-
+public class FolderTemplateManagerTest extends AbstractAclTest {
     private static final String DATA_KEY_1 = "tag";
     private static final String DATA_TYPE_1 = "string";
     private static final String DATA_VALUE_1 = "OWNER";
+    private static final String DATA_KEY_2 = "tag-2";
+    private static final String DATA_TYPE_2 = "string-2";
+    private static final String DATA_VALUE_2 = "OWNER-2";
 
-    private static final String TEMPLATE_FOLDER_NAME = "test-folder";
-    private static final String CHILD_TEMPLATE_FOLDER_NAME_1 = "test-1";
-    private static final String DATASTORAGE_NAME_1 = "ds-1";
+    private static final String CHILD_TEMPLATE_FOLDER_NAME = "test-1";
+    private static final String DATASTORAGE_NAME = "ds-1";
+    private static final String DATASTORAGE_NAME_2 = "ds-2";
+
+    private static final String PERMISSION_NAME = "PERMISSION";
+    private static final String PERMISSION_NAME_2 = "PERMISSION_2";
+
+    private static final Long FOLDER_ID = 1L;
+    private static final Long FOLDER_CHILD_ID = 2L;
+
+    private Folder childFolder;
+    private AbstractDataStorage folderDataStorage;
+    private AbstractDataStorage childFolderDataStorage;
 
     @Autowired
     private FolderTemplateManager folderTemplateManager;
     @Autowired
-    private FolderManager folderManager;
+    private MetadataManager mockMetadataManager;
     @Autowired
-    private MetadataManager metadataManager;
+    private DataStorageManager mockDataStorageManager;
     @Autowired
-    private DataStorageManager dataStorageManager;
-    @SpyBean
-    private S3StorageProvider storageProviderManager;
+    private FolderCrudManager mockFolderCrudManager;
     @Autowired
-    private AclTestDao aclTestDao;
+    private PermissionGrantVOMapper mockPermissionGrantVOMapper;
     @Autowired
-    private GrantPermissionManager permissionManager;
+    private EntityManager mockEntityManager;
     @Autowired
-    private CloudRegionDao cloudRegionDao;
-
-    private AwsRegion awsRegion;
-
-
-    @Before
-    public void setUp() {
-        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
-
-        awsRegion = new AwsRegion();
-        awsRegion.setName("US");
-        awsRegion.setRegionCode("us-east-1");
-        awsRegion.setDefault(true);
-        cloudRegionDao.create(awsRegion);
-
-        AclTestDao.AclSid testUserSid = new AclTestDao.AclSid(true, TEST_USER);
-        aclTestDao.createAclSid(testUserSid);
-        AclTestDao.AclSid testRole = new AclTestDao.AclSid(false, TEST_ROLE);
-        aclTestDao.createAclSid(testRole);
-
-        AclTestDao.AclClass folderAclClass = new AclTestDao.AclClass(Folder.class.getCanonicalName());
-        aclTestDao.createAclClassIfNotPresent(folderAclClass);
-    }
+    private JdbcMutableAclServiceImpl aclService;
 
     @Test
-    @WithMockUser(username = TEST_USER)
-    public void createFolderFromTemplateTest() throws IOException {
-        Map<String, PipeConfValue> metadata = new HashMap<>();
-        metadata.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+    public void shouldCreateFolderFromTemplate() {
+        final Map<String, PipeConfValue> metadata = getMetadata();
+        final Map<String, PipeConfValue> childMetadata = getChildMetadata();
+        final DataStorageWithMetadataVO dataStorageVO = getS3BucketDataStorageWithMetadataNameAndPath(metadata,
+                DATASTORAGE_NAME, TEST_PATH);
+        final DataStorageWithMetadataVO dataStorageForChild = getS3BucketDataStorageWithMetadataNameAndPath(
+                childMetadata, DATASTORAGE_NAME_2, TEST_PATH_2);
+        final PermissionVO permissionVO = getPermissionVO(PERMISSION_NAME);
+        final PermissionVO childPermissionVO = getPermissionVO(PERMISSION_NAME_2);
+        final FolderTemplate childFolderTemplate = getFolderTemplate(dataStorageForChild, null,
+                childMetadata, childPermissionVO, TEST_NAME_2);
+        final FolderTemplate folderTemplate = getFolderTemplate(dataStorageVO, childFolderTemplate,
+                metadata, permissionVO, TEST_NAME);
 
-        DataStorageWithMetadataVO dataStorageVO = new DataStorageWithMetadataVO();
-        dataStorageVO.setName(DATASTORAGE_NAME_1);
-        dataStorageVO.setType(DataStorageType.S3);
-        dataStorageVO.setPath(TEST_PATH);
-        dataStorageVO.setMetadata(metadata);
+        folderDataStorage = new S3bucketDataStorage(FOLDER_ID, DATASTORAGE_NAME, TEST_PATH);
+        childFolderDataStorage = new S3bucketDataStorage(FOLDER_CHILD_ID, DATASTORAGE_NAME_2, TEST_PATH_2);
 
-        PermissionVO permissionVO = new PermissionVO();
-        permissionVO.setMask(AclPermission.READ.getMask());
-        permissionVO.setUserName(TEST_ROLE);
-        permissionVO.setPrincipal(false);
+        childFolder = getFolderChild(childFolderDataStorage);
+        final Folder folder = getFolder(folderDataStorage);
 
-        FolderTemplate childFolderTemplate1 = FolderTemplate.builder().name(CHILD_TEMPLATE_FOLDER_NAME_1).build();
-        FolderTemplate folderTemplate = FolderTemplate.builder()
-                .name(TEMPLATE_FOLDER_NAME)
-                .datastorages(Stream.of(dataStorageVO).collect(Collectors.toList()))
-                .children(Stream.of(childFolderTemplate1).collect(Collectors.toList()))
-                .metadata(metadata)
-                .permissions(Stream.of(permissionVO).collect(Collectors.toList()))
-                .build();
+        doReturn(folder).when(mockFolderCrudManager)
+                .create(argThat(matches(Predicates.forFolderTemplate(folderTemplate.getName()))));
+        doReturn(childFolder).when(mockFolderCrudManager)
+                .create(argThat(matches(Predicates.forChildFolderTemplate(childFolderTemplate.getName()))));
+        doReturn(getSecurityEntityForFolder()).when(mockDataStorageManager)
+                .create(argThat(matches(Predicates.forDataStorage())), eq(true), eq(true), eq(false));
+        doReturn(getSecurityEntityForFolderChild()).when(mockDataStorageManager)
+                .create(argThat(matches(Predicates.forChildDataStorage())), eq(true), eq(true), eq(false));
 
-        Folder folder = new Folder();
-        folder.setName(TEMPLATE_FOLDER_NAME);
+        //permissionGrantVOMapper doesn't work, so mapping it manually
+        doReturn(getPermissionGrantVOFrom(permissionVO, AclClass.FOLDER, FOLDER_ID)).when(mockPermissionGrantVOMapper)
+                .toPermissionGrantVO(eq(permissionVO));
+        doReturn(getPermissionGrantVOFrom(childPermissionVO, AclClass.FOLDER, FOLDER_CHILD_ID))
+                .when(mockPermissionGrantVOMapper).toPermissionGrantVO(eq(childPermissionVO));
+
+        doReturn(folder).when(mockEntityManager).load(eq(AclClass.FOLDER), eq(FOLDER_ID));
+        doReturn(childFolder).when(mockEntityManager).load(eq(AclClass.FOLDER), eq(FOLDER_CHILD_ID));
+        doReturn(new PrincipalSid(folder.getOwner())).when(aclService).createOrGetSid(
+                eq(permissionVO.getUserName().toUpperCase()), eq(permissionVO.getPrincipal()));
+        doReturn(new PrincipalSid(childFolder.getOwner())).when(aclService).createOrGetSid(
+                eq(childPermissionVO.getUserName().toUpperCase()), eq(childPermissionVO.getPrincipal()));
+
+        initAclEntity(folder, AclPermission.READ);
+        initAclEntity(childFolder, AclPermission.READ);
+
         folderTemplateManager.createFolderFromTemplate(folder, folderTemplate);
 
-        Folder savedRootFolder = folderManager.loadByNameOrId(TEMPLATE_FOLDER_NAME);
-        savedRootFolder = folderManager.load(savedRootFolder.getId());
-        Assert.assertNotNull(savedRootFolder);
-        Long rootFolderId = savedRootFolder.getId();
-        List<EntityVO> metadataEntries = Collections.singletonList(new EntityVO(rootFolderId, AclClass.FOLDER));
-        Assert.assertEquals(metadata, metadataManager.listMetadataItems(metadataEntries).get(0).getData());
-        AbstractDataStorage clonedDataStorage = savedRootFolder.getStorages().get(0);
-        clonedDataStorage = dataStorageManager.load(clonedDataStorage.getId());
-        Assert.assertTrue(clonedDataStorage.getName().startsWith(DATASTORAGE_NAME_1));
-        Assert.assertTrue(clonedDataStorage.getPath().startsWith(TEST_PATH));
-        metadataEntries = Collections.singletonList(new EntityVO(clonedDataStorage.getId(), AclClass.DATA_STORAGE));
-        Assert.assertEquals(metadata, metadataManager.listMetadataItems(metadataEntries).get(0).getData());
-        List<AclPermissionEntry> rootFolderPermissions = permissionManager.getPermissions(rootFolderId, AclClass.FOLDER)
-                .getPermissions();
-        Assert.assertEquals(1, rootFolderPermissions.size());
-        AclPermissionEntry actualPermission = rootFolderPermissions.get(0);
-        Assert.assertEquals(permissionVO.getMask(), actualPermission.getMask());
-        Assert.assertEquals(permissionVO.getPrincipal(), actualPermission.getSid().isPrincipal());
-        Assert.assertEquals(permissionVO.getUserName(), actualPermission.getSid().getName());
+        verify(mockFolderCrudManager).create(argThat(matches(Predicates.forFolderTemplate(folderTemplate.getName()))));
+        verify(mockFolderCrudManager).create(argThat(matches(
+                Predicates.forChildFolderTemplate(childFolderTemplate.getName()))));
+        verify(mockDataStorageManager).create(argThat(matches(Predicates.forDataStorage())),
+                eq(true), eq(true), eq(false));
+        verify(mockDataStorageManager).create(argThat(matches(Predicates.forDataStorage())),
+                eq(true), eq(true), eq(false));
+        verify(mockMetadataManager).updateEntityMetadata(eq(metadata), eq(FOLDER_ID), eq(AclClass.DATA_STORAGE));
+        verify(mockMetadataManager).updateEntityMetadata(eq(metadata), eq(FOLDER_ID), eq(AclClass.FOLDER));
+        verify(mockMetadataManager).updateEntityMetadata(eq(childMetadata),
+                eq(FOLDER_CHILD_ID), eq(AclClass.DATA_STORAGE));
+        verify(mockMetadataManager).updateEntityMetadata(eq(childMetadata), eq(FOLDER_CHILD_ID), eq(AclClass.FOLDER));
 
-        Folder savedChildFolder = folderManager.loadByNameOrId(TEMPLATE_FOLDER_NAME + "/" +
-                CHILD_TEMPLATE_FOLDER_NAME_1);
-        Assert.assertNotNull(savedChildFolder);
-        Assert.assertEquals(rootFolderId, savedChildFolder.getParentId());
+        verify(mockPermissionGrantVOMapper).toPermissionGrantVO(eq(permissionVO));
+        verify(mockPermissionGrantVOMapper).toPermissionGrantVO(eq(childPermissionVO));
+        verify(mockEntityManager).load(eq(AclClass.FOLDER), eq(FOLDER_ID));
+        verify(mockEntityManager).load(eq(AclClass.FOLDER), eq(FOLDER_CHILD_ID));
+        verify(aclService).createOrGetSid(eq(permissionVO.getUserName()), eq(permissionVO.getPrincipal()));
+        verify(aclService).createOrGetSid(eq(childPermissionVO.getUserName()), eq(childPermissionVO.getPrincipal()));
+    }
+
+    private SecuredEntityWithAction<AbstractDataStorage> getSecurityEntityForFolder() {
+        SecuredEntityWithAction<AbstractDataStorage> action = new SecuredEntityWithAction<>();
+        action.setEntity(folderDataStorage);
+        return action;
+    }
+
+    private SecuredEntityWithAction<AbstractDataStorage> getSecurityEntityForFolderChild() {
+        SecuredEntityWithAction<AbstractDataStorage> action = new SecuredEntityWithAction<>();
+        action.setEntity(childFolderDataStorage);
+        return action;
+    }
+
+    private Folder getFolder(final AbstractDataStorage dataStorage) {
+        final Folder folder = new Folder();
+        folder.setId(FOLDER_ID);
+        folder.setOwner(SIMPLE_USER);
+        folder.setChildFolders(Collections.singletonList(childFolder));
+        folder.setStorages(Collections.singletonList(dataStorage));
+        return folder;
+    }
+
+    private Folder getFolderChild(final AbstractDataStorage dataStorage) {
+        final Folder folder = new Folder();
+        folder.setId(FOLDER_CHILD_ID);
+        folder.setOwner(SIMPLE_USER);
+        folder.setName(CHILD_TEMPLATE_FOLDER_NAME);
+        folder.setParentId(FOLDER_ID);
+        folder.setStorages(Collections.singletonList(dataStorage));
+        return folder;
+    }
+
+    private Map<String, PipeConfValue> getMetadata() {
+        final Map<String, PipeConfValue> metadata = new HashMap<>();
+        metadata.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        return metadata;
+    }
+
+    private Map<String, PipeConfValue> getChildMetadata() {
+        final Map<String, PipeConfValue> metadata = new HashMap<>();
+        metadata.put(DATA_KEY_2, new PipeConfValue(DATA_TYPE_2, DATA_VALUE_2));
+        return metadata;
+    }
+
+    private static class Predicates {
+        static Predicate<Folder> forFolderTemplate(String name) {
+            return f -> !FOLDER_ID.equals(f.getParentId())
+                    && f.getName().equals(name);
+        }
+
+        static Predicate<Folder> forChildFolderTemplate(String name) {
+            return f -> FOLDER_ID.equals(f.getParentId())
+                    && f.getName().equals(name);
+        }
+
+        static Predicate<DataStorageWithMetadataVO> forDataStorage() {
+            return dataStorage -> DATASTORAGE_NAME.equals(dataStorage.getName())
+                    && TEST_PATH.equals(dataStorage.getPath());
+        }
+
+        static Predicate<DataStorageWithMetadataVO> forChildDataStorage() {
+            return dataStorage -> DATASTORAGE_NAME_2.equals(dataStorage.getName())
+                    && TEST_PATH_2.equals(dataStorage.getPath());
+        }
     }
 }

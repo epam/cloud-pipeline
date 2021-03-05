@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,11 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class DockerCreatorUtils {
+    public static final String IMAGE1 = "library/image1";
+    public static final String IMAGE2 = "library/image2";
+    public static final String REGISTRY1 = "registry1:8080";
+    public static final String REGISTRY2 = "registry2:8080";
+    public static final String VERSION = ":latest";
 
     public static final TypeReference<Result<ImageDescription>> IMAGE_DESCRIPTION_INSTANCE_TYPE =
             new TypeReference<Result<ImageDescription>>() {};
@@ -158,6 +163,14 @@ public final class DockerCreatorUtils {
         return dockerRegistry;
     }
 
+    public static DockerRegistry getDockerRegistry(final Long id, final String path,
+                                                   final String owner, final String externalUrl) {
+        final DockerRegistry registry = getDockerRegistry(id, owner);
+        registry.setPath(path);
+        registry.setExternalUrl(externalUrl);
+        return registry;
+    }
+
     public static DockerRegistryVO getDockerRegistryVO() {
         final DockerRegistryVO dockerRegistryVO = new DockerRegistryVO();
         dockerRegistryVO.setId(ID);
@@ -181,6 +194,14 @@ public final class DockerCreatorUtils {
         return new DockerRegistryList(Collections.singletonList(dockerRegistry));
     }
 
+    public static DockerRegistryList getDockerRegistryList(final Long id, final String owner,
+                                                           final DockerRegistry dockerRegistry) {
+        final DockerRegistryList dockerRegistryList = getDockerRegistryList(dockerRegistry);
+        dockerRegistryList.setId(id);
+        dockerRegistryList.setOwner(owner);
+        return dockerRegistryList;
+    }
+
     public static DockerRegistryEventEnvelope getDockerRegistryEventEnvelope() {
         return new DockerRegistryEventEnvelope();
     }
@@ -199,12 +220,17 @@ public final class DockerCreatorUtils {
         return getTool(ID, owner);
     }
 
-    public static ToolGroup getToolGroup(final Long id, final String owner) {
+    public static ToolGroup getToolGroup(final Long id, final String name, final Long registryId, final String owner) {
         final ToolGroup toolGroup = new ToolGroup();
         toolGroup.setId(id);
-        toolGroup.setRegistryId(id);
+        toolGroup.setName(name);
+        toolGroup.setRegistryId(registryId);
         toolGroup.setOwner(owner);
         return toolGroup;
+    }
+
+    public static ToolGroup getToolGroup(final Long id, final String owner) {
+        return getToolGroup(id, null, id, owner);
     }
 
     public static ToolGroup getToolGroup(final String owner) {
@@ -220,6 +246,20 @@ public final class DockerCreatorUtils {
         tool.setImage(TEST_STRING);
         tool.setToolGroupId(id);
         tool.setRegistry(TEST_STRING);
+        return tool;
+    }
+
+    public static Tool getTool(final ToolGroup toolGroup, final String image,
+                               final DockerRegistry dockerRegistry, final String owner) {
+        final Tool tool = new Tool();
+        tool.setToolGroup(toolGroup.getName());
+        tool.setToolGroupId(toolGroup.getId());
+        tool.setImage(image);
+        tool.setCpu(TEST_STRING);
+        tool.setRam(TEST_STRING);
+        tool.setRegistry(dockerRegistry.getPath());
+        tool.setRegistryId(dockerRegistry.getId());
+        tool.setOwner(owner);
         return tool;
     }
 

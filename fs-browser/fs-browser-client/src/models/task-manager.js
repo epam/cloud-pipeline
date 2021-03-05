@@ -90,8 +90,8 @@ class Task extends TaskStatus {
 }
 
 class UploadToBucketTask extends UploadToBucket {
-  constructor(id, path, url, tagValue, file) {
-    super(id, url, tagValue, file);
+  constructor(id, path, url, tagValue, cannedACLValue, file) {
+    super(id, url, tagValue, cannedACLValue, file);
     this.id = id;
     this.item = {path, type: 'upload-to-bucket'};
   }
@@ -166,6 +166,7 @@ class TaskManager {
       path,
       request.value.url.url,
       request.value.url.tagValue,
+      request.value.url.cannedACLValue,
       file,
     );
     task.fetch().then(async () => {

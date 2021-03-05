@@ -1367,12 +1367,12 @@ if __name__ == '__main__':
     pipeline_api = os.environ['API']
     master_run_id = os.environ['RUN_ID']
     default_hostfile = os.environ['DEFAULT_HOSTFILE']
-    instance_disk = os.environ['instance_disk']
-    instance_type = os.environ['instance_size']
-    instance_image = os.environ['docker_image']
+    instance_disk = os.getenv('CP_CAP_AUTOSCALE_INSTANCE_DISK', os.environ['instance_disk'])
+    instance_type = os.getenv('CP_CAP_AUTOSCALE_INSTANCE_TYPE', os.environ['instance_size'])
+    instance_image = os.getenv('CP_CAP_AUTOSCALE_INSTANCE_IMAGE', os.environ['docker_image'])
     cmd_template = os.getenv('CP_CAP_AUTOSCALE_CMD_TEMPLATE', 'sleep infinity')
     price_type = os.getenv('CP_CAP_AUTOSCALE_PRICE_TYPE', os.environ['price_type'])
-    region_id = os.environ['CLOUD_REGION_ID']
+    region_id = os.getenv('CP_CAP_AUTOSCALE_CLOUD_REGION_ID', os.environ['CLOUD_REGION_ID'])
     instance_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
     additional_hosts = int(os.getenv('CP_CAP_AUTOSCALE_WORKERS', 3))
     log_verbose = os.getenv('CP_CAP_AUTOSCALE_VERBOSE', 'false').strip().lower() == 'true'

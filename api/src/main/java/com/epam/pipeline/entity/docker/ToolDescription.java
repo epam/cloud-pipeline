@@ -26,4 +26,8 @@ import java.util.List;
 public class ToolDescription {
     private Long toolId;
     private List<ToolVersionAttributes> versions;
+
+    public ToolDescription(final long toolId) {
+        this.toolId = toolId;
+    }
 }

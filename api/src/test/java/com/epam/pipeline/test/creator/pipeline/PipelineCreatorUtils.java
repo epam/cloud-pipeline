@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,13 @@ import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
+import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Revision;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
@@ -41,9 +44,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class PipelineCreatorUtils {
@@ -62,7 +67,6 @@ public final class PipelineCreatorUtils {
             new TypeReference<Result<Revision>>() {};
     public static final TypeReference<Result<DocumentGenerationProperty>> DOCUMENT_GENERATION_PROPERTY_TYPE =
             new TypeReference<Result<DocumentGenerationProperty>>() {};
-
     public static final TypeReference<Result<List<Pipeline>>> PIPELINE_LIST_INSTANCE_TYPE =
             new TypeReference<Result<List<Pipeline>>>() {};
     public static final TypeReference<Result<List<PipelineRun>>> PIPELINE_RUN_LIST_INSTANCE_TYPE =
@@ -74,7 +78,7 @@ public final class PipelineCreatorUtils {
     public static final TypeReference<List<UploadFileMetadata>> UPLOAD_METADATA_LIST_TYPE =
             new TypeReference<List<UploadFileMetadata>>() {};
     public static final TypeReference<Result<List<RunSchedule>>> RUN_SCHEDULE_LIST_TYPE =
-            new TypeReference<Result<List<RunSchedule>>>() { };
+            new TypeReference<Result<List<RunSchedule>>>() {};
 
     private PipelineCreatorUtils() {
 
@@ -108,6 +112,17 @@ public final class PipelineCreatorUtils {
         return new PipelineRun();
     }
 
+    public static PipelineRun getPipelineRun(final TaskStatus taskStatus) {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setStatus(taskStatus);
+        pipelineRun.setStartDate(new Date());
+        return pipelineRun;
+    }
+
+    public static PipelineRun getPipelineRun(final Long id) {
+        return getPipelineRun(id, TEST_STRING);
+    }
+
     public static PipelineRun getPipelineRun(final Long id, final String owner) {
         final PipelineRun pipelineRun = getPipelineRun();
         pipelineRun.setId(id);
@@ -129,6 +144,23 @@ public final class PipelineCreatorUtils {
         pipelineVO.setId(ID);
         pipelineVO.setParentFolderId(id);
         return pipelineVO;
+    }
+
+    public static PipelineStart getPipelineStart(final Map<String, PipeConfValueVO> params, final String image) {
+        final PipelineStart vo = new PipelineStart();
+        vo.setNonPause(false);
+        vo.setInstanceImage(TEST_STRING);
+        vo.setPrettyUrl(TEST_STRING);
+        vo.setWorkerCmd(TEST_STRING);
+        vo.setInstanceType(TEST_STRING);
+        vo.setDockerImage(image);
+        vo.setHddSize(TEST_INT);
+        vo.setCmdTemplate(TEST_STRING);
+        vo.setTimeout(TEST_LONG);
+        vo.setNodeCount(TEST_INT);
+        vo.setIsSpot(true);
+        vo.setParams(params);
+        return vo;
     }
 
     public static CheckRepositoryVO getCheckRepositoryVO() {

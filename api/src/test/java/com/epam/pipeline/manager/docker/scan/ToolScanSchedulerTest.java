@@ -279,7 +279,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
 
         @Override
         public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
-                                                ToolOSVersion toolOSVersion, String layerRef, String digest) {
+                                                ToolOSVersion toolOSVersion, String layerRef, String digest,
+                                                Map<VulnerabilitySeverity, Integer> vulnerabilityCount) {
             Assert.assertNotNull(version);
 
             ToolVersionScanResult versionScan = new ToolVersionScanResult();
@@ -302,8 +303,10 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
 
         @Override
         public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
-                                                String layerRef, String digest) {
-            updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef, digest);
+                                                String layerRef, String digest,
+                                                Map<VulnerabilitySeverity, Integer> vulnerabilityCount) {
+            updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef,
+                    digest, vulnerabilityCount);
         }
 
         @Override

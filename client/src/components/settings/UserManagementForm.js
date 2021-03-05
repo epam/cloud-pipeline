@@ -261,7 +261,7 @@ export default class UserManagementForm extends React.Component {
   }
 
   onUserSearchChanged = (e) => {
-    let userSearchText = e.target.value.trim();
+    let userSearchText = e.target.value;
     if (userSearchText.length === 0) {
       userSearchText = null;
     }
@@ -287,7 +287,7 @@ export default class UserManagementForm extends React.Component {
   };
 
   onGroupSearchChanged = (e) => {
-    let groupsSearchText = e.target.value.trim();
+    let groupsSearchText = e.target.value;
     if (groupsSearchText.length === 0) {
       groupsSearchText = null;
     }

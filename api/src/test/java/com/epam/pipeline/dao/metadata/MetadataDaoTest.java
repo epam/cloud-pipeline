@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.metadata;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.issue.IssueDao;
 import com.epam.pipeline.entity.issue.Issue;
@@ -26,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
@@ -50,7 +50,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
 @Transactional
-public class MetadataDaoTest extends AbstractSpringTest {
+public class MetadataDaoTest extends AbstractJdbcTest {
 
     private static final String AUTHOR = "Author";
     private static final Long ID_1 = 1L;

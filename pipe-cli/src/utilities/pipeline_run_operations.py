@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,15 +40,9 @@ class PipelineRunOperations(object):
             click.confirm('Are you sure you want to stop run {}?'.format(run_id), abort=True)
         try:
             pipeline_run_model = Pipeline.stop_pipeline(run_id)
-            pipeline_name = pipeline_run_model.pipeline
-            if not pipeline_name:
-                try:
-                    pipeline_model = Pipeline.get(pipeline_run_model.pipeline_id, load_versions=False,
-                                                  load_storage_rules=False, load_run_parameters=False)
-                    pipeline_name = pipeline_model.name
-                except RuntimeError:
-                    pass
-            click.echo('RunID {} of "{}@{}" stopped'.format(run_id, pipeline_name, pipeline_run_model.version))
+            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+            click.echo('RunID {} of "{}" stopped'.format(
+                run_id, cls.build_image_name(pipeline_name, pipeline_run_model.version)))
 
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
@@ -197,8 +191,9 @@ class PipelineRunOperations(object):
                                                                       friendly_url=friendly_url)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
-                            click.echo('"{}@{}" pipeline run scheduled with RunId: {}'
-                                       .format(pipeline_model.name, pipeline_run_parameters.version, pipeline_run_id))
+                            click.echo('"{}" pipeline run scheduled with RunId: {}'.format(
+                                cls.build_image_name(pipeline_model.name, pipeline_run_parameters.version),
+                                pipeline_run_id))
                             if sync:
                                 pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
                                 click.echo('Pipeline run {} completed with status {}'
@@ -290,6 +285,54 @@ class PipelineRunOperations(object):
                 click.echo(str(value_error), err=True)
                 sys.exit(2)
 
+    @classmethod
+    def resume(cls, run_id, sync):
+        try:
+            pipeline_run_model = Pipeline.resume_pipeline(run_id)
+            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+            pipeline_version = pipeline_run_model.version
+            image_name = cls.build_image_name(pipeline_name, pipeline_version)
+            click.echo('Resuming RunID {} of "{}"'.format(run_id, image_name))
+            if sync:
+                status = cls.get_resuming_pipeline_status(run_id)
+                if status == 'RUNNING':
+                    click.echo('RunID {} of "{}" is resumed'.format(run_id, image_name))
+                    sys.exit(1)
+                else:
+                    click.echo('Failed resuming RunID {} of "{}"'.format(run_id, image_name), err=True)
+        except ConfigNotFoundError as config_not_found_error:
+            click.echo(str(config_not_found_error), err=True)
+        except requests.exceptions.RequestException as http_error:
+            click.echo('Http error: {}'.format(str(http_error)), err=True)
+        except RuntimeError as runtime_error:
+            click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        except ValueError as value_error:
+            click.echo('Error: {}'.format(str(value_error)), err=True)
+
+    @classmethod
+    def pause(cls, run_id, check_size, sync):
+        try:
+            pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
+            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+            pipeline_version = pipeline_run_model.version
+            image_name = cls.build_image_name(pipeline_name, pipeline_version)
+            click.echo('Pausing RunID {} of "{}"'.format(run_id, image_name))
+            if sync:
+                status = cls.get_pausing_pipeline_status(run_id)
+                if status == 'PAUSED':
+                    click.echo('RunID {} of "{}" is paused'.format(run_id, image_name))
+                    sys.exit(1)
+                else:
+                    click.echo('Failed pausing RunID {} of "{}"'.format(run_id, image_name), err=True)
+        except ConfigNotFoundError as config_not_found_error:
+            click.echo(str(config_not_found_error), err=True)
+        except requests.exceptions.RequestException as http_error:
+            click.echo('Http error: {}'.format(str(http_error)), err=True)
+        except RuntimeError as runtime_error:
+            click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        except ValueError as value_error:
+            click.echo('Error: {}'.format(str(value_error)), err=True)
+
     @staticmethod
     @wait_for_server_enabling_if_needed()
     def pipeline_run_get(identifier):
@@ -297,7 +340,8 @@ class PipelineRunOperations(object):
 
     @staticmethod
     def print_pipeline_parameters_info(pipeline_model, pipeline_run_parameters):
-        click.echo('"{}@{}" pipeline arguments:'.format(pipeline_model.name, pipeline_run_parameters.version))
+        click.echo('"{}" pipeline arguments:'.format(
+            PipelineRunOperations.build_image_name(pipeline_model.name, pipeline_run_parameters.version)))
         if len(pipeline_run_parameters.parameters) > 0:
             for parameter in pipeline_run_parameters.parameters:
                 if parameter.required:
@@ -312,8 +356,20 @@ class PipelineRunOperations(object):
 
     @classmethod
     def get_pipeline_processed_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['SCHEDULED', 'RUNNING'])
+
+    @classmethod
+    def get_resuming_pipeline_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['PAUSED', 'RESUMING'])
+
+    @classmethod
+    def get_pausing_pipeline_status(cls, identifier):
+        return cls.get_pipeline_status(identifier, hanging_statuses=['RUNNING', 'PAUSING'])
+
+    @classmethod
+    def get_pipeline_status(cls, identifier, hanging_statuses):
         status = cls.pipeline_run_get(identifier).status
-        while status.upper() == 'SCHEDULED' or status.upper() == 'RUNNING':
+        while status.upper() in hanging_statuses:
             sleep(DELAY)
             status = cls.pipeline_run_get(identifier).status
         return status
@@ -359,6 +415,15 @@ class PipelineRunOperations(object):
     def required_args_missing(parent_node, instance_type, instance_disk, cmd_template):
         return parent_node is None and (instance_type is None or instance_disk is None or cmd_template is None)
 
+    @staticmethod
+    def build_image_name(name, version):
+        if not name:
+            return '<unknown>'
+        elif not version:
+            return name
+        else:
+            return '{}@{}'.format(name, version)
+
     @classmethod
     def _build_pretty_url(cls, pretty_url):
         path = str(pretty_url).strip('/')
@@ -370,3 +435,14 @@ class PipelineRunOperations(object):
             return '{"path":"%s"}' % parts[0]
         return '{"domain":"%s","path":"%s"}' % (parts[0], parts[1])
 
+    @classmethod
+    def extract_pipeline_name(cls, pipeline_run_model):
+        pipeline_name = pipeline_run_model.pipeline
+        if not pipeline_name:
+            try:
+                pipeline_model = Pipeline.get(pipeline_run_model.pipeline_id, load_versions=False,
+                                              load_storage_rules=False, load_run_parameters=False)
+                pipeline_name = pipeline_model.name
+            except RuntimeError:
+                pass
+        return pipeline_name

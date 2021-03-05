@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,145 +16,112 @@
 
 package com.epam.pipeline.manager.notification;
 
-import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
-import com.epam.pipeline.dao.notification.NotificationTemplateDao;
-import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
-import com.epam.pipeline.entity.notification.NotificationTemplate;
-import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.manager.AbstractManagerTest;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.pipeline.RunStatusManager;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.epam.pipeline.test.aspect.AbstractAspectTest;
+import com.epam.pipeline.test.creator.notification.NotificationCreatorUtils;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
+import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.Optional;
+import org.junit.Assert;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@DirtiesContext
-@ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
-public class NotificationAspectTest extends AbstractManagerTest {
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+public class NotificationAspectTest extends AbstractAspectTest {
+
+    private final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser(TEST_STRING);
+    private final ExtendedRole extendedRole = UserCreatorUtils.getExtendedRole(pipelineUser);
+
     @Autowired
     private PipelineRunManager pipelineRunManager;
 
     @Autowired
-    private NotificationTemplateDao notificationTemplateDao;
+    private MonitoringNotificationDao mockMonitoringNotificationDao;
 
     @Autowired
-    private MonitoringNotificationDao monitoringNotificationDao;
+    private NotificationSettingsDao mockNotificationSettingsDao;
 
     @Autowired
-    private UserDao userDao;
+    private UserDao mockUserDao;
 
     @Autowired
-    private NotificationSettingsDao notificationSettingsDao;
-
-    @MockBean
-    private PipelineRunDao pipelineRunDao;
-
-    @MockBean
-    private RunStatusManager runStatusManager;
-
-    @MockBean
-    private PipelineManager pipelineManager;
-
-    private NotificationTemplate statusTemplate;
-    private PipelineUser testOwner;
-    private Pipeline pipeline;
-
-    @Before
-    public void setUp() throws Exception {
-        statusTemplate = new NotificationTemplate(5L);
-        statusTemplate.setBody("///");
-        statusTemplate.setSubject("//");
-        statusTemplate.setName("testTemplate");
-        notificationTemplateDao.createNotificationTemplate(statusTemplate);
-
-        NotificationSettings settings = new NotificationSettings();
-        settings.setType(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS);
-        settings.setKeepInformedAdmins(true);
-        settings.setInformedUserIds(Collections.emptyList());
-        settings.setTemplateId(statusTemplate.getId());
-        settings.setThreshold(null);
-        settings.setEnabled(true);
-        settings.setResendDelay(null);
-        settings.setKeepInformedOwner(true);
-        settings.setStatusesToInform(Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
-        notificationSettingsDao.createNotificationSettings(settings);
-
-        testOwner = new PipelineUser("testOwner");
-        userDao.createUser(testOwner, Collections.emptyList());
-
-        pipeline = new Pipeline();
-        pipeline.setName("TestPipeline");
-
-        Mockito.when(pipelineManager.load(Mockito.anyLong())).thenReturn(pipeline);
-    }
+    private RoleDao mockRoleDao;
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyRunStatusChanged() {
-        PipelineRun run = new PipelineRun();
-        run.setStatus(TaskStatus.SUCCESS);
-        run.setOwner(testOwner.getUserName());
-        run.setStartDate(new Date());
+        final NotificationSettings settings = NotificationCreatorUtils
+            .getNotificationSettings(ID, Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
+        final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.SUCCESS);
+        doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
+        doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
+        mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
-        Assert.assertFalse(messages.isEmpty());
-        NotificationMessage message = messages.get(0);
-        Assert.assertEquals(testOwner.getId(), message.getToUserId());
-        Assert.assertEquals(TaskStatus.SUCCESS.name(), message.getTemplateParameters().get("status"));
+        final ArgumentCaptor<NotificationMessage> captor =
+            ArgumentCaptor.forClass(NotificationMessage.class);
+        verify(mockMonitoringNotificationDao).createMonitoringNotification(captor.capture());
 
-        Mockito.verify(pipelineRunDao).updateRunStatus(Mockito.any());
-        Mockito.verify(runStatusManager).saveStatus(Mockito.any());
+        final NotificationMessage capturedMessage = captor.getValue();
+        Assert.assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
+        Assert.assertEquals(TaskStatus.SUCCESS.name(),
+            capturedMessage.getTemplateParameters().get("status"));
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyRunStatusChangedNotActiveIfStatusNotConfiguredForNotification() {
-        PipelineRun run = new PipelineRun();
-        run.setStatus(TaskStatus.PAUSED);
-        run.setOwner(testOwner.getUserName());
-        run.setStartDate(new Date());
+        final NotificationSettings settings = NotificationCreatorUtils
+            .getNotificationSettings(ID, Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
+        final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.PAUSED);
+        doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
+        mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
-        Assert.assertTrue(messages.isEmpty());
+
+        verify(mockMonitoringNotificationDao, never()).createMonitoringNotification(any());
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyRunStatusChangedActiveIfSettingsDoesntHaveStatusesConfigured() {
-        NotificationSettings toUpdate = notificationSettingsDao
-                .loadNotificationSettings(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS.getId());
-        toUpdate.setStatusesToInform(Collections.emptyList());
-        notificationSettingsDao.updateNotificationSettings(toUpdate);
-        PipelineRun run = new PipelineRun();
-        run.setStatus(TaskStatus.PAUSED);
-        run.setOwner(testOwner.getUserName());
-        run.setStartDate(new Date());
+        final NotificationSettings settings = NotificationCreatorUtils
+            .getNotificationSettings(ID, Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
+        final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.PAUSED);
+        doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
+        doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
+        settings.setStatusesToInform(Collections.emptyList());
+        mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
-        Assert.assertFalse(messages.isEmpty());
+
+        final ArgumentCaptor<NotificationMessage> captor =
+            ArgumentCaptor.forClass(NotificationMessage.class);
+        verify(mockMonitoringNotificationDao).createMonitoringNotification(captor.capture());
+
+        final NotificationMessage capturedMessage = captor.getValue();
+        Assert.assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
+    }
+
+    private void mockRole() {
+        doReturn(Optional.of(new Role())).when(mockRoleDao).loadRole(any());
+        doReturn(extendedRole).when(mockRoleDao).loadExtendedRole(any());
     }
 }

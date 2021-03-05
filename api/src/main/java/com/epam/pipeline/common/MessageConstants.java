@@ -202,6 +202,8 @@ public final class MessageConstants {
     public static final String ERROR_KUBE_SERVICE_PORT_UNDEFINED = "error.kube.service.port.undefined";
     public static final String ERROR_NODE_DOWN_TIMEOUT = "error.kube.node.down.timeout";
     public static final String LOG_WAS_TRUNCATED = "log.truncated";
+    public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
+    public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
 
     // Data storage messages
     public static final String ERROR_DATASTORAGE_NOT_FOUND = "error.datastorage.not.found";
@@ -565,6 +567,9 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED = "error.node.pool.instance.type.not.allowed";
     public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";
     public static final String ERROR_NODE_POOL_INVALID_COUNT = "error.node.pool.invalid.count";
+    public static final String ERROR_NODE_POOL_POSITIVE_INT_REQUIRED = "error.node.pool.positive.int.required";
+    public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
+    public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
@@ -578,7 +583,6 @@ public final class MessageConstants {
     public static final String ERROR_PROFILE_ID_NOT_FOUND = "error.profile.id.not.found";
     public static final String ERROR_PROFILE_HAS_LINKS = "error.profile.has.links";
     public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
-    public static final String ERROR_PROFILE_POLICY_NOT_FOUND = "error.profile.policy.not.found";
     public static final String ERROR_PROFILE_NAME_NOT_FOUND = "error.profile.name.not.found";
 
     private MessageConstants() {
