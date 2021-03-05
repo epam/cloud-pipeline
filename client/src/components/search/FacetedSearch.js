@@ -34,7 +34,8 @@ import styles from './FacetedSearch.css';
 @observer
 class FacetedSearch extends React.Component {
   state = {
-    activeFilters: []
+    activeFilters: [],
+    filtersMock: null
   }
 
   @computed
@@ -58,17 +59,64 @@ class FacetedSearch extends React.Component {
     return [];
   }
 
+  setFiltersMock (mock) {
+    const {filtersMock} = this.state;
+    if (!filtersMock && mock.length) {
+      this.setState({filtersMock: mock});
+    }
+  }
+
+  componentDidUpdate () {
+    const {filtersMock} = this.state;
+    if (!filtersMock && this.filters.length) {
+      this.setFiltersMock(this.filters);
+    }
+  }
+
   get filters () {
     // todo: filter `configuredFacetedFilters` dictionaries and their values
     // todo: (based on API response)
+    const {filtersMock} = this.state;
+    const getRandomNumber = (from, to) => {
+      return Math.floor(from + Math.random() * (to + 1 - from));
+    };
+    if (filtersMock) {
+      return filtersMock;
+    }
     return this.configuredFacetedFilters
       .filter(d => true)
       .map(d => ({
         name: d.name,
         values: d.values
           .filter(v => true)
-          .map(v => ({name: v, count: 1}))
+          .map(v => ({name: v, count: getRandomNumber(0, 7)}))
+          .sort((a, b) => a.count - b.count)
       }));
+  }
+
+  getFilterPreferences = (filterName) => {
+    const {systemDictionaries, preferences} = this.props;
+    const {facetedFiltersDictionaries} = preferences;
+    if (systemDictionaries.loaded && facetedFiltersDictionaries) {
+      const [filter] = facetedFiltersDictionaries.dictionaries
+        .filter(dict => dict.dictionary === filterName);
+      if (!filter) {
+        return null;
+      }
+      const preferences = {
+        entriesToDisplay: filter.defaultDictEntriesToDisplay,
+        defaultEntriesToDisplay: facetedFiltersDictionaries.defaultDictEntriesToDisplay
+      };
+      return Object.fromEntries(Object.entries(preferences)
+        .map(([key, value]) => {
+          if (value && typeof value === 'string' && value.toLowerCase() === 'all') {
+            return [key, Infinity];
+          }
+          return [key, Number(value)];
+        })
+      );
+    }
+    return null;
   }
 
   onChangeFilter = (group, name, active) => {
@@ -145,6 +193,8 @@ class FacetedSearch extends React.Component {
                     values={filter.values}
                     activeFilters={activeFilters}
                     changeFilter={this.onChangeFilter}
+                    preferences={this.getFilterPreferences(filter.name)}
+                    test={index === 0}
                   />
                 ))
               }
