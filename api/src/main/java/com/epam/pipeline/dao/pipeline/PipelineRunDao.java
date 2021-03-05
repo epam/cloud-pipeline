@@ -273,9 +273,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             return;
         }
 
-        MapSqlParameterSource[] params = runs.stream()
-            .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
-            .toArray(MapSqlParameterSource[]::new);
+        MapSqlParameterSource[] params = getParamsForBatchUpdate(runs);
 
         getNamedParameterJdbcTemplate().batchUpdate(updateLastNotificationQuery, params);
     }
@@ -372,10 +370,16 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         if (CollectionUtils.isEmpty(runs)) {
             return;
         }
-        final MapSqlParameterSource[] params = runs.stream()
-                .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
-                .toArray(MapSqlParameterSource[]::new);
+        final MapSqlParameterSource[] params = getParamsForBatchUpdate(runs);
         getNamedParameterJdbcTemplate().batchUpdate(updateTagsQuery, params);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateRuns(final Collection<PipelineRun> runs) {
+        if (CollectionUtils.isEmpty(runs)) {
+            return;
+        }
+        getNamedParameterJdbcTemplate().batchUpdate(updateRunQuery, getParamsForBatchUpdate(runs));
     }
 
     public int countFilteredPipelineRuns(PipelineRunFilterVO filter, PipelineRunFilterVO.ProjectFilter projectFilter) {
@@ -679,6 +683,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             run.getRunSids().add(sid);
         });
         return runs;
+    }
+
+    private MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
+        return runs.stream()
+                .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
+                .toArray(MapSqlParameterSource[]::new);
     }
 
     public enum PipelineRunParameters {

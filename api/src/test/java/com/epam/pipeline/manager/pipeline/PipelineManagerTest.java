@@ -39,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -232,9 +233,10 @@ public class PipelineManagerTest {
 
         pipelineManager.update(pipelineVO);
 
-        final ArgumentCaptor<PipelineRun> runCaptor = ArgumentCaptor.forClass(PipelineRun.class);
-        verify(pipelineRunDao).updateRun(runCaptor.capture());
-        assertThat(runCaptor.getValue().getPipelineName(), is(NEW_REPOSITORY_NAME));
+        final ArgumentCaptor<List<PipelineRun>> runsCaptor = ArgumentCaptor.forClass((Class) List.class);
+        verify(pipelineRunDao).updateRuns(runsCaptor.capture());
+        assertThat(runsCaptor.getValue().size(), is(1));
+        assertThat(runsCaptor.getValue().get(0).getPipelineName(), is(NEW_REPOSITORY_NAME));
         verify(pipelineRunDao).loadAllRunsForPipeline(ID);
     }
 

@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @AclSync
@@ -186,8 +187,9 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
         pipelineDao.updatePipeline(dbPipeline);
-        ListUtils.emptyIfNull(pipelineRunDao.loadAllRunsForPipeline(pipelineVO.getId()))
-                .forEach(run -> updatePipelineNameForRun(pipelineVOName, run));
+
+        updatePipelineNameForRuns(pipelineVO, pipelineVOName);
+
         if (projectNameUpdated) {
             gitManager.updateRepositoryName(currentProjectName, newProjectName);
         }
@@ -250,8 +252,7 @@ public class PipelineManager implements SecuredEntityManager {
         runStatusManager.deleteRunStatusForPipeline(id);
         runScheduleManager.deleteSchedulesForRunByPipeline(id);
         pipelineRunDao.deleteRunSidsByPipelineId(id);
-        ListUtils.emptyIfNull(pipelineRunDao.loadAllRunsForPipeline(id))
-                .forEach(this::resetPipelineIdForRun);
+        resetPipelineIdForRuns(id);
         dataStorageRuleDao.deleteRulesByPipeline(id);
         pipelineDao.deletePipeline(id);
         return pipeline;
@@ -393,16 +394,31 @@ public class PipelineManager implements SecuredEntityManager {
         });
     }
 
-    private void updatePipelineNameForRun(final String pipelineName, final PipelineRun run) {
-        if (Objects.equals(run.getPipelineName(), pipelineName)) {
-            return;
-        }
-        run.setPipelineName(pipelineName);
-        pipelineRunDao.updateRun(run);
+    private void updatePipelineNameForRuns(final PipelineVO pipelineVO, final String pipelineVOName) {
+        final List<PipelineRun> runsToUpdate = ListUtils.emptyIfNull(
+                pipelineRunDao.loadAllRunsForPipeline(pipelineVO.getId())).stream()
+                .map(run -> updatePipelineNameForRun(pipelineVOName, run))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        pipelineRunDao.updateRuns(runsToUpdate);
     }
 
-    private void resetPipelineIdForRun(final PipelineRun run) {
+    private PipelineRun updatePipelineNameForRun(final String pipelineName, final PipelineRun run) {
+        if (Objects.equals(run.getPipelineName(), pipelineName)) {
+            return null;
+        }
+        run.setPipelineName(pipelineName);
+        return run;
+    }
+
+    private void resetPipelineIdForRuns(final Long id) {
+        pipelineRunDao.updateRuns(ListUtils.emptyIfNull(pipelineRunDao.loadAllRunsForPipeline(id)).stream()
+                .map(this::resetPipelineIdForRun)
+                .collect(Collectors.toSet()));
+    }
+
+    private PipelineRun resetPipelineIdForRun(final PipelineRun run) {
         run.setPipelineId(null);
-        pipelineRunDao.updateRun(run);
+        return run;
     }
 }
