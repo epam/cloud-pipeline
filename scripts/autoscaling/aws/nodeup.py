@@ -47,6 +47,7 @@ NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 BOTO3_RETRY_COUNT = 6
 MIN_SWAP_DEVICE_SIZE = 5
+LOCAL_NVME_INSTANCE_TYPES = [ 'c5d.' , 'm5d.', 'r5d.' ]
 
 current_run_id = 0
 api_url = None
@@ -383,7 +384,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             KeyName=ins_key,
             InstanceType=ins_type,
             UserData=user_data_script,
-            BlockDeviceMappings=get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
+            BlockDeviceMappings=get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_size),
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
@@ -431,8 +432,19 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     return ins_id, ins_ip
 
 
-def get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size):
-    block_devices = [root_device(ec2, ins_img, kms_encyr_key_id), block_device(ins_hdd, kms_encyr_key_id)]
+def get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_size):
+    # Add root device
+    block_devices = [root_device(ec2, ins_img, kms_encyr_key_id)]
+
+    # Check if this is one of 'x5d' instance types (e.g. c5d), which support super fast local SSD
+    # For these instance - we don't create "general" EBS-SSDs
+    local_nvme_family = next(iter([ x for x in LOCAL_NVME_INSTANCE_TYPES if ins_type.startswith(x) ]), None)
+    if local_nvme_family:
+        pipe_log('Instance type family supports local NVME ({}). Will NOT create EBS volume'.format(ins_type))
+    else:
+        block_devices.append(block_device(ins_hdd, kms_encyr_key_id))
+
+    # Add SWAP, if requested
     if swap_size is not None and swap_size > 0:
         block_devices.append(block_device(swap_size, kms_encyr_key_id, name="/dev/sdc"))
     return block_devices
@@ -906,7 +918,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
             'InstanceType': ins_type,
             'KeyName': ins_key,
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
-            'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
+            'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_size),
         }
     if allowed_networks and cheapest_zone in allowed_networks:
         subnet_id = allowed_networks[cheapest_zone]
