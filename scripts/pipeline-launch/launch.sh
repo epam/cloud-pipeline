@@ -712,7 +712,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
-check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/2.7/get-pip.py | $CP_PYTHON2_PATH; };
+check_python_module_installed "pip --version" || { curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | $CP_PYTHON2_PATH; };
 
 # Check jq is installed
 if ! jq --version > /dev/null 2>&1; then

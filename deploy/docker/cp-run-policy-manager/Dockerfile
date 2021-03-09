@@ -16,7 +16,7 @@ FROM centos:7
 
 RUN yum install -y curl python3
 
-RUN  curl -s https://bootstrap.pypa.io/2.7/get-pip.py | python3 - && \
+RUN  curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python3 - && \
      pip3 install -I kubernetes==12.0.1
 
 RUN mkdir /policy-manager
