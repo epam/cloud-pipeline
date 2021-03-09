@@ -32,21 +32,20 @@ import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
-import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import org.apache.commons.collections.CollectionUtils;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -55,6 +54,7 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE2;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.REGISTRY1;
@@ -66,21 +66,10 @@ import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPi
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -92,14 +81,11 @@ public class PipelineRunManagerUnitTest {
     private static final long NOT_EXISTING_RUN_ID = -1L;
     private static final String NODE_NAME = "node_name";
     private static final Long SIZE = 10L;
-
     private static final Long ID_4 = 4L;
     private static final String OWNER = "USER";
-
     private static final String PARAM_NAME_1 = "param-1";
     private static final String ENV_VAR_NAME = "TEST_ENV";
     private static final String ENV_VAR_VALUE = "value";
-
 
     @Mock
     private NodesManager nodesManager;
