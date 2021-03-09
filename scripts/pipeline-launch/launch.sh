@@ -1806,5 +1806,9 @@ else
     rm -Rf $RUN_DIR
 fi
 
+if check_installed "umount"; then
+  umount cifs,fuse,nfs,nfs4,lustre -lfa
+fi
+
 exit "$CP_EXEC_RESULT"
 ######################################################
