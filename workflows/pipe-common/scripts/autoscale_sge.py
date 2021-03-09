@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -920,6 +920,10 @@ class GridEngineAutoscaler:
         self.clock = clock
 
         self.latest_running_job = None
+        self.startup_time = None
+
+    def update_startup_time(self):
+        self.startup_time = self.clock.now()
 
     def scale(self):
         now = self.clock.now()
@@ -968,8 +972,9 @@ class GridEngineAutoscaler:
                     Logger.info('Latest job started less than %s seconds. '
                                 'Scaling down is not required.' % self.scale_down_timeout.seconds)
             else:
-                Logger.info('There are no previously running jobs. Scaling down is required.')
-                self._scale_down(running_jobs, additional_hosts)
+                if not self.startup_time or now >= self.startup_time + self.scale_down_timeout:
+                    Logger.info('There are no previously running jobs. Scaling down is required.')
+                    self._scale_down(running_jobs, additional_hosts)
         Logger.info('Finish scaling step at %s.' % self.clock.now())
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
@@ -1255,6 +1260,7 @@ class GridEngineAutoscalingDaemon:
     def start(self):
         while True:
             try:
+                self.autoscaler.update_startup_time()
                 time.sleep(self.timeout)
                 self.worker_validator.validate_hosts()
                 self.autoscaler.scale()
@@ -1415,6 +1421,9 @@ if __name__ == '__main__':
                                          storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
+    run_custom_scale_down_timeout = os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', None)
+    if run_custom_scale_down_timeout:
+        scale_down_timeout = int(run_custom_scale_down_timeout)
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
                                                            default_value=900))
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
