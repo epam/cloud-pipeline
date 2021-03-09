@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1400,27 +1400,37 @@ echo "$_CP_ENV_ULIMIT" >> /etc/profile
 # umask may be present in the existing file, so we are replacing it the updated value
 sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" /etc/profile
 
-if [ -f /etc/bash.bashrc ]; then
-      _GLOBAL_BASHRC_PATH="/etc/bash.bashrc"
-elif [ -f /etc/bashrc ]; then
-      _GLOBAL_BASHRC_PATH="/etc/bashrc"
-else
-      _GLOBAL_BASHRC_PATH="/etc/bash.bashrc"
-      touch $_GLOBAL_BASHRC_PATH
-      ln -s $_GLOBAL_BASHRC_PATH /etc/bashrc
+_GLOBAL_BASHRC_PATHS=()
+
+if [ -f "/etc/bash.bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bash.bashrc")
 fi
 
-sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_UMASK" $_GLOBAL_BASHRC_PATH
+if [ -f "/etc/bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bashrc")
+fi
 
-sed -i "\|ulimit|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_ULIMIT" $_GLOBAL_BASHRC_PATH
+if [ ! -f "/etc/bash.bashrc" ] && [ ! -f "/etc/bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bash.bashrc")
+    touch "/etc/bash.bashrc"
+    echo >> "/etc/bash.bashrc"
+    ln -s "/etc/bash.bashrc" "/etc/bashrc"
+fi
 
-sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" $_GLOBAL_BASHRC_PATH
-
-sed -i "\|$_CP_ENV_SUDO_ALIAS|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_SUDO_ALIAS" $_GLOBAL_BASHRC_PATH
+for _GLOBAL_BASHRC_PATH in "${_GLOBAL_BASHRC_PATHS[@]}"
+do
+    sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_UMASK" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|ulimit|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_ULIMIT" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|$_CP_ENV_SUDO_ALIAS|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_SUDO_ALIAS" "$_GLOBAL_BASHRC_PATH"
+done
 
 echo "Finished setting environment variables to /etc/profile"
 
