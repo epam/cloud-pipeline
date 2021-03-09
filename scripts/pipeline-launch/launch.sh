@@ -1809,6 +1809,7 @@ fi
 if check_installed "umount"; then
   echo "Unmounting all storage mounts"
   umount cifs,fuse,nfs,nfs4,lustre -lfa
+  echo "Finished unmounting  process"
 fi
 
 exit "$CP_EXEC_RESULT"
