@@ -33,6 +33,7 @@ RUN yum install -y wget \
 RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install requests==2.21.0 \
                 ipaddress==1.0.22 \
+                rsa==4.0 \
                 pykube==0.15.0 \
                 psycopg2==2.7.7 \
                 sqlalchemy==1.3.2 \
