@@ -1807,6 +1807,7 @@ else
 fi
 
 if check_installed "umount"; then
+  echo "Unmounting all storage mounts"
   umount cifs,fuse,nfs,nfs4,lustre -lfa
 fi
 
