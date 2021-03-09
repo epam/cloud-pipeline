@@ -20,4 +20,4 @@ RUN yum install -y wget \
                    curl \
                    python \
                    git && \
-    curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
