@@ -35,7 +35,6 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
-import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -44,7 +43,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +63,9 @@ import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -111,6 +112,10 @@ public class PipelineRunManagerUnitTest {
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
+
+    private final Map<String, String> envVars = singletonMap(ENV_VAR_NAME, ENV_VAR_VALUE);
+    private final List<PipelineRunParameter> parameters = singletonList(
+            new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
 
     @Before
     public void setUp() throws Exception {
@@ -186,7 +191,7 @@ public class PipelineRunManagerUnitTest {
                 .when(runCRUDService).loadRunsByIds(runIds);
         doReturn(Arrays.asList(tool(ID, REGISTRY1, IMAGE1), tool(ID_2, REGISTRY1, IMAGE2))).when(toolManager)
                 .loadAllByRegistryAndImageIn(eq(ID), any());
-        doReturn(Collections.singletonList(tool(ID, REGISTRY2, IMAGE1))).when(toolManager)
+        doReturn(singletonList(tool(ID, REGISTRY2, IMAGE1))).when(toolManager)
                 .loadAllByRegistryAndImageIn(eq(ID_2), any());
 
         final List<PipelineRunWithTool> result = pipelineRunManager.loadRunsWithTools(runIds);
@@ -227,7 +232,7 @@ public class PipelineRunManagerUnitTest {
         when(folderApiService.load(project.getId())).thenReturn(project);
 
         final PagingRunFilterVO filterVO = new PagingRunFilterVO();
-        filterVO.setProjectIds(Collections.singletonList(project.getId()));
+        filterVO.setProjectIds(singletonList(project.getId()));
 
         final PipelineRunFilterVO.ProjectFilter projectFilter = pipelineRunManager.resolveProjectFiltering(filterVO);
         assertEquals(2, projectFilter.getPipelineIds().size());
@@ -238,91 +243,63 @@ public class PipelineRunManagerUnitTest {
     public void shouldThrowExceptionOnInexistentRunTagUpdate() {
         doReturn(null).when(pipelineRunDao).loadPipelineRun(eq(NOT_EXISTING_RUN_ID));
 
-        final Runnable result = () -> pipelineRunManager.updateTags(NOT_EXISTING_RUN_ID, new TagsVO(null));
-        assertThrows(IllegalArgumentException.class, result);
+        assertThrows(IllegalArgumentException.class, () -> pipelineRunManager
+                .updateTags(NOT_EXISTING_RUN_ID, new TagsVO(null)));
     }
 
     @Test
     public void shouldReplaceEnvVarsWithEmptyCollections() {
-        final List<PipelineRunParameter> actualParameters =
-                pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), new HashMap<>());
-        assertTrue(CollectionUtils.isEmpty(actualParameters));
+        assertTrue(isEmpty(assertEnvVarsReplacement(new ArrayList<>(), new HashMap<>())));
     }
 
     @Test
     public void shouldReplaceEnvVarsWithEmptyEnvVars() {
-        final List<PipelineRunParameter> parameters = new ArrayList<>();
-        parameters.add(new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
-
-        final List<PipelineRunParameter> actualParameters =
-                pipelineRunManager.replaceParametersWithEnvVars(parameters, new HashMap<>());
-        assertEquals(parameters, actualParameters);
+        assertEquals(parameters, assertEnvVarsReplacement(parameters, new HashMap<>()));
     }
 
     @Test
     public void shouldReplaceEnvVarsWithEmptyParams() {
-        final Map<String, String> envVars = new HashMap<>();
-        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
-
-        final List<PipelineRunParameter> actualParameters =
-                pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), envVars);
-        assertTrue(CollectionUtils.isEmpty(actualParameters));
+        assertTrue(isEmpty(assertEnvVarsReplacement(new ArrayList<>(), envVars)));
     }
 
     @Test
     public void shouldNotReplaceEnvVarsIfNoNeeded() {
-        final List<PipelineRunParameter> parameters = new ArrayList<>();
-        parameters.add(new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
-        final Map<String, String> envVars = new HashMap<>();
-        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
-
-        final List<PipelineRunParameter> actualParameters
-                = pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        assertEquals(TEST_STRING, actualParameters.get(0).getValue());
+        assertEquals(TEST_STRING, assertEnvVarsReplacement(parameters, envVars).get(0).getValue());
     }
 
     @Test
     public void shouldReplaceEnvVarsWithTestEnv() {
-        testEnvVarsReplacement("test/${%s}", "test/%s");
+        assertEnvVarsReplacement("test/${%s}", "test/%s");
     }
 
     @Test
     public void shouldReplaceEnvVarsWithTestEnvAtTheEndOfTheLine() {
-        testEnvVarsReplacement("test/$%s", "test/%s");
+        assertEnvVarsReplacement("test/$%s", "test/%s");
     }
 
     @Test
     public void shouldReplaceEnvVarsWithTestEnvAtTheMiddleOfTheLine() {
-        testEnvVarsReplacement("test/$%s/", "test/%s/");
+        assertEnvVarsReplacement("test/$%s/", "test/%s/");
     }
 
     @Test
     public void shouldReplaceEnvVarsWithTestEnvWithSeveralVariables() {
-        final Map<String, String> envVars = new HashMap<>();
-        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
-
-        final String paramValue = String.format("test/$%s/${%s}/$%s/", ENV_VAR_NAME, ENV_VAR_NAME, ENV_VAR_NAME);
-        final String expectedValue = String.format("test/%s/%s/%s/", ENV_VAR_VALUE, ENV_VAR_VALUE, ENV_VAR_VALUE);
-        final List<PipelineRunParameter> actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-                Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
+        assertEnvVarsReplacement("test/$%1$s/${%1$s}/$%1$s/", "test/%1$s/%1$s/%1$s/");
     }
 
-    private void testEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {
-        final Map<String, String> envVars = new HashMap<>();
-        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
-
+    private void assertEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {
         final String paramValue = String.format(paramValuePattern, ENV_VAR_NAME);
         final String expectedValue = String.format(expectedValuePattern, ENV_VAR_VALUE);
         final List<PipelineRunParameter> actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-                Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-    }
+                singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
 
-    private void checkResolvedValue(List<PipelineRunParameter> actualParameters, String paramValue,
-                                    String expectedValue) {
         assertEquals(expectedValue, actualParameters.get(0).getResolvedValue());
         assertEquals(paramValue, actualParameters.get(0).getValue());
+    }
+
+    private List<PipelineRunParameter> assertEnvVarsReplacement(final List<PipelineRunParameter> initialParameters,
+                                          final Map<String, String> envVars) {
+        return pipelineRunManager.replaceParametersWithEnvVars(initialParameters, envVars);
     }
 
     private void assertAttachFails(final DiskAttachRequest request) {
