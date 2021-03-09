@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 
 public class RunApiServiceTest extends AbstractAclTest {
 
@@ -171,6 +172,16 @@ public class RunApiServiceTest extends AbstractAclTest {
         initAclEntity(pipeline);
 
         assertThat(runApiService.loadPipelineRun(ID)).isEqualTo(pipelineRun);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldFailLoadPipelineRunWithoutPipelineForNotOwner() {
+        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID));
+        verify(mockRunManager).loadRunParent(pipelineRun);
     }
 
     @Test

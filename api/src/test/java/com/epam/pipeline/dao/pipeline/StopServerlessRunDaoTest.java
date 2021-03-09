@@ -75,8 +75,6 @@ public class StopServerlessRunDaoTest extends AbstractJdbcTest {
         stopServerlessRunDao.deleteByRunId(pipelineRun.getId());
 
         assertEquals(stopServerlessRunDao.loadAll().size(), 0);
-
-        pipelineRunDao.deleteRunsByPipeline(1L);
     }
 
     @Test

@@ -123,6 +123,8 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     private static final String DOCKER_IMAGE = "dockerImage";
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
+    private static final String TEST_PIPELINE_NAME = "Test";
+    private static final String TEST_NEW_PIPELINE_NAME = "AnotherName";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -156,7 +158,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     @Before
     public void setup() {
         testPipeline = new Pipeline();
-        testPipeline.setName("Test");
+        testPipeline.setName(TEST_PIPELINE_NAME);
         testPipeline.setRepository(TEST_REPO);
         testPipeline.setRepositorySsh(TEST_REPO_SSH);
         testPipeline.setOwner(TEST_USER);
@@ -869,6 +871,37 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void shouldCreatePipelineRunWithPipelineName() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId(), null);
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertThat(loadedRun.getPipelineName(), is(TEST_PIPELINE_NAME));
+    }
+
+    @Test
+    public void shouldBatchUpdateRuns() {
+        final PipelineRun run1 = buildPipelineRun(testPipeline.getId(), null);
+        final PipelineRun run2 = buildPipelineRun(testPipeline.getId(), null);
+        pipelineRunDao.createPipelineRun(run1);
+        pipelineRunDao.createPipelineRun(run2);
+
+        run1.setPipelineName(TEST_NEW_PIPELINE_NAME);
+        run1.setPipelineId(null);
+        run2.setPipelineName(TEST_NEW_PIPELINE_NAME);
+        run2.setPipelineId(null);
+        pipelineRunDao.updateRuns(Arrays.asList(run1, run2));
+
+        final List<PipelineRun> result = pipelineRunDao.loadRunByIdIn(Arrays.asList(run1.getId(), run2.getId()));
+        assertThat(result.size(), is(2));
+        assertThat(result, hasItems(run1, run2));
+        result.forEach(run -> {
+            assertThat(run.getPipelineName(), is(TEST_NEW_PIPELINE_NAME));
+            assertNull(run.getPipelineId());
+        });
+    }
+
+    @Test
     public void shouldLoadAndUpdateKubeServiceFlag() {
         final PipelineRun run = buildPipelineRun(testPipeline.getId(), null);
         pipelineRunDao.createPipelineRun(run);
@@ -880,6 +913,23 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         pipelineRunDao.updateRun(run);
         final PipelineRun updatedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertTrue(updatedRun.isKubeServiceEnabled());
+    }
+
+    @Test
+    public void shouldNotDeleteRunIfPipelineDeleted() {
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run = buildPipelineRun(pipeline.getId(), TEST_SERVICE_URL);
+        run.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run);
+        pipelineDao.deletePipeline(pipeline.getId());
+
+        run.setPipelineId(null);
+        pipelineRunDao.updateRun(run);
+
+        final PipelineRun result = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(result);
+        assertThat(result.getPipelineName(), is(TEST_PIPELINE_NAME));
+        assertNull(result.getPipelineId());
     }
 
     private PipelineRun createTestPipelineRun() {
@@ -905,6 +955,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
                                          final Date start, final Date end) {
         PipelineRun run = new PipelineRun();
         run.setPipelineId(pipelineId);
+        run.setPipelineName(TEST_PIPELINE_NAME);
         run.setVersion("abcdefg");
         run.setStartDate(start);
         run.setEndDate(end);
@@ -1014,7 +1065,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
 
     private Pipeline getPipeline() {
         Pipeline testPipeline2 = new Pipeline();
-        testPipeline2.setName("Test");
+        testPipeline2.setName(TEST_PIPELINE_NAME);
         testPipeline2.setRepository(TEST_REPO);
         testPipeline2.setRepositorySsh(TEST_REPO_SSH);
         testPipeline2.setOwner(TEST_USER);
