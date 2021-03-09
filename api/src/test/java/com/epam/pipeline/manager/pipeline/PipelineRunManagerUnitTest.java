@@ -16,25 +16,36 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.PagingRunFilterVO;
+import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -43,6 +54,7 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE2;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.REGISTRY1;
@@ -54,7 +66,9 @@ import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPi
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -63,13 +77,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PipelineRunManagerUnitTest {
-
     private static final Long RUN_ID = 1L;
     private static final long NOT_EXISTING_RUN_ID = -1L;
     private static final String NODE_NAME = "node_name";
     private static final Long SIZE = 10L;
     private static final Long ID_4 = 4L;
     private static final String OWNER = "USER";
+    private static final String PARAM_NAME_1 = "param-1";
+    private static final String ENV_VAR_NAME = "TEST_ENV";
+    private static final String ENV_VAR_VALUE = "value";
 
     @Mock
     private NodesManager nodesManager;
@@ -89,6 +105,9 @@ public class PipelineRunManagerUnitTest {
 
     @Mock
     private ToolManager toolManager;
+
+    @Mock
+    private FolderApiService folderApiService;
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
@@ -178,6 +197,132 @@ public class PipelineRunManagerUnitTest {
         verifyRunWithTool(resultByRunId.get(ID_2), REGISTRY2, IMAGE1);
         verifyRunWithTool(resultByRunId.get(ID_3), REGISTRY1, IMAGE2);
         verifyRunWithTool(resultByRunId.get(ID_4), REGISTRY1, IMAGE2);
+    }
+
+    @Test
+    public void testResolveProjectFiltering() {
+        final Folder project = new Folder();
+        project.setId(1L);
+
+        final Folder child = new Folder();
+        project.setId(2L);
+        project.getChildFolders().add(child);
+
+        final Pipeline pipeline1 = new Pipeline();
+        pipeline1.setId(2L);
+        project.getPipelines().add(pipeline1);
+
+        final Pipeline pipeline2 = new Pipeline();
+        pipeline2.setId(3L);
+        child.getPipelines().add(pipeline2);
+
+        final RunConfiguration configuration1 = new RunConfiguration();
+        configuration1.setId(4L);
+        project.getConfigurations().add(configuration1);
+
+        final RunConfiguration configuration2 = new RunConfiguration();
+        configuration2.setId(5L);
+        child.getConfigurations().add(configuration2);
+
+        when(folderApiService.load(project.getId())).thenReturn(project);
+
+        final PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setProjectIds(Collections.singletonList(project.getId()));
+
+        final PipelineRunFilterVO.ProjectFilter projectFilter = pipelineRunManager.resolveProjectFiltering(filterVO);
+        assertEquals(2, projectFilter.getPipelineIds().size());
+        assertEquals(2, projectFilter.getConfigurationIds().size());
+    }
+
+    @Test
+    public void shouldThrowExceptionOnInexistentRunTagUpdate() {
+        doReturn(null).when(pipelineRunDao).loadPipelineRun(eq(NOT_EXISTING_RUN_ID));
+
+        final Runnable result = () -> pipelineRunManager.updateTags(NOT_EXISTING_RUN_ID, new TagsVO(null));
+        assertThrows(IllegalArgumentException.class, result);
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyCollections() {
+        final List<PipelineRunParameter> actualParameters =
+                pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), new HashMap<>());
+        assertTrue(CollectionUtils.isEmpty(actualParameters));
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyEnvVars() {
+        final List<PipelineRunParameter> parameters = new ArrayList<>();
+        parameters.add(new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
+
+        final List<PipelineRunParameter> actualParameters =
+                pipelineRunManager.replaceParametersWithEnvVars(parameters, new HashMap<>());
+        assertEquals(parameters, actualParameters);
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyParams() {
+        final Map<String, String> envVars = new HashMap<>();
+        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
+
+        final List<PipelineRunParameter> actualParameters =
+                pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), envVars);
+        assertTrue(CollectionUtils.isEmpty(actualParameters));
+    }
+
+    @Test
+    public void shouldNotReplaceEnvVarsIfNoNeeded() {
+        final List<PipelineRunParameter> parameters = new ArrayList<>();
+        parameters.add(new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
+        final Map<String, String> envVars = new HashMap<>();
+        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
+
+        final List<PipelineRunParameter> actualParameters
+                = pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
+        assertEquals(TEST_STRING, actualParameters.get(0).getValue());
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnv() {
+        testEnvVarsReplacement("test/${%s}", "test/%s");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvAtTheEndOfTheLine() {
+        testEnvVarsReplacement("test/$%s", "test/%s");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvAtTheMiddleOfTheLine() {
+        testEnvVarsReplacement("test/$%s/", "test/%s/");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvWithSeveralVariables() {
+        final Map<String, String> envVars = new HashMap<>();
+        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
+
+        final String paramValue = String.format("test/$%s/${%s}/$%s/", ENV_VAR_NAME, ENV_VAR_NAME, ENV_VAR_NAME);
+        final String expectedValue = String.format("test/%s/%s/%s/", ENV_VAR_VALUE, ENV_VAR_VALUE, ENV_VAR_VALUE);
+        final List<PipelineRunParameter> actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
+                Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
+        checkResolvedValue(actualParameters, paramValue, expectedValue);
+    }
+
+    private void testEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {
+        final Map<String, String> envVars = new HashMap<>();
+        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
+
+        final String paramValue = String.format(paramValuePattern, ENV_VAR_NAME);
+        final String expectedValue = String.format(expectedValuePattern, ENV_VAR_VALUE);
+        final List<PipelineRunParameter> actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
+                Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
+        checkResolvedValue(actualParameters, paramValue, expectedValue);
+    }
+
+    private void checkResolvedValue(List<PipelineRunParameter> actualParameters, String paramValue,
+                                    String expectedValue) {
+        assertEquals(expectedValue, actualParameters.get(0).getResolvedValue());
+        assertEquals(paramValue, actualParameters.get(0).getValue());
     }
 
     private void assertAttachFails(final DiskAttachRequest request) {

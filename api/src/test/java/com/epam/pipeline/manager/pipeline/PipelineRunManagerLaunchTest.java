@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
@@ -25,10 +26,13 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -36,31 +40,44 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.util.TestUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
 import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getPipelineConfiguration;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRunWithInstance;
 import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getDefaultAwsRegion;
 import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getNonDefaultAwsRegion;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mapstruct.ap.internal.util.Collections.newArrayList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -86,6 +103,9 @@ public class PipelineRunManagerLaunchTest {
     private static final String DEFAULT_COMMAND = "sleep";
     private static final String TEST_USER = "user";
     private static final String IMAGE = "testImage";
+    private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
+    private static final int HOURS_12 = 12;
+    private static final int HOURS_18 = 18;
 
     @InjectMocks
     private final PipelineRunManager pipelineRunManager = new PipelineRunManager();
@@ -118,6 +138,9 @@ public class PipelineRunManagerLaunchTest {
     private CloudRegionManager cloudRegionManager;
 
     @Mock
+    private ToolVersionManager toolVersionManager;
+
+    @Mock
     private CheckPermissionHelper permissionHelper;
 
     @Mock
@@ -126,10 +149,13 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private PreferenceManager preferenceManager;
 
+    @Mock
+    private RunStatusManager runStatusManager;
+
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
-    private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(REGION_ID);
-    private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(NON_ALLOWED_REGION_ID);
-    private final AwsRegion notDefaultAwsRegion = getNonDefaultAwsRegion(NON_DEFAULT_REGION_ID);
+    private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
+    private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
+    private final AwsRegion notDefaultAwsRegion = getNonDefaultAwsRegion(ID_3);
     private final PipelineConfiguration configuration = getPipelineConfiguration(
             IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId());
     private final PipelineConfiguration configurationWithoutRegion = getPipelineConfiguration(IMAGE, INSTANCE_DISK);
@@ -175,12 +201,19 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
+    public void launchPipelineShouldValidateToolInstanceTypeAndPriceType() {
+        launchTool(configuration, INSTANCE_TYPE);
+
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getResource()), eq(false));
+    }
+
+    @Test
     public void launchPipelineShouldFailOnNotAllowedToolInstanceType() {
         doReturn(false).when(instanceOfferManager)
                 .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(REGION_ID), eq(true));
 
         assertThrows(() -> launchTool(configuration, INSTANCE_TYPE));
-
         verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(REGION_ID), eq(true));
     }
 
@@ -197,7 +230,6 @@ public class PipelineRunManagerLaunchTest {
         configuration.setCloudRegionId(NON_ALLOWED_REGION_ID);
 
         assertThrows(() -> launchTool(configuration, INSTANCE_TYPE));
-
         verify(instanceOfferManager)
                 .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(NON_ALLOWED_REGION_ID), eq(true));
     }
@@ -214,7 +246,6 @@ public class PipelineRunManagerLaunchTest {
         configuration.setCloudRegionId(NON_ALLOWED_REGION_ID);
 
         assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
-
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(NON_ALLOWED_REGION_ID), eq(true));
     }
 
@@ -223,7 +254,6 @@ public class PipelineRunManagerLaunchTest {
         doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
 
         assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
-
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
     }
 
@@ -239,7 +269,6 @@ public class PipelineRunManagerLaunchTest {
         configuration.setIsSpot(null);
 
         launchPipeline(configuration, INSTANCE_TYPE);
-
         verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(null), eq(false));
     }
 
@@ -248,7 +277,6 @@ public class PipelineRunManagerLaunchTest {
         doReturn(false).when(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
 
         assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
-
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
     }
 
@@ -328,6 +356,28 @@ public class PipelineRunManagerLaunchTest {
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
     }
 
+    @Test
+    public void shouldLoadRunsActivityStats() {
+        final PipelineRun pipelineRun = getPipelineRun(ID, TEST_USER);
+        final PipelineRun pipelineRun2 = getPipelineRun(ID_2, TEST_USER);
+        doReturn(pipelineRun).when(pipelineRunDao).loadPipelineRun(anyLong());
+        doReturn(newArrayList(pipelineRun, pipelineRun2)).when(pipelineRunDao)
+                .loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD.plusHours(HOURS_18)));
+        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class));
+
+        launchPipelineRun(TEST_PERIOD, TEST_PERIOD.plusHours(HOURS_12));
+        launchPipelineRun(TEST_PERIOD.plusHours(HOURS_18), null);
+
+        final Map<Long, PipelineRun> stats =
+                pipelineRunManager.loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD.plusHours(HOURS_18)).stream()
+                        .collect(Collectors.toMap(BaseEntity::getId,
+                                Function.identity()));
+
+        assertEquals(2, stats.size());
+        assertEquals(2, stats.get(ID).getRunStatuses().size());
+        assertEquals(1, stats.get(ID_2).getRunStatuses().size());
+    }
+
     private void mock(final InstancePrice price) {
         doReturn(price).when(instanceOfferManager)
                 .getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong());
@@ -368,6 +418,36 @@ public class PipelineRunManagerLaunchTest {
         doReturn(tool).when(toolManager).resolveSymlinks(eq(IMAGE));
     }
 
+    private void launchPipelineRun(final LocalDateTime startDate, final LocalDateTime stopDate) {
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE);
+        pipelineRun.setStartDate(TestUtils.convertLocalDateTimeToDate(startDate));
+        saveStatusForRun(pipelineRun.getId(), TaskStatus.RUNNING, startDate);
+        if (stopDate != null) {
+            pipelineRun.setStatus(TaskStatus.STOPPED);
+            pipelineRun.setEndDate(TestUtils.convertLocalDateTimeToDate(stopDate));
+            saveStatusForRun(pipelineRun.getId(), TaskStatus.STOPPED, stopDate);
+        } else {
+            pipelineRun.setEndDate(null);
+        }
+        pipelineRunManager.updateRunInfo(pipelineRun);
+    }
+
+    private Map<Long, List<RunStatus>> getStatusMap() {
+        final RunStatus status1 = new RunStatus(ID, TaskStatus.RUNNING, null, TEST_PERIOD);
+        final RunStatus status2 = new RunStatus(ID, TaskStatus.STOPPED, null, TEST_PERIOD.plusHours(HOURS_18));
+        final List<RunStatus> list1 = newArrayList(status1, status2);
+        final RunStatus status3 = new RunStatus(ID_2, TaskStatus.RUNNING, null, TEST_PERIOD.plusHours(HOURS_18));
+        final List<RunStatus> list2 = newArrayList(status3);
+        final Map<Long, List<RunStatus>> map = new HashMap<>();
+        map.put(ID, list1);
+        map.put(ID_2, list2);
+        return map;
+    }
+
+    private void saveStatusForRun(final Long runId, final TaskStatus status, final LocalDateTime timePoint) {
+        runStatusManager.saveStatus(new RunStatus(runId, status, null, timePoint));
+    }
+
     private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
         launchPipeline(configuration, null, instanceType, null);
     }
@@ -384,5 +464,9 @@ public class PipelineRunManagerLaunchTest {
                                        final String instanceType, final Long parentRunId) {
         return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null,
                 null, null, parentRunId, null, null, null);
+    }
+
+    private ContextualPreferenceExternalResource getResource() {
+        return new ContextualPreferenceExternalResource(TOOL, tool.getId().toString());
     }
 }
