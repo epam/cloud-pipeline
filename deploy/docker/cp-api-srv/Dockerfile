@@ -58,7 +58,7 @@ RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
     tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
     rm -f osslsigncode.tgz
 
-RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python && \
+RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
     pip install -I  requests==2.21.0 \
                     ipaddress==1.0.22 \
                     pykube==0.15.0 \

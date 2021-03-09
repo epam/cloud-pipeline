@@ -77,7 +77,7 @@ install_pip() {
     pip --version
     if [[ "$?" -ne 0 ]]; then
         echo "Installing pip"
-        curl "https://bootstrap.pypa.io/2.7/get-pip.py" -o "get-pip.py"
+        curl "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py" -o "get-pip.py"
         python get-pip.py
     fi
 }

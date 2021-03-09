@@ -29,7 +29,7 @@ if ! kubectl version &> /dev/null || ! kubectl get po 2>/dev/null | grep -q cp-a
 fi
 
 # Install awscli if not available
-curl -s https://bootstrap.pypa.io/2.7/get-pip.py | python - && \
+curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install awscli
 
 # Grab required files from the S3
