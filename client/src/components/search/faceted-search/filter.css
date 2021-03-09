@@ -16,30 +16,32 @@
 
 .filter {
   margin: 2px 0;
+  padding: 0;
   background-color: #fafafa;
   border: 1px solid #ddd;
   border-radius: 5px;
-  padding: 4px;
   font-size: larger;
   display: flex;
   flex-direction: column;
 }
 
 .filter .header {
-  margin-bottom: 5px;
   border: 1px dashed transparent;
-  border-bottom: 1px dashed #dfdfdf;
+  padding: 2px 5px;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   justify-content: flex-start;
   cursor: pointer;
-  transition: border 0.3s ease;
+  transition: background 0.2s ease;
+}
+
+.filter .header.expanded {
+  border-bottom: 1px dashed #dfdfdf;
 }
 
 .filter .header:hover {
-  border: 1px dashed #91d5ff;
-  border-radius: 5px;
+  background: #e6f7ff;
 }
 
 .header .header-caret {
@@ -50,7 +52,6 @@
 }
 
 .header .header-caret.expanded {
-  color: #f5222d;
   transform: rotate(90deg);
 }
 
@@ -62,6 +63,7 @@
 .filter .options-container {
   display: flex;
   flex-direction: column;
+  padding: 0px 5px;
 }
 
 .filter .option {

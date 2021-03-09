@@ -15,44 +15,19 @@
  */
 
 import React from 'react';
-import classNames from 'classnames';
-import MENU_VIEW from '../enums/menu-view';
 import styles from './controls.css';
 
-function FilterControl ({menuView, onExpand, onCollapse, visible}) {
-  const handleExpand = (event) => {
-    event && event.stopPropagation();
-    onExpand && onExpand(event);
-  };
-  const handleCollapse = (event) => {
-    event && event.stopPropagation();
-    onExpand && onCollapse(event);
-  };
-  if (menuView === MENU_VIEW.entirelyCollapsed) {
+function FilterControl ({onClick, expanded, visible}) {
+  if (!visible) {
     return null;
   }
-  if (menuView === MENU_VIEW.expanded) {
-    return (
-      <div
-        onClick={handleCollapse}
-        className={
-          classNames(styles.expandBtn,
-            {[styles.expanded]: menuView === MENU_VIEW.expanded})
-        }
-      >
-        collapse...
-      </div>);
-  }
-  if (menuView === MENU_VIEW.collapsed) {
-    return (
-      <div
-        onClick={handleExpand}
-        className={styles.expandBtn}
-      >
-        expand all...
-      </div>);
-  }
-  return null;
+  return (
+    <div
+      onClick={onClick}
+      className={styles.expandBtn}
+    >
+      {expanded ? 'collapse...' : 'expand all...'}
+    </div>);
 };
 
 export default FilterControl;

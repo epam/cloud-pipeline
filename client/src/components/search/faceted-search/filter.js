@@ -19,72 +19,73 @@ import PropTypes from 'prop-types';
 import {Checkbox, Icon} from 'antd';
 import classNames from 'classnames';
 import {FilterControl} from './controls';
-import MENU_VIEW from './enums/menu-view';
 import styles from './filter.css';
 
 const DEFAULT_ITEMS = 5;
 
 class FacetedFilter extends React.Component {
   state = {
-    menuView: MENU_VIEW.collapsed
+    filterGroupExpanded: true,
+    filtersExpanded: false
+  }
+  get values () {
+    const {showEmptyValues, values} = this.props;
+    if (!Array.isArray(values)) {
+      return [];
+    }
+    if (showEmptyValues) {
+      return values;
+    }
+    return values.filter(v => v.count && Number(v.count) > 0);
   }
   get entriesToDisplayPreference () {
     const {preferences} = this.props;
     if (preferences) {
       const {entriesToDisplay, defaultEntriesToDisplay} = preferences;
-      return entriesToDisplay || defaultEntriesToDisplay || DEFAULT_ITEMS;
+      return +entriesToDisplay || +defaultEntriesToDisplay || DEFAULT_ITEMS;
     }
     return DEFAULT_ITEMS;
   }
   get entriesToDisplay () {
-    const {menuView} = this.state;
-    if (menuView === MENU_VIEW.entirelyCollapsed) {
+    const {filterGroupExpanded, filtersExpanded} = this.state;
+    if (!filterGroupExpanded) {
       return 0;
     }
-    if (menuView === MENU_VIEW.expanded) {
-      return Infinity;
+    if (filterGroupExpanded && filtersExpanded) {
+      return this.values.length;
     }
     return this.entriesToDisplayPreference;
   }
-  get showFilterControls () {
-    const {values} = this.props;
-    if (!values || values.length === 0) {
+  get showFilterControl () {
+    const {filtersExpanded, filterGroupExpanded} = this.state;
+    if (!filterGroupExpanded) {
       return false;
     }
-    return (values.length > this.entriesToDisplay) ||
-      (values.length !== this.entriesToDisplayPreference);
+    if (filtersExpanded) {
+      return this.values.length > this.entriesToDisplayPreference;
+    }
+    return this.values.length > this.entriesToDisplay;
   }
   get filterGroup () {
     const {activeFilters, name} = this.props;
     return activeFilters.filter(f => f.group === name);
   }
-  collapseMenu = (event, entirely) => {
+  toggleFilters = (event) => {
     event && event.stopPropagation();
-    entirely
-      ? this.setState({menuView: MENU_VIEW.entirelyCollapsed})
-      : this.setState({menuView: MENU_VIEW.collapsed});
+    this.setState(prevState => ({filtersExpanded: !prevState.filtersExpanded}));
   }
-  expandMenu = (event, toCollapsed) => {
+  toggleFilterGroup = (event) => {
     event && event.stopPropagation();
-    toCollapsed
-      ? this.setState(({menuView: MENU_VIEW.collapsed}))
-      : this.setState(({menuView: MENU_VIEW.expanded}));
-  }
-  onHeaderClick = (event) => {
-    const {menuView} = this.state;
-    menuView === MENU_VIEW.entirelyCollapsed
-      ? this.expandMenu(event)
-      : this.collapseMenu(event, true);
+    this.setState(prevState => ({filterGroupExpanded: !prevState.filterGroupExpanded}));
   }
   render () {
     const {
       className,
       name,
-      values,
       changeFilter
     } = this.props;
-    const {menuView} = this.state;
-    if (!values || values.length === 0) {
+    const {filtersExpanded, filterGroupExpanded} = this.state;
+    if (this.values.length === 0) {
       return null;
     }
     return (
@@ -97,14 +98,17 @@ class FacetedFilter extends React.Component {
         }
       >
         <div
-          className={styles.header}
-          onClick={this.onHeaderClick}
+          className={
+            classNames(styles.header,
+              {[styles.expanded]: filterGroupExpanded})
+          }
+          onClick={this.toggleFilterGroup}
         >
           <div
             className={
               classNames(styles.headerCaret,
-                {[styles.expanded]: [MENU_VIEW.expanded, MENU_VIEW.collapsed].includes(menuView)
-                })}
+                {[styles.expanded]: filterGroupExpanded})
+            }
           >
             <Icon type="caret-right" />
           </div>
@@ -112,7 +116,7 @@ class FacetedFilter extends React.Component {
         </div>
         <div className={styles.optionsContainer}>
           {
-            values.map((v, i) => (
+            this.values.map((v, i) => (
               <div
                 key={v.name}
                 className={
@@ -131,13 +135,11 @@ class FacetedFilter extends React.Component {
             ))
           }
         </div>
-        {this.showFilterControls && (
-          <FilterControl
-            menuView={menuView}
-            onExpand={this.expandMenu}
-            onCollapse={this.collapseMenu}
-          />
-        )}
+        <FilterControl
+          onClick={this.toggleFilters}
+          expanded={filtersExpanded}
+          visible={this.showFilterControl}
+        />
       </div>
     );
   }
@@ -150,7 +152,8 @@ FacetedFilter.propTypes = {
   selection: PropTypes.array,
   showAmount: PropTypes.number,
   activeFilters: PropTypes.array,
-  changeFilter: PropTypes.func
+  changeFilter: PropTypes.func,
+  showEmptyValues: PropTypes.bool
 };
 
 export default FacetedFilter;
