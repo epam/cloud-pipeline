@@ -77,7 +77,13 @@ fi
 
 # Copy backup script to the target pod
 TARGET_POD="${TARGET_PODS_NAMES[0]}"
-/kubectl cp "$SOURCE_BKP_SCRIPT" "$TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
+COPY_COMMAND="/kubectl cp $SOURCE_BKP_SCRIPT $TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
+if [ ! -z $CP_BKP_SERVICE_CONTAINER_NAME ]; then
+    echo "[INFO] Container name is not empty. Will try to copy backup script for pod: $CP_BKP_SERVICE_NAME container: $CP_BKP_SERVICE_CONTAINER_NAME"
+    COPY_COMMAND="/kubectl cp $SOURCE_BKP_SCRIPT $TARGET_POD:$TARGET_BKP_SCRIPT_NAME -c $CP_BKP_SERVICE_CONTAINER_NAME"
+fi
+
+eval $COPY_COMMAND
 if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot copy the backup script from $SOURCE_BKP_SCRIPT to $TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
     exit 1
@@ -85,7 +91,14 @@ fi
 
 # Do the backup
 rm -rf $CP_BKP_SERVICE_WD/cp-bkp-*
-bash -c "/kubectl exec -i $TARGET_POD -- bash $TARGET_BKP_SCRIPT_NAME"
+
+BACKUP_COMMAND="bash -c \"/kubectl exec -i $TARGET_POD -- bash $TARGET_BKP_SCRIPT_NAME\""
+if [ ! -z $CP_BKP_SERVICE_CONTAINER_NAME ]; then
+    echo "[INFO] Container name is not empty. Will try to set up backup process for pod: $CP_BKP_SERVICE_NAME container: $CP_BKP_SERVICE_CONTAINER_NAME"
+    BACKUP_COMMAND="bash -c \"/kubectl exec -i $TARGET_POD  -c $CP_BKP_SERVICE_CONTAINER_NAME -- bash $TARGET_BKP_SCRIPT_NAME\""
+fi
+
+eval $BACKUP_COMMAND
 if [ $? -ne 0 ]; then
     echo "[ERROR] An error occured while executing the backup script at $TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
     exit 1
