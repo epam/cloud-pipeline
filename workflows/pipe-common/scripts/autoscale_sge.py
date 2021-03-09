@@ -1421,9 +1421,13 @@ if __name__ == '__main__':
                                          storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
-    run_custom_scale_down_timeout = os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', None)
+    run_custom_scale_down_timeout = os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT')
     if run_custom_scale_down_timeout:
-        scale_down_timeout = int(run_custom_scale_down_timeout)
+        if run_custom_scale_down_timeout.isdigit():
+            scale_down_timeout = int(run_custom_scale_down_timeout)
+        else:
+            Logger.warn('Idle timeout [%s], specified for workers via run parameter, is illegal. '
+                        'Using global value [%s] instead.' % (run_custom_scale_down_timeout, scale_down_timeout))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
                                                            default_value=900))
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
