@@ -23,6 +23,7 @@ RUN yum update -y && \
 
 RUN  curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python3 - && \
      pip3 install -I  \
+                rsa==4.0 \
                 pykube==0.15.0 \
                 flask==1.1.2
 
