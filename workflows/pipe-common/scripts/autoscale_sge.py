@@ -908,12 +908,13 @@ class FileSystemHostStorage:
                 for line in file.readlines():
                     stripped_line = line.strip().strip(FileSystemHostStorage._LINE_BREAKER)
                     if stripped_line:
-                        host_stats = stripped_line.strip().strip(FileSystemHostStorage._VALUE_BREAKER)
-                        hostname = host_stats[0]
-                        last_activity = datetime.strptime(host_stats[1], FileSystemHostStorage._DATETIME_FORMAT) \
-                            if len(host_stats) > 1 \
-                            else None
-                        hosts[hostname] = last_activity
+                        host_stats = stripped_line.strip().split(FileSystemHostStorage._VALUE_BREAKER)
+                        if host_stats:
+                            hostname = host_stats[0]
+                            last_activity = datetime.strptime(host_stats[1], FileSystemHostStorage._DATETIME_FORMAT) \
+                                if len(host_stats) > 1 \
+                                else None
+                            hosts[hostname] = last_activity
                 return hosts
         else:
             return {}
