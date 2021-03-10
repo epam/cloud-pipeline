@@ -898,7 +898,7 @@ class FileSystemHostStorage:
     def _update_storage_file(self, hosts):
         hosts_summary_table = []
         for host, last_activity in hosts.items():
-            formatted_activity = last_activity.strftime(FileSystemHostStorage._DATETIME_FORMAT) if last_activity else ''
+            formatted_activity = last_activity.strftime(FileSystemHostStorage._DATETIME_FORMAT)
             hosts_summary_table.append(FileSystemHostStorage._VALUE_BREAKER.join([host, formatted_activity]))
         self.executor.execute(FileSystemHostStorage._REPLACE_FILE % {'content': '\n'.join(hosts_summary_table),
                                                                      'file': self.storage_file})
@@ -921,9 +921,7 @@ class FileSystemHostStorage:
                         host_stats = stripped_line.strip().split(FileSystemHostStorage._VALUE_BREAKER)
                         if host_stats:
                             hostname = host_stats[0]
-                            last_activity = datetime.strptime(host_stats[1], FileSystemHostStorage._DATETIME_FORMAT) \
-                                if len(host_stats) > 1 \
-                                else None
+                            last_activity = datetime.strptime(host_stats[1], FileSystemHostStorage._DATETIME_FORMAT)
                             hosts[hostname] = last_activity
                 return hosts
         else:
@@ -1086,7 +1084,7 @@ class GridEngineAutoscaler:
         inactive_hosts = []
         hosts_activity = self.host_storage.get_hosts_activity(inactive_host_candidates)
         for host, last_activity in hosts_activity.items():
-            if not last_activity or scaling_period_start > last_activity + self.idle_timeout:
+            if scaling_period_start > last_activity + self.idle_timeout:
                 inactive_hosts.append(host)
         return inactive_hosts
 
