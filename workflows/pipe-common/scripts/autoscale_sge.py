@@ -841,7 +841,7 @@ class FileSystemHostStorage:
     _REPLACE_FILE = 'echo "%(content)s" > %(file)s_MODIFIED; ' \
                     'mv %(file)s_MODIFIED %(file)s'
     _DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
-    _VALUE_BREAKER = ' '
+    _VALUE_BREAKER = '|'
     _LINE_BREAKER = '\n'
 
     def __init__(self, cmd_executor, storage_file, clock=Clock()):
