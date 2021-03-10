@@ -932,7 +932,7 @@ class FileSystemHostStorage:
 class GridEngineAutoscaler:
 
     def __init__(self, grid_engine, cmd_executor, scale_up_handler, scale_down_handler, host_storage, scale_up_timeout,
-                 scale_down_timeout, max_additional_hosts, idle_timeout=None, clock=Clock()):
+                 scale_down_timeout, max_additional_hosts, idle_timeout=30, clock=Clock()):
         """
         Grid engine autoscaler.
 
@@ -964,7 +964,7 @@ class GridEngineAutoscaler:
         self.clock = clock
 
         self.latest_running_job = None
-        self.idle_timeout = timedelta(seconds=idle_timeout) if idle_timeout else None
+        self.idle_timeout = timedelta(seconds=idle_timeout)
 
     def scale(self):
         now = self.clock.now()
@@ -974,8 +974,7 @@ class GridEngineAutoscaler:
         updated_jobs = self.grid_engine.get_jobs()
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         pending_jobs = self._filter_pending_job(updated_jobs)
-        if self.idle_timeout:
-            self._update_hosts_activity(now, running_jobs)
+        self._update_hosts_activity(now, running_jobs)
         if running_jobs:
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
         if pending_jobs:
@@ -1058,7 +1057,7 @@ class GridEngineAutoscaler:
     def _scale_down(self, running_jobs, additional_hosts, scaling_period_start=None):
         active_hosts = set([host for job in running_jobs for host in job.hosts])
         inactive_additional_hosts = [host for host in additional_hosts if host not in active_hosts]
-        if self.idle_timeout and scaling_period_start:
+        if scaling_period_start:
             inactive_additional_hosts = self._filter_valid_idle_hosts(inactive_additional_hosts, scaling_period_start)
         if inactive_additional_hosts:
             Logger.info('There are %s inactive additional child pipelines. '
@@ -1076,7 +1075,7 @@ class GridEngineAutoscaler:
         inactive_hosts = []
         for host in inactive_host_candidates:
             last_activity = self.host_storage.get_host_activity(host)
-            if not last_activity or scaling_period_start > last_activity + self.idle_timeout:
+            if scaling_period_start > last_activity + self.idle_timeout:
                 inactive_hosts.append(host)
         return inactive_hosts
 
@@ -1415,17 +1414,6 @@ def fetch_worker_launch_system_params(api, master_run_id):
     return worker_launch_system_params
 
 
-def get_idle_timeout():
-    idle_timeout_value = os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT')
-    if idle_timeout_value:
-        if idle_timeout_value.isdigit():
-            return int(idle_timeout_value)
-        else:
-            Logger.warn('Idle timeout [%s], specified for workers via run parameter, is illegal, skipping it...'
-                        % idle_timeout_value)
-    return None
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Launches grid engine autoscaler long running process.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -1489,7 +1477,7 @@ if __name__ == '__main__':
                                          storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
-    idle_timeout = get_idle_timeout()
+    idle_timeout = int(os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', 30))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
                                                            default_value=900))
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
