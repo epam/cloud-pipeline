@@ -1028,7 +1028,7 @@ class GridEngineAutoscaler:
     def _update_hosts_activity(self, scaling_step_start, running_jobs):
         active_hosts = set()
         for job in running_jobs:
-            active_hosts.add(job.hosts)
+            active_hosts.update(job.hosts)
         if active_hosts:
             self.host_storage.update_hosts_activity(active_hosts, scaling_step_start)
 
