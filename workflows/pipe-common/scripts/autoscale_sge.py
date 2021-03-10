@@ -803,11 +803,12 @@ class MemoryHostStorage:
         It stores all hosts in memory unlike FileSystemHostStorage implementation.
         """
         self._storage = dict()
+        self.clock = Clock()
 
     def add_host(self, host):
         if host in self._storage:
             raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
-        self._storage[host] = None
+        self._storage[host] = self.clock.now()
 
     def remove_host(self, host):
         self._validate_existence(host)
@@ -843,7 +844,7 @@ class FileSystemHostStorage:
     _VALUE_BREAKER = ' '
     _LINE_BREAKER = '\n'
 
-    def __init__(self, cmd_executor, storage_file):
+    def __init__(self, cmd_executor, storage_file, clock=Clock()):
         """
         Additional hosts storage.
         Contains the hostname along with the time of the last activity on it.
@@ -854,6 +855,7 @@ class FileSystemHostStorage:
         """
         self.executor = cmd_executor
         self.storage_file = storage_file
+        self.clock = clock
 
     def add_host(self, host):
         """
@@ -864,7 +866,7 @@ class FileSystemHostStorage:
         hosts = self._load_hosts_stats()
         if host in hosts:
             raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
-        hosts[host] = None
+        hosts[host] = self.clock.now()
         self._update_storage_file(hosts)
 
     def update_hosts_activity(self, hosts, timestamp):
@@ -1479,11 +1481,12 @@ if __name__ == '__main__':
                 task='GridEngineAutoscaling', verbose=log_verbose)
 
     cmd_executor = CmdExecutor()
-
+    scaling_operations_clock = Clock()
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
                              max_cluster_cores=max_cluster_cores)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
-                                         storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
+                                         storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'),
+                                         clock=scaling_operations_clock)
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
     idle_timeout = int(os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', 30))
@@ -1508,7 +1511,7 @@ if __name__ == '__main__':
                                       scale_up_handler=scale_up_handler, scale_down_handler=scale_down_handler,
                                       host_storage=host_storage, scale_up_timeout=scale_up_timeout,
                                       scale_down_timeout=scale_down_timeout, max_additional_hosts=additional_hosts,
-                                      idle_timeout=idle_timeout)
+                                      idle_timeout=idle_timeout, clock=scaling_operations_clock)
     daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
                                          polling_timeout=args.polling_interval)
     daemon.start()
