@@ -813,9 +813,10 @@ class MemoryHostStorage:
         self._validate_existence(host)
         self._storage.pop(host)
 
-    def update_host_activity(self, host, timestamp):
-        self._validate_existence(host)
-        self._storage[host] = timestamp
+    def update_hosts_activity(self, hosts, timestamp):
+        for host in hosts:
+            self._validate_existence(host)
+            self._storage[host] = timestamp
 
     def get_host_activity(self, host):
         self._validate_existence(host)
@@ -857,20 +858,21 @@ class FileSystemHostStorage:
 
         :param host: Additional host name.
         """
-        hosts = self._load_hosts_dict()
+        hosts = self._load_hosts_stats()
         if host in hosts:
             raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
         hosts[host] = None
         self._update_storage_file(hosts)
 
-    def update_host_activity(self, host, timestamp):
-        hosts = self._load_hosts_dict()
-        self._validate_existence(host, hosts)
-        hosts[host] = timestamp
-        self._update_storage_file(hosts)
+    def update_hosts_activity(self, hosts, timestamp):
+        latest_hosts_stats = self._load_hosts_stats()
+        for host in hosts:
+            self._validate_existence(host, latest_hosts_stats)
+            latest_hosts_stats[host] = timestamp
+        self._update_storage_file(latest_hosts_stats)
 
     def get_host_activity(self, host):
-        hosts = self._load_hosts_dict()
+        hosts = self._load_hosts_stats()
         self._validate_existence(host, hosts)
         return hosts[host]
 
@@ -880,7 +882,7 @@ class FileSystemHostStorage:
 
         :param host: Additional host name.
         """
-        hosts = self._load_hosts_dict()
+        hosts = self._load_hosts_stats()
         self._validate_existence(host, hosts)
         hosts.pop(host)
         self._update_storage_file(hosts)
@@ -894,9 +896,9 @@ class FileSystemHostStorage:
                                                                      'file': self.storage_file})
 
     def load_hosts(self):
-        return list(self._load_hosts_dict().keys())
+        return list(self._load_hosts_stats().keys())
 
-    def _load_hosts_dict(self):
+    def _load_hosts_stats(self):
         """
         Load all additional hosts from storage.
 
@@ -1018,9 +1020,12 @@ class GridEngineAutoscaler:
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
 
-    def _update_hosts_activity(self, now, running_jobs):
+    def _update_hosts_activity(self, scaling_step_start, running_jobs):
+        active_hosts = set()
         for job in running_jobs:
-            self.host_storage.update_host_activity(job.hosts, now)
+            active_hosts.add(job.hosts)
+        if active_hosts:
+            self.host_storage.update_hosts_activity(active_hosts, scaling_step_start)
 
     def _filter_pending_job(self, updated_jobs):
         # kill jobs that are pending and can't be satisfied with requested resource
