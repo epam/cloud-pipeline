@@ -810,15 +810,15 @@ class MemoryHostStorage:
         self._storage[host] = None
 
     def remove_host(self, host):
-        self.validate_existence(host)
+        self._validate_existence(host)
         self._storage.pop(host)
 
     def update_host_activity(self, host, timestamp):
-        self.validate_existence(host)
+        self._validate_existence(host)
         self._storage[host] = timestamp
 
     def get_host_activity(self, host):
-        self.validate_existence(host)
+        self._validate_existence(host)
         return self._storage[host]
 
     def load_hosts(self):
@@ -827,7 +827,7 @@ class MemoryHostStorage:
     def clear(self):
         self._storage = dict()
 
-    def validate_existence(self, host):
+    def _validate_existence(self, host):
         if host not in self._storage:
             raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
 
@@ -857,21 +857,21 @@ class FileSystemHostStorage:
 
         :param host: Additional host name.
         """
-        hosts = self.load_hosts_dict()
+        hosts = self._load_hosts_dict()
         if host in hosts:
             raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
         hosts[host] = None
         self._update_storage_file(hosts)
 
     def update_host_activity(self, host, timestamp):
-        hosts = self.load_hosts_dict()
-        self.validate_existence(host, hosts)
+        hosts = self._load_hosts_dict()
+        self._validate_existence(host, hosts)
         hosts[host] = timestamp
         self._update_storage_file(hosts)
 
     def get_host_activity(self, host):
-        hosts = self.load_hosts_dict()
-        self.validate_existence(host, hosts)
+        hosts = self._load_hosts_dict()
+        self._validate_existence(host, hosts)
         return hosts[host]
 
     def remove_host(self, host):
@@ -880,8 +880,8 @@ class FileSystemHostStorage:
 
         :param host: Additional host name.
         """
-        hosts = self.load_hosts_dict()
-        self.validate_existence(host, hosts)
+        hosts = self._load_hosts_dict()
+        self._validate_existence(host, hosts)
         hosts.pop(host)
         self._update_storage_file(hosts)
 
@@ -894,9 +894,9 @@ class FileSystemHostStorage:
                                                                      'file': self.storage_file})
 
     def load_hosts(self):
-        return list(self.load_hosts_dict().keys())
+        return list(self._load_hosts_dict().keys())
 
-    def load_hosts_dict(self):
+    def _load_hosts_dict(self):
         """
         Load all additional hosts from storage.
 
@@ -922,7 +922,7 @@ class FileSystemHostStorage:
     def clear(self):
         self._update_storage_file({})
 
-    def validate_existence(self, host, hosts_dict):
+    def _validate_existence(self, host, hosts_dict):
         if host not in hosts_dict:
             raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
 
@@ -949,6 +949,7 @@ class GridEngineAutoscaler:
         before autoscaler will scale down the cluster.
         :param max_additional_hosts: Maximum number of additional hosts that autoscaler can launch.
         :param clock: Clock.
+        :param idle_timeout: Maximum number of seconds a host could wait for a new job before getting scaled-down.
         """
         self.grid_engine = grid_engine
         self.executor = cmd_executor
@@ -972,7 +973,7 @@ class GridEngineAutoscaler:
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         pending_jobs = self._filter_pending_job(updated_jobs)
         if self.idle_timeout:
-            self.update_hosts_activity(now, running_jobs)
+            self._update_hosts_activity(now, running_jobs)
         if running_jobs:
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
         if pending_jobs:
@@ -1017,7 +1018,7 @@ class GridEngineAutoscaler:
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
 
-    def update_hosts_activity(self, now, running_jobs):
+    def _update_hosts_activity(self, now, running_jobs):
         for job in running_jobs:
             self.host_storage.update_host_activity(job.hosts, now)
 
@@ -1053,7 +1054,7 @@ class GridEngineAutoscaler:
         active_hosts = set([host for job in running_jobs for host in job.hosts])
         inactive_additional_hosts = [host for host in additional_hosts if host not in active_hosts]
         if self.idle_timeout and scaling_period_start:
-            inactive_additional_hosts = self.filter_valid_idle_hosts(inactive_additional_hosts, scaling_period_start)
+            inactive_additional_hosts = self._filter_valid_idle_hosts(inactive_additional_hosts, scaling_period_start)
         if inactive_additional_hosts:
             Logger.info('There are %s inactive additional child pipelines. '
                         'Scaling down will be performed.' % len(inactive_additional_hosts))
@@ -1066,7 +1067,7 @@ class GridEngineAutoscaler:
         else:
             Logger.info('There are no inactive additional child pipelines. Scaling down will not be performed.')
 
-    def filter_valid_idle_hosts(self, inactive_host_candidates, scaling_period_start):
+    def _filter_valid_idle_hosts(self, inactive_host_candidates, scaling_period_start):
         inactive_hosts = []
         for host in inactive_host_candidates:
             last_activity = self.host_storage.get_host_activity(host)
