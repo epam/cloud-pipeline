@@ -1057,11 +1057,14 @@ class GridEngineAutoscaler:
     def _scale_down(self, running_jobs, additional_hosts, scaling_period_start=None):
         active_hosts = set([host for job in running_jobs for host in job.hosts])
         inactive_additional_hosts = [host for host in additional_hosts if host not in active_hosts]
-        if scaling_period_start:
-            inactive_additional_hosts = self._filter_valid_idle_hosts(inactive_additional_hosts, scaling_period_start)
         if inactive_additional_hosts:
-            Logger.info('There are %s inactive additional child pipelines. '
-                        'Scaling down will be performed.' % len(inactive_additional_hosts))
+            Logger.info('There are %s inactive additional child pipelines.' % len(inactive_additional_hosts))
+            if scaling_period_start:
+                idle_additional_hosts = self._filter_valid_idle_hosts(inactive_additional_hosts, scaling_period_start)
+                Logger.info('There are %s idle additional child pipelines.' % len(idle_additional_hosts))
+                inactive_additional_hosts = idle_additional_hosts
+        if inactive_additional_hosts:
+            Logger.info('Scaling down will be performed.')
             # TODO: here we always choose weakest host, even if all hosts are inactive and we can drop strongest one firstly
             # TODO in order to safe some money
             inactive_additional_host = self.grid_engine.get_host_to_scale_down(inactive_additional_hosts)
@@ -1069,7 +1072,7 @@ class GridEngineAutoscaler:
             if succeed:
                 self.host_storage.remove_host(inactive_additional_host)
         else:
-            Logger.info('There are no inactive additional child pipelines. Scaling down will not be performed.')
+            Logger.info('There are no additional child pipelines for scaling down.')
 
     def _filter_valid_idle_hosts(self, inactive_host_candidates, scaling_period_start):
         inactive_hosts = []
