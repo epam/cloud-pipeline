@@ -1052,7 +1052,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
                   echo "[ERROR] Main repository install failed. Exiting"
                   exit "$_INSTALL_RESULT"
             fi
-            cd ..
+            cd -
       fi
 fi
 # Init path for shell scripts from common repository
@@ -1142,6 +1142,7 @@ else
       else
             git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
       fi
+      cd -
 fi
 
 # Apply MAC/networking tweaks if requested
