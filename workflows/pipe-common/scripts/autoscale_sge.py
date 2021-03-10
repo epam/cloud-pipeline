@@ -818,9 +818,12 @@ class MemoryHostStorage:
             self._validate_existence(host)
             self._storage[host] = timestamp
 
-    def get_host_activity(self, host):
-        self._validate_existence(host)
-        return self._storage[host]
+    def get_hosts_activity(self, hosts):
+        hosts_activity = {}
+        for host in hosts:
+            self._validate_existence(host)
+            hosts_activity[host] = self._storage[host]
+        return hosts_activity
 
     def load_hosts(self):
         return list(self._storage.keys())
@@ -871,10 +874,13 @@ class FileSystemHostStorage:
             latest_hosts_stats[host] = timestamp
         self._update_storage_file(latest_hosts_stats)
 
-    def get_host_activity(self, host):
-        hosts = self._load_hosts_stats()
-        self._validate_existence(host, hosts)
-        return hosts[host]
+    def get_hosts_activity(self, hosts):
+        hosts_activity = {}
+        latest_hosts_activity = self._load_hosts_stats()
+        for host in hosts:
+            self._validate_existence(host, latest_hosts_activity)
+            hosts_activity[host] = latest_hosts_activity[host]
+        return hosts_activity
 
     def remove_host(self, host):
         """
@@ -1076,9 +1082,9 @@ class GridEngineAutoscaler:
 
     def _filter_valid_idle_hosts(self, inactive_host_candidates, scaling_period_start):
         inactive_hosts = []
-        for host in inactive_host_candidates:
-            last_activity = self.host_storage.get_host_activity(host)
-            if scaling_period_start > last_activity + self.idle_timeout:
+        hosts_activity = self.host_storage.get_hosts_activity(inactive_host_candidates)
+        for host, last_activity in hosts_activity.items():
+            if not last_activity or scaling_period_start > last_activity + self.idle_timeout:
                 inactive_hosts.append(host)
         return inactive_hosts
 
