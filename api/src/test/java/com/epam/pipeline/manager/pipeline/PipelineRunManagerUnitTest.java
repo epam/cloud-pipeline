@@ -249,22 +249,23 @@ public class PipelineRunManagerUnitTest {
 
     @Test
     public void shouldReplaceEnvVarsWithEmptyCollections() {
-        assertTrue(isEmpty(assertEnvVarsReplacement(new ArrayList<>(), new HashMap<>())));
+        assertTrue(isEmpty(pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), new HashMap<>())));
     }
 
     @Test
     public void shouldReplaceEnvVarsWithEmptyEnvVars() {
-        assertEquals(parameters, assertEnvVarsReplacement(parameters, new HashMap<>()));
+        assertEquals(parameters, pipelineRunManager.replaceParametersWithEnvVars(parameters, new HashMap<>()));
     }
 
     @Test
     public void shouldReplaceEnvVarsWithEmptyParams() {
-        assertTrue(isEmpty(assertEnvVarsReplacement(new ArrayList<>(), envVars)));
+        assertTrue(isEmpty(pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), envVars)));
     }
 
     @Test
     public void shouldNotReplaceEnvVarsIfNoNeeded() {
-        assertEquals(TEST_STRING, assertEnvVarsReplacement(parameters, envVars).get(0).getValue());
+        assertEquals(TEST_STRING, pipelineRunManager
+                .replaceParametersWithEnvVars(parameters, envVars).get(0).getValue());
     }
 
     @Test
@@ -295,11 +296,6 @@ public class PipelineRunManagerUnitTest {
 
         assertEquals(expectedValue, actualParameters.get(0).getResolvedValue());
         assertEquals(paramValue, actualParameters.get(0).getValue());
-    }
-
-    private List<PipelineRunParameter> assertEnvVarsReplacement(final List<PipelineRunParameter> initialParameters,
-                                          final Map<String, String> envVars) {
-        return pipelineRunManager.replaceParametersWithEnvVars(initialParameters, envVars);
     }
 
     private void assertAttachFails(final DiskAttachRequest request) {

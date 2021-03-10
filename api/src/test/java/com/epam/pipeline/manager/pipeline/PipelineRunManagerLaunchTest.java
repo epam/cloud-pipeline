@@ -40,7 +40,6 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
-import com.epam.pipeline.util.TestUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -48,6 +47,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,9 +72,7 @@ import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getNonDef
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mapstruct.ap.internal.util.Collections.newArrayList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
@@ -104,7 +103,7 @@ public class PipelineRunManagerLaunchTest {
     private static final String TEST_USER = "user";
     private static final String IMAGE = "testImage";
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
-    private static final int HOURS_12 = 12;
+    private static final LocalDateTime TEST_PERIOD_18 = TEST_PERIOD.plusHours(18);
     private static final int HOURS_18 = 18;
 
     @InjectMocks
@@ -198,14 +197,6 @@ public class PipelineRunManagerLaunchTest {
         launchTool(configuration, INSTANCE_TYPE);
 
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(resource), eq(false));
-    }
-
-    @Test
-    public void launchPipelineShouldValidateToolInstanceTypeAndPriceType() {
-        launchTool(configuration, INSTANCE_TYPE);
-
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(getResource()), eq(ID), eq(true));
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(getResource()), eq(false));
     }
 
     @Test
@@ -358,24 +349,15 @@ public class PipelineRunManagerLaunchTest {
 
     @Test
     public void shouldLoadRunsActivityStats() {
-        final PipelineRun pipelineRun = getPipelineRun(ID, TEST_USER);
-        final PipelineRun pipelineRun2 = getPipelineRun(ID_2, TEST_USER);
-        doReturn(pipelineRun).when(pipelineRunDao).loadPipelineRun(anyLong());
-        doReturn(newArrayList(pipelineRun, pipelineRun2)).when(pipelineRunDao)
-                .loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD.plusHours(HOURS_18)));
+        doReturn(Arrays.asList(getPipelineRun(ID, TEST_USER), getPipelineRun(ID_2, TEST_USER)))
+                .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18));
         doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class));
 
-        launchPipelineRun(TEST_PERIOD, TEST_PERIOD.plusHours(HOURS_12));
-        launchPipelineRun(TEST_PERIOD.plusHours(HOURS_18), null);
+        pipelineRunManager.loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18).stream()
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
 
-        final Map<Long, PipelineRun> stats =
-                pipelineRunManager.loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD.plusHours(HOURS_18)).stream()
-                        .collect(Collectors.toMap(BaseEntity::getId,
-                                Function.identity()));
-
-        assertEquals(2, stats.size());
-        assertEquals(2, stats.get(ID).getRunStatuses().size());
-        assertEquals(1, stats.get(ID_2).getRunStatuses().size());
+        verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(any(LocalDateTime.class), any(LocalDateTime.class));
+        verify(runStatusManager).loadRunStatus(anyListOf(Long.class));
     }
 
     private void mock(final InstancePrice price) {
@@ -418,34 +400,14 @@ public class PipelineRunManagerLaunchTest {
         doReturn(tool).when(toolManager).resolveSymlinks(eq(IMAGE));
     }
 
-    private void launchPipelineRun(final LocalDateTime startDate, final LocalDateTime stopDate) {
-        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE);
-        pipelineRun.setStartDate(TestUtils.convertLocalDateTimeToDate(startDate));
-        saveStatusForRun(pipelineRun.getId(), TaskStatus.RUNNING, startDate);
-        if (stopDate != null) {
-            pipelineRun.setStatus(TaskStatus.STOPPED);
-            pipelineRun.setEndDate(TestUtils.convertLocalDateTimeToDate(stopDate));
-            saveStatusForRun(pipelineRun.getId(), TaskStatus.STOPPED, stopDate);
-        } else {
-            pipelineRun.setEndDate(null);
-        }
-        pipelineRunManager.updateRunInfo(pipelineRun);
-    }
-
     private Map<Long, List<RunStatus>> getStatusMap() {
-        final RunStatus status1 = new RunStatus(ID, TaskStatus.RUNNING, null, TEST_PERIOD);
-        final RunStatus status2 = new RunStatus(ID, TaskStatus.STOPPED, null, TEST_PERIOD.plusHours(HOURS_18));
-        final List<RunStatus> list1 = newArrayList(status1, status2);
-        final RunStatus status3 = new RunStatus(ID_2, TaskStatus.RUNNING, null, TEST_PERIOD.plusHours(HOURS_18));
-        final List<RunStatus> list2 = newArrayList(status3);
         final Map<Long, List<RunStatus>> map = new HashMap<>();
-        map.put(ID, list1);
-        map.put(ID_2, list2);
+        map.put(ID, Arrays.asList(
+                new RunStatus(ID, TaskStatus.RUNNING, null, TEST_PERIOD),
+                new RunStatus(ID, TaskStatus.STOPPED, null, TEST_PERIOD.plusHours(HOURS_18))));
+        map.put(ID_2, Collections.singletonList(
+                new RunStatus(ID_2, TaskStatus.RUNNING, null, TEST_PERIOD.plusHours(HOURS_18))));
         return map;
-    }
-
-    private void saveStatusForRun(final Long runId, final TaskStatus status, final LocalDateTime timePoint) {
-        runStatusManager.saveStatus(new RunStatus(runId, status, null, timePoint));
     }
 
     private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
@@ -464,9 +426,5 @@ public class PipelineRunManagerLaunchTest {
                                        final String instanceType, final Long parentRunId) {
         return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null,
                 null, null, parentRunId, null, null, null);
-    }
-
-    private ContextualPreferenceExternalResource getResource() {
-        return new ContextualPreferenceExternalResource(TOOL, tool.getId().toString());
     }
 }
