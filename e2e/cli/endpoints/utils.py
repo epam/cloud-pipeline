@@ -75,7 +75,7 @@ def run_test(tool, command, endpoints_structure, url_checker=None, check_access=
             assert is_accessible, "service url: {}, is not accessible.".format(url)
         return run_id, node_name
     finally:
-        stop_pipe(run_id)
+        stop_pipe_with_retry(run_id)
 
 
 def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spark=False, friendly_url=None,
@@ -83,7 +83,7 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
     args = ["-id", "50",
             "-pt", "on-demand",
             "-cmd", command.format(test_case=test_case),
-            "-di", image]
+            "-di", image, "-np"]
 
     if friendly_url:
         args.append("--friendly-url")
@@ -100,19 +100,22 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
         args.append("CP_CAP_SPARK")
         args.append('boolean?true')
 
+    node_name = None
     (run_id, _) = run_tool(*args)
-    logging.info("Pipeline run with ID %s." % run_id)
-    wait_for_instance_creation(run_id, MAX_REPETITIONS)
-    logging.info("Instance %s created." % run_id)
+    try:
+        logging.info("Pipeline run with ID %s." % run_id)
+        wait_for_instance_creation(run_id, MAX_REPETITIONS)
+        logging.info("Instance %s created." % run_id)
 
-    node_state = wait_for_node_up(run_id, MAX_REPETITIONS)
-    node_name = get_node_name_from_cluster_state(node_state)
-    logging.info("Used node %s." % node_name)
+        node_state = wait_for_node_up(run_id, MAX_REPETITIONS)
+        node_name = get_node_name_from_cluster_state(node_state)
+        logging.info("Used node %s." % node_name)
 
-    wait_for_run_initialized(run_id, MAX_REPETITIONS)
-    wait_for_service_urls(run_id, MAX_REPETITIONS / 4)
-    logging.info("Pipeline %s has initialized successfully." % run_id)
-
+        wait_for_run_initialized(run_id, MAX_REPETITIONS)
+        wait_for_service_urls(run_id, MAX_REPETITIONS / 4)
+        logging.info("Pipeline %s has initialized successfully." % run_id)
+    except RuntimeError as e:
+        stop_pipe_with_retry(run_id)
     return run_id, node_name
 
 

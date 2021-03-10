@@ -40,7 +40,7 @@ class TestRStudioEndpoints(object):
     @classmethod
     def teardown_class(cls):
         for node in cls.nodes:
-            terminate_node(node)
+            terminate_node_with_retry(node)
             logging.info("Node %s was terminated" % node)
         tool_info = get_tool_info("library/rstudio")
         logging.info("Change endpoint settings for RStudio tool, make a SubDomain param is False")
