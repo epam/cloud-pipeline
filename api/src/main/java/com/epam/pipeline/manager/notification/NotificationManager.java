@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -462,11 +462,6 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     @Transactional(propagation = Propagation.REQUIRED)
     public void removeNotificationTimestamps(final Long runId) {
         monitoringNotificationDao.deleteNotificationTimestampsForRun(runId);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void removeNotificationTimestampsByPipelineId(final Long id) {
-        monitoringNotificationDao.deleteNotificationTimestampsForPipeline(id);
     }
 
     public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long runId,

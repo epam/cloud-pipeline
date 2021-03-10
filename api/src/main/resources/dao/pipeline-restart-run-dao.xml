@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -135,18 +135,6 @@
                     JOIN pipeline.restart_run AS r
                     ON (rrrr.top_parent_run_id = r.restarted_run_id OR rrrr.top_restarted_run_id = r.restarted_run_id)
                     ORDER BY r.parent_run_id;
-                ]]>
-            </value>
-        </property>
-        <property name="deleteRestartedRunsByPipelineQuery">
-            <value>
-                <![CDATA[
-                    DELETE FROM
-                        pipeline.restart_run
-                    USING
-                        pipeline.pipeline_run AS run
-                    WHERE
-                        run.run_id = restart_run.restarted_run_id AND run.pipeline_id = ?
                 ]]>
             </value>
         </property>

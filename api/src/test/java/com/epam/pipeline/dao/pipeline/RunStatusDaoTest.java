@@ -101,13 +101,6 @@ public class RunStatusDaoTest extends AbstractJdbcTest {
         assertTrue(runStatusDao.loadRunStatus(testRun.getId()).isEmpty());
     }
 
-    @Test
-    public void shouldDeleteStatusesByPipelineId() {
-        createStatus();
-        runStatusDao.deleteRunStatusForPipeline(testPipeline.getId());
-        assertTrue(runStatusDao.loadRunStatus(testRun.getId()).isEmpty());
-    }
-
     private RunStatus createStatus() {
         RunStatus runStatus = RunStatus.builder()
                 .runId(testRun.getId())

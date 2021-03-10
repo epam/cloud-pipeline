@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -253,18 +253,14 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = USER_OWNER)
-    public void testDeleteRunSchedulesForPipeline() {
+    public void shouldUnscheduleRunSchedulesForPipeline() {
         runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                 Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
         Mockito.verify(runScheduler, Mockito.times(2)).scheduleRunSchedule(any());
 
         runScheduleManager.deleteSchedulesForRunByPipeline(testPipeline.getId());
 
-        final List<RunSchedule> loadRunSchedule = runScheduleManager
-                .loadAllSchedulesBySchedulableId(RUN_ID, ScheduleType.PIPELINE_RUN);
-        assertEquals(0, loadRunSchedule.size());
         Mockito.verify(runScheduler, Mockito.times(2)).unscheduleRunSchedule(any());
-
     }
 
     @Test(expected = IllegalArgumentException.class)

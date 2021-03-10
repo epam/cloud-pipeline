@@ -45,7 +45,6 @@ import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
-import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -813,20 +812,6 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final List<PipelineRun> runs = pipelineRunDao.loadRunsByStatuses(
                 Arrays.asList(TaskStatus.PAUSING, TaskStatus.RESUMING));
         assertEquals(2, runs.size());
-    }
-
-    @Test
-    public void shouldDeleteSidsFromRunByPipelineId() {
-        final RunSid runSid = new RunSid();
-        runSid.setName(GROUP_NAME);
-        runSid.setIsPrincipal(false);
-        final Pipeline pipeline = getPipeline();
-        final PipelineRun run = createRunWithRunSids(pipeline.getId(), null, Collections.singletonList(runSid));
-
-        pipelineRunDao.deleteRunSidsByPipelineId(pipeline.getId());
-
-        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
-        assertTrue(CollectionUtils.isEmpty(loadedRun.getRunSids()));
     }
 
     @Test

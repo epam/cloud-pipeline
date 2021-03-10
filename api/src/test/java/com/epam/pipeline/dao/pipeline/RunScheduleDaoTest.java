@@ -29,7 +29,6 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,9 +68,6 @@ public class RunScheduleDaoTest extends AbstractJdbcTest {
 
     @Autowired
     private PipelineDao pipelineDao;
-
-    @Autowired
-    private PipelineManager pipelineManager;
 
     @Autowired
     private RunConfigurationDao configurationDao;
@@ -167,14 +163,6 @@ public class RunScheduleDaoTest extends AbstractJdbcTest {
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedules();
         assertEquals(1, runSchedules.size());
         assertEquals(runSchedules.get(0).getId(), testRunSchedule2.getId());
-    }
-
-    @Test
-    public void testScheduleRemovalAfterRunIsRemoved() {
-        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testUpdatedRunSchedule, testRunSchedule2));
-        assertFalse(runScheduleDao.loadAllRunSchedules().isEmpty());
-        pipelineManager.delete(testPipeline.getId(), true);
-        assertTrue(runScheduleDao.loadAllRunSchedules().isEmpty());
     }
 
     @Test
