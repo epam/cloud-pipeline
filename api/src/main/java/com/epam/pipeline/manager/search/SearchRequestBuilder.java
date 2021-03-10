@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
+import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -39,6 +40,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
@@ -74,19 +76,16 @@ public class SearchRequestBuilder {
     public SearchRequest buildRequest(final ElasticSearchRequest searchRequest,
                                       final String typeFieldName,
                                       final String aggregation) {
-        final QueryBuilder query = getQuery(searchRequest);
+        final QueryBuilder query = getQuery(searchRequest.getQuery());
         log.debug("Search query: {} ", query.toString());
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(query)
-                .storedFields(Arrays.asList("id", typeFieldName, "name", "parentId", "description"))
+                .storedFields(buildStoredFields(typeFieldName))
                 .size(searchRequest.getPageSize())
                 .from(searchRequest.getOffset());
 
         if (searchRequest.isHighlight()) {
-            searchSource.highlighter(SearchSourceBuilder.highlight()
-                    .field("*")
-                    .postTags("</highlight>")
-                    .preTags("<highlight>"));
+            addHighlighterToSource(searchSource);
         }
 
         if (searchRequest.isAggregate()) {
@@ -116,9 +115,53 @@ public class SearchRequestBuilder {
                 .source(sizeSumSearch);
     }
 
-    private QueryBuilder getQuery(final ElasticSearchRequest searchRequest) {
-        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-                .must(getBasicQuery(searchRequest));
+    public SearchRequest buildFacetedRequest(final FacetedSearchRequest facetedSearchRequest,
+                                             final String typeFieldName) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+
+        final QueryBuilder queryBuilder = prepareFacetedQuery(facetedSearchRequest.getQuery());
+        boolQueryBuilder.must(queryBuilder);
+
+        MapUtils.emptyIfNull(facetedSearchRequest.getFilters())
+                .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
+
+        log.debug("Search query: {} ", boolQueryBuilder.toString());
+
+        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
+                .query(boolQueryBuilder)
+                .storedFields(buildStoredFields(typeFieldName))
+                .size(facetedSearchRequest.getPageSize())
+                .from(facetedSearchRequest.getOffset());
+
+        if (facetedSearchRequest.isHighlight()) {
+            addHighlighterToSource(searchSource);
+        }
+
+        ListUtils.emptyIfNull(facetedSearchRequest.getFacets())
+                .forEach(facet -> addTermAggregationToSource(searchSource, facet));
+
+        return new SearchRequest()
+                .indices(buildAllIndexTypes())
+                .source(searchSource);
+    }
+
+    private List<String> buildStoredFields(final String typeFieldName) {
+        return Arrays.asList("id", typeFieldName, "name", "parentId", "description");
+    }
+
+    private void addHighlighterToSource(final SearchSourceBuilder searchSource) {
+        searchSource.highlighter(SearchSourceBuilder.highlight()
+                .field("*")
+                .postTags("</highlight>")
+                .preTags("<highlight>"));
+    }
+
+    private QueryBuilder getQuery(final String query) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(query));
+        return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private QueryBuilder prepareAclFiltersOrAdmin(final BoolQueryBuilder queryBuilder) {
         final PipelineUser pipelineUser = userManager.loadUserByName(authManager.getAuthorizedUser());
         if (pipelineUser == null) {
             throw new IllegalArgumentException("Failed to find currently authorized user");
@@ -132,8 +175,8 @@ public class SearchRequestBuilder {
         return queryBuilder;
     }
 
-    private QueryBuilder getBasicQuery(final ElasticSearchRequest searchRequest) {
-        QueryStringQueryBuilder query = QueryBuilders.queryStringQuery(searchRequest.getQuery());
+    private QueryBuilder getBasicQuery(final String searchQuery) {
+        QueryStringQueryBuilder query = QueryBuilders.queryStringQuery(searchQuery);
         ListUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SEARCH_FIELDS))
                 .forEach(query::field);
         return query;
@@ -171,7 +214,7 @@ public class SearchRequestBuilder {
 
     private String[] buildIndexNames(final List<SearchDocumentType> filterTypes) {
         if (CollectionUtils.isEmpty(filterTypes)) {
-            return new String[]{preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_CP_INDEX_PREFIX)};
+            return buildAllIndexTypes();
         }
         final Map<SearchDocumentType, String> typeIndexPrefixes = preferenceManager
                 .getPreference(SystemPreferences.SEARCH_ELASTIC_TYPE_INDEX_PREFIX);
@@ -182,5 +225,27 @@ public class SearchRequestBuilder {
                 .map(type -> Optional.ofNullable(typeIndexPrefixes.get(type))
                         .orElseThrow(() -> new SearchException("Missing index name for type: " + type)))
                 .toArray(String[]::new);
+    }
+
+    private String[] buildAllIndexTypes() {
+        return new String[]{preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_CP_INDEX_PREFIX)};
+    }
+
+    private QueryBuilder filterToTermsQuery(final String fieldName, final List<String> values) {
+        return QueryBuilders.termsQuery(fieldName, values);
+    }
+
+    private QueryBuilder prepareFacetedQuery(final String requestQuery) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+        if (StringUtils.isNotBlank(requestQuery)) {
+            queryBuilder.must(getBasicQuery(requestQuery));
+        }
+        return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
+        final TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(facet)
+                .field(String.format("%s.keyword", facet));
+        searchSource.aggregation(aggregationBuilder);
     }
 }
