@@ -844,7 +844,7 @@ class FileSystemHostStorage:
     _VALUE_BREAKER = '|'
     _LINE_BREAKER = '\n'
 
-    def __init__(self, cmd_executor, storage_file, clock=Clock()):
+    def __init__(self, cmd_executor, storage_file, clock=Clock(), master_host=None):
         """
         Additional hosts storage.
         Contains the hostname along with the time of the last activity on it.
@@ -856,6 +856,7 @@ class FileSystemHostStorage:
         self.executor = cmd_executor
         self.storage_file = storage_file
         self.clock = clock
+        self.master_host = master_host
 
     def add_host(self, host):
         """
@@ -872,13 +873,15 @@ class FileSystemHostStorage:
     def update_hosts_activity(self, hosts, timestamp):
         latest_hosts_stats = self._load_hosts_stats()
         for host in hosts:
-            self._validate_existence(host, latest_hosts_stats)
+            if host != self.master_host:
+                self._validate_existence(host, latest_hosts_stats)
             latest_hosts_stats[host] = timestamp
         self._update_storage_file(latest_hosts_stats)
 
     def get_hosts_activity(self, hosts):
         hosts_activity = {}
         latest_hosts_activity = self._load_hosts_stats()
+        hosts.remove(self.master_host)
         for host in hosts:
             self._validate_existence(host, latest_hosts_activity)
             hosts_activity[host] = latest_hosts_activity[host]
@@ -890,6 +893,9 @@ class FileSystemHostStorage:
 
         :param host: Additional host name.
         """
+        if host == self.master_host:
+            Logger.warn('Master host shouldn\'t be removed from the host storage, skipping...')
+            return
         hosts = self._load_hosts_stats()
         self._validate_existence(host, hosts)
         hosts.pop(host)
@@ -904,7 +910,9 @@ class FileSystemHostStorage:
                                                                      'file': self.storage_file})
 
     def load_hosts(self):
-        return list(self._load_hosts_stats().keys())
+        latest_hosts_stats = self._load_hosts_stats()
+        latest_hosts_stats.pop(self.master_host)
+        return list(latest_hosts_stats.keys())
 
     def _load_hosts_stats(self):
         """
@@ -1482,9 +1490,11 @@ if __name__ == '__main__':
     scaling_operations_clock = Clock()
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
                              max_cluster_cores=max_cluster_cores)
+    master_host = os.getenv('PARENT')
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
                                          storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'),
-                                         clock=scaling_operations_clock)
+                                         clock=scaling_operations_clock,
+                                         master_host=master_host)
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
     idle_timeout = int(os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', 30))
