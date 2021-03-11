@@ -1807,6 +1807,12 @@ if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
       echo "Failure waiting timeout has been reached, proceeding with the cleanup and termination"
 fi
 
+if check_installed "umount"; then
+  echo "Unmounting all storage mounts"
+  umount cifs,fuse,nfs,nfs4,lustre -lfa
+  echo "Finished unmounting process"
+fi
+
 if [ "$SINGLE_RUN" = true ] && [ "$cluster_role_type" != "additional" ]; then
     echo "Cleaning any data in a runs root directory at ${RUNS_ROOT}"
     rm -Rf $RUNS_ROOT/*
@@ -1817,11 +1823,6 @@ else
     rm -Rf $RUN_DIR
 fi
 
-if check_installed "umount"; then
-  echo "Unmounting all storage mounts"
-  umount cifs,fuse,nfs,nfs4,lustre -lfa
-  echo "Finished unmounting process"
-fi
 
 exit "$CP_EXEC_RESULT"
 ######################################################
