@@ -45,7 +45,8 @@ class FacetedSearch extends React.Component {
     error: undefined,
     totalHits: 0,
     facetsCount: {},
-    documents: []
+    documents: [],
+    query: '*'
   }
 
   componentDidMount () {
@@ -125,7 +126,7 @@ class FacetedSearch extends React.Component {
     this.setState({pending: true}, () => {
       this.loadFacets()
         .then(() => {
-          const {activeFilters, facets} = this.state;
+          const {activeFilters, facets, query} = this.state;
           if (facets.length === 0) {
             // eslint-disable-next-line
             console.warn('No facets configured. Please, check "faceted.filter.dictionaries" preference and system dictionaries');
@@ -135,8 +136,8 @@ class FacetedSearch extends React.Component {
             return;
           }
           Promise.all([
-            fetchFacets(facets.map(f => f.name), activeFilters),
-            doSearch('*', activeFilters, offset, PAGE_SIZE)
+            fetchFacets(facets.map(f => f.name), activeFilters, query),
+            doSearch(query, activeFilters, offset, PAGE_SIZE)
           ])
             .then(([facetsCount, searchResult]) => {
               const {
@@ -151,7 +152,8 @@ class FacetedSearch extends React.Component {
                 facetsCount: {...facetsCount},
                 documents: documents.slice(),
                 totalHits,
-                initialFacetsCount: Object.keys(activeFilters).length === 0
+                initialFacetsCount: (!query || query === '*') &&
+                Object.keys(activeFilters).length === 0
                   ? {...facetsCount}
                   : initialFacetsCount
               });
@@ -197,9 +199,15 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  onQueryChange = (e) => {
+    this.setState({
+      query: e.target.value
+    });
+  };
+
   render () {
     const {systemDictionaries} = this.props;
-    const {activeFilters, pending, facetsLoaded} = this.state;
+    const {activeFilters, pending, facetsLoaded, query} = this.state;
     if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
       return (
         <LoadingView />
@@ -218,13 +226,19 @@ class FacetedSearch extends React.Component {
           className={styles.search}
         >
           <Input
+            disabled={pending}
             size="large"
             className={styles.searchInput}
+            value={query}
+            onChange={this.onQueryChange}
+            onPressEnter={() => this.doSearch()}
           />
           <Button
+            disabled={pending}
             className={styles.find}
             size="large"
             type="primary"
+            onClick={() => this.doSearch()}
           >
             <Icon type="search" />
             Search
