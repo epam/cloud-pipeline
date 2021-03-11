@@ -19,11 +19,12 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
-import com.epam.pipeline.elasticsearchagent.utils.ChunkedIterator;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
+import com.epam.pipeline.elasticsearchagent.utils.IteratorUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
@@ -41,6 +42,7 @@ import com.microsoft.azure.storage.blob.models.ContainerListBlobFlatSegmentRespo
 import com.microsoft.azure.storage.blob.models.ListBlobsFlatSegmentResponse;
 import com.microsoft.azure.storage.blob.models.StorageErrorException;
 import io.reactivex.Single;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -74,13 +76,23 @@ public class AzureBlobManager implements ObjectStorageFileManager {
 
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
+    
+    @Getter
+    private final DataStorageType type = DataStorageType.AZ;
 
+    @Override
+    public Stream<DataStorageFile> listVersionsWithTags(final AbstractDataStorage dataStorage,
+                                                        final TemporaryCredentials credentials) {
+        return files(dataStorage, credentials);
+    }
+
+    @Override
     public void listAndIndexFiles(final String indexName,
                                   final AbstractDataStorage storage,
                                   final TemporaryCredentials credentials,
                                   final PermissionsContainer permissions,
                                   final IndexRequestContainer indexContainer) {
-        iterateFilesInChunks(storage, credentials).forEachRemaining(chunk -> {
+        fileChunks(storage, credentials).forEach(chunk -> {
             final Map<String, Map<String, String>> pathTags = cloudPipelineAPIClient.loadDataStorageTagsMap(
                     storage.getId(),
                     new DataStorageTagLoadBatchRequest(
@@ -95,10 +107,14 @@ public class AzureBlobManager implements ObjectStorageFileManager {
         });
     }
 
-    private ChunkedIterator<DataStorageFile> iterateFilesInChunks(final AbstractDataStorage storage,
-                                                                  final TemporaryCredentials credentials) {
-        final int chunkSize = 100;
-        return new ChunkedIterator<>(iterateFiles(storage, credentials), chunkSize);
+    private Stream<List<DataStorageFile>> fileChunks(final AbstractDataStorage storage,
+                                                     final TemporaryCredentials credentials) {
+        return IteratorUtils.streamFrom(IteratorUtils.chunked(iterateFiles(storage, credentials)));
+    }
+
+    private Stream<DataStorageFile> files(final AbstractDataStorage dataStorage,
+                                          final TemporaryCredentials credentials) {
+        return IteratorUtils.streamFrom(iterateFiles(dataStorage, credentials));
     }
 
     private Iterator<DataStorageFile> iterateFiles(final AbstractDataStorage storage,

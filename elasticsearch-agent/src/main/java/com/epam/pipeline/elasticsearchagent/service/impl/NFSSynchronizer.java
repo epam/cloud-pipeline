@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.utils.ChunkedIterator;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
+import com.epam.pipeline.elasticsearchagent.utils.IteratorUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -158,15 +159,14 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
 
     private void consumeFilesInChunks(final Path mountFolder, final Consumer<List<Path>> consumer) {
         try (Stream<Path> files = Files.walk(mountFolder).filter(file -> file.toFile().isFile())) {
-            iterateFilesInChunks(files).forEachRemaining(consumer);
+            fileChunks(files).forEach(consumer);
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred during creating document.", e);
         }
     }
 
-    private Iterator<List<Path>> iterateFilesInChunks(final Stream<Path> paths) {
-        final int chunkSize = 100;
-        return new ChunkedIterator<>(paths.iterator(), chunkSize);
+    private Stream<List<Path>> fileChunks(final Stream<Path> paths) {
+        return IteratorUtils.streamFrom(IteratorUtils.chunked(paths.iterator()));
     }
 
     private String getRelativePath(final Path mountFolder, final Path path) {

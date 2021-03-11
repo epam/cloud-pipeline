@@ -93,9 +93,9 @@ public class GsBucketFileManagerTest {
     }
 
     private void setUpReturnValues(final List<Blob> files) {
-        Mockito.doReturn(files.iterator())
+        Mockito.doAnswer(i -> files.stream())
                .when(manager)
-               .iterateFiles(dataStorage, temporaryCredentials);
+               .files(dataStorage, temporaryCredentials);
     }
 
     private void verifyBlobMapping(final List<Blob> files, final int numberOfInvocation) {

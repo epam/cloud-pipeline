@@ -49,6 +49,7 @@ import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import okhttp3.MultipartBody;
@@ -57,6 +58,7 @@ import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
@@ -147,6 +149,10 @@ public interface CloudPipelineAPI {
 
     @GET("datastorage/{id}/load")
     Call<Result<AbstractDataStorage>> loadDataStorage(@Path(ID) Long storageId);
+
+    @PUT("datastorage/{id}/tags/batch/insert")
+    Call<Result<Object>> insertDataStorageTags(@Path(ID) Long storageId,
+                                               @Body DataStorageTagInsertBatchRequest request);
 
     @POST("datastorage/{id}/tags/batch/load")
     Call<Result<List<DataStorageTag>>> loadDataStorageObjectTags(@Path(ID) Long storageId,
