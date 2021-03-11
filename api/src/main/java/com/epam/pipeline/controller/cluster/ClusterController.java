@@ -86,6 +86,17 @@ public class ClusterController extends AbstractRestController {
         return Result.success(clusterApiService.getMasterNodes());
     }
 
+    @RequestMapping(value = "/cluster/edge/externalUrl", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Return EDGE external URL.",
+            notes = "Return EDGE external URL.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<String> buildEdgeExternalUrl() {
+        return Result.success(clusterApiService.buildEdgeExternalUrl());
+    }
+
     @RequestMapping(value = "/cluster/node/loadAll", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
