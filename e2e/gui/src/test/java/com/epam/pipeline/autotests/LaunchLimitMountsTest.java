@@ -357,7 +357,6 @@ public class LaunchLimitMountsTest
         tools()
                 .perform(registry, group, tool, tool ->
                         tool.settings()
-                                .expandTab(EXEC_ENVIRONMENT)
                                 .doNotMountStoragesSelect(false)
                                 .save());
         library()
@@ -366,7 +365,31 @@ public class LaunchLimitMountsTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
-                .doNotMountStoragesSelect(true);
+                .doNotMountStoragesSelect(true)
+                .ensureNotVisible(LIMIT_MOUNTS)
+                .doNotMountStoragesSelect(false)
+                .ensureVisible(LIMIT_MOUNTS)
+                .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
+                .selectDataStoragesToLimitMounts()
+                .click(CLEAR_SELECTION)
+                .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)
+                .ok()
+                .ensureNotVisible(LIMIT_MOUNTS)
+                .assertDoNotMountStoragesIsChecked()
+                .launch(this)
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", "None"), exist)
+                .waitForSshLink()
+                .waitForTask(mountDataStoragesTask)
+                .click(taskWithName(mountDataStoragesTask))
+                .ensure(log(), containsMessages(
+                        "Run is launched with mount limits (None) Only 0 storages will be mounted",
+                        "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
+                .ssh(shell -> shell
+                        .execute("ls -l cloud-data/")
+                        .assertOutputContains("total 0")
+                        .close());
     }
 
     private String mountStorageMessage(String storage) {
