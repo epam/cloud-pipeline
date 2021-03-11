@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.utils.UtilsManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,6 +53,7 @@ public class ClusterApiService {
     private final NodeDiskManager nodeDiskManager;
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
+    private final UtilsManager utilsManager;
 
     @PostFilter(NODE_READ_FILTER)
     public List<NodeInstance> getNodes() {
@@ -112,5 +114,9 @@ public class ClusterApiService {
     @PreAuthorize(NODE_READ)
     public List<NodeDisk> loadNodeDisks(final String name) {
         return nodeDiskManager.loadByNodeId(name);
+    }
+
+    public String buildEdgeExternalUrl() {
+        return utilsManager.buildEdgeExternalUrl();
     }
 }
