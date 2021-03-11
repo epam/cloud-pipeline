@@ -24,20 +24,23 @@ import {
 } from 'antd';
 import {PreviewIcons} from '../preview/previewIcons';
 import {SearchItemTypes} from '../../../models/search';
+import Preview from '../preview';
 import styles from './search-results.css';
 
 const RESULT_ITEM_HEIGHT = 55;
 const RESULT_ITEM_MARGIN = 5;
+const PREVIEW_TIMEOUT = 1000;
 
 class SearchResults extends React.Component {
   state = {
     resultsAreaHeight: undefined,
-    hoveredIndex: undefined
+    hoverInfo: undefined,
+    preview: undefined
   };
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.page !== this.props.page) {
-      this.unHoverItem(this.state.hoveredIndex)();
+      this.unHoverItem(this.state.hoverInfo)();
     }
   }
 
@@ -85,7 +88,7 @@ class SearchResults extends React.Component {
   };
 
   renderSearchResultItem = (resultItem) => {
-    const {hoveredIndex} = this.state;
+    const {hoverInfo, preview} = this.state;
     const renderName = () => {
       switch (resultItem.type) {
         case SearchItemTypes.run: {
@@ -110,7 +113,7 @@ class SearchResults extends React.Component {
     };
     return (
       <a
-        href={`/#${resultItem.url}`}
+        href={resultItem.url ? `/#${resultItem.url}` : undefined}
         target="_blank"
         key={resultItem.elasticId}
         className={styles.resultItemContainer}
@@ -121,14 +124,14 @@ class SearchResults extends React.Component {
             classNames(
               styles.resultItem,
               {
-                [styles.hovered]: hoveredIndex === resultItem.elasticId
+                [styles.hovered]: hoverInfo === resultItem || preview === resultItem
               }
             )
           }
           style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
-          onMouseOver={this.hoverItem(resultItem.elasticId)}
-          onMouseEnter={this.hoverItem(resultItem.elasticId)}
-          onMouseLeave={this.unHoverItem(resultItem.elasticId)}
+          onMouseOver={this.hoverItem(resultItem)}
+          onMouseEnter={this.hoverItem(resultItem)}
+          onMouseLeave={this.unHoverItem(resultItem)}
           onClick={this.navigate(resultItem)}
         >
           <div style={{display: 'inline-block'}}>
@@ -142,18 +145,43 @@ class SearchResults extends React.Component {
     );
   };
 
-  unHoverItem = (index) => () => {
-    const {hoveredIndex} = this.state;
-    if (hoveredIndex === index) {
-      this.setState({hoveredIndex: undefined});
+  unHoverItem = (info) => () => {
+    const {hoverInfo} = this.state;
+    if (hoverInfo === info) {
+      this.setState({hoverInfo: undefined}, () => this.setPreview(undefined));
     }
   }
 
-  hoverItem = (index) => () => {
-    const {hoveredIndex} = this.state;
-    if (hoveredIndex !== index) {
-      this.setState({hoveredIndex: index});
+  hoverItem = (info) => () => {
+    const {hoverInfo, preview} = this.state;
+    if (hoverInfo !== info) {
+      this.setState({hoverInfo: info}, () => {
+        this.setPreview(info, !preview);
+      });
     }
+  };
+
+  setPreview = (info, delayed = true) => {
+    if (this.previewTimeout) {
+      clearTimeout(this.previewTimeout);
+    }
+    if (delayed) {
+      this.previewTimeout = setTimeout(
+        () => {
+          this.setState({preview: info});
+        },
+        PREVIEW_TIMEOUT
+      );
+    } else {
+      this.setState({preview: info});
+    }
+  };
+
+  doNotHidePreview = (info) => {
+    if (this.previewTimeout) {
+      clearTimeout(this.previewTimeout);
+    }
+    this.setState({preview: info});
   };
 
   navigate = (item) => (e) => {
@@ -181,6 +209,7 @@ class SearchResults extends React.Component {
       page,
       pageSize
     } = this.props;
+    const {preview} = this.state;
     return (
       <div
         className={classNames(
@@ -190,16 +219,33 @@ class SearchResults extends React.Component {
         style={style}
       >
         <div
-          className={styles.results}
-          ref={this.initializeResultsArea}
+          className={styles.content}
         >
+          <div
+            className={styles.results}
+            ref={this.initializeResultsArea}
+          >
+            {
+              showResults && total === 0 && (
+                <Alert type="info" message="Nothing found" />
+              )
+            }
+            {
+              showResults && total > 0 && documents.map(this.renderSearchResultItem)
+            }
+          </div>
           {
-            showResults && total === 0 && (
-              <Alert type="info" message="Nothing found" />
+            preview && (
+              <div
+                className={styles.preview}
+                onMouseOver={() => this.doNotHidePreview(preview)}
+              >
+                <Preview
+                  item={preview}
+                  lightMode
+                />
+              </div>
             )
-          }
-          {
-            showResults && total > 0 && documents.map(this.renderSearchResultItem)
           }
         </div>
         <div

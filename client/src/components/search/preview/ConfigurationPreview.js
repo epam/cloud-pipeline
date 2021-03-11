@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
@@ -61,7 +62,8 @@ export default class ConfigurationPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    })
+    }),
+    lightMode: PropTypes.bool
   };
 
   @observable
@@ -516,7 +518,16 @@ export default class ConfigurationPreview extends React.Component {
     const fireCloudOutputs = this.renderFireCloudIOList('methodOutputs');
 
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />

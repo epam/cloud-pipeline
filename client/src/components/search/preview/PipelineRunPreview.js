@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -76,6 +77,44 @@ const colors = {
   }
 };
 
+const lightColors = {
+  [Statuses.failure]: {
+    color: 'rgb(177,52,20)'
+  },
+  [Statuses.paused]: {
+    color: 'rgb(29,96,138)',
+    fontWeight: 'bold'
+  },
+  [Statuses.pausing]: {
+    color: 'rgb(29,96,138)',
+    fontWeight: 'bold'
+  },
+  [Statuses.running]: {
+    color: 'rgb(29,96,138)',
+    fontWeight: 'bold'
+  },
+  [Statuses.queued]: {
+    color: 'rgb(29,96,138)',
+    fontWeight: 'bold'
+  },
+  [Statuses.resuming]: {
+    color: 'rgb(29,96,138)',
+    fontWeight: 'bold'
+  },
+  [Statuses.scheduled]: {
+    color: 'rgb(29,96,138)',
+    fontWeight: 'bold'
+  },
+  [Statuses.stopped]: {
+    color: '#c17515',
+    fontWeight: 'bold'
+  },
+  [Statuses.success]: {
+    color: 'rgb(30,100,36)',
+    fontWeight: 'bold'
+  }
+};
+
 const icons = {
   [Statuses.failure]: 'exclamation-circle-o',
   [Statuses.stopped]: 'clock-circle-o'
@@ -100,7 +139,8 @@ export default class PipelineRunPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    })
+    }),
+    lightMode: PropTypes.bool
   };
 
   @computed
@@ -427,7 +467,7 @@ export default class PipelineRunPreview extends React.Component {
                     <StatusIcon
                       status={task.status}
                       small
-                      additionalStyleByStatus={colors}
+                      additionalStyleByStatus={this.props.lightMode ? lightColors : colors}
                       iconSet={icons}
                       displayTooltip={false} />
                     <code>{task.name}</code>
@@ -451,14 +491,23 @@ export default class PipelineRunPreview extends React.Component {
     const info = this.renderInfo();
     const tasks = this.renderTasks();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={styles.title} style={{whiteSpace: 'initial'}}>
             {
               this.props.runInfo && this.props.runInfo.loaded
                 ? <StatusIcon
                     run={this.props.runInfo.value}
-                    additionalStyleByStatus={colors}
+                    additionalStyleByStatus={this.props.lightMode ? lightColors : colors}
                     iconSet={icons} />
                 : <Icon type={PreviewIcons[this.props.item.type]} style={{fontSize: 'smaller'}} />
             }

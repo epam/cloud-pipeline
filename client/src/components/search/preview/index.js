@@ -56,6 +56,6 @@ export default function preview (props) {
     return null;
   }
   return (
-    <Content item={props.item} />
+    <Content item={props.item} lightMode={props.lightMode} />
   );
 }

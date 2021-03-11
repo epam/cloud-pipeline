@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
 import renderHighlights from './renderHighlights';
@@ -42,7 +43,8 @@ export default class FolderPreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string
-    })
+    }),
+    lightMode: PropTypes.bool
   };
 
   @computed
@@ -221,7 +223,16 @@ export default class FolderPreview extends React.Component {
     const items = this.renderItems();
 
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />

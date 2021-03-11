@@ -20,9 +20,28 @@
   overflow: auto;
 }
 
-.container .results {
+.container .content {
   flex: 1;
   overflow: auto;
+  display: flex;
+  flex-direction: row;
+}
+
+.container .content .results {
+  flex: 1;
+  overflow: auto;
+}
+
+.container .content .preview {
+  min-width: 30vw;
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: white;
+  margin-left: 10px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .container .pagination {
