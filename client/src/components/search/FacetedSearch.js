@@ -16,7 +16,6 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
 import {
   Alert,
   Button,
@@ -27,70 +26,59 @@ import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import FacetedFilter from './faceted-search/filter';
 import SearchResults from './faceted-search/search-results';
+import {doSearch, fetchFacets} from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
 import styles from './FacetedSearch.css';
+
+const PAGE_SIZE = 20;
 
 @inject('systemDictionaries', 'preferences')
 @observer
 class FacetedSearch extends React.Component {
+  static HIDE_VALUE_IF_EMPTY = false;
+
   state = {
-    activeFilters: [],
-    filtersMock: null
+    activeFilters: {},
+    pending: false,
+    facetsLoaded: false,
+    facets: [],
+    error: undefined,
+    totalHits: 0,
+    facetsCount: {},
+    documents: []
   }
 
-  @computed
-  get configuredFacetedFilters () {
-    const {systemDictionaries, preferences} = this.props;
-    const configuration = preferences.facetedFiltersDictionaries;
-    if (systemDictionaries.loaded && configuration) {
-      const {dictionaries = []} = configuration || {};
-      const orders = dictionaries
-        .map(d => ({[d.dictionary]: d.order || Infinity}))
-        .reduce((r, c) => ({...r, ...c}), {});
-      const systemDictionariesFiltered = (systemDictionaries.value || [])
-        .filter(d => orders.hasOwnProperty(d.key));
-      systemDictionariesFiltered
-        .sort((a, b) => orders[a.key] - orders[b.key]);
-      return systemDictionariesFiltered.map(d => ({
-        name: d.key,
-        values: (d.values || []).map(v => v.value)
-      }));
-    }
-    return [];
-  }
-
-  setFiltersMock (mock) {
-    const {filtersMock} = this.state;
-    if (!filtersMock && mock.length) {
-      this.setState({filtersMock: mock});
-    }
-  }
-
-  componentDidUpdate () {
-    const {filtersMock} = this.state;
-    if (!filtersMock && this.filters.length) {
-      this.setFiltersMock(this.filters);
-    }
+  componentDidMount () {
+    this.doSearch();
   }
 
   get filters () {
-    // todo: filter `configuredFacetedFilters` dictionaries and their values
-    // todo: (based on API response)
-    const {filtersMock} = this.state;
-    const getRandomNumber = (from, to) => {
-      return Math.floor(from + Math.random() * (to + 1 - from));
-    };
-    if (filtersMock) {
-      return filtersMock;
+    const {
+      facetsLoaded,
+      facets,
+      facetsCount,
+      initialFacetsCount = {}
+    } = this.state;
+    if (!facetsLoaded || !facetsCount) {
+      return [];
     }
-    return this.configuredFacetedFilters
-      .filter(d => true)
+    return facets
+      .filter(d => FacetedSearch.HIDE_VALUE_IF_EMPTY
+        ? initialFacetsCount.hasOwnProperty(d.name)
+        : facetsCount.hasOwnProperty(d.name)
+      )
       .map(d => ({
         name: d.name,
         values: d.values
-          .filter(v => true)
-          .map(v => ({name: v, count: getRandomNumber(0, 7)}))
-          .sort((a, b) => a.count - b.count)
+          .map(v => ({name: v, count: facetsCount[d.name][v] || 0}))
+          .sort((a, b) => b.count - a.count)
+          .filter(v => FacetedSearch.HIDE_VALUE_IF_EMPTY
+            ? v.count > 0
+            : (
+              initialFacetsCount[d.name].hasOwnProperty(v.name) &&
+              Number(initialFacetsCount[d.name][v.name]) > 0
+            )
+          )
       }));
   }
 
@@ -119,25 +107,100 @@ class FacetedSearch extends React.Component {
     return null;
   }
 
-  onChangeFilter = (group, name, active) => {
-    if (!group || !name) {
+  onChangeFilter = (group) => (selection) => {
+    if (!group) {
       return;
     }
     const {activeFilters} = this.state;
-    const filter = {group, name, active};
-    let newState = [...activeFilters];
-    if (active) {
-      newState.push(filter);
+    const newFilters = {...activeFilters};
+    if (selection && selection.length) {
+      newFilters[group] = selection.slice();
     } else {
-      newState = newState.filter(f => !(f.group === group && f.name === name));
+      delete newFilters[group];
     }
-    this.setState({activeFilters: newState});
+    this.setState({activeFilters: newFilters}, () => this.doSearch());
   }
+
+  doSearch = (offset = 0) => {
+    this.setState({pending: true}, () => {
+      this.loadFacets()
+        .then(() => {
+          const {activeFilters, facets} = this.state;
+          if (facets.length === 0) {
+            // eslint-disable-next-line
+            console.warn('No facets configured. Please, check "faceted.filter.dictionaries" preference and system dictionaries');
+            this.setState({
+              pending: false
+            });
+            return;
+          }
+          Promise.all([
+            fetchFacets(facets.map(f => f.name), activeFilters),
+            doSearch('*', activeFilters, offset, PAGE_SIZE)
+          ])
+            .then(([facetsCount, searchResult]) => {
+              const {
+                error,
+                documents = [],
+                totalHits = 0
+              } = searchResult;
+              const {initialFacetsCount} = this.state;
+              this.setState({
+                pending: false,
+                error,
+                facetsCount: {...facetsCount},
+                documents: documents.slice(),
+                totalHits,
+                initialFacetsCount: Object.keys(activeFilters).length === 0
+                  ? {...facetsCount}
+                  : initialFacetsCount
+              });
+            });
+        });
+    });
+  };
+
+  loadFacets = () => {
+    const {facetsLoaded} = this.state;
+    if (facetsLoaded) {
+      return Promise.resolve();
+    }
+    const {systemDictionaries, preferences} = this.props;
+    return new Promise((resolve) => {
+      const onDone = () => {
+        const configuration = preferences.facetedFiltersDictionaries;
+        if (systemDictionaries.loaded && configuration) {
+          const {dictionaries = []} = configuration || {};
+          const orders = dictionaries
+            .map(d => ({[d.dictionary]: d.order || Infinity}))
+            .reduce((r, c) => ({...r, ...c}), {});
+          const filtered = (systemDictionaries.value || [])
+            .filter(d => orders.hasOwnProperty(d.key));
+          filtered
+            .sort((a, b) => orders[a.key] - orders[b.key]);
+          const facets = filtered.map(d => ({
+            name: d.key,
+            values: (d.values || []).map(v => v.value)
+          }));
+          this.setState({facetsLoaded: true, facets}, resolve);
+        } else {
+          this.setState({facetsLoaded: true}, resolve);
+        }
+      };
+      Promise.all([
+        systemDictionaries.fetchIfNeededOrWait(),
+        preferences.fetchIfNeededOrWait()
+      ])
+        .then(() => {})
+        .catch(() => {})
+        .then(onDone);
+    });
+  };
 
   render () {
     const {systemDictionaries} = this.props;
-    const {activeFilters} = this.state;
-    if (systemDictionaries.pending && !systemDictionaries.loaded) {
+    const {activeFilters, pending, facetsLoaded} = this.state;
+    if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
       return (
         <LoadingView />
       );
@@ -190,11 +253,12 @@ class FacetedSearch extends React.Component {
                     key={filter.name}
                     name={filter.name}
                     className={styles.filter}
+                    disabled={pending}
                     values={filter.values}
-                    activeFilters={activeFilters}
-                    changeFilter={this.onChangeFilter}
+                    selection={(activeFilters || {})[filter.name]}
+                    onChange={this.onChangeFilter(filter.name)}
                     preferences={this.getFilterPreferences(filter.name)}
-                    test={index === 0}
+                    showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY}
                   />
                 ))
               }

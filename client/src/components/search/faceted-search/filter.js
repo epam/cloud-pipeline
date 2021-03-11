@@ -28,6 +28,7 @@ class FacetedFilter extends React.Component {
     filterGroupExpanded: true,
     filtersExpanded: false
   }
+
   get values () {
     const {showEmptyValues, values} = this.props;
     if (!Array.isArray(values)) {
@@ -38,6 +39,7 @@ class FacetedFilter extends React.Component {
     }
     return values.filter(v => v.count && Number(v.count) > 0);
   }
+
   get entriesToDisplayPreference () {
     const {preferences} = this.props;
     if (preferences) {
@@ -46,6 +48,7 @@ class FacetedFilter extends React.Component {
     }
     return DEFAULT_ITEMS;
   }
+
   get entriesToDisplay () {
     const {filterGroupExpanded, filtersExpanded} = this.state;
     if (!filterGroupExpanded) {
@@ -56,6 +59,7 @@ class FacetedFilter extends React.Component {
     }
     return this.entriesToDisplayPreference;
   }
+
   get showFilterControl () {
     const {filtersExpanded, filterGroupExpanded} = this.state;
     if (!filterGroupExpanded) {
@@ -66,23 +70,40 @@ class FacetedFilter extends React.Component {
     }
     return this.values.length > this.entriesToDisplay;
   }
-  get filterGroup () {
-    const {activeFilters, name} = this.props;
-    return activeFilters.filter(f => f.group === name);
-  }
+
+  onChangeFilters = (value, selected) => {
+    const {selection = [], onChange} = this.props;
+    let changed = false;
+    const newSelection = [...selection];
+    const index = newSelection.indexOf(value);
+    if (selected && index === -1) {
+      newSelection.push(value);
+      changed = true;
+    } else if (!selected && index >= 0) {
+      newSelection.splice(index, 1);
+      changed = true;
+    }
+    if (changed && onChange) {
+      onChange(newSelection);
+    }
+  };
+
   toggleFilters = (event) => {
     event && event.stopPropagation();
     this.setState(prevState => ({filtersExpanded: !prevState.filtersExpanded}));
   }
+
   toggleFilterGroup = (event) => {
     event && event.stopPropagation();
     this.setState(prevState => ({filterGroupExpanded: !prevState.filterGroupExpanded}));
   }
+
   render () {
     const {
       className,
+      disabled,
       name,
-      changeFilter
+      selection = []
     } = this.props;
     const {filtersExpanded, filterGroupExpanded} = this.state;
     if (this.values.length === 0) {
@@ -125,9 +146,9 @@ class FacetedFilter extends React.Component {
                     })}
               >
                 <Checkbox
-                  onChange={(e) => changeFilter(name, v.name, e.target.checked)}
-                  checked={this.filterGroup.some(f => f.name === v.name)}
-                  disabled={v.count === 0}
+                  onChange={(e) => this.onChangeFilters(v.name, e.target.checked)}
+                  checked={selection.some(s => s === v.name)}
+                  disabled={v.count === 0 || disabled}
                 >
                   {v.name} ({v.count})
                 </Checkbox>
@@ -147,13 +168,13 @@ class FacetedFilter extends React.Component {
 
 FacetedFilter.propTypes = {
   className: PropTypes.string,
+  disabled: PropTypes.bool,
   name: PropTypes.string,
-  values: PropTypes.array,
+  onChange: PropTypes.func,
   selection: PropTypes.array,
   showAmount: PropTypes.number,
-  activeFilters: PropTypes.array,
-  changeFilter: PropTypes.func,
-  showEmptyValues: PropTypes.bool
+  showEmptyValues: PropTypes.bool,
+  values: PropTypes.array
 };
 
 export default FacetedFilter;
