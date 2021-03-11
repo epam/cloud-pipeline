@@ -40,35 +40,30 @@ class FacetedFilter extends React.Component {
     return values.filter(v => v.count && Number(v.count) > 0);
   }
 
-  get entriesToDisplayPreference () {
-    const {preferences} = this.props;
-    if (preferences) {
-      const {entriesToDisplay, defaultEntriesToDisplay} = preferences;
-      return +entriesToDisplay || +defaultEntriesToDisplay || DEFAULT_ITEMS;
-    }
-    return DEFAULT_ITEMS;
-  }
-
-  get entriesToDisplay () {
+  get filtersToShow () {
     const {filterGroupExpanded, filtersExpanded} = this.state;
+    const {preferences} = this.props;
+    const {entriesToDisplay} = preferences || {};
     if (!filterGroupExpanded) {
       return 0;
     }
     if (filterGroupExpanded && filtersExpanded) {
       return this.values.length;
     }
-    return this.entriesToDisplayPreference;
+    return entriesToDisplay || DEFAULT_ITEMS;
   }
 
   get showFilterControl () {
     const {filtersExpanded, filterGroupExpanded} = this.state;
+    const {preferences} = this.props;
+    const {entriesToDisplay} = preferences || {};
     if (!filterGroupExpanded) {
       return false;
     }
     if (filtersExpanded) {
-      return this.values.length > this.entriesToDisplayPreference;
+      return this.values.length > (entriesToDisplay || DEFAULT_ITEMS);
     }
-    return this.values.length > this.entriesToDisplay;
+    return this.values.length > this.filtersToShow;
   }
 
   onChangeFilters = (value, selected) => {
@@ -142,7 +137,7 @@ class FacetedFilter extends React.Component {
                 key={v.name}
                 className={
                   classNames(styles.option,
-                    {[styles.optionHidden]: (i + 1) > this.entriesToDisplay
+                    {[styles.optionHidden]: (i + 1) > this.filtersToShow
                     })}
               >
                 <Checkbox
@@ -171,6 +166,7 @@ FacetedFilter.propTypes = {
   disabled: PropTypes.bool,
   name: PropTypes.string,
   onChange: PropTypes.func,
+  preferences: PropTypes.object,
   selection: PropTypes.array,
   showAmount: PropTypes.number,
   showEmptyValues: PropTypes.bool,

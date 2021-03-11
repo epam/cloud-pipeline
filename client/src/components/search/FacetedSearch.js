@@ -92,18 +92,14 @@ class FacetedSearch extends React.Component {
       if (!filter) {
         return null;
       }
-      const preferences = {
-        entriesToDisplay: filter.defaultDictEntriesToDisplay,
-        defaultEntriesToDisplay: facetedFiltersDictionaries.defaultDictEntriesToDisplay
+      let entriesToDisplay = filter.defaultDictEntriesToDisplay ||
+      facetedFiltersDictionaries.defaultDictEntriesToDisplay;
+      if (typeof entriesToDisplay === 'string' && entriesToDisplay.toLowerCase() === 'all') {
+        entriesToDisplay = Infinity;
+      }
+      return {
+        entriesToDisplay: Number(entriesToDisplay)
       };
-      return Object.fromEntries(Object.entries(preferences)
-        .map(([key, value]) => {
-          if (value && typeof value === 'string' && value.toLowerCase() === 'all') {
-            return [key, Infinity];
-          }
-          return [key, Number(value)];
-        })
-      );
     }
     return null;
   }
