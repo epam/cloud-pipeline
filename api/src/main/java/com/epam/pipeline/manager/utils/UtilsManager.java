@@ -34,6 +34,7 @@ import java.util.Optional;
 @Service
 public class UtilsManager {
 
+    private static final String BASE_URL_TEMPLATE = "%s://%s:%d";
     private static final String SSH_URL_TEMPLATE = "%s://%s:%d/ssh/pipeline/%d";
     private static final String FSBROWSER_URL_TEMPLATE = "%s://%s:%d/fsbrowser/%d";
 
@@ -63,6 +64,11 @@ public class UtilsManager {
         } else {
             throw new IllegalArgumentException("Storage fsbrowser is not enabled.");
         }
+    }
+
+    public String buildEdgeExternalUrl() {
+        final ServiceDescription service = getServiceDescription(edgeLabel);
+        return String.format(BASE_URL_TEMPLATE, service.getScheme(), service.getIp(), service.getPort());
     }
 
     private boolean runIsNotSensitive(final Long runId) {

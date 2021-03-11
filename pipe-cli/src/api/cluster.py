@@ -63,3 +63,9 @@ class Cluster(API):
         url_path = 'cluster/node/%s/usage/report?interval=%s&from=%s&to=%s&type=%s' \
                    % (instance_id, interval, date_from, date_to, report_type.upper())
         api.download(url_path, file_path)
+
+    @classmethod
+    def get_edge_external_url(cls):
+        api = cls.instance()
+        response_data = api.call('cluster/edge/externalUrl', data=None)
+        return response_data.get('payload')

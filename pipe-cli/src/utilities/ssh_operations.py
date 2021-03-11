@@ -26,6 +26,7 @@ import time
 
 import paramiko
 from scp import SCPClient, SCPException
+from src.api.cluster import Cluster
 
 from src.config import is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
@@ -37,6 +38,8 @@ from urllib.parse import urlparse
 DEFAULT_SSH_PORT = 22
 DEFAULT_SSH_USER = 'root'
 DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
+
+run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner sensitive')
 
 
 class PasswordlessSSHConfig:
@@ -84,6 +87,7 @@ def setup_paramiko_logging():
     if paramiko_log_file:
         paramiko.util.log_to_file(paramiko_log_file, paramiko_log_level)
 
+
 def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
     timeout = timeout or None
     retries = retries or 0
@@ -124,6 +128,7 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
         else:
             raise
 
+
 def get_conn_info(run_id):
     run_model = PipelineRun.get(run_id)
     if not run_model.is_initialized:
@@ -138,13 +143,29 @@ def get_conn_info(run_id):
     ssh_proxy_port = ssh_url_parts.port
     if not ssh_proxy_port:
         ssh_proxy_port = 80 if ssh_url_parts.scheme == "http" else 443
-
-    run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner sensitive')
     return run_conn_info(ssh_proxy=(ssh_proxy_host, ssh_proxy_port),
                          ssh_endpoint=(run_model.pod_ip, DEFAULT_SSH_PORT),
                          ssh_pass=run_model.ssh_pass,
                          owner=run_model.owner,
                          sensitive=run_model.sensitive)
+
+
+def get_custom_conn_info(host_id):
+    proxy_url = Cluster.get_edge_external_url()
+    if not proxy_url:
+        raise RuntimeError('Cannot retrieve EDGE service external url')
+    proxy_url_parts = urlparse(proxy_url)
+    proxy_host = proxy_url_parts.hostname
+    if not proxy_host:
+        raise RuntimeError('Cannot resolve EDGE service hostname from its external url')
+    proxy_port = proxy_url_parts.port
+    if not proxy_port:
+        proxy_port = 80 if proxy_url_parts.scheme == 'http' else 443
+    return run_conn_info(ssh_proxy=(proxy_host, proxy_port),
+                         ssh_endpoint=(host_id, DEFAULT_SSH_PORT),
+                         ssh_pass=None,
+                         owner=None,
+                         sensitive=None)
 
 
 def setup_paramiko_transport(conn_info, retries):
@@ -290,9 +311,25 @@ def parse_scp_location(location):
     return location, None
 
 
-def create_tunnel(run_id, local_port, remote_port, connection_timeout,
+def create_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
                   timeout, foreground, retries):
+    run_id = parse_run_identifier(host_id)
+    if run_id:
+        create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
+                             ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                             timeout, foreground, retries)
+    else:
+        if ssh:
+            raise RuntimeError('Passwordless SSH tunnel connections are allowed to runs only.')
+        create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
+                              log_file, log_level,
+                              timeout, foreground, retries)
+
+
+def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
+                         ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                         timeout, foreground, retries):
     conn_info = get_conn_info(run_id)
     if conn_info.sensitive:
         raise RuntimeError('Tunnel connections to sensitive runs are not allowed.')
@@ -304,6 +341,17 @@ def create_tunnel(run_id, local_port, remote_port, connection_timeout,
         else:
             create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                                      remote_host, log_level, retries)
+    else:
+        create_background_tunnel(log_file, timeout)
+
+
+def create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
+                          log_file, log_level,
+                          timeout, foreground, retries):
+    if foreground:
+        conn_info = get_custom_conn_info(host_id)
+        create_foreground_tunnel(host_id, local_port, remote_port, connection_timeout, conn_info,
+                                 host_id, log_level, retries)
     else:
         create_background_tunnel(log_file, timeout)
 
