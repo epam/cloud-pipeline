@@ -338,6 +338,16 @@ export default class S3FilePreview extends React.Component {
   };
 
   renderPreview = () => {
+    if (this.props.dataStorageInfo && !this.props.dataStorageInfo.loaded) {
+      return;
+    }
+    if (
+      this.props.dataStorageInfo &&
+      this.props.dataStorageInfo.value &&
+      this.props.dataStorageInfo.value.sensitive
+    ) {
+      return null;
+    }
     const extension = this.props.item.id.split('.').pop().toLowerCase();
     const previewRenderers = {
       pdb: this.renderPDBPreview,
