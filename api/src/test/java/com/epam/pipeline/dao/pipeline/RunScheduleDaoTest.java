@@ -71,9 +71,6 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
     private PipelineDao pipelineDao;
 
     @Autowired
-    private PipelineManager pipelineManager;
-
-    @Autowired
     private RunConfigurationDao configurationDao;
 
     @Autowired
@@ -167,14 +164,6 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedules();
         assertEquals(1, runSchedules.size());
         assertEquals(runSchedules.get(0).getId(), testRunSchedule2.getId());
-    }
-
-    @Test
-    public void testScheduleRemovalAfterRunIsRemoved() {
-        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testUpdatedRunSchedule, testRunSchedule2));
-        assertFalse(runScheduleDao.loadAllRunSchedules().isEmpty());
-        pipelineManager.delete(testPipeline.getId(), true);
-        assertTrue(runScheduleDao.loadAllRunSchedules().isEmpty());
     }
 
     @Test

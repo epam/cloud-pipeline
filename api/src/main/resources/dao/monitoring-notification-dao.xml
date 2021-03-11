@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -126,17 +126,6 @@
                     FROM
                         pipeline.notification_timestamp
                     WHERE run_id = ?
-                ]]>
-            </value>
-        </property>
-        <property name="deleteNotificationTimestampsByPipelineIdQuery">
-            <value>
-                <![CDATA[
-                    DELETE
-                    FROM
-                        pipeline.notification_timestamp nt
-                    USING pipeline.pipeline_run pr
-                    WHERE pr.run_id = nt.run_id AND pr.pipeline_id = ?
                 ]]>
             </value>
         </property>

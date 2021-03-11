@@ -1780,7 +1780,5 @@
                     ORDER BY
                         start_date DESC
                 ]]>
-            </value>
-        </property>
     </bean>
 </beans>
