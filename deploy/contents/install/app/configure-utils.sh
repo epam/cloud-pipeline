@@ -1050,6 +1050,10 @@ function api_register_drive_mapping {
     api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
 }
 
+function api_register_edge {
+    api_set_preference "base.edge.host.external" "${EDGE_EXTERNAL_SCHEMA}://${CP_EDGE_EXTERNAL_HOST}:${CP_EDGE_EXTERNAL_PORT}/" "true"    
+}
+
 function api_register_share_service {
     api_set_preference "data.sharing.base.api" "https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}/proxy/?id=%d" "false"
 
