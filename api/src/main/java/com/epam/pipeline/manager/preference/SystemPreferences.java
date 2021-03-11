@@ -512,8 +512,6 @@ public class SystemPreferences {
                                                         null, BASE_URLS_GROUP, PreferenceValidators.isValidUrl);
     public static final StringPreference BASE_DAV_AUTH_URL = new StringPreference("base.dav.auth.url",
             null, BASE_URLS_GROUP, pass);
-    public static final StringPreference BASE_EDGE_HOST_EXTERNAL = new StringPreference("base.edge.host.external",
-            null, BASE_URLS_GROUP, pass);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,

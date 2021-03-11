@@ -713,9 +713,6 @@ if is_service_requested cp-edge; then
 
         print_info "-> Waiting for EDGE to initialize"
         wait_for_deployment "cp-edge"
-        
-        print_info "-> Register EDGE in API Service"
-        api_register_edge
 
         print_info "-> Setting EDGE Service labels:"
         __edge_external_host__="cloud-pipeline/external-host=$CP_EDGE_EXTERNAL_HOST"
