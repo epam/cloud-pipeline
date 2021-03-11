@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     private String loadPipelineRestartedRunForParentRunQuery;
     private String loadAllRestartedRunsQuery;
     private String loadAllRestartedRunsForInitialRunQuery;
-    private String deleteRestartedRunsByPipelineQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createPipelineRestartRun(RestartRun restartRun) {
@@ -63,11 +62,6 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     public List<RestartRun> loadAllRestartedRunsForInitialRun(Long runId) {
         return getJdbcTemplate().query(loadAllRestartedRunsForInitialRunQuery,
                 PipelineRestartRunParameters.getRowMapper(), runId, runId);
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRestartedRunsForPipeline(Long pipelineId) {
-        getJdbcTemplate().update(deleteRestartedRunsByPipelineQuery, pipelineId);
     }
 
     enum PipelineRestartRunParameters {
@@ -120,10 +114,5 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadAllRestartedRunsForInitialRunQuery(String loadAllRestartedRunsForInitialRunQuery) {
         this.loadAllRestartedRunsForInitialRunQuery = loadAllRestartedRunsForInitialRunQuery;
-    }
-
-    @Required
-    public void setDeleteRestartedRunsByPipelineQuery(String deleteRestartedRunsByPipelineQuery) {
-        this.deleteRestartedRunsByPipelineQuery = deleteRestartedRunsByPipelineQuery;
     }
 }

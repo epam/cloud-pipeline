@@ -33,7 +33,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 @Transactional
 public class RestartRunDaoTest extends AbstractJdbcTest {
@@ -149,16 +148,6 @@ public class RestartRunDaoTest extends AbstractJdbcTest {
         assertNotNull(runs);
         assertEquals(1, runs2.size());
         assertEquals(runs2.get(0).getParentRunId(), restartRun4.getParentRunId());
-    }
-
-    @Test
-    public void testDeleteRestartedRunsByPipeline() {
-        restartRunDao.createPipelineRestartRun(restartRun1);
-        restartRunDao.createPipelineRestartRun(restartRun2);
-
-        restartRunDao.deleteRestartedRunsForPipeline(testPipeline.getId());
-        List<RestartRun> loadRestartRun = restartRunDao.loadAllRestartedRuns();
-        assertTrue(loadRestartRun.isEmpty());
     }
 
     private PipelineRun createPipelineRun(Long runId, Long pipelineId, Long parentRunId) {
