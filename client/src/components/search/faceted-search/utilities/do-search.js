@@ -18,7 +18,7 @@ import {FacetedSearch} from '../../../../models/search';
 
 function doSearch (query, filters, offset, pageSize) {
   const payload = {
-    query: '*',
+    query: query || '*',
     filters: {...filters},
     offset,
     pageSize,

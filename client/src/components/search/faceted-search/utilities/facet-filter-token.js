@@ -14,10 +14,15 @@
  *  limitations under the License.
  */
 
-import * as facetedQueryString from './facet-query-string';
+function getFacetFilterToken (query, filters, offset, pageSize) {
+  const filtersKeys = Object.keys(filters || {}).sort();
+  const filtersParts = filtersKeys.map(key => `${key}:${(filters[key] || []).sort().join(',')}`);
+  return [
+    query || '*',
+    ...filtersParts,
+    `${offset}`,
+    `${pageSize}`
+  ].join('|');
+}
 
-export {default as doSearch} from './do-search';
-export {facetedQueryString};
-export {default as getFacetFilterToken} from './facet-filter-token';
-export {default as fetchFacets} from './fetch-facets';
-export {default as getItemUrl} from './get-item-url';
+export default getFacetFilterToken;

@@ -16,16 +16,14 @@
 
 import {FacetedSearch} from '../../../../models/search';
 
-const PAGE_SIZE = 20;
-
 function fetchFacetsGroup (facetNames, filters, query) {
   return new Promise((resolve) => {
     const payload = {
-      query,
+      query: query || '*',
       facets: facetNames,
       filters: {...filters},
       offset: 0,
-      pageSize: PAGE_SIZE,
+      pageSize: 1,
       highlight: false
     };
     const request = new FacetedSearch();

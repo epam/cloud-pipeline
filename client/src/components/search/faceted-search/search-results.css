@@ -15,5 +15,61 @@
  */
 
 .container {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
 
+.container .results {
+  flex: 1;
+  overflow: auto;
+}
+
+.container .pagination {
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.empty-warning {
+  color: #666;
+  font-size: larger;
+  padding: 20px;
+}
+
+.result-item-container {
+  color: inherit;
+  text-decoration: none;
+}
+
+.result-item {
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.result-item.hovered {
+  background-color: #eef8ff;
+  border-color: #a2d8ff;
+}
+
+.result-item .icon {
+  margin-right: 5px;
+  font-size: large;
+}
+
+.result-item .title {
+  font-weight: bold;
+  font-size: larger;
 }

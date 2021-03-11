@@ -15,7 +15,7 @@
  */
 
 .filter {
-  margin: 2px 0;
+  margin-bottom: 4px;
   padding: 0;
   background-color: #fafafa;
   border: 1px solid #ddd;
@@ -63,7 +63,7 @@
 .filter .options-container {
   display: flex;
   flex-direction: column;
-  padding: 0px 5px;
+  padding: 0 5px;
 }
 
 .filter .option {

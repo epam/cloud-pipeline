@@ -26,13 +26,24 @@ import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import FacetedFilter from './faceted-search/filter';
 import SearchResults from './faceted-search/search-results';
-import {doSearch, fetchFacets} from './faceted-search/utilities';
+import {
+  doSearch,
+  facetedQueryString,
+  getFacetFilterToken,
+  getItemUrl,
+  fetchFacets
+} from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
 import styles from './FacetedSearch.css';
 
-const PAGE_SIZE = 20;
-
-@inject('systemDictionaries', 'preferences')
+@inject('systemDictionaries', 'preferences', 'pipelines')
+@inject((stores, props) => {
+  const {location = {}} = props || {};
+  const {query = {}} = location;
+  return {
+    facetedFilters: facetedQueryString.parse(query)
+  };
+})
 @observer
 class FacetedSearch extends React.Component {
   static HIDE_VALUE_IF_EMPTY = false;
@@ -46,11 +57,21 @@ class FacetedSearch extends React.Component {
     totalHits: 0,
     facetsCount: {},
     documents: [],
-    query: '*'
+    query: undefined,
+    offset: 0,
+    pageSize: undefined,
+    pageSizeInitialized: false,
+    showResults: false
   }
 
   componentDidMount () {
-    this.doSearch();
+    const {facetedFilters} = this.props;
+    if (facetedFilters) {
+      const {query, filters} = facetedFilters;
+      this.setState({query, activeFilters: filters}, () => this.doSearch());
+    } else {
+      this.doSearch();
+    }
   }
 
   get filters () {
@@ -81,6 +102,14 @@ class FacetedSearch extends React.Component {
             )
           )
       }));
+  }
+
+  get page () {
+    const {offset, pageSize, pageSizeInitialized} = this.state;
+    if (!pageSizeInitialized) {
+      return 1;
+    }
+    return Math.floor(offset / pageSize) + 1;
   }
 
   getFilterPreferences = (filterName) => {
@@ -122,7 +151,17 @@ class FacetedSearch extends React.Component {
     this.setState({pending: true}, () => {
       this.loadFacets()
         .then(() => {
-          const {activeFilters, facets, query} = this.state;
+          const {
+            activeFilters,
+            facets,
+            query,
+            pageSize,
+            pageSizeInitialized,
+            searchToken: currentSearchToken
+          } = this.state;
+          if (!pageSizeInitialized) {
+            return;
+          }
           if (facets.length === 0) {
             // eslint-disable-next-line
             console.warn('No facets configured. Please, check "faceted.filter.dictionaries" preference and system dictionaries');
@@ -131,29 +170,52 @@ class FacetedSearch extends React.Component {
             });
             return;
           }
-          Promise.all([
-            fetchFacets(facets.map(f => f.name), activeFilters, query),
-            doSearch(query, activeFilters, offset, PAGE_SIZE)
-          ])
-            .then(([facetsCount, searchResult]) => {
-              const {
-                error,
-                documents = [],
-                totalHits = 0
-              } = searchResult;
-              const {initialFacetsCount} = this.state;
-              this.setState({
-                pending: false,
-                error,
-                facetsCount: {...facetsCount},
-                documents: documents.slice(),
-                totalHits,
-                initialFacetsCount: (!query || query === '*') &&
-                Object.keys(activeFilters).length === 0
-                  ? {...facetsCount}
-                  : initialFacetsCount
+          const searchToken = getFacetFilterToken(query, activeFilters, offset, pageSize);
+          if (currentSearchToken === searchToken) {
+            return;
+          }
+          this.setState({
+            searchToken
+          }, () => {
+            let queryString = facetedQueryString.build(query, activeFilters);
+            if (queryString) {
+              queryString = `?${queryString}`;
+            }
+            if (this.props.router.location.search !== queryString) {
+              this.props.router.push(`/search/advanced${queryString || ''}`);
+            }
+            Promise.all([
+              fetchFacets(facets.map(f => f.name), activeFilters, query),
+              doSearch(query, activeFilters, offset, pageSize)
+            ])
+              .then(([facetsCount, searchResult]) => {
+                const {
+                  error,
+                  documents = [],
+                  totalHits = 0
+                } = searchResult;
+                Promise.all(
+                  documents.map(doc => getItemUrl(doc, this.props))
+                )
+                  .then(urls => {
+                    urls.forEach((url, index) => {
+                      documents[index].url = url;
+                    });
+                    const {searchToken: actualSearchToken} = this.state;
+                    if (actualSearchToken === searchToken) {
+                      this.setState({
+                        pending: false,
+                        error,
+                        facetsCount: {...facetsCount},
+                        documents: documents.slice(),
+                        totalHits,
+                        searchToken: undefined,
+                        showResults: Object.keys(activeFilters || {}).length > 0 || !!query
+                      });
+                    }
+                  });
               });
-            });
+          });
         });
     });
   };
@@ -180,7 +242,14 @@ class FacetedSearch extends React.Component {
             name: d.key,
             values: (d.values || []).map(v => v.value)
           }));
-          this.setState({facetsLoaded: true, facets}, resolve);
+          fetchFacets(facets.map(f => f.name), {}, '*')
+            .then((facetsCount) => {
+              this.setState({
+                initialFacetsCount: facetsCount,
+                facetsLoaded: true,
+                facets
+              }, resolve);
+            });
         } else {
           this.setState({facetsLoaded: true}, resolve);
         }
@@ -195,15 +264,45 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  onChangePage = (page, pageSize) => {
+    const {offset, pageSize: oldPageSize, pageSizeInitialized} = this.state;
+    const newOffset = (page - 1) * pageSize;
+    if (pageSizeInitialized || newOffset !== offset || pageSize !== oldPageSize) {
+      this.setState({
+        offset: newOffset,
+        pageSize: pageSizeInitialized ? oldPageSize : pageSize,
+        pageSizeInitialized: true
+      }, () => {
+        this.doSearch(newOffset);
+      });
+    }
+  };
+
   onQueryChange = (e) => {
     this.setState({
       query: e.target.value
     });
   };
 
+  onNavigate = async (item) => {
+    if (!this.props.router || !item.url) {
+      return;
+    }
+    this.props.router.push(item.url);
+  }
+
   render () {
     const {systemDictionaries} = this.props;
-    const {activeFilters, pending, facetsLoaded, query} = this.state;
+    const {
+      activeFilters,
+      documents,
+      facetsLoaded,
+      pageSize,
+      pending,
+      showResults,
+      totalHits,
+      query
+    } = this.state;
     if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
       return (
         <LoadingView />
@@ -246,7 +345,7 @@ class FacetedSearch extends React.Component {
               key: 'faceted-filter',
               size: {
                 pxMinimum: 300,
-                percentMaximum: 75,
+                percentMaximum: 50,
                 percentDefault: 25
               }
             }]}
@@ -276,6 +375,14 @@ class FacetedSearch extends React.Component {
             <SearchResults
               key="search-results"
               className={classNames(styles.panel, styles.searchResults)}
+              disabled={pending}
+              documents={(documents || []).slice()}
+              page={this.page}
+              pageSize={pageSize}
+              onChangePage={this.onChangePage}
+              onNavigate={this.onNavigate}
+              showResults={showResults}
+              total={totalHits}
             />
           </SplitPanel>
         </div>
