@@ -540,7 +540,7 @@ class GridEngineScaleUpHandler:
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
                  instance_image, cmd_template, price_type, region_id, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params=''):
+                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params='', clock=Clock()):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -580,6 +580,7 @@ class GridEngineScaleUpHandler:
         self.ge_polling_timeout = ge_polling_timeout
         self.instance_family = instance_family
         self.worker_launch_system_params = worker_launch_system_params
+        self.clock = clock
 
     def scale_up(self, resource):
         """
@@ -711,6 +712,7 @@ class GridEngineScaleUpHandler:
             try:
                 self.grid_engine.enable_host(pod.name)
                 Logger.info('Additional worker with host=%s has been enabled in grid engine.' % pod.name)
+                self.host_storage.update_hosts_activity([pod.name], self.clock.now())
                 return
             except Exception as e:
                 Logger.warn('Additional worker with host=%s enabling in grid engine has failed '
@@ -1512,7 +1514,8 @@ if __name__ == '__main__':
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_family=instance_family,
-                                                worker_launch_system_params=worker_launch_system_params)
+                                                worker_launch_system_params=worker_launch_system_params,
+                                                clock=scaling_operations_clock)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
