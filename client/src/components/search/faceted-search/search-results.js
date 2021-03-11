@@ -88,6 +88,7 @@ class SearchResults extends React.Component {
   };
 
   renderSearchResultItem = (resultItem) => {
+    const {disabled} = this.props;
     const {hoverInfo, preview} = this.state;
     const renderName = () => {
       switch (resultItem.type) {
@@ -113,7 +114,7 @@ class SearchResults extends React.Component {
     };
     return (
       <a
-        href={resultItem.url ? `/#${resultItem.url}` : undefined}
+        href={!disabled && resultItem.url ? `/#${resultItem.url}` : undefined}
         target="_blank"
         key={resultItem.elasticId}
         className={styles.resultItemContainer}
@@ -124,7 +125,8 @@ class SearchResults extends React.Component {
             classNames(
               styles.resultItem,
               {
-                [styles.hovered]: hoverInfo === resultItem || preview === resultItem
+                [styles.disabled]: disabled,
+                [styles.hovered]: !disabled && (hoverInfo === resultItem || preview === resultItem)
               }
             )
           }
@@ -185,6 +187,9 @@ class SearchResults extends React.Component {
   };
 
   navigate = (item) => (e) => {
+    if (this.props.disabled) {
+      return;
+    }
     if (e && (e.ctrlKey || e.metaKey)) {
       return;
     }

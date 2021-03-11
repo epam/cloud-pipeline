@@ -326,14 +326,14 @@ class FacetedSearch extends React.Component {
             className={styles.searchInput}
             value={query}
             onChange={this.onQueryChange}
-            onPressEnter={() => this.doSearch()}
+            onPressEnter={() => this.doSearch(0)}
           />
           <Button
             disabled={pending}
             className={styles.find}
             size="large"
             type="primary"
-            onClick={() => this.doSearch()}
+            onClick={() => this.doSearch(0)}
           >
             <Icon type="search" />
             Search

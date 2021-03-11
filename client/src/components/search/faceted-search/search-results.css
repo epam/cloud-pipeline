@@ -83,6 +83,11 @@
   border-color: #a2d8ff;
 }
 
+.result-item.disabled {
+  background-color: #eee;
+  color: #999;
+}
+
 .result-item .icon {
   margin-right: 5px;
   font-size: large;
