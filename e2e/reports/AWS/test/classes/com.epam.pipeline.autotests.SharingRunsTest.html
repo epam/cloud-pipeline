@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">7</div>
+<div class="counter">6</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">20m14.78s</div>
+<div class="counter">23m56.17s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">12%</div>
+<div class="percent">25%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,82 +73,13 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="displayingSharingToolAtServicesPanel - EPMCMBIBPC-2680"></a>
-<h3 class="failures">displayingSharingToolAtServicesPanel - EPMCMBIBPC-2680</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-logout}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615389246284.114.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615389246284.114.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-logout&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.NavigationMenuAO.logout(NavigationMenuAO.java:93)
-	at com.epam.pipeline.autotests.mixins.Authorization.logout(Authorization.java:72)
-	at com.epam.pipeline.autotests.SharingRunsTest.displayingSharingToolAtServicesPanel(SharingRunsTest.java:206)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-logout&quot;}
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edcb828e2f43', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 467fa43a640435a2990afc635dc2c977
-*** Element info: {Using=id, value=navigation-button-logout}
-	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
-	at org.openqa.selenium.By$ById.findElement(By.java:218)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 23 more
-</pre>
-</span>
-</div>
-<div class="test">
 <a name="removeNode"></a>
 <h3 class="failures">removeNode</h3>
 <span class="code">
 <pre>Element not found {By.id: navigation-button-cluster}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615389911831.122.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615389911831.122.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615474548948.147.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615474548948.147.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-cluster&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -165,7 +96,7 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest.lambda$removeNode$0(AbstractSinglePipelineRunningTest.java:47)
 	at java.util.Optional.ifPresent(Optional.java:159)
 	at com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest.removeNode(AbstractSinglePipelineRunningTest.java:47)
-	at sun.reflect.GeneratedMethodAccessor22.invoke(Unknown Source)
+	at sun.reflect.GeneratedMethodAccessor28.invoke(Unknown Source)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
@@ -183,10 +114,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edcb828e2f43', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '1fa9f42c6ffc', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 467fa43a640435a2990afc635dc2c977
+Session ID: 93d01f3d42ff0a69adb6e98ad5ec56f9
 *** Element info: {Using=id, value=navigation-button-cluster}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -216,8 +147,8 @@ Session ID: 467fa43a640435a2990afc635dc2c977
 <span class="code">
 <pre>Element not found {By.id: navigation-button-logout}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615389414067.116.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615389414067.116.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615474050388.141.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615474050388.141.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-logout&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -252,10 +183,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edcb828e2f43', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '1fa9f42c6ffc', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 467fa43a640435a2990afc635dc2c977
+Session ID: 93d01f3d42ff0a69adb6e98ad5ec56f9
 *** Element info: {Using=id, value=navigation-button-logout}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -285,8 +216,8 @@ Session ID: 467fa43a640435a2990afc635dc2c977
 <span class="code">
 <pre>Element not found {By.id: navigation-button-logout}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615389581363.118.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615389581363.118.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615474218414.143.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615474218414.143.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-logout&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -321,10 +252,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edcb828e2f43', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '1fa9f42c6ffc', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 467fa43a640435a2990afc635dc2c977
+Session ID: 93d01f3d42ff0a69adb6e98ad5ec56f9
 *** Element info: {Using=id, value=navigation-button-logout}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -354,8 +285,8 @@ Session ID: 467fa43a640435a2990afc635dc2c977
 <span class="code">
 <pre>Element not found {By.id: navigation-button-logout}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615389748967.120.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615389748967.120.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615474386185.145.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615474386185.145.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-logout&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -390,10 +321,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edcb828e2f43', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '1fa9f42c6ffc', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 467fa43a640435a2990afc635dc2c977
+Session ID: 93d01f3d42ff0a69adb6e98ad5ec56f9
 *** Element info: {Using=id, value=navigation-button-logout}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -423,8 +354,8 @@ Session ID: 467fa43a640435a2990afc635dc2c977
 <span class="code">
 <pre>Element not found {By.id: navigation-button-runs}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615389993712.123.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615389993712.123.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615474630812.148.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615474630812.148.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-runs&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -441,7 +372,7 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest.lambda$stopRun$1(AbstractSinglePipelineRunningTest.java:55)
 	at java.util.Optional.ifPresent(Optional.java:159)
 	at com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest.stopRun(AbstractSinglePipelineRunningTest.java:55)
-	at sun.reflect.GeneratedMethodAccessor21.invoke(Unknown Source)
+	at sun.reflect.GeneratedMethodAccessor27.invoke(Unknown Source)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
@@ -459,10 +390,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edcb828e2f43', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '1fa9f42c6ffc', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 467fa43a640435a2990afc635dc2c977
+Session ID: 93d01f3d42ff0a69adb6e98ad5ec56f9
 *** Element info: {Using=id, value=navigation-button-runs}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -492,8 +423,8 @@ Session ID: 467fa43a640435a2990afc635dc2c977
 <span class="code">
 <pre>Element not found {By.id: navigation-button-tools}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615389829897.121.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615389829897.121.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615474467038.146.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615474467038.146.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-tools&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -527,10 +458,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edcb828e2f43', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '1fa9f42c6ffc', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 467fa43a640435a2990afc635dc2c977
+Session ID: 93d01f3d42ff0a69adb6e98ad5ec56f9
 *** Element info: {Using=id, value=navigation-button-tools}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -566,28 +497,28 @@ Session ID: 467fa43a640435a2990afc635dc2c977
 </tr>
 </thead>
 <tr>
-<td class="failures">displayingSharingToolAtServicesPanel - EPMCMBIBPC-2680</td>
-<td>4m12.38s</td>
-<td class="failures">failed</td>
+<td class="success">displayingSharingToolAtServicesPanel - EPMCMBIBPC-2680</td>
+<td>3m29.20s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">removeNode</td>
-<td>1m21.94s</td>
+<td>1m21.91s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">shareSSHsession - EPMCMBIBPC-3179</td>
-<td>2m47.13s</td>
+<td>4m27.52s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">shareToolRunWithUser - EPMCMBIBPC-2678</td>
-<td>2m46.67s</td>
+<td>2m47.06s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">shareToolRunWithUserGroup - EPMCMBIBPC-2679</td>
-<td>2m47.43s</td>
+<td>2m47.10s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -597,12 +528,12 @@ Session ID: 467fa43a640435a2990afc635dc2c977
 </tr>
 <tr>
 <td class="success">validationOfFriendlyURL - EPMCMBIBPC-2674</td>
-<td>3m37.09s</td>
+<td>6m21.33s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">validationOfFriendlyURLNegative - EPMCMBIBPC-2677</td>
-<td>1m20.27s</td>
+<td>1m20.17s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -610,24 +541,60 @@ Session ID: 467fa43a640435a2990afc635dc2c977
 <div id="tab2" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Mar 10, 2021 3:10:10 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 865 -&gt; ChromeDriver: chrome on LINUX (c2f0d37c2e8b895de4f25118ccb8606c)
-Mar 10, 2021 3:10:10 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Mar 11, 2021 2:39:49 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 784 -&gt; ChromeDriver: chrome on LINUX (88f11d15501676607933bb5c81b0b6be)
+Mar 11, 2021 2:39:49 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Mar 10, 2021 3:10:10 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 81 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 13545
+Mar 11, 2021 2:39:49 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 88 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 24280
 Only local connections are allowed.
-Mar 10, 2021 3:10:11 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+Mar 11, 2021 2:39:50 PM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Mar 10, 2021 3:10:11 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Mar 11, 2021 2:39:50 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Mar 10, 2021 3:10:11 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Mar 11, 2021 2:39:50 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Mar 10, 2021 3:10:11 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Mar 11, 2021 2:39:50 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Mar 10, 2021 3:10:11 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 865: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (467fa43a640435a2990afc635dc2c977)
+Mar 11, 2021 2:39:50 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 784: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (e481a746ff8ebc2e750b5abbc829500b)
+Mar 11, 2021 2:41:33 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 784 -&gt; ChromeDriver: chrome on LINUX (e481a746ff8ebc2e750b5abbc829500b)
+Mar 11, 2021 2:41:33 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+INFO: Trying to close the browser ChromeDriver ...
+Mar 11, 2021 2:41:33 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 75 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 5496
+Only local connections are allowed.
+Mar 11, 2021 2:41:34 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+INFO: Detected dialect: OSS
+Mar 11, 2021 2:41:34 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
+Mar 11, 2021 2:41:34 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+INFO: Selenide v. 4.10.01
+Mar 11, 2021 2:41:34 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
+Mar 11, 2021 2:41:34 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 784: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (a75cea231bc23c5b6560069cb71266ba)
+Mar 11, 2021 2:43:36 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 784 -&gt; ChromeDriver: chrome on LINUX (a75cea231bc23c5b6560069cb71266ba)
+Mar 11, 2021 2:43:36 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+INFO: Trying to close the browser ChromeDriver ...
+Mar 11, 2021 2:43:36 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 74 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 6378
+Only local connections are allowed.
+Mar 11, 2021 2:43:36 PM org.openqa.selenium.remote.ProtocolHandshake createSession
+INFO: Detected dialect: OSS
+Mar 11, 2021 2:43:36 PM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
+Mar 11, 2021 2:43:36 PM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+INFO: Selenide v. 4.10.01
+Mar 11, 2021 2:43:36 PM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
+Mar 11, 2021 2:43:36 PM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 784: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (93d01f3d42ff0a69adb6e98ad5ec56f9)
 </pre>
 </span>
 </div>
@@ -639,7 +606,7 @@ INFO: Create webdriver in current thread 865: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 10, 2021 4:09:28 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 11, 2021 4:13:48 PM</p>
 </div>
 </div>
 </body>

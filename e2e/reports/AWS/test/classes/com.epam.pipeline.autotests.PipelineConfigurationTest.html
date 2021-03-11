@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">7m56.43s</div>
+<div class="counter">6m9.30s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">91%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,56 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803"></a>
+<h3 class="failures">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</h3>
+<span class="code">
+<pre>Element should text '15' {By.xpath: .//*[contains(@class, 'log__node-parameter-name') and text() = 'Disk']/following-sibling::*[contains(@class, 'log__node-parameter-value')]}
+Element: '&lt;span class=&quot;log__node-parameter-value&quot;&gt;20 Gb&lt;/span&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615453118640.100.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615453118640.100.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
+	at com.epam.pipeline.autotests.PipelineConfigurationTest.lambda$launchAndCheckLaunchParametersInPipelineLogsPage$12(PipelineConfigurationTest.java:322)
+	at com.epam.pipeline.autotests.ao.LogAO.instanceParameters(LogAO.java:308)
+	at com.epam.pipeline.autotests.PipelineConfigurationTest.launchAndCheckLaunchParametersInPipelineLogsPage(PipelineConfigurationTest.java:321)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,81 +122,81 @@
 </thead>
 <tr>
 <td class="success">changeInstancePriceTypeInConfigurationFile - EPMCMBIBPC-1256</td>
-<td>41.953s</td>
+<td>45.548s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</td>
-<td>39.785s</td>
+<td>42.071s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkConfigurationTabOnPipelineEditPage - EPMCMBIBPC-795</td>
-<td>15.770s</td>
+<td>16.481s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</td>
-<td>2m59.87s</td>
-<td class="success">passed</td>
+<td class="failures">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</td>
+<td>1m28.25s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">launchPipelineThatHaveSeveralConfigurations - EPMCMBIBPC-800</td>
-<td>5.914s</td>
+<td>5.928s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">parametersDoesntChangeOnSwitchingConfigurations - EPMCMBIBPC-1500</td>
-<td>48.716s</td>
+<td>49.991s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">priceTypeValidation - EPMCMBIBPC-1517</td>
-<td>0.667s</td>
+<td>0.539s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfAddingNewConfigurationFeature - EPMCMBIBPC-796</td>
-<td>9.167s</td>
+<td>9.393s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfConfigurationRemoving - EPMCMBIBPC-805</td>
-<td>11.955s</td>
-<td class="success">passed</td>
+<td class="skipped">validationOfConfigurationRemoving</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">validationOfDefaultPriceType - EPMCMBIBPC-1263</td>
-<td>16.775s</td>
+<td>17.728s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfEditConfigurationInConfigurationFile - EPMCMBIBPC-799</td>
-<td>43.004s</td>
+<td>45.948s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfEditNewConfiguration - EPMCMBIBPC-797</td>
-<td>18.218s</td>
+<td>18.599s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</td>
-<td>27.683s</td>
+<td>28.815s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfSettingAsDefaultBehavior - EPMCMBIBPC-804</td>
-<td>16.960s</td>
-<td class="success">passed</td>
+<td class="skipped">validationOfSettingAsDefaultBehavior</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 61762 from [61762]
-Returns latest run with runId 61763 from [61762, 61763]
+<pre>Returns latest run with runId 61915 from [61915]
+Returns latest run with runId 61916 from [61915, 61916]
 </pre>
 </span>
 </div>
@@ -165,7 +208,7 @@ Returns latest run with runId 61763 from [61762, 61763]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 10, 2021 4:09:28 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 11, 2021 4:13:48 PM</p>
 </div>
 </div>
 </body>
