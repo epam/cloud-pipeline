@@ -1375,7 +1375,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 
 
 @tunnel.command(name='start')
-@click.argument('run-id', required=True, type=int)
+@click.argument('host-id', required=True)
 @click.option('-lp', '--local-port', required=True, type=int, help='Local port to establish connection from')
 @click.option('-rp', '--remote-port', required=True, type=int, help='Remote port to establish connection to')
 @click.option('-ct', '--connection-timeout', required=False, type=float, default=0,
@@ -1399,7 +1399,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def start_tunnel(run_id, local_port, remote_port, connection_timeout,
+def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
                  timeout, foreground, retries, trace):
     """
@@ -1415,6 +1415,9 @@ def start_tunnel(run_id, local_port, remote_port, connection_timeout,
 
     For Windows workstations openssh library and putty utils are configured to allow passwordless access
     using ssh and scp command line clients as well as putty application with plink and pscp command line clients.
+
+    Additionally tunnel connections can be established to specific hosts if their ips are specified
+    rather than run ids.
 
     Examples:
 
@@ -1454,6 +1457,12 @@ def start_tunnel(run_id, local_port, remote_port, connection_timeout,
 
         scp file.txt pipeline-12345:/common/workdir/file.txt
 
+    III. Example of tcp port tunnel connection establishing to a specific host.
+
+    Establish tunnel connection from host (10.244.123.123) port (4567) to the same local port.
+
+        pipe tunnel start -lp 4567 -rp 4567 10.244.123.123
+
     Advanced tunnel configuration environment variables:
 
     \b
@@ -1463,7 +1472,7 @@ def start_tunnel(run_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
     try:
-        create_tunnel(run_id, local_port, remote_port, connection_timeout,
+        create_tunnel(host_id, local_port, remote_port, connection_timeout,
                       ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
                       timeout, foreground, retries)
     except Exception as runtime_error:
