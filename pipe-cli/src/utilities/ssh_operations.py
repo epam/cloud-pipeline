@@ -26,6 +26,7 @@ import time
 
 import paramiko
 from scp import SCPClient, SCPException
+from src.api.cluster import Cluster
 
 from src.config import is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
@@ -37,6 +38,8 @@ from urllib.parse import urlparse
 DEFAULT_SSH_PORT = 22
 DEFAULT_SSH_USER = 'root'
 DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
+
+run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner sensitive')
 
 
 class PasswordlessSSHConfig:
@@ -140,8 +143,6 @@ def get_conn_info(run_id):
     ssh_proxy_port = ssh_url_parts.port
     if not ssh_proxy_port:
         ssh_proxy_port = 80 if ssh_url_parts.scheme == "http" else 443
-
-    run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner sensitive')
     return run_conn_info(ssh_proxy=(ssh_proxy_host, ssh_proxy_port),
                          ssh_endpoint=(run_model.pod_ip, DEFAULT_SSH_PORT),
                          ssh_pass=run_model.ssh_pass,
@@ -150,7 +151,7 @@ def get_conn_info(run_id):
 
 
 def get_custom_conn_info(host_id):
-    proxy_url = get_edge_external_url()
+    proxy_url = Cluster.get_edge_external_url()
     if not proxy_url:
         raise RuntimeError('Cannot retrieve EDGE service external url')
     proxy_url_parts = urlparse(proxy_url)
@@ -160,17 +161,11 @@ def get_custom_conn_info(host_id):
     proxy_port = proxy_url_parts.port
     if not proxy_port:
         proxy_port = 80 if proxy_url_parts.scheme == 'http' else 443
-    run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint')
     return run_conn_info(ssh_proxy=(proxy_host, proxy_port),
-                         ssh_endpoint=(host_id, DEFAULT_SSH_PORT))
-
-
-def get_edge_external_url():
-    try:
-        base_edge_host_external_preference = PreferenceAPI.get_preference('base.edge.host.external')
-        return base_edge_host_external_preference.value
-    except:
-        return None
+                         ssh_endpoint=(host_id, DEFAULT_SSH_PORT),
+                         ssh_pass=None,
+                         owner=None,
+                         sensitive=None)
 
 
 def setup_paramiko_transport(conn_info, retries):
