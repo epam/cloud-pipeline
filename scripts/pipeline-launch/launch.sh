@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -602,6 +602,36 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function configureHyperThreading() {
+    mount -o rw,remount /sys
+    if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
+      _current_processor=-1
+      declare -a used_cores
+      cat /proc/cpuinfo | while read line; do
+        if [[ "$line" == *"processor"* ]]; then
+          _current_processor=`echo "$line" | awk '{ print $3 }'`
+        elif [[ "$line" == *"core id"* ]]; then
+          _current_core=`echo "$line" | awk '{ print $4 }'`
+          if [[  "${used_cores}" == *"${_current_core}"* ]]; then
+            if [ -f /sys/devices/system/cpu/cpu${_current_processor}/online ]; then
+              echo 0 > /sys/devices/system/cpu/cpu${_current_processor}/online
+            else
+              echo "Processor $_current_processor marked as hyper-threaded, but file /sys/devices/system/cpu/cpu${_current_processor}/online doesn't exists"
+            fi
+          else
+              used_cores="${used_cores} ${_current_core}"
+          fi
+        fi
+      done
+    else
+      for cpu in `ls /sys/devices/system/cpu/ | grep -E 'cpu[0-9]+'`; do
+        if [ -f /sys/devices/system/cpu/${cpu}/online ]; then
+          echo 1 > /sys/devices/system/cpu/${cpu}/online
+        fi
+      done
+    fi
+}
+
 ######################################################
 
 
@@ -625,6 +655,12 @@ else
     echo "Running a child job on the node"
     SINGLE_RUN=false;
 fi
+
+
+######################################################
+# Configure Hyperthreading
+######################################################
+configureHyperThreading
 
 
 ######################################################
@@ -712,7 +748,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
-check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/2.7/get-pip.py | $CP_PYTHON2_PATH; };
+check_python_module_installed "pip --version" || { curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | $CP_PYTHON2_PATH; };
 
 # Check jq is installed
 if ! jq --version > /dev/null 2>&1; then
@@ -1095,7 +1131,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
                   echo "[ERROR] Main repository install failed. Exiting"
                   exit "$_INSTALL_RESULT"
             fi
-            cd ..
+            cd -
       fi
 fi
 # Init path for shell scripts from common repository
@@ -1105,44 +1141,47 @@ if [ -d $COMMON_REPO_DIR/shell ]; then
 fi
 
 # Install pipe CLI
-if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
-      install_pip_package PipelineCLI
-else
-      echo "Installing 'pipe' CLI"
-      echo "-"
-      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
-        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_TARBALL_NAME:-pipe.tar.gz}"
+CP_PIPE_CLI_ENABLED=${CP_PIPE_CLI_ENABLED:-"true"}
+if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
+      if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
+            install_pip_package PipelineCLI
       else
-        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
-      fi
+            echo "Installing 'pipe' CLI"
+            echo "-"
+            if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+                  CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_TARBALL_NAME:-pipe.tar.gz}"
+            else
+                  CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+            fi
 
-      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_NAME}"
+            download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_NAME}"
 
-      if [ $? -ne 0 ]; then
-            echo "[ERROR] 'pipe' CLI download failed. Exiting"
-            exit 1
-      fi
+            if [ $? -ne 0 ]; then
+                  echo "[ERROR] 'pipe' CLI download failed. Exiting"
+                  exit 1
+            fi
 
-      # Clean any known locations, where previous verssion of the pipe might reside (E.g. committed by the user)
-      rm -f /bin/pipe
-      rm -f /usr/bin/pipe
-      rm -f /usr/local/bin/pipe
-      rm -f /sbin/pipe
-      rm -f /usr/sbin/pipe
-      rm -f /usr/local/sbin/pipe
-      rm -rf ${CP_USR_BIN}/pipe
+            # Clean any known locations, where previous version of the pipe might reside (E.g. committed by the user)
+            rm -f /bin/pipe
+            rm -f /usr/bin/pipe
+            rm -f /usr/local/bin/pipe
+            rm -f /sbin/pipe
+            rm -f /usr/sbin/pipe
+            rm -f /usr/local/sbin/pipe
+            rm -rf ${CP_USR_BIN}/pipe
 
 
-      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
-        tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
-        rm -f "$CP_PIPELINE_CLI_NAME"
-        ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
-      else
-        # Install into the PATH locationse
-        cp pipe /usr/bin/
-        cp pipe ${CP_USR_BIN}/
-        chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
-        rm -f pipe
+            if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+                  tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
+                  rm -f "$CP_PIPELINE_CLI_NAME"
+                  ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
+            else
+                  # Install into the PATH locations
+                  cp pipe /usr/bin/
+                  cp pipe ${CP_USR_BIN}/
+                  chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
+                  rm -f pipe
+            fi
       fi
 fi
 
@@ -1195,6 +1234,7 @@ else
       else
             git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
       fi
+      cd -
 fi
 
 # Apply MAC/networking tweaks if requested
@@ -1312,29 +1352,28 @@ echo "------"
 echo
 ######################################################
 
+CP_DATA_LOCALIZATION_ENABLED=${CP_DATA_LOCALIZATION_ENABLED:-"true"}
+if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
+      if [ "$RESUMED_RUN" == true ]; then
+            echo "Skipping data localization for resumed run"
+      else
+            ######################################################
+            echo "Checking if remote data needs localizing"
+            echo "-"
+            ######################################################
+            LOCALIZATION_TASK_NAME="InputData"
+            INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
 
-if [ "$RESUMED_RUN" == true ];
-then
-    echo "Skipping data localization for resumed run"
-else
-    ######################################################
-    echo "Checking if remote data needs localizing"
-    echo "-"
-    ######################################################
-    LOCALIZATION_TASK_NAME="InputData"
-    INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
+            upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
 
-    upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
+            if [ $? -ne 0 ]; then
+                  echo "Failed to upload input data"
+                  exit 1
+            fi
+            echo
 
-    if [ $? -ne 0 ];
-    then
-        echo "Failed to upload input data"
-        exit 1
-    fi
-    echo
-
-    [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
-
+            [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
+      fi
 fi
 echo "------"
 echo
@@ -1453,27 +1492,37 @@ echo "$_CP_ENV_ULIMIT" >> /etc/profile
 # umask may be present in the existing file, so we are replacing it the updated value
 sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" /etc/profile
 
-if [ -f /etc/bash.bashrc ]; then
-      _GLOBAL_BASHRC_PATH="/etc/bash.bashrc"
-elif [ -f /etc/bashrc ]; then
-      _GLOBAL_BASHRC_PATH="/etc/bashrc"
-else
-      _GLOBAL_BASHRC_PATH="/etc/bash.bashrc"
-      touch $_GLOBAL_BASHRC_PATH
-      ln -s $_GLOBAL_BASHRC_PATH /etc/bashrc
+_GLOBAL_BASHRC_PATHS=()
+
+if [ -f "/etc/bash.bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bash.bashrc")
 fi
 
-sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_UMASK" $_GLOBAL_BASHRC_PATH
+if [ -f "/etc/bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bashrc")
+fi
 
-sed -i "\|ulimit|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_ULIMIT" $_GLOBAL_BASHRC_PATH
+if [ ! -f "/etc/bash.bashrc" ] && [ ! -f "/etc/bashrc" ]; then
+    _GLOBAL_BASHRC_PATHS=("${_GLOBAL_BASHRC_PATHS[@]}" "/etc/bash.bashrc")
+    touch "/etc/bash.bashrc"
+    echo >> "/etc/bash.bashrc"
+    ln -s "/etc/bash.bashrc" "/etc/bashrc"
+fi
 
-sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" $_GLOBAL_BASHRC_PATH
-
-sed -i "\|$_CP_ENV_SUDO_ALIAS|d" $_GLOBAL_BASHRC_PATH
-sed -i "1i$_CP_ENV_SUDO_ALIAS" $_GLOBAL_BASHRC_PATH
+for _GLOBAL_BASHRC_PATH in "${_GLOBAL_BASHRC_PATHS[@]}"
+do
+    sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_UMASK" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|ulimit|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_ULIMIT" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" "$_GLOBAL_BASHRC_PATH"
+    
+    sed -i "\|$_CP_ENV_SUDO_ALIAS|d" "$_GLOBAL_BASHRC_PATH"
+    sed -i "1i$_CP_ENV_SUDO_ALIAS" "$_GLOBAL_BASHRC_PATH"
+done
 
 echo "Finished setting environment variables to /etc/profile"
 
@@ -1677,6 +1726,14 @@ then
     initialise_wrappers "docker" "docker_wrapper \"$DEFAULT_ENV_FILE\"" "$CP_USR_BIN"
 fi
 
+echo "Prepare profile credentials"
+$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON2_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
+_PROFILE_CREDENTIALS_WRITER_RESULT=$?
+if [ "$_PROFILE_CREDENTIALS_WRITER_RESULT" -ne 0 ];
+then
+      echo "[ERROR] Failed to write profile credentials"
+fi
+
 # As some environments do not support "sleep infinity" command - it is substituted with "sleep 10000d"
 SCRIPT="${SCRIPT/sleep infinity/sleep 10000d}"
 
@@ -1750,8 +1807,7 @@ if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
       echo "Failure waiting timeout has been reached, proceeding with the cleanup and termination"
 fi
 
-if [ "$SINGLE_RUN" = true ] ;
-then
+if [ "$SINGLE_RUN" = true ] && [ "$cluster_role_type" != "additional" ]; then
     echo "Cleaning any data in a runs root directory at ${RUNS_ROOT}"
     rm -Rf $RUNS_ROOT/*
     echo "Cleaning any data in a common root directory at ${COMMON_ROOT}"
@@ -1759,6 +1815,12 @@ then
 else
     echo "Cleaning run directory at ${RUN_DIR}"
     rm -Rf $RUN_DIR
+fi
+
+if check_installed "umount"; then
+  echo "Unmounting all storage mounts"
+  umount cifs,fuse,nfs,nfs4,lustre -lfa
+  echo "Finished unmounting process"
 fi
 
 exit "$CP_EXEC_RESULT"

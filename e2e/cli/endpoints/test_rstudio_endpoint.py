@@ -31,7 +31,7 @@ class TestRStudioEndpoints(object):
     @classmethod
     def teardown_class(cls):
         for node in cls.nodes:
-            terminate_node(node)
+            terminate_node_with_retry(node)
             logging.info("Node %s was terminated" % node)
 
     @pipe_test

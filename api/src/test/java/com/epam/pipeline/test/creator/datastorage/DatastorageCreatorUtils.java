@@ -53,9 +53,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 
 public final class DatastorageCreatorUtils {
@@ -112,6 +112,8 @@ public final class DatastorageCreatorUtils {
             new TypeReference<Result<StorageMountPath>>() { };
     public static final TypeReference<Result<FileShareMount>> FILE_SHARE_MOUNT_TYPE =
             new TypeReference<Result<FileShareMount>>() { };
+    public static final String NFS_MASK = "nfs://";
+    public static final String S3_MASK = "s3://";
     private static final String TEST_PATH = "localhost:root/test";
 
     private DatastorageCreatorUtils() {
@@ -135,6 +137,12 @@ public final class DatastorageCreatorUtils {
         return s3bucket;
     }
 
+    public static S3bucketDataStorage getS3bucketDataStorage(final Long id, final String path, final String owner) {
+        final S3bucketDataStorage s3bucket = new S3bucketDataStorage(id, TEST_STRING, path);
+        s3bucket.setOwner(owner);
+        return s3bucket;
+    }
+
     public static AzureBlobStorage getAzureBlobStorage() {
         return new AzureBlobStorage(ID, TEST_STRING, TEST_STRING, new StoragePolicy(), TEST_STRING);
     }
@@ -145,6 +153,15 @@ public final class DatastorageCreatorUtils {
 
     public static NFSDataStorage getNfsDataStorage() {
         return new NFSDataStorage(ID, TEST_STRING, TEST_PATH);
+    }
+
+    public static NFSDataStorage getNfsDataStorage(final Long id, final String path, final String options,
+                                                   final String point, final String owner) {
+        final NFSDataStorage storage = new NFSDataStorage(id, TEST_STRING, path);
+        storage.setMountOptions(options);
+        storage.setMountPoint(point);
+        storage.setOwner(owner);
+        return storage;
     }
 
     public static DataStorageWithShareMount getDefaultDataStorageWithShareMount() {

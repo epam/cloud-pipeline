@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,9 @@ public interface NodePoolMapper {
     @Mapping(target = "schedule", ignore = true)
     NodePool toEntity(NodePoolVO vo);
 
+    @Mapping(target = "scheduleId", ignore = true)
+    NodePoolVO toVO(NodePool entity);
+
     @AfterMapping
     default void fillSchedule(final NodePoolVO vo, final @MappingTarget NodePool entity) {
         Optional.ofNullable(vo.getScheduleId())
@@ -40,5 +43,11 @@ public interface NodePoolMapper {
                     schedule.setId(scheduleId);
                     entity.setSchedule(schedule);
                 });
+    }
+
+    @AfterMapping
+    default void fillSchedule(final NodePool entity, final @MappingTarget NodePoolVO vo) {
+        Optional.ofNullable(entity.getSchedule())
+                .ifPresent(schedule -> vo.setScheduleId(schedule.getId()));
     }
 }

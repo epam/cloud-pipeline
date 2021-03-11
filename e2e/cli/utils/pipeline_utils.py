@@ -205,9 +205,43 @@ def stop_pipe(run_id):
         subprocess.Popen(['pipe', 'stop', '-y', run_id], stdout=subprocess.PIPE)
 
 
+def stop_pipe_with_retry(run_id, retry=10):
+    if retry == 0:
+        raise RuntimeError("Can't stop pipeline: " + run_id)
+    try:
+        stop_pipe(run_id)
+        wait_for_required_status("STOPPED", run_id, 10)
+    except BaseException as e:
+        sleep(5)
+        stop_pipe_with_retry(run_id, retry - 1)
+
+
+def terminate_node_with_retry(node_name, retry=10):
+    if retry == 0:
+        raise RuntimeError("Can't stop node: " + node_name)
+    terminate_node(node_name)
+    if check_node_termination(node_name, 10):
+        return
+    else:
+        sleep(5)
+        terminate_node_with_retry(node_name, retry - 1)
+
+
 def terminate_node(node_name):
     if node_name:
         subprocess.Popen(['pipe', 'terminate-node', '-y', node_name], stdout=subprocess.PIPE)
+
+
+def check_node_termination(node_name, max_rep_count):
+    node = view_cluster_for_node(node_name)
+    rep = 0
+    while rep < max_rep_count:
+        if not node:
+            return True
+        node = view_cluster_for_node(node_name)
+        sleep(3)
+        rep = rep + 1
+    return False
 
 
 def wait_for_node_termination(node_name, max_rep_count):

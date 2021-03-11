@@ -67,6 +67,10 @@
   white-space: pre-line;
 }
 
+.cluster-node-selection {
+  width: 30px;
+}
+
 thead[class*="ant-table-thead"] .cluster-node-row-created,
 thead[class*="ant-table-thead"] .cluster-node-row-addresses,
 thead[class*="ant-table-thead"] .cluster-node-row-pipeline {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,18 @@
 
 package com.epam.pipeline.dao.contextual;
 
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
+import com.epam.pipeline.entity.preference.PreferenceType;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.After;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+import java.util.Optional;
+
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
@@ -25,19 +37,9 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.entity.contextual.ContextualPreference;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
-import com.epam.pipeline.entity.preference.PreferenceType;
-import java.util.List;
-import java.util.Optional;
-import org.junit.After;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
-public class ContextualPreferenceDaoTest extends AbstractSpringTest {
+public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
 
     private static final String NAME = "name";
     private static final String ANOTHER_NAME = "anotherName";

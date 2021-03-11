@@ -58,7 +58,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
         commands.add("--ins_key");
         commands.add(sshKey);
         commands.add("--ins_img");
-        commands.add(instanceImage);
+        commands.add(StringUtils.isBlank(instanceImage) ? "null" : instanceImage);
         commands.add("--ins_type");
         commands.add(instanceType);
         commands.add("--ins_hdd");

@@ -30,7 +30,7 @@ RUN yum install -y wget \
                    java-1.8.0-openjdk \
                    python && \
     yum clean all && \
-    curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
 # Cromwell download link should be provided through --build-arg
 ARG CROMWELL_LINK="https://github.com/broadinstitute/cromwell/releases/download/37/cromwell-37.jar"

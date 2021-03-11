@@ -24,7 +24,7 @@ import {
   Select
 } from 'antd';
 import LoadTool from '../../../../models/tools/LoadTool';
-import LoadToolScanTags from '../../../../models/tools/LoadToolScanTags';
+import LoadToolAttributes from '../../../../models/tools/LoadToolAttributes';
 import LoadingView from '../../../special/LoadingView';
 import highlightText from '../../../special/highlightText';
 import styles from './packages.css';
@@ -34,12 +34,11 @@ import styles from './packages.css';
     toolId: params.id,
     version: params.version,
     tool: new LoadTool(params.id),
-    versions: new LoadToolScanTags(params.id)
+    versions: new LoadToolAttributes(params.id, params.version)
   };
 })
 @observer
 export default class Packages extends React.Component {
-
   state = {
     filterDependencies: null,
     selectedEcosystem: null
@@ -48,9 +47,9 @@ export default class Packages extends React.Component {
   @computed
   get ecosystems () {
     if (this.props.versions.loaded &&
-        this.props.versions.value.toolVersionScanResults &&
-        this.props.versions.value.toolVersionScanResults[this.props.version]) {
-      const result = (this.props.versions.value.toolVersionScanResults[this.props.version].dependencies || [])
+        this.props.versions.value &&
+        this.props.versions.value.scanResult) {
+      const result = (this.props.versions.value.scanResult.dependencies || [])
         .map(d => d.ecosystem)
         .filter((ecosystem, index, array) => array.indexOf(ecosystem) === index);
       result.sort();
@@ -80,7 +79,7 @@ export default class Packages extends React.Component {
     if (this.props.versions.loaded &&
         this.state.selectedEcosystem &&
         this.ecosystems.length > 0) {
-      const result = (this.props.versions.value.toolVersionScanResults[this.props.version].dependencies || [])
+      const result = (this.props.versions.value.scanResult.dependencies || [])
         .filter(d => d.ecosystem === this.state.selectedEcosystem);
       result.sort(Packages.sortDependencies);
       return result;
@@ -91,10 +90,10 @@ export default class Packages extends React.Component {
   @computed
   get filteredDependencies () {
     if (this.state.filterDependencies && this.props.versions.loaded &&
-      this.props.versions.value.toolVersionScanResults &&
-      this.props.versions.value.toolVersionScanResults[this.props.version]) {
+      this.props.versions.value &&
+      this.props.versions.value.scanResult) {
       const filterDependenciesString = (this.state.filterDependencies || '').toLowerCase();
-      const result = (this.props.versions.value.toolVersionScanResults[this.props.version].dependencies || [])
+      const result = (this.props.versions.value.scanResult.dependencies || [])
         .filter(
           d => d.ecosystem !== this.state.selectedEcosystem &&
           (d.name || '').toLowerCase().indexOf(filterDependenciesString) >= 0

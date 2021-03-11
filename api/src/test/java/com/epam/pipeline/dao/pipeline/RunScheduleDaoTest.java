@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.configuration.RunConfigurationDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -24,13 +23,13 @@ import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
-import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
+import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +46,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class RunScheduleDaoTest extends AbstractSpringTest {
+public class RunScheduleDaoTest extends AbstractJdbcTest {
 
     private static final Long RUN_ID_1 = 1L;
     private static final Long RUN_ID_2 = 2L;
@@ -69,9 +68,6 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
 
     @Autowired
     private PipelineDao pipelineDao;
-
-    @Autowired
-    private PipelineManager pipelineManager;
 
     @Autowired
     private RunConfigurationDao configurationDao;
@@ -167,14 +163,6 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedules();
         assertEquals(1, runSchedules.size());
         assertEquals(runSchedules.get(0).getId(), testRunSchedule2.getId());
-    }
-
-    @Test
-    public void testScheduleRemovalAfterRunIsRemoved() {
-        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testUpdatedRunSchedule, testRunSchedule2));
-        assertFalse(runScheduleDao.loadAllRunSchedules().isEmpty());
-        pipelineManager.delete(testPipeline.getId(), true);
-        assertTrue(runScheduleDao.loadAllRunSchedules().isEmpty());
     }
 
     @Test

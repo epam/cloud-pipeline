@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,39 @@
 
 package com.epam.pipeline.dao.metadata;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.entity.BaseEntity;
-import com.epam.pipeline.entity.metadata.*;
+import com.epam.pipeline.entity.metadata.MetadataClass;
+import com.epam.pipeline.entity.metadata.MetadataClassDescription;
+import com.epam.pipeline.entity.metadata.MetadataEntity;
+import com.epam.pipeline.entity.metadata.MetadataField;
+import com.epam.pipeline.entity.metadata.MetadataFilter;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class MetadataEntityDaoTest extends AbstractSpringTest {
+public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER = "Test";
     private static final String TEST_NAME = "Test";

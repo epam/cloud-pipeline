@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public class ServerlessConfigurationManager {
                                           final ObjectMapper objectMapper,
                                           final AuthManager authManager,
                                           @Value("${edge.internal.host:}") final String edgeInternalHost,
-                                          @Value("${edge.internal.port}") final Integer edgeInternalPort) {
+                                          @Value("${edge.internal.port:}") final Integer edgeInternalPort) {
         this.runConfigurationManager = runConfigurationManager;
         this.configurationRunner = configurationRunner;
         this.runConfigurationMapper = runConfigurationMapper;

@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.docker.HistoryEntry;
 import com.epam.pipeline.entity.docker.HistoryEntryV1;
 import com.epam.pipeline.entity.docker.RawImageDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -61,6 +62,7 @@ public final class DockerParsingUtils {
         final List<String> commandsHistory = getHistoryEntryStream(rawImage)
             .map(HistoryEntryV1::getContainerConfig)
             .map(ContainerConfig::getCommands)
+            .filter(CollectionUtils::isNotEmpty)
             .map(commands -> String.join(StringUtils.EMPTY, commands))
             .map(DockerParsingUtils::cropNopPrefix)
             .map(command -> command.replaceAll("\\t", StringUtils.EMPTY))

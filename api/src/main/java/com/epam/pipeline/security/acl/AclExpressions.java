@@ -18,8 +18,8 @@ package com.epam.pipeline.security.acl;
 
 public final class AclExpressions {
 
-    private static final String OR = " OR ";
-    private static final String AND = " AND ";
+    public static final String OR = " OR ";
+    public static final String AND = " AND ";
 
     public static final String ADMIN_ONLY = "hasRole('ADMIN')";
 
@@ -125,6 +125,9 @@ public final class AclExpressions {
 
     public static final String TOOL_READ = ADMIN_ONLY + OR +
             "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')";
+
+    public static final String TOOL_WRITE = ADMIN_ONLY + OR +
+            "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'WRITE')";
 
     public static final String OR_HAS_ASSIGNED_USER_OR_ROLE =
             " OR @grantPermissionManager.hasCloudProfilePermissions(#profileId)";

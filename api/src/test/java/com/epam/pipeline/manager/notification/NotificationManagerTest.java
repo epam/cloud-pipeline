@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -125,9 +124,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
-
-    @Autowired
-    private PipelineManager pipelineManager;
 
     @MockBean
     private KubernetesManager kubernetesManager;
@@ -470,23 +466,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
         messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(0, messages.size());
-    }
-
-    @Test
-    public void testRemoveNotificationTimestampWhenDelete() {
-        Pipeline pipeline = createPipeline(testOwner);
-        PipelineRun run1 = createTestPipelineRun(pipeline.getId());
-        notificationManager.notifyHighResourceConsumingRuns(Collections.singletonList(
-                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM, TEST_MEMORY_RATE))),
-                HIGH_CONSUMED_RESOURCES);
-
-        Assert.assertTrue(notificationManager.loadLastNotificationTimestamp(run1.getId(),
-                HIGH_CONSUMED_RESOURCES).isPresent());
-
-        pipelineManager.delete(pipeline.getId(), true);
-
-        Assert.assertFalse(notificationManager.loadLastNotificationTimestamp(run1.getId(),
-                HIGH_CONSUMED_RESOURCES).isPresent());
     }
 
     @Test

@@ -22,11 +22,11 @@ RUN apt update && \
                    openjdk-8-jdk \
                     graphviz \
                    python && \
-    curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
 # NXF_VER will be considered in the installation script
-ENV NXF_VER="20.04.1"
+ENV NXF_VER="20.10.0"
 ENV NXF_HOME_ROOT="/opt/nextflow"
 ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
 
@@ -39,6 +39,7 @@ ENV CP_CAP_DIND_CONTAINER="true"
 # Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
 ENV ANALYSIS_DIR="/common/analysis"
 ENV INPUT_DIR="/common/input"
+ENV SCRIPTS_DIR="/common/scripts"
 
 # Install nextflow itlself into $NXF_HOME
 RUN mkdir -p $NXF_HOME && \

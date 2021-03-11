@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,15 @@
 
 package com.epam.pipeline.dao.issue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.issue.IssueStatus;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -30,17 +36,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.entity.issue.Issue;
-import com.epam.pipeline.entity.issue.IssueStatus;
-import com.epam.pipeline.entity.security.acl.AclClass;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public class IssueDaoTest extends AbstractSpringTest {
+public class IssueDaoTest extends AbstractJdbcTest {
 
     private static final Long ENTITY_ID = 1L;
     private static final AclClass ENTITY_CLASS = AclClass.PIPELINE;

@@ -104,4 +104,19 @@ public final class ConfigurationCreatorUtils {
         configuration.setLanguage(TEST_STRING);
         return configuration;
     }
+
+    public static PipelineConfiguration getPipelineConfiguration(final String image, final String instanceDisk,
+                                                                 final boolean isSpot, final Long regionId) {
+        final PipelineConfiguration configuration = getPipelineConfiguration(image, instanceDisk);
+        configuration.setIsSpot(isSpot);
+        configuration.setCloudRegionId(regionId);
+        return configuration;
+    }
+
+    public static PipelineConfiguration getPipelineConfiguration(final String image, final String instanceDisk) {
+        final PipelineConfiguration configuration = getPipelineConfiguration();
+        configuration.setDockerImage(image);
+        configuration.setInstanceDisk(instanceDisk);
+        return configuration;
+    }
 }

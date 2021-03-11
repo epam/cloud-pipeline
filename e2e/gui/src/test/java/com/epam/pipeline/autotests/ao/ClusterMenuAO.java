@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                 nodeLine(runId)
                         .shouldBe(visible)
                         .findAll("td")
-                        .get(1)
+                        .get(2)
                         .text()
                         .contains(pipelineName)
         );
@@ -157,9 +157,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     public ClusterMenuAO removeNode(String runId) {
         $(byText(runIdLabelText(runId)))
                 .closest("tr")
-                .findAll("td")
-                .get(5)
-                .find(".ant-btn")
+                .find(byId("terminate-node-button"))
                 .click();
 
         $$(button("OK")).find(visible).click();
@@ -192,7 +190,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                 .should(exist)
                 .closest("tr")
                 .findAll("td")
-                .get(0)
+                .get(1)
                 .text();
     }
 
@@ -234,7 +232,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
         return $(byText(runIdLabelText(runId)))
                 .closest("tr")
                 .findAll("td")
-                .get(3)
+                .get(4)
                 .text()
                 .replaceAll(", .+", "");
     }

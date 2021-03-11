@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class StopServerlessRunDaoTest extends AbstractSpringTest {
+public class StopServerlessRunDaoTest extends AbstractJdbcTest {
 
     private static final Long TEST_STOP_AFTER = 60L;
 
@@ -75,8 +75,6 @@ public class StopServerlessRunDaoTest extends AbstractSpringTest {
         stopServerlessRunDao.deleteByRunId(pipelineRun.getId());
 
         assertEquals(stopServerlessRunDao.loadAll().size(), 0);
-
-        pipelineRunDao.deleteRunsByPipeline(1L);
     }
 
     @Test

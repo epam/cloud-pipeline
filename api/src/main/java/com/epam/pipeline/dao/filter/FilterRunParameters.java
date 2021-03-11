@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ public enum FilterRunParameters {
     POD_ID,
     @FilterField(
             displayName = "pipeline.name",
-            databaseTableAlias = "pipelines",
+            databaseTableAlias = "r",
             description = "Pipeline name",
             composer = WildCardComposer.class,
             converter = WildCardConverter.class,
@@ -257,10 +257,6 @@ public enum FilterRunParameters {
     OTHER_PARAMETER;
 
     static RowMapper<PipelineRun> getRowMapper() {
-        return (rs, rowNum) -> {
-            PipelineRun run = PipelineRunDao.PipelineRunParameters.parsePipelineRun(rs);
-            run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
-            return run;
-        };
+        return (rs, rowNum) -> PipelineRunDao.PipelineRunParameters.parsePipelineRun(rs);
     }
 }

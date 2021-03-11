@@ -69,7 +69,7 @@ import localization from '../../utils/localization';
 import 'highlight.js/styles/github.css';
 import displayDate from '../../utils/displayDate';
 import displaySize from '../../utils/displaySize';
-import LoadToolAttributes from '../../models/tools/LoadToolAttributes';
+import LoadToolAttributes from '../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../models/tools/LoadToolScanPolicy';
 import UpdateToolVersionWhiteList from '../../models/tools/UpdateToolVersionWhiteList';
 import ToolScan from '../../models/tools/ToolScan';
@@ -746,18 +746,13 @@ export default class Tool extends localization.LocalizedReactComponent {
       versions.forEach(currentVersion => {
         const scanResult = currentVersion.scanResult || {};
         const versionAttributes = currentVersion.attributes;
-
-        const vulnerabilities = scanResult.vulnerabilities || [];
-        const countCriticalVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Critical').length;
-        const countHighVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'High').length;
-        const countMediumVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Medium').length;
-        const countLowVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Low').length;
-        const countNegligibleVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Negligible').length;
+        const {
+          Critical = 0,
+          High = 0,
+          Low = 0,
+          Medium = 0,
+          Negligible = 0
+        } = scanResult.vulnerabilitiesCount || {};
 
         const digestAliases = versionAttributes && versionAttributes.digest
           ? versionsByDigest[versionAttributes.digest]
@@ -779,11 +774,11 @@ export default class Tool extends localization.LocalizedReactComponent {
           allowedToExecute: scanResult.allowedToExecute,
           toolOSVersion: scanResult.toolOSVersion,
           vulnerabilitiesStatistics: scanResult.status === ScanStatuses.notScanned ? null : {
-            critical: countCriticalVulnerabilities,
-            high: countHighVulnerabilities,
-            medium: countMediumVulnerabilities,
-            low: countLowVulnerabilities,
-            negligible: countNegligibleVulnerabilities
+            critical: Critical,
+            high: High,
+            medium: Medium,
+            low: Low,
+            negligible: Negligible
           }
         });
         keyIndex += 1;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,15 +128,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .stream()
                 .map(SelenideElement::getText)
                 .filter(e -> e.contains(message))
-                .count() == 1, isVisible);
+                .count() == 1, isVisible, format("Message '%s' isn't [%s] visible", message, isVisible));
         return this;
     }
 
     public PipelineRunFormAO setDisk(String disk) {
-        $(byId("exec.disk"))
-                .shouldBe(enabled)
-                .setValue(String.valueOf(disk));
-        return this;
+        return setValue(DISK, disk);
     }
 
     public PipelineRunFormAO setCommand(String command) {

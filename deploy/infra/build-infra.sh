@@ -591,7 +591,7 @@ if ! check_installed "python"; then
 fi
 if ! check_installed "pip"; then
     echo "Installing pip"
-    curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 fi
 if ! check_installed "jq"; then
     echo "Installing jq"

@@ -213,6 +213,12 @@ public class NodesManager {
         return nodeInstance;
     }
 
+    public NodeInstance terminateNode(final String name, final boolean updateRunStatus) {
+        final NodeInstance nodeInstance = getNode(name);
+        terminateNode(nodeInstance, updateRunStatus);
+        return nodeInstance;
+    }
+
     public List<MasterNode> getMasterNodes() {
         final String defMasterPort =
                 String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_MASTER_PORT));
@@ -275,10 +281,14 @@ public class NodesManager {
     }
 
     private void terminateNode(final NodeInstance nodeInstance) {
+        terminateNode(nodeInstance, true);
+    }
+
+    private void terminateNode(final NodeInstance nodeInstance, final boolean updateRunStatus) {
         Assert.isTrue(!isNodeProtected(nodeInstance),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_IS_PROTECTED, nodeInstance.getName()));
 
-        if (nodeInstance.getPipelineRun() != null) {
+        if (updateRunStatus && nodeInstance.getPipelineRun() != null) {
             PipelineRun run = nodeInstance.getPipelineRun();
             pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED);
         }

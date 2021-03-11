@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.datastorage;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -28,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +42,7 @@ import static com.epam.pipeline.assertions.ProjectAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
-public class DataStorageDaoTest extends AbstractSpringTest {
+public class DataStorageDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_OWNER = "testOwner";
     private static final String TEST_STORAGE_NAME = "testStorage";

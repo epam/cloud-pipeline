@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,18 +24,17 @@ import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
-import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
@@ -54,8 +53,10 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @AclSync
@@ -72,9 +73,6 @@ public class PipelineManager implements SecuredEntityManager {
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
-
-    @Autowired
-    private RunLogDao runLogDao;
 
     @Autowired
     private DataStorageRuleDao dataStorageRuleDao;
@@ -95,16 +93,7 @@ public class PipelineManager implements SecuredEntityManager {
     private MetadataManager metadataManager;
 
     @Autowired
-    private RestartRunManager restartRunManager;
-
-    @Autowired
-    private RunStatusManager runStatusManager;
-
-    @Autowired
     private RunScheduleManager runScheduleManager;
-
-    @Autowired
-    private NotificationManager notificationManager;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineManager.class);
 
@@ -184,6 +173,9 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
         pipelineDao.updatePipeline(dbPipeline);
+
+        updatePipelineNameForRuns(pipelineVO, pipelineVOName);
+
         if (projectNameUpdated) {
             gitManager.updateRepositoryName(currentProjectName, newProjectName);
         }
@@ -240,13 +232,8 @@ public class PipelineManager implements SecuredEntityManager {
                 LOGGER.error(e.getMessage(), e);
             }
         }
-        runLogDao.deleteLogsForPipeline(id);
-        notificationManager.removeNotificationTimestampsByPipelineId(id);
-        restartRunManager.deleteRestartedRunsForPipeline(id);
-        runStatusManager.deleteRunStatusForPipeline(id);
         runScheduleManager.deleteSchedulesForRunByPipeline(id);
-        pipelineRunDao.deleteRunSidsByPipelineId(id);
-        pipelineRunDao.deleteRunsByPipeline(id);
+        resetPipelineIdForRuns(id);
         dataStorageRuleDao.deleteRulesByPipeline(id);
         pipelineDao.deletePipeline(id);
         return pipeline;
@@ -386,5 +373,33 @@ public class PipelineManager implements SecuredEntityManager {
             rule.setPipelineId(newPipelineId);
             dataStorageRuleDao.createDataStorageRule(rule);
         });
+    }
+
+    private void updatePipelineNameForRuns(final PipelineVO pipelineVO, final String pipelineVOName) {
+        final List<PipelineRun> runsToUpdate = ListUtils.emptyIfNull(
+                pipelineRunDao.loadAllRunsForPipeline(pipelineVO.getId())).stream()
+                .map(run -> updatePipelineNameForRun(pipelineVOName, run))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        pipelineRunDao.updateRuns(runsToUpdate);
+    }
+
+    private PipelineRun updatePipelineNameForRun(final String pipelineName, final PipelineRun run) {
+        if (Objects.equals(run.getPipelineName(), pipelineName)) {
+            return null;
+        }
+        run.setPipelineName(pipelineName);
+        return run;
+    }
+
+    private void resetPipelineIdForRuns(final Long id) {
+        pipelineRunDao.updateRuns(ListUtils.emptyIfNull(pipelineRunDao.loadAllRunsForPipeline(id)).stream()
+                .map(this::resetPipelineIdForRun)
+                .collect(Collectors.toSet()));
+    }
+
+    private PipelineRun resetPipelineIdForRun(final PipelineRun run) {
+        run.setPipelineId(null);
+        return run;
     }
 }

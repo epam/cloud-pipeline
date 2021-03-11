@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.dao.user;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,7 +41,7 @@ import java.util.Map;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 @Transactional
-public class UserDaoTest extends AbstractSpringTest {
+public class UserDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_USER2 = "test_user2";

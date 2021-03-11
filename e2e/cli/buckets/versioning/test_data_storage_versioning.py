@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ from common_utils.test_utils import format_name
 ERROR_MESSAGE = "An error occurred in case "
 
 
-@pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name, reason="Versioning is not supported for AZURE provider")
+@pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name,
+                    reason="Versioning is not supported for AZURE provider")
 class TestDataStorageVersioning(object):
 
     test_file_1 = "versioning1.txt"
@@ -35,7 +36,7 @@ class TestDataStorageVersioning(object):
     test_folder_1 = "test_folder1"
     test_folder_2 = "test_folder2"
     test_folder_3 = "test_folder3"
-    bucket = format_name('epmcmbibpc-versioning-it{}'.format(get_test_prefix()))
+    bucket = format_name('versions{}'.format(get_test_prefix()))
     path_to_bucket = 'cp://{}'.format(bucket)
     token = os.environ['USER_TOKEN']
     user = os.environ['TEST_USER']
@@ -65,6 +66,7 @@ class TestDataStorageVersioning(object):
                         expected_status=None)
 
     def test_list_marked_for_deletion_object(self):
+        """TC-PIPE-STORAGE-114"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             pipe_storage_cp(self.test_file_1, destination)
@@ -79,9 +81,10 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 2)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-877:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-114:" + "\n" + e.message)
 
     def test_restore_marked_for_deletion_file(self):
+        """TC-PIPE-STORAGE-115"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             pipe_storage_cp(self.test_file_1, destination)
@@ -102,9 +105,10 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 1)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-881:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-115:" + "\n" + e.message)
 
     def test_object_versions(self):
+        """TC-PIPE-STORAGE-116"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             pipe_storage_cp(self.test_file_1, destination)
@@ -122,9 +126,10 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 2)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-882:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-116:" + "\n" + e.message)
 
     def test_restore_specific_version(self):
+        """TC-PIPE-STORAGE-117"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             pipe_storage_cp(self.test_file_1, destination)
@@ -147,9 +152,10 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 1)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-883:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-117:" + "\n" + e.message)
 
     def test_object_hard_deletion(self):
+        """TC-PIPE-STORAGE-118"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination)
@@ -159,9 +165,10 @@ class TestDataStorageVersioning(object):
             expected_output = []
             compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-884:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-118:" + "\n" + e.message)
 
     def test_marked_object_hard_deletion(self):
+        """TC-PIPE-STORAGE-124"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination)
@@ -179,11 +186,13 @@ class TestDataStorageVersioning(object):
             expected_output = []
             compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-993:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-124:" + "\n" + e.message)
 
     @pytest.mark.skipif(os.environ['CP_PROVIDER'] == GsClient.name,
                         reason="Folder restore allowed for S3 provider only")
     def test_mark_for_deletion_non_empty_folder(self):
+        """TC-PIPE-STORAGE-119"""
+        # TODO: TC-PIPE-STORAGE-120
         destination_1 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination_1)
@@ -211,9 +220,10 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 2, sort=False)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-885-886:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-119-120:" + "\n" + e.message)
 
     def test_hard_deletion_non_empty_folder(self):
+        """TC-PIPE-STORAGE-122"""
         destination_1 = 'cp://{}/{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_folder_2, self.test_file_1)
         destination_2 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
         try:
@@ -229,9 +239,10 @@ class TestDataStorageVersioning(object):
             expected_output = []
             compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-887:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-122:" + "\n" + e.message)
 
     def test_hard_deletion_marked_non_empty_folder(self):
+        """TC-PIPE-STORAGE-125"""
         destination_1 = 'cp://{}/{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_folder_2, self.test_file_1)
         destination_2 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
         try:
@@ -263,25 +274,28 @@ class TestDataStorageVersioning(object):
             expected_output = []
             compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-998:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-125:" + "\n" + e.message)
 
     def test_mark_for_delete_non_existing_file(self):
+        """TC-PIPE-STORAGE-132"""
         destination = 'cp://{}/{}'.format(self.bucket, TestFiles.NOT_EXISTS_FILE)
         try:
             error_message = pipe_storage_rm(destination, recursive=True, expected_status=1)[1]
             assert 'Storage path "{}" was not found'.format(destination) in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-945:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-132:" + "\n" + e.message)
 
     def test_hard_delete_non_existing_file(self):
+        """TC-PIPE-STORAGE-133"""
         destination = 'cp://{}/{}'.format(self.bucket, TestFiles.NOT_EXISTS_FILE)
         try:
             error_message = pipe_storage_rm(destination, recursive=True, expected_status=1, args=['--hard-delete'])[1]
             assert 'Storage path "{}" was not found'.format(destination) in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-946:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-133:" + "\n" + e.message)
 
     def test_restore_non_existing_version(self):
+        """TC-PIPE-STORAGE-134"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         not_existing_version = 'does-not-exist'
         try:
@@ -290,9 +304,10 @@ class TestDataStorageVersioning(object):
             error_message = pipe_storage_restore(destination, expected_status=1, version=not_existing_version)[1]
             assert 'Error: Version "{}" doesn\'t exist.'.format(not_existing_version) in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-947:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-134:" + "\n" + e.message)
 
     def test_restore_not_removed_object(self):
+        """TC-PIPE-STORAGE-135"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             pipe_storage_cp(self.test_file_1, destination)
@@ -300,9 +315,10 @@ class TestDataStorageVersioning(object):
             assert 'Error: Latest file version is not deleted. Please specify "--version" parameter.'\
                    in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-948:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-135:" + "\n" + e.message)
 
     def test_restore_latest_version(self):
+        """TC-PIPE-STORAGE-136"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             pipe_storage_cp(self.test_file_1, destination)
@@ -313,9 +329,10 @@ class TestDataStorageVersioning(object):
             assert 'Version "{}" is already the latest version'.format(version_id)\
                    in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-949:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-136:" + "\n" + e.message)
 
     def test_role_model_marked_object_deletion(self):
+        """TC-PIPE-STORAGE-121"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             set_storage_permission(self.user, self.bucket, allow='r')
@@ -327,9 +344,10 @@ class TestDataStorageVersioning(object):
             pipe_output = pipe_storage_ls(self.path_to_bucket, expected_status=1, token=self.token, versioning=True)[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-889:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-121:" + "\n" + e.message)
 
     def test_role_model_object_versions(self):
+        """TC-PIPE-STORAGE-127"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             set_storage_permission(self.user, self.bucket, allow='r')
@@ -341,12 +359,14 @@ class TestDataStorageVersioning(object):
                 f(self.test_file_1, 14)
             ]
             compare_listing(actual_output, expected_output, 1)
-            actual_output = pipe_storage_ls(self.path_to_bucket, expected_status=1, token=self.token, versioning=True)[1]
+            actual_output = pipe_storage_ls(self.path_to_bucket, expected_status=1, token=self.token,
+                                            versioning=True)[1]
             assert "Access is denied" in actual_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-891:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-127:" + "\n" + e.message)
 
     def test_role_model_restore_latest_version(self):
+        """TC-PIPE-STORAGE-128"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             set_storage_permission(self.user, self.bucket, allow='r')
@@ -358,9 +378,10 @@ class TestDataStorageVersioning(object):
             pipe_output = pipe_storage_restore(self.path_to_bucket, expected_status=1, token=self.token)[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-894:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-128:" + "\n" + e.message)
 
     def test_role_model_object_hard_deletion(self):
+        """TC-PIPE-STORAGE-129"""
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
         try:
             set_storage_permission(self.user, self.bucket, allow='r')
@@ -369,9 +390,10 @@ class TestDataStorageVersioning(object):
             pipe_output = pipe_storage_rm(destination, args=['--hard-delete'], token=self.token, expected_status=1)[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-892:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-129:" + "\n" + e.message)
 
     def test_role_model_restore_marked_for_deletion_non_empty_folder(self):
+        """TC-PIPE-STORAGE-130"""
         destination_1 = 'cp://{}/{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_folder_2, self.test_file_1)
         destination_2 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
         try:
@@ -386,9 +408,10 @@ class TestDataStorageVersioning(object):
             pipe_output = pipe_storage_restore(self.path_to_bucket, expected_status=1, token=self.token)[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-893:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-130:" + "\n" + e.message)
 
     def test_role_model_hard_deletion_marked_non_empty_folder(self):
+        """TC-PIPE-STORAGE-131"""
         destination_1 = 'cp://{}/{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_folder_2, self.test_file_1)
         destination_2 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
         try:
@@ -400,9 +423,10 @@ class TestDataStorageVersioning(object):
                                           token=self.token, expected_status=1, args=['--hard-delete'])[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-895:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-131:" + "\n" + e.message)
 
     def test_ls_with_paging(self):
+        """TC-PIPE-STORAGE-58"""
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), "{}/{}".format(self.path_to_bucket, self.test_file_1))
             pipe_storage_cp(os.path.abspath(self.test_file_1), "{}/{}/{}".format(self.path_to_bucket,
@@ -428,9 +452,10 @@ class TestDataStorageVersioning(object):
                                                                   paging=str(3)))
             assert len(pipe_output) == 3
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1024:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-58:" + "\n" + e.message)
 
     def test_copy_with_similar_keys(self):
+        """TC-PIPE-STORAGE-60"""
         try:
             source = os.path.abspath(self.test_file_1)
             destination = "cp://{}/{}".format(self.bucket, self.test_file_1)
@@ -445,9 +470,10 @@ class TestDataStorageVersioning(object):
             pipe_storage_rm(destination)
             assert not object_exists(self.bucket, self.test_file_1)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-1337", e.message))
+            pytest.fail("Test case {} failed. {}".format("TC-PIPE-STORAGE-60", e.message))
 
     def test_rm_files_with_common_keys(self):
+        """TC-PIPE-STORAGE-126"""
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), "{}/{}".format(self.path_to_bucket,
                                                                               self.test_file_1_without_extension))
@@ -457,7 +483,7 @@ class TestDataStorageVersioning(object):
             pipe_output = get_pipe_listing(self.path_to_bucket)
             assert len(pipe_output) == 1
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1283:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-126:" + "\n" + e.message)
 
     def test_list_version(self):
         destination = "cp://{}/{}".format(self.bucket, self.test_file_1)

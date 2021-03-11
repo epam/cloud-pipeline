@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 from common_utils.pipe_cli import *
 from common_utils.test_utils import format_name
+from utils.pipeline_utils import get_log_filename
 from ..utils.assertions_utils import *
 from ..utils.file_utils import *
 from ..utils.utilities_for_test import *
@@ -21,11 +22,11 @@ from ..utils.utilities_for_test import *
 
 class TestMoveWithFolders(object):
 
-    raw_bucket_name = "epmcmbibpc-it-mv-folders{}".format(get_test_prefix())
+    raw_bucket_name = "mv-folders{}".format(get_test_prefix())
     bucket_name = format_name(raw_bucket_name)
     other_bucket_name = format_name("{}-other".format(raw_bucket_name))
     current_directory = os.getcwd()
-    home_dir = "test_cp_home_dir-681%s/" % get_test_prefix()
+    home_dir = "test_cp_home_dir-storage-16%s/" % get_test_prefix()
     checkout_dir = "mv-folders-checkout/"
     test_prefix = "%s-mv-folders-" % get_test_prefix()
     output_folder = test_prefix + TestFiles.TEST_FOLDER_FOR_OUTPUT
@@ -38,7 +39,7 @@ class TestMoveWithFolders(object):
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         create_buckets(cls.bucket_name, cls.other_bucket_name)
         # /test_folder
@@ -76,23 +77,24 @@ class TestMoveWithFolders(object):
         clean_test_data(os.path.abspath(cls.test_folder))
 
     """
-        1. epam test case
+        1. test case
         2. source path
         3. with --force option
         4. path to directory if need to switch current directory
     """
     test_case_for_upload_folders = [
-        ("EPMCMBIBPC-680", os.path.abspath(test_folder), False, None),
-        ("EPMCMBIBPC-681", "~/" + home_dir, None, None),
-        ("EPMCMBIBPC-684", "./" + test_folder, False, None),
-        ("EPMCMBIBPC-684-1", "./", False, True),
-        ("EPMCMBIBPC-684-2", ".", False, True),
-        ("EPMCMBIBPC-685", os.path.abspath(test_folder) + "/", True, None),
+        ("TC-PIPE-STORAGE-12", "", os.path.abspath(test_folder), False, None),
+        ("TC-PIPE-STORAGE-16", "", "~/" + home_dir, None, None),
+        ("TC-PIPE-STORAGE-18", "", "./" + test_folder, False, None),
+        ("TC-PIPE-STORAGE-18", "-1", "./", False, True),
+        ("TC-PIPE-STORAGE-18", "-2", ".", False, True),
+        ("TC-PIPE-STORAGE-20", "", os.path.abspath(test_folder) + "/", True, None),
     ]
 
     @pytest.mark.run(order=1)
-    @pytest.mark.parametrize("case,source,force,switch_dir", test_case_for_upload_folders)
-    def test_folder_should_be_uploaded(self, case, source, force, switch_dir):
+    @pytest.mark.parametrize("test_case,suffix,source,force,switch_dir", test_case_for_upload_folders)
+    def test_folder_should_be_uploaded(self, test_case, suffix, source, force, switch_dir):
+        case = test_case + suffix
         destination = "cp://{}/{}/".format(self.bucket_name, case)
         if force:
             pipe_storage_cp(os.path.abspath(self.source_dir + self.test_file_2), destination + self.test_file_1,
@@ -132,23 +134,24 @@ class TestMoveWithFolders(object):
         os.chdir(self.current_directory)
 
     """
-        1. epam test case
+        1. test case
         2. source path
         3. path to directory if need to switch current directory
         4. relative path to file to rewrite (with --force option)
     """
     test_case_for_download_folders = [
-        ("EPMCMBIBPC-680", os.path.abspath(output_folder + "EPMCMBIBPC-680") + "/", None, None),
-        ("EPMCMBIBPC-681", "~/" + output_folder + "EPMCMBIBPC-681/", None, None),
-        ("EPMCMBIBPC-684", "./" + output_folder + "EPMCMBIBPC-684/", None, None),
-        ("EPMCMBIBPC-684-1", "./", None, True),
-        ("EPMCMBIBPC-684-2", ".", None, True),
-        ("EPMCMBIBPC-685", os.path.abspath(output_folder + "EPMCMBIBPC-685") + "/", True, None),
+        ("TC-PIPE-STORAGE-12", "", os.path.abspath(output_folder + "TC-PIPE-STORAGE-12") + "/", None, None),
+        ("TC-PIPE-STORAGE-16", "", "~/" + output_folder + "TC-PIPE-STORAGE-16/", None, None),
+        ("TC-PIPE-STORAGE-18", "", "./" + output_folder + "TC-PIPE-STORAGE-18/", None, None),
+        ("TC-PIPE-STORAGE-18", "-1", "./", None, True),
+        ("TC-PIPE-STORAGE-18", "-2", ".", None, True),
+        ("TC-PIPE-STORAGE-20", "", os.path.abspath(output_folder + "TC-PIPE-STORAGE-20") + "/", True, None),
     ]
 
     @pytest.mark.run(order=2)
-    @pytest.mark.parametrize("case,destination,force,switch_dir", test_case_for_download_folders)
-    def test_folder_should_be_downloaded(self, case, destination, force, switch_dir):
+    @pytest.mark.parametrize("test_case,suffix,destination,force,switch_dir", test_case_for_download_folders)
+    def test_folder_should_be_downloaded(self, test_case, suffix, destination, force, switch_dir):
+        case = test_case + suffix
         source = "cp://{}/{}/".format(self.bucket_name, case)
         if force:
             create_test_file(destination + self.test_file_1, TestFiles.COPY_CONTENT)
@@ -177,25 +180,25 @@ class TestMoveWithFolders(object):
         os.chdir(self.current_directory)
 
     """
-        1. epam test case
+        1. test case
         2. --force option
     """
     test_case_for_copy_between_buckets_folders = [
-        ("EPMCMBIBPC-680", False),
-        ("EPMCMBIBPC-685", True),
+        ("TC-PIPE-STORAGE-12", False),
+        ("TC-PIPE-STORAGE-20", True),
     ]
 
     @pytest.mark.run(order=3)
-    @pytest.mark.parametrize("case,force", test_case_for_copy_between_buckets_folders)
-    def test_folder_should_be_copied(self, case, force):
-        source = "cp://{}/{}/".format(self.bucket_name, case)
-        destination = "cp://{}/{}/".format(self.other_bucket_name, case)
+    @pytest.mark.parametrize("test_case,force", test_case_for_copy_between_buckets_folders)
+    def test_folder_should_be_copied(self, test_case, force):
+        source = "cp://{}/{}/".format(self.bucket_name, test_case)
+        destination = "cp://{}/{}/".format(self.other_bucket_name, test_case)
         pipe_storage_cp(self.source_dir + self.test_file_1, source + self.test_file_1, expected_status=0)
         pipe_storage_cp(self.source_dir + self.test_folder + self.test_file_1, source + self.test_folder +
                         self.test_file_1, expected_status=0)
-        source_file_object = ObjectInfo(False).build(self.bucket_name, os.path.join(case, self.test_file_1))
+        source_file_object = ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_1))
         source_folder_file_object = ObjectInfo(False).build(self.bucket_name, os.path.join(
-            case, self.test_folder, self.test_file_1))
+            test_case, self.test_folder, self.test_file_1))
         if force:
             pipe_storage_cp(self.source_dir + self.test_file_2, destination + self.test_file_1,
                             expected_status=0)
@@ -205,16 +208,17 @@ class TestMoveWithFolders(object):
         pipe_storage_mv(source, destination, force=force, recursive=True, expected_status=0)
         assert_copied_object_info(source_file_object,
                                   ObjectInfo(False).build(self.other_bucket_name,
-                                                          os.path.join(case, self.test_file_1)), case)
+                                                          os.path.join(test_case, self.test_file_1)), test_case)
         assert_copied_object_info(source_folder_file_object,
                                   ObjectInfo(False).build(self.other_bucket_name, os.path.join(
-                                      case, self.test_folder, self.test_file_1)), case)
+                                      test_case, self.test_folder, self.test_file_1)), test_case)
         assert_files_deleted(self.bucket_name, self.source_dir + self.test_file_1)
         assert_files_deleted(self.bucket_name, self.source_dir + self.test_folder + self.test_file_1)
 
     @pytest.mark.run(order=1)
     def test_excluded_files_should_be_uploaded(self):
-        case = "EPMCMBIBPC-686-1"
+        """TC-PIPE-STORAGE-26"""
+        case = "TC-PIPE-STORAGE-26-1"
         source = os.path.abspath(self.test_folder)
         source_test_file_1 = os.path.join(source, self.test_file_1)
         source_test_file_2 = os.path.join(source, self.test_file_with_other_extension)
@@ -236,7 +240,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=2)
     def test_excluded_files_should_be_downloaded(self):
-        case = "EPMCMBIBPC-686-2"
+        """TC-PIPE-STORAGE-26"""
+        case = "TC-PIPE-STORAGE-26-2"
         source = "cp://{}/{}/".format(self.bucket_name, case)
         key_file_1 = os.path.join(case, self.test_file_1)
         key_file_2 = os.path.join(case, self.test_file_with_other_extension)
@@ -259,7 +264,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=3)
     def test_excluded_files_should_be_copied(self):
-        case = "EPMCMBIBPC-686-3"
+        """TC-PIPE-STORAGE-26"""
+        case = "TC-PIPE-STORAGE-26-3"
         key_file_1 = os.path.join(case, self.test_file_1)
         key_file_2 = os.path.join(case, self.test_file_with_other_extension)
         key_folder_file = os.path.join(case, self.test_folder, self.test_file_1)
@@ -279,7 +285,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=1)
     def test_included_files_should_be_uploaded(self):
-        case = "EPMCMBIBPC-688-1"
+        """TC-PIPE-STORAGE-28"""
+        case = "TC-PIPE-STORAGE-28-1"
         source = os.path.abspath(self.test_folder)
         source_test_file_1 = os.path.join(source, self.test_file_1)
         source_test_file_2 = os.path.join(source, self.test_file_with_other_extension)
@@ -300,7 +307,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=2)
     def test_included_files_should_be_downloaded(self):
-        case = "EPMCMBIBPC-688-2"
+        """TC-PIPE-STORAGE-28"""
+        case = "TC-PIPE-STORAGE-28-2"
         source = "cp://{}/{}/".format(self.bucket_name, case)
         key_file_1 = os.path.join(case, self.test_file_1)
         key_file_2 = os.path.join(case, self.test_file_with_other_extension)
@@ -322,7 +330,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=3)
     def test_excluded_files_should_be_copied(self):
-        case = "EPMCMBIBPC-688-3"
+        """TC-PIPE-STORAGE-28"""
+        case = "TC-PIPE-STORAGE-28-3"
         key_file_1 = os.path.join(case, self.test_file_1)
         key_file_2 = os.path.join(case, self.test_file_with_other_extension)
         key_folder_file = os.path.join(case, self.test_folder, self.test_file_1)
@@ -341,7 +350,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=1)
     def test_included_excluded_files_should_be_uploaded(self):
-        case = "EPMCMBIBPC-689-1"
+        """TC-PIPE-STORAGE-32"""
+        case = "TC-PIPE-STORAGE-32-1"
         source = os.path.abspath(self.test_folder) + "/"
         source_test_file_1 = os.path.join(source, self.test_file_1)
         source_test_file_2 = os.path.join(source, self.test_file_with_other_extension)
@@ -363,7 +373,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=2)
     def test_included_files_should_be_downloaded(self):
-        case = "EPMCMBIBPC-689-2"
+        """TC-PIPE-STORAGE-32"""
+        case = "TC-PIPE-STORAGE-32-2"
         source = "cp://{}/{}/".format(self.bucket_name, case)
         key_file_1 = os.path.join(case, self.test_file_1)
         key_file_2 = os.path.join(case, self.test_file_with_other_extension)
@@ -386,7 +397,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=3)
     def test_excluded_files_should_be_copied(self):
-        case = "EPMCMBIBPC-689-3"
+        """TC-PIPE-STORAGE-32"""
+        case = "TC-PIPE-STORAGE-32-3"
         key_file_1 = os.path.join(case, self.test_file_1)
         key_file_2 = os.path.join(case, self.test_file_with_other_extension)
         key_folder_file = os.path.join(case, self.test_folder, self.test_file_1)
@@ -406,7 +418,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=4)
     def test_upload_without_recursive(self):
-        case = "EPMCMBIBPC-674"
+        """TC-PIPE-STORAGE-14"""
+        case = "TC-PIPE-STORAGE-14"
         source = os.path.abspath(self.source_dir + self.test_folder)
         destination = "cp://{}/".format(os.path.join(self.bucket_name, case))
         error_text = pipe_storage_mv(source, destination, expected_status=1)[1]
@@ -421,7 +434,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=5)
     def test_download_without_recursive(self):
-        case = "EPMCMBIBPC-674"
+        """TC-PIPE-STORAGE-14"""
+        case = "TC-PIPE-STORAGE-14"
         source = "cp://{}/".format(os.path.join(self.bucket_name, case))
         create_test_files_on_bucket(self.source_dir + self.test_file_1, self.bucket_name,
                                     os.path.join(case, self.test_file_1),
@@ -437,7 +451,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_copy_without_recursive(self):
-        case = "EPMCMBIBPC-674"
+        """TC-PIPE-STORAGE-14"""
+        case = "TC-PIPE-STORAGE-14"
         source = "cp://{}/".format(os.path.join(self.bucket_name, case))
         destination = "cp://{}/".format(os.path.join(self.other_bucket_name, case))
         error_text = pipe_storage_mv(source, destination, expected_status=1)[1]
@@ -451,7 +466,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_upload_file_to_bucket_with_folder_with_same_name(self):
-        case = "EPMCMBIBPC-2001"
+        """-PIPE-STORAGE-76"""
+        case = "TC-PIPE-STORAGE-76"
         source = os.path.abspath(os.path.join(self.source_dir, self.test_folder, case))
         try:
             create_test_folder(source)
@@ -469,7 +485,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_upload_folder_structure(self):
-        case = "EPMCMBIBPC-2003"
+        """TC-PIPE-STORAGE-77"""
+        case = "TC-PIPE-STORAGE-77"
         source = os.path.abspath(os.path.join(self.source_dir, self.test_folder, case))
         try:
             create_test_folder(source)
@@ -496,7 +513,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_download_folder_structure(self):
-        case = "EPMCMBIBPC-2006"
+        """TC-PIPE-STORAGE-79"""
+        case = "TC-PIPE-STORAGE-79"
         source = os.path.abspath(os.path.join(self.source_dir, self.test_folder, case))
         try:
             create_test_folder(source)
@@ -525,7 +543,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_upload_folders_with_similar_keys(self):
-        case = "EPMCMBIBPC-2009"
+        """TC-PIPE-STORAGE-82"""
+        case = "TC-PIPE-STORAGE-82"
         source_folder = os.path.abspath(os.path.join(self.test_folder, case))
         test_folder1 = "folder"
         test_folder2 = "folder2"
@@ -547,7 +566,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_download_folders_with_similar_keys(self):
-        case = "EPMCMBIBPC-2010"
+        """TC-PIPE-STORAGE-83"""
+        case = "TC-PIPE-STORAGE-83"
         source_folder = os.path.abspath(os.path.join(self.test_folder, case))
         source1 = os.path.join(source_folder, self.test_file_1)
         source2 = os.path.join(source_folder, self.test_file_2)
@@ -571,12 +591,13 @@ class TestMoveWithFolders(object):
         except BaseException as e:
             pytest.fail("Test case {} failed. {}".format(case, e.message))
 
-    test_case_for_destination_slash = [("EPMCMBIBPC-2160-1", True, True), ("EPMCMBIBPC-2160-2", True, False),
-                                       ("EPMCMBIBPC-2160-3", False, False), ("EPMCMBIBPC-2160-4", False, True)]
+    test_case_for_destination_slash = [("TC-PIPE-STORAGE-85-1", True, True), ("TC-PIPE-STORAGE-85-2", True, False),
+                                       ("TC-PIPE-STORAGE-85-3", False, False), ("TC-PIPE-STORAGE-85-4", False, True)]
 
     @pytest.mark.run(order=6)
     @pytest.mark.parametrize("case,has_destination_slash,has_source_slash", test_case_for_destination_slash)
     def test_folder_with_slash_should_upload_content_only(self, case, has_destination_slash, has_source_slash):
+        """TC-PIPE-STORAGE-85"""
         source_folder = os.path.abspath(os.path.join(self.test_folder, case))
         source1 = os.path.join(source_folder, self.test_file_1)
         source2 = os.path.join(source_folder, self.test_file_2)
@@ -596,12 +617,15 @@ class TestMoveWithFolders(object):
         except BaseException as e:
             pytest.fail("Test case {} failed. {}".format(case, e.message))
 
-    test_case_for_download_with_slash = [("EPMCMBIBPC-2202-1", True, True), ("EPMCMBIBPC-2202-2", True, False),
-                                         ("EPMCMBIBPC-2202-3", False, False), ("EPMCMBIBPC-2202-4", False, True)]
+    test_case_for_download_with_slash = [("TC-PIPE-STORAGE-104-1", True, True),
+                                         ("TC-PIPE-STORAGE-104-2", True, False),
+                                         ("TC-PIPE-STORAGE-104-3", False, False),
+                                         ("TC-PIPE-STORAGE-104-4", False, True)]
 
     @pytest.mark.run(order=6)
     @pytest.mark.parametrize("case,has_destination_slash,has_source_slash", test_case_for_download_with_slash)
     def test_folder_with_slash_should_download_content_only(self, case, has_destination_slash, has_source_slash):
+        """TC-PIPE-STORAGE-104"""
         source = "cp://%s/%s" % (self.bucket_name, case)
         destination = os.path.abspath(os.path.join(self.output_folder, case))
         source, destination = prepare_paths_with_slash(source, destination, has_source_slash, has_destination_slash)
@@ -617,16 +641,17 @@ class TestMoveWithFolders(object):
         except BaseException as e:
             pytest.fail("Test case {} failed. {}".format(case, e.message))
 
-    test_case_for_copy_between_buckets_with_slash = [("EPMCMBIBPC-2203-1", True, True),
-                                                     ("EPMCMBIBPC-2203-2", True, False),
-                                                     ("EPMCMBIBPC-2203-3", False, False),
-                                                     ("EPMCMBIBPC-2203-4", False, True)]
+    test_case_for_copy_between_buckets_with_slash = [("TC-PIPE-STORAGE-105-1", True, True),
+                                                     ("TC-PIPE-STORAGE-105-2", True, False),
+                                                     ("TC-PIPE-STORAGE-105-3", False, False),
+                                                     ("TC-PIPE-STORAGE-105-4", False, True)]
 
     @pytest.mark.run(order=6)
     @pytest.mark.parametrize("case,has_destination_slash,has_source_slash",
                              test_case_for_copy_between_buckets_with_slash)
     def test_folder_with_slash_should_copy_between_buckets_content_only(self, case, has_destination_slash,
                                                                         has_source_slash):
+        """TC-PIPE-STORAGE-105"""
         source = "cp://%s/%s" % (self.bucket_name, case)
         destination = "cp://%s/%s" % (self.other_bucket_name, case)
         source, destination = prepare_paths_with_slash(source, destination, has_source_slash, has_destination_slash)
@@ -644,7 +669,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_upload_folder_with_skip_existing_option_should_skip(self):
-        case = "EPMCMBIBPC-2167"
+        """TC-PIPE-STORAGE-87"""
+        case = "TC-PIPE-STORAGE-87"
         source_folder = os.path.abspath(os.path.join(self.test_folder, case))
         source1 = os.path.join(source_folder, self.test_file_1)
         source2 = os.path.join(source_folder, self.test_file_2)
@@ -674,7 +700,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_upload_folder_with_skip_existing_option_should_not_skip(self):
-        case = "EPMCMBIBPC-2168"
+        """TC-PIPE-STORAGE-90"""
+        case = "TC-PIPE-STORAGE-90"
         source_folder = os.path.abspath(os.path.join(self.test_folder, case))
         source1 = os.path.join(source_folder, self.test_file_1)
         source2 = os.path.join(source_folder, self.test_file_2)
@@ -702,7 +729,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_download_folder_with_skip_existing_option_should_skip(self):
-        case = "EPMCMBIBPC-2198"
+        """TC-PIPE-STORAGE-100"""
+        case = "TC-PIPE-STORAGE-100"
         destination_folder = os.path.abspath(os.path.join(self.output_folder, case))
         destination1 = os.path.join(destination_folder, self.test_file_1)
         destination2 = os.path.join(destination_folder, self.test_file_2)
@@ -732,7 +760,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_download_folder_with_skip_existing_option_should_not_skip(self):
-        case = "EPMCMBIBPC-2199"
+        """TC-PIPE-STORAGE-101"""
+        case = "TC-PIPE-STORAGE-101"
         destination_folder = os.path.abspath(os.path.join(self.output_folder, case))
         destination1 = os.path.join(destination_folder, self.test_file_1)
         destination2 = os.path.join(destination_folder, self.test_file_2)
@@ -760,7 +789,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_copy_folder_between_buckets_with_skip_existing_option_should_skip(self):
-        case = "EPMCMBIBPC-2211"
+        """TC-PIPE-STORAGE-112"""
+        case = "TC-PIPE-STORAGE-112"
         source_folder = "cp://%s/%s/" % (self.bucket_name, case)
         destination_folder = "cp://%s/%s/" % (self.other_bucket_name, case)
         key1 = os.path.join(case, self.test_file_1)
@@ -791,7 +821,8 @@ class TestMoveWithFolders(object):
 
     @pytest.mark.run(order=6)
     def test_copy_folder_between_buckets_with_skip_existing_option_should_not_skip(self):
-        case = "EPMCMBIBPC-2212"
+        """TC-PIPE-STORAGE-113"""
+        case = "TC-PIPE-STORAGE-113"
         source_folder = "cp://%s/%s/" % (self.bucket_name, case)
         destination_folder = "cp://%s/%s/" % (self.other_bucket_name, case)
         key1 = os.path.join(case, self.test_file_1)

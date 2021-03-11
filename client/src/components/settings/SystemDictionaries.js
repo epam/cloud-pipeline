@@ -276,8 +276,13 @@ class SystemDictionaries extends React.Component {
 
   render () {
     const {authenticatedUserInfo} = this.props;
-    if (!authenticatedUserInfo.loaded || !authenticatedUserInfo.value.admin) {
+    if (!authenticatedUserInfo.loaded && authenticatedUserInfo.pending) {
       return null;
+    }
+    if (!authenticatedUserInfo.value.admin) {
+      return (
+        <Alert type="error" message="Access is denied" />
+      );
     }
     const {systemDictionaries} = this.props;
     if (!systemDictionaries.loaded && systemDictionaries.pending) {

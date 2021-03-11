@@ -20,5 +20,5 @@ RUN apt-get update -y && \
                    curl \
                    python \
                    git
-RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python - && \
+RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install msgen==0.9.0

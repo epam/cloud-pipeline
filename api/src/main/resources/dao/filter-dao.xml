@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -70,10 +70,10 @@
                         r.node_cloud_provider,
                         r.tags,
                         r.sensitive,
-                        pipelines.pipeline_name
+                        r.kube_service_enabled,
+                        r.pipeline_name
                     FROM
                         pipeline.pipeline_run r
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     WHERE @WHERE@
                     ORDER BY r.run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
@@ -87,7 +87,6 @@
                         count(*) as count
                     FROM
                         pipeline.pipeline_run r
-                    LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     WHERE @WHERE@
                 ]]>
             </value>

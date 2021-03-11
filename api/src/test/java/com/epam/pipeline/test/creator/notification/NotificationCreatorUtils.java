@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,22 @@ public final class NotificationCreatorUtils {
         notificationSettings.setType(NotificationSettings.NotificationType.HIGH_CONSUMED_RESOURCES);
         notificationSettings.setStatusesToInform(Collections.singletonList(TaskStatus.RUNNING));
         return notificationSettings;
+    }
+
+    public static NotificationSettings getNotificationSettings(final Long id,
+                                                              final List<TaskStatus> taskStatuses) {
+        final NotificationSettings settings = new NotificationSettings();
+        settings.setId(id);
+        settings.setType(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS);
+        settings.setKeepInformedAdmins(true);
+        settings.setInformedUserIds(Collections.emptyList());
+        settings.setTemplateId(ID);
+        settings.setThreshold(null);
+        settings.setEnabled(true);
+        settings.setResendDelay(null);
+        settings.setKeepInformedOwner(true);
+        settings.setStatusesToInform(taskStatuses);
+        return settings;
     }
 
     public static NotificationTemplate getNotificationTemplate() {

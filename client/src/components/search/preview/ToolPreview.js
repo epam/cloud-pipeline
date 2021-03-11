@@ -20,7 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
 import LoadTool from '../../../models/tools/LoadTool';
-import LoadToolAttributes from '../../../models/tools/LoadToolAttributes';
+import LoadToolAttributes from '../../../models/tools/LoadToolInfo';
 import ToolImage from '../../../models/tools/ToolImage';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -163,17 +163,13 @@ export default class ToolPreview extends React.Component {
         const scanResult = currentVersion.scanResult || {};
         const versionAttributes = currentVersion.attributes;
 
-        const vulnerabilities = scanResult.vulnerabilities || [];
-        const countCriticalVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Critical').length;
-        const countHighVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'High').length;
-        const countMediumVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Medium').length;
-        const countLowVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Low').length;
-        const countNegligibleVulnerabilities =
-          vulnerabilities.filter(vulnerabilitie => vulnerabilitie.severity === 'Negligible').length;
+        const {
+          Critical = 0,
+          High = 0,
+          Low = 0,
+          Medium = 0,
+          Negligible = 0
+        } = scanResult.vulnerabilitiesCount || {};
 
         const digestAliases = versionAttributes && versionAttributes.digest
           ? versionsByDigest[versionAttributes.digest]
@@ -193,11 +189,11 @@ export default class ToolPreview extends React.Component {
           successScanDate: scanResult.successScanDate || '',
           allowedToExecute: scanResult.allowedToExecute,
           vulnerabilitiesStatistics: scanResult.status === ScanStatuses.notScanned ? null : {
-            critical: countCriticalVulnerabilities,
-            high: countHighVulnerabilities,
-            medium: countMediumVulnerabilities,
-            low: countLowVulnerabilities,
-            negligible: countNegligibleVulnerabilities
+            critical: Critical,
+            high: High,
+            medium: Medium,
+            low: Low,
+            negligible: Negligible
           }
         });
         keyIndex += 1;

@@ -51,7 +51,7 @@ RUN apt-get update && apt-get install -y automake \
                         libncurses5-dev \
                         gettext-base \
                         libjsoncpp-dev && \
-    curl https://bootstrap.pypa.io/2.7/get-pip.py | python -
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
     # Install gitfs
 RUN apt-get install -y libssl1.0-dev \
                         libffi-dev \

@@ -31,8 +31,9 @@ RUN yum install -y python \
                    sshpass \
                    perl && \
     yum group install -y "Development Tools" && \
-    curl https://bootstrap.pypa.io/2.7/get-pip.py | python - && \
-    pip install pykube
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
+    pip install rsa==4.0 \
+                pykube==0.15.0
 
 # Openresty + http_connect module
 RUN yum install -y  pcre-devel \

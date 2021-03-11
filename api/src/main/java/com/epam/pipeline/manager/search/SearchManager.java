@@ -17,8 +17,10 @@
 package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
+import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchResult;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -65,6 +67,20 @@ public class SearchManager {
             final SearchResponse searchResponse = globalSearchElasticHelper.buildClient().search(requestBuilder
                     .buildSumAggregationForStorage(dataStorage.getId(), dataStorage.getType(), path));
             return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    public FacetedSearchResult facetedSearch(final FacetedSearchRequest searchRequest) {
+        Assert.notNull(searchRequest.getPageSize(), "Page Size is required");
+        Assert.notNull(searchRequest.getOffset(), "Offset is required");
+        try {
+            final String typeFieldName = getTypeFieldName();
+            final SearchResponse response = globalSearchElasticHelper.buildClient()
+                    .search(requestBuilder.buildFacetedRequest(searchRequest, typeFieldName));
+            return resultConverter.buildFacetedResult(response, typeFieldName, getAclFilterFields());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);

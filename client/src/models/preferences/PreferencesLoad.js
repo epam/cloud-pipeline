@@ -107,6 +107,11 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
+  @computed
+  get nfsSensitivePolicy () {
+    return this.getPreferenceValue('storage.mounts.nfs.sensitive.policy');
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

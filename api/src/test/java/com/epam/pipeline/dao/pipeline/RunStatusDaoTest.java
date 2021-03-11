@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -25,6 +24,7 @@ import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class RunStatusDaoTest extends AbstractSpringTest {
+public class RunStatusDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_NAME = "TEST";
     private static final String TEST_REPOSITORY = "///";
@@ -98,13 +98,6 @@ public class RunStatusDaoTest extends AbstractSpringTest {
     public void shouldDeleteStatusesByRunId() {
         createStatus();
         runStatusDao.deleteRunStatus(testRun.getId());
-        assertTrue(runStatusDao.loadRunStatus(testRun.getId()).isEmpty());
-    }
-
-    @Test
-    public void shouldDeleteStatusesByPipelineId() {
-        createStatus();
-        runStatusDao.deleteRunStatusForPipeline(testPipeline.getId());
         assertTrue(runStatusDao.loadRunStatus(testRun.getId()).isEmpty());
     }
 

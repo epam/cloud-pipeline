@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,11 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -61,6 +63,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
@@ -77,6 +80,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,12 +102,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.entity.configuration.RunConfigurationUtils.getNodeCount;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.REPOSITORY_AND_IMAGE;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
 
 @Service
 public class PipelineRunManager {
@@ -192,6 +202,9 @@ public class PipelineRunManager {
 
     @Autowired
     private StopServerlessRunManager stopServerlessRunManager;
+
+    @Autowired
+    private DockerRegistryManager dockerRegistryManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -1076,6 +1089,31 @@ public class PipelineRunManager {
         stopServerlessRunManager.deleteByRunId(runId);
     }
 
+    public List<PipelineRunWithTool> loadRunsWithTools(final List<Long> runIds) {
+        final List<PipelineRun> runs = runCRUDService.loadRunsByIds(runIds);
+        if (CollectionUtils.isEmpty(runs)) {
+            return Collections.emptyList();
+        }
+        final Map<String, DockerRegistry> allRegistries = ListUtils.emptyIfNull(
+                dockerRegistryManager.loadAllDockerRegistry()).stream()
+                .collect(Collectors.toMap(DockerRegistry::getPath, Function.identity()));
+        final Map<String, Set<String>> imagesByRegistries = runs.stream()
+                .map(PipelineRun::getDockerImage)
+                .map(this::parseDockerImage)
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(Pair::getKey, mapping(Pair::getValue, toSet())));
+        final Map<String, Tool> tools = imagesByRegistries.entrySet().stream()
+                .flatMap(entry -> ListUtils.emptyIfNull(toolManager.loadAllByRegistryAndImageIn(
+                        parseRegistryId(entry.getKey(), allRegistries), entry.getValue())).stream())
+                .collect(Collectors.toMap(this::buildRegistryPath, Function.identity()));
+        return runs.stream()
+                .map(run -> PipelineRunWithTool.builder()
+                        .pipelineRun(run)
+                        .tool(tools.get(trimToolVersion(run.getDockerImage())))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     private int getTotalSize(final List<InstanceDisk> disks) {
         return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
@@ -1382,5 +1420,39 @@ public class PipelineRunManager {
             runInstance.setCloudProvider(i.getCloudProvider());
             return runInstance;
         }).orElse(new RunInstance());
+    }
+
+    private Pair<String, String> parseDockerImage(final String dockerImage) {
+        final Matcher matcher = REPOSITORY_AND_IMAGE.matcher(dockerImage);
+
+        if (!matcher.find()) {
+            LOGGER.error("Failed to parse docker image ['{}']", dockerImage);
+            return null;
+        }
+
+        final String repository = matcher.group(1);
+        final String imageWithTag = matcher.group(2);
+        final String imageName = getImageWithoutTag(imageWithTag);
+
+        return Pair.of(repository, imageName);
+    }
+
+    private Long parseRegistryId(final String registry, final Map<String, DockerRegistry> allRegistries) {
+        return allRegistries.getOrDefault(registry, new DockerRegistry()).getId();
+    }
+
+    private String buildRegistryPath(final Tool tool) {
+        return formatRegistryPath(tool.getRegistry(), tool.getImage());
+    }
+
+    private String formatRegistryPath(final String registry, final String image) {
+        return String.format("%s/%s", registry, image);
+    }
+
+    private String trimToolVersion(final String docketImage) {
+        final Pair<String, String> parsedImage = parseDockerImage(docketImage);
+        return Objects.isNull(parsedImage)
+                ? null
+                : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
     }
 }

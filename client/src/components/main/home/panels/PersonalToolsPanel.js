@@ -23,7 +23,7 @@ import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes'
 import {names} from '../../../../models/utils/ContextualPreference';
 import ToolImage from '../../../../models/tools/ToolImage';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
-import LoadToolScanTags from '../../../../models/tools/LoadToolScanTags';
+import LoadToolInfo from '../../../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../../../models/tools/LoadToolScanPolicy';
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import {getVersionRunningInfo} from '../../../tools/utils';
@@ -44,6 +44,7 @@ import {
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
@@ -246,8 +247,8 @@ export default class PersonalToolsPanel extends React.Component {
     const hide = message.loading('Fetching tool info...', 0);
     const toolRequest = new LoadTool(tool.id);
     await toolRequest.fetch();
-    const toolTagRequest = new LoadToolScanTags(tool.id);
-    await toolTagRequest.fetch();
+    const toolTagsInfo = new LoadToolInfo(tool.id);
+    await toolTagsInfo.fetch();
     const scanPolicy = new LoadToolScanPolicy();
     const toolSettings = new LoadToolVersionSettings(tool.id);
     await toolSettings.fetch();
@@ -257,9 +258,9 @@ export default class PersonalToolsPanel extends React.Component {
     if (toolRequest.error) {
       hide();
       message.error(toolRequest.error);
-    } else if (toolTagRequest.error) {
+    } else if (toolTagsInfo.error) {
       hide();
-      message.error(toolTagRequest.error);
+      message.error(toolTagsInfo.error);
     } else if (scanPolicy.error) {
       hide();
       message.error(scanPolicy.error);
@@ -268,7 +269,9 @@ export default class PersonalToolsPanel extends React.Component {
       message.error(toolSettings.error);
     } else {
       const toolValue = toolRequest.value;
-      const versions = toolTagRequest.value.toolVersionScanResults;
+      const versions = (toolTagsInfo.value.versions || [])
+        .map(v => ({[v.version]: v.scanResult}))
+        .reduce((r, c) => ({...r, ...c}), {});
 
       let defaultTag;
       let anyTag;
@@ -410,6 +413,39 @@ export default class PersonalToolsPanel extends React.Component {
             : undefined,
           cloudRegionId: cloudRegionIdValue
         }, allowedInstanceTypesRequest);
+        if (
+          this.props.dataStorageAvailable &&
+          this.props.preferences &&
+          this.props.preferences.loaded &&
+          /^skip$/i.test(this.props.preferences.nfsSensitivePolicy) &&
+          defaultPayload.params &&
+          defaultPayload.params[CP_CAP_LIMIT_MOUNTS] &&
+          defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value &&
+          !/^none$/i.test(defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value)
+        ) {
+          await this.props.dataStorageAvailable.fetchIfNeededOrWait();
+          if (this.props.dataStorageAvailable.loaded) {
+            const ids = new Set(
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value
+                .split(',').map(i => +i)
+            );
+            const selection = (this.props.dataStorageAvailable.value || [])
+              .filter(s => ids.has(+s.id));
+            const hasSensitive = !!selection.find(s => s.sensitive);
+            const filtered = selection
+              .filter(
+                filterNFSStorages(
+                  this.props.preferences.nfsSensitivePolicy,
+                  hasSensitive
+                )
+              );
+            if (filtered.length) {
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+            } else {
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
+            }
+          }
+        }
         const parts = (tool.image || '').toLowerCase().split('/');
         const [image] = parts[parts.length - 1].split(':');
         const {

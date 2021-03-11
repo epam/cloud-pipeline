@@ -120,9 +120,12 @@ function PoolCard ({
   }
   const regions = awsRegions.loaded ? awsRegions.value : [];
   const {
+    autoscaled,
     name,
     schedule,
     count: nodeCount,
+    minSize,
+    maxSize,
     instanceType,
     instanceDisk,
     regionId,
@@ -213,13 +216,27 @@ function PoolCard ({
           <div className={styles.instance}>
             <AWSRegionTag regionId={regionId} />
             {
-              nodeCount > 0
+              !autoscaled && nodeCount > 0
                 ? (
                   <span className={styles.count}>
                     {nodeCount} node{nodeCount === 1 ? '' : 's'}
                   </span>
                 )
                 : undefined
+            }
+            {
+              autoscaled && Number(maxSize) >= 1 && (
+                <span className={styles.count}>
+                  Autoscaled ({minSize} - {maxSize} nodes)
+                </span>
+              )
+            }
+            {
+              autoscaled && !maxSize && (
+                <span className={styles.count}>
+                  Autoscaled ({minSize} - ... nodes)
+                </span>
+              )
             }
             <span className={styles.type}>
               {instanceType}
