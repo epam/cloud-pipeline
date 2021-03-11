@@ -290,7 +290,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO waitForLog(final String message) {
         for (int i = 0; i < 70; i++) {
             refresh();
-            if ($(log()).is(matchText(message))) {
+            if ($(log()).shouldBe(visible).is(matchText(message))) {
                 break;
             }
             sleep(20, SECONDS);

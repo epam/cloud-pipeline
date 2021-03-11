@@ -37,6 +37,7 @@ import java.util.stream.IntStream;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
@@ -284,8 +285,8 @@ public class LaunchLimitMountsTest
                 .waitForTask(mountDataStoragesTask)
                 .click(taskWithName(mountDataStoragesTask))
                 .ensure(log(), containsMessages("Found 2 available storage(s). Checking mount options."))
-                .ensure(log(), containsMessages(format("Run is launched with mount limits (%s,%s) Only 2 storages will be mounted",
-                        sensitiveStorageID, storageID)))
+                .ensure(log(), matchText(format("Run is launched with mount limits \\((%s,%s|%s,%s)\\) Only 2 storages will be mounted",
+                        sensitiveStorageID, storageID, storageID, sensitiveStorageID)))
                 .ensure(log(), containsMessages(mountStorageMessage(storage1)))
                 .ensure(log(), containsMessages(mountStorageMessage(storageSensitive)))
                 .ssh(shell -> shell
