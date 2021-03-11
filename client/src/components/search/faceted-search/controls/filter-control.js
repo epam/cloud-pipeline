@@ -26,7 +26,7 @@ function FilterControl ({onClick, expanded, visible}) {
       onClick={onClick}
       className={styles.expandBtn}
     >
-      {expanded ? 'collapse...' : 'expand all...'}
+      {expanded ? 'Hide' : 'Show all'}
     </div>);
 };
 
