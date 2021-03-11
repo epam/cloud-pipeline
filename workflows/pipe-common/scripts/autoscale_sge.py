@@ -881,7 +881,8 @@ class FileSystemHostStorage:
     def get_hosts_activity(self, hosts):
         hosts_activity = {}
         latest_hosts_activity = self._load_hosts_stats()
-        hosts.remove(self.master_host)
+        if self.master_host in hosts:
+            hosts.remove(self.master_host)
         for host in hosts:
             self._validate_existence(host, latest_hosts_activity)
             hosts_activity[host] = latest_hosts_activity[host]
@@ -911,7 +912,8 @@ class FileSystemHostStorage:
 
     def load_hosts(self):
         latest_hosts_stats = self._load_hosts_stats()
-        latest_hosts_stats.pop(self.master_host)
+        if self.master_host in latest_hosts_stats:
+            latest_hosts_stats.pop(self.master_host)
         return list(latest_hosts_stats.keys())
 
     def _load_hosts_stats(self):
