@@ -103,8 +103,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         final DataStorageAction action = new DataStorageAction();
         action.setBucketName(dataStorage.getPath());
         action.setId(dataStorage.getId());
-        action.setWrite(false);
-        action.setRead(true);
+        action.setList(true);
         return cloudPipelineAPIClient
                 .generateTemporaryCredentials(Collections.singletonList(action));
     }
