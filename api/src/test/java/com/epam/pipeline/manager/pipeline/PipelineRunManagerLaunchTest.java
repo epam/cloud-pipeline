@@ -48,7 +48,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +70,9 @@ import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getDefaul
 import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getNonDefaultAwsRegion;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.lang.Integer.parseInt;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -105,6 +106,11 @@ public class PipelineRunManagerLaunchTest {
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
     private static final LocalDateTime TEST_PERIOD_18 = TEST_PERIOD.plusHours(18);
     private static final int HOURS_18 = 18;
+    private static final RunStatus TEST_STATUS_1 = new RunStatus(ID, TaskStatus.RUNNING, null, TEST_PERIOD);
+    private static final RunStatus TEST_STATUS_2 = new RunStatus(ID, TaskStatus.STOPPED, null,
+            TEST_PERIOD.plusHours(HOURS_18));
+    private static final RunStatus TEST_STATUS_3 = new RunStatus(ID_2, TaskStatus.RUNNING, null,
+            TEST_PERIOD.plusHours(HOURS_18));
 
     @InjectMocks
     private final PipelineRunManager pipelineRunManager = new PipelineRunManager();
@@ -353,8 +359,11 @@ public class PipelineRunManagerLaunchTest {
                 .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18));
         doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class));
 
-        pipelineRunManager.loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18).stream()
+        Map<Long, PipelineRun> runMap = pipelineRunManager.loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18).stream()
                 .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+
+        assertEquals(Arrays.asList(TEST_STATUS_1, TEST_STATUS_2), runMap.get(ID).getRunStatuses());
+        assertEquals(singletonList(TEST_STATUS_3), runMap.get(ID_2).getRunStatuses());
 
         verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(any(LocalDateTime.class), any(LocalDateTime.class));
         verify(runStatusManager).loadRunStatus(anyListOf(Long.class));
@@ -402,11 +411,8 @@ public class PipelineRunManagerLaunchTest {
 
     private Map<Long, List<RunStatus>> getStatusMap() {
         final Map<Long, List<RunStatus>> map = new HashMap<>();
-        map.put(ID, Arrays.asList(
-                new RunStatus(ID, TaskStatus.RUNNING, null, TEST_PERIOD),
-                new RunStatus(ID, TaskStatus.STOPPED, null, TEST_PERIOD.plusHours(HOURS_18))));
-        map.put(ID_2, Collections.singletonList(
-                new RunStatus(ID_2, TaskStatus.RUNNING, null, TEST_PERIOD.plusHours(HOURS_18))));
+        map.put(ID, Arrays.asList(TEST_STATUS_1, TEST_STATUS_2));
+        map.put(ID_2, singletonList(TEST_STATUS_3));
         return map;
     }
 
