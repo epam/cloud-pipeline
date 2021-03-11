@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ class FsBrowserManager(object):
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         task.upload_path = path
         self.tasks.update({task_id: task})
-        pipeline_client = CloudPipelineApiProvider(self.logger.log_dir)
+        pipeline_client = CloudPipelineApiProvider()
         storage_id = pipeline_client.load_storage_id_by_name(self.storage_name)
         upload_url = pipeline_client.get_upload_url(storage_id, os.path.join(self.storage_path, task_id, path))
         return task_id, upload_url
