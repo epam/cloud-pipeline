@@ -249,6 +249,9 @@ class GridEngine:
                 current_host = None
         return jobs.values()
 
+    def filter_running_job(self, jobs):
+        return [job for job in jobs if job.state == GridEngineJobState.RUNNING]
+
     def _parse_date(self, date):
         return datetime.strptime(date, GridEngine._QSTAT_DATETIME_FORMAT)
 
@@ -659,6 +662,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
+            self._update_last_activity_for_currently_running_jobs()
             run = self.api.load_run(run_id)
             if run.get('status', 'RUNNING') != 'RUNNING':
                 error_msg = 'Additional worker is not running. Probably it has failed.'
@@ -684,6 +688,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts > 0:
+            self._update_last_activity_for_currently_running_jobs()
             run = self.api.load_run(run_id)
             if run.get('status', 'RUNNING') != 'RUNNING':
                 error_msg = 'Additional worker is not running. Probably it has failed.'
@@ -710,6 +715,7 @@ class GridEngineScaleUpHandler:
             else GridEngineScaleUpHandler._GE_POLL_ATTEMPTS
         while attempts > 0:
             try:
+                self._update_last_activity_for_currently_running_jobs()
                 self.grid_engine.enable_host(pod.name)
                 Logger.info('Additional worker with host=%s has been enabled in grid engine.' % pod.name)
                 self.host_storage.update_hosts_activity([pod.name], self.clock.now())
@@ -728,6 +734,12 @@ class GridEngineScaleUpHandler:
         Logger.info('Increase number of parallel environment slots by %s.' % slots_to_append)
         self.grid_engine.increase_parallel_environment_slots(slots_to_append)
         Logger.info('Number of parallel environment slots was increased.')
+
+    def _update_last_activity_for_currently_running_jobs(self):
+        jobs = self.grid_engine.get_jobs()
+        running_jobs = self.grid_engine.filter_running_job(jobs)
+        if running_jobs:
+            GridEngineAutoscaler.update_running_jobs_host_activity(running_jobs, self.host_storage, self.clock.now())
 
 
 class GridEngineScaleDownHandler:
@@ -990,9 +1002,9 @@ class GridEngineAutoscaler:
         additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(additional_hosts))
         updated_jobs = self.grid_engine.get_jobs()
-        running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
+        running_jobs = self.grid_engine.filter_running_job(updated_jobs)
         pending_jobs = self._filter_pending_job(updated_jobs)
-        self._update_hosts_activity(now, running_jobs)
+        self.update_running_jobs_host_activity(running_jobs, self.host_storage, now)
         if running_jobs:
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
         if pending_jobs:
@@ -1037,12 +1049,13 @@ class GridEngineAutoscaler:
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
 
-    def _update_hosts_activity(self, scaling_step_start, running_jobs):
+    @staticmethod
+    def update_running_jobs_host_activity(running_jobs, host_storage, scaling_step_start):
         active_hosts = set()
         for job in running_jobs:
             active_hosts.update(job.hosts)
         if active_hosts:
-            self.host_storage.update_hosts_activity(active_hosts, scaling_step_start)
+            host_storage.update_hosts_activity(active_hosts, scaling_step_start)
 
     def _filter_pending_job(self, updated_jobs):
         # kill jobs that are pending and can't be satisfied with requested resource
