@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(value = "sync.s3-file.disable", matchIfMissing = true, havingValue = "false")
 public class S3FileSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
@@ -49,6 +48,7 @@ public class S3FileSyncConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = "sync.s3-file.disable", matchIfMissing = true, havingValue = "false")
     public ObjectStorageIndex s3FileSynchronizer(
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,

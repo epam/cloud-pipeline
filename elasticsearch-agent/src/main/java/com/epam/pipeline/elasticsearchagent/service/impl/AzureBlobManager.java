@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.microsoft.azure.storage.blob.AnonymousCredentials;
+import com.microsoft.azure.storage.blob.BlobListingDetails;
 import com.microsoft.azure.storage.blob.ContainerURL;
 import com.microsoft.azure.storage.blob.ListBlobsOptions;
 import com.microsoft.azure.storage.blob.PipelineOptions;
@@ -180,7 +181,9 @@ public class AzureBlobManager implements ObjectStorageFileManager {
         public ContainerListBlobFlatSegmentResponse next() {
             response = unwrap(container.listBlobsFlatSegment(nextMarker, new ListBlobsOptions()
                     .withPrefix(path)
-                    .withMaxResults(pageSize)));
+                    .withMaxResults(pageSize)
+                    .withDetails(new BlobListingDetails()
+                            .withMetadata(true))));
             nextMarker = Optional.ofNullable(response)
                     .map(ContainerListBlobFlatSegmentResponse::body)
                     .map(ListBlobsFlatSegmentResponse::nextMarker)

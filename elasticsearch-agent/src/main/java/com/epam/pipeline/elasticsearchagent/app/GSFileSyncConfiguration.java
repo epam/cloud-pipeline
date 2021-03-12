@@ -27,7 +27,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(value = "sync.gs-file.disable", matchIfMissing = true, havingValue = "false")
 public class GSFileSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
@@ -48,6 +47,7 @@ public class GSFileSyncConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = "sync.gs-file.disable", matchIfMissing = true, havingValue = "false")
     public ObjectStorageIndex gsFileSynchronizer(
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,

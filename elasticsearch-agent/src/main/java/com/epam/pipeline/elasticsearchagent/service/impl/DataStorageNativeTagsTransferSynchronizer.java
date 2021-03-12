@@ -11,6 +11,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,30 +43,46 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
-        log.debug("Started data storage tags processor");
+        log.debug("Started data storage native tags transfer synchronization");
         cloudPipelineAPIClient.loadAllDataStorages()
                 .parallelStream()
                 .forEach(storage -> {
-                    final boolean isVersioningEnabled = storage.isVersioningEnabled();
-                    Optional.ofNullable(storage.getType()).map(fileManagers::get)
-                            .map(it -> it.listVersionsWithNativeTags(storage, getTemporaryCredentials(storage)))
-                            .map(Stream::iterator)
-                            .map(IteratorUtils::chunked)
-                            .map(IteratorUtils::streamFrom)
-                            .orElseGet(Stream::empty)
-                            .map(chunk -> chunk.stream()
-                                    .flatMap(isVersioningEnabled ? this::versionedTags : this::nonVersionedTags)
-                                    .collect(Collectors.toList()))
-                            .map(DataStorageTagInsertBatchRequest::new)
-                            .forEach(request ->
-                                    cloudPipelineAPIClient.insertDataStorageTags(storage.getId(), request));
+                    log.debug("Started {} data storage {} native tags transfer synchronization", 
+                            storage.getType(), storage.getPath());
+                    try {
+                        final boolean isVersioningEnabled = storage.isVersioningEnabled();
+                        Optional.ofNullable(storage.getType()).map(fileManagers::get)
+                                .map(fileManager -> fileManager.listVersionsWithNativeTags(storage,
+                                        getTemporaryCredentials(storage)))
+                                .map(Stream::iterator)
+                                .map(IteratorUtils::chunked)
+                                .map(IteratorUtils::streamFrom)
+                                .orElseGet(Stream::empty)
+                                .map(chunk -> chunk.stream()
+                                        .flatMap(isVersioningEnabled ? this::versionedTags : this::nonVersionedTags)
+                                        .collect(Collectors.toList()))
+                                .filter(CollectionUtils::isNotEmpty)
+                                .map(DataStorageTagInsertBatchRequest::new)
+                                .forEach(request -> {
+                                    cloudPipelineAPIClient.insertDataStorageTags(storage.getId(), request);
+                                    log.debug("{} native tags of {} data storage {} have been transferred",
+                                            request.getRequests().size(), storage.getType(), storage.getPath());
+                                });
+                    } catch (Exception e) {
+                        log.error(String.format("Failed %s data storage %s native tags transfer synchronization", 
+                                storage.getType(), storage.getPath()), e);
+                    }
+                    log.debug("Finished {} data storage {} native tags transfer synchronization",
+                            storage.getType(), storage.getPath());
                 });
+        log.debug("Finished data storage native tags transfer synchronization");
     }
 
     private Stream<DataStorageTagInsertRequest> versionedTags(final DataStorageFile file) {
-        final Stream<DataStorageTagInsertRequest> dataStorageTagInsertRequestStream = file.getTags().entrySet().stream()
-                .map(e -> new DataStorageTagInsertRequest(
-                        file.getPath(), file.getVersion(), e.getKey(), e.getValue()));
+        final Stream<DataStorageTagInsertRequest> dataStorageTagInsertRequestStream =
+                MapUtils.emptyIfNull(file.getTags()).entrySet().stream()
+                        .map(e -> new DataStorageTagInsertRequest(
+                                file.getPath(), file.getVersion(), e.getKey(), e.getValue()));
         return BooleanUtils.toBoolean(MapUtils.emptyIfNull(file.getLabels()).get("LATEST"))
                 ? dataStorageTagInsertRequestStream.flatMap(r -> Stream.of(r,
                 new DataStorageTagInsertRequest(r.getPath(), null, r.getKey(), r.getValue())))
@@ -73,7 +90,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
     }
 
     private Stream<DataStorageTagInsertRequest> nonVersionedTags(final DataStorageFile file) {
-        return file.getTags().entrySet().stream()
+        return MapUtils.emptyIfNull(file.getTags()).entrySet().stream()
                 .map(e -> new DataStorageTagInsertRequest(
                         file.getPath(), null, e.getKey(), e.getValue()));
     }
@@ -83,7 +100,11 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
         action.setBucketName(storage.getPath());
         action.setId(storage.getId());
         action.setWrite(false);
+        action.setWriteVersion(false);
         action.setRead(true);
+        action.setReadVersion(true);
+        action.setList(true);
+        action.setListVersion(true);
         return cloudPipelineAPIClient.generateTemporaryCredentials(Collections.singletonList(action));
     }
 }

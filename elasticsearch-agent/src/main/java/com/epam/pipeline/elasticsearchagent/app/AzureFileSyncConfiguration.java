@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(value = "sync.az-blob.disable", matchIfMissing = true, havingValue = "false")
 public class AzureFileSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
@@ -52,6 +51,7 @@ public class AzureFileSyncConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = "sync.az-blob.disable", matchIfMissing = true, havingValue = "false")
     public ObjectStorageIndex azFileSynchronizer(
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,

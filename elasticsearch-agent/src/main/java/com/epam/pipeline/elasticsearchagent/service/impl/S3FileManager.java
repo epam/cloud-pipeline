@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -78,6 +79,7 @@ public class S3FileManager implements ObjectStorageFileManager {
                                                               final TemporaryCredentials credentials) {
         final AmazonS3 client = getS3Client(credentials);
         return versions(client, dataStorage)
+                .filter(file -> !file.getDeleteMarker())
                 .peek(file -> file.setTags(getNativeTags(client, dataStorage, file)));
     }
 
@@ -165,19 +167,20 @@ public class S3FileManager implements ObjectStorageFileManager {
                     .withBucketName(bucket)
                     .withPrefix(path)
                     .withContinuationToken(continuationToken));
-            continuationToken = objectsListing.isTruncated() ? null : objectsListing.getNextContinuationToken();
+            continuationToken = objectsListing.isTruncated() ? objectsListing.getNextContinuationToken(): null;
             items = objectsListing.getObjectSummaries()
                     .stream()
+                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
+                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), S3FileManager.DELIMITER))
                     .map(this::convertToStorageFile)
-                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getPath(), ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
                     .collect(Collectors.toList());
             return items;
         }
 
         private DataStorageFile convertToStorageFile(final S3ObjectSummary s3ObjectSummary) {
             final DataStorageFile file = new DataStorageFile();
-            file.setName(StringUtils.removeEnd(s3ObjectSummary.getKey(), S3FileManager.DELIMITER));
-            file.setPath(file.getName());
+            file.setName(s3ObjectSummary.getKey());
+            file.setPath(s3ObjectSummary.getKey());
             file.setSize(s3ObjectSummary.getSize());
             file.setVersion(null);
             file.setChanged(ESConstants.FILE_DATE_FORMAT.format(s3ObjectSummary.getLastModified()));
@@ -190,6 +193,7 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     @RequiredArgsConstructor
+    @Slf4j
     private static class S3VersionPageIterator implements Iterator<List<DataStorageFile>> {
 
         private final AmazonS3 client;
@@ -215,15 +219,16 @@ public class S3FileManager implements ObjectStorageFileManager {
                     .withKeyMarker(nextKeyMarker)
                     .withVersionIdMarker(nextVersionIdMarker));
             if (versionListing.isTruncated()) {
-                nextKeyMarker = null;
-                nextVersionIdMarker = null;
-            } else {
                 nextKeyMarker = versionListing.getNextKeyMarker();
                 nextVersionIdMarker = versionListing.getNextVersionIdMarker();
+            } else {
+                nextKeyMarker = null;
+                nextVersionIdMarker = null;
             }
             items = versionListing.getVersionSummaries()
                     .stream()
                     .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
+                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), S3FileManager.DELIMITER))
                     .map(this::convertToStorageFile)
                     .collect(Collectors.toList());
             return items;
@@ -231,8 +236,8 @@ public class S3FileManager implements ObjectStorageFileManager {
 
         private DataStorageFile convertToStorageFile(final S3VersionSummary summary) {
             final DataStorageFile file = new DataStorageFile();
-            file.setName(StringUtils.removeEnd(summary.getKey(), S3FileManager.DELIMITER));
-            file.setPath(file.getName());
+            file.setName(summary.getKey());
+            file.setPath(summary.getKey());
             file.setSize(summary.getSize());
             if (summary.getVersionId() != null && !summary.getVersionId().equals("null")) {
                 file.setVersion(summary.getVersionId());
