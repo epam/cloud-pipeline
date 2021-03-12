@@ -1364,10 +1364,10 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
-      const pipeline = pipelineName && pipelineId && version
+      const pipeline = pipelineName && version
         ? {name: pipelineName, id: pipelineId, version: version}
         : undefined;
-      const {runId}= this.props.params;
+      const {runId} = this.props.params;
 
       const {
         startDate,
@@ -1382,13 +1382,35 @@ class Logs extends localization.LocalizedReactComponent {
       ResumeFailureReason = resumeFailureReason
         ? (<Alert type="warning" message={resumeFailureReason} />)
         : null;
-      const pipelineLink = pipeline
-        ? (
-          <Link className={styles.pipelineLink} to={`/${pipeline.id}/${pipeline.version}`}>
-            {pipeline.name} ({pipeline.version})
-          </Link>
-        )
-        : undefined;
+      let pipelineLink;
+      if (pipeline) {
+        if (pipeline.id) {
+          pipelineLink = (
+            <Link className={styles.pipelineLink} to={`/${pipeline.id}/${pipeline.version}`}>
+              {pipeline.name} ({pipeline.version})
+            </Link>
+          );
+        } else {
+          pipelineLink = (
+            <span className={styles.deletedPipeline}>
+              {pipeline.name} ({pipeline.version})
+              <Popover
+                content={(
+                  <span>{this.localizedString('Pipeline')} <b>{pipeline.name}</b> has been removed</span>
+                )}
+              >
+                <Icon
+                  type="info-circle"
+                  style={{
+                    marginLeft: 5,
+                    fontSize: 'smaller'
+                  }}
+                />
+              </Popover>
+            </span>
+          );
+        }
+      }
 
       const failureReason = status === 'FAILURE' && podStatus
         ? <span style={{fontWeight: 'normal', marginLeft: 5}}>({podStatus})</span> : undefined;

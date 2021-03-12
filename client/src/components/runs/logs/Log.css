@@ -143,6 +143,12 @@
   vertical-align: middle;
 }
 
+.deleted-pipeline {
+  font-weight: normal;
+  vertical-align: middle;
+  color: #8d0d0d;
+}
+
 .graph-container-full-height {
   position: relative;
   height: 100%;
