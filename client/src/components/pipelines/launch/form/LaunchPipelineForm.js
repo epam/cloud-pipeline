@@ -123,6 +123,7 @@ import {
   CP_CAP_AUTOSCALE_PRICE_TYPE
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
+import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -718,7 +719,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           payload = this.generateLaunchPayload(values);
         }
         if (this.props.onLaunch) {
-          const result = await this.props.onLaunch(payload);
+          const result = await this.props.onLaunch(payload, values[ADVANCED].hostedApplication);
           if (result) {
             this.reset();
             this.prepare();
@@ -4051,6 +4052,38 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   };
 
+  renderHostedAppConfigurationItem = () => {
+    if (
+      this.props.detached ||
+      this.props.isDetachedConfiguration ||
+      this.props.editConfigurationMode
+    ) {
+      return null;
+    }
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'hostedApplication')}
+        {...this.leftFormItemLayout}
+        label="Internal DNS name"
+      >
+        <Col span={10}>
+          <FormItem
+            className={styles.formItemRow}
+          >
+            {
+              this.getSectionFieldDecorator(ADVANCED)('hostedApplication')(
+                <HostedAppConfiguration />
+              )
+            }
+          </FormItem>
+        </Col>
+        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.hostedApplicationHint)}
+        </Col>
+      </FormItem>
+    );
+  };
+
   renderCmdTemplateFormItem = () => {
     return (
       <FormItem
@@ -4897,6 +4930,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderPriceTypeSelection()}
               {this.renderDisableAutoPauseFormItem()}
               {this.renderPrettyUrlFormItem()}
+              {this.renderHostedAppConfigurationItem()}
               {this.renderTimeoutFormItem()}
               {this.renderEndpointNameFormItem()}
               {this.renderStopAfterFormItem()}
