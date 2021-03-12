@@ -175,7 +175,8 @@ class FacetedSearch extends React.Component {
             return;
           }
           this.setState({
-            searchToken
+            searchToken,
+            offset
           }, () => {
             let queryString = facetedQueryString.build(query, activeFilters);
             if (queryString) {

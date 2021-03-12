@@ -183,7 +183,7 @@ class SearchResults extends React.Component {
     if (this.previewTimeout) {
       clearTimeout(this.previewTimeout);
     }
-    this.setState({preview: info});
+    this.setState({preview: info, hoverInfo: info});
   };
 
   navigate = (item) => (e) => {
@@ -244,6 +244,7 @@ class SearchResults extends React.Component {
               <div
                 className={styles.preview}
                 onMouseOver={() => this.doNotHidePreview(preview)}
+                onMouseLeave={this.unHoverItem(preview)}
               >
                 <Preview
                   item={preview}

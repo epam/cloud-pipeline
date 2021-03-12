@@ -378,7 +378,6 @@ export default class S3FilePreview extends React.Component {
     if (!this.props.item) {
       return null;
     }
-    console.log(this.props.item);
     const highlights = renderHighlights(this.props.item);
     const info = this.renderInfo();
     const attributes = renderAttributes(this.props.metadata, true);
