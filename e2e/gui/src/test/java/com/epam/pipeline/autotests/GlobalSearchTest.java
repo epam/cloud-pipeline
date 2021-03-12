@@ -485,8 +485,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItemWithText(testRunID_2668)
-                .ensure(TITLE, Status.WORKING.reached, text(testRunID_2668),
-                        text(String.format("%s:%s", toolEndpoint, toolVersion)))
+                .ensure(TITLE, Status.WORKING.reached, text(testRunID_2668))
+                .ensure(TAGS, text(String.format("%s:%s", toolEndpoint, toolVersion)))
                 .checkTags(instanceParam)
                 .ensure(HIGHLIGHTS, text("Found in id"))
                 .ensure(PREVIEW, text("Owner"), text("Scheduled"),
