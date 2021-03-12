@@ -48,6 +48,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -412,7 +413,7 @@ public class PipelineRunManagerLaunchTest {
     private Map<Long, List<RunStatus>> getStatusMap() {
         final Map<Long, List<RunStatus>> map = new HashMap<>();
         map.put(ID, Arrays.asList(TEST_STATUS_1, TEST_STATUS_2));
-        map.put(ID_2, singletonList(TEST_STATUS_3));
+        map.put(ID_2, Collections.singletonList(TEST_STATUS_3));
         return map;
     }
 
