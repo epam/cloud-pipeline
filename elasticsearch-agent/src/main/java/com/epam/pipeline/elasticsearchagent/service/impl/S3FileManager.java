@@ -32,7 +32,7 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
-import com.epam.pipeline.elasticsearchagent.utils.IteratorUtils;
+import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -126,14 +126,14 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     private Stream<DataStorageFile> versions(final AmazonS3 client, final AbstractDataStorage dataStorage) {
-        return IteratorUtils.streamFrom(IteratorUtils.unchunked(
-                new S3VersionPageIterator(client, dataStorage.getPath(), "")));
+        return StreamUtils.from(new S3VersionPageIterator(client, dataStorage.getPath(), ""))
+                .flatMap(List::stream);
     }
 
     private Stream<DataStorageFile> files(final AmazonS3 client,
                                           final AbstractDataStorage dataStorage) {
-        return IteratorUtils.streamFrom(IteratorUtils.unchunked(
-                new S3PageIterator(client, dataStorage.getPath(), "")));
+        return StreamUtils.from(new S3PageIterator(client, dataStorage.getPath(), ""))
+                .flatMap(List::stream);
     }
 
     private IndexRequest createIndexRequest(final DataStorageFile item,

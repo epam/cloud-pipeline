@@ -2,7 +2,7 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
-import com.epam.pipeline.elasticsearchagent.utils.IteratorUtils;
+import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -57,9 +57,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                                         .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : nonVersionedTags(chunk))
                                         .map(stream -> stream.collect(Collectors.toList()))
                                         .filter(CollectionUtils::isNotEmpty))
-                                .map(Stream::iterator)
-                                .map(IteratorUtils::windowed)
-                                .map(IteratorUtils::streamFrom)
+                                .map(StreamUtils::windowed)
                                 .orElseGet(Stream::empty)
                                 .map(DataStorageTagInsertBatchRequest::new)
                                 .forEach(request -> {

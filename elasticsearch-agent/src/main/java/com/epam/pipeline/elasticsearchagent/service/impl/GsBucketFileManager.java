@@ -19,7 +19,7 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
-import com.epam.pipeline.elasticsearchagent.utils.IteratorUtils;
+import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -93,7 +93,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
         final Iterator<Blob> iterator = googleStorage.list(bucketName, Storage.BlobListOption.versions(true))
                 .iterateAll()
                 .iterator();
-        return IteratorUtils.streamFrom(iterator)
+        return StreamUtils.from(iterator)
                 .filter(blob -> !StringUtils.endsWithIgnoreCase(blob.getName(), ESConstants.HIDDEN_FILE_NAME))
                 .map(blob -> {
                     final DataStorageFile file = new DataStorageFile();
@@ -118,7 +118,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
         final Storage googleStorage = getGoogleStorage(credentials);
         final String bucketName = dataStorage.getPath();
         final Iterator<Blob> iterator = googleStorage.list(bucketName).iterateAll().iterator();
-        return IteratorUtils.streamFrom(iterator)
+        return StreamUtils.from(iterator)
                 .filter(blob -> !StringUtils.endsWithIgnoreCase(blob.getName(), ESConstants.HIDDEN_FILE_NAME))
                 .map(this::convertToStorageFile);
     }

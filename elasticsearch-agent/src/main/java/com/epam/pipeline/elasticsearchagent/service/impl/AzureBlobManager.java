@@ -20,7 +20,7 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
-import com.epam.pipeline.elasticsearchagent.utils.IteratorUtils;
+import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -56,10 +56,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.HIDDEN_FILE_NAME;
@@ -93,17 +90,9 @@ public class AzureBlobManager implements ObjectStorageFileManager {
                 .forEach(indexContainer::add);
     }
 
-    private Stream<DataStorageFile> files(final AbstractDataStorage dataStorage,
+    private Stream<DataStorageFile> files(final AbstractDataStorage storage,
                                           final TemporaryCredentials credentials) {
-        return IteratorUtils.streamFrom(iterateFiles(dataStorage, credentials));
-    }
-
-    private Iterator<DataStorageFile> iterateFiles(final AbstractDataStorage storage,
-                                                   final TemporaryCredentials credentials) {
-        final AzureFlatSegmentIterator segmentIterator = new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), "");
-        final Spliterator<ContainerListBlobFlatSegmentResponse> spliterator = Spliterators.spliteratorUnknownSize(segmentIterator, 0);
-        final Stream<ContainerListBlobFlatSegmentResponse> stream = StreamSupport.stream(spliterator, false);
-        return stream
+        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), ""))
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
                         .map(BlobFlatListSegment::blobItems)
@@ -111,8 +100,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
                 .flatMap(List::stream)
                 .filter(blob -> !Objects.equals(blob.name(), null))
                 .filter(blob -> !StringUtils.endsWithIgnoreCase(blob.name(), HIDDEN_FILE_NAME.toLowerCase()))
-                .map(this::convertToStorageFile)
-                .iterator();
+                .map(this::convertToStorageFile);
     }
 
     private ContainerURL buildContainerUrl(final AbstractDataStorage storage,
