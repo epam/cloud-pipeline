@@ -159,6 +159,12 @@ const executionEnvironmentSummaryHint = (localizedStringFn) => (
   </Row>
 );
 
+const hostedApplicationHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    You can specify an internal DNS name for the job
+  </Row>
+);
+
 const hints = {
   renderHint,
   pipelineHint,
@@ -176,7 +182,8 @@ const hints = {
   limitMountsHint,
   doNotMountStoragesHint,
   prettyUrlHint,
-  executionEnvironmentSummaryHint
+  executionEnvironmentSummaryHint,
+  hostedApplicationHint
 };
 
 export default hints;
