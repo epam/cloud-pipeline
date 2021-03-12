@@ -30,6 +30,7 @@ import {
 } from 'antd';
 import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
+import PipelineRunHostedApp from '../../../models/pipelines/PipelineRunHostedApp';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
@@ -61,8 +62,24 @@ export function run (parent, callback) {
     console.warn('Parent component should be marked with @runPipelineActions');
     throw new Error('"run" function should be called with parent component passed to arguments:');
   }
-  return function (payload, confirm = true, title, warning, allowedInstanceTypesRequest) {
-    return runFn(payload, confirm, title, warning, parent.props, callback, allowedInstanceTypesRequest);
+  return function (
+    payload,
+    confirm = true,
+    title,
+    warning,
+    allowedInstanceTypesRequest,
+    hostedApplicationConfiguration
+  ) {
+    return runFn(
+      payload,
+      confirm,
+      title,
+      warning,
+      parent.props,
+      callback,
+      allowedInstanceTypesRequest,
+      hostedApplicationConfiguration
+    );
   };
 }
 
@@ -114,7 +131,27 @@ async function saveRunSchedule (runId, scheduleRules) {
   }
 }
 
-function runFn (payload, confirm, title, warning, stores, callbackFn, allowedInstanceTypesRequest) {
+async function runHostedApp (runId, configuration) {
+  if (configuration) {
+    const {service, ports = []} = configuration;
+    const request = new PipelineRunHostedApp(runId, service);
+    await request.send(ports);
+    if (request.error) {
+      message.error(request.error);
+    }
+  }
+}
+
+function runFn (
+  payload,
+  confirm,
+  title,
+  warning,
+  stores,
+  callbackFn,
+  allowedInstanceTypesRequest,
+  hostedApplicationConfiguration
+) {
   return new Promise(async (resolve) => {
     let launchName;
     let availableInstanceTypes = [];
@@ -216,6 +253,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         if (scheduleRules && scheduleRules.length > 0) {
           await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
         }
+        await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
         resolve(true);
         callbackFn && callbackFn(true);
       }
@@ -314,6 +352,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
               if (scheduleRules && scheduleRules.length > 0) {
                 await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
               }
+              await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
               resolve(true);
               callbackFn && callbackFn(true);
             }
