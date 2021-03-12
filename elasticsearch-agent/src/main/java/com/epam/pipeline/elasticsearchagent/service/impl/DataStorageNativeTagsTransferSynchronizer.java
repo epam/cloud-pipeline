@@ -52,16 +52,15 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                     try {
                         final boolean isVersioningEnabled = storage.isVersioningEnabled();
                         Optional.ofNullable(storage.getType()).map(fileManagers::get)
-                                .map(fileManager -> fileManager.listVersionsWithNativeTags(storage,
-                                        getTemporaryCredentials(storage)))
+                                .map(fileManager -> fileManager
+                                        .listVersionsWithNativeTags(storage, getTemporaryCredentials(storage))
+                                        .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : nonVersionedTags(chunk))
+                                        .map(stream -> stream.collect(Collectors.toList()))
+                                        .filter(CollectionUtils::isNotEmpty))
                                 .map(Stream::iterator)
-                                .map(IteratorUtils::chunked)
+                                .map(IteratorUtils::windowed)
                                 .map(IteratorUtils::streamFrom)
                                 .orElseGet(Stream::empty)
-                                .map(chunk -> chunk.stream()
-                                        .flatMap(isVersioningEnabled ? this::versionedTags : this::nonVersionedTags)
-                                        .collect(Collectors.toList()))
-                                .filter(CollectionUtils::isNotEmpty)
                                 .map(DataStorageTagInsertBatchRequest::new)
                                 .forEach(request -> {
                                     cloudPipelineAPIClient.insertDataStorageTags(storage.getId(), request);

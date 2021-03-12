@@ -27,4 +27,12 @@ public final class IteratorUtils {
     public static <T> Iterator<T> unchunked(final Iterator<List<T>> iterator) {
         return new ItemIterator<>(iterator);
     }
+
+    public static <T> Iterator<List<T>> windowed(final Iterator<List<T>> iterator) {
+        return windowed(iterator, 100);
+    }
+
+    public static <T> Iterator<List<T>> windowed(final Iterator<List<T>> iterator, final int chunkSize) {
+        return new WindowIterator<>(iterator, chunkSize);
+    }
 }
