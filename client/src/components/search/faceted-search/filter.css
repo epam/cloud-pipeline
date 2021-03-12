@@ -68,10 +68,47 @@
 
 .filter .option {
   margin-bottom: 5px;
-  transition: all 0s ease;
   user-select: none;
 }
 
 .filter .option-hidden {
-  display: none;
+  animation: collapse 0.2s ease;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+.filter .option-visible {
+  animation: expand 0.2s ease;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+@keyframes collapse {
+  0% {
+    height: 21px;
+  }
+  50% {
+    color: transparent;
+  }
+  100% {
+    transform: scaleY(0);
+    border: 0;
+    padding: 0;
+    margin: 0;
+    visibility: hidden;
+    height: 0;
+  }
+}
+
+@keyframes expand {
+  0% {
+    color: transparent;
+    height: 0;
+  }
+  100% {
+    height: 21px;
+    color: inherit;
+    transform: scaleY(1);
+    margin-bottom: 5px;
+  }
 }

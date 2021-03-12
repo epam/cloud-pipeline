@@ -137,8 +137,9 @@ class FacetedFilter extends React.Component {
                 key={v.name}
                 className={
                   classNames(styles.option,
-                    {[styles.optionHidden]: (i + 1) > this.filtersToShow
-                    })}
+                    {[styles.optionVisible]: (i + 1) <= this.filtersToShow},
+                    {[styles.optionHidden]: (i + 1) > this.filtersToShow}
+                  )}
               >
                 <Checkbox
                   onChange={(e) => this.onChangeFilters(v.name, e.target.checked)}
