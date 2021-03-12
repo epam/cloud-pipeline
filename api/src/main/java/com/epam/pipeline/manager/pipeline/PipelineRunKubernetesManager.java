@@ -126,6 +126,7 @@ public class PipelineRunKubernetesManager {
         final ServicePort servicePort = new ServicePort();
         servicePort.setPort(port.getPort());
         servicePort.setTargetPort(new IntOrString(port.getTargetPort()));
+        servicePort.setName(String.format("port-%d", port.getPort()));
         return servicePort;
     }
 
