@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">2</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">6m9.30s</div>
+<div class="counter">9m15.96s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">91%</div>
+<div class="percent">92%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,15 +73,20 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803"></a>
-<h3 class="failures">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</h3>
+<a name="validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241"></a>
+<h3 class="failures">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</h3>
 <span class="code">
-<pre>Element should text '15' {By.xpath: .//*[contains(@class, 'log__node-parameter-name') and text() = 'Disk']/following-sibling::*[contains(@class, 'log__node-parameter-value')]}
-Element: '&lt;span class=&quot;log__node-parameter-value&quot;&gt;20 Gb&lt;/span&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615453118640.100.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615453118640.100.html
+<pre>Element not found {By.className: ant-modal-body}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615538826666.60.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615538826666.60.html
 Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+Caused by: Element not found {By.className: ant-modal-body.findBy(text 'Launch')}
+Expected: text 'Launch'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:51)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
@@ -89,10 +94,18 @@ Timeout: 80 s.
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
-	at com.epam.pipeline.autotests.PipelineConfigurationTest.lambda$launchAndCheckLaunchParametersInPipelineLogsPage$12(PipelineConfigurationTest.java:322)
-	at com.epam.pipeline.autotests.ao.LogAO.instanceParameters(LogAO.java:308)
-	at com.epam.pipeline.autotests.PipelineConfigurationTest.launchAndCheckLaunchParametersInPipelineLogsPage(PipelineConfigurationTest.java:321)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.launch(PipelineRunFormAO.java:287)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.launch(PipelineRunFormAO.java:213)
+	at com.epam.pipeline.autotests.PipelineConfigurationTest.validationOfRunPipelineUsingOnDemandInstance(PipelineConfigurationTest.java:155)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -106,6 +119,13 @@ Timeout: 80 s.
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
+Caused by: Element not found {By.className: ant-modal-body.findBy(text 'Launch')}
+Expected: text 'Launch'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 32 more
 </pre>
 </span>
 </div>
@@ -122,81 +142,80 @@ Timeout: 80 s.
 </thead>
 <tr>
 <td class="success">changeInstancePriceTypeInConfigurationFile - EPMCMBIBPC-1256</td>
-<td>45.548s</td>
+<td>45.170s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</td>
-<td>42.071s</td>
+<td>42.035s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkConfigurationTabOnPipelineEditPage - EPMCMBIBPC-795</td>
-<td>16.481s</td>
+<td>16.695s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</td>
-<td>1m28.25s</td>
-<td class="failures">failed</td>
+<td class="success">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</td>
+<td>2m54.96s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchPipelineThatHaveSeveralConfigurations - EPMCMBIBPC-800</td>
-<td>5.928s</td>
+<td>6.180s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">parametersDoesntChangeOnSwitchingConfigurations - EPMCMBIBPC-1500</td>
-<td>49.991s</td>
+<td>49.936s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">priceTypeValidation - EPMCMBIBPC-1517</td>
-<td>0.539s</td>
+<td>0.544s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfAddingNewConfigurationFeature - EPMCMBIBPC-796</td>
-<td>9.393s</td>
+<td>9.583s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfConfigurationRemoving</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validationOfConfigurationRemoving - EPMCMBIBPC-805</td>
+<td>12.231s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfDefaultPriceType - EPMCMBIBPC-1263</td>
-<td>17.728s</td>
+<td>17.218s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfEditConfigurationInConfigurationFile - EPMCMBIBPC-799</td>
-<td>45.948s</td>
+<td>46.760s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfEditNewConfiguration - EPMCMBIBPC-797</td>
-<td>18.599s</td>
+<td>18.493s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</td>
-<td>28.815s</td>
-<td class="success">passed</td>
+<td class="failures">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</td>
+<td>1m38.81s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfSettingAsDefaultBehavior</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validationOfSettingAsDefaultBehavior - EPMCMBIBPC-804</td>
+<td>17.353s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 61915 from [61915]
-Returns latest run with runId 61916 from [61915, 61916]
+<pre>Returns latest run with runId 62075 from [62075]
 </pre>
 </span>
 </div>
@@ -208,7 +227,7 @@ Returns latest run with runId 61916 from [61915, 61916]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 11, 2021 4:13:48 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 12, 2021 3:46:50 PM</p>
 </div>
 </div>
 </body>
