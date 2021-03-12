@@ -1317,6 +1317,7 @@ class Logs extends localization.LocalizedReactComponent {
       const podIP = this.props.run.value.podIP;
       const podStatus = this.props.run.value.podStatus;
       const sensitive = this.props.run.value.sensitive;
+      const isRemovedPipeline = !!version && !pipelineId;
       let endpoints;
       let share;
       if (this.endpointAvailable) {
@@ -1400,7 +1401,7 @@ class Logs extends localization.LocalizedReactComponent {
                 )}
               >
                 <Icon
-                  type="info-circle"
+                  type="exclamation-circle"
                   style={{
                     marginLeft: 5,
                     fontSize: 'smaller'
@@ -1612,7 +1613,9 @@ class Logs extends localization.LocalizedReactComponent {
           case 'stopped':
           case 'failure':
           case 'success':
-            ActionButton = <a onClick={() => this.reRunPipeline()}>RERUN</a>;
+            if (!isRemovedPipeline) {
+              ActionButton = <a onClick={() => this.reRunPipeline()}>RERUN</a>;
+            }
             break;
         }
         if (roleModel.isOwner(this.props.run.value) &&
