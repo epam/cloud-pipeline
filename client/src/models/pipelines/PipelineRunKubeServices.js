@@ -16,11 +16,11 @@
 
 import RemotePost from '../basic/RemotePost';
 
-class PipelineRunHostedApp extends RemotePost {
+class PipelineRunKubeServices extends RemotePost {
   constructor (id, service) {
     super();
     this.url = `/run/${id}/kube/services?serviceName=${service}`;
   }
 }
 
-export default PipelineRunHostedApp;
+export default PipelineRunKubeServices;

@@ -30,7 +30,7 @@ import {
 } from 'antd';
 import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
-import PipelineRunHostedApp from '../../../models/pipelines/PipelineRunHostedApp';
+import PipelineRunKubeServices from '../../../models/pipelines/PipelineRunKubeServices';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
@@ -134,7 +134,7 @@ async function saveRunSchedule (runId, scheduleRules) {
 async function runHostedApp (runId, configuration) {
   if (configuration) {
     const {service, ports = []} = configuration;
-    const request = new PipelineRunHostedApp(runId, service);
+    const request = new PipelineRunKubeServices(runId, service);
     await request.send(ports);
     if (request.error) {
       message.error(request.error);

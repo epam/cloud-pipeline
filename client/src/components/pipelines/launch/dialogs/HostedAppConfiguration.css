@@ -85,19 +85,3 @@
 .modal-actions .button:first-child {
   margin-left: 0;
 }
-
-.port-presentation {
-  margin-right: 5px;
-}
-
-.port-presentation::after {
-  content: ';';
-}
-
-.port-presentation:last-child {
-  margin-right: 0;
-}
-
-.port-presentation:last-child::after {
-  content: none;
-}

@@ -31,6 +31,7 @@ import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
 import PipelineRunSSH from '../../../models/pipelines/PipelineRunSSH';
+import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKubeServicesLoad';
 import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
@@ -81,6 +82,7 @@ const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
 const MAX_NESTED_RUNS_TO_DISPLAY = 10;
+const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 
 @connect({
   pipelineRun,
@@ -109,6 +111,7 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     runFSBrowser: new PipelineRunFSBrowser(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     runSchedule: new RunSchedules(params.runId),
+    runKubeServices: new PipelineRunKubeServicesLoad(params.runId),
     task,
     pipelines,
     roles: new Roles(),
@@ -1317,8 +1320,18 @@ class Logs extends localization.LocalizedReactComponent {
       const podIP = this.props.run.value.podIP;
       const podStatus = this.props.run.value.podStatus;
       const sensitive = this.props.run.value.sensitive;
+      const kubeServiceEnabled = this.props.run.value.kubeServiceEnabled;
+      let kubeServiceInfo;
+      if (
+        kubeServiceEnabled &&
+        /^running$/i.test(this.props.run.value.status) &&
+        this.props.runKubeServices.loaded
+      ) {
+        kubeServiceInfo = this.props.runKubeServices.value;
+      }
       let endpoints;
       let share;
+      let kubeServices;
       if (this.endpointAvailable) {
         const urls = parseRunServiceUrl(this.props.run.value.serviceUrl);
         endpoints = (
@@ -1329,6 +1342,44 @@ class Logs extends localization.LocalizedReactComponent {
                 {
                   urls.map((url, index) =>
                     <li key={index}><a href={url.url} target="_blank">{url.name || url.url}</a></li>
+                  )
+                }
+              </ul>
+            </td>
+          </tr>
+        );
+      }
+      if (kubeServiceInfo) {
+        const {hostName, ports = []} = kubeServiceInfo;
+        const firstPorts = ports.slice(0, MAX_KUBE_SERVICES_TO_DISPLAY);
+        const renderPort = (port) => (
+          <span>
+            {hostName}:{port.port}
+          </span>
+        );
+        kubeServices = (
+          <tr>
+            <th style={{verticalAlign: 'top'}}>{ports.length > 1 ? 'Services: ' : 'Service: '}</th>
+            <td>
+              <ul>
+                {
+                  firstPorts.map((port) =>
+                    <li key={port.port}>{renderPort(port)}</li>
+                  )
+                }
+                {
+                  ports.length > MAX_KUBE_SERVICES_TO_DISPLAY && (
+                    <li>
+                      <Popover
+                        placement="right"
+                        content={
+                          <div style={{maxHeight: '50vh', overflow: 'auto', paddingRight: 20}}>
+                            {ports.map((port) => <Row key={port.port}>{renderPort(port)}</Row>)}
+                          </div>
+                        }>
+                        <a>And {ports.length - MAX_KUBE_SERVICES_TO_DISPLAY} more</a>
+                      </Popover>
+                    </li>
                   )
                 }
               </ul>
@@ -1473,6 +1524,7 @@ class Logs extends localization.LocalizedReactComponent {
                 ) : undefined
               }
               {endpoints}
+              {kubeServices}
               {share}
               <tr>
                 <th>Owner: </th><td><UserName userName={owner}/></td>

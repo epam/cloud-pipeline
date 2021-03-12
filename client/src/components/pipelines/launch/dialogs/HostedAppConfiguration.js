@@ -294,7 +294,7 @@ class HostedAppConfigurationDialog extends React.Component {
                 }
                 value={port.port}
                 onChange={this.onChangePort(index)}
-                min={1}
+                min={30000}
                 max={65535}
               />
               <span
@@ -321,7 +321,7 @@ class HostedAppConfigurationDialog extends React.Component {
                 }
                 value={port.targetPort}
                 onChange={this.onChangeTargetPort(index)}
-                min={1}
+                min={30000}
                 max={65535}
               />
               <Button
@@ -438,28 +438,39 @@ class HostedAppConfiguration extends React.Component {
     }
     const {service, ports = []} = value;
     return (
-      <div style={{lineHeight: '18px', marginTop: 5}}>
+      <div
+        style={{
+          lineHeight: '18px',
+          marginTop: 5,
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap'
+        }}
+      >
         <span
           style={{marginRight: 5}}
         >
           {service}
         </span>
-        <span
-          style={{marginRight: 5}}
-        >
-          (
-          {
-            ports.map((port, index) => (
-              <span
-                key={`${port.port}-${port.targetPort}-${index}`}
-                className={styles.portPresentation}
-              >
-                {port.port}:{port.targetPort}
-              </span>
-            ))
-          }
-          )
-        </span>
+        <span>(</span>
+        {
+          ports.map((port, index, array) => (
+            <span
+              key={`${port.port}-${port.targetPort}-${index}`}
+              style={
+                index === array.length - 1
+                  ? {}
+                  : {marginRight: 5}
+              }
+            >
+              {port.port}:{port.targetPort}
+              {
+                index < array.length - 1 ? ',' : undefined
+              }
+            </span>
+          ))
+        }
+        <span style={{marginRight: 5}}>)</span>
         <span className={styles.configure}>
           <Icon type="setting" />Configure
         </span>
