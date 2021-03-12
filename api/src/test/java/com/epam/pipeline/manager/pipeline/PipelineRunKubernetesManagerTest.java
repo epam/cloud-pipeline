@@ -55,6 +55,7 @@ public class PipelineRunKubernetesManagerTest {
     private static final String KUBE_SVC_SUFFIX = "svc.cluster.local";
     private static final String EXPECTED_HOST_NAME = String.format("%s.%s.%s", SERVICE_NAME, DEFAULT_NAMESPACE,
             KUBE_SVC_SUFFIX);
+    private static final String PORT_NAME_PREFIX = "port-";
 
     private final PipelineRun run = getPipelineRun(ID);
 
@@ -88,6 +89,9 @@ public class PipelineRunKubernetesManagerTest {
         assertThat(resultPorts.stream().map(ServicePort::getPort).collect(Collectors.toSet()))
                 .hasSize(2)
                 .contains(PORT1, PORT2);
+        assertThat(resultPorts.stream().map(ServicePort::getName).collect(Collectors.toSet()))
+                .hasSize(2)
+                .contains(PORT_NAME_PREFIX + PORT1, PORT_NAME_PREFIX + PORT2);
         verify(pipelineRunCRUDService).updateKubernetesService(run, true);
     }
 
@@ -153,6 +157,7 @@ public class PipelineRunKubernetesManagerTest {
     private ServicePort servicePort(final Integer port) {
         final ServicePort servicePort = new ServicePort();
         servicePort.setPort(port);
+        servicePort.setName(PORT_NAME_PREFIX + port);
         return servicePort;
     }
 }
