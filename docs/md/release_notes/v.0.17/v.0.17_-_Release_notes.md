@@ -15,12 +15,15 @@
 - [Home storage for each user](#home-storage-for-each-user)
 - [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
+- [Updates of Metadata object](#updates-of-metadata-object)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
+    - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
     - [AWS deployment: unable to list more than 1000 files in the S3 bucket](#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket)
     - [Size of tool version created from original tool without any changes is a lot larger than original one](#size-of-tool-version-created-from-original-tool-without-any-changes-is-a-lot-larger-than-original-one)
     - [`pipe storage cp` fails in Windows for the GCS](#pipe-storage-cp-fails-in-windows-for-the-gcs-with-sslv3-error)
@@ -576,6 +579,19 @@ Here: `12345` is the _Run ID_, `4567` is just a random free _local port_ and `22
 
 For more details and examples see [here](../../manual/14_CLI/14.10._SSH_tunnel.md).
 
+## Updates of Metadata object
+
+From the current version, for all Metadata entities the "**Created date**" fields are displayed. This column appears and filled in automatically when the Metadata is uploaded or created manually, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_01.png)
+
+In some cases, it could be convenient not to specify entity ID during import. Therefore, starting from **`v0.17`**, Metadata entities support IDs autogeneration (in the [`UUID4`](https://en.wikipedia.org/wiki/Universally_unique_identifier) format). This works and for the import Metadata operation (for empty ID fields), and for the manual instance creation, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_02.png)
+
+See after the creation:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
+
+> **_Note_**: IDs still should be unique
+
 ## AWS: seamless authentication
 
 In some cases, users are faced with the following scenarios:
@@ -637,6 +653,18 @@ Example:
 ***
 
 ## Notable Bug fixes
+
+### Unable to view pipeline sources for previous draft versions
+
+[#1353](https://github.com/epam/cloud-pipeline/issues/1353)
+
+Previously, Pipeline's "**Documents**" and "**Code**" tabs always showed content of the last "_draft_" version of pipeline, even if one of the previous versions was forcibly specified in the url.
+
+### `pipe storage ls` works incorrectly with the option `--page`
+
+[#1339](https://github.com/epam/cloud-pipeline/issues/1339)
+
+Previously, the `pipe` CLI storage listing worked incorrectly with `--page` (`-p`) option with S3 provider. All items were displayed without pagination.
 
 ### AWS deployment: unable to list more than 1000 files in the S3 bucket
 
