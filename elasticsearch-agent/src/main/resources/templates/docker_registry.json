@@ -2,7 +2,11 @@
   "mappings": {
     "_doc": {
       "properties": {
-        "doc_type": { "type": "keyword", "store": true },
+        "doc_type": {
+          "type": "keyword",
+          "store": true,
+          "fields": { "keyword": { "type": "keyword" } }
+        },
         "id": { "type": "keyword", "store": true },
         "name": { "type": "text", "store": true, "index": false},
         "parentId": {"type": "keyword", "store": true, "index": false },
