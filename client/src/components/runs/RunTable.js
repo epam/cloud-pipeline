@@ -773,6 +773,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
 
   renderStatusAction = (record) => {
     if (roleModel.executeAllowed(record)) {
+      const isRemovedPipeline = !!record.version && !record.pipelineId;
       switch (record.status.toLowerCase()) {
         case 'paused':
           if (roleModel.isOwner(record)) {
@@ -797,7 +798,16 @@ export default class RunTable extends localization.LocalizedReactComponent {
         case 'stopped':
         case 'failure':
         case 'success':
-          return <a id={`run-${record.id}-rerun-button`} onClick={(e) => this.reRunPipeline(e, record)}>RERUN</a>;
+          if (!isRemovedPipeline) {
+            return (
+              <a
+                id={`run-${record.id}-rerun-button`}
+                onClick={(e) => this.reRunPipeline(e, record)}
+              >
+                RERUN
+              </a>
+            );
+          }
       }
     }
     return <div />;
