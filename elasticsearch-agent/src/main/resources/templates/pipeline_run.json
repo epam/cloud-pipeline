@@ -5,7 +5,11 @@
         "id": { "type": "keyword", "store": true },
         "name": { "type": "text", "store": true, "index": false },
         "description": { "type": "text", "store": true },
-        "doc_type": { "type": "keyword", "store": true },
+        "doc_type": {
+          "type": "keyword",
+          "store": true,
+          "fields": { "keyword": { "type": "keyword" } }
+        },
         "createdDate": { "type": "date",  "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "startDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "endDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
