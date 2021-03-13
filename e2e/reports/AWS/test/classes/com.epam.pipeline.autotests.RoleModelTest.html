@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">3</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">39m56.20s</div>
+<div class="counter">43m52.24s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">88%</div>
+<div class="percent">92%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,62 +73,13 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="editAndExecutePipeline - EPMCMBIBPC-561"></a>
-<h3 class="failures">editAndExecutePipeline - EPMCMBIBPC-561</h3>
-<span class="code">
-<pre>org.openqa.selenium.StaleElementReferenceException: stale element reference: element is not attached to the page document
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/stale_element_reference.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8eaaf27e51bf', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 8a7f03ed75d26c0b7083dacf80c5fec5
-	at sun.reflect.GeneratedConstructorAccessor17.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteExecuteMethod.execute(RemoteExecuteMethod.java:35)
-	at org.openqa.selenium.remote.RemoteMouse.mouseMove(RemoteMouse.java:89)
-	at org.openqa.selenium.interactions.MoveMouseAction.perform(MoveMouseAction.java:43)
-	at org.openqa.selenium.interactions.CompositeAction.perform(CompositeAction.java:36)
-	at org.openqa.selenium.interactions.Actions$BuiltAction.perform(Actions.java:641)
-	at org.openqa.selenium.interactions.Actions.perform(Actions.java:594)
-	at com.epam.pipeline.autotests.ao.PipelineCodeTabAO.clearAndFillPipelineFile(PipelineCodeTabAO.java:94)
-	at com.epam.pipeline.autotests.RoleModelTest.editAndExecutePipeline(RoleModelTest.java:426)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-<div class="test">
 <a name="setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579"></a>
 <h3 class="failures">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</h3>
 <span class="code">
 <pre>Element not found {by text: DOMAIN USERS}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615518557244.7.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615518557244.7.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615604949254.7.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615604949254.7.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -165,10 +116,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8eaaf27e51bf', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '17e7a9ad24b7', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 8a7f03ed75d26c0b7083dacf80c5fec5
+Session ID: 4246a88146db5d092e0a41430becfd91
 *** Element info: {Using=xpath, value=.//*/text()[normalize-space(translate(string(.), '	
  ', '    ')) = &quot;DOMAIN USERS&quot;]/parent::*}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
@@ -200,8 +151,8 @@ Session ID: 8a7f03ed75d26c0b7083dacf80c5fec5
 <span class="code">
 <pre>Element not found {by text: DOMAIN USERS}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615518661623.8.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615518661623.8.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1615605054899.8.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1615605054899.8.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -246,10 +197,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8eaaf27e51bf', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '17e7a9ad24b7', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 8a7f03ed75d26c0b7083dacf80c5fec5
+Session ID: 4246a88146db5d092e0a41430becfd91
 *** Element info: {Using=xpath, value=.//*/text()[normalize-space(translate(string(.), '	
  ', '    ')) = &quot;DOMAIN USERS&quot;]/parent::*}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
@@ -288,17 +239,17 @@ Session ID: 8a7f03ed75d26c0b7083dacf80c5fec5
 </thead>
 <tr>
 <td class="success">checkBucketEditProhibitionForReadOnlyUser - EPMCMBIBPC-563</td>
-<td>28.873s</td>
+<td>29.341s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</td>
-<td>3m57.96s</td>
+<td>3m57.40s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkClusterNodesByNonAdminUser - EPMCMBIBPC-567</td>
-<td>6m13.52s</td>
+<td>6m5.26s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -308,117 +259,117 @@ Session ID: 8a7f03ed75d26c0b7083dacf80c5fec5
 </tr>
 <tr>
 <td class="success">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</td>
-<td>1m27.25s</td>
+<td>1m31.05s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPermissionsForExecutingPipelines - EPMCMBIBPC-553</td>
-<td>4m16.63s</td>
+<td>4m36.93s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPipelinePermissionsForGroup - EPMCMBIBPC-578</td>
-<td>32.519s</td>
+<td>32.616s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkReadPermissionForBucket - EPMCMBIBPC-562</td>
-<td>52.481s</td>
+<td>50.577s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByEditPermissionUser - EPMCMBIBPC-574</td>
-<td>1m39.37s</td>
+<td>1m39.92s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByExecutePermissionUser - EPMCMBIBPC-573</td>
-<td>1m37.02s</td>
+<td>1m34.28s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByReadOnlyUser - EPMCMBIBPC-572</td>
-<td>2m15.87s</td>
+<td>2m16.76s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkWritePermissionForBucket - EPMCMBIBPC-565</td>
-<td>58.551s</td>
+<td>57.989s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">editAndExecutePipeline - EPMCMBIBPC-561</td>
-<td>1m33.20s</td>
-<td class="failures">failed</td>
+<td class="success">editAndExecutePipeline - EPMCMBIBPC-561</td>
+<td>5m3.91s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">givePermissionsToUser - EPMCMBIBPC-537</td>
-<td>1m48.96s</td>
+<td>1m49.26s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">giveUserReadPermissionForPipeline - EPMCMBIBPC-546</td>
-<td>47.774s</td>
+<td>51.146s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">giveUserWritePermissionForPipeline - EPMCMBIBPC-540</td>
-<td>59.919s</td>
+<td>1m1.42s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">readOnlyUserIsNotAbleToEditFileInPipeline - EPMCMBIBPC-558</td>
-<td>4.200s</td>
+<td>4.232s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">readOnlyUserIsNotAbleToEditPipeline - EPMCMBIBPC-547</td>
-<td>28.087s</td>
+<td>28.620s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">rerunPipelineWithoutPermissionsForExecute - EPMCMBIBPC-560</td>
-<td>1m10.98s</td>
+<td>1m10.60s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</td>
-<td>1m48.05s</td>
+<td>1m48.93s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580</td>
-<td>1m44.33s</td>
+<td>1m45.60s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">tryToNavigateToAnotherBucketByNavigationBar - EPMCMBIBPC-564</td>
-<td>18.507s</td>
+<td>18.792s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePermissionsForEditPipeline - EPMCMBIBPC-556</td>
-<td>1m18.29s</td>
+<td>1m16.75s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePermissionsForEditPipelineFiles - EPMCMBIBPC-557</td>
-<td>49.583s</td>
+<td>51.186s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateSearchForNoUser - EPMCMBIBPC-1581</td>
-<td>21.516s</td>
+<td>23.219s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateSearchWithinEditUser - EPMCMBIBPC-1575</td>
-<td>33.781s</td>
+<td>36.278s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">viewUserPermissions - EPMCMBIBPC-539</td>
-<td>35.489s</td>
+<td>36.682s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -426,13 +377,16 @@ Session ID: 8a7f03ed75d26c0b7083dacf80c5fec5
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 62020 from [62020]
-Returns latest run with runId 62020 from [62020]
-Returns latest run with runId 62020 from [62020]
-Returns latest run with runId 62021 from [62020, 62021]
-Returns latest run with runId 62021 from [62020, 62021]
-Returns latest run with runId 62022 from [62020, 62021, 62022]
-Returns latest run with runId 62022 from [62020, 62021, 62022]
+<pre>Returns latest run with runId 62200 from [62200]
+Returns latest run with runId 62200 from [62200]
+Returns latest run with runId 62200 from [62200]
+Returns latest run with runId 62201 from [62200, 62201]
+Returns latest run with runId 62201 from [62200, 62201]
+Returns latest run with runId 62201 from [62200, 62201]
+Returns latest run with runId 62202 from [62200, 62201, 62202]
+Returns latest run with runId 62202 from [62200, 62201, 62202]
+Returns latest run with runId 62203 from [62200, 62201, 62202, 62203]
+Returns latest run with runId 62203 from [62200, 62201, 62202, 62203]
 </pre>
 </span>
 </div>
@@ -444,7 +398,7 @@ Returns latest run with runId 62022 from [62020, 62021, 62022]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 12, 2021 3:46:50 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 13, 2021 3:26:27 PM</p>
 </div>
 </div>
 </body>
