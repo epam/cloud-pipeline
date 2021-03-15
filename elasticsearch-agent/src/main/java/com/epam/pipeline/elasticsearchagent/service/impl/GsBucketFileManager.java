@@ -52,6 +52,8 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class GsBucketFileManager implements ObjectStorageFileManager {
 
+    private static final String DELIMITER = "/";
+
     @Getter
     private final DataStorageType type = DataStorageType.GS;
 
@@ -70,6 +72,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
                 .iterator();
         return StreamUtils.from(iterator)
                 .filter(blob -> !StringUtils.endsWithIgnoreCase(blob.getName(), ESConstants.HIDDEN_FILE_NAME))
+                .filter(blob -> !StringUtils.endsWithIgnoreCase(blob.getName(), DELIMITER))
                 .map(this::convertToStorageFile);
     }
 
@@ -83,6 +86,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
                 .iterator();
         return StreamUtils.from(iterator)
                 .filter(blob -> !StringUtils.endsWithIgnoreCase(blob.getName(), ESConstants.HIDDEN_FILE_NAME))
+                .filter(blob -> !StringUtils.endsWithIgnoreCase(blob.getName(), DELIMITER))
                 .map(this::convertToStorageFileVersion);
     }
 
