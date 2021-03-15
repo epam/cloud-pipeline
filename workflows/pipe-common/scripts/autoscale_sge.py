@@ -736,7 +736,7 @@ class GridEngineScaleUpHandler:
         jobs = self.grid_engine.get_jobs()
         running_jobs = [job for job in jobs if job.state == GridEngineJobState.RUNNING]
         if running_jobs:
-            GridEngineAutoscaler.update_running_jobs_host_activity(running_jobs, self.host_storage, self.clock.now())
+            host_storage.update_running_jobs_host_activity(running_jobs, self.clock.now())
 
 
 class GridEngineScaleDownHandler:
@@ -825,10 +825,17 @@ class MemoryHostStorage:
         self._validate_existence(host)
         self._storage.pop(host)
 
+    def update_running_jobs_host_activity(self, running_jobs, activity_timestamp):
+        active_hosts = set()
+        for job in running_jobs:
+            active_hosts.update(job.hosts)
+        if active_hosts:
+            self.update_hosts_activity(active_hosts, activity_timestamp)
+
     def update_hosts_activity(self, hosts, timestamp):
         for host in hosts:
-            self._validate_existence(host)
-            self._storage[host] = timestamp
+            if host in self._storage:
+                self._storage[host] = timestamp
 
     def get_hosts_activity(self, hosts):
         hosts_activity = {}
@@ -879,6 +886,13 @@ class FileSystemHostStorage:
             raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
         hosts[host] = self.clock.now()
         self._update_storage_file(hosts)
+
+    def update_running_jobs_host_activity(self, running_jobs, activity_timestamp):
+        active_hosts = set()
+        for job in running_jobs:
+            active_hosts.update(job.hosts)
+        if active_hosts:
+            self.update_hosts_activity(active_hosts, activity_timestamp)
 
     def update_hosts_activity(self, hosts, timestamp):
         latest_hosts_stats = self._load_hosts_stats()
@@ -991,8 +1005,8 @@ class GridEngineAutoscaler:
         updated_jobs = self.grid_engine.get_jobs()
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         pending_jobs = self._filter_pending_job(updated_jobs)
-        self.update_running_jobs_host_activity(running_jobs, self.host_storage, now)
         if running_jobs:
+            self.host_storage.update_running_jobs_host_activity(running_jobs, now)
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
         if pending_jobs:
             Logger.info('There are %s waiting jobs.' % len(pending_jobs))
@@ -1035,14 +1049,6 @@ class GridEngineAutoscaler:
         Logger.info('Finish scaling step at %s.' % self.clock.now())
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
-
-    @staticmethod
-    def update_running_jobs_host_activity(running_jobs, host_storage, scaling_step_start):
-        active_hosts = set()
-        for job in running_jobs:
-            active_hosts.update(job.hosts)
-        if active_hosts:
-            host_storage.update_hosts_activity(active_hosts, scaling_step_start)
 
     def _filter_pending_job(self, updated_jobs):
         # kill jobs that are pending and can't be satisfied with requested resource
