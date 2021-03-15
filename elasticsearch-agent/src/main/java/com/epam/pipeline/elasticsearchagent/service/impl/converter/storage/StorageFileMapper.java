@@ -26,6 +26,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -37,24 +38,28 @@ public class StorageFileMapper {
                                           final PermissionsContainer permissions,
                                           final SearchDocumentType type) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            return jsonBuilder
+            final Map<String, String> tags = MapUtils.emptyIfNull(dataStorageFile.getTags());
+            jsonBuilder
                     .startObject()
                     .field("lastModified", dataStorageFile.getChanged())
                     .field("size", dataStorageFile.getSize())
                     .field("path", dataStorageFile.getPath())
-                    .field("owner", MapUtils.emptyIfNull(dataStorageFile.getTags()).get("CP_OWNER"))
+                    .field("ownerUserName", tags.get("CP_OWNER"))
                     .field("storage_id", dataStorage.getId())
                     .field("storage_name", dataStorage.getName())
                     .field("storage_region", region)
                     .field(DOC_TYPE_FIELD, type.name())
-                    .array("tags", MapUtils.emptyIfNull(dataStorageFile.getTags()).entrySet().stream()
+                    .array("metadata", tags.entrySet().stream()
                             .map(entry -> entry.getKey() + " " + entry.getValue())
                             .toArray(String[]::new))
                     .array("allowed_users", permissions.getAllowedUsers().toArray())
                     .array("denied_users", permissions.getDeniedUsers().toArray())
                     .array("allowed_groups", permissions.getAllowedGroups().toArray())
-                    .array("denied_groups", permissions.getDeniedGroups().toArray())
-                    .endObject();
+                    .array("denied_groups", permissions.getDeniedGroups().toArray());
+            for (final Map.Entry<String, String> entry : tags.entrySet()) {
+                jsonBuilder.field(entry.getKey(), entry.getValue());
+            }
+            return jsonBuilder.endObject();
         } catch (IOException e) {
             throw new AmazonS3Exception("An error occurred while creating document: ", e);
         }
