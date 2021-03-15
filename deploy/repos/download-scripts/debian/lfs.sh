@@ -18,7 +18,7 @@ else
 fi
 
 
-wget -O - http://packages.lizardfs.com/lizardfs.key | apt-key add -
-sed -i "1 i\deb [trusted=yes] http://packages.lizardfs.com/$_repository/$_release $_release main" /etc/apt/sources.list
+wget -O - http://dev.lizardfs.com/old-packages/lizardfs.key | apt-key add -
+sed -i "1 i\deb [trusted=yes] http://dev.lizardfs.com/old-packages/$_repository/$_release $_release main" /etc/apt/sources.list
 apt update
 apt install --download-only -t $_release lizardfs-chunkserver lizardfs-master lizardfs-client -y
