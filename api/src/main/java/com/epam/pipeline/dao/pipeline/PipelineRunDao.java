@@ -138,7 +138,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         if (run.getId() == null) {
             run.setId(createRunId());
         }
-
+        if (run.getPipelineId() == null) {
+            run.setPipelineName(null);
+        }
         getNamedParameterJdbcTemplate().update(createPipelineRunQuery,
                 PipelineRunParameters.getParameters(run, getConnection()));
 
