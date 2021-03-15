@@ -249,9 +249,6 @@ class GridEngine:
                 current_host = None
         return jobs.values()
 
-    def filter_running_job(self, jobs):
-        return [job for job in jobs if job.state == GridEngineJobState.RUNNING]
-
     def _parse_date(self, date):
         return datetime.strptime(date, GridEngine._QSTAT_DATETIME_FORMAT)
 
@@ -737,7 +734,7 @@ class GridEngineScaleUpHandler:
 
     def _update_last_activity_for_currently_running_jobs(self):
         jobs = self.grid_engine.get_jobs()
-        running_jobs = self.grid_engine.filter_running_job(jobs)
+        running_jobs = [job for job in jobs if job.state == GridEngineJobState.RUNNING]
         if running_jobs:
             GridEngineAutoscaler.update_running_jobs_host_activity(running_jobs, self.host_storage, self.clock.now())
 
@@ -992,7 +989,7 @@ class GridEngineAutoscaler:
         additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(additional_hosts))
         updated_jobs = self.grid_engine.get_jobs()
-        running_jobs = self.grid_engine.filter_running_job(updated_jobs)
+        running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         pending_jobs = self._filter_pending_job(updated_jobs)
         self.update_running_jobs_host_activity(running_jobs, self.host_storage, now)
         if running_jobs:
