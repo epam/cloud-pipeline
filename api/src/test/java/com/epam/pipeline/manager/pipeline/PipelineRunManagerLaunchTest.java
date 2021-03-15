@@ -44,16 +44,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
@@ -71,7 +66,10 @@ import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getDefaul
 import static com.epam.pipeline.test.creator.region.RegionCreatorUtils.getNonDefaultAwsRegion;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.lang.Integer.parseInt;
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -85,6 +83,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 @SuppressWarnings("PMD.UnusedPrivateField")
 public class PipelineRunManagerLaunchTest {
@@ -173,7 +172,7 @@ public class PipelineRunManagerLaunchTest {
 
     @Before
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+        initMocks(this);
 
         mock(CLUSTER_DOCKER_EXTRA_MULTI);
         mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
@@ -356,14 +355,14 @@ public class PipelineRunManagerLaunchTest {
 
     @Test
     public void shouldLoadRunsActivityStats() {
-        doReturn(Arrays.asList(getPipelineRun(ID, TEST_USER), getPipelineRun(ID_2, TEST_USER)))
+        doReturn(asList(getPipelineRun(ID, TEST_USER), getPipelineRun(ID_2, TEST_USER)))
                 .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18));
         doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class));
 
         Map<Long, PipelineRun> runMap = pipelineRunManager.loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18).stream()
-                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+                .collect(toMap(BaseEntity::getId, identity()));
 
-        assertEquals(Arrays.asList(TEST_STATUS_1, TEST_STATUS_2), runMap.get(ID).getRunStatuses());
+        assertEquals(asList(TEST_STATUS_1, TEST_STATUS_2), runMap.get(ID).getRunStatuses());
         assertEquals(singletonList(TEST_STATUS_3), runMap.get(ID_2).getRunStatuses());
 
         verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(any(LocalDateTime.class), any(LocalDateTime.class));
@@ -412,8 +411,8 @@ public class PipelineRunManagerLaunchTest {
 
     private Map<Long, List<RunStatus>> getStatusMap() {
         final Map<Long, List<RunStatus>> map = new HashMap<>();
-        map.put(ID, Arrays.asList(TEST_STATUS_1, TEST_STATUS_2));
-        map.put(ID_2, Collections.singletonList(TEST_STATUS_3));
+        map.put(ID, asList(TEST_STATUS_1, TEST_STATUS_2));
+        map.put(ID_2, singletonList(TEST_STATUS_3));
         return map;
     }
 
