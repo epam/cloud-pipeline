@@ -45,10 +45,13 @@
 }
 
 .header .header-caret {
-  color: #1890ff;
-  transition: all 0.3s ease-in-out;
+  color: #595959;
+  transition: all 0.2s ease-in-out;
   transform-origin: 50% 50%;
   margin-right: 5px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
 }
 
 .header .header-caret.expanded {
@@ -69,46 +72,16 @@
 .filter .option {
   margin-bottom: 5px;
   user-select: none;
+  height: 21px;
+  visibility: visible;
+  transition: all 0.2s ease-in-out;
 }
 
 .filter .option-hidden {
-  animation: collapse 0.2s ease;
-  animation-fill-mode: forwards;
-  animation-iteration-count: 1;
-}
-
-.filter .option-visible {
-  animation: expand 0.2s ease;
-  animation-fill-mode: forwards;
-  animation-iteration-count: 1;
-}
-
-@keyframes collapse {
-  0% {
-    height: 21px;
-  }
-  50% {
-    color: transparent;
-  }
-  100% {
-    transform: scaleY(0);
-    border: 0;
-    padding: 0;
-    margin: 0;
-    visibility: hidden;
-    height: 0;
-  }
-}
-
-@keyframes expand {
-  0% {
-    color: transparent;
-    height: 0;
-  }
-  100% {
-    height: 21px;
-    color: inherit;
-    transform: scaleY(1);
-    margin-bottom: 5px;
-  }
+  transform: scaleY(0);
+  border: 0;
+  padding: 0;
+  margin: 0;
+  visibility: hidden;
+  height: 0;
 }

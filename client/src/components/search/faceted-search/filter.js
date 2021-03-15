@@ -134,10 +134,9 @@ class FacetedFilter extends React.Component {
           {
             this.values.map((v, i) => (
               <div
-                key={v.name}
+                key={i}
                 className={
                   classNames(styles.option,
-                    {[styles.optionVisible]: (i + 1) <= this.filtersToShow},
                     {[styles.optionHidden]: (i + 1) > this.filtersToShow}
                   )}
               >
