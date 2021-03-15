@@ -37,7 +37,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -129,7 +128,8 @@ public class S3FileManager implements ObjectStorageFileManager {
             continuationToken = objectsListing.isTruncated() ? objectsListing.getNextContinuationToken(): null;
             items = objectsListing.getObjectSummaries()
                     .stream()
-                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
+                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), 
+                            ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
                     .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), S3FileManager.DELIMITER))
                     .map(this::convertToStorageFile)
                     .collect(Collectors.toList());
@@ -152,7 +152,6 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     @RequiredArgsConstructor
-    @Slf4j
     private static class S3VersionPageIterator implements Iterator<List<DataStorageFile>> {
 
         private final AmazonS3 client;
@@ -186,7 +185,8 @@ public class S3FileManager implements ObjectStorageFileManager {
             }
             items = versionListing.getVersionSummaries()
                     .stream()
-                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
+                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), 
+                            ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
                     .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), S3FileManager.DELIMITER))
                     .map(this::convertToStorageFile)
                     .collect(Collectors.toList());

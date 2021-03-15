@@ -114,25 +114,14 @@ public class AzureBlobManager implements ObjectStorageFileManager {
         return new URL(blobUrl);
     }
 
+    @RequiredArgsConstructor
     private static class AzureFlatSegmentIterator implements Iterator<ContainerListBlobFlatSegmentResponse> {
 
         private final ContainerURL container;
         private final String path;
-        private final int pageSize;
 
         private String nextMarker;
-        private ContainerListBlobFlatSegmentResponse response = null;
-
-        private AzureFlatSegmentIterator(final ContainerURL container, final String path, final String nextMarker,
-                                         final int pageSize) {
-            this.container = container;
-            this.path = path;
-            this.pageSize = pageSize;
-        }
-
-        public AzureFlatSegmentIterator(final ContainerURL container, final String path) {
-            this(container, path, null, LIST_PAGE_SIZE);
-        }
+        private ContainerListBlobFlatSegmentResponse response;
 
         @Override
         public boolean hasNext() {
@@ -143,7 +132,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
         public ContainerListBlobFlatSegmentResponse next() {
             response = unwrap(container.listBlobsFlatSegment(nextMarker, new ListBlobsOptions()
                     .withPrefix(path)
-                    .withMaxResults(pageSize)
+                    .withMaxResults(LIST_PAGE_SIZE)
                     .withDetails(new BlobListingDetails()
                             .withMetadata(true))));
             nextMarker = Optional.ofNullable(response)

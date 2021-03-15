@@ -44,7 +44,6 @@ import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
-import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
