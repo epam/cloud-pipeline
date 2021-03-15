@@ -104,17 +104,16 @@ public class S3FileManager implements ObjectStorageFileManager {
                                   final PermissionsContainer permissions,
                                   final IndexRequestContainer requestContainer) {
         chunkedFiles(getS3Client(credentials), dataStorage)
-                .peek(chunk -> {
+                .flatMap(chunk -> {
                     final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
                             dataStorage.getId(),
-                            new DataStorageTagLoadBatchRequest(chunk.stream().map(DataStorageFile::getPath)
+                            new DataStorageTagLoadBatchRequest(chunk.stream()
+                                    .map(DataStorageFile::getPath)
                                     .map(DataStorageTagLoadRequest::new)
                                     .collect(Collectors.toList())));
-                    for (final DataStorageFile file : chunk) {
-                        file.setTags(tags.get(file.getPath()));
-                    }
+                    return chunk.stream()
+                            .peek(file -> file.setTags(tags.get(file.getPath())));
                 })
-                .flatMap(List::stream)
                 .map(file -> createIndexRequest(file, indexName, dataStorage, credentials, permissions))
                 .forEach(requestContainer::add);
     }

@@ -91,17 +91,16 @@ public class AzureBlobManager implements ObjectStorageFileManager {
                                   final PermissionsContainer permissions,
                                   final IndexRequestContainer indexContainer) {
         chunkedFiles(storage, credentials)
-                .peek(chunk -> {
+                .flatMap(chunk -> {
                     final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
                             storage.getId(),
-                            new DataStorageTagLoadBatchRequest(chunk.stream().map(DataStorageFile::getPath)
+                            new DataStorageTagLoadBatchRequest(chunk.stream()
+                                    .map(DataStorageFile::getPath)
                                     .map(DataStorageTagLoadRequest::new)
                                     .collect(Collectors.toList())));
-                    for (final DataStorageFile file : chunk) {
-                        file.setTags(tags.get(file.getPath()));
-                    }
+                    return chunk.stream()
+                            .peek(file -> file.setTags(tags.get(file.getPath())));
                 })
-                .flatMap(List::stream)
                 .map(file -> createIndexRequest(file, storage, credentials.getRegion(), permissions, indexName))
                 .forEach(indexContainer::add);
     }
