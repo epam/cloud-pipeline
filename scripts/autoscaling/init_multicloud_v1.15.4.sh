@@ -81,6 +81,8 @@ function setup_swap_device {
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
+FS_TYPE="@FS_TYPE@"
+
 UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
 DRIVE_NUM=0
 for DRIVE_NAME in $UNMOUNTED_DRIVES
@@ -102,15 +104,22 @@ do
     MOUNT_POINT=$MOUNT_POINT$DRIVE_NUM
   fi
 
-  mkfs.btrfs -f -d single $DRIVE_NAME
   mkdir $MOUNT_POINT
-  mount $DRIVE_NAME $MOUNT_POINT
-  DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
-  echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
+
+  if [[ $FS_TYPE == "ext4" ]]; then
+    mkfs -t ext4 $DRIVE_NAME
+    mount $DRIVE_NAME $MOUNT_POINT
+    echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+  else
+    mkfs.btrfs -f -d single $DRIVE_NAME
+    mount $DRIVE_NAME $MOUNT_POINT
+    DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
+    echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
+  fi
+
   mkdir -p $MOUNT_POINT/runs
   mkdir -p $MOUNT_POINT/reference
   rm -rf $MOUNT_POINT/lost+found/
-
 done
 
 systemctl stop docker
@@ -134,6 +143,15 @@ if [ $? -ne 0 ]; then
 fi
 
 mkdir -p /etc/docker
+
+if [[ $FS_TYPE == "ext4" ]]; then
+  DOCKER_STORAGE_DRIVER="overlay2"
+  DOCKER_STORAGE_OPTS='"storage-opts": ["overlay2.override_kernel_check=true"],'
+else
+  DOCKER_STORAGE_DRIVER="btrfs"
+  DOCKER_STORAGE_OPTS=""
+fi
+
 if check_installed "nvidia-smi"; then
   nvidia-persistenced --persistence-mode
 
@@ -141,7 +159,8 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
-  "storage-driver": "btrfs",
+  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
    "runtimes": {
@@ -157,7 +176,8 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
-  "storage-driver": "btrfs",
+  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1
 }
 EOT
@@ -312,11 +332,12 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
-_API_URL="@API_URL@"
-_API_TOKEN="@API_TOKEN@"
-_MOUNT_POINT="/ebs"
-_CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+if [[ $FS_TYPE == "btrfs" ]]; then
+  _API_URL="@API_URL@"
+  _API_TOKEN="@API_TOKEN@"
+  _MOUNT_POINT="/ebs"
+  _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+  cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
 cat >/etc/systemd/system/fsautoscale.service <<EOL
 [Unit]
 Description=Cloud Pipeline Filesystem Autoscaling Daemon
@@ -334,8 +355,9 @@ ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
 [Install]
 WantedBy=multi-user.target
 EOL
-systemctl enable fsautoscale
-systemctl start fsautoscale
+  systemctl enable fsautoscale
+  systemctl start fsautoscale
+fi
 
 if check_installed "nvidia-smi"; then
   cat >> /etc/rc.local << EOF
