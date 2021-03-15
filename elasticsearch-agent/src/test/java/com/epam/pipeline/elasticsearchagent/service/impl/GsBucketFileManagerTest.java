@@ -16,14 +16,17 @@
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
+import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.StorageClass;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.index.IndexRequest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +42,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -53,11 +57,11 @@ public class GsBucketFileManagerTest {
     private static final String TEST_BLOB_NAME_2 = "2";
 
     @Mock
-    private CloudPipelineAPIClient apiClient;
-    @Mock
     private IndexRequestContainer requestContainer;
     @Spy
-    private final GsBucketFileManager manager = new GsBucketFileManager(apiClient);
+    private final GsBucketFileManager manager = new GsBucketFileManager();
+    @Spy
+    private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     private final AbstractDataStorage dataStorage = new GSBucketStorage();
     private final TemporaryCredentials temporaryCredentials = new TemporaryCredentials();
@@ -83,11 +87,11 @@ public class GsBucketFileManagerTest {
 
     private void verifyRequestContainerState(final List<Blob> files, final int numberOfInvocation) {
         setUpReturnValues(files);
-        manager.listAndIndexFiles(INDEX_NAME,
-                                  dataStorage,
-                                  temporaryCredentials,
-                                  permissionsContainer,
-                                  requestContainer);
+        manager.files(dataStorage, temporaryCredentials)
+                .map(file -> new IndexRequest(INDEX_NAME, DOC_MAPPING_TYPE)
+                        .source(fileMapper.fileToDocument(file, dataStorage, null, permissionsContainer,
+                                SearchDocumentType.GS_FILE)))
+                .forEach(requestContainer::add);
         verifyNumberOfInsertions(numberOfInvocation);
         verifyBlobMapping(files, numberOfInvocation);
     }
@@ -114,8 +118,8 @@ public class GsBucketFileManagerTest {
 
     private List<DataStorageFile> captureDataStorageFilesIndexing(final int numberOfInvocation) {
         final ArgumentCaptor<DataStorageFile> captor = ArgumentCaptor.forClass(DataStorageFile.class);
-        verify(manager, times(numberOfInvocation))
-                .createIndexRequest(captor.capture(), any(), any(), any(), any());
+        verify(fileMapper, times(numberOfInvocation))
+                .fileToDocument(captor.capture(), any(), any(), any(), any());
         return captor.getAllValues();
     }
 

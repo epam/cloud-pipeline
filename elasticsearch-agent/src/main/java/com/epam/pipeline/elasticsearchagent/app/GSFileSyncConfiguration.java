@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.*;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,8 +43,8 @@ public class GSFileSyncConfiguration {
     private Integer bulkInsertSize;
 
     @Bean
-    public ObjectStorageFileManager gsFileManager(final CloudPipelineAPIClient apiClient) {
-        return new GsBucketFileManager(apiClient);
+    public ObjectStorageFileManager gsFileManager() {
+        return new GsBucketFileManager();
     }
 
     @Bean
@@ -55,7 +56,8 @@ public class GSFileSyncConfiguration {
             final @Qualifier("gsFileManager") ObjectStorageFileManager gsFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 gsFileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.GS);
+                indexSettingsPath, bulkInsertSize, DataStorageType.GS,
+                SearchDocumentType.GS_FILE);
     }
 
 }

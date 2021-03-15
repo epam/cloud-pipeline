@@ -20,19 +20,32 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
+import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
+import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.action.index.IndexRequest;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 
 @RequiredArgsConstructor
@@ -46,7 +59,11 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final String indexPrefix;
     private final String indexMappingFile;
     private final int bulkInsertSize;
+    @Getter
     private final DataStorageType storageType;
+    @Getter
+    private final SearchDocumentType documentType;
+    private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
@@ -55,11 +72,6 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 .stream()
                 .filter(dataStorage -> dataStorage.getType() == getStorageType())
                 .forEach(this::indexStorage);
-    }
-
-    @Override
-    public DataStorageType getStorageType() {
-        return storageType;
     }
 
     @Override
@@ -77,9 +89,12 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             final String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
             elasticIndexService.createIndexIfNotExist(indexName, indexMappingFile);
             final TemporaryCredentials credentials = getTemporaryCredentials(dataStorage);
-            try(IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
-                fileManager.listAndIndexFiles(indexName, dataStorage, credentials,
-                        permissionsContainer, requestContainer);
+            try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
+                StreamUtils.chunked(fileManager.files(dataStorage, credentials))
+                        .flatMap(files -> filesWithIncorporatedTags(dataStorage, files))
+                        .map(file -> createIndexRequest(file, dataStorage, permissionsContainer, indexName, 
+                                credentials))
+                        .forEach(requestContainer::add);
             }
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
@@ -106,5 +121,28 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         action.setList(true);
         return cloudPipelineAPIClient
                 .generateTemporaryCredentials(Collections.singletonList(action));
+    }
+
+    private Stream<DataStorageFile> filesWithIncorporatedTags(final AbstractDataStorage dataStorage,
+                                                              final List<DataStorageFile> files) {
+        final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
+                dataStorage.getId(),
+                new DataStorageTagLoadBatchRequest(files.stream()
+                        .map(DataStorageFile::getPath)
+                        .map(DataStorageTagLoadRequest::new)
+                        .collect(Collectors.toList())));
+        return files.stream()
+                .peek(file -> file.setTags(tags.get(file.getPath())));
+    }
+
+    private IndexRequest createIndexRequest(final DataStorageFile file,
+                                            final AbstractDataStorage dataStorage,
+                                            final PermissionsContainer permissionsContainer,
+                                            final String indexName,
+                                            final TemporaryCredentials credentials) {
+        return new IndexRequest(indexName, DOC_MAPPING_TYPE)
+                .source(fileMapper.fileToDocument(file, dataStorage, credentials.getRegion(),
+                        permissionsContainer,
+                        getDocumentType()));
     }
 }

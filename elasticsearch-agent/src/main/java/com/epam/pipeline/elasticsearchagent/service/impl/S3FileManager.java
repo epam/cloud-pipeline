@@ -28,25 +28,19 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.S3VersionSummary;
 import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.services.s3.model.VersionListing;
-import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
-import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
-import com.epam.pipeline.entity.search.SearchDocumentType;
-import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
-import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.action.index.IndexRequest;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,15 +53,10 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
-
 @RequiredArgsConstructor
 public class S3FileManager implements ObjectStorageFileManager {
 
     private static final String DELIMITER = "/";
-
-    private final CloudPipelineAPIClient cloudPipelineAPIClient;
-    private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Getter
     private final DataStorageType type = DataStorageType.S3;
@@ -78,44 +67,21 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     @Override
-    public Stream<DataStorageFile> listVersionsWithNativeTags(final AbstractDataStorage dataStorage,
-                                                              final TemporaryCredentials credentials) {
+    public Stream<DataStorageFile> files(final AbstractDataStorage storage,
+                                         final TemporaryCredentials credentials) {
         final AmazonS3 client = getS3Client(credentials);
-        return versions(client, dataStorage)
-                .filter(file -> !file.getDeleteMarker())
-                .peek(file -> file.setTags(getNativeTags(client, dataStorage, file)));
-    }
-
-    private Map<String, String> getNativeTags(final AmazonS3 client,
-                                              final AbstractDataStorage dataStorage,
-                                              final DataStorageFile file) {
-        final GetObjectTaggingResult tagging = client.getObjectTagging(new GetObjectTaggingRequest(
-                dataStorage.getRoot(), file.getPath(), file.getVersion()));
-        return CollectionUtils.emptyIfNull(tagging.getTagSet())
-                .stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Tag::getKey, Tag::getValue));
+        return StreamUtils.from(new S3PageIterator(client, storage.getPath(), ""))
+                .flatMap(List::stream);
     }
 
     @Override
-    public void listAndIndexFiles(final String indexName,
-                                  final AbstractDataStorage dataStorage,
-                                  final TemporaryCredentials credentials,
-                                  final PermissionsContainer permissions,
-                                  final IndexRequestContainer requestContainer) {
-        chunkedFiles(getS3Client(credentials), dataStorage)
-                .flatMap(chunk -> {
-                    final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
-                            dataStorage.getId(),
-                            new DataStorageTagLoadBatchRequest(chunk.stream()
-                                    .map(DataStorageFile::getPath)
-                                    .map(DataStorageTagLoadRequest::new)
-                                    .collect(Collectors.toList())));
-                    return chunk.stream()
-                            .peek(file -> file.setTags(tags.get(file.getPath())));
-                })
-                .map(file -> createIndexRequest(file, indexName, dataStorage, credentials, permissions))
-                .forEach(requestContainer::add);
+    public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
+                                                          final TemporaryCredentials credentials) {
+        final AmazonS3 client = getS3Client(credentials);
+        return StreamUtils.from(new S3VersionPageIterator(client, storage.getPath(), ""))
+                .flatMap(List::stream)
+                .filter(file -> !file.getDeleteMarker())
+                .peek(file -> file.setTags(getNativeTags(client, storage, file)));
     }
 
     private AmazonS3 getS3Client(final TemporaryCredentials credentials) {
@@ -128,29 +94,15 @@ public class S3FileManager implements ObjectStorageFileManager {
                 .build();
     }
 
-    private Stream<DataStorageFile> versions(final AmazonS3 client, final AbstractDataStorage dataStorage) {
-        return StreamUtils.from(new S3VersionPageIterator(client, dataStorage.getPath(), ""))
-                .flatMap(List::stream);
-    }
-
-    private Stream<List<DataStorageFile>> chunkedFiles(final AmazonS3 client, final AbstractDataStorage dataStorage) {
-        return StreamUtils.chunked(files(client, dataStorage));
-    }
-
-    private Stream<DataStorageFile> files(final AmazonS3 client,
-                                          final AbstractDataStorage dataStorage) {
-        return StreamUtils.from(new S3PageIterator(client, dataStorage.getPath(), ""))
-                .flatMap(List::stream);
-    }
-
-    private IndexRequest createIndexRequest(final DataStorageFile item,
-                                            final String indexName,
-                                            final AbstractDataStorage dataStorage,
-                                            final TemporaryCredentials credentials,
-                                            final PermissionsContainer permissions) {
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE)
-                .source(fileMapper.fileToDocument(item, dataStorage, credentials.getRegion(), permissions,
-                        SearchDocumentType.S3_FILE));
+    private Map<String, String> getNativeTags(final AmazonS3 client,
+                                              final AbstractDataStorage dataStorage,
+                                              final DataStorageFile file) {
+        final GetObjectTaggingResult tagging = client.getObjectTagging(new GetObjectTaggingRequest(
+                dataStorage.getRoot(), file.getPath(), file.getVersion()));
+        return CollectionUtils.emptyIfNull(tagging.getTagSet())
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Tag::getKey, Tag::getValue));
     }
 
     @RequiredArgsConstructor

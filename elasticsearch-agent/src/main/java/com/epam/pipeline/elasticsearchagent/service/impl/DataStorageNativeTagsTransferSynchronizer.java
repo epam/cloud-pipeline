@@ -53,7 +53,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                         final boolean isVersioningEnabled = storage.isVersioningEnabled();
                         Optional.ofNullable(storage.getType()).map(fileManagers::get)
                                 .map(fileManager -> fileManager
-                                        .listVersionsWithNativeTags(storage, getTemporaryCredentials(storage))
+                                        .versionsWithNativeTags(storage, getTemporaryCredentials(storage))
                                         .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : nonVersionedTags(chunk))
                                         .map(stream -> stream.collect(Collectors.toList()))
                                         .filter(CollectionUtils::isNotEmpty))

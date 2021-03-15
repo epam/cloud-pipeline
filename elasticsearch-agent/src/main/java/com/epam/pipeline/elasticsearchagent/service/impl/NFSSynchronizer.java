@@ -137,17 +137,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
              Stream<Path> paths = Files.walk(mountFolder)) {
             StreamUtils.chunked(paths.filter(path -> path.toFile().isFile())
                     .map(path -> convertToStorageFile(path, mountFolder)))
-                    .flatMap(chunk -> {
-                        final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
-                                dataStorage.getId(),
-                                new DataStorageTagLoadBatchRequest(
-                                        chunk.stream()
-                                                .map(DataStorageFile::getPath)
-                                                .map(DataStorageTagLoadRequest::new)
-                                                .collect(Collectors.toList())));
-                        return chunk.stream()
-                                .peek(file -> file.setTags(tags.get(file.getPath())));
-                    })
+                    .flatMap(files -> filesWithIncorporatedTags(dataStorage, files))
                     .map(file -> createIndexRequest(file, indexName, dataStorage, permissionsContainer))
                     .forEach(walker::add);
         } catch (IOException e) {
@@ -215,6 +205,19 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                 throw new IllegalArgumentException("Invalid path");
             }
         }
+    }
+
+    private Stream<DataStorageFile> filesWithIncorporatedTags(final AbstractDataStorage dataStorage,
+                                                              final List<DataStorageFile> files) {
+        final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
+                dataStorage.getId(),
+                new DataStorageTagLoadBatchRequest(
+                        files.stream()
+                                .map(DataStorageFile::getPath)
+                                .map(DataStorageTagLoadRequest::new)
+                                .collect(Collectors.toList())));
+        return files.stream()
+                .peek(file -> file.setTags(tags.get(file.getPath())));
     }
 
     private IndexRequest createIndexRequest(final DataStorageFile file,

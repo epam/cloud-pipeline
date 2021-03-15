@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.elasticsearchagent.service;
 
-import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
-import com.epam.pipeline.elasticsearchagent.service.impl.IndexRequestContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -26,17 +24,16 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import java.util.stream.Stream;
 
 /**
- * Lists all files in specified {@code AbstractDataStorage} and ass them to ES index
+ * Lists all files in specified {@code AbstractDataStorage}
  */
 public interface ObjectStorageFileManager {
     
     DataStorageType getType();
 
-    Stream<DataStorageFile> listVersionsWithNativeTags(AbstractDataStorage dataStorage,
-                                                       TemporaryCredentials credentials);
+    Stream<DataStorageFile> files(AbstractDataStorage storage,
+                                  TemporaryCredentials credentials);
 
-    void listAndIndexFiles(String indexName, AbstractDataStorage dataStorage,
-                           TemporaryCredentials credentials,
-                           PermissionsContainer permissionsContainer,
-                           IndexRequestContainer requestContainer);
+    Stream<DataStorageFile> versionsWithNativeTags(AbstractDataStorage storage,
+                                                   TemporaryCredentials credentials);
+
 }

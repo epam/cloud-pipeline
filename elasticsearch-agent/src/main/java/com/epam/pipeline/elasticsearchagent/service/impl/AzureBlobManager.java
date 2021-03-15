@@ -16,9 +16,7 @@
 
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
-import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
-import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -26,9 +24,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
-import com.epam.pipeline.entity.search.SearchDocumentType;
-import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
-import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import com.microsoft.azure.storage.blob.AnonymousCredentials;
 import com.microsoft.azure.storage.blob.BlobListingDetails;
 import com.microsoft.azure.storage.blob.ContainerURL;
@@ -49,20 +44,16 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.elasticsearch.action.index.IndexRequest;
 
 import java.net.URL;
 import java.sql.Date;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.HIDDEN_FILE_NAME;
 
 @Slf4j
@@ -72,46 +63,12 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     private static final String BLOB_URL_FORMAT = "https://%s.blob.core.windows.net%s";
     private static final int LIST_PAGE_SIZE = 1000;
 
-    private final CloudPipelineAPIClient cloudPipelineAPIClient;
-    private final StorageFileMapper fileMapper = new StorageFileMapper();
-    
     @Getter
     private final DataStorageType type = DataStorageType.AZ;
 
     @Override
-    public Stream<DataStorageFile> listVersionsWithNativeTags(final AbstractDataStorage dataStorage,
-                                                              final TemporaryCredentials credentials) {
-        return files(dataStorage, credentials);
-    }
-
-    @Override
-    public void listAndIndexFiles(final String indexName,
-                                  final AbstractDataStorage storage,
-                                  final TemporaryCredentials credentials,
-                                  final PermissionsContainer permissions,
-                                  final IndexRequestContainer indexContainer) {
-        chunkedFiles(storage, credentials)
-                .flatMap(chunk -> {
-                    final Map<String, Map<String, String>> tags = cloudPipelineAPIClient.loadDataStorageTagsMap(
-                            storage.getId(),
-                            new DataStorageTagLoadBatchRequest(chunk.stream()
-                                    .map(DataStorageFile::getPath)
-                                    .map(DataStorageTagLoadRequest::new)
-                                    .collect(Collectors.toList())));
-                    return chunk.stream()
-                            .peek(file -> file.setTags(tags.get(file.getPath())));
-                })
-                .map(file -> createIndexRequest(file, storage, credentials.getRegion(), permissions, indexName))
-                .forEach(indexContainer::add);
-    }
-
-    private Stream<List<DataStorageFile>> chunkedFiles(final AbstractDataStorage storage,
-                                                       final TemporaryCredentials credentials) {
-        return StreamUtils.chunked(files(storage, credentials));
-    }
-
-    private Stream<DataStorageFile> files(final AbstractDataStorage storage,
-                                          final TemporaryCredentials credentials) {
+    public Stream<DataStorageFile> files(final AbstractDataStorage storage,
+                                         final TemporaryCredentials credentials) {
         return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), ""))
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
@@ -123,6 +80,12 @@ public class AzureBlobManager implements ObjectStorageFileManager {
                 .map(this::convertToStorageFile);
     }
 
+    @Override
+    public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
+                                                          final TemporaryCredentials credentials) {
+        return files(storage, credentials);
+    }
+
     private ContainerURL buildContainerUrl(final AbstractDataStorage storage,
                                            final TemporaryCredentials credentials) {
         final AnonymousCredentials creds = new AnonymousCredentials();
@@ -130,15 +93,6 @@ public class AzureBlobManager implements ObjectStorageFileManager {
                 url(String.format(BLOB_URL_FORMAT, credentials.getAccessKey(), credentials.getToken())),
                 StorageURL.createPipeline(creds, new PipelineOptions()));
         return serviceURL.createContainerURL(storage.getPath());
-    }
-
-    private IndexRequest createIndexRequest(final DataStorageFile item,
-                                            final AbstractDataStorage storage,
-                                            final String region,
-                                            final PermissionsContainer permissions,
-                                            final String indexName) {
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE)
-                .source(fileMapper.fileToDocument(item, storage, region, permissions, SearchDocumentType.AZ_BLOB_FILE));
     }
 
     private DataStorageFile convertToStorageFile(final BlobItem blob) {
