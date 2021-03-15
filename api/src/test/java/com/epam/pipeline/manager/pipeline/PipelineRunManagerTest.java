@@ -17,29 +17,15 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
-import com.epam.pipeline.controller.vo.PagingRunFilterVO;
-import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
-import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.pipeline.CommitStatus;
-import com.epam.pipeline.entity.pipeline.Folder;
-import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.entity.pipeline.run.RunStatus;
-import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolExecutionDeniedException;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.EntityManager;
@@ -53,11 +39,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
-import com.epam.pipeline.util.TestUtils;
 import io.reactivex.subjects.BehaviorSubject;
-import org.apache.commons.collections.CollectionUtils;
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
@@ -67,35 +49,23 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 @Transactional
-@SuppressWarnings("PMD.TooManyStaticImports")
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.UnusedPrivateField"})
 public class PipelineRunManagerTest extends AbstractManagerTest {
-    private static final String PARAM_NAME_1 = "param-1";
-    private static final String ENV_VAR_NAME = "TEST_ENV";
-    private static final String ENV_VAR_VALUE = "value";
     private static final float PRICE_PER_HOUR = 12F;
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
     private static final float DISK_PRICE_PER_HOUR = 1F;
@@ -103,13 +73,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final long REGION_ID = 1L;
     private static final long NOT_ALLOWED_REGION_ID = 2L;
     private static final long NON_DEFAULT_REGION_ID = 3L;
-    private static final long PARENT_RUN_ID = 5L;
+    private static final String TEST_IMAGE = "testImage";
     private static final String INSTANCE_DISK = "1";
-    private static final LocalDateTime SYNC_PERIOD_START = LocalDateTime.of(2019, 4, 2, 0, 0);
-    private static final LocalDateTime SYNC_PERIOD_END = LocalDateTime.of(2019, 4, 3, 0, 0);
-    private static final int HOURS_12 = 12;
-    private static final int HOURS_18 = 18;
-    private static final int HOURS_24 = 24;
 
     @Autowired
     private PipelineRunManager pipelineRunManager;
@@ -143,7 +108,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
     @MockBean
     private ResourceMonitoringManager resourceMonitoringManager; // mock out this bean, because it depends on
-                                                                    // instanceOfferManager during initialization
+    // instanceOfferManager during initialization
     @MockBean
     private ToolVersionManager toolVersionManager;
 
@@ -158,9 +123,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
     @Autowired
     private PreferenceManager preferenceManager;
-
-    private static final String TEST_IMAGE = "testImage";
-    private PipelineConfiguration configuration;
 
     @Before
     public void setUp() throws Exception {
@@ -177,7 +139,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         when(cloudRegionManager.load(eq(NOT_ALLOWED_REGION_ID))).thenReturn(nonDefaultRegion(NOT_ALLOWED_REGION_ID));
         when(cloudRegionManager.load(eq(NON_DEFAULT_REGION_ID))).thenReturn(nonDefaultRegion(NON_DEFAULT_REGION_ID));
 
-        configuration = new PipelineConfiguration();
+        PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setDockerImage(TEST_IMAGE);
         configuration.setInstanceDisk(INSTANCE_DISK);
         configuration.setIsSpot(true);
@@ -204,7 +166,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
                 .thenReturn(price);
         when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString(), anyString()))
-            .thenReturn("sleep");
+                .thenReturn("sleep");
         when(toolScanInfoManager.loadToolVersionScanInfo(notScannedTool.getId(), null))
                 .thenReturn(Optional.empty());
         when(toolVersionManager.loadToolVersion(anyLong(), anyString()))
@@ -214,25 +176,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
 
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
-
-        AwsRegion region = new AwsRegion();
-        region.setRegionCode("us-east-1");
-        doNothing().when(entityManager).setManagers(any());
-        doNothing().when(resourceMonitoringManager).monitorResourceUsage();
-
-        PipelineRun parentRun = new PipelineRun();
-        parentRun.setId(PARENT_RUN_ID);
-        RunInstance parentRunInstance = new RunInstance();
-        parentRunInstance.setCloudRegionId(NON_DEFAULT_REGION_ID);
-        parentRunInstance.setCloudProvider(CloudProvider.AWS);
-        parentRun.setInstance(parentRunInstance);
-        parentRun.setStatus(TaskStatus.RUNNING);
-        parentRun.setCommitStatus(CommitStatus.NOT_COMMITTED);
-        parentRun.setStartDate(DateUtils.now());
-        parentRun.setPodId("podId");
-        parentRun.setOwner("owner");
-        parentRun.setLastChangeCommitTime(DateUtils.now());
-        pipelineRunDao.createPipelineRun(parentRun);
     }
 
     /**
@@ -261,193 +204,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         pipelineRunManager.runCmd(startVO);
 
         verify(notificationManager).notifyRunStatusChanged(any());
-    }
-
-    @Test
-    public void testEnvVarsReplacement() {
-        List<PipelineRunParameter> parameters = new ArrayList<>();
-        Map<String, String> envVars = new HashMap<>();
-        // case: empty collections
-        List<PipelineRunParameter> actualParameters =
-            pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertTrue(CollectionUtils.isEmpty(actualParameters));
-        // case: empty env_vars
-        String paramValue = "simple";
-        parameters.add(new PipelineRunParameter(PARAM_NAME_1, paramValue));
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertEquals(parameters, actualParameters);
-        // case: empty params
-        envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), envVars);
-        Assert.assertTrue(CollectionUtils.isEmpty(actualParameters));
-        // case: replacement no needed
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertEquals(paramValue, actualParameters.get(0).getValue());
-        // case: ${TEST_ENV}
-        paramValue = String.format("test/${%s}", ENV_VAR_NAME);
-        String expectedValue = String.format("test/%s", ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-            Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-
-        // case: $TEST_ENV at the end of the line
-        paramValue = String.format("test/$%s", ENV_VAR_NAME);
-        expectedValue = String.format("test/%s", ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-            Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-
-        // case: $TEST_ENV at the middle of the line
-        paramValue = String.format("test/$%s/", ENV_VAR_NAME);
-        expectedValue = String.format("test/%s/", ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-            Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-
-        // case: several variables
-        paramValue = String.format("test/$%s/${%s}/$%s/", ENV_VAR_NAME, ENV_VAR_NAME, ENV_VAR_NAME);
-        expectedValue = String.format("test/%s/%s/%s/", ENV_VAR_VALUE, ENV_VAR_VALUE, ENV_VAR_VALUE);
-        actualParameters = pipelineRunManager.replaceParametersWithEnvVars(
-            Collections.singletonList(new PipelineRunParameter(PARAM_NAME_1, paramValue)), envVars);
-        checkResolvedValue(actualParameters, paramValue, expectedValue);
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    public void testResolveProjectFiltering() {
-        Folder project = new Folder();
-        project.setId(1L);
-
-        Folder child = new Folder();
-        project.setId(2L);
-        project.getChildFolders().add(child);
-
-        Pipeline pipeline1 = new Pipeline();
-        pipeline1.setId(2L);
-        project.getPipelines().add(pipeline1);
-
-        Pipeline pipeline2 = new Pipeline();
-        pipeline2.setId(3L);
-        child.getPipelines().add(pipeline2);
-
-        RunConfiguration configuration1 = new RunConfiguration();
-        configuration1.setId(4L);
-        project.getConfigurations().add(configuration1);
-
-        RunConfiguration configuration2 = new RunConfiguration();
-        configuration2.setId(5L);
-        child.getConfigurations().add(configuration2);
-
-        when(folderManager.load(project.getId())).thenReturn(project);
-
-        PagingRunFilterVO filterVO = new PagingRunFilterVO();
-        filterVO.setProjectIds(Collections.singletonList(project.getId()));
-
-        PipelineRunFilterVO.ProjectFilter projectFilter = pipelineRunManager.resolveProjectFiltering(filterVO);
-        Assert.assertEquals(2, projectFilter.getPipelineIds().size());
-        Assert.assertEquals(2, projectFilter.getConfigurationIds().size());
-
-    }
-
-    @Test (expected = IllegalArgumentException.class)
-    @WithMockUser
-    public void shouldThrowExceptionOnInexistentRunTagUpdate() {
-        pipelineRunManager.updateTags(-1L, new TagsVO(null));
-    }
-
-    @Test
-    @WithMockUser
-    public void testUpdateRunTags() {
-        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, PARENT_RUN_ID);
-        loadRunAndAssertTags(pipelineRun.getId(), Collections.emptyMap());
-
-        final Map<String, String> tags = new HashMap<>();
-        tags.put("newKey", "newValue");
-        updateTagsForRunAndAssertWithExpected(pipelineRun, tags, tags);
-        tags.clear();
-        updateTagsForRunAndAssertWithExpected(pipelineRun, tags, Collections.emptyMap());
-        pipelineRun.setTags(null);
-        updateTagsForRunAndAssertWithExpected(pipelineRun, null, Collections.emptyMap());
-    }
-
-    @Test
-    public void testLoadRunsActivityStats() {
-        final LocalDateTime beforeSyncStart = SYNC_PERIOD_START.minusHours(HOURS_12);
-        final LocalDateTime afterSyncStart = SYNC_PERIOD_START.plusHours(HOURS_12);
-
-        final PipelineRun run1 = launchPipelineRun(beforeSyncStart.minusHours(12), beforeSyncStart);
-        final PipelineRun run2 = launchPipelineRun(beforeSyncStart, afterSyncStart);
-        final PipelineRun run3 = launchPipelineRun(afterSyncStart, afterSyncStart.plusHours(HOURS_12));
-        final PipelineRun run4 = launchPipelineRun(afterSyncStart, null);
-        final PipelineRun run5 = launchPipelineRun(beforeSyncStart.minusHours(HOURS_24), null);
-        saveStatusForRun(run5.getId(), TaskStatus.PAUSED, beforeSyncStart.minusHours(HOURS_18));
-        saveStatusForRun(run5.getId(), TaskStatus.RUNNING, beforeSyncStart.minusHours(HOURS_12));
-        final PipelineRun run6 = launchPipelineRun(beforeSyncStart.minusHours(HOURS_24), null);
-        saveStatusForRun(run6.getId(), TaskStatus.RUNNING, beforeSyncStart.minusHours(HOURS_24));
-        saveStatusForRun(run6.getId(), TaskStatus.PAUSED, beforeSyncStart.minusHours(HOURS_12));
-
-        final Map<Long, PipelineRun> stats =
-            pipelineRunManager.loadRunsActivityStats(SYNC_PERIOD_START, SYNC_PERIOD_END).stream()
-                .collect(Collectors.toMap(BaseEntity::getId,
-                                          Function.identity()));
-
-        Assert.assertEquals(5, stats.size());
-        Assert.assertNull(stats.get(run1.getId()));
-        Assert.assertEquals(2, stats.get(run2.getId()).getRunStatuses().size());
-        Assert.assertEquals(2, stats.get(run3.getId()).getRunStatuses().size());
-        Assert.assertEquals(1, stats.get(run4.getId()).getRunStatuses().size());
-        Assert.assertEquals(3, stats.get(run5.getId()).getRunStatuses().size());
-        Assert.assertEquals(2, stats.get(run6.getId()).getRunStatuses().size());
-    }
-
-    private PipelineRun launchPipelineRun(final LocalDateTime startDate, final LocalDateTime stopDate) {
-        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, null);
-        pipelineRun.setStartDate(TestUtils.convertLocalDateTimeToDate(startDate));
-        saveStatusForRun(pipelineRun.getId(), TaskStatus.RUNNING, startDate);
-        if (stopDate != null) {
-            pipelineRun.setStatus(TaskStatus.STOPPED);
-            pipelineRun.setEndDate(TestUtils.convertLocalDateTimeToDate(stopDate));
-            saveStatusForRun(pipelineRun.getId(), TaskStatus.STOPPED, stopDate);
-        } else {
-            pipelineRun.setEndDate(null);
-        }
-        pipelineRunManager.updateRunInfo(pipelineRun);
-        return pipelineRun;
-    }
-
-    private void saveStatusForRun(final Long runId, final TaskStatus status, final LocalDateTime timePoint) {
-        runStatusManager.saveStatus(new RunStatus(runId, status, null, timePoint));
-    }
-
-    private void updateTagsForRunAndAssertWithExpected(final PipelineRun run,
-                                                       final Map<String, String> newTags,
-                                                       final Map<String, String> expectedTags) {
-        final TagsVO tagsVO = new TagsVO(newTags);
-        pipelineRunManager.updateTags(run.getId(), tagsVO);
-        loadRunAndAssertTags(run.getId(), expectedTags);
-    }
-
-    private void loadRunAndAssertTags(final Long runId, Map<String, String> expectedTags) {
-        final PipelineRun loadedRun = pipelineRunManager.loadPipelineRun(runId);
-        assertThat(expectedTags, CoreMatchers.is(loadedRun.getTags()));
-    }
-
-
-    private void checkResolvedValue(List<PipelineRunParameter> actualParameters, String paramValue,
-            String expectedValue) {
-        Assert.assertEquals(expectedValue, actualParameters.get(0).getResolvedValue());
-        Assert.assertEquals(paramValue, actualParameters.get(0).getValue());
-    }
-
-    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType,
-                                       final Long parentRunId) {
-        return launchPipeline(configuration, new Pipeline(), instanceType, parentRunId);
-    }
-
-    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
-                                       final String instanceType, final Long parentRunId) {
-        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null, null,
-                parentRunId, null, null, null);
     }
 
     private AwsRegion defaultRegion(final long id) {

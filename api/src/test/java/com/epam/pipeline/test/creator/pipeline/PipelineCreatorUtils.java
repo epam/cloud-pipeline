@@ -137,10 +137,10 @@ public final class PipelineCreatorUtils {
 
     public static PipelineRun getPipelineRunWithInstance(final Long id, final String owner, final Long runInstanceId) {
         final PipelineRun pipelineRun = getPipelineRun(id, owner);
-        final RunInstance parentRunInstance = new RunInstance();
-        parentRunInstance.setCloudRegionId(runInstanceId);
-        parentRunInstance.setCloudProvider(CloudProvider.AWS);
-        pipelineRun.setInstance(parentRunInstance);
+        final RunInstance runInstance = new RunInstance();
+        runInstance.setCloudRegionId(runInstanceId);
+        runInstance.setCloudProvider(CloudProvider.AWS);
+        pipelineRun.setInstance(runInstance);
         pipelineRun.setStatus(TaskStatus.RUNNING);
         pipelineRun.setCommitStatus(CommitStatus.NOT_COMMITTED);
         pipelineRun.setStartDate(DateUtils.now());
