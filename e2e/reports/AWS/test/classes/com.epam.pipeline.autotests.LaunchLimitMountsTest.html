@@ -23,25 +23,25 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">9</div>
+<div class="counter">7</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">7</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3m35.55s</div>
+<div class="counter">15m1.45s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="percent">85%</div>
 <p>successful</p>
 </div>
 </td>
@@ -66,90 +66,35 @@
 <li>
 <a href="#tab1">Tests</a>
 </li>
+<li>
+<a href="#tab2">Standard output</a>
+</li>
 </ul>
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="removeEntities"></a>
-<h3 class="failures">removeEntities</h3>
+<a name="checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480"></a>
+<h3 class="failures">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</h3>
 <span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4600752251560953746')]]}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615813509767.89.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615813509767.89.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4600752251560953746')]]
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:238)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.removeStorage(PipelinesLibraryAO.java:229)
-	at com.epam.pipeline.autotests.LaunchLimitMountsTest.removeEntities(LaunchLimitMountsTest.java:124)
+<pre>java.lang.AssertionError: Message 'A large number of the object data storages (12) are going to be mounted for this job' isn't [true] visible expected [true] but found [false]
+	at org.testng.Assert.fail(Assert.java:93)
+	at org.testng.Assert.failNotEquals(Assert.java:512)
+	at org.testng.Assert.assertEqualsImpl(Assert.java:134)
+	at org.testng.Assert.assertEquals(Assert.java:115)
+	at org.testng.Assert.assertEquals(Assert.java:304)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.checkWarningMessage(PipelineRunFormAO.java:127)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.checkOOMwarningMessage(LaunchLimitMountsTest.java:370)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.checkWarningInCaseOfOOMriskDueToStorageMountsNumber(LaunchLimitMountsTest.java:342)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4600752251560953746')]]
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'f505c5f28365', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 24 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="setPreferences"></a>
-<h3 class="failures">setPreferences</h3>
-<span class="code">
-<pre>Element should text 'launchLimitMountsStorage4603116438120860797' {By.className: browser__item-header}
-Element: '&lt;div class=&quot;browser__item-header&quot;&gt;Library&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1615813399670.88.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1615813399670.88.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
-	at com.epam.pipeline.autotests.ao.StorageContentAO.validateHeader(StorageContentAO.java:273)
-	at com.epam.pipeline.autotests.LaunchLimitMountsTest.setPreferences(LaunchLimitMountsTest.java:94)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
@@ -168,51 +113,52 @@ Timeout: 80 s.
 </tr>
 </thead>
 <tr>
-<td class="skipped">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">prepareLimitMounts - EPMCMBIBPC-2681</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="failures">removeEntities</td>
-<td>1m50.08s</td>
+<td class="failures">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
+<td>1m49.23s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">rerunPipelineWithoutLimitMounts</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
+<td>39.482s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">prepareLimitMounts - EPMCMBIBPC-2681</td>
+<td>20.835s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">runPipelineWithSensitiveLimitMounts</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
+<td>32.295s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">setPreferences</td>
-<td>1m45.47s</td>
-<td class="failures">failed</td>
+<td class="success">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
+<td>1m36.06s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
+<td>5m0.23s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</td>
+<td>5m3.33s</td>
+<td class="success">passed</td>
 </tr>
 </table>
+</div>
+<div id="tab2" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>Returns latest run with runId 62596 from [62596]
+Returns latest run with runId 62597 from [62596, 62597]
+Returns latest run with runId 62597 from [62596, 62597]
+Returns latest run with runId 62598 from [62596, 62597, 62598]
+Returns latest run with runId 62599 from [62596, 62597, 62598, 62599]
+</pre>
+</span>
 </div>
 </div>
 <div id="footer">
@@ -222,7 +168,7 @@ Timeout: 80 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 15, 2021 2:51:29 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 16, 2021 3:49:43 PM</p>
 </div>
 </div>
 </body>
