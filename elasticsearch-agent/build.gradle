@@ -21,7 +21,7 @@ bootJar {
 }
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
