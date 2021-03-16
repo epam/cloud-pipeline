@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -540,7 +540,7 @@ class GridEngineScaleUpHandler:
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
                  instance_image, cmd_template, price_type, region_id, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params=''):
+                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params='', clock=Clock()):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -580,6 +580,7 @@ class GridEngineScaleUpHandler:
         self.ge_polling_timeout = ge_polling_timeout
         self.instance_family = instance_family
         self.worker_launch_system_params = worker_launch_system_params
+        self.clock = clock
 
     def scale_up(self, resource):
         """
@@ -658,6 +659,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
+            self._update_last_activity_for_currently_running_jobs()
             run = self.api.load_run(run_id)
             if run.get('status', 'RUNNING') != 'RUNNING':
                 error_msg = 'Additional worker is not running. Probably it has failed.'
@@ -683,6 +685,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts > 0:
+            self._update_last_activity_for_currently_running_jobs()
             run = self.api.load_run(run_id)
             if run.get('status', 'RUNNING') != 'RUNNING':
                 error_msg = 'Additional worker is not running. Probably it has failed.'
@@ -709,8 +712,10 @@ class GridEngineScaleUpHandler:
             else GridEngineScaleUpHandler._GE_POLL_ATTEMPTS
         while attempts > 0:
             try:
+                self._update_last_activity_for_currently_running_jobs()
                 self.grid_engine.enable_host(pod.name)
                 Logger.info('Additional worker with host=%s has been enabled in grid engine.' % pod.name)
+                self.host_storage.update_hosts_activity([pod.name], self.clock.now())
                 return
             except Exception as e:
                 Logger.warn('Additional worker with host=%s enabling in grid engine has failed '
@@ -726,6 +731,12 @@ class GridEngineScaleUpHandler:
         Logger.info('Increase number of parallel environment slots by %s.' % slots_to_append)
         self.grid_engine.increase_parallel_environment_slots(slots_to_append)
         Logger.info('Number of parallel environment slots was increased.')
+
+    def _update_last_activity_for_currently_running_jobs(self):
+        jobs = self.grid_engine.get_jobs()
+        running_jobs = [job for job in jobs if job.state == GridEngineJobState.RUNNING]
+        if running_jobs:
+            host_storage.update_running_jobs_host_activity(running_jobs, self.clock.now())
 
 
 class GridEngineScaleDownHandler:
@@ -799,36 +810,62 @@ class MemoryHostStorage:
     def __init__(self):
         """
         Additional hosts storage.
+        Contains the hostname along with the time of the last activity on it.
         It stores all hosts in memory unlike FileSystemHostStorage implementation.
         """
-        self._storage = list()
+        self._storage = dict()
+        self.clock = Clock()
 
     def add_host(self, host):
         if host in self._storage:
             raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
-        self._storage.append(host)
+        self._storage[host] = self.clock.now()
 
     def remove_host(self, host):
-        if host not in self._storage:
-            raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
-        self._storage.remove(host)
+        self._validate_existence(host)
+        self._storage.pop(host)
+
+    def update_running_jobs_host_activity(self, running_jobs, activity_timestamp):
+        active_hosts = set()
+        for job in running_jobs:
+            active_hosts.update(job.hosts)
+        if active_hosts:
+            self.update_hosts_activity(active_hosts, activity_timestamp)
+
+    def update_hosts_activity(self, hosts, timestamp):
+        for host in hosts:
+            if host in self._storage:
+                self._storage[host] = timestamp
+
+    def get_hosts_activity(self, hosts):
+        hosts_activity = {}
+        for host in hosts:
+            self._validate_existence(host)
+            hosts_activity[host] = self._storage[host]
+        return hosts_activity
 
     def load_hosts(self):
-        return list(self._storage)
+        return list(self._storage.keys())
 
     def clear(self):
-        self._storage = list()
+        self._storage = dict()
+
+    def _validate_existence(self, host):
+        if host not in self._storage:
+            raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
 
 
 class FileSystemHostStorage:
     _REPLACE_FILE = 'echo "%(content)s" > %(file)s_MODIFIED; ' \
                     'mv %(file)s_MODIFIED %(file)s'
+    _DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
+    _VALUE_BREAKER = '|'
     _LINE_BREAKER = '\n'
 
-    def __init__(self, cmd_executor, storage_file):
+    def __init__(self, cmd_executor, storage_file, clock=Clock()):
         """
         Additional hosts storage.
-
+        Contains the hostname along with the time of the last activity on it.
         It uses file system to persist all hosts. Therefore it can be used through relaunches of the autoscaler script.
 
         :param cmd_executor: Cmd executor.
@@ -836,6 +873,7 @@ class FileSystemHostStorage:
         """
         self.executor = cmd_executor
         self.storage_file = storage_file
+        self.clock = clock
 
     def add_host(self, host):
         """
@@ -843,11 +881,33 @@ class FileSystemHostStorage:
 
         :param host: Additional host name.
         """
-        hosts = self.load_hosts()
+        hosts = self._load_hosts_stats()
         if host in hosts:
             raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
-        hosts.append(host)
+        hosts[host] = self.clock.now()
         self._update_storage_file(hosts)
+
+    def update_running_jobs_host_activity(self, running_jobs, activity_timestamp):
+        active_hosts = set()
+        for job in running_jobs:
+            active_hosts.update(job.hosts)
+        if active_hosts:
+            self.update_hosts_activity(active_hosts, activity_timestamp)
+
+    def update_hosts_activity(self, hosts, timestamp):
+        latest_hosts_stats = self._load_hosts_stats()
+        for host in hosts:
+            if host in latest_hosts_stats:
+                latest_hosts_stats[host] = timestamp
+        self._update_storage_file(latest_hosts_stats)
+
+    def get_hosts_activity(self, hosts):
+        hosts_activity = {}
+        latest_hosts_activity = self._load_hosts_stats()
+        for host in hosts:
+            self._validate_existence(host, latest_hosts_activity)
+            hosts_activity[host] = latest_hosts_activity[host]
+        return hosts_activity
 
     def remove_host(self, host):
         """
@@ -855,17 +915,23 @@ class FileSystemHostStorage:
 
         :param host: Additional host name.
         """
-        hosts = self.load_hosts()
-        if host not in hosts:
-            raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
-        hosts.remove(host)
+        hosts = self._load_hosts_stats()
+        self._validate_existence(host, hosts)
+        hosts.pop(host)
         self._update_storage_file(hosts)
 
     def _update_storage_file(self, hosts):
-        self.executor.execute(FileSystemHostStorage._REPLACE_FILE % {'content': '\n'.join(hosts),
+        hosts_summary_table = []
+        for host, last_activity in hosts.items():
+            formatted_activity = last_activity.strftime(FileSystemHostStorage._DATETIME_FORMAT)
+            hosts_summary_table.append(FileSystemHostStorage._VALUE_BREAKER.join([host, formatted_activity]))
+        self.executor.execute(FileSystemHostStorage._REPLACE_FILE % {'content': '\n'.join(hosts_summary_table),
                                                                      'file': self.storage_file})
 
     def load_hosts(self):
+        return list(self._load_hosts_stats().keys())
+
+    def _load_hosts_stats(self):
         """
         Load all additional hosts from storage.
 
@@ -873,23 +939,31 @@ class FileSystemHostStorage:
         """
         if os.path.exists(self.storage_file):
             with open(self.storage_file) as file:
-                hosts = []
+                hosts = {}
                 for line in file.readlines():
                     stripped_line = line.strip().strip(FileSystemHostStorage._LINE_BREAKER)
                     if stripped_line:
-                        hosts.append(stripped_line)
+                        host_stats = stripped_line.strip().split(FileSystemHostStorage._VALUE_BREAKER)
+                        if host_stats:
+                            hostname = host_stats[0]
+                            last_activity = datetime.strptime(host_stats[1], FileSystemHostStorage._DATETIME_FORMAT)
+                            hosts[hostname] = last_activity
                 return hosts
         else:
-            return []
+            return {}
 
     def clear(self):
-        self._update_storage_file([])
+        self._update_storage_file({})
+
+    def _validate_existence(self, host, hosts_dict):
+        if host not in hosts_dict:
+            raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
 
 
 class GridEngineAutoscaler:
 
     def __init__(self, grid_engine, cmd_executor, scale_up_handler, scale_down_handler, host_storage, scale_up_timeout,
-                 scale_down_timeout, max_additional_hosts, clock=Clock()):
+                 scale_down_timeout, max_additional_hosts, idle_timeout=30, clock=Clock()):
         """
         Grid engine autoscaler.
 
@@ -908,6 +982,7 @@ class GridEngineAutoscaler:
         before autoscaler will scale down the cluster.
         :param max_additional_hosts: Maximum number of additional hosts that autoscaler can launch.
         :param clock: Clock.
+        :param idle_timeout: Maximum number of seconds a host could wait for a new job before getting scaled-down.
         """
         self.grid_engine = grid_engine
         self.executor = cmd_executor
@@ -920,6 +995,7 @@ class GridEngineAutoscaler:
         self.clock = clock
 
         self.latest_running_job = None
+        self.idle_timeout = timedelta(seconds=idle_timeout)
 
     def scale(self):
         now = self.clock.now()
@@ -929,8 +1005,8 @@ class GridEngineAutoscaler:
         updated_jobs = self.grid_engine.get_jobs()
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         pending_jobs = self._filter_pending_job(updated_jobs)
-
         if running_jobs:
+            self.host_storage.update_running_jobs_host_activity(running_jobs, now)
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
         if pending_jobs:
             Logger.info('There are %s waiting jobs.' % len(pending_jobs))
@@ -963,13 +1039,13 @@ class GridEngineAutoscaler:
                 if now >= self.latest_running_job.datetime + self.scale_down_timeout:
                     Logger.info('Latest job started more than %s seconds ago. Scaling down is required.' %
                                 self.scale_down_timeout.seconds)
-                    self._scale_down(running_jobs, additional_hosts)
+                    self._scale_down(running_jobs, additional_hosts, now)
                 else:
                     Logger.info('Latest job started less than %s seconds. '
                                 'Scaling down is not required.' % self.scale_down_timeout.seconds)
             else:
                 Logger.info('There are no previously running jobs. Scaling down is required.')
-                self._scale_down(running_jobs, additional_hosts)
+                self._scale_down(running_jobs, additional_hosts, now)
         Logger.info('Finish scaling step at %s.' % self.clock.now())
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
@@ -1002,12 +1078,17 @@ class GridEngineAutoscaler:
         Logger.info('Start grid engine SCALING UP.')
         return self.scale_up_handler.scale_up(resource)
 
-    def _scale_down(self, running_jobs, additional_hosts):
+    def _scale_down(self, running_jobs, additional_hosts, scaling_period_start=None):
         active_hosts = set([host for job in running_jobs for host in job.hosts])
         inactive_additional_hosts = [host for host in additional_hosts if host not in active_hosts]
         if inactive_additional_hosts:
-            Logger.info('There are %s inactive additional child pipelines. '
-                        'Scaling down will be performed.' % len(inactive_additional_hosts))
+            Logger.info('There are %s inactive additional child pipelines.' % len(inactive_additional_hosts))
+            if scaling_period_start:
+                idle_additional_hosts = self._filter_valid_idle_hosts(inactive_additional_hosts, scaling_period_start)
+                Logger.info('There are %s idle additional child pipelines.' % len(idle_additional_hosts))
+                inactive_additional_hosts = idle_additional_hosts
+        if inactive_additional_hosts:
+            Logger.info('Scaling down will be performed.')
             # TODO: here we always choose weakest host, even if all hosts are inactive and we can drop strongest one firstly
             # TODO in order to safe some money
             inactive_additional_host = self.grid_engine.get_host_to_scale_down(inactive_additional_hosts)
@@ -1015,7 +1096,15 @@ class GridEngineAutoscaler:
             if succeed:
                 self.host_storage.remove_host(inactive_additional_host)
         else:
-            Logger.info('There are no inactive additional child pipelines. Scaling down will not be performed.')
+            Logger.info('There are no additional child pipelines for scaling down.')
+
+    def _filter_valid_idle_hosts(self, inactive_host_candidates, scaling_period_start):
+        inactive_hosts = []
+        hosts_activity = self.host_storage.get_hosts_activity(inactive_host_candidates)
+        for host, last_activity in hosts_activity.items():
+            if scaling_period_start > last_activity + self.idle_timeout:
+                inactive_hosts.append(host)
+        return inactive_hosts
 
     def scale_down(self, child_host):
         """
@@ -1408,13 +1497,15 @@ if __name__ == '__main__':
                 task='GridEngineAutoscaling', verbose=log_verbose)
 
     cmd_executor = CmdExecutor()
-
+    scaling_operations_clock = Clock()
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
                              max_cluster_cores=max_cluster_cores)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
-                                         storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
+                                         storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'),
+                                         clock=scaling_operations_clock)
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
+    idle_timeout = int(os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', 30))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
                                                            default_value=900))
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
@@ -1427,7 +1518,8 @@ if __name__ == '__main__':
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_family=instance_family,
-                                                worker_launch_system_params=worker_launch_system_params)
+                                                worker_launch_system_params=worker_launch_system_params,
+                                                clock=scaling_operations_clock)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
@@ -1435,7 +1527,8 @@ if __name__ == '__main__':
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
                                       scale_up_handler=scale_up_handler, scale_down_handler=scale_down_handler,
                                       host_storage=host_storage, scale_up_timeout=scale_up_timeout,
-                                      scale_down_timeout=scale_down_timeout, max_additional_hosts=additional_hosts)
+                                      scale_down_timeout=scale_down_timeout, max_additional_hosts=additional_hosts,
+                                      idle_timeout=idle_timeout, clock=scaling_operations_clock)
     daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
                                          polling_timeout=args.polling_interval)
     daemon.start()
