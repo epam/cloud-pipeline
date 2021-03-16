@@ -1391,8 +1391,8 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode')
 @click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG')
-@click.option('-t', '--timeout', required=False, type=int, default=5 * 1000,
-              help='Time period in ms for background tunnel process health check')
+@click.option('-t', '--timeout', required=False, type=int, default=5 * 60,
+              help='Maximum timeout for background tunnel process health check in seconds')
 @click.option('-f', '--foreground', required=False, is_flag=True, default=False,
               help='Establishes tunnel in foreground mode')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
