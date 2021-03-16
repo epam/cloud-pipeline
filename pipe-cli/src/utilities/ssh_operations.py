@@ -333,8 +333,8 @@ def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
     conn_info = get_conn_info(run_id)
     if conn_info.sensitive:
         raise RuntimeError('Tunnel connections to sensitive runs are not allowed.')
+    remote_host = ssh_host or 'pipeline-{}'.format(run_id)
     if foreground:
-        remote_host = ssh_host or 'pipeline-{}'.format(run_id)
         if ssh:
             create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
                                               ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
@@ -342,7 +342,7 @@ def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
             create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
                                      remote_host, log_level, retries)
     else:
-        create_background_tunnel(log_file, timeout)
+        create_background_tunnel(local_port, remote_port, remote_host, log_file, log_level, timeout)
 
 
 def create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
@@ -353,11 +353,13 @@ def create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
         create_foreground_tunnel(host_id, local_port, remote_port, connection_timeout, conn_info,
                                  host_id, log_level, retries)
     else:
-        create_background_tunnel(log_file, timeout)
+        create_background_tunnel(local_port, remote_port, host_id, log_file, log_level, timeout)
 
 
-def create_background_tunnel(log_file, timeout):
+def create_background_tunnel(local_port, remote_port, remote_host, log_file, log_level, timeout):
     import subprocess
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
+    logging.info('Launching background tunnel %s:%s:%s...', local_port, remote_host, remote_port)
     with open(log_file or os.devnull, 'w') as output:
         if is_windows():
             # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
@@ -374,12 +376,30 @@ def create_background_tunnel(log_file, timeout):
                                        cwd=os.getcwd(), env=os.environ.copy(), creationflags=creationflags)
         if stdin:
             os.close(stdin)
-        time.sleep(timeout / 1000)
+        wait_for_background_tunnel(tunnel_proc, local_port, timeout)
+
+
+def wait_for_background_tunnel(tunnel_proc, local_port, timeout, polling_delay=1):
+    import psutil
+    attempts = int(timeout / polling_delay)
+    while attempts > 0:
+        time.sleep(polling_delay)
         if tunnel_proc.poll() is not None:
-            import click
-            click.echo('Failed to serve tunnel in background. Tunnel command exited with return code: {}'
-                       .format(tunnel_proc.returncode), err=True)
-            sys.exit(1)
+            raise RuntimeError('Failed to serve tunnel in background. '
+                               'Tunnel exited with return code {}.'
+                               .format(tunnel_proc.returncode))
+        for net_connection in psutil.net_connections():
+            if net_connection.laddr \
+                    and net_connection.laddr.port == local_port \
+                    and net_connection.pid == tunnel_proc.pid:
+                logging.info('Background tunnel is initialized. Exiting...')
+                return
+        logging.debug('Background tunnel is not initialized yet. '
+                      'Only %s attempts remain left...', attempts)
+        attempts -= 1
+    raise RuntimeError('Failed to serve tunnel in background. '
+                       'Tunnel is not initialized after {} seconds.'
+                       .format(timeout))
 
 
 def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
