@@ -577,21 +577,28 @@ def configure_graceful_exiting():
 def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config):
     logging.info('Generating tunnel remote ssh keys and copying ssh public key to authorized keys...')
     exit_code = run_ssh(run_id,
-                        'mkdir -p $(dirname {remote_private_key_path});'
-                        'ssh-keygen -t rsa -f {remote_private_key_path} -N "" -q;'
-                        'cat {remote_public_key_path} | tee -a {remote_authorized_keys_paths} > /dev/null;'
-                        'command -v puttygen || apt-get -y install putty-tools;'
-                        'command -v puttygen || yum -y install putty;'
-                        'puttygen {remote_private_key_path} -o {remote_ppk_key_path} -O private;'
+                        """
+                        mkdir -p $(dirname {remote_private_key_path})
+                        ssh-keygen -t rsa -f {remote_private_key_path} -N "" -q
+                        cat {remote_public_key_path} | tee -a {remote_authorized_keys_paths} > /dev/null
+                        if ! command -v puttygen; then
+                            wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/putty/puttygen.tgz" -O "/tmp/puttygen.tgz"
+                            tar -zxf "/tmp/puttygen.tgz" -C "${{CP_USR_BIN:-/usr/cpbin}}"
+                            rm -f "/tmp/puttygen.tgz"
+                        fi
+                        if ! command -v puttygen; then apt-get -y install putty-tools; fi
+                        if ! command -v puttygen; then yum -y install putty; fi
+                        puttygen {remote_private_key_path} -o {remote_ppk_key_path} -O private
+                        """
                         .format(remote_public_key_path=passwordless_config.remote_public_key_path,
                                 remote_private_key_path=passwordless_config.remote_private_key_path,
                                 remote_ppk_key_path=passwordless_config.remote_ppk_key_path,
                                 remote_authorized_keys_paths=' '.join(passwordless_config.remote_authorized_keys_paths)),
                         user=DEFAULT_SSH_USER, retries=retries)
     if exit_code:
-        raise RuntimeError(
-            'Generating tunnel remote ssh keys and copying ssh public key to authorized keys have failed with {} exit code'.format(
-                exit_code))
+        raise RuntimeError('Generating tunnel remote ssh keys and copying ssh public key to authorized keys '
+                           'have failed with {} exit code'
+                           .format(exit_code))
 
 
 def remove_remote_openssh_and_putty_keys(run_id, retries, passwordless_config):
