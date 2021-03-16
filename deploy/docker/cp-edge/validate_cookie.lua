@@ -116,7 +116,9 @@ if token then
         ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root ..
                 "; User: " .. username .. "; Status: Successfully authenticated.")
     end
-    ngx.var.auth_user_name = username
+    if ngx.var.auth_user_name ~= nil then
+        ngx.var.auth_user_name = username
+    end
     ngx.req.set_header('X-Auth-User', username)
     return
 end
