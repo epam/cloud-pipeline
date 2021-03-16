@@ -54,6 +54,10 @@ public class UtilsManager {
         return buildUrl(SSH_URL_TEMPLATE, runId);
     }
 
+    public String getEdgeDomainNameOrIP() {
+        return getServiceDescription(edgeLabel).getIp();
+    }
+
     public String buildFSBrowserUrl(Long runId) {
         if (isFSBrowserEnabled() && runIsNotSensitive(runId)) {
             return buildUrl(FSBROWSER_URL_TEMPLATE, runId);
@@ -78,11 +82,16 @@ public class UtilsManager {
     }
 
     private String buildUrl(String template, Long runId) {
-        ServiceDescription service = kubeManager.getServiceByLabel(edgeLabel);
+        final ServiceDescription service = getServiceDescription(edgeLabel);
+        return String.format(template, service.getScheme(), service.getIp(), service.getPort(), runId);
+    }
+
+    private ServiceDescription getServiceDescription(final String label) {
+        final ServiceDescription service = kubeManager.getServiceByLabel(label);
         if (service == null) {
             throw new IllegalArgumentException("Edge server is not registered in the cluster.");
         }
-        return String.format(template, service.getScheme(), service.getIp(), service.getPort(), runId);
+        return service;
     }
     
     public List<DefaultSystemParameter> getSystemParameters() {
