@@ -1771,6 +1771,9 @@ class Logs extends localization.LocalizedReactComponent {
     if (nextProps.runId !== this.props.runId) {
       this.language = null;
       this._pipelineLanguage = null;
+      this.props.run.clearInterval();
+      this.props.runTasks.clearInterval();
+      this.props.nestedRuns.clearRefreshInterval();
     }
   }
 
