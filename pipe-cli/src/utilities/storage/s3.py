@@ -32,6 +32,7 @@ from botocore.credentials import RefreshableCredentials
 from botocore.exceptions import ClientError
 from botocore.session import get_session
 from s3transfer.manager import TransferManager
+from s3transfer import upload, tasks, copies
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_item_model import DataStorageItemModel, DataStorageItemLabelModel
@@ -40,6 +41,54 @@ from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import StorageOperations, AbstractListingManager, AbstractDeleteManager, \
     AbstractRestoreManager, AbstractTransferManager, TransferResult, UploadResult
 from src.config import Config
+
+
+class UploadedObjectsContainer:
+
+    def __init__(self):
+        self._objects = {}
+
+    def add(self, bucket, key, data):
+        self._objects[bucket + '/' + key] = data
+
+    def pop(self, bucket, key):
+        data = self._objects[bucket + '/' + key]
+        del self._objects[bucket + '/' + key]
+        return data
+
+
+uploaded_objects_container = UploadedObjectsContainer()
+
+
+def _put_object_task_main(self, client, fileobj, bucket, key, extra_args):
+    with fileobj as body:
+        output = client.put_object(Bucket=bucket, Key=key, Body=body, **extra_args)
+        uploaded_objects_container.add(bucket, key, output['VersionId'])
+
+
+def _complete_multipart_upload_task_main(self, client, bucket, key, upload_id, parts, extra_args):
+    output = client.complete_multipart_upload(
+        Bucket=bucket, Key=key, UploadId=upload_id,
+        MultipartUpload={'Parts': parts},
+        **extra_args)
+    uploaded_objects_container.add(bucket, key, output['VersionId'])
+
+
+def _copy_object_task_main(self, client, copy_source, bucket, key, extra_args, callbacks, size):
+    output = client.copy_object(
+        CopySource=copy_source, Bucket=bucket, Key=key, **extra_args)
+    for callback in callbacks:
+        callback(bytes_transferred=size)
+    uploaded_objects_container.add(bucket, key, output['VersionId'])
+
+
+# By default boto library doesn't aggregate uploaded object versions
+# which have to be downloaded via an extra request for each individual object.
+# This monkey patching allows to aggregate uploaded object versions
+# and use them later on without any extra requests being performed.
+upload.PutObjectTask._main = _put_object_task_main
+tasks.CompleteMultipartUploadTask._main = _complete_multipart_upload_task_main
+copies.CopyObjectTask._main = _copy_object_task_main
 
 
 class StorageItemManager(object):
@@ -97,6 +146,9 @@ class StorageItemManager(object):
             return item.get('VersionId')
         except ClientError:
             return None
+
+    def get_uploaded_s3_file_version(self, bucket, key):
+        return uploaded_objects_container.pop(bucket, key)
 
     @staticmethod
     def get_local_file_size(path):
@@ -168,7 +220,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         if clean:
             source_wrapper.delete_item(source_key)
         tags = StorageOperations.parse_tags(tags)
-        version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
+        version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
                             tags=tags)
 
@@ -212,7 +264,7 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         else:
             self.bucket.upload_fileobj(file_stream, destination_key, ExtraArgs=extra_args)
         tags = StorageOperations.parse_tags(tags)
-        version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
+        version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
                             tags=tags)
 
@@ -253,7 +305,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
             self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
         if clean:
             source_wrapper.delete_item(path)
-        version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
+        version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
         return TransferResult(source_key=path, destination_key=destination_key, destination_version=version,
                               tags=StorageOperations.parse_tags(tags))
 
