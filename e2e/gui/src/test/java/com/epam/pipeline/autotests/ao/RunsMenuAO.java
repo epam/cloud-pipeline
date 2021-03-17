@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,6 +197,16 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO validateAllRunsHaveButton(String button) {
         allRuns().forEach(row -> row.$(byText(button)).shouldBe(visible));
+        return this;
+    }
+
+    public RunsMenuAO validateRunsHaveButton(final List<String> runIds, final String button) {
+        runIds.forEach(id -> $("tbody")
+                .find(withText(id))
+                .closest(".ant-table-row")
+                .find(byText(button))
+                .shouldBe(visible)
+        );
         return this;
     }
 
