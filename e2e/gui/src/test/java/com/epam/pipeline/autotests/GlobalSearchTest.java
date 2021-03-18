@@ -750,7 +750,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .ensure(RUNS, enabled)
-                .validateCountSearchResults(4)
+                .validateCountSearchResults(1)
                 .search(configuration)
                 .enter()
                 .validateSearchResults(0, "")
