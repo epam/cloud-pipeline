@@ -16,7 +16,7 @@ import os
 import datetime
 import time
 
-from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
 
 FS_BROWSER_TASK = "FsBrowserTask"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"

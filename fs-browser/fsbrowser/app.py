@@ -15,6 +15,8 @@
 import argparse
 import os
 import traceback
+
+import flask
 from flask import Flask, jsonify, send_from_directory
 from flask_httpauth import HTTPBasicAuth
 
@@ -41,9 +43,11 @@ def error(message):
         "status": "ERROR"
     }
 
+
 @auth.verify_password
 def verify_password(username, password):
     return password == os.getenv('SSH_PASS')
+
 
 @app.route('/')
 @auth.login_required
@@ -149,6 +153,94 @@ def delete(path):
         return jsonify(error(e.__str__()))
 
 
+@app.route('/vs/<vs_id>/clone')
+@auth.login_required
+def clone_versioned_storage(vs_id):
+    revision = flask.request.args.get("revision", None)
+    manager = app.config['fsbrowser']
+    try:
+        task_id = manager.git_clone(vs_id, revision)
+        return jsonify(success({"task": task_id}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/<vs_id>/detached')
+@auth.login_required
+def is_versioned_storage_detached(vs_id):
+    manager = app.config['fsbrowser']
+    try:
+        is_head_detached = manager.git_head(vs_id)
+        return jsonify(success({"detached": is_head_detached}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/list')
+@auth.login_required
+def list_versioned_storages():
+    manager = app.config['fsbrowser']
+    try:
+        items = manager.list_version_storages()
+        return jsonify(success(items))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/<vs_id>/fetch')
+@auth.login_required
+def fetch_versioned_storage(vs_id):
+    manager = app.config['fsbrowser']
+    try:
+        task_id = manager.git_pull(vs_id)
+        return jsonify(success({"task": task_id}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/<vs_id>/diff')
+@auth.login_required
+def diff_versioned_storage(vs_id):
+    manager = app.config['fsbrowser']
+    try:
+        items = manager.git_status(vs_id)
+        return jsonify(success(items))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/<vs_id>/diff/files')
+@auth.login_required
+def diff_versioned_storage_file(vs_id):
+    file_path = flask.request.args.get("path")
+    manager = app.config['fsbrowser']
+    try:
+        items = manager.git_diff(vs_id, file_path)
+        return jsonify(success(items))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/<vs_id>/commit')
+@auth.login_required
+def commit_versioned_storage(vs_id):
+    message = flask.request.args.get("message")
+    files_to_add = flask.request.args.get("files", None)
+    manager = app.config['fsbrowser']
+    try:
+        task_id = manager.git_push(vs_id, message, files_to_add)
+        return jsonify(success({"task": task_id}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
 def str_to_bool(input_value):
     return input_value.lower() in ("true", "t")
 
@@ -158,6 +250,7 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default="5000")
     parser.add_argument("--working_directory", required=True)
+    parser.add_argument("--vs_working_directory", required=True)
     parser.add_argument("--transfer_storage", required=True)
     parser.add_argument("--process_count", default=2)
     parser.add_argument("--run_id", required=False)
@@ -166,10 +259,12 @@ def main():
     parser.add_argument("--follow_symlinks", default="True", type=str_to_bool)
     parser.add_argument("--tmp_directory", default="/tmp")
 
+    # TODO: should we move pool and add another manager?
     args = parser.parse_args()
     app.config['fsbrowser'] = FsBrowserManager(args.working_directory, args.process_count,
                                                BrowserLogger(args.run_id, args.log_dir), args.transfer_storage,
-                                               args.follow_symlinks, args.tmp_directory, args.exclude)
+                                               args.follow_symlinks, args.tmp_directory, args.exclude,
+                                               args.vs_working_directory)
 
     app.run(host=args.host, port=args.port)
 

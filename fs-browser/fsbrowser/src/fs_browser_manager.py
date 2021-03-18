@@ -17,7 +17,8 @@ import uuid
 import shutil
 from multiprocessing.pool import ThreadPool
 
-from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.git.git_manager import GitManager
 from fsbrowser.src.model.file import File
 from fsbrowser.src.model.folder import Folder
 from fsbrowser.src.pattern_utils import PatternMatcher
@@ -26,7 +27,8 @@ from fsbrowser.src.transfer_task import TransferTask, TaskStatus
 
 class FsBrowserManager(object):
 
-    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, tmp, exclude):
+    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, tmp, exclude,
+                 vs_working_directory):
         self.tasks = {}
         self.pool = ThreadPool(processes=process_count)
         self.working_directory = working_directory
@@ -36,6 +38,7 @@ class FsBrowserManager(object):
         self._create_tmp_dir_if_needed(tmp)
         self.tmp = tmp
         self.exclude_list = self._parse_exclude_list(exclude, working_directory)
+        self.git_manager = GitManager(self.pool, self.tasks, self.logger, vs_working_directory)
 
     def list(self, path):
         items = []
@@ -104,6 +107,27 @@ class FsBrowserManager(object):
             shutil.rmtree(full_path)
         self.logger.log("Data by path '%s' has been successfully deleted" % full_path)
         return path
+
+    def git_clone(self, versioned_storage_id, revision):
+        return self.git_manager.clone(versioned_storage_id, revision)
+
+    def git_head(self, versioned_storage_id):
+        return self.git_manager.head(versioned_storage_id)
+
+    def list_version_storages(self):
+        return self.git_manager.list()
+
+    def git_pull(self, versioned_storage_id):
+        return self.git_manager.pull(versioned_storage_id)
+
+    def git_status(self, versioned_storage_id):
+        return self.git_manager.status(versioned_storage_id)
+
+    def git_diff(self, versioned_storage_id, file_path):
+        return self.git_manager.diff(versioned_storage_id, file_path)
+
+    def git_push(self, versioned_storage_id, message, files_to_add=None):
+        return self.git_manager.push(versioned_storage_id, message, files_to_add)
 
     @staticmethod
     def _parse_transfer_storage_path(storage):

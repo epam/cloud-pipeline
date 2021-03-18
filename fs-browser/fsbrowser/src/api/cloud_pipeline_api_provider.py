@@ -58,6 +58,10 @@ class CloudPipelineAPI:
             'Content-Type': 'application/json',
         }
 
+    def find_pipeline(self, id):
+        result = self._get('/pipeline/%s/load' % str(id))
+        return result or {}
+
     def find_storage(self, storage_id_or_name):
         result = self._get('/datastorage/find?id=%s' % storage_id_or_name)
         return result or {}
@@ -78,6 +82,10 @@ class CloudPipelineAPI:
     def log_event(self, run_id, data):
         url = '/run/%s/log' % str(run_id)
         result = self._post(url, data)
+        return result or {}
+
+    def get_git_credentials(self):
+        result = self._get('/pipeline/git/credentials')
         return result or {}
 
     def _get(self, url):
@@ -122,6 +130,12 @@ class CloudPipelineApiProvider(object):
     def __init__(self):
         self.api = CloudPipelineAPI(os.environ.get('API'), os.environ.get('API_TOKEN'))
 
+    def get_pipeline(self, id):
+        pipeline = self.api.find_pipeline(id)
+        if not pipeline:
+            raise RuntimeError('Failed to find pipeline by id "%s"' % str(id))
+        return pipeline
+
     def load_storage_id_by_name(self, name):
         storage = self.api.find_storage(name)
         storage_id = storage.get('id', '')
@@ -143,3 +157,10 @@ class CloudPipelineApiProvider(object):
 
     def log_event(self, run_id, data):
         self.api.log_event(run_id, data)
+
+    def get_git_credentials(self):
+        result = self.api.get_git_credentials()
+        if not result:
+            raise RuntimeError("Failed to find git credentials")
+        return result
+

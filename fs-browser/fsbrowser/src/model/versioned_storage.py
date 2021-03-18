@@ -12,22 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup, find_packages
-from fsbrowser.version import __version__
+class VersionedStorage:
 
-setup(
-    name='fsbrowser',
-    version=__version__,
-    py_modules=['fsbrowser'],
-    packages=find_packages(),
-    include_package_data=True,
-    install_requires=[
-        'flask==1.1.1',
-        'Flask-HTTPAuth==3.3.0',
-        'pygit2==1.5.0'
-    ],
-    entry_points='''
-        [console_scripts]
-        fsbrowser=fsbrowser.app:main
-    '''
-)
+    def __init__(self, id, name, path):
+        self.id = id
+        self.name = name
+        self.path = path
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "path": self.path
+        }

@@ -17,60 +17,26 @@ import traceback
 import tarfile
 import subprocess
 
-from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
 from fsbrowser.src.logger import BrowserLogger
 from fsbrowser.src.pattern_utils import PatternMatcher
+from fsbrowser.src.model.task import TaskStatus, Task
 
 TAR_GZ_EXTENSION = '.tar.gz'
 DELIMITER = '/'
 TAR_GZ_PERMISSIONS = 0o774  # -rwxrwxr--
 
 
-class TaskStatus(object):
-    PENDING = 'pending'
-    SUCCESS = 'success'
-    RUNNING = 'running'
-    FAILURE = 'failure'
-    CANCELED = 'canceled'
-
-    @staticmethod
-    def is_terminal(status):
-        return status == TaskStatus.SUCCESS or status == TaskStatus.FAILURE or status == TaskStatus.CANCELED
-
-
-class TransferTask(object):
+class TransferTask(Task):
 
     def __init__(self, task_id, storage_name, storage_path='', logger=BrowserLogger()):
-        self.task_id = task_id
+        super().__init__(task_id)
         self.storage_name = storage_name
-        self.status = TaskStatus.PENDING
         self.process = None
-        self.message = None
-        self.result = None
         self.upload_path = None
         self.logger = logger
         self.storage_path = storage_path
         self.tmp_tar_ball = None
-
-    def success(self, result=None):
-        self.status = TaskStatus.SUCCESS
-        if result:
-            self.result = result
-
-    def failure(self, e):
-        self.status = TaskStatus.FAILURE
-        self.message = e.__str__()
-
-    def running(self):
-        self.status = TaskStatus.RUNNING
-
-    def to_json(self):
-        result = {'status': self.status}
-        if self.message:
-            result.update({'message': self.message})
-        if self.result:
-            result.update({'result': self.result})
-        return result
 
     def cancel(self, working_directory):
         self.status = TaskStatus.CANCELED
