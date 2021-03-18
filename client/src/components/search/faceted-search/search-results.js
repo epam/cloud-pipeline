@@ -24,10 +24,11 @@ import {
 } from 'antd';
 import {PreviewIcons} from '../preview/previewIcons';
 import {SearchItemTypes} from '../../../models/search';
+import TopSuggestions from './top-suggestions';
 import Preview from '../preview';
 import styles from './search-results.css';
 
-const RESULT_ITEM_HEIGHT = 55;
+const RESULT_ITEM_HEIGHT = 45;
 const RESULT_ITEM_MARGIN = 5;
 const PREVIEW_TIMEOUT = 1000;
 
@@ -212,7 +213,8 @@ class SearchResults extends React.Component {
       showResults,
       total,
       page,
-      pageSize
+      pageSize,
+      onChangeDocumentType
     } = this.props;
     const {preview} = this.state;
     return (
@@ -227,9 +229,23 @@ class SearchResults extends React.Component {
           className={styles.content}
         >
           <div
-            className={styles.results}
+            className={
+              classNames(
+                styles.results,
+                {
+                  [styles.hint]: !showResults
+                }
+              )
+            }
             ref={this.initializeResultsArea}
           >
+            {
+              !showResults && (
+                <TopSuggestions
+                  onChangeDocumentType={onChangeDocumentType}
+                />
+              )
+            }
             {
               showResults && total === 0 && (
                 <Alert type="info" message="Nothing found" />
@@ -240,7 +256,7 @@ class SearchResults extends React.Component {
             }
           </div>
           {
-            preview && (
+            preview && showResults && (
               <div
                 className={styles.preview}
                 onMouseOver={() => this.doNotHidePreview(preview)}
@@ -283,7 +299,8 @@ SearchResults.propTypes = {
   pageSize: PropTypes.number,
   showResults: PropTypes.bool,
   style: PropTypes.object,
-  total: PropTypes.number
+  total: PropTypes.number,
+  onChangeDocumentType: PropTypes.func
 };
 
 SearchResults.defaultProps = {

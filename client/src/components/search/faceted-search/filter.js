@@ -174,3 +174,4 @@ FacetedFilter.propTypes = {
 };
 
 export default FacetedFilter;
+export {DocumentTypeFilter, DocumentTypeFilterName} from './controls';

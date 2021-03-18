@@ -34,3 +34,65 @@
 .expand-btn:hover {
   background: #e6f7ff;
 }
+
+.document-type-filter {
+  margin: 0 6px;
+  line-height: 24px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.document-type-filter .filter {
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 3px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-width: 135px;
+  margin-right: 5px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.document-type-filter .filter:hover {
+  background-color: #eef8ff;
+  border-color: #a2d8ff;
+}
+
+.document-type-filter .filter.selected {
+  background-color: rgb(49, 127, 208);
+  border-color: rgb(49, 127, 208);
+  color: white;
+}
+
+.document-type-filter .filter.selected:hover {
+  background-color: rgb(76, 149, 226);
+  border-color: rgb(49, 127, 208);
+}
+
+.document-type-filter .filter.disabled,
+.document-type-filter .filter:hover.disabled {
+  background-color: transparent;
+  color: #999;
+  border-color: transparent;
+  cursor: default;
+}
+
+.document-type-filter .filter .count {
+  margin-left: 5px;
+}
+
+.document-type-filter .filter .icon {
+  font-size: large;
+  margin-right: 5px;
+}
+
+.hint code {
+  color: #c7254e;
+  background-color: #f9f2f4;
+}

@@ -32,6 +32,10 @@
   overflow: auto;
 }
 
+.container .content .results.hint {
+  display: flex;
+}
+
 .container .content .preview {
   min-width: 30vw;
   flex: 1;

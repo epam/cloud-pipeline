@@ -24,7 +24,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
-import FacetedFilter from './faceted-search/filter';
+import FacetedFilter, {DocumentTypeFilter, DocumentTypeFilterName} from './faceted-search/filter';
 import SearchResults from './faceted-search/search-results';
 import {
   doSearch,
@@ -73,6 +73,38 @@ class FacetedSearch extends React.Component {
       this.doSearch();
     }
   }
+
+  get documentTypeFilter () {
+    const {
+      facetsLoaded,
+      facetsCount,
+      initialFacetsCount = {}
+    } = this.state;
+    if (!facetsLoaded || !facetsCount) {
+      return {name: DocumentTypeFilterName, values: []};
+    }
+    const filter = facetsCount[DocumentTypeFilterName];
+    if (!filter) {
+      return {name: DocumentTypeFilterName, values: []};
+    }
+    return {
+      name: DocumentTypeFilterName,
+      values: Object.keys(filter)
+        .map(key => ({
+          name: key,
+          count: filter[key] || 0
+        }))
+        .sort((a, b) => b.count - a.count)
+        .filter(v => FacetedSearch.HIDE_VALUE_IF_EMPTY
+          ? v.count > 0
+          : (
+            initialFacetsCount.hasOwnProperty(DocumentTypeFilterName) &&
+            initialFacetsCount[DocumentTypeFilterName].hasOwnProperty(v.name) &&
+            Number(initialFacetsCount[DocumentTypeFilterName][v.name]) > 0
+          )
+        )
+    };
+  };
 
   get filters () {
     const {
@@ -243,6 +275,10 @@ class FacetedSearch extends React.Component {
             name: d.key,
             values: (d.values || []).map(v => v.value)
           }));
+          facets.push({
+            name: DocumentTypeFilterName,
+            values: []
+          });
           fetchFacets(facets.map(f => f.name), {}, '*')
             .then((facetsCount) => {
               this.setState({
@@ -340,6 +376,11 @@ class FacetedSearch extends React.Component {
             Search
           </Button>
         </div>
+        <DocumentTypeFilter
+          values={this.documentTypeFilter.values}
+          selection={(activeFilters || {})[DocumentTypeFilterName]}
+          onChange={this.onChangeFilter(DocumentTypeFilterName)}
+        />
         <div className={styles.content}>
           <SplitPanel
             contentInfo={[{
@@ -384,6 +425,7 @@ class FacetedSearch extends React.Component {
               onNavigate={this.onNavigate}
               showResults={showResults}
               total={totalHits}
+              onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
             />
           </SplitPanel>
         </div>

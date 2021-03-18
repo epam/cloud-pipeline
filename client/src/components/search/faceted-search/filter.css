@@ -20,7 +20,6 @@
   background-color: #fafafa;
   border: 1px solid #ddd;
   border-radius: 5px;
-  font-size: larger;
   display: flex;
   flex-direction: column;
 }
@@ -70,7 +69,6 @@
 }
 
 .filter .option {
-  margin-bottom: 5px;
   user-select: none;
   height: 21px;
   visibility: visible;
