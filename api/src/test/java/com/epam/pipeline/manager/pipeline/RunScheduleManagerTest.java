@@ -257,7 +257,6 @@ public class RunScheduleManagerTest {
         runScheduleManager.deleteSchedulesForRunByPipeline(testPipeline.getId());
 
         verify(mockRunScheduler, times(2)).unscheduleRunSchedule(any());
-        verify(mockRunScheduleDao).deleteRunSchedulesForRunByPipeline(anyLong());
     }
 
     @Test(expected = IllegalArgumentException.class)
