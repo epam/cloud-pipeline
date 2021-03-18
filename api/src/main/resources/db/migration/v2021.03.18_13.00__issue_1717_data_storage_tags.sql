@@ -38,32 +38,6 @@ begin
 end;
 $$;
 
-CREATE OR REPLACE FUNCTION create_datastorage_root_from_datastorage_function()
-RETURNS TRIGGER AS
-$BODY$
-BEGIN
-    IF new.datastorage_type in ('S3', 'AZ', 'GS') THEN
-        INSERT INTO pipeline.datastorage_root(datastorage_root_path)
-        VALUES (regexp_replace(new.path, '/.*$', ''))
-        ON CONFLICT (datastorage_root_path)
-        DO NOTHING;
-        RETURN new;
-    ELSEIF new.datastorage_type = 'NFS' THEN
-        INSERT INTO pipeline.datastorage_root(datastorage_root_path)
-        VALUES (get_nfs_datastorage_root(path))
-        ON CONFLICT (datastorage_root_path)
-        DO NOTHING;
-        RETURN new;
-    END IF;
-END;
-$BODY$
-language plpgsql;
-
-CREATE TRIGGER create_datastorage_root_trigger
-     AFTER INSERT ON pipeline.datastorage
-     FOR EACH ROW
-     EXECUTE PROCEDURE create_datastorage_root_from_datastorage_function();
-
 INSERT INTO pipeline.datastorage_root(datastorage_root_path)
 SELECT DISTINCT regexp_replace(path, '/.*$', '')
 FROM pipeline.datastorage
@@ -73,6 +47,32 @@ INSERT INTO pipeline.datastorage_root(datastorage_root_path)
 SELECT DISTINCT get_nfs_datastorage_root(path)
 FROM pipeline.datastorage
 WHERE datastorage_type = 'NFS';
+
+ALTER TABLE pipeline.datastorage
+ADD COLUMN IF NOT EXISTS datastorage_root_id BIGINT;
+
+ALTER TABLE pipeline.datastorage
+ADD CONSTRAINT datastorage_datastorage_root_id_fk
+FOREIGN KEY (datastorage_root_id)
+REFERENCES datastorage_root (datastorage_root_id);
+
+UPDATE pipeline.datastorage
+SET datastorage_root_id = (
+   SELECT datastorage_root_id
+   FROM pipeline.datastorage_root
+   WHERE pipeline.datastorage_root.datastorage_root_path = regexp_replace(pipeline.datastorage.path, '/.*$', '')
+)
+WHERE datastorage_type in ('S3', 'AZ', 'GS');
+
+UPDATE pipeline.datastorage
+SET datastorage_root_id = (
+   SELECT datastorage_root_id
+   FROM pipeline.datastorage_root
+   WHERE pipeline.datastorage_root.datastorage_root_path = get_nfs_datastorage_root(path)
+)
+WHERE datastorage_type = 'NFS';
+
+ALTER TABLE pipeline.datastorage ALTER COLUMN datastorage_root_id SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS pipeline.datastorage_tag (
     datastorage_root_id      BIGINT                   NOT NULL,

@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.datastorage;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
+import com.epam.pipeline.entity.datastorage.DataStorageRoot;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
@@ -43,6 +44,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -71,6 +73,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadDataStorageByPrefixesQuery;
     private String loadDataStoragesByIdsQuery;
     private String loadDataStoragesFileShareId;
+    private String loadDataStorageRootQuery;
+    private String createDataStorageRootQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -85,6 +89,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createDataStorage(AbstractDataStorage dataStorage) {
+        createDataStorageRoot(dataStorage.getRoot());
+        final DataStorageRoot dataStorageRoot = loadDataStorageRoot(dataStorage.getRoot())
+                .orElseThrow(() -> new RuntimeException("Data storage root not found"));
+        dataStorage.setRootId(dataStorageRoot.getId());
         dataStorage.setId(createDataStorageId());
         if (dataStorage.getCreatedDate() == null) {
             dataStorage.setCreatedDate(DateUtils.now());
@@ -275,6 +283,14 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStoragesFileShareId = loadDataStoragesFileShareId;
     }
 
+    public void setLoadDataStorageRootQuery(final String loadDataStorageRootQuery) {
+        this.loadDataStorageRootQuery = loadDataStorageRootQuery;
+    }
+
+    public void setCreateDataStorageRootQuery(final String createDataStorageRootQuery) {
+        this.createDataStorageRootQuery = createDataStorageRootQuery;
+    }
+
     public enum DataStorageParameters {
         DATASTORAGE_ID,
         DATASTORAGE_NAME,
@@ -309,7 +325,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
         SENSITIVE,
 
-        DATASTORAGE_IDS;
+        DATASTORAGE_IDS,
+        
+        // root
+        DATASTORAGE_ROOT_ID,
+        DATASTORAGE_ROOT_PATH;
 
 
         static MapSqlParameterSource getParameters(AbstractDataStorage dataStorage) {
@@ -320,6 +340,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(DESCRIPTION.name(), dataStorage.getDescription());
             params.addValue(DATASTORAGE_TYPE.name(), dataStorage.getType().name());
             params.addValue(PATH.name(), dataStorage.getPath());
+            params.addValue(DATASTORAGE_ROOT_ID.name(), dataStorage.getRootId());
             params.addValue(FOLDER_ID.name(), dataStorage.getParentFolderId());
             params.addValue(CREATED_DATE.name(), dataStorage.getCreatedDate());
             params.addValue(OWNER.name(), dataStorage.getOwner());
@@ -433,11 +454,20 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             StoragePolicy policy = getStoragePolicy(rs);
             dataStorage.setStoragePolicy(policy);
             dataStorage.setSensitive(rs.getBoolean(SENSITIVE.name()));
+            dataStorage.setRootId(rs.getLong(DATASTORAGE_ROOT_ID.name()));
             return dataStorage;
         }
 
         static RowMapper<AbstractDataStorage> getRowMapper() {
             return (rs, rowNum) -> parseDataStorage(rs);
+        }
+
+        static RowMapper<DataStorageRoot> getRootRowMapper() {
+            return (rs, rowNum) -> {
+                final Long id = rs.getLong(DATASTORAGE_ROOT_ID.name());
+                final String path = rs.getString(DATASTORAGE_ROOT_PATH.name());
+                return new DataStorageRoot(id, path);
+            };
         }
 
         public static StoragePolicy getStoragePolicy(ResultSet rs) throws SQLException {
@@ -462,5 +492,19 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             return policy;
         }
 
+    }
+
+    private void createDataStorageRoot(final String rootPath) {
+        getNamedParameterJdbcTemplate().update(createDataStorageRootQuery, new MapSqlParameterSource()
+                .addValue(DataStorageParameters.DATASTORAGE_ROOT_PATH.name(), rootPath));
+    }
+
+    private Optional<DataStorageRoot> loadDataStorageRoot(final String rootPath) {
+        return getNamedParameterJdbcTemplate()
+                .query(loadDataStorageRootQuery, new MapSqlParameterSource()
+                                .addValue(DataStorageParameters.DATASTORAGE_ROOT_PATH.name(), rootPath),
+                        DataStorageParameters.getRootRowMapper())
+                .stream()
+                .findFirst();
     }
 }

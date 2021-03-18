@@ -38,15 +38,15 @@ public class DataStorageTagBatchManager {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
         }
-        final Optional<String> rootPath = getRootPath(storageId);
-        if (!rootPath.isPresent()) {
+        final Optional<Long> root = getRoot(storageId);
+        if (!root.isPresent()) {
             return Collections.emptyList();
         }
         final List<DataStorageTag> tags = request.getRequests().stream()
                 .map(this::tagFrom)
                 .collect(Collectors.toList());
-        tagDao.batchDelete(rootPath.get(), tags.stream().map(DataStorageTag::getObject));
-        return tagDao.batchUpsert(rootPath.get(), tags);
+        tagDao.batchDelete(root.get(), tags.stream().map(DataStorageTag::getObject));
+        return tagDao.batchUpsert(root.get(), tags);
     }
 
     private DataStorageTag tagFrom(final DataStorageTagInsertRequest request) {
@@ -59,8 +59,8 @@ public class DataStorageTagBatchManager {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
         }
-        final Optional<String> rootPath = getRootPath(storageId);
-        if (!rootPath.isPresent()) {
+        final Optional<Long> root = getRoot(storageId);
+        if (!root.isPresent()) {
             return Collections.emptyList();
         }
         final Map<DataStorageTagCopyRequest.DataStorageTagCopyRequestObject, List<DataStorageTag>> sourceTagsMap =
@@ -68,7 +68,7 @@ public class DataStorageTagBatchManager {
                         .map(DataStorageTagCopyRequest::getSource)
                         .distinct()
                         .collect(Collectors.toMap(Function.identity(),
-                            it -> tagDao.load(rootPath.get(), new DataStorageObject(it.getPath(), it.getVersion()))));
+                            it -> tagDao.load(root.get(), new DataStorageObject(it.getPath(), it.getVersion()))));
         final List<DataStorageTag> tags = request.getRequests().stream()
                 .flatMap(r -> Optional.ofNullable(sourceTagsMap.get(r.getSource()))
                         .map(sourceTags -> sourceTags.stream()
@@ -76,8 +76,8 @@ public class DataStorageTagBatchManager {
                                         r.getDestination().getVersion()))))
                         .orElseGet(Stream::empty))
                 .collect(Collectors.toList());
-        tagDao.batchDelete(rootPath.get(), tags.stream().map(DataStorageTag::getObject).distinct());
-        return tagDao.batchUpsert(rootPath.get(), tags);
+        tagDao.batchDelete(root.get(), tags.stream().map(DataStorageTag::getObject).distinct());
+        return tagDao.batchUpsert(root.get(), tags);
     }
 
     @Transactional
@@ -85,11 +85,11 @@ public class DataStorageTagBatchManager {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return Collections.emptyList();
         }
-        final Optional<String> rootPath = getRootPath(storageId);
-        if (!rootPath.isPresent()) {
+        final Optional<Long> root = getRoot(storageId);
+        if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        return tagDao.batchLoad(rootPath.get(), request.getRequests().stream()
+        return tagDao.batchLoad(root.get(), request.getRequests().stream()
                 .map(DataStorageTagLoadRequest::getPath)
                 .collect(Collectors.toList()));
     }
@@ -99,11 +99,11 @@ public class DataStorageTagBatchManager {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return;
         }
-        final Optional<String> rootPath = getRootPath(storageId);
-        if (!rootPath.isPresent()) {
+        final Optional<Long> root = getRoot(storageId);
+        if (!root.isPresent()) {
             return;
         }
-        tagDao.batchDelete(rootPath.get(), request.getRequests().stream()
+        tagDao.batchDelete(root.get(), request.getRequests().stream()
             .map(r -> new DataStorageObject(r.getPath(), r.getVersion())));
     }
 
@@ -112,7 +112,7 @@ public class DataStorageTagBatchManager {
         if (CollectionUtils.isEmpty(request.getRequests())) {
             return;
         }
-        final Optional<String> rootPath = getRootPath(storageId);
+        final Optional<Long> rootPath = getRoot(storageId);
         if (!rootPath.isPresent()) {
             return;
         }
@@ -122,8 +122,8 @@ public class DataStorageTagBatchManager {
                 .collect(Collectors.toList()));
     }
 
-    private Optional<String> getRootPath(final Long storageId) {
+    private Optional<Long> getRoot(final Long storageId) {
         return Optional.ofNullable(storageDao.loadDataStorage(storageId))
-                .map(AbstractDataStorage::getRoot);
+                .map(AbstractDataStorage::getRootId);
     }
 }
