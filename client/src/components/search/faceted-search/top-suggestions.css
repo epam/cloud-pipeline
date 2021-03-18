@@ -16,18 +16,12 @@
 
 .card-link-wrapper {
   margin: 0 5px 5px 0;
-  transition: border 0.2s ease;
   border: 1px solid transparent;
   border-radius: 5px;
 }
 
 .card-link-wrapper:hover {
   border: 1px solid #a2d8ff;
-}
-
-.card-link-wrapper:hover .suggestion.tool .background,
-.card-link-wrapper:hover .suggestion.pipeline .background {
-  transform: scale(0.8);
 }
 
 .title {
@@ -44,10 +38,11 @@
   display: flex;
   align-items: stretch;
   flex-wrap: wrap;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
 }
 
 .suggestions {
+  padding-bottom: 5px;
   border-bottom: 1px solid #ddd;
 }
 
@@ -59,9 +54,10 @@
   flex: 1;
   min-width: 250px;
   min-height: 50px;
-  height: 100%;
+  border: 1px solid #ddd;
   border-radius: 5px;
   background-color: #fafafa;
+  margin: 0 5px 5px 0;
   padding: 5px 10px;
   position: relative;
   overflow: hidden;
@@ -97,16 +93,15 @@
   left: -25%;
   width: 100%;
   opacity: 0.05;
-  transition: all 0.6s ease;
 }
 
-.suggestion.pipeline .background {
+.suggestion.pipeline .background,
+.suggestion.run .background {
   position: absolute;
   top: -50%;
   left: -12%;
   width: 50%;
-  opacity: 0.15;
-  transition: all 0.6s ease;
+  opacity: 0.1;
 }
 
 .suggestion.tool .header .tool-icon {
@@ -156,6 +151,23 @@
   font-size: larger;
 }
 
+.suggestion.pipeline .header > * {
+  margin-right: 5px;
+}
+
+.suggestion.tool .header .icon {
+  font-size: x-large;
+  margin-right: 5px;
+}
+
+.suggestion.pipeline .header .icon {
+  font-size: large;
+}
+
+.suggestion.pipeline .header > *:last-child {
+  margin-right: 0;
+}
+
 .suggestion.pipeline .header .postfix {
   color: #666;
 }
@@ -180,4 +192,75 @@
   border-radius: 5px;
   padding: 5px;
   margin: 5px;
+}
+
+.suggestion.run {
+  width: auto;
+  min-width: 250px;
+  max-width: 300px;
+}
+
+.suggestion.run .header {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #333;
+  font-size: larger;
+}
+
+.suggestion.run .header .status-icon {
+  margin-right: 5px;
+}
+
+.suggestion.run .description {
+  color: #666;
+}
+
+.suggestion.run .attributes {
+  color: #666;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.suggestion.run .attributes > * {
+  margin-right: 5px;
+}
+
+.suggestion.run .attributes .docker-image-icon {
+  height: 20px;
+}
+
+.suggestion.storage {
+  width: auto;
+  min-width: 250px;
+  max-width: 300px;
+}
+
+.suggestion.storage .header {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #333;
+  font-size: larger;
+}
+
+.suggestion.storage .header .sensitive {
+  color: #ff5c33;
+}
+
+.suggestion.storage .description {
+  color: #666;
+}
+
+.storage-type {
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+.storage-type.nfs {
+  border-color: #116118;
+  color: #116118;
 }

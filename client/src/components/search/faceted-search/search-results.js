@@ -214,7 +214,8 @@ class SearchResults extends React.Component {
       total,
       page,
       pageSize,
-      onChangeDocumentType
+      onChangeDocumentType,
+      onNavigate
     } = this.props;
     const {preview} = this.state;
     return (
@@ -243,6 +244,7 @@ class SearchResults extends React.Component {
               !showResults && (
                 <TopSuggestions
                   onChangeDocumentType={onChangeDocumentType}
+                  onNavigate={onNavigate}
                 />
               )
             }
@@ -270,11 +272,11 @@ class SearchResults extends React.Component {
             )
           }
         </div>
-        <div
-          className={styles.pagination}
-        >
-          {
-            showResults && (
+        {
+          showResults && (
+            <div
+              className={styles.pagination}
+            >
               <Pagination
                 disabled={disabled}
                 current={page}
@@ -282,9 +284,9 @@ class SearchResults extends React.Component {
                 pageSize={pageSize}
                 onChange={this.onChangePagination}
               />
-            )
-          }
-        </div>
+            </div>
+          )
+        }
       </div>
     );
   }

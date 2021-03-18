@@ -20,10 +20,14 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import {Icon} from 'antd';
+import moment from 'moment-timezone';
 import PipelineRunFilter from '../../../models/pipelines/PipelineRunFilter';
 import {SearchHint} from './controls';
 import roleModel from '../../../utils/roleModel';
 import LoadingView from '../../special/LoadingView';
+import StatusIcon from '../../special/run-status-icon';
+import {getSpotTypeName} from '../../special/spot-instance-names';
+import AWSRegionTag from '../../special/AWSRegionTag';
 import ToolImage from '../../../models/tools/ToolImage';
 import displayDate from '../../../utils/displayDate';
 import localization from '../../../utils/localization';
@@ -32,14 +36,15 @@ import styles from './top-suggestions.css';
 
 const TOP_SUGGESTION_SECTION_LENGTH = 5;
 
-@inject('pipelines', 'dockerRegistries')
+@inject('dataStorages', 'pipelines', 'dockerRegistries')
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @observer
 class TopSuggestions extends localization.LocalizedReactComponent {
   state = {
     runs: [],
-    runsLoaded: false
+    runsLoaded: false,
+    runsLoading: false
   };
 
   componentDidMount () {
@@ -90,6 +95,15 @@ class TopSuggestions extends localization.LocalizedReactComponent {
     return [];
   }
 
+  @computed
+  get dataStorages () {
+    const {dataStorages} = this.props;
+    if (dataStorages.loaded) {
+      return (dataStorages.value || []).map(p => p);
+    }
+    return [];
+  }
+
   get topTools () {
     const {runs} = this.state;
     const extractDockerImage = r => {
@@ -105,7 +119,8 @@ class TopSuggestions extends localization.LocalizedReactComponent {
       .map(tool => ({
         ...tool,
         hits: runs.filter(run => tool.imageRegExp.test(run.dockerImage)).length,
-        lastRun: runs.filter(run => tool.imageRegExp.test(run.dockerImage))[0]
+        lastRun: runs.filter(run => tool.imageRegExp.test(run.dockerImage))[0],
+        url: `/tool/${tool.id}`
       }))
       .slice(0, TOP_SUGGESTION_SECTION_LENGTH)
       .sort((a, b) => b.hits - a.hits);
@@ -123,7 +138,8 @@ class TopSuggestions extends localization.LocalizedReactComponent {
         tool: Array.from(new Set(runs.filter(run => pipeline.id === run.pipelineId)))
           .map(run => this.tools.find(tool => tool.imageRegExp.test(run.dockerImage)))
           .filter(Boolean)[0],
-        lastRun: runs.filter(run => pipeline.id === run.pipelineId)[0]
+        lastRun: runs.filter(run => pipeline.id === run.pipelineId)[0],
+        url: `/${pipeline.id}`
       }))
       .slice(0, TOP_SUGGESTION_SECTION_LENGTH)
       .sort((a, b) => b.hits - a.hits);
@@ -131,45 +147,101 @@ class TopSuggestions extends localization.LocalizedReactComponent {
 
   get topRuns () {
     const {runs} = this.state;
-    return runs.slice(0, TOP_SUGGESTION_SECTION_LENGTH);
+    return runs
+      .slice(0, TOP_SUGGESTION_SECTION_LENGTH)
+      .map(run => ({
+        ...run,
+        tool: this.tools.find(tool => tool.imageRegExp.test(run.dockerImage)),
+        url: `/run/${run.id}`
+      }));
+  }
+
+  get topStorages () {
+    const {runs} = this.state;
+    const ids = new Set(
+      runs
+        .map(r => r.pipelineRunParameters)
+        .filter(Boolean)
+        .reduce((r, c) => ([...r, ...c]), [])
+        .filter(p => p.dataStorageLinks)
+        .map(p => p.dataStorageLinks)
+        .reduce((r, c) => ([...r, ...c]), [])
+        .map(s => s.dataStorageId)
+    );
+    return this.dataStorages
+      .filter(s => ids.has(s.id))
+      .map(storage => ({
+        ...storage,
+        url: `/storage/${storage.id}`
+      }));
   }
 
   loadRuns = () => {
-    const {runsLoaded} = this.state;
+    const {runsLoaded, runsLoading} = this.state;
     const {authenticatedUserInfo} = this.props;
-    if (!runsLoaded && authenticatedUserInfo.loaded) {
-      const request = new PipelineRunFilter({}, true);
-      request.filter({
-        page: 1,
-        pageSize: 100,
-        userModified: false,
-        owners: [this.props.authenticatedUserInfo.value.userName]
-      })
-        .then(() => {
-          if (request.loaded) {
-            this.setState({
-              runs: (request.value || []),
-              runsLoaded: true
+    if (!runsLoaded && !runsLoading && authenticatedUserInfo.loaded) {
+      this.setState({
+        runsLoading: true
+      }, () => {
+        const loadRuns = (statuses, pageSize = 100) => new Promise((resolve) => {
+          const request = new PipelineRunFilter({}, true);
+          request.filter({
+            page: 1,
+            pageSize,
+            userModified: false,
+            owners: [this.props.authenticatedUserInfo.value.userName],
+            statuses
+          })
+            .catch(() => {})
+            .then(() => {
+              if (request.loaded) {
+                resolve((request.value || []).sort((a, b) => {
+                  const aD = moment.utc(a.endDate || undefined);
+                  const bD = moment.utc(b.endDate || undefined);
+                  return bD - aD;
+                }));
+              } else {
+                resolve([]);
+              }
             });
-          }
-        })
-        .catch(() => {
-          this.setState({
-            runsLoaded: true
-          });
         });
+        Promise.all([
+          loadRuns([
+            'PAUSED',
+            'PAUSING',
+            'RESUMING',
+            'RUNNING'
+          ]),
+          loadRuns([
+            'FAILURE',
+            'STOPPED',
+            'SUCCESS'
+          ])
+        ])
+          .then(result => {
+            this.setState({
+              runs: result.reduce((r, c) => ([...r, ...c]), []),
+              runsLoaded: true,
+              runsLoading: false
+            });
+          });
+      });
     }
   };
 
-  onNavigate = (event) => {
+  onNavigate = (object) => (event) => {
     event && event.preventDefault();
     event && event.stopPropagation();
+    const {onNavigate} = this.props;
+    if (onNavigate) {
+      onNavigate(object);
+    }
   }
 
   renderLastRun = (obj) => {
     const {lastRun} = obj || {};
     if (lastRun) {
-      const date = lastRun.endDate || lastRun.createdDate;
+      const date = lastRun.endDate || lastRun.startDate;
       return `Last ran at ${displayDate(date, 'd MMMM YYYY, HH:mm')}`;
     }
     return undefined;
@@ -177,29 +249,34 @@ class TopSuggestions extends localization.LocalizedReactComponent {
 
   renderToolCard = (tool) => (
     <a
-      onClick={this.onNavigate}
+      key={tool.key}
+      onClick={this.onNavigate(tool)}
       className={styles.cardLinkWrapper}
+      href={`/#${tool.url}`}
     >
       <div
-        key={tool.key}
         className={classNames(styles.suggestion, styles.tool)}
       >
         {
           tool.iconId && (
-            <div className={styles.backgroundWrapper}>
-              <img
-                className={styles.background}
-                src={ToolImage.url(tool.id, tool.iconId)} />
-            </div>
+            <img
+              className={styles.background}
+              src={ToolImage.url(tool.id, tool.iconId)}
+            />
           )
         }
         <div className={styles.header}>
           {
-            tool.iconId && (
-              <img
-                className={styles.toolIcon}
-                src={ToolImage.url(tool.id, tool.iconId)} />
-            )
+            tool.iconId
+              ? (
+                <img
+                  className={styles.toolIcon}
+                  src={ToolImage.url(tool.id, tool.iconId)}
+                />
+              )
+              : (
+                <Icon type="tool" className={styles.icon} />
+              )
           }
           <div
             className={classNames(styles.toolName, styles.notTransparentBackground)}
@@ -209,7 +286,9 @@ class TopSuggestions extends localization.LocalizedReactComponent {
             </div>
             <div className={styles.registry}>
               {tool.registryObj.description || tool.registryObj.path}
-              <Icon type="caret-right" />
+              <Icon
+                type="caret-right"
+              />
               {tool.groupObj.name}
             </div>
           </div>
@@ -230,11 +309,12 @@ class TopSuggestions extends localization.LocalizedReactComponent {
 
   renderPipelineCard = (pipeline) => (
     <a
-      onClick={this.onNavigate}
+      key={`pipeline-${pipeline.id}`}
+      onClick={this.onNavigate(pipeline)}
       className={styles.cardLinkWrapper}
+      href={`/#${pipeline.url}`}
     >
       <div
-        key={`pipeline-${pipeline.id}`}
         className={
           classNames(
             styles.suggestion,
@@ -244,17 +324,18 @@ class TopSuggestions extends localization.LocalizedReactComponent {
       >
         {
           pipeline.tool && pipeline.tool.iconId && (
-            <div className={styles.backgroundWrapper}>
-              <img
-                className={styles.background}
-                src={ToolImage.url(pipeline.tool.id, pipeline.tool.iconId)} />
-            </div>
+            <img
+              className={styles.background}
+              src={ToolImage.url(pipeline.tool.id, pipeline.tool.iconId)}
+            />
           )
         }
         <div
           className={classNames(styles.header, styles.notTransparentBackground)}
         >
-          {pipeline.name} <span className={styles.postfix}>{this.localizedString('pipeline')}</span>
+          <Icon type="fork" className={styles.icon} />
+          <span>{pipeline.name}</span>
+          <span className={styles.postfix}>{this.localizedString('pipeline')}</span>
         </div>
         {
           pipeline.description && (
@@ -272,7 +353,145 @@ class TopSuggestions extends localization.LocalizedReactComponent {
     </a>
   );
 
-  renderSuggestionsDescription = (count, object, group) => {
+  renderRunCard = (run) => (
+    <a
+      key={`pipeline-${run.id}`}
+      onClick={this.onNavigate(run)}
+      className={styles.cardLinkWrapper}
+      href={`/#${run.url}`}
+    >
+      <div
+        className={
+          classNames(
+            styles.suggestion,
+            styles.run
+          )
+        }
+      >
+        {
+          run.tool && run.tool.iconId && (
+            <img
+              className={styles.background}
+              src={ToolImage.url(run.tool.id, run.tool.iconId)}
+            />
+          )
+        }
+        <div
+          className={classNames(styles.header, styles.notTransparentBackground)}
+        >
+          <StatusIcon
+            className={styles.statusIcon}
+            run={run}
+          />
+          {
+            run.nodeCount > 0 && (
+              <Icon type="database" />
+            )
+          }
+          {
+            run.serviceUrl && (
+              <Icon type="export" />
+            )
+          }
+          {run.podId}
+        </div>
+        <div
+          className={classNames(styles.description, styles.notTransparentBackground)}
+        >
+          <div>
+            Started: {displayDate(run.startDate, 'd MMMM YYYY, HH:mm')}
+          </div>
+          {
+            run.endDate && (
+              <div>
+                Finished: {displayDate(run.endDate, 'd MMMM YYYY, HH:mm')}
+              </div>
+            )
+          }
+        </div>
+        <div
+          className={styles.attributes}
+        >
+          {
+            run.tool && run.tool.iconId && (
+              <img
+                className={styles.dockerImageIcon}
+                src={ToolImage.url(run.tool.id, run.tool.iconId)}
+              />
+            )
+          }
+          <span>{(run.dockerImage || '').split('/').slice(-1)[0]}</span>
+          {
+            run.instance && (
+              <AWSRegionTag
+                provider={run.instance.cloudProvider}
+                style={{fontSize: 'larger'}}
+              />
+            )
+          }
+          {
+            run.instance && (
+              <span>
+                {getSpotTypeName(run.instance.spot, run.instance.cloudProvider)}
+              </span>
+            )
+          }
+          {
+            run.instance && (
+              <span>
+                {run.instance.nodeType}
+              </span>
+            )
+          }
+        </div>
+      </div>
+    </a>
+  );
+
+  renderStorageCard = (storage) => (
+    <a
+      key={`storage-${storage.id}`}
+      onClick={this.onNavigate(storage)}
+      className={styles.cardLinkWrapper}
+      href={`/#${storage.url}`}
+    >
+      <div
+        className={
+          classNames(
+            styles.suggestion,
+            styles.storage
+          )
+        }
+      >
+        <div
+          className={classNames(styles.header, styles.notTransparentBackground)}
+        >
+          {
+            /^nfs$/i.test(storage.type) && (
+              <span
+                className={classNames(styles.storageType, styles.nfs)}
+              >
+                NFS
+              </span>
+            )
+          }
+          <AWSRegionTag regionId={storage.regionId} />
+          <span
+            className={classNames({[styles.sensitive]: storage.sensitive})}
+          >
+            {storage.name}
+          </span>
+        </div>
+        <div
+          className={classNames(styles.description, styles.notTransparentBackground)}
+        >
+          {storage.pathMask}
+        </div>
+      </div>
+    </a>
+  );
+
+  renderSuggestionsDescription = (count, object, searchObject, group, title) => {
     const {onChangeDocumentType} = this.props;
     if (
       count > 0 &&
@@ -296,10 +515,16 @@ class TopSuggestions extends localization.LocalizedReactComponent {
           }
         >
           <div>
-            Suggested <b>{object.toLowerCase()}{count > 1 ? 's' : ''}</b> for you.
+            {
+              title || (
+                <span>
+                  Suggested <b>{object.toLowerCase()}{count > 1 ? 's' : ''}</b> for you.
+                </span>
+              )
+            }
           </div>
           <div>
-            You can search {object.toLowerCase()}s by
+            You can search {searchObject || `${object.toLowerCase()}s`} by
             <a
               onClick={changeFilter}
               className={styles.link}
@@ -331,6 +556,7 @@ class TopSuggestions extends localization.LocalizedReactComponent {
                 this.renderSuggestionsDescription(
                   this.topTools.length,
                   'Tool',
+                  'Tool',
                   SearchGroupTypes.tool
                 )
               }
@@ -347,7 +573,48 @@ class TopSuggestions extends localization.LocalizedReactComponent {
                 this.renderSuggestionsDescription(
                   this.topPipelines.length,
                   this.localizedString('Pipeline'),
+                  this.localizedString('Pipeline'),
                   SearchGroupTypes.pipeline
+                )
+              }
+            </div>
+          )
+        }
+        {
+          this.topRuns.length > 0 && (
+            <div
+              className={styles.suggestions}
+            >
+              {this.topRuns.map(this.renderRunCard)}
+              {
+                this.renderSuggestionsDescription(
+                  this.topRuns.length,
+                  this.localizedString('Run'),
+                  this.localizedString('Run'),
+                  SearchGroupTypes.run,
+                  (
+                    <span>
+                      {/* eslint-disable-next-line */}
+                      Your last <b>{this.localizedString('run')}{this.topRuns.length > 1 ? 's' : ''}</b>.
+                    </span>
+                  )
+                )
+              }
+            </div>
+          )
+        }
+        {
+          this.topStorages.length > 0 && (
+            <div
+              className={styles.suggestions}
+            >
+              {this.topStorages.map(this.renderStorageCard)}
+              {
+                this.renderSuggestionsDescription(
+                  this.topStorages.length,
+                  this.localizedString('Storage'),
+                  `${this.localizedString('storage')}s and data`,
+                  SearchGroupTypes.storage
                 )
               }
             </div>
@@ -365,7 +632,6 @@ class TopSuggestions extends localization.LocalizedReactComponent {
         <LoadingView />
       );
     }
-    console.log(this.topTools, this.topPipelines, this.topRuns);
     const noSuggestions = this.topTools.length === 0 &&
       this.topPipelines.length === 0 &&
       this.topRuns.length === 0;
@@ -385,7 +651,8 @@ class TopSuggestions extends localization.LocalizedReactComponent {
 }
 
 TopSuggestions.propTypes = {
-  onChangeDocumentType: PropTypes.func
+  onChangeDocumentType: PropTypes.func,
+  onNavigate: PropTypes.func
 };
 
 export default TopSuggestions;
