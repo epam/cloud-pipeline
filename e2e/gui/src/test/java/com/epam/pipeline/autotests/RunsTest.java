@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.util.Arrays;
 
 import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
@@ -104,8 +106,8 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .completedRuns()
                 .validateColumnName("Run", "Parent run", "Pipeline", "Docker image",
                         "Started", "Completed", "Elapsed", "Owner")
-                .validateAllRunsHaveButton("RERUN")
                 .validateAllRunsHaveButton("Log")
+                .validateRunsHaveButton(Arrays.asList(pipelineRunID, secondToolRunID), "RERUN")
                 .validateAllRunsHaveCost()
                 .validateRowsCount(sizeGreaterThanOrEqual(3));
     }

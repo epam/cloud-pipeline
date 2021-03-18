@@ -22,6 +22,7 @@ import java.util.Map;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.utils.DateUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public final class PipelineRunMapper {
     private static final int SECONDS_IN_MINUTE = 60;
@@ -40,6 +41,10 @@ public final class PipelineRunMapper {
         JsonMapper mapper = new JsonMapper();
         Map<String, Object> params = mapper.convertValue(run, mapper.getTypeFactory()
             .constructParametricType(Map.class, String.class, Object.class));
+
+        if (StringUtils.isBlank(run.getPipelineName())) {
+            params.put("pipelineName", PipelineRun.DEFAULT_PIPELINE_NAME);
+        }
 
         if (threshold != null) {
             params.put("timeThreshold", threshold / SECONDS_IN_MINUTE);

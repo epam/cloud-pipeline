@@ -109,6 +109,26 @@ const collapseMask = (mask) => {
   return readAllowed | writeAllowed << 1 | executeAllowed << 2;
 };
 
+const buildMask = (read, write, execute, extendedMask = false) => {
+  const mask = (read ? 1 : 0) | ((write ? 1 : 0) << 1) | ((execute ? 1 : 0) << 2);
+  if (extendedMask) {
+    return extendedMask(mask);
+  }
+  return mask;
+};
+
+const buildPermissionsMask = (ra, rd, wa, wd, ea, ed) => {
+  const buildBit = (bit, shift) => bit ? (1 << shift) : 0;
+  return (
+    buildBit(ra, 0) |
+    buildBit(rd, 1) |
+    buildBit(wa, 2) |
+    buildBit(wd, 3) |
+    buildBit(ea, 4) |
+    buildBit(ed, 5)
+  );
+};
+
 const management = (roleName) => (WrappedComponent, key) => {
   const Component = inject('authenticatedUserInfo')(
     observer(
@@ -187,5 +207,7 @@ export default {
   hasRole,
   userHasRole,
   authenticationInfo,
-  refreshAuthenticationInfo
+  refreshAuthenticationInfo,
+  buildMask,
+  buildPermissionsMask
 };

@@ -21,6 +21,7 @@ import PermissionsForm from '../../roleModel/PermissionsForm';
 import roleModel from '../../../utils/roleModel';
 
 @Form.create()
+@roleModel.authenticationInfo
 export default class EditToolGroupForm extends React.Component {
 
   static propTypes = {
@@ -143,6 +144,12 @@ export default class EditToolGroupForm extends React.Component {
   };
 
   render () {
+    const disableWritePermission = this.props.toolGroup &&
+      this.props.toolGroup.privateGroup &&
+      roleModel.isOwner(this.props.toolGroup) &&
+      this.props.authenticatedUserInfo.loaded &&
+      this.props.authenticatedUserInfo.value &&
+      !this.props.authenticatedUserInfo.value.admin;
     const isNewToolGroup = this.props.toolGroup === undefined || this.props.toolGroup === null;
     const {resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
@@ -189,7 +196,28 @@ export default class EditToolGroupForm extends React.Component {
                 <Tabs.TabPane key="permissions" tab="Permissions">
                   <PermissionsForm
                     objectIdentifier={this.props.toolGroup.id}
-                    objectType="TOOL_GROUP" />
+                    objectType="TOOL_GROUP"
+                    defaultMask={
+                      roleModel.buildPermissionsMask(
+                        0,
+                        0,
+                        0,
+                        disableWritePermission,
+                        0,
+                        0
+                      )
+                    }
+                    enabledMask={
+                      roleModel.buildPermissionsMask(
+                        1,
+                        1,
+                        !disableWritePermission,
+                        !disableWritePermission,
+                        1,
+                        1
+                      )
+                    }
+                  />
                 </Tabs.TabPane>
               }
             </Tabs>

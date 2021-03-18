@@ -18,7 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Menu, Icon, message, Modal, Button, Dropdown, Row, Checkbox} from 'antd';
+import {Menu, Icon, message, Button, Dropdown} from 'antd';
 import roleModel from '../../utils/roleModel';
 import AddRegistry from '../../models/tools/RegistryCreate';
 import UpdateRegistry from '../../models/tools/RegistryUpdate';

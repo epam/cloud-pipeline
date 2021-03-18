@@ -15,7 +15,7 @@
  */
 
 buildscript {
-    repositories { jcenter() }
+    repositories { mavenCentral() }
 }
 
 plugins {
@@ -34,7 +34,7 @@ apply plugin: 'jacoco'
 
 sourceCompatibility = 1.8
 
-repositories { jcenter() }
+repositories { mavenCentral() }
 
 dependencies {
     compile('org.springframework.boot:spring-boot-starter')

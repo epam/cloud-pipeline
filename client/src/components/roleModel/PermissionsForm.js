@@ -74,8 +74,14 @@ export default class PermissionsForm extends React.Component {
       PropTypes.string,
       PropTypes.number
     ]),
-    readonly: PropTypes.bool
+    readonly: PropTypes.bool,
+    defaultMask: PropTypes.number,
+    enabledMask: PropTypes.number
   };
+
+  static defaultProps = {
+    enabledMask: roleModel.buildPermissionsMask(1, 1, 1, 1, 1, 1)
+  }
 
   lastFetchId = 0;
 
@@ -236,7 +242,7 @@ export default class PermissionsForm extends React.Component {
   };
 
   onSelectUser = async () => {
-    await this.grantPermission(this.selectedUser, true, 0);
+    await this.grantPermission(this.selectedUser, true, this.props.defaultMask || 0);
     this.closeFindUserDialog();
   };
 
@@ -253,7 +259,7 @@ export default class PermissionsForm extends React.Component {
     const [role] = (this.props.roles.loaded ? this.props.roles.value || [] : [])
       .filter(r => !r.predefined && this.splitRoleName(r.name) === this.selectedGroup);
     const roleName = role ? role.name : this.selectedGroup;
-    await this.grantPermission(roleName, false, 0);
+    await this.grantPermission(roleName, false, this.props.defaultMask || 0);
     this.closeFindGroupDialog();
   };
 
@@ -371,7 +377,7 @@ export default class PermissionsForm extends React.Component {
           className: styles.userAllowDenyActions,
           render: (item) => (
             <Checkbox
-              disabled={this.props.readonly}
+              disabled={this.props.readonly || ((item.allowMask & this.props.enabledMask) === 0)}
               checked={item.allowed}
               onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.allowMask, !item.isRead)} />
           )
@@ -382,7 +388,7 @@ export default class PermissionsForm extends React.Component {
           className: styles.userAllowDenyActions,
           render: (item) => (
             <Checkbox
-              disabled={this.props.readonly}
+              disabled={this.props.readonly || ((item.denyMask & this.props.enabledMask) === 0)}
               checked={item.denied}
               onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.denyMask)} />
           )

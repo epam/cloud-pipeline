@@ -45,6 +45,9 @@ LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
 
+DEFAULT_FS_TYPE = 'btrfs'
+SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
+
 MIN_SWAP_DEVICE_SIZE = 5
 
 current_run_id = 0
@@ -187,7 +190,7 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
     default_embedded_scripts = { "fsautoscale": os.path.dirname(os.path.abspath(__file__)) + '/fsautoscale.sh' }
     default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
-        "embedded_scripts": default_embedded_scripts }
+        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE}
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
@@ -198,9 +201,10 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
         instance_mask_ami = image_config["ami"]
         init_script = image_config.get("init_script", default_object["init_script"])
         embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
+        fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
         if fnmatch.fnmatch(instance_type, instance_mask):
             return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
-            "embedded_scripts": embedded_scripts }
+            "embedded_scripts": embedded_scripts, "fs_type": fs_type}
 
     return default_object
 
@@ -972,6 +976,11 @@ def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, ku
         user_data_script = init_script.read()
         certs_string = get_certs_string()
         well_known_string = get_well_known_hosts_string(cloud_region)
+        fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
+        if fs_type not in SUPPORTED_FS_TYPES:
+            pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
+                          fs_type, DEFAULT_FS_TYPE)
+            fs_type = DEFAULT_FS_TYPE
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
@@ -981,7 +990,8 @@ def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, ku
                                             .replace('@KUBE_IP@', kube_ip) \
                                             .replace('@KUBE_TOKEN@', kubeadm_token) \
                                             .replace('@API_URL@', api_url) \
-                                            .replace('@API_TOKEN@', api_token)
+                                            .replace('@API_TOKEN@', api_token) \
+                                            .replace('@FS_TYPE@', fs_type)
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():

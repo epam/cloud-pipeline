@@ -1,5 +1,5 @@
 buildscript {
-    repositories { jcenter() }
+    repositories { mavenCentral() }
 }
 
 plugins {
@@ -61,7 +61,7 @@ test {
 sourceCompatibility = 1.8
 
 repositories {
-    jcenter()
+    mavenCentral()
     maven {
         url System.getProperty("user.dir") + "/api/common"
 
