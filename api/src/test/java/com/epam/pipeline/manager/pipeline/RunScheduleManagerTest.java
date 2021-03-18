@@ -74,8 +74,10 @@ public class RunScheduleManagerTest {
             PipelineCreatorUtils.getPipelineRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION2, TIME_ZONE);
     private final PipelineRunScheduleVO testRunScheduleVO3 =
             PipelineCreatorUtils.getPipelineRunScheduleVO(RunScheduledAction.RUN, CRON_EXPRESSION2, TIME_ZONE);
-    private final RunSchedule runPauseSchedule = createRunSchedule(PAUSE_SCHEDULE_ID, RunScheduledAction.PAUSE, CRON_EXPRESSION1);
-    private final RunSchedule runResumeSchedule = createRunSchedule(RESUME_SCHEDULE_ID, RunScheduledAction.RESUME, CRON_EXPRESSION2);
+    private final RunSchedule runPauseSchedule =
+            createRunSchedule(PAUSE_SCHEDULE_ID, RunScheduledAction.PAUSE, CRON_EXPRESSION1);
+    private final RunSchedule runResumeSchedule =
+            createRunSchedule(RESUME_SCHEDULE_ID, RunScheduledAction.RESUME, CRON_EXPRESSION2);
 
     @InjectMocks
     private RunScheduleManager runScheduleManager;
@@ -227,7 +229,8 @@ public class RunScheduleManagerTest {
         doReturn(Optional.of(runResumeSchedule))
                 .when(mockRunScheduleDao).loadRunSchedule(RESUME_SCHEDULE_ID);
 
-        runScheduleManager.deleteSchedules(RUN_ID, ScheduleType.PIPELINE_RUN, Arrays.asList(PAUSE_SCHEDULE_ID, RESUME_SCHEDULE_ID));
+        runScheduleManager.deleteSchedules(
+                RUN_ID, ScheduleType.PIPELINE_RUN, Arrays.asList(PAUSE_SCHEDULE_ID, RESUME_SCHEDULE_ID));
 
         verify(mockRunScheduler, times(2)).unscheduleRunSchedule(any());
     }
