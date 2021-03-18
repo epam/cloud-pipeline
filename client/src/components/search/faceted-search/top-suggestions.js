@@ -161,6 +161,11 @@ class TopSuggestions extends localization.LocalizedReactComponent {
     }
   };
 
+  onNavigate = (event) => {
+    event && event.preventDefault();
+    event && event.stopPropagation();
+  }
+
   renderLastRun = (obj) => {
     const {lastRun} = obj || {};
     if (lastRun) {
@@ -171,86 +176,100 @@ class TopSuggestions extends localization.LocalizedReactComponent {
   };
 
   renderToolCard = (tool) => (
-    <div
-      key={tool.key}
-      className={classNames(styles.suggestion, styles.tool)}
+    <a
+      onClick={this.onNavigate}
+      className={styles.cardLinkWrapper}
     >
-      {
-        tool.iconId && (
-          <img
-            className={styles.background}
-            src={ToolImage.url(tool.id, tool.iconId)} />
-        )
-      }
-      <div className={styles.header}>
+      <div
+        key={tool.key}
+        className={classNames(styles.suggestion, styles.tool)}
+      >
         {
           tool.iconId && (
-            <img
-              className={styles.toolIcon}
-              src={ToolImage.url(tool.id, tool.iconId)} />
+            <div className={styles.backgroundWrapper}>
+              <img
+                className={styles.background}
+                src={ToolImage.url(tool.id, tool.iconId)} />
+            </div>
           )
         }
-        <div
-          className={classNames(styles.toolName, styles.notTransparentBackground)}
-        >
-          <div className={styles.name}>
-            {tool.name}
-          </div>
-          <div className={styles.registry}>
-            {tool.registryObj.description || tool.registryObj.path}
-            <Icon type="caret-right" />
-            {tool.groupObj.name}
+        <div className={styles.header}>
+          {
+            tool.iconId && (
+              <img
+                className={styles.toolIcon}
+                src={ToolImage.url(tool.id, tool.iconId)} />
+            )
+          }
+          <div
+            className={classNames(styles.toolName, styles.notTransparentBackground)}
+          >
+            <div className={styles.name}>
+              {tool.name}
+            </div>
+            <div className={styles.registry}>
+              {tool.registryObj.description || tool.registryObj.path}
+              <Icon type="caret-right" />
+              {tool.groupObj.name}
+            </div>
           </div>
         </div>
+        {
+          tool.shortDescription && (
+            <div className={classNames(styles.description, styles.notTransparentBackground)}>
+              {tool.shortDescription}
+            </div>
+          )
+        }
+        <div className={classNames(styles.lastRun)}>
+          <span>{this.renderLastRun(tool)}</span>
+        </div>
       </div>
-      {
-        tool.shortDescription && (
-          <div className={classNames(styles.description, styles.notTransparentBackground)}>
-            {tool.shortDescription}
-          </div>
-        )
-      }
-      <div className={classNames(styles.lastRun)}>
-        <span>{this.renderLastRun(tool)}</span>
-      </div>
-    </div>
+    </a>
   );
 
   renderPipelineCard = (pipeline) => (
-    <div
-      key={`pipeline-${pipeline.id}`}
-      className={
-        classNames(
-          styles.suggestion,
-          styles.pipeline
-        )
-      }
+    <a
+      onClick={this.onNavigate}
+      className={styles.cardLinkWrapper}
     >
-      {
-        pipeline.tool && pipeline.tool.iconId && (
-          <img
-            className={styles.background}
-            src={ToolImage.url(pipeline.tool.id, pipeline.tool.iconId)} />
-        )
-      }
       <div
-        className={classNames(styles.header, styles.notTransparentBackground)}
+        key={`pipeline-${pipeline.id}`}
+        className={
+          classNames(
+            styles.suggestion,
+            styles.pipeline
+          )
+        }
       >
-        {pipeline.name} <span className={styles.postfix}>{this.localizedString('pipeline')}</span>
+        {
+          pipeline.tool && pipeline.tool.iconId && (
+            <div className={styles.backgroundWrapper}>
+              <img
+                className={styles.background}
+                src={ToolImage.url(pipeline.tool.id, pipeline.tool.iconId)} />
+            </div>
+          )
+        }
+        <div
+          className={classNames(styles.header, styles.notTransparentBackground)}
+        >
+          {pipeline.name} <span className={styles.postfix}>{this.localizedString('pipeline')}</span>
+        </div>
+        {
+          pipeline.description && (
+            <div
+              className={classNames(styles.description, styles.notTransparentBackground)}
+            >
+              {pipeline.description}
+            </div>
+          )
+        }
+        <div className={classNames(styles.lastRun)}>
+          <span>{this.renderLastRun(pipeline)}</span>
+        </div>
       </div>
-      {
-        pipeline.description && (
-          <div
-            className={classNames(styles.description, styles.notTransparentBackground)}
-          >
-            {pipeline.description}
-          </div>
-        )
-      }
-      <div className={classNames(styles.lastRun)}>
-        <span>{this.renderLastRun(pipeline)}</span>
-      </div>
-    </div>
+    </a>
   );
 
   renderSuggestionsDescription = (count, object, group) => {
