@@ -53,11 +53,14 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  text-decoration: none;
+  color: #666;
 }
 
 .suggestion:hover {
   border: 1px solid #91d5ff;
   background: #e6f7ff;
+  color: #666;
 }
 
 .suggestion:hover .not-transparent-background {
