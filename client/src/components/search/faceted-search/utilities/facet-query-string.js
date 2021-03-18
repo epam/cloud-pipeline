@@ -35,7 +35,9 @@ function parse (queryString) {
 }
 
 function build (query, filters) {
-  const filtersKeys = Object.keys(filters || {}).sort();
+  const filtersKeys = Object.keys(filters || {})
+    .filter(key => !!filters[key] && filters[key].length)
+    .sort();
   const filtersParts = filtersKeys
     .map(key => `${key}:${(filters[key] || []).sort().join(',')}`)
     .join(';');

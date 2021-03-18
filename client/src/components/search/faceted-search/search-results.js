@@ -24,7 +24,6 @@ import {
 } from 'antd';
 import {PreviewIcons} from '../preview/previewIcons';
 import {SearchItemTypes} from '../../../models/search';
-import TopSuggestions from './top-suggestions';
 import Preview from '../preview';
 import styles from './search-results.css';
 
@@ -213,9 +212,7 @@ class SearchResults extends React.Component {
       showResults,
       total,
       page,
-      pageSize,
-      onChangeDocumentType,
-      onNavigate
+      pageSize
     } = this.props;
     const {preview} = this.state;
     return (
@@ -240,14 +237,6 @@ class SearchResults extends React.Component {
             }
             ref={this.initializeResultsArea}
           >
-            {
-              !showResults && (
-                <TopSuggestions
-                  onChangeDocumentType={onChangeDocumentType}
-                  onNavigate={onNavigate}
-                />
-              )
-            }
             {
               showResults && total === 0 && (
                 <Alert type="info" message="Nothing found" />
