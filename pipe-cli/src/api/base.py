@@ -14,12 +14,25 @@
 
 import json
 import sys
+import time
 
 import click
 import requests
 import urllib3
 
 from ..config import Config
+
+
+class ServerError(RuntimeError):
+    pass
+
+
+class HTTPError(ServerError):
+    pass
+
+
+class APIError(ServerError):
+    pass
 
 
 class API(object):
@@ -33,6 +46,9 @@ class API(object):
             self.__proxies__ = self.__config__.resolve_proxy()
         else:
             self.__proxies__ = None
+        self.__attempts__ = 3
+        self.__timeout__ = 5
+        self.__connection_timeout__ = 10
 
     def get_url_for_method(self, method):
         return '{}/{}'.format(self.__config__.api.strip('/'), method)
@@ -65,6 +81,33 @@ class API(object):
                 else:
                     response = requests.get(url, headers=self.__headers__, verify=False, proxies=self.__proxies__)
         return self._build_response_data(response, error_message)
+
+    def retryable_call(self, http_method, endpoint, data=None):
+        count = 0
+        exceptions = []
+        while count < self.__attempts__:
+            count += 1
+            try:
+                response = requests.request(method=http_method, url=endpoint, data=json.dumps(data),
+                                            headers=self.__headers__, verify=False,
+                                            timeout=self.__connection_timeout__)
+                if response.status_code != 200:
+                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
+                response_data = response.json()
+                status = response_data.get('status')
+                message = response_data.get('message')
+                if not status:
+                    raise APIError('API responded without any status.')
+                if status != 'OK':
+                    if message:
+                        raise APIError('API responded with status %s and error message: %s.' % (status, message))
+                    else:
+                        raise APIError('API responded with status %s.' % status)
+                return response_data.get('payload')
+            except Exception as e:
+                exceptions.append(e)
+            time.sleep(self.__timeout__)
+        raise exceptions[-1]
 
     def download(self, url_path, file_path):
         url = '{}/{}'.format(self.__config__.api.strip('/'), url_path)

@@ -291,125 +291,55 @@ class DataStorage(API):
     @classmethod
     def set_object_tags(cls, identifier, path, tags, version):
         api = cls.instance()
-        data = json.dumps(tags)
-        endpoint = 'datastorage/{}/tags?path={}'.format(identifier, path)
-        if version:
-            endpoint = '&version='.join([endpoint, version])
-        response_data = api.call(endpoint, data=data, http_method='POST')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to update tags for object {}.".format(path))
+        return api.retryable_call('POST', 'datastorage/{}/tags?path={}'.format(identifier, path) + \
+                                  ('&version=' + version if version else ''),
+                                  data=tags) \
+               or []
 
     @classmethod
     def get_object_tags(cls, identifier, path, version):
         api = cls.instance()
-        endpoint = 'datastorage/{}/tags?path={}'.format(identifier, path)
-        if version:
-            endpoint = '&version='.join([endpoint, version])
-        response_data = api.call(endpoint, None)
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to update tags for object {}.".format(path))
+        return api.retryable_call('GET', 'datastorage/{}/tags?path={}'.format(identifier, path) + \
+                                  ('&version=' + version if version else '')) \
+               or []
 
     @classmethod
     def delete_object_tags(cls, identifier, path, tags, version):
         api = cls.instance()
-        data = json.dumps(tags)
-        endpoint = 'datastorage/{}/tags?path={}'.format(identifier, path)
-        if version:
-            endpoint = '&version='.join([endpoint, version])
-        response_data = api.call(endpoint, data=data, http_method='DELETE')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to update tags for object {}.".format(path))
+        api.retryable_call('DELETE', 'datastorage/{}/tags?path={}'.format(identifier, path) + \
+                           ('&version=' + version if version else ''),
+                           data=tags)
 
     @classmethod
     def batch_insert_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({'requests': requests})
-        endpoint = 'datastorage/{}/tags/batch/insert'.format(identifier)
-        response_data = api.call(endpoint, data=data, http_method='PUT')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError('Failed to bulk upsert tags: {}.'.format(requests))
+        api.retryable_call('PUT', 'datastorage/{}/tags/batch/insert'.format(identifier),
+                           data={'requests': requests})
 
     @classmethod
     def batch_copy_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({'requests': requests})
-        endpoint = 'datastorage/{}/tags/batch/copy'.format(identifier)
-        response_data = api.call(endpoint, data=data, http_method='PUT')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError('Failed to bulk copy tags: {}.'.format(requests))
+        api.retryable_call('PUT', 'datastorage/{}/tags/batch/copy'.format(identifier),
+                           data={'requests': requests})
 
     @classmethod
     def batch_load_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({'requests': requests})
-        endpoint = 'datastorage/{}/tags/batch/load'.format(identifier)
-        response_data = api.call(endpoint, data=data, http_method='POST')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError('Failed to bulk load tags: {}.'.format(requests))
+        return api.retryable_call('POST', 'datastorage/{}/tags/batch/load'.format(identifier),
+                                  data={'requests': requests}) \
+               or []
 
     @classmethod
     def batch_delete_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({'requests': requests})
-        endpoint = 'datastorage/{}/tags/batch/delete'.format(identifier)
-        response_data = api.call(endpoint, data=data, http_method='DELETE')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError('Failed to bulk delete tags for paths {}.'.format(requests))
+        api.retryable_call('DELETE', 'datastorage/{}/tags/batch/delete'.format(identifier),
+                           data={'requests': requests})
 
     @classmethod
     def batch_delete_all_object_tags(cls, identifier, requests):
         api = cls.instance()
-        data = json.dumps({'requests': requests})
-        endpoint = 'datastorage/{}/tags/batch/deleteAll'.format(identifier)
-        response_data = api.call(endpoint, data=data, http_method='DELETE')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError('Failed to bulk delete tags for paths {}.'.format(requests))
+        api.retryable_call('DELETE', 'datastorage/{}/tags/batch/deleteAll'.format(identifier),
+                           data={'requests': requests})
 
     @classmethod
     def get_storage_usage(cls, name, path=None):
