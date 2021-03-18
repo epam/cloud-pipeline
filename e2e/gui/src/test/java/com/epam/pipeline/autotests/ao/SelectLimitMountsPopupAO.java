@@ -129,7 +129,8 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
     }
 
     public int countObjectStorages() {
-        return Integer.parseInt(get(OK).text().replaceAll("[^0-9]", "")) - countStoragesWithType("NFS");
+        return $$(byXpath("//tbody[@class='ant-table-tbody']//span[@class='ant-checkbox ant-checkbox-checked']")).size() -
+                            countStoragesWithType("NFS");
     }
 
     private int countStoragesWithType(String type) {
