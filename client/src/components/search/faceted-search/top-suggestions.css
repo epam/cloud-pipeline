@@ -14,16 +14,6 @@
  *  limitations under the License.
  */
 
-.card-link-wrapper {
-  margin: 0 5px 5px 0;
-  border: 1px solid transparent;
-  border-radius: 5px;
-}
-
-.card-link-wrapper:hover {
-  border: 1px solid #a2d8ff;
-}
-
 .title {
   font-size: large;
   margin-bottom: 5px;
@@ -63,6 +53,15 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.suggestion:hover {
+  border: 1px solid #91d5ff;
+  background: #e6f7ff;
+}
+
+.suggestion:hover .not-transparent-background {
+  background: rgba(230, 241, 255, 0.5)
 }
 
 .suggestion.navigation {

@@ -251,58 +251,54 @@ class TopSuggestions extends localization.LocalizedReactComponent {
     <a
       key={tool.key}
       onClick={this.onNavigate(tool)}
-      className={styles.cardLinkWrapper}
+      className={classNames(styles.suggestion, styles.tool)}
       href={`/#${tool.url}`}
     >
-      <div
-        className={classNames(styles.suggestion, styles.tool)}
-      >
+      {
+        tool.iconId && (
+          <img
+            className={styles.background}
+            src={ToolImage.url(tool.id, tool.iconId)}
+          />
+        )
+      }
+      <div className={styles.header}>
         {
-          tool.iconId && (
-            <img
-              className={styles.background}
-              src={ToolImage.url(tool.id, tool.iconId)}
-            />
-          )
-        }
-        <div className={styles.header}>
-          {
-            tool.iconId
-              ? (
-                <img
-                  className={styles.toolIcon}
-                  src={ToolImage.url(tool.id, tool.iconId)}
-                />
-              )
-              : (
-                <Icon type="tool" className={styles.icon} />
-              )
-          }
-          <div
-            className={classNames(styles.toolName, styles.notTransparentBackground)}
-          >
-            <div className={styles.name}>
-              {tool.name}
-            </div>
-            <div className={styles.registry}>
-              {tool.registryObj.description || tool.registryObj.path}
-              <Icon
-                type="caret-right"
+          tool.iconId
+            ? (
+              <img
+                className={styles.toolIcon}
+                src={ToolImage.url(tool.id, tool.iconId)}
               />
-              {tool.groupObj.name}
-            </div>
+            )
+            : (
+              <Icon type="tool" className={styles.icon} />
+            )
+        }
+        <div
+          className={classNames(styles.toolName, styles.notTransparentBackground)}
+        >
+          <div className={styles.name}>
+            {tool.name}
+          </div>
+          <div className={styles.registry}>
+            {tool.registryObj.description || tool.registryObj.path}
+            <Icon
+              type="caret-right"
+            />
+            {tool.groupObj.name}
           </div>
         </div>
-        {
-          tool.shortDescription && (
-            <div className={classNames(styles.description, styles.notTransparentBackground)}>
-              {tool.shortDescription}
-            </div>
-          )
-        }
-        <div className={classNames(styles.lastRun)}>
-          <span>{this.renderLastRun(tool)}</span>
-        </div>
+      </div>
+      {
+        tool.shortDescription && (
+          <div className={classNames(styles.description, styles.notTransparentBackground)}>
+            {tool.shortDescription}
+          </div>
+        )
+      }
+      <div className={classNames(styles.lastRun)}>
+        <span>{this.renderLastRun(tool)}</span>
       </div>
     </a>
   );
@@ -311,44 +307,40 @@ class TopSuggestions extends localization.LocalizedReactComponent {
     <a
       key={`pipeline-${pipeline.id}`}
       onClick={this.onNavigate(pipeline)}
-      className={styles.cardLinkWrapper}
+      className={
+        classNames(
+          styles.suggestion,
+          styles.pipeline
+        )
+      }
       href={`/#${pipeline.url}`}
     >
+      {
+        pipeline.tool && pipeline.tool.iconId && (
+          <img
+            className={styles.background}
+            src={ToolImage.url(pipeline.tool.id, pipeline.tool.iconId)}
+          />
+        )
+      }
       <div
-        className={
-          classNames(
-            styles.suggestion,
-            styles.pipeline
-          )
-        }
+        className={classNames(styles.header, styles.notTransparentBackground)}
       >
-        {
-          pipeline.tool && pipeline.tool.iconId && (
-            <img
-              className={styles.background}
-              src={ToolImage.url(pipeline.tool.id, pipeline.tool.iconId)}
-            />
-          )
-        }
-        <div
-          className={classNames(styles.header, styles.notTransparentBackground)}
-        >
-          <Icon type="fork" className={styles.icon} />
-          <span>{pipeline.name}</span>
-          <span className={styles.postfix}>{this.localizedString('pipeline')}</span>
-        </div>
-        {
-          pipeline.description && (
-            <div
-              className={classNames(styles.description, styles.notTransparentBackground)}
-            >
-              {pipeline.description}
-            </div>
-          )
-        }
-        <div className={classNames(styles.lastRun)}>
-          <span>{this.renderLastRun(pipeline)}</span>
-        </div>
+        <Icon type="fork" className={styles.icon} />
+        <span>{pipeline.name}</span>
+        <span className={styles.postfix}>{this.localizedString('pipeline')}</span>
+      </div>
+      {
+        pipeline.description && (
+          <div
+            className={classNames(styles.description, styles.notTransparentBackground)}
+          >
+            {pipeline.description}
+          </div>
+        )
+      }
+      <div className={classNames(styles.lastRun)}>
+        <span>{this.renderLastRun(pipeline)}</span>
       </div>
     </a>
   );
@@ -357,93 +349,89 @@ class TopSuggestions extends localization.LocalizedReactComponent {
     <a
       key={`pipeline-${run.id}`}
       onClick={this.onNavigate(run)}
-      className={styles.cardLinkWrapper}
+      className={
+        classNames(
+          styles.suggestion,
+          styles.run
+        )
+      }
       href={`/#${run.url}`}
     >
+      {
+        run.tool && run.tool.iconId && (
+          <img
+            className={styles.background}
+            src={ToolImage.url(run.tool.id, run.tool.iconId)}
+          />
+        )
+      }
       <div
-        className={
-          classNames(
-            styles.suggestion,
-            styles.run
+        className={classNames(styles.header, styles.notTransparentBackground)}
+      >
+        <StatusIcon
+          className={styles.statusIcon}
+          run={run}
+        />
+        {
+          run.nodeCount > 0 && (
+            <Icon type="database" />
           )
         }
+        {
+          run.serviceUrl && (
+            <Icon type="export" />
+          )
+        }
+        {run.podId}
+      </div>
+      <div
+        className={classNames(styles.description, styles.notTransparentBackground)}
+      >
+        <div>
+          Started: {displayDate(run.startDate, 'd MMMM YYYY, HH:mm')}
+        </div>
+        {
+          run.endDate && (
+            <div>
+              Finished: {displayDate(run.endDate, 'd MMMM YYYY, HH:mm')}
+            </div>
+          )
+        }
+      </div>
+      <div
+        className={styles.attributes}
       >
         {
           run.tool && run.tool.iconId && (
             <img
-              className={styles.background}
+              className={styles.dockerImageIcon}
               src={ToolImage.url(run.tool.id, run.tool.iconId)}
             />
           )
         }
-        <div
-          className={classNames(styles.header, styles.notTransparentBackground)}
-        >
-          <StatusIcon
-            className={styles.statusIcon}
-            run={run}
-          />
-          {
-            run.nodeCount > 0 && (
-              <Icon type="database" />
-            )
-          }
-          {
-            run.serviceUrl && (
-              <Icon type="export" />
-            )
-          }
-          {run.podId}
-        </div>
-        <div
-          className={classNames(styles.description, styles.notTransparentBackground)}
-        >
-          <div>
-            Started: {displayDate(run.startDate, 'd MMMM YYYY, HH:mm')}
-          </div>
-          {
-            run.endDate && (
-              <div>
-                Finished: {displayDate(run.endDate, 'd MMMM YYYY, HH:mm')}
-              </div>
-            )
-          }
-        </div>
-        <div
-          className={styles.attributes}
-        >
-          {
-            run.tool && run.tool.iconId && (
-              <img
-                className={styles.dockerImageIcon}
-                src={ToolImage.url(run.tool.id, run.tool.iconId)}
-              />
-            )
-          }
-          <span>{(run.dockerImage || '').split('/').slice(-1)[0]}</span>
-          {
-            run.instance && (
-              <AWSRegionTag
-                provider={run.instance.cloudProvider}
-                style={{fontSize: 'larger'}}
-              />
-            )
-          }
-          {
-            run.instance && (
-              <span>
-                {getSpotTypeName(run.instance.spot, run.instance.cloudProvider)}
-              </span>
-            )
-          }
-          {
-            run.instance && (
-              <span>
-                {run.instance.nodeType}
-              </span>
-            )
-          }
-        </div>
+        <span>{(run.dockerImage || '').split('/').slice(-1)[0]}</span>
+        {
+          run.instance && (
+            <AWSRegionTag
+              provider={run.instance.cloudProvider}
+              style={{fontSize: 'larger'}}
+            />
+          )
+        }
+        {
+          run.instance && (
+            <span>
+              {getSpotTypeName(run.instance.spot, run.instance.cloudProvider)}
+            </span>
+          )
+        }
+        {
+          run.instance && (
+            <span>
+              {run.instance.nodeType}
+            </span>
+          )
+        }
       </div>
     </a>
   );
@@ -452,41 +440,37 @@ class TopSuggestions extends localization.LocalizedReactComponent {
     <a
       key={`storage-${storage.id}`}
       onClick={this.onNavigate(storage)}
-      className={styles.cardLinkWrapper}
       href={`/#${storage.url}`}
+      className={
+        classNames(
+          styles.suggestion,
+          styles.storage
+        )
+      }
     >
       <div
-        className={
-          classNames(
-            styles.suggestion,
-            styles.storage
+        className={classNames(styles.header, styles.notTransparentBackground)}
+      >
+        {
+          /^nfs$/i.test(storage.type) && (
+            <span
+              className={classNames(styles.storageType, styles.nfs)}
+            >
+              NFS
+            </span>
           )
         }
+        <AWSRegionTag regionId={storage.regionId} />
+        <span
+          className={classNames({[styles.sensitive]: storage.sensitive})}
+        >
+          {storage.name}
+        </span>
+      </div>
+      <div
+        className={classNames(styles.description, styles.notTransparentBackground)}
       >
-        <div
-          className={classNames(styles.header, styles.notTransparentBackground)}
-        >
-          {
-            /^nfs$/i.test(storage.type) && (
-              <span
-                className={classNames(styles.storageType, styles.nfs)}
-              >
-                NFS
-              </span>
-            )
-          }
-          <AWSRegionTag regionId={storage.regionId} />
-          <span
-            className={classNames({[styles.sensitive]: storage.sensitive})}
-          >
-            {storage.name}
-          </span>
-        </div>
-        <div
-          className={classNames(styles.description, styles.notTransparentBackground)}
-        >
-          {storage.pathMask}
-        </div>
+        {storage.pathMask}
       </div>
     </a>
   );
