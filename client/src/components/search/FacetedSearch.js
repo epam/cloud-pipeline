@@ -66,6 +66,7 @@ class FacetedSearch extends React.Component {
     offset: 0,
     pageSize: undefined,
     pageSizeInitialized: false,
+    presentationMode: PresentationModes.list,
     showResults: false
   }
 
@@ -320,6 +321,14 @@ class FacetedSearch extends React.Component {
     }
   };
 
+  onChangePresentationMode = (mode) => {
+    const {presentationMode} = this.state;
+    if (mode === presentationMode) {
+      return null;
+    }
+    this.setState({presentationMode: mode});
+  }
+
   onQueryChange = (e) => {
     this.setState({
       query: e.target.value
@@ -341,6 +350,7 @@ class FacetedSearch extends React.Component {
       facetsLoaded,
       pageSize,
       pending,
+      presentationMode,
       showResults,
       totalHits,
       query
@@ -389,7 +399,8 @@ class FacetedSearch extends React.Component {
           />
           <TogglePresentationMode
             className={styles.togglePresentationMode}
-            // todo
+            onChange={this.onChangePresentationMode}
+            mode={presentationMode}
           />
           <Pagination
             className={styles.pagination}
@@ -445,6 +456,7 @@ class FacetedSearch extends React.Component {
               showResults={showResults}
               total={totalHits}
               onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
+              mode={presentationMode}
             />
           </SplitPanel>
         </div>

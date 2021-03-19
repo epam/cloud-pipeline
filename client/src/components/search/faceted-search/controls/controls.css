@@ -101,3 +101,30 @@
   color: #c7254e;
   background-color: #f9f2f4;
 }
+
+.view-toggler-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  padding: 0 5px;
+  justify-content: center;
+  align-items: center;
+  font-size: small;
+}
+
+.view-toggler {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.view-toggler .toggle-btn {
+  margin-left: 8px;
+  font-size: 20px;
+  color: #8c8c8c;
+}
+
+.view-toggler .toggle-btn.toggle-btn-active {
+  color: #1890ff;
+}

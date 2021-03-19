@@ -15,7 +15,10 @@
  */
 
 import React from 'react';
+import {Icon} from 'antd';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
+import styles from './controls.css';
 
 const Modes = {
   list: 'list',
@@ -30,12 +33,37 @@ function TogglePresentationMode (
     style
   }
 ) {
-  // todo
+  const onButtonClick = (event, mode) => {
+    event && event.stopPropagation();
+    onChange && onChange(mode);
+  };
   return (
     <div
-      className={className}
+      style={style}
+      className={classNames(
+        styles.viewTogglerContainer,
+        className
+      )}
     >
-      {'\u00A0'}
+      <span>View mode:</span>
+      <div className={styles.viewToggler}>
+        <Icon
+          className={classNames(
+            styles.toggleBtn,
+            {[styles.toggleBtnActive]: mode === Modes.list}
+          )}
+          onClick={(e) => onButtonClick(e, Modes.list)}
+          type="bars"
+        />
+        <Icon
+          className={classNames(
+            styles.toggleBtn,
+            {[styles.toggleBtnActive]: mode === Modes.table}
+          )}
+          onClick={(e) => onButtonClick(e, Modes.table)}
+          type="appstore-o"
+        />
+      </div>
     </div>
   );
 }

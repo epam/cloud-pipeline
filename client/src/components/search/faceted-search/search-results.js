@@ -23,7 +23,9 @@ import {
 } from 'antd';
 import {PreviewIcons} from '../preview/previewIcons';
 import {SearchItemTypes} from '../../../models/search';
-import Preview from '../preview';
+// TODO: Preview disabled until it will be converted into a popover or something
+// import Preview from '../preview';
+import {PresentationModes} from '../faceted-search/controls';
 import styles from './search-results.css';
 
 const RESULT_ITEM_HEIGHT = 38;
@@ -203,15 +205,67 @@ class SearchResults extends React.Component {
     }
   }
 
-  render () {
+  renderResultsList = () => {
     const {
-      className,
       documents,
-      style,
       showResults,
       total
     } = this.props;
-    const {preview} = this.state;
+    return (
+      <div
+        className={styles.content}
+      >
+        <div
+          className={
+            classNames(
+              styles.results,
+              {
+                [styles.hint]: !showResults
+              }
+            )
+          }
+          ref={this.initializeResultsArea}
+        >
+          {
+            showResults && total === 0 && (
+              <Alert type="info" message="Nothing found" />
+            )
+          }
+          {
+            showResults && total > 0 && documents.map(this.renderSearchResultItem)
+          }
+        </div>
+        {/* TODO: Preview disabled until it will be converted into a popover or something */}
+        {/* {
+          preview && showResults && (
+            <div
+              className={styles.preview}
+              onMouseOver={() => this.doNotHidePreview(preview)}
+              onMouseLeave={this.unHoverItem(preview)}
+            >
+              <Preview
+                item={preview}
+                lightMode
+              />
+            </div>
+          )
+        } */}
+      </div>);
+  }
+
+  renderResultsTable = () => {
+    return null;
+  }
+
+  render () {
+    const {
+      className,
+      style,
+      mode
+    } = this.props;
+    if (!mode) {
+      return null;
+    }
     return (
       <div
         className={classNames(
@@ -220,44 +274,8 @@ class SearchResults extends React.Component {
         )}
         style={style}
       >
-        <div
-          className={styles.content}
-        >
-          <div
-            className={
-              classNames(
-                styles.results,
-                {
-                  [styles.hint]: !showResults
-                }
-              )
-            }
-            ref={this.initializeResultsArea}
-          >
-            {
-              showResults && total === 0 && (
-                <Alert type="info" message="Nothing found" />
-              )
-            }
-            {
-              showResults && total > 0 && documents.map(this.renderSearchResultItem)
-            }
-          </div>
-          {
-            preview && showResults && (
-              <div
-                className={styles.preview}
-                onMouseOver={() => this.doNotHidePreview(preview)}
-                onMouseLeave={this.unHoverItem(preview)}
-              >
-                <Preview
-                  item={preview}
-                  lightMode
-                />
-              </div>
-            )
-          }
-        </div>
+        {mode === PresentationModes.list && this.renderResultsList()}
+        {mode === PresentationModes.table && this.renderResultsTable()}
       </div>
     );
   }
@@ -274,7 +292,8 @@ SearchResults.propTypes = {
   style: PropTypes.object,
   total: PropTypes.number,
   onChangeDocumentType: PropTypes.func,
-  onChangeBottomOffset: PropTypes.func
+  onChangeBottomOffset: PropTypes.func,
+  mode: PropTypes.oneOf([PresentationModes.list, PresentationModes.table])
 };
 
 SearchResults.defaultProps = {
