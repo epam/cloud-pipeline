@@ -33,7 +33,6 @@ import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
-import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.datastorage.tag.DataStorageTagBatchApiService;
 import com.epam.pipeline.acl.docker.DockerRegistryApiService;
 import com.epam.pipeline.acl.docker.ToolApiService;

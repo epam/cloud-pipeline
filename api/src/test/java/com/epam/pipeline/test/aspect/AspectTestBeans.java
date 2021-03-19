@@ -30,6 +30,7 @@ import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.FileShareMountDao;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
+import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.dts.DtsRegistryDao;
 import com.epam.pipeline.dao.event.EventDao;
@@ -140,6 +141,9 @@ public class AspectTestBeans {
 
     @MockBean
     protected DataStorageDao mockDataStorageDao;
+
+    @MockBean
+    protected DataStorageTagDao mockDataStorageTagDao;
 
     @MockBean
     protected JdbcMutableAclServiceImpl mockJdbcMutableAclService;

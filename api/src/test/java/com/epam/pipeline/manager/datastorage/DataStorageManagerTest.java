@@ -60,7 +60,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     private static final int STS_DURATION = 1;
     private static final int LTS_DURATION = 11;
     private static final Long WITHOUT_PARENT_ID = null;
-    private static final String PATH = "path";
+    private static final String PATH = "127.0.0.1@tcp1:/path";
     private static final String NAME = "name";
     private static final String DESCRIPTION = "description";
     private static final String CHANGED = "changed";

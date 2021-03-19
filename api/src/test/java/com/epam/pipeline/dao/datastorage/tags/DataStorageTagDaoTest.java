@@ -193,7 +193,8 @@ public class DataStorageTagDaoTest extends AbstractJdbcTest {
     @Test
     @Transactional
     public void bulkLoadShouldReturnNothingIfDataStorageDoesNotExist() {
-        assertFalse(dataStorageTagDao.load(NON_EXISTING_STORAGE_ROOT_ID, new DataStorageObject(STORAGE_PATH), STORAGE_PATH)
+        assertFalse(dataStorageTagDao.load(NON_EXISTING_STORAGE_ROOT_ID, new DataStorageObject(STORAGE_PATH), 
+                STORAGE_PATH)
                 .isPresent());
     }
     

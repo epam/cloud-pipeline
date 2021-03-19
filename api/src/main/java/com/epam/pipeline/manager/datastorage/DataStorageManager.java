@@ -82,8 +82,6 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1134,20 +1132,6 @@ public class DataStorageManager implements SecuredEntityManager {
         if (storage.isVersioningEnabled()) {
             tagManager.insert(storage.getRootId(), new DataStorageObject(relativePath, version), defaultTags);
         }
-    }
-
-    private Pair<String, String> getRootAndRelativePaths(final AbstractDataStorage storage, final String path) {
-        final String rootPath = storage.getRoot();
-        final String storagePath = StringUtils.strip(StringUtils.removeStart(storage.getPath(), rootPath), 
-                storage.getDelimiter());
-        final String relativePath = StringUtils.strip(path, storage.getDelimiter());
-        if (StringUtils.isBlank(storagePath)) {
-            return new ImmutablePair<>(rootPath, relativePath);
-        }
-        if (StringUtils.isBlank(relativePath)) {
-            return new ImmutablePair<>(rootPath, storagePath);
-        }
-        return new ImmutablePair<>(rootPath, storagePath + storage.getDelimiter() + relativePath);
     }
 
     private AbstractDataStorageItem updateDataStorageItem(final AbstractDataStorage storage,
