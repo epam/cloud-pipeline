@@ -83,12 +83,13 @@ class API(object):
         return self._build_response_data(response, error_message)
 
     def retryable_call(self, http_method, endpoint, data=None):
+        url = '{}/{}'.format(self.__config__.api.strip('/'), endpoint)
         count = 0
         exceptions = []
         while count < self.__attempts__:
             count += 1
             try:
-                response = requests.request(method=http_method, url=endpoint, data=json.dumps(data),
+                response = requests.request(method=http_method, url=url, data=json.dumps(data),
                                             headers=self.__headers__, verify=False,
                                             timeout=self.__connection_timeout__)
                 if response.status_code != 200:
