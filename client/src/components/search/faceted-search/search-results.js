@@ -19,16 +19,15 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Alert,
-  Icon,
-  Pagination
+  Icon
 } from 'antd';
 import {PreviewIcons} from '../preview/previewIcons';
 import {SearchItemTypes} from '../../../models/search';
 import Preview from '../preview';
 import styles from './search-results.css';
 
-const RESULT_ITEM_HEIGHT = 45;
-const RESULT_ITEM_MARGIN = 5;
+const RESULT_ITEM_HEIGHT = 38;
+const RESULT_ITEM_MARGIN = 3;
 const PREVIEW_TIMEOUT = 1000;
 
 class SearchResults extends React.Component {
@@ -53,28 +52,29 @@ class SearchResults extends React.Component {
     if (this.area) {
       const height = this.area.clientHeight;
       const {resultsAreaHeight} = this.state;
-      const {onChangePage, page, pageSize} = this.props;
+      const {
+        onChangePage,
+        onChangeBottomOffset,
+        page,
+        pageSize
+      } = this.props;
       if (height !== resultsAreaHeight) {
         this.setState({
           resultsAreaHeight: height
         }, () => {
-          const newPageSize = Math.floor(height / (RESULT_ITEM_HEIGHT + RESULT_ITEM_MARGIN));
+          const newPageSize = 2 * Math.floor(height / (RESULT_ITEM_HEIGHT + RESULT_ITEM_MARGIN));
           if (onChangePage) {
             const currentItem = (page - 1) * pageSize;
             const newPage = Math.floor(currentItem / newPageSize) + 1;
             onChangePage(newPage, newPageSize);
           }
+          if (onChangeBottomOffset) {
+            onChangeBottomOffset(height - newPageSize * (RESULT_ITEM_HEIGHT + RESULT_ITEM_MARGIN));
+          }
         });
       }
     }
   };
-
-  onChangePagination = (page, pageSize) => {
-    const {onChangePage} = this.props;
-    if (onChangePage) {
-      onChangePage(page, pageSize);
-    }
-  }
 
   renderIcon = (resultItem) => {
     if (PreviewIcons[resultItem.type]) {
@@ -206,13 +206,10 @@ class SearchResults extends React.Component {
   render () {
     const {
       className,
-      disabled,
       documents,
       style,
       showResults,
-      total,
-      page,
-      pageSize
+      total
     } = this.props;
     const {preview} = this.state;
     return (
@@ -261,21 +258,6 @@ class SearchResults extends React.Component {
             )
           }
         </div>
-        {
-          showResults && (
-            <div
-              className={styles.pagination}
-            >
-              <Pagination
-                disabled={disabled}
-                current={page}
-                total={total}
-                pageSize={pageSize}
-                onChange={this.onChangePagination}
-              />
-            </div>
-          )
-        }
       </div>
     );
   }
@@ -291,7 +273,8 @@ SearchResults.propTypes = {
   showResults: PropTypes.bool,
   style: PropTypes.object,
   total: PropTypes.number,
-  onChangeDocumentType: PropTypes.func
+  onChangeDocumentType: PropTypes.func,
+  onChangeBottomOffset: PropTypes.func
 };
 
 SearchResults.defaultProps = {

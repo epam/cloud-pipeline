@@ -36,12 +36,17 @@
 }
 
 .document-type-filter {
-  margin: 0 6px;
   line-height: 24px;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: flex-start;
+}
+
+.pagination {
+  height: 32px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .document-type-filter .filter {

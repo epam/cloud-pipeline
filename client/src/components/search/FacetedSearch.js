@@ -25,6 +25,11 @@ import {
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import FacetedFilter, {DocumentTypeFilter, DocumentTypeFilterName} from './faceted-search/filter';
+import {
+  Pagination,
+  PresentationModes,
+  TogglePresentationMode
+} from './faceted-search/controls';
 import SearchResults from './faceted-search/search-results';
 import {
   doSearch,
@@ -243,7 +248,7 @@ class FacetedSearch extends React.Component {
                         documents: documents.slice(),
                         totalHits,
                         searchToken: undefined,
-                        showResults: Object.keys(activeFilters || {}).length > 0 || !!query
+                        showResults: true
                       });
                     }
                   });
@@ -376,11 +381,25 @@ class FacetedSearch extends React.Component {
             Search
           </Button>
         </div>
-        <DocumentTypeFilter
-          values={this.documentTypeFilter.values}
-          selection={(activeFilters || {})[DocumentTypeFilterName]}
-          onChange={this.onChangeFilter(DocumentTypeFilterName)}
-        />
+        <div className={styles.actions}>
+          <DocumentTypeFilter
+            values={this.documentTypeFilter.values}
+            selection={(activeFilters || {})[DocumentTypeFilterName]}
+            onChange={this.onChangeFilter(DocumentTypeFilterName)}
+          />
+          <TogglePresentationMode
+            className={styles.togglePresentationMode}
+            // todo
+          />
+          <Pagination
+            className={styles.pagination}
+            disabled={pending}
+            page={this.page}
+            pageSize={pageSize}
+            onChangePage={this.onChangePage}
+            total={totalHits}
+          />
+        </div>
         <div className={styles.content}>
           <SplitPanel
             contentInfo={[{
