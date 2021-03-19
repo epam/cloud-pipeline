@@ -23,7 +23,7 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">2</div>
+<div class="counter">3</div>
 <p>tests</p>
 </div>
 </td>
@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">2m16.89s</div>
+<div class="counter">9m4.10s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="percent">66%</div>
 <p>successful</p>
 </div>
 </td>
@@ -70,18 +70,21 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="launchPipelineWithJSONParameter - EPMCMBIBPC-360"></a>
-<h3 class="failures">launchPipelineWithJSONParameter - EPMCMBIBPC-360</h3>
+<a name="removePipeline"></a>
+<h3 class="failures">removePipeline</h3>
 <span class="code">
-<pre>Element should be be expanded tab {By.id: launch-pipeline-exec-environment-panel}
-Element: '&lt;div class=&quot;ant-collapse-item launch-pipeline-form__section&quot; id=&quot;launch-pipeline-exec-environment-panel&quot; role=&quot;tablist&quot;&gt;Exec environment
-library/centos:7
-m5.large
-20Gb&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1616068653571.69.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1616068653571.69.html
+<pre>Element not found {By.className: ant-modal.findBy(text 'Do you want to delete a pipeline with repository or only unregister it?')}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1616153173161.70.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1616153173161.70.html
 Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+Caused by: Element not found {By.className: ant-modal.findBy(text 'Do you want to delete a pipeline with repository or only unregister it?')}
+Expected: text 'Do you want to delete a pipeline with repository or only unregister it?'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
@@ -89,23 +92,32 @@ Timeout: 80 s.
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.expandTab(AccessObject.java:272)
-	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.&lt;init&gt;(PipelineRunFormAO.java:85)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.runPipeline(AbstractPipelineTabAO.java:112)
-	at com.epam.pipeline.autotests.Launch_JsonOutputFileTest.launchPipelineWithJSONParameter(Launch_JsonOutputFileTest.java:77)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at com.epam.pipeline.autotests.ao.PipelineLibraryContentAO$DeletionConfirmationPopupAO.confirmDeletion(PipelineLibraryContentAO.java:237)
+	at com.epam.pipeline.autotests.ao.PipelineLibraryContentAO.delete(PipelineLibraryContentAO.java:88)
+	at com.epam.pipeline.autotests.AbstractAutoRemovingPipelineRunningTest.lambda$removePipeline$0(AbstractAutoRemovingPipelineRunningTest.java:43)
+	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:345)
+	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:338)
+	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:327)
+	at com.epam.pipeline.autotests.AbstractAutoRemovingPipelineRunningTest.removePipeline(AbstractAutoRemovingPipelineRunningTest.java:40)
+	at sun.reflect.GeneratedMethodAccessor25.invoke(Unknown Source)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
+Caused by: Element not found {By.className: ant-modal.findBy(text 'Do you want to delete a pipeline with repository or only unregister it?')}
+Expected: text 'Do you want to delete a pipeline with repository or only unregister it?'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 26 more
 </pre>
 </span>
 </div>
@@ -121,14 +133,19 @@ Timeout: 80 s.
 </tr>
 </thead>
 <tr>
-<td class="failures">launchPipelineWithJSONParameter - EPMCMBIBPC-360</td>
-<td>2m16.89s</td>
+<td class="success">launchPipelineWithJSONParameter - EPMCMBIBPC-360</td>
+<td>7m18.82s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">removePipeline</td>
+<td>1m37.60s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">validateOutputRun</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateOutputRun - EPMCMBIBPC-360</td>
+<td>7.674s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
@@ -140,7 +157,7 @@ Timeout: 80 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 18, 2021 4:28:08 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 19, 2021 2:15:51 PM</p>
 </div>
 </div>
 </body>
