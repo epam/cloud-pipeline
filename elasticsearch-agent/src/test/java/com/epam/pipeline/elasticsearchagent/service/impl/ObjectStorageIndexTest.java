@@ -69,6 +69,7 @@ public class ObjectStorageIndexTest {
             TEST_NAME,
             TEST_NAME,
             1000,
+            1000,
             DataStorageType.GS,
             SearchDocumentType.GS_FILE);
 

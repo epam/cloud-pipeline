@@ -76,6 +76,7 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.utils.StreamUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
@@ -100,7 +101,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -112,10 +112,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 @Service
@@ -126,6 +124,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStorageManager.class);
     private static final String DEFAULT_USER_STORAGE_NAME_TEMPLATE = "@@-home";
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
+    private static final int DEFAULT_OPERATIONS_BULK_SIZE = 1000;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -917,29 +916,23 @@ public class DataStorageManager implements SecuredEntityManager {
         final String newRelativePath = dataStorage.resolveRootPath(newPath);
         tagManager.copyFolder(dataStorage.getRootId(), oldRelativePath, newRelativePath);
         if (dataStorage.isVersioningEnabled()) {
-            processInChunks(storageProviderManager.listFiles(dataStorage, newPath + dataStorage.getDelimiter()),
-                chunk -> tagBatchManager.copy(dataStorage.getId(), new DataStorageTagCopyBatchRequest(
-                        chunk.stream()
-                                .map(file -> new DataStorageTagCopyRequest(
-                                        DataStorageTagCopyRequest.object(file.getPath(), null),
-                                        DataStorageTagCopyRequest.object(file.getPath(), file.getVersion())))
-                                .collect(Collectors.toList()))));
+            StreamUtils.chunked(storageProviderManager.listFiles(dataStorage, newPath + dataStorage.getDelimiter()), 
+                    getOperationsBulkSize())
+                    .forEach(chunk -> tagBatchManager.copy(dataStorage.getId(), new DataStorageTagCopyBatchRequest(
+                            chunk.stream()
+                                    .map(file -> new DataStorageTagCopyRequest(
+                                            DataStorageTagCopyRequest.object(file.getPath(), null),
+                                            DataStorageTagCopyRequest.object(file.getPath(), file.getVersion())))
+                                    .collect(Collectors.toList()))));
         } else {
             tagManager.deleteAllInFolder(dataStorage.getRootId(), oldRelativePath);
         }
     }
 
-    private <T> void processInChunks(final Stream<T> stream, final Consumer<List<T>> consumer) {
-        final int chunkSize = 100;
-        final Iterator<T> iterator = stream.iterator();
-        final List<T> chunk = new ArrayList<>(chunkSize);
-        while (iterator.hasNext()) {
-            while (iterator.hasNext() && chunk.size() < chunkSize) {
-                chunk.add(iterator.next());
-            }
-            consumer.accept(chunk);
-            chunk.clear();
-        }
+    private Integer getOperationsBulkSize() {
+        return Optional.of(SystemPreferences.DATA_STORAGE_OPERATIONS_BULK_SIZE)
+                .map(preferenceManager::getPreference)
+                .orElse(DEFAULT_OPERATIONS_BULK_SIZE);
     }
 
     private DataStorageFile moveDataStorageFile(final AbstractDataStorage dataStorage,

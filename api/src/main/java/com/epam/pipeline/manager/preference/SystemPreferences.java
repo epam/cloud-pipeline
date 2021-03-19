@@ -143,6 +143,8 @@ public class SystemPreferences {
                                new TypeReference<DataStorageTemplate>() {},
                                DATA_STORAGE_GROUP,
                                isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
+    public static final IntPreference DATA_STORAGE_OPERATIONS_BULK_SIZE = new IntPreference(
+            "storage.operations.bulk.size", 1000, DATA_STORAGE_GROUP, isGreaterThan(0));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'

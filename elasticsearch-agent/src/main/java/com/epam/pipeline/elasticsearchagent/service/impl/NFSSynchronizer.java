@@ -20,7 +20,7 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
-import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
+import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -63,6 +63,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final String indexPrefix;
     private final String indexName;
     private final Integer bulkInsertSize;
+    private final Integer bulkLoadTagsSize;
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final ElasticIndexService elasticIndexService;
@@ -73,6 +74,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                            @Value("${sync.index.common.prefix}") String indexPrefix,
                            @Value("${sync.nfs-file.index.name}") String indexName,
                            @Value("${sync.nfs-file.bulk.insert.size}") Integer bulkInsertSize,
+                           @Value("${sync.nfs-file.bulk.load.tags.size}") Integer bulkLoadTagsSize,
                            CloudPipelineAPIClient cloudPipelineAPIClient,
                            ElasticsearchServiceClient elasticsearchServiceClient,
                            ElasticIndexService elasticIndexService) {
@@ -81,6 +83,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.indexPrefix = indexPrefix;
         this.indexName = indexName;
         this.bulkInsertSize = bulkInsertSize;
+        this.bulkLoadTagsSize = bulkLoadTagsSize;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.elasticsearchServiceClient = elasticsearchServiceClient;
         this.elasticIndexService = elasticIndexService;
@@ -136,7 +139,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                 elasticsearchServiceClient.sendRequests(indexName, requests), bulkInsertSize);
              Stream<Path> paths = Files.walk(mountFolder)) {
             StreamUtils.chunked(paths.filter(path -> path.toFile().isFile())
-                    .map(path -> convertToStorageFile(path, mountFolder)))
+                    .map(path -> convertToStorageFile(path, mountFolder)),
+                    bulkLoadTagsSize)
                     .flatMap(files -> filesWithIncorporatedTags(dataStorage, files))
                     .map(file -> createIndexRequest(file, indexName, dataStorage, permissionsContainer))
                     .forEach(walker::add);
