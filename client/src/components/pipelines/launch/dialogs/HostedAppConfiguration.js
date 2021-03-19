@@ -294,7 +294,7 @@ class HostedAppConfigurationDialog extends React.Component {
                 }
                 value={port.port}
                 onChange={this.onChangePort(index)}
-                min={30000}
+                min={10}
                 max={65535}
               />
               <span
@@ -321,7 +321,7 @@ class HostedAppConfigurationDialog extends React.Component {
                 }
                 value={port.targetPort}
                 onChange={this.onChangeTargetPort(index)}
-                min={30000}
+                min={10}
                 max={65535}
               />
               <Button
