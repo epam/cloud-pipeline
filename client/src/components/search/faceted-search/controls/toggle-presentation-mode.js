@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Icon} from 'antd';
+import {Icon, Button} from 'antd';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import styles from './controls.css';
@@ -45,24 +45,29 @@ function TogglePresentationMode (
         className
       )}
     >
-      <span>View mode:</span>
       <div className={styles.viewToggler}>
-        <Icon
-          className={classNames(
-            styles.toggleBtn,
-            {[styles.toggleBtnActive]: mode === Modes.list}
-          )}
-          onClick={(e) => onButtonClick(e, Modes.list)}
-          type="bars"
-        />
-        <Icon
-          className={classNames(
-            styles.toggleBtn,
-            {[styles.toggleBtnActive]: mode === Modes.table}
-          )}
-          onClick={(e) => onButtonClick(e, Modes.table)}
-          type="appstore-o"
-        />
+        <Button.Group>
+          <Button
+            onClick={(e) => onButtonClick(e, Modes.list)}
+            className={classNames(
+              styles.toggleBtn,
+              {[styles.toggleBtnActive]: mode === Modes.list}
+            )}
+          >
+            <Icon type="bars" />
+            List
+          </Button>
+          <Button
+            onClick={(e) => onButtonClick(e, Modes.table)}
+            className={classNames(
+              styles.toggleBtn,
+              {[styles.toggleBtnActive]: mode === Modes.table}
+            )}
+          >
+            <Icon type="layout" />
+            Table
+          </Button>
+        </Button.Group>
       </div>
     </div>
   );
