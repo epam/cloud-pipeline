@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
@@ -68,6 +69,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -355,10 +357,24 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             Map<Pod, Long> priorityScore = new HashMap<>();
             List<Pod> checkedPods = new ArrayList<>();
 
+            final List<Long> activeRunIds = ListUtils.emptyIfNull(items).stream()
+                    .map(p -> Long.parseLong(p.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL)))
+                    .collect(Collectors.toList());
+
+            final Map<Long, PipelineRun> idToRun = ListUtils.emptyIfNull(
+                    pipelineRunManager.loadPipelineRuns(activeRunIds))
+                    .stream()
+                    .collect(Collectors.toMap(BaseEntity::getId, Function.identity(), (r1, r2) -> r1));
+
             for (Pod pod : items) {
                 Long runId = Long.parseLong(pod.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL));
                 try {
-                    PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
+                    PipelineRun run = idToRun.get(runId);
+                    if (run == null) {
+                        log.error("Failed to load pipeline run {}.", runId);
+                        cleanDeletedRun(client, pod, runId);
+                        continue;
+                    }
                     if (run.getStatus().isFinal()) {
                         log.debug("Pipeline run {} is already in final status", runId);
                         continue;
@@ -501,7 +517,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
         public InstanceRequest getNewRunInstance(String runId) throws GitClientException {
             Long longRunId = Long.parseLong(runId);
-            PipelineRun run = pipelineRunManager.loadPipelineRun(longRunId);
+            PipelineRun run = pipelineRunManager.findRun(longRunId)
+                    .orElseThrow(() -> new IllegalArgumentException("Failed to find run " + longRunId));
 
             RunInstance instance;
             if (run.getInstance() == null || run.getInstance().isEmpty()) {

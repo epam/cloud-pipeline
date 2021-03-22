@@ -53,6 +53,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
@@ -158,6 +159,7 @@ public class AutoscaleManagerTest {
         unscheduledPipelinePod.setStatus(status);
 
         PipelineRun testRun = new PipelineRun();
+        testRun.setId(TEST_RUN_ID);
         testRun.setStatus(TaskStatus.RUNNING);
         testRun.setPipelineRunParameters(Collections.emptyList());
 
@@ -165,7 +167,9 @@ public class AutoscaleManagerTest {
         spotInstance.setSpot(true);
         testRun.setInstance(spotInstance);
 
-        when(pipelineRunManager.loadPipelineRun(eq(TEST_RUN_ID))).thenReturn(testRun);
+        when(pipelineRunManager.loadPipelineRuns(eq(Collections.singletonList(TEST_RUN_ID))))
+                .thenReturn(Collections.singletonList(testRun));
+        when(pipelineRunManager.findRun(eq(TEST_RUN_ID))).thenReturn(Optional.of(testRun));
         when(autoscalerService.fillInstance(any(RunInstance.class)))
             .thenAnswer(invocation -> invocation.getArguments()[0]);
 
