@@ -89,31 +89,35 @@ class SearchResults extends React.Component {
     return null;
   };
 
+  getResultItemName = (resultItem) => {
+    if (!resultItem) {
+      return '';
+    }
+    switch (resultItem.type) {
+      case SearchItemTypes.run: {
+        if (resultItem.description) {
+          const parts = resultItem.description.split('/');
+          if (parts.length > 1) {
+            return `${resultItem.name} - ${parts.pop()}`;
+          }
+          return `${resultItem.name} - ${resultItem.description}`;
+        }
+        return resultItem.name || `Run ${resultItem.elasticId}`;
+      }
+      case SearchItemTypes.NFSFile:
+      case SearchItemTypes.gsFile:
+      case SearchItemTypes.azFile:
+      case SearchItemTypes.s3File: {
+        const path = (resultItem.name || '');
+        return path.split('/').pop().split('\\').pop();
+      }
+      default: return resultItem.name;
+    }
+  }
+
   renderSearchResultItem = (resultItem) => {
     const {disabled} = this.props;
     const {hoverInfo, preview} = this.state;
-    const renderName = () => {
-      switch (resultItem.type) {
-        case SearchItemTypes.run: {
-          if (resultItem.description) {
-            const parts = resultItem.description.split('/');
-            if (parts.length > 1) {
-              return `${resultItem.name} - ${parts.pop()}`;
-            }
-            return `${resultItem.name} - ${resultItem.description}`;
-          }
-          return resultItem.name || `Run ${resultItem.elasticId}`;
-        }
-        case SearchItemTypes.NFSFile:
-        case SearchItemTypes.gsFile:
-        case SearchItemTypes.azFile:
-        case SearchItemTypes.s3File: {
-          const path = (resultItem.name || '');
-          return path.split('/').pop().split('\\').pop();
-        }
-        default: return resultItem.name;
-      }
-    };
     return (
       <a
         href={!disabled && resultItem.url ? `/#${resultItem.url}` : undefined}
@@ -142,7 +146,7 @@ class SearchResults extends React.Component {
             {this.renderIcon(resultItem)}
           </div>
           <span className={styles.title}>
-            {renderName()}
+            {this.getResultItemName(resultItem)}
           </span>
         </div>
       </a>
@@ -253,8 +257,90 @@ class SearchResults extends React.Component {
       </div>);
   }
 
+  columns = [
+    {
+      key: 'name',
+      name: 'Name',
+      renderFn: (value, resultItem) => (
+        <span>
+          {this.renderIcon(resultItem)}
+          <b style={{marginLeft: '5px'}}>
+            {this.getResultItemName(resultItem)}
+          </b>
+        </span>
+      ),
+      width: '2fr'
+    },
+    {key: 'type', name: 'Type', width: '1fr'},
+    {key: 'url', name: 'Url', width: '2fr'},
+    {key: 'elasticId', name: 'Elastic id', width: '2fr'},
+    {key: 'id', name: 'Identifier', width: '2fr'}
+  ]
+
+  gridTemplate = `'${this.columns.map(c => c.key).join(' ')}' 1fr /
+      ${this.columns.map(c => c.width || '1fr').join(' ')}`;
+
+  renderTableRow = (resultItem, rowIndex) => {
+    const {disabled} = this.props;
+    if (!resultItem) {
+      return null;
+    }
+    return (
+      <a
+        href={!disabled && resultItem.url ? `/#${resultItem.url}` : undefined}
+        target="_blank"
+        className={styles.tableRow}
+        style={{gridTemplate: this.gridTemplate}}
+        key={rowIndex}
+      >
+        {this.columns.map(({key, renderFn}, index) => (
+          <div
+            className={styles.tableCell}
+            key={index}
+          >
+            {renderFn ? renderFn(resultItem[key], resultItem) : resultItem[key]}
+          </div>
+        ))
+        }
+      </a>
+    );
+  }
+
+  renderTableHeader = () => {
+    return (
+      <div
+        className={classNames(
+          styles.tableRow,
+          styles.tableHeader
+        )}
+        style={{gridTemplate: this.gridTemplate}}
+      >
+        {this.columns.map(({name}, index) => (
+          <div key={index} className={styles.headerCell}>
+            {name}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   renderResultsTable = () => {
-    return null;
+    const {
+      documents,
+      showResults,
+      total
+    } = this.props;
+    if (!showResults || !total) {
+      return <Alert type="info" message="Nothing found" />;
+    }
+    return (
+      <div className={styles.tableContainer}>
+        {this.renderTableHeader()}
+        {documents.map((document, index) => (
+          this.renderTableRow(document, index)
+        ))}
+      </div>
+    );
   }
 
   render () {

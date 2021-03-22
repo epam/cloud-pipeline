@@ -102,3 +102,48 @@
   font-weight: bold;
   font-size: larger;
 }
+
+.table-container {
+  display: flex;
+  flex-wrap: nowrap;
+  flex-direction: column;
+}
+
+.table-row {
+  cursor: pointer;
+  color: inherit;
+  background: inherit;
+  text-decoration: none !important;
+  display: grid;
+  background: #fafafa;
+  transition: background 0.2s ease;
+}
+
+.table-row:not(.table-header):hover {
+  background: #f5f5f5;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.table-header {
+  position: sticky;
+  top: 0;
+  background: #dfdfdf;
+}
+
+.header-cell {
+  margin: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-cell:not(:last-child) {
+  border-right: 1px solid #bfbfbf;
+}
+
+.table-cell {
+  margin: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
