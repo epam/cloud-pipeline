@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import traceback
+
 from fsbrowser.src.model.task import Task
 
 
@@ -23,8 +25,8 @@ class GitTaskStatus:
 
 class GitTask(Task):
 
-    def __init__(self, task_id):
-        super().__init__(task_id)
+    def __init__(self, task_id, logger):
+        super().__init__(task_id, logger)
         self.conflicts = []
 
     def pulling(self):
@@ -45,6 +47,7 @@ class GitTask(Task):
             repository_path = git_client.clone(full_repo_path, git_url, revision)
             self.success(repository_path)
         except Exception as e:
+            self.logger.log(traceback.format_exc())
             self.failure(e)
 
     def pull(self, git_client, full_repo_path):
@@ -56,6 +59,7 @@ class GitTask(Task):
                 return
             self._conflicts_failure(conflicts)
         except Exception as e:
+            self.logger.log(traceback.format_exc())
             self.failure(e)
 
     def push(self, git_client, full_repo_path, message, files_to_add=None):
@@ -64,11 +68,7 @@ class GitTask(Task):
             index_files = self._add_files_to_index(git_client, full_repo_path, files_to_add)
 
             self.committing()
-            commit = git_client.commit(full_repo_path, index_files, message)
-            if not commit:
-                self.success()
-                self.message = 'Nothing to commit'
-                return
+            git_client.commit(full_repo_path, index_files, message)
 
             self.pulling()
             conflicts = git_client.pull(full_repo_path)
@@ -81,9 +81,11 @@ class GitTask(Task):
 
             self.success()
         except Exception as e:
+            self.logger.log(traceback.format_exc())
             self.failure(e)
 
-    def _add_files_to_index(self, git_client, full_repo_path, files_to_add):
+    @staticmethod
+    def _add_files_to_index(git_client, full_repo_path, files_to_add):
         git_files = git_client.status(full_repo_path)
         index_files = []
         for git_file in git_files:

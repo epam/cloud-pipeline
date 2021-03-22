@@ -42,51 +42,27 @@ class GitClient:
         if revision:
             commit = result_repository.get(revision)
             result_repository.checkout_tree(commit)
-            # TODO: result_repository.set_head(commit.id) ?
+            result_repository.set_head(commit.id)
         return result_repository.workdir
 
     def pull(self, path, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
         callbacks = self._build_callback()
         repo = self._repository(path)
-        remote = repo.remotes[remote_name]
-        if not remote:
-            raise RuntimeError("Failed to find remote '%s'" % remote_name)
+        remote = self._get_remote(repo, remote_name)
 
         remote.fetch(callbacks=callbacks)
-        remote_master_id = repo.lookup_reference('refs/remotes/%s/%s' % (remote_name, branch)).target
+        remote_master_id = self._get_remote_head(repo, remote_name, branch).target
         merge_result, _ = repo.merge_analysis(remote_master_id)
-        # Up to date, do nothing
+
         if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
+            # Up to date, do nothing
             self.logger.log("Repository '%s' already up to date" % path)
             return None
-        # We can just fast-forward
         if merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
-            self.logger.log("Fast-forward pull for repository '%s'" % path)
-            repo.checkout_tree(repo.get(remote_master_id))
-            try:
-                master_ref = repo.lookup_reference('refs/heads/%s' % branch)
-                master_ref.set_target(remote_master_id)
-            except KeyError:
-                repo.create_branch(branch, repo.get(remote_master_id))
-            repo.head.set_target(remote_master_id)
+            self._fast_forward_pull(repo, path, remote_master_id, branch)
             return None
         if merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
-            repo.merge(remote_master_id)
-
-            if repo.index.conflicts is not None:
-                conflict_paths = []
-                for conflict in repo.index.conflicts:
-                    conflict_paths.append(conflict[0].path)
-                self.logger.log('Conflicts were found in paths: \n%s' % "\n".join(conflict_paths))
-                return repo.index.conflicts
-
-            user = repo.default_signature
-            tree = repo.index.write_tree()
-            commit = repo.create_commit('HEAD', user, user, 'Git pull merge commit', tree,
-                                        [repo.head.target, remote_master_id])
-            # We need to do this or git CLI will think we are still merging.
-            repo.state_cleanup()
-            return None
+            return self._merge(repo, remote_master_id)
         else:
             raise RuntimeError('Unknown merge analysis result')
 
@@ -124,16 +100,17 @@ class GitClient:
         index.write()
         self.logger.log("File '%s' added to index for repo '%s'" % (repo_path, file_to_add.path))
 
-    def commit(self, repo_path, files, message):
-        if not files:
-            self.logger.log("Nothing to commit to repository '%s'" % repo_path)
-            return None
-
+    def commit(self, repo_path, files, message, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
-        user = repo.default_signature
-        parent = [repo.head.target]
+        head_id = repo.head.target
+        merge_in_progress = self._is_merge_in_progress(repo)
+
+        remote_master_id = self._get_remote_head(repo, remote_name, branch).target
+        parent = [head_id, remote_master_id] if merge_in_progress else [head_id]
+
         index = repo.index
         tree = index.write_tree()
+        user = self._get_author(repo)
 
         for file_to_commit in files:
             self.logger.log("Preparing file '%s' to commit into repo '%s'" % (file_to_commit.path, repo_path))
@@ -147,18 +124,20 @@ class GitClient:
 
         index.write()
 
+        if merge_in_progress:
+            message = self._build_merge_commit_message(head_id, remote_master_id)
+
         commit = repo.create_commit('HEAD', user, user, message, tree, parent)
         self.logger.log("Committed to repo '%s'" % repo_path)
+        if merge_in_progress:
+            self._finish_merge(repo)
         return commit
 
     def push(self, repo_path, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
-        remote = repo.remotes[remote_name]
-        credentials = pygit2.UserPass(self.user_name, self.token)
-        remote.credentials = credentials  # TODO: do we need credentials here?
-        callbacks = pygit2.RemoteCallbacks(credentials=credentials)
-        callbacks.certificate_check = insecure
-        remote.push(['refs/heads/%s:refs/heads/%s' % (branch, branch)], callbacks=callbacks)
+        remote = self._get_remote(repo, remote_name)
+
+        remote.push(['refs/heads/%s:refs/heads/%s' % (branch, branch)], callbacks=self._build_callback())
         self.logger.log("Pushed to repo '%s'" % repo_path)
 
     def _build_callback(self):
@@ -167,37 +146,46 @@ class GitClient:
         callbacks.certificate_check = insecure
         return callbacks
 
-    def _build_lines(self, diff_patch):
-        hunks = diff_patch.hunks
-        lines = []
-        if not hunks or len(hunks) == 0:
-            return lines
-        for hunk in hunks:
-            lines += hunk.lines or []
-        return lines
+    def _merge(self, repo, remote_master_id):
+        repo.merge(remote_master_id)
+        head_id = repo.head.target
 
-    def _get_delta_path(self, delta_path):
-        if not delta_path:
-            return None
-        return delta_path.path
+        if repo.index.conflicts:
+            conflict_paths = []
+            for conflict in repo.index.conflicts:
+                conflict_paths.append(conflict[0].path)
+            self.logger.log("Conflicts were found in paths: [%s]" % ", ".join(conflict_paths))
+            return repo.index.conflicts
 
-    @staticmethod
-    def _repository(repo_path):
-        return pygit2.Repository(os.path.join(repo_path, '.git'))
+        user = self._get_author(repo)
+        tree = repo.index.write_tree()
+        repo.create_commit('HEAD', user, user, self._build_merge_commit_message(head_id, remote_master_id),
+                           tree, [head_id, remote_master_id])
+        self._finish_merge(repo)
+        return None
 
-    @staticmethod
-    def _is_untracked(repo, file_path):
-        file_status = repo.status_file(file_path)
-        return file_status == pygit2.GIT_STATUS_WT_NEW
+    def _fast_forward_pull(self, repo, repo_path, remote_master_id, branch=DEFAULT_BRANCH_NAME):
+        self.logger.log("Fast-forward pull for repository '%s'" % repo_path)
+        repo.checkout_tree(repo.get(remote_master_id))
+        try:
+            master_ref = self._get_head(repo, branch)
+            master_ref.set_target(remote_master_id)
+        except KeyError:
+            repo.create_branch(branch, repo.get(remote_master_id))
+        repo.head.set_target(remote_master_id)
 
-    def _find_patch(self, repo_path, file_path):
+    def _find_patch(self, repo_path, file_path, branch_name=DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
         if self._is_untracked(repo, file_path):
+            # build in-memory index
             tree = repo.head.peel().tree
             index = repo.index
             index.add(file_path)
             repo_diff = tree.diff_to_index(index)
             index.clear()
+        elif self._is_conflicts(repo, file_path):
+            master_ref = self._get_head(repo, branch_name)
+            repo_diff = repo.diff(master_ref)
         else:
             repo_diff = repo.diff()
         for diff_patch in repo_diff:
@@ -209,3 +197,67 @@ class GitClient:
                 continue
             return diff_patch
         return None
+
+    def _get_author(self, repo):
+        return repo.default_signature
+
+    @staticmethod
+    def _get_delta_path(delta_path):
+        if not delta_path:
+            return None
+        return delta_path.path
+
+    @staticmethod
+    def _build_lines(diff_patch):
+        hunks = diff_patch.hunks
+        lines = []
+        if not hunks or len(hunks) == 0:
+            return lines
+        for hunk in hunks:
+            lines += hunk.lines or []
+        return lines
+
+    @staticmethod
+    def _repository(repo_path):
+        return pygit2.Repository(os.path.join(repo_path, '.git'))
+
+    @staticmethod
+    def _is_untracked(repo, file_path):
+        file_status = repo.status_file(file_path)
+        return file_status == pygit2.GIT_STATUS_WT_NEW
+
+    @staticmethod
+    def _is_conflicts(repo, file_path):
+        file_status = repo.status_file(file_path)
+        return file_status == pygit2.GIT_STATUS_CONFLICTED
+
+    @staticmethod
+    def _is_merge_in_progress(repo):
+        try:
+            repo.lookup_reference('MERGE_HEAD')
+            return True
+        except KeyError:
+            return False
+
+    @staticmethod
+    def _finish_merge(repo):
+        repo.state_cleanup()
+
+    @staticmethod
+    def _get_remote(repo, remote_name=DEFAULT_REMOTE_NAME):
+        remote = repo.remotes[remote_name]
+        if not remote:
+            raise RuntimeError("Failed to find remote '%s'" % remote_name)
+        return remote
+
+    @staticmethod
+    def _get_remote_head(repo, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
+        return repo.lookup_reference('refs/remotes/%s/%s' % (remote_name, branch))
+
+    @staticmethod
+    def _get_head(repo, branch=DEFAULT_BRANCH_NAME):
+        return repo.lookup_reference('refs/heads/%s' % branch)
+
+    @staticmethod
+    def _build_merge_commit_message(id1, id2):
+        return 'Merge: %s %s' % (id1, id2)

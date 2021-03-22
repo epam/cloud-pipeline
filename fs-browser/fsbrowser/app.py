@@ -171,7 +171,7 @@ def clone_versioned_storage(vs_id):
 def is_versioned_storage_detached(vs_id):
     manager = app.config['fsbrowser']
     try:
-        is_head_detached = manager.git_head(vs_id)
+        is_head_detached = manager.is_head_detached(vs_id)
         return jsonify(success({"detached": is_head_detached}))
     except Exception as e:
         manager.logger.log(traceback.format_exc())

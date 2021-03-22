@@ -30,11 +30,10 @@ TAR_GZ_PERMISSIONS = 0o774  # -rwxrwxr--
 class TransferTask(Task):
 
     def __init__(self, task_id, storage_name, storage_path='', logger=BrowserLogger()):
-        super().__init__(task_id)
+        super().__init__(task_id, logger)
         self.storage_name = storage_name
         self.process = None
         self.upload_path = None
-        self.logger = logger
         self.storage_path = storage_path
         self.tmp_tar_ball = None
 

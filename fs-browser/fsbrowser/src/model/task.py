@@ -26,11 +26,12 @@ class TaskStatus(object):
 
 class Task:
 
-    def __init__(self, task_id):
+    def __init__(self, task_id, logger):
         self.task_id = task_id
         self.status = TaskStatus.PENDING
         self.result = None
         self.message = None
+        self.logger = logger
 
     def success(self, result=None):
         self.status = TaskStatus.SUCCESS

@@ -111,8 +111,8 @@ class FsBrowserManager(object):
     def git_clone(self, versioned_storage_id, revision):
         return self.git_manager.clone(versioned_storage_id, revision)
 
-    def git_head(self, versioned_storage_id):
-        return self.git_manager.head(versioned_storage_id)
+    def is_head_detached(self, versioned_storage_id):
+        return self.git_manager.is_head_detached(versioned_storage_id)
 
     def list_version_storages(self):
         return self.git_manager.list()

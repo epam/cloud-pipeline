@@ -44,19 +44,19 @@ class GitManager:
             raise RuntimeError('Repository already exists!')
         git_url = versioned_storage.get('repository')
         task_id = str(uuid.uuid4().hex)
-        task = GitTask(task_id)
+        task = GitTask(task_id, self.logger)
         self.tasks.update({task_id: task})
         self.pool.apply_async(task.clone, [self.git_client, full_repo_path, git_url, revision])
         return task_id
 
-    def head(self, versioned_storage_id):
+    def is_head_detached(self, versioned_storage_id):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         return self.git_client.head(full_repo_path)
 
     def pull(self, versioned_storage_id):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         task_id = str(uuid.uuid4().hex)
-        task = GitTask(task_id)
+        task = GitTask(task_id, self.logger)
         self.tasks.update({task_id: task})
         self.pool.apply_async(task.pull, [self.git_client, full_repo_path])
         return task_id
@@ -89,13 +89,13 @@ class GitManager:
         return git_file_diff.to_json()
 
     def push(self, versioned_storage_id, message, files_to_add=None):
-        if self.head(versioned_storage_id):
+        if self.is_head_detached(versioned_storage_id):
             raise RuntimeError('HEAD detached')
         if not message:
             raise RuntimeError('Message shall be specified')
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         task_id = str(uuid.uuid4().hex)
-        task = GitTask(task_id)
+        task = GitTask(task_id, self.logger)
         self.tasks.update({task_id: task})
         self.pool.apply_async(task.push, [self.git_client, full_repo_path, message, files_to_add])
         return task_id
