@@ -42,4 +42,8 @@ public final class DateUtils {
     public static LocalDateTime convertDateToLocalDateTime(final Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
+
+    public static LocalDateTime convertEpochMilliToLocalDateTime(final long epochMilli) {
+        return convertDateToLocalDateTime(new Date(epochMilli));
+    }
 }

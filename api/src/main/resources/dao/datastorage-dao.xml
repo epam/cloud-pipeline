@@ -29,6 +29,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -54,6 +55,7 @@
                         :DESCRIPTION,
                         :DATASTORAGE_TYPE,
                         :PATH,
+                        :DATASTORAGE_ROOT_ID,
                         :STS_DURATION,
                         :LTS_DURATION,
                         :INCOMPLETE_UPLOAD_CLEANUP_DAYS,
@@ -113,6 +115,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -147,6 +150,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -183,6 +187,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -218,6 +223,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -253,6 +259,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -288,6 +295,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -323,6 +331,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -359,6 +368,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -394,6 +404,7 @@
                         description,
                         datastorage_type,
                         path,
+                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -447,6 +458,7 @@
                             d.description,
                             d.datastorage_type,
                             d.path,
+                            d.datastorage_root_id,
                             d.sts_duration,
                             d.lts_duration,
                             d.incomplete_upload_cleanup_days,
@@ -481,6 +493,7 @@
                             null as description,
                             null as datastorage_type,
                             null as path,
+                            null as datastorage_root_id,
                             null as sts_duration,
                             null as lts_duration,
                             null as incomplete_upload_cleanup_days,
@@ -517,6 +530,7 @@
                             d.description,
                             d.datastorage_type,
                             d.path,
+                            d.datastorage_root_id,
                             d.sts_duration,
                             d.lts_duration,
                             d.incomplete_upload_cleanup_days,
@@ -547,6 +561,7 @@
                             null as description,
                             null as datastorage_type,
                             null as path,
+                            null as datastorage_root_id,
                             null as sts_duration,
                             null as lts_duration,
                             null as incomplete_upload_cleanup_days,
@@ -570,6 +585,25 @@
 	                    FROM pipeline.folder m
 	                    INNER JOIN children t ON t.parent_folder_id = m.folder_id
 	                ) SELECT * FROM children;
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageRootQuery">
+            <value>
+                <![CDATA[
+                    SELECT r.datastorage_root_id, r.datastorage_root_path
+                    FROM pipeline.datastorage_root r
+                    WHERE r.datastorage_root_path = :DATASTORAGE_ROOT_PATH
+                ]]>
+            </value>
+        </property>
+        <property name="createDataStorageRootQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_root (datastorage_root_path)
+                    VALUES (:DATASTORAGE_ROOT_PATH)
+                    ON CONFLICT (datastorage_root_path) 
+                    DO NOTHING;
                 ]]>
             </value>
         </property>

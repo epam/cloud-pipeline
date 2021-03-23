@@ -112,6 +112,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Util class providing methods to interact with AWS S3 API.
@@ -326,6 +327,11 @@ public class S3Helper {
         }
     }
 
+    public Stream<DataStorageFile> listDataStorageFiles(final String bucket, final String path) {
+        final AmazonS3 client = getDefaultS3Client();
+        return S3ListingHelper.files(client, bucket, path);
+    }
+
     public DataStorageListing getItems(String bucket, String path, Boolean showVersion,
             Integer pageSize, String marker, String prefix) {
         String requestPath = Optional.ofNullable(path).orElse("");
@@ -341,6 +347,43 @@ public class S3Helper {
                 listFiles(client, bucket, requestPath, pageSize, marker, prefix);
         result.getResults().sort(AbstractDataStorageItem.getStorageItemComparator());
         return result;
+    }
+
+    private DataStorageFile getFile(final AmazonS3 client, final String bucket, final String path) {
+        return findFile(client, bucket, path)
+                .orElseThrow(() -> new DataStorageException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket)));
+    }
+
+    public Optional<DataStorageFile> findFile(final String bucket, final String path) {
+        final AmazonS3 client = getDefaultS3Client();
+        return findFile(client, bucket, path);
+    }
+
+    private Optional<DataStorageFile> findFile(final AmazonS3 client, final String bucket, final String path) {
+        try {
+            final ObjectMetadata metadata = client.getObjectMetadata(new GetObjectMetadataRequest(bucket, path));
+            final TimeZone tz = TimeZone.getTimeZone("UTC");
+            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            df.setTimeZone(tz);
+            final DataStorageFile file = new DataStorageFile();
+            file.setName(path);
+            file.setPath(path);
+            file.setSize(metadata.getContentLength());
+            file.setChanged(df.format(metadata.getLastModified()));
+            file.setVersion(metadata.getVersionId());
+            final Map<String, String> labels = new HashMap<>();
+            if (metadata.getStorageClass() != null) {
+                labels.put("StorageClass", metadata.getStorageClass());
+            }
+            file.setLabels(labels);
+            return Optional.of(file);
+        } catch (AmazonS3Exception e) {
+            if (e.getStatusCode() == NOT_FOUND) {
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 
     public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path,
@@ -405,7 +448,7 @@ public class S3Helper {
         putObjectRequest.withTagging(new ObjectTagging(tags));
         putObjectRequest.withCannedAcl(DEFAULT_CANNED_ACL);
         client.putObject(putObjectRequest);
-        return this.getFile(client, bucket, path);
+        return getFile(client, bucket, path);
     }
 
     private boolean itemExists(AmazonS3 client, String bucket, String path, boolean isFolder) {
@@ -436,35 +479,6 @@ public class S3Helper {
                 request.setMarker(listing.getNextMarker());
             } while (listing.isTruncated());
         }
-    }
-
-    private DataStorageFile getFile(AmazonS3 client, String bucket, String path) {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        ListObjectsRequest req = new ListObjectsRequest();
-        req.setBucketName(bucket);
-        req.setPrefix(path);
-        req.setDelimiter(ProviderUtils.DELIMITER);
-        ObjectListing listing = client.listObjects(req);
-        for (S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
-            String relativePath = s3ObjectSummary.getKey();
-            if (relativePath.equalsIgnoreCase(path)) {
-                String fileName = relativePath.substring(path.length());
-                DataStorageFile file = new DataStorageFile();
-                file.setName(fileName);
-                file.setPath(relativePath);
-                file.setSize(s3ObjectSummary.getSize());
-                file.setChanged(df.format(s3ObjectSummary.getLastModified()));
-                Map<String, String> labels = new HashMap<>();
-                if (s3ObjectSummary.getStorageClass() != null) {
-                    labels.put("StorageClass", s3ObjectSummary.getStorageClass());
-                }
-                file.setLabels(labels);
-                return file;
-            }
-        }
-        return null;
     }
 
     public DataStorageFolder createFolder(String bucket, String path) throws DataStorageException {
@@ -556,6 +570,27 @@ public class S3Helper {
             if (noFiles) {
                 deleteAllVersions(client, bucket, path);
             }
+        }
+    }
+
+    private void deleteAllVersions(AmazonS3 client, String bucket, String path) {
+        try(S3ObjectDeleter s3ObjectDeleter = new S3ObjectDeleter(client, bucket)) {
+            ListVersionsRequest request = new ListVersionsRequest().withBucketName(bucket);
+            if (path != null) {
+                request = request.withPrefix(path);
+            }
+            VersionListing versionListing;
+            do {
+                versionListing = client.listVersions(request);
+                for (S3VersionSummary versionSummary : versionListing.getVersionSummaries()) {
+                    if (!pathMatch(path, versionSummary.getKey())) {
+                        continue;
+                    }
+                    s3ObjectDeleter.deleteKey(versionSummary.getKey(), versionSummary.getVersionId());
+                }
+                request.setKeyMarker(versionListing.getNextKeyMarker());
+                request.setVersionIdMarker(versionListing.getNextVersionIdMarker());
+            } while (versionListing.isTruncated());
         }
     }
 
@@ -842,27 +877,6 @@ public class S3Helper {
 
     private String buildOwnerTag(String owner) {
         return ProviderUtils.OWNER_TAG_KEY + "=" + owner;
-    }
-
-    private void deleteAllVersions(AmazonS3 client, String bucket, String path) {
-        try(S3ObjectDeleter s3ObjectDeleter = new S3ObjectDeleter(client, bucket)) {
-            ListVersionsRequest request = new ListVersionsRequest().withBucketName(bucket);
-            if (path != null) {
-                request = request.withPrefix(path);
-            }
-            VersionListing versionListing;
-            do {
-                versionListing = client.listVersions(request);
-                for (S3VersionSummary versionSummary : versionListing.getVersionSummaries()) {
-                    if (!pathMatch(path, versionSummary.getKey())) {
-                        continue;
-                    }
-                    s3ObjectDeleter.deleteKey(versionSummary.getKey(), versionSummary.getVersionId());
-                }
-                request.setKeyMarker(versionListing.getNextKeyMarker());
-                request.setVersionIdMarker(versionListing.getNextVersionIdMarker());
-            } while (versionListing.isTruncated());
-        }
     }
 
     private boolean pathMatch(String path, String key) {

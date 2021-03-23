@@ -45,7 +45,9 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -87,9 +89,19 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final AzureBlobStorage dataStorage, final String path) {
+        return getAzureStorageHelper(dataStorage).listDataStorageFiles(dataStorage, path);
+    }
+
+    @Override
     public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker) {
         return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, pageSize, marker);
+    }
+
+    @Override
+    public Optional<DataStorageFile> findFile(final AzureBlobStorage dataStorage, final String path) {
+        return getAzureStorageHelper(dataStorage).findFile(dataStorage, path);
     }
 
     @Override

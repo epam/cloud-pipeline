@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * An abstract entity, that represents a Data Storage, that is used to store and access data from different sources.
@@ -40,6 +40,8 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
     private AclClass aclClass = AclClass.DATA_STORAGE;
     private boolean hasMetadata;
     private Long fileShareMountId;
+    @JsonIgnore
+    private Long rootId;
 
     /**
      * Defines a path to a directory, where this storage should be mounted in a Docker container
@@ -117,5 +119,17 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
 
     public String getRoot() {
         return getPath().split(getDelimiter())[0];
+    }
+
+    public String resolveRootPath(final String path) {
+        final String storagePath = StringUtils.strip(StringUtils.removeStart(getPath(), getRoot()), getDelimiter());
+        final String relativePath = StringUtils.strip(path, getDelimiter());
+        if (StringUtils.isBlank(storagePath)) {
+            return relativePath;
+        }
+        if (StringUtils.isBlank(relativePath)) {
+            return storagePath;
+        }
+        return storagePath + getDelimiter() + relativePath;
     }
 }

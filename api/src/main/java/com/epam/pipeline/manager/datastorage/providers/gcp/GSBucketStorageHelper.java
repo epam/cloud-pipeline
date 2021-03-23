@@ -81,10 +81,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -117,6 +120,17 @@ public class GSBucketStorageHelper {
         deleteBucket(bucketName, client);
     }
 
+    public Stream<DataStorageFile> listDataStorageFiles(final GSBucketStorage storage, final String path) {
+        final String folderPath = normalizeFolderPath(path);
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+        final Page<Blob> blobs = client.list(bucketName, 
+                Storage.BlobListOption.prefix(folderPath));
+        final Spliterator<Blob> spliterator = blobs.iterateAll().spliterator();
+        return StreamSupport.stream(spliterator, false)
+                .map(this::createDataStorageFile);
+    }
+
     public DataStorageListing listItems(final GSBucketStorage storage, final String path, final Boolean showVersion,
                                         final Integer pageSize, final String marker) {
         String requestPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
@@ -136,6 +150,18 @@ public class GSBucketStorageHelper {
                 ? listItemsWithVersions(blobs)
                 : listItemsWithoutVersions(blobs);
         return new DataStorageListing(blobs.getNextPageToken(), items);
+    }
+
+    public Optional<DataStorageFile> findFile(final GSBucketStorage storage, final String path) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        return Optional.ofNullable(client.get(storage.getPath(), path))
+                .map(blob -> {
+                    final DataStorageFile file = new DataStorageFile();
+                    file.setName(blob.getName());
+                    file.setPath(blob.getName());
+                    file.setVersion(blob.getGeneration() != null ? blob.getGeneration().toString() : null);
+                    return file;
+                });
     }
 
     public DataStorageFile createFile(final GSBucketStorage storage, final String path,
@@ -515,7 +541,7 @@ public class GSBucketStorageHelper {
             }
             items.add(blob.isDirectory()
                     ? createDataStorageFolder(blob.getName())
-                    : createDataStorageFile(blob));
+                    : createDataStorageFileWithoutVersion(blob));
         }
         return items;
     }
@@ -623,7 +649,15 @@ public class GSBucketStorageHelper {
         return folder;
     }
 
+    private DataStorageFile createDataStorageFileWithoutVersion(final Blob blob) {
+        return createDataStorageFile(blob, false);
+    }
+
     private DataStorageFile createDataStorageFile(final Blob blob) {
+        return createDataStorageFile(blob, true);
+    }
+    
+    private DataStorageFile createDataStorageFile(final Blob blob, final boolean withVersion) {
         final TimeZone tz = TimeZone.getTimeZone("UTC");
         final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         df.setTimeZone(tz);
@@ -635,6 +669,9 @@ public class GSBucketStorageHelper {
         file.setPath(blob.getName());
         file.setSize(blob.getSize());
         file.setChanged(df.format(new Date(blob.getUpdateTime())));
+        if (withVersion) {
+            file.setVersion(String.valueOf(blob.getGeneration()));
+        }
         return file;
     }
 

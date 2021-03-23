@@ -572,11 +572,11 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
         params.add(VERSION, TEST);
-        Mockito.doReturn(TAGS).when(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, setTags, TEST);
+        Mockito.doReturn(TAGS).when(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, TEST, setTags);
 
         final MvcResult mvcResult = performRequest(delete(String.format(TAGS_URL, ID)).params(params).content(content));
 
-        Mockito.verify(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, setTags, TEST);
+        Mockito.verify(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, TEST, setTags);
         assertResponse(mvcResult, TAGS, STRING_MAP_INSTANCE_TYPE);
     }
 }

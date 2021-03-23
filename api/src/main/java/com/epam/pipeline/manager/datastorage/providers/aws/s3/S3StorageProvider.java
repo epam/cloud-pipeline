@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -161,7 +162,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public DataStorageItemContent getFile(S3bucketDataStorage dataStorage, String path,
-            String version, Long maxDownloadSize) {
+                                          String version, Long maxDownloadSize) {
         return getS3Helper(dataStorage).getFileContent(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version, maxDownloadSize);
     }
@@ -179,6 +180,11 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         return getS3Helper(dataStorage).getItems(datastoragePath.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
                 ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()));
+    }
+
+    @Override
+    public Optional<DataStorageFile> findFile(final S3bucketDataStorage dataStorage, final String path) {
+        return getS3Helper(dataStorage).findFile(dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path));
     }
 
     @Override
@@ -222,6 +228,13 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override public DataStorageFolder createFolder(S3bucketDataStorage dataStorage, String path) {
         return getS3Helper(dataStorage).createFolder(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path));
+    }
+
+    @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final S3bucketDataStorage dataStorage,
+                                                        final String path) {
+        return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path));
     }
 

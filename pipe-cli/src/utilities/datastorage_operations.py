@@ -30,6 +30,7 @@ from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.du import DataUsageHelper
 from src.utilities.du_format_type import DuFormatType
 from src.utilities.patterns import PatternMatcher
+from src.utilities.storage.common import TransferResult, UploadResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
@@ -94,6 +95,7 @@ class DataStorageOperations(object):
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
             sorted_items = list()
+            transfer_results = []
             for item in items:
                 full_path = item[1]
                 relative_path = item[2]
@@ -121,12 +123,20 @@ class DataStorageOperations(object):
                 if threads:
                     sorted_items.append(item)
                 else:
-                    manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                     relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                     tags=tags, skip_existing=skip_existing)
+                    transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                                       relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                                       tags=tags, skip_existing=skip_existing)
+                    if not destination_wrapper.is_local():
+                        transfer_results.append(transfer_result)
+                        transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                                       transfer_results, clean=clean)
             if threads:
                 cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
                                                  clean, quiet, tags, skip_existing)
+            else:
+                if not destination_wrapper.is_local():
+                    cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                transfer_results, clean=clean, flush_size=1)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)
@@ -545,17 +555,6 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, skip_existing,
-                        lock):
-        for item in items:
-            full_path = item[1]
-            relative_path = item[2]
-            size = item[3]
-            manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                             relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                             tags=tags, skip_existing=skip_existing, lock=lock)
-
-    @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
                                      quiet, tags, skip_existing):
         size_index = 3
@@ -578,6 +577,65 @@ class DataStorageOperations(object):
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
+
+    @classmethod
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, skip_existing,
+                        lock):
+        transfer_results = []
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            size = item[3]
+            transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                                relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                                tags=tags, skip_existing=skip_existing, lock=lock)
+            if not destination_wrapper.is_local():
+                transfer_results.append(transfer_result)
+                transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                               transfer_results, clean=clean)
+        if not destination_wrapper.is_local():
+            cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                        transfer_results, clean=clean, flush_size=1)
+
+    @classmethod
+    def _flush_transfer_results(cls, source_wrapper, destination_wrapper, transfer_results,
+                                clean=False, flush_size=100):
+        if len(transfer_results) < flush_size:
+            return transfer_results
+        tag_objects = []
+        source_tags_map = {}
+        if transfer_results and isinstance(transfer_results[0], TransferResult):
+            source_tags = DataStorage.batch_load_object_tags(source_wrapper.bucket.identifier,
+                                                             [{'path': transfer_result.source_key}
+                                                              for transfer_result in transfer_results])
+            for source_tag in source_tags:
+                source_object_path = source_tag.get('object', {}).get('path', '')
+                source_object_tags = source_tags_map.get(source_object_path, {})
+                source_object_tags[source_tag.get('key', '')] = source_tag.get('value', '')
+                source_tags_map[source_object_path] = source_object_tags
+        for transfer_result in transfer_results:
+            all_tags = {}
+            all_tags.update(source_tags_map.get(transfer_result.source_key, {}))
+            all_tags.update(transfer_result.tags)
+            for key, value in all_tags.items():
+                tag_objects.append({
+                    'path': transfer_result.destination_key,
+                    'key': key,
+                    'value': value
+                })
+                if destination_wrapper.bucket.policy.versioning_enabled and transfer_result.destination_version:
+                    tag_objects.append({
+                        'path': transfer_result.destination_key,
+                        'version': transfer_result.destination_version,
+                        'key': key,
+                        'value': value
+                    })
+        DataStorage.batch_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects)
+        if clean and not source_wrapper.is_local() and not source_wrapper.bucket.policy.versioning_enabled:
+            DataStorage.batch_delete_all_object_tags(source_wrapper.bucket.identifier,
+                                                     [{'path': transfer_result.source_key}
+                                                      for transfer_result in transfer_results])
+        return []
 
     @staticmethod
     def _handle_keyboard_interrupt(workers):

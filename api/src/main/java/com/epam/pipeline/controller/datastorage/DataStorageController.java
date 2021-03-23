@@ -628,7 +628,7 @@ public class DataStorageController extends AbstractRestController {
                                                       @RequestParam(value = PATH) String path,
                                                       @RequestParam(value = VERSION, required = false) String version,
                                                       @RequestBody final Set<String> tags) {
-        return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, tags, version));
+        return Result.success(dataStorageApiService.deleteDataStorageObjectTags(id, path, version, tags));
     }
 
     @GetMapping(value = "/datastorage/{id}/tags/list")

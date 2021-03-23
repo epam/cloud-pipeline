@@ -76,6 +76,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -283,6 +284,39 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
+    public Stream<DataStorageFile> listDataStorageFiles(final NFSDataStorage dataStorage, final String path) {
+        final File dataStorageRoot = mount(dataStorage);
+        final File dir = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
+        try (Stream<Path> dirStream = Files.walk(dir.toPath(), 1)) {
+            return dirStream
+                    .map(p -> {
+                        File file = p.toFile();
+
+                        AbstractDataStorageItem item;
+                        if (file.isDirectory()) {
+                            item = new DataStorageFolder();
+                        } else {
+                            //set size if it's a file
+                            DataStorageFile dataStorageFile = new DataStorageFile();
+                            dataStorageFile.setSize(file.length());
+                            dataStorageFile.setChanged(S3Constants.getAwsDateFormat()
+                                    .format(new Date(file.lastModified())));
+                            item = dataStorageFile;
+                        }
+
+                        item.setName(file.getName());
+                        item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
+
+                        return item;
+                    })
+                    .filter(DataStorageFile.class::isInstance)
+                    .map(DataStorageFile.class::cast);
+        } catch (IOException e) {
+            throw new DataStorageException(e);
+        }
+    }
+
+    @Override
     public DataStorageListing getItems(NFSDataStorage dataStorage, String path, Boolean showVersion,
                                        Integer pageSize, String marker) {
         File dataStorageRoot = mount(dataStorage);
@@ -330,6 +364,21 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         } catch (IOException e) {
             throw new DataStorageException(e);
         }
+    }
+
+    @Override
+    public Optional<DataStorageFile> findFile(final NFSDataStorage dataStorage, final String path) {
+        final File dataStorageRoot = mount(dataStorage);
+        return Optional.of(new File(dataStorageRoot, path))
+                .filter(File::exists)
+                .map(file -> {
+                    final DataStorageFile item = new DataStorageFile();
+                    item.setSize(file.length());
+                    item.setChanged(S3Constants.getAwsDateFormat().format(new Date(file.lastModified())));
+                    item.setName(file.getName());
+                    item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
+                    return item;   
+                });
     }
 
     @Override

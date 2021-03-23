@@ -37,7 +37,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import StorageOperations, AbstractTransferManager, AbstractListingManager, \
-    AbstractDeleteManager
+    AbstractDeleteManager, UploadResult, TransferResult
 from src.utilities.progress_bar import ProgressPercentage
 from src.config import Config
 
@@ -152,7 +152,9 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             prefix = prefix[:-1]
             check_file = False
         if not recursive:
-            self.__delete_blob(prefix, exclude, include)
+            deleted = self.__delete_blob(prefix, exclude, include)
+            if deleted:
+                self._delete_all_object_tags([prefix])
         else:
             blob_names_for_deletion = []
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
@@ -161,8 +163,19 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
                     break
                 if self.__file_under_folder(item.name, prefix):
                     blob_names_for_deletion.append(item.name)
+            deleted_blob_names = []
             for blob_name in blob_names_for_deletion:
-                self.__delete_blob(blob_name, exclude, include, prefix=prefix)
+                deleted = self.__delete_blob(blob_name, exclude, include, prefix=prefix)
+                if deleted:
+                    deleted_blob_names.append(blob_name)
+            self._delete_all_object_tags(deleted_blob_names)
+
+    def _delete_all_object_tags(self, blob_names_for_deletion, chunk_size=100):
+        for blob_names_for_deletion_chunk in [blob_names_for_deletion[i:i + chunk_size]
+                                              for i in range(0, len(blob_names_for_deletion), chunk_size)]:
+            DataStorage.batch_delete_all_object_tags(self.bucket.identifier,
+                                                     [{'path': blob_name}
+                                                      for blob_name in blob_names_for_deletion_chunk])
 
     def __file_under_folder(self, file_path, folder_path):
         return StorageOperations.without_prefix(file_path, folder_path).startswith(self.delimiter)
@@ -173,10 +186,11 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             relative_file_name = StorageOperations.get_item_name(blob_name, prefix=prefix + self.delimiter)
             file_name = StorageOperations.get_prefix(relative_file_name)
         if not PatternMatcher.match_any(file_name, include):
-            return
+            return False
         if PatternMatcher.match_any(file_name, exclude, default=False):
-            return
+            return False
         self.service.delete_blob(self.bucket.path, blob_name)
+        return True
 
 
 class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
@@ -207,7 +221,6 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         source_credentials = source_service.credentials
         source_blob_url = self.service.make_blob_url(source_wrapper.bucket.path, full_path,
                                                      sas_token=source_credentials.session_token.lstrip('?'))
-        destination_tags = self._destination_tags(source_wrapper, full_path, tags)
         destination_bucket = destination_wrapper.bucket.path
         sync_copy = size < TransferBetweenAzureBucketsManager._SYNC_COPY_SIZE_LIMIT
         if not size or size == 0:
@@ -216,7 +229,6 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         if progress_callback:
             progress_callback(0, size)
         self.service.copy_blob(destination_bucket, destination_path, source_blob_url,
-                               metadata=destination_tags,
                                requires_sync=sync_copy)
         if not sync_copy:
             self._wait_for_copying(destination_bucket, destination_path, full_path)
@@ -224,6 +236,8 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
             progress_callback(size, size)
         if clean:
             source_service.delete_blob(source_wrapper.bucket.path, full_path)
+        return TransferResult(source_key=full_path, destination_key=destination_path, destination_version=None,
+                              tags=StorageOperations.parse_tags(tags))
 
     def _wait_for_copying(self, destination_bucket, destination_path, full_path):
         for _ in range(0, TransferBetweenAzureBucketsManager._POLLS_ATTEMPTS):
@@ -239,12 +253,6 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
     def _get_copying_status(self, destination_bucket, destination_path):
         blob = self.service.get_blob_properties(destination_bucket, destination_path)
         return blob.properties.copy.status
-
-    def _destination_tags(self, source_wrapper, full_path, raw_tags):
-        tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
-            else source_wrapper.get_list_manager().get_file_tags(full_path)
-        tags.update(StorageOperations.source_tags(tags, full_path, source_wrapper))
-        return tags
 
 
 class AzureDownloadManager(AzureManager, AbstractTransferManager):
@@ -297,6 +305,8 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
                                            progress_callback=progress_callback)
         if clean:
             source_wrapper.delete_item(source_key)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=destination_tags)
 
 
 class _SourceUrlIO(io.BytesIO):
@@ -336,6 +346,8 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
                                              progress_callback=progress_callback)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=destination_tags)
 
 
 class AzureTemporaryCredentials:

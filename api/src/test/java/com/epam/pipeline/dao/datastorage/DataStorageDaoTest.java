@@ -96,7 +96,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         policy.setVersioningEnabled(true);
         s3Bucket.setStoragePolicy(policy);
 
-        nfsStorage = new NFSDataStorage(null, "NFS_STORAGE", "nfs_path");
+        nfsStorage = new NFSDataStorage(null, "NFS_STORAGE", "127.0.0.1@tcp1:/path");
         nfsStorage.setOwner(TEST_OWNER);
         nfsStorage.setDescription("NFS");
         nfsStorage.setParentFolderId(testFolder.getId());

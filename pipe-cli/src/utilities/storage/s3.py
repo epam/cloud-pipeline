@@ -38,7 +38,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import StorageOperations, AbstractListingManager, AbstractDeleteManager, \
-    AbstractRestoreManager, AbstractTransferManager
+    AbstractRestoreManager, AbstractTransferManager, TransferResult, UploadResult
 from src.config import Config
 
 
@@ -85,6 +85,16 @@ class StorageItemManager(object):
             if 'ContentLength' in item:
                 return int(item['ContentLength'])
             return None
+        except ClientError:
+            return None
+
+    def get_s3_file_version(self, bucket, key):
+        try:
+            client = self._get_client()
+            item = client.head_object(Bucket=bucket, Key=key)
+            if 'DeleteMarker' in item:
+                return None
+            return item.get('VersionId')
         except ClientError:
             return None
 
@@ -157,6 +167,10 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             self.bucket.upload_file(source_key, destination_key, ExtraArgs=extra_args)
         if clean:
             source_wrapper.delete_item(source_key)
+        tags = StorageOperations.parse_tags(tags)
+        version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
+                            tags=tags)
 
 
 class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManager):
@@ -197,6 +211,10 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
                                        ExtraArgs=extra_args)
         else:
             self.bucket.upload_fileobj(file_stream, destination_key, ExtraArgs=extra_args)
+        tags = StorageOperations.parse_tags(tags)
+        version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
+                            tags=tags)
 
 
 class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager):
@@ -225,17 +243,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (path, destination_key))
                 return
-        object_tags = ObjectTaggingManager.get_object_tagging(
-            ObjectTaggingManager(self.session, source_bucket, source_region), path)
-        if not tags and object_tags:
-            tags = self.convert_object_tags(object_tags)
-        if not self.has_required_tag(tags, 'CP_SOURCE'):
-            tags += ('CP_SOURCE=s3://{}/{}'.format(source_bucket, path),)
-        if not self.has_required_tag(tags, 'CP_OWNER'):
-            tags += ('CP_OWNER={}'.format(self._get_user()),)
-        TransferManager.ALLOWED_COPY_ARGS.append('Tagging')
         extra_args = {
-            'Tagging': self._convert_tags_to_url_string(tags),
             'ACL': 'bucket-owner-full-control'
         }
         if StorageItemManager.show_progress(quiet, size, lock):
@@ -245,6 +253,9 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
             self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
         if clean:
             source_wrapper.delete_item(path)
+        version = self.get_s3_file_version(destination_wrapper.bucket.path, destination_key)
+        return TransferResult(source_key=path, destination_key=destination_key, destination_version=version,
+                              tags=StorageOperations.parse_tags(tags))
 
     def build_source_client(self, source_region):
         source_s3 = self.session.resource('s3',
@@ -295,11 +306,33 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         relative_path = self.bucket.path
         self._validate_version(bucket, client, version, file_items)
         try:
-            client.copy_object(Bucket=bucket, Key=relative_path,
-                               CopySource=dict(Bucket=bucket, Key=relative_path, VersionId=version))
+            copied_object = client.copy_object(Bucket=bucket, Key=relative_path,
+                                               CopySource=dict(Bucket=bucket, Key=relative_path, VersionId=version))
             delete_us = dict(Objects=[])
             delete_us['Objects'].append(dict(Key=relative_path, VersionId=version))
             client.delete_objects(Bucket=bucket, Delete=delete_us)
+            DataStorage.batch_copy_object_tags(self.bucket.bucket.identifier, [{
+                'source': {
+                    'path': relative_path,
+                    'version': version
+                },
+                'destination': {
+                    'path': relative_path
+                }
+            }, {
+                'source': {
+                    'path': relative_path,
+                    'version': version
+                },
+                'destination': {
+                    'path': relative_path,
+                    'version': copied_object['VersionId']
+                }
+            }])
+            DataStorage.batch_delete_object_tags(self.bucket.bucket.identifier, [{
+                'path': relative_path,
+                'version': version
+            }])
         except ClientError as e:
             error_message = str(e)
             if 'delete marker' in error_message:
@@ -422,6 +455,25 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
             else:
                 delete_us['Objects'].append(dict(Key=prefix))
             client.delete_objects(Bucket=bucket, Delete=delete_us)
+            if self.bucket.bucket.policy.versioning_enabled:
+                if version:
+                    latest_version = self.get_s3_file_version(bucket, prefix)
+                    if latest_version:
+                        DataStorage.batch_copy_object_tags(self.bucket.bucket.identifier, [{
+                            'source': {
+                                'path': relative_path,
+                                'version': latest_version
+                            },
+                            'destination': {
+                                'path': relative_path
+                            }
+                        }])
+                        self._delete_object_tags(delete_us)
+                    else:
+                        delete_us['Objects'].append(dict(Key=prefix))
+                        self._delete_object_tags(delete_us)
+            else:
+                self._delete_object_tags(delete_us)
         else:
             operation_parameters = {
                 'Bucket': bucket,
@@ -440,10 +492,29 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
                 S3BucketOperations.process_listing(page, 'DeleteMarkers', delete_us, delimiter, exclude, include,
                                                    prefix, versions=True)
                 # flush once aws limit reached
+                if not self.bucket.bucket.policy.versioning_enabled or hard_delete:
+                    self._delete_all_object_tags(delete_us)
                 delete_us = S3BucketOperations.send_delete_objects_request(client, bucket, delete_us)
             # flush rest
             if len(delete_us['Objects']):
+                if not self.bucket.bucket.policy.versioning_enabled or hard_delete:
+                    self._delete_all_object_tags(delete_us)
                 client.delete_objects(Bucket=bucket, Delete=delete_us)
+
+    def _delete_all_object_tags(self, delete_us, chunk_size=100):
+        item_names = list(set(item['Key'] for item in delete_us['Objects']))
+        for item_names_chunk in [item_names[i:i + chunk_size]
+                                 for i in range(0, len(item_names), chunk_size)]:
+            DataStorage.batch_delete_all_object_tags(self.bucket.bucket.identifier,
+                                                     [{'path': item_name}
+                                                      for item_name in item_names_chunk])
+
+    def _delete_object_tags(self, delete_us, chunk_size=100):
+        for items_chunk in [delete_us['Objects'][i:i + chunk_size]
+                            for i in range(0, len(delete_us['Objects']), chunk_size)]:
+            DataStorage.batch_delete_object_tags(self.bucket.bucket.identifier,
+                                                 [{'path': item['Key'], 'version': item.get('VersionId')}
+                                                  for item in items_chunk])
 
 
 class ListingManager(StorageItemManager, AbstractListingManager):
@@ -932,19 +1003,23 @@ class S3BucketOperations(object):
 
     @staticmethod
     def process_listing(page, name, delete_us, delimiter, exclude, include, prefix, versions=False):
+        found_file = False
         if name in page:
             if not versions:
                 single_file_item = S3BucketOperations.get_single_file_item(name, page, prefix)
                 if single_file_item:
                     S3BucketOperations.add_item_to_deletion(single_file_item, prefix, delimiter, include, exclude,
                                                             versions, delete_us)
-                    return
+                    return True
             for item in page[name]:
                 if item is None:
                     break
+                if item['Key'] == prefix:
+                    found_file = True
                 if S3BucketOperations.expect_to_delete_file(prefix, item):
                     continue
                 S3BucketOperations.add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, delete_us)
+        return found_file
 
     @staticmethod
     def get_single_file_item(name, page, prefix):

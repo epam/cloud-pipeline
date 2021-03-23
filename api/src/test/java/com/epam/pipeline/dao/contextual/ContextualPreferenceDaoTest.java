@@ -31,7 +31,6 @@ import java.util.Optional;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
@@ -45,7 +44,6 @@ public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
     private static final String ANOTHER_NAME = "anotherName";
     private static final String VALUE = "value";
     private static final String ANOTHER_VALUE = "anotherValue";
-    private static final int TWO_SEC = 2000;
     private static final PreferenceType TYPE = PreferenceType.INTEGER;
     private static final ContextualPreferenceLevel LEVEL = ContextualPreferenceLevel.USER;
     private static final ContextualPreferenceLevel ANOTHER_LEVEL = ContextualPreferenceLevel.TOOL;
@@ -132,23 +130,6 @@ public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
 
         assertTrue(loadedPreference.isPresent());
         assertNotNull(loadedPreference.get().getCreatedDate());
-    }
-
-    @Test
-    public void upsertShouldUpdateCreatedDateWhileUpdatingPreference() throws InterruptedException {
-        final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(LEVEL,
-                RESOURCE_ID);
-        final ContextualPreference preference = new ContextualPreference(NAME, VALUE, resource);
-        final ContextualPreference oldPreference = contextualPreferenceDao.upsert(preference);
-
-        Thread.sleep(TWO_SEC); // Make sure that old vs loaded creation dates change
-        
-        contextualPreferenceDao.upsert(oldPreference.withValue(ANOTHER_VALUE));
-
-        final Optional<ContextualPreference> loadedPreference = contextualPreferenceDao.load(NAME, resource);
-
-        assertTrue(loadedPreference.isPresent());
-        assertThat(loadedPreference.get().getCreatedDate(), is(not(oldPreference.getCreatedDate())));
     }
 
     @Test

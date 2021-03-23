@@ -16,12 +16,17 @@ import os
 import re
 
 from abc import abstractmethod, ABCMeta
+from collections import namedtuple
 
 import click
 import jwt
 
 from src.config import Config
 from src.model.data_storage_wrapper_type import WrapperType
+
+TransferResult = namedtuple('TransferResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
+
+UploadResult = namedtuple('UploadResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
 
 
 class StorageOperations:

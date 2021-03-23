@@ -282,8 +282,8 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public Map<String, String> deleteDataStorageObjectTags(Long id, String path, Set<String> tags, String version) {
-        return dataStorageManager.deleteDataStorageObjectTags(id, path, tags, version);
+    public Map<String, String> deleteDataStorageObjectTags(Long id, String path, String version, Set<String> tags) {
+        return dataStorageManager.deleteDataStorageObjectTags(id, path, version, tags);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
