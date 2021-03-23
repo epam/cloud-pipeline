@@ -181,23 +181,24 @@ class GitClient:
 
     def _find_patch(self, repo_path, file_path, branch_name=DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
-        if self._is_untracked(repo, file_path):
+        file_status = repo.status_file(file_path)
+        if self._is_untracked(file_status):
             # build in-memory index
             tree = repo.head.peel().tree
             index = repo.index
             index.add(file_path)
             repo_diff = tree.diff_to_index(index)
             index.clear()
-        elif self._is_conflicts(repo, file_path):
-            master_ref = self._get_head(repo, branch_name)
-            repo_diff = repo.diff(master_ref)
+        elif self._is_conflicts(file_status) or self._is_index_modified(file_status):
+            head_ref = self._get_head(repo, branch_name)
+            repo_diff = repo.diff(head_ref)
         else:
             repo_diff = repo.diff()
         for diff_patch in repo_diff:
             delta = diff_patch.delta
             if not delta:
                 continue
-            patch_path = self._get_delta_path(delta.new_file)
+            patch_path = self._get_delta_path(delta.new_file) or self._get_delta_path(delta.old_file)
             if not patch_path or not patch_path == file_path:
                 continue
             return diff_patch
@@ -233,14 +234,16 @@ class GitClient:
         return pygit2.Repository(os.path.join(repo_path, '.git'))
 
     @staticmethod
-    def _is_untracked(repo, file_path):
-        file_status = repo.status_file(file_path)
-        return file_status == pygit2.GIT_STATUS_WT_NEW
+    def _is_untracked(file_status):
+        return file_status & pygit2.GIT_STATUS_WT_NEW
 
     @staticmethod
-    def _is_conflicts(repo, file_path):
-        file_status = repo.status_file(file_path)
-        return file_status == pygit2.GIT_STATUS_CONFLICTED
+    def _is_conflicts(file_status):
+        return file_status & pygit2.GIT_STATUS_CONFLICTED
+
+    @staticmethod
+    def _is_index_modified(file_status):
+        return file_status & pygit2.GIT_STATUS_INDEX_MODIFIED
 
     @staticmethod
     def _is_merge_in_progress(repo):
