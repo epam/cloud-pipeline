@@ -109,6 +109,9 @@
   flex-direction: column;
   width: 100%;
   min-width: min-content;
+  border-radius: 5px 5px 0 0;
+  border: 1px solid #ddd;
+  overflow: auto;
 }
 
 .table-row {
@@ -119,41 +122,59 @@
   display: grid;
   background: #fafafa;
   transition: background 0.2s ease;
+  border: 1px solid transparent;
 }
 
 .table-row:not(.table-header):hover {
-  background: #f5f5f5;
-  color: rgba(0, 0, 0, 0.65);
+  background-color: #eef8ff;
+  border: 1px solid #a2d8ff;
+  color: #49a9ee;
 }
 
 .table-header {
   position: sticky;
   top: 0;
-  background: #dfdfdf;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  color: #8c8c8c;
 }
 
 .header-cell {
-  margin: 5px;
+  margin: 0;
+  padding: 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: none;
+  cursor: default;
 }
 
 .table-cell {
-  margin: 5px;
+  margin: 5px 0 5px 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .table-divider {
-  cursor: e-resize;
   background: transparent;
+  height: 100%;
+  user-select: none;
+  width: 1px;
 }
 
 .table-header .table-divider {
-  border-left: 1px solid #8c8c8c;
+  cursor: e-resize;
+  border-left: 1px solid #f0f0f0;
+  width: 4px;
+}
+
+.table-header .table-divider:hover {
+  border-left: 1px solid #bfbfbf
+}
+
+.table-header .table-divider.divider-active {
+  border-left: 1px solid #69c0ff;
 }
 
 .table-header .table-divider:last-child {
@@ -162,5 +183,7 @@
 
 .table-divider.divider-active {
   width: 1px;
-  background: #69c0ff;
+  margin-top: -1px;
+  height: calc(100% + 2px);
+  background:  #69c0ff;
 }

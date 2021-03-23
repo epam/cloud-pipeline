@@ -299,10 +299,12 @@ class SearchResults extends React.Component {
 
   getGridTemplate = () => {
     const {columnWidths} = this.state;
+    const cellDefault = '100px';
+    const divider = '1px';
     const columnString = `'${this.columns
       .map(c => `${c.key} .`).join(' ')}' 1fr /`;
     const widthString = `${this.columns
-      .map(c => `${columnWidths[c.key] || c.width || '100px'} 4px`).join(' ')}`;
+      .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${divider}`).join(' ')}`;
     return columnString.concat(widthString);
   };
 
@@ -404,7 +406,6 @@ class SearchResults extends React.Component {
             {name}
           </div>,
           <div
-            style={{userSelect: 'none'}}
             className={classNames(
               styles.tableDivider,
               {[styles.dividerActive]: resizingColumn === key}
