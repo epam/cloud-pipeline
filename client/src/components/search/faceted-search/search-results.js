@@ -43,6 +43,7 @@ class SearchResults extends React.Component {
 
   dividerRefs = [];
   headerRef = null;
+  tableWidth = undefined;
   animationFrame;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -51,10 +52,17 @@ class SearchResults extends React.Component {
     }
   }
 
+  componentDidMount () {
+    window.addEventListener('mousemove', this.onResize);
+    window.addEventListener('mouseup', this.stopResizing);
+  }
+
   componentWillUnmount () {
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
     }
+    window.removeEventListener('mousemove', this.onResize);
+    window.removeEventListener('mouseup', this.stopResizing);
   }
 
   initializeResultsArea = (area) => {
@@ -281,12 +289,12 @@ class SearchResults extends React.Component {
           </b>
         </span>
       ),
-      width: '2fr'
+      width: '25%'
     },
-    {key: 'type', name: 'Type', width: '1fr'},
-    {key: 'url', name: 'Url', width: '2fr'},
-    {key: 'elasticId', name: 'Elastic id', width: '2fr'},
-    {key: 'id', name: 'Identifier', width: '2fr'}
+    {key: 'type', name: 'Type', width: '15%'},
+    {key: 'url', name: 'Url', width: '15%'},
+    {key: 'elasticId', name: 'Elastic id', width: '15%'},
+    {key: 'id', name: 'Identifier', width: '15%'}
   ]
 
   getGridTemplate = () => {
@@ -294,7 +302,7 @@ class SearchResults extends React.Component {
     const columnString = `'${this.columns
       .map(c => `${c.key} .`).join(' ')}' 1fr /`;
     const widthString = `${this.columns
-      .map(c => `${columnWidths[c.key] || c.width || '1fr'} 4px`).join(' ')}`;
+      .map(c => `${columnWidths[c.key] || c.width || '100px'} 4px`).join(' ')}`;
     return columnString.concat(widthString);
   };
 
@@ -303,11 +311,13 @@ class SearchResults extends React.Component {
     if (resizingColumn) {
       this.animationFrame = requestAnimationFrame(this.onResize);
       const rect = this.dividerRefs[resizingColumn].getBoundingClientRect();
-      const availableSpace = this.headerRef.getBoundingClientRect().width;
+      if (!this.tableWidth) {
+        this.tableWidth = this.headerRef.getBoundingClientRect().width;
+      }
       const divider = 5;
       const step = 2;
       const offset = event.clientX - (rect.right + divider);
-      const maxWidth = availableSpace / 3;
+      const maxWidth = this.tableWidth / 3;
       if ((rect.width + offset) > maxWidth) {
         return null;
       }
@@ -382,7 +392,6 @@ class SearchResults extends React.Component {
           styles.tableHeader
         )}
         style={{gridTemplate: this.getGridTemplate()}}
-        onMouseMove={(e) => this.onResize(e)}
         ref={header => (this.headerRef = header)}
       >
         {this.columns.map(({key, name}, index) => ([
@@ -419,7 +428,6 @@ class SearchResults extends React.Component {
     return (
       <div
         className={styles.tableContainer}
-        onMouseUp={this.stopResizing}
         onBlur={this.stopResizing}
       >
         {this.renderTableHeader()}

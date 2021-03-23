@@ -107,6 +107,8 @@
   display: flex;
   flex-wrap: nowrap;
   flex-direction: column;
+  width: 100%;
+  min-width: min-content;
 }
 
 .table-row {
