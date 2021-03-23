@@ -20,13 +20,21 @@ class GitFileDiff:
         self.lines = []
         self.new_name = None
         self.old_name = None
+        self.is_binary = False
+        self.new_size = None
+        self.old_size = None
 
     def to_json(self):
-        return {
-            "lines": self._lines_to_json(self.lines),
+        result = {
             "new_name": self.new_name,
-            "old_name": self.old_name
+            "old_name": self.old_name,
+            "binary": self.is_binary
         }
+        if self.is_binary:
+            result.update({"new_size": self.new_size, "old_size": self.old_size})
+        else:
+            result.update({"lines": self._lines_to_json(self.lines)})
+        return result
 
     def _lines_to_json(self, lines):
         return [self._line_to_json(line) for line in lines]

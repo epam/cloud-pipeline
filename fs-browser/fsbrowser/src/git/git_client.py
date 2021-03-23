@@ -75,7 +75,12 @@ class GitClient:
         patch_path = self._get_delta_path(delta.new_file)
 
         change = GitFileDiff(patch_path)
-        change.lines = self._build_lines(diff_patch)
+        if delta.is_binary:
+            change.is_binary = True
+            change.new_size = self._get_delta_size(delta.new_file)
+            change.old_size = self._get_delta_size(delta.old_file)
+        else:
+            change.lines = self._build_lines(diff_patch)
         change.new_name = patch_path
         change.old_name = self._get_delta_path(delta.old_file)
         return change
@@ -202,10 +207,16 @@ class GitClient:
         return repo.default_signature
 
     @staticmethod
-    def _get_delta_path(delta_path):
-        if not delta_path:
+    def _get_delta_path(diff_file):
+        if not diff_file or diff_file.id.hex == pygit2.GIT_OID_HEX_ZERO:
             return None
-        return delta_path.path
+        return diff_file.path
+
+    @staticmethod
+    def _get_delta_size(diff_file):
+        if not diff_file or diff_file.id.hex == pygit2.GIT_OID_HEX_ZERO:
+            return None
+        return diff_file.size
 
     @staticmethod
     def _build_lines(diff_patch):

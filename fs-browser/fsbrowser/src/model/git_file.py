@@ -21,33 +21,25 @@ class GitFile:
         self.path = path
         self.state = None
         self.state_code = None
-        self.is_binary = False
-        self.size = None  # available for binary only
 
     def is_modified(self):
-        return self.state_code == pygit2.GIT_STATUS_INDEX_MODIFIED or self.state_code == pygit2.GIT_STATUS_WT_MODIFIED
+        return self.state_code & pygit2.GIT_STATUS_INDEX_MODIFIED or self.state_code & pygit2.GIT_STATUS_WT_MODIFIED
 
     def is_deleted(self):
-        return self.state_code == pygit2.GIT_STATUS_WT_DELETED or self.state_code == pygit2.GIT_STATUS_INDEX_DELETED
+        return self.state_code & pygit2.GIT_STATUS_WT_DELETED or self.state_code & pygit2.GIT_STATUS_INDEX_DELETED
 
     def is_created(self):
-        return self.state_code == pygit2.GIT_STATUS_INDEX_NEW
+        return self.state_code & pygit2.GIT_STATUS_INDEX_NEW or self.state_code & pygit2.GIT_STATUS_WT_NEW
 
     def is_renamed(self):
-        return self.state_code == pygit2.GIT_STATUS_INDEX_RENAMED or self.state_code == pygit2.GIT_STATUS_WT_RENAMED
+        return self.state_code & pygit2.GIT_STATUS_INDEX_RENAMED or self.state_code & pygit2.GIT_STATUS_WT_RENAMED
 
     def is_typechange(self):
-        return self.state_code == pygit2.GIT_STATUS_INDEX_TYPECHANGE \
-               or self.state_code == pygit2.GIT_STATUS_WT_TYPECHANGE
-
-    def is_untracked(self):
-        return self.state_code == pygit2.GIT_STATUS_WT_NEW
+        return self.state_code & pygit2.GIT_STATUS_INDEX_TYPECHANGE \
+               or self.state_code & pygit2.GIT_STATUS_WT_TYPECHANGE
 
     def is_conflicted(self):
-        return self.state_code == pygit2.GIT_STATUS_CONFLICTED
-
-    def set_size(self, size):
-        self.size = size
+        return self.state_code & pygit2.GIT_STATUS_CONFLICTED
 
     def set_state(self, state_code):
         self.state_code = state_code
@@ -57,7 +49,7 @@ class GitFile:
         if self.is_deleted():
             self.state = 'deleted'
             return
-        if self.is_created() or self.is_untracked():
+        if self.is_created():
             self.state = 'created'
             return
         if self.is_renamed():
@@ -66,13 +58,13 @@ class GitFile:
         if self.is_typechange():
             self.state = 'typechange'
             return
-        if self.state_code == pygit2.GIT_STATUS_WT_UNREADABLE:
+        if self.state_code & pygit2.GIT_STATUS_WT_UNREADABLE:
             self.state = 'unreadable'
             return
-        if self.state_code == pygit2.GIT_STATUS_CURRENT:
+        if self.state_code & pygit2.GIT_STATUS_CURRENT:
             self.state = 'unmodified'
             return
-        if self.state_code == pygit2.GIT_STATUS_IGNORED:
+        if self.state_code & pygit2.GIT_STATUS_IGNORED:
             self.state = 'ignored'
             return
         if self.is_conflicted():
@@ -83,7 +75,5 @@ class GitFile:
     def to_json(self):
         return {
             "status": self.state,
-            "path": self.path,
-            "binary": self.is_binary,
-            "size": self.size
+            "path": self.path
         }
