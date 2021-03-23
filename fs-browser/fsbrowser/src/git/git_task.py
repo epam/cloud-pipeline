@@ -51,12 +51,14 @@ class GitTask(Task):
             self.logger.log(traceback.format_exc())
             self.failure(e)
 
-    def pull(self, git_client, full_repo_path):
+    def pull(self, git_client, full_repo_path, is_head_detached):
         try:
             self.pulling()
             conflicts = git_client.pull(full_repo_path)
             if not conflicts:
                 self.success()
+                if is_head_detached:
+                    git_client.set_head(full_repo_path)
                 return
             self._conflicts_failure(conflicts)
         except Exception as e:

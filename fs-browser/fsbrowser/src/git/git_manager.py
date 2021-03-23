@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import shutil
 import uuid
 
 from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
@@ -55,10 +56,11 @@ class GitManager:
 
     def pull(self, versioned_storage_id):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        is_head_detached = self.is_head_detached(versioned_storage_id)
         task_id = str(uuid.uuid4().hex)
         task = GitTask(task_id, self.logger)
         self.tasks.update({task_id: task})
-        self.pool.apply_async(task.pull, [self.git_client, full_repo_path])
+        self.pool.apply_async(task.pull, [self.git_client, full_repo_path, is_head_detached])
         return task_id
 
     def list(self):
@@ -109,6 +111,14 @@ class GitManager:
         self.tasks.update({task_id: task})
         self.pool.apply_async(task.save_file, [full_repo_path, path, content])
         return task_id
+
+    def revert(self, versioned_storage_id):
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        self.git_client.revert(full_repo_path)
+
+    def remove(self, versioned_storage_id):
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        shutil.rmtree(full_repo_path)
 
     def _build_path_to_repo(self, versioned_storage_id):
         versioned_storage = self.api_client.get_pipeline(versioned_storage_id)

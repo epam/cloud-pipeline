@@ -132,6 +132,12 @@ class FsBrowserManager(object):
     def save_file(self, versioned_storage_id, path, content):
         return self.git_manager.save_file(versioned_storage_id, path, content)
 
+    def revert(self, versioned_storage_id):
+        return self.git_manager.revert(versioned_storage_id)
+
+    def remove_version_storage(self, versioned_storage_id):
+        return self.git_manager.remove(versioned_storage_id)
+
     @staticmethod
     def _parse_transfer_storage_path(storage):
         if not storage:

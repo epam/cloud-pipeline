@@ -145,6 +145,14 @@ class GitClient:
         remote.push(['refs/heads/%s:refs/heads/%s' % (branch, branch)], callbacks=self._build_callback())
         self.logger.log("Pushed to repo '%s'" % repo_path)
 
+    def revert(self, repo_path, branch=DEFAULT_BRANCH_NAME):
+        repo = self._repository(repo_path)
+        repo.reset(self._get_head(repo, branch).target, pygit2.GIT_RESET_HARD)
+
+    def set_head(self, repo_path, branch=DEFAULT_BRANCH_NAME):
+        repo = self._repository(repo_path)
+        repo.checkout('refs/heads/%s' % branch)
+
     def _build_callback(self):
         user_pass = pygit2.UserPass(self.user_name, self.token)
         callbacks = pygit2.RemoteCallbacks(credentials=user_pass)
