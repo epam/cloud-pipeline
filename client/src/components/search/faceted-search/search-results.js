@@ -42,6 +42,7 @@ class SearchResults extends React.Component {
   };
 
   dividerRefs = [];
+  headerRef = null;
   animationFrame;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -302,9 +303,15 @@ class SearchResults extends React.Component {
     if (resizingColumn) {
       this.animationFrame = requestAnimationFrame(this.onResize);
       const rect = this.dividerRefs[resizingColumn].getBoundingClientRect();
+      const availableSpace = this.headerRef.getBoundingClientRect().width;
       const divider = 5;
+      const step = 2;
       const offset = event.clientX - (rect.right + divider);
-      if (Math.abs(offset) > 10) {
+      const maxWidth = availableSpace / 3;
+      if ((rect.width + offset) > maxWidth) {
+        return null;
+      }
+      if (Math.abs(offset) > step) {
         columnWidths[resizingColumn] = `${Math.round(rect.width + offset)}px`;
         this.setState(columnWidths);
       }
@@ -346,7 +353,7 @@ class SearchResults extends React.Component {
             <div
               className={styles.tableCell}
               key={index}
-              style={{width: columnWidths[key]}}
+              style={{maxWidth: columnWidths[key], minWidth: '0'}}
             >
               {renderFn
                 ? renderFn(resultItem[key], resultItem)
@@ -376,13 +383,14 @@ class SearchResults extends React.Component {
         )}
         style={{gridTemplate: this.getGridTemplate()}}
         onMouseMove={(e) => this.onResize(e)}
+        ref={header => (this.headerRef = header)}
       >
         {this.columns.map(({key, name}, index) => ([
           <div
             key={index}
             className={styles.headerCell}
             ref={ref => (this.dividerRefs[key] = ref)}
-            style={{width: columnWidths[key]}}
+            style={{maxWidth: columnWidths[key], minWidth: '0'}}
           >
             {name}
           </div>,
