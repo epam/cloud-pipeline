@@ -153,7 +153,7 @@ def delete(path):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/vs/<vs_id>/clone')
+@app.route('/vs/<vs_id>/clone', methods=['POST'])
 @auth.login_required
 def clone_versioned_storage(vs_id):
     revision = flask.request.args.get("revision", None)
@@ -190,7 +190,7 @@ def list_versioned_storages():
         return jsonify(error(e.__str__()))
 
 
-@app.route('/vs/<vs_id>/fetch')
+@app.route('/vs/<vs_id>/fetch', methods=['POST'])
 @auth.login_required
 def fetch_versioned_storage(vs_id):
     manager = app.config['fsbrowser']
@@ -227,7 +227,7 @@ def diff_versioned_storage_file(vs_id):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/vs/<vs_id>/commit')
+@app.route('/vs/<vs_id>/commit', methods=['POST'])
 @auth.login_required
 def commit_versioned_storage(vs_id):
     message = flask.request.args.get("message")
@@ -235,6 +235,20 @@ def commit_versioned_storage(vs_id):
     manager = app.config['fsbrowser']
     try:
         task_id = manager.git_push(vs_id, message, files_to_add)
+        return jsonify(success({"task": task_id}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/<vs_id>/files', methods=['POST'])
+@auth.login_required
+def save_versioned_storage_file(vs_id):
+    path = flask.request.args.get('path')
+    manager = app.config['fsbrowser']
+    try:
+        content = flask.request.stream.read()
+        task_id = manager.save_file(vs_id, path, content)
         return jsonify(success({"task": task_id}))
     except Exception as e:
         manager.logger.log(traceback.format_exc())

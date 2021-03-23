@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import traceback
 
 from fsbrowser.src.model.task import Task
@@ -79,6 +80,16 @@ class GitTask(Task):
             self.pushing()
             git_client.push(full_repo_path)
 
+            self.success()
+        except Exception as e:
+            self.logger.log(traceback.format_exc())
+            self.failure(e)
+
+    def save_file(self, full_repo_path, path, content):
+        try:
+            full_path_to_file = os.path.join(full_repo_path, path)
+            with open(full_path_to_file, "bw") as f:
+                f.write(content)
             self.success()
         except Exception as e:
             self.logger.log(traceback.format_exc())

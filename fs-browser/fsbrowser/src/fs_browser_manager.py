@@ -129,6 +129,9 @@ class FsBrowserManager(object):
     def git_push(self, versioned_storage_id, message, files_to_add=None):
         return self.git_manager.push(versioned_storage_id, message, files_to_add)
 
+    def save_file(self, versioned_storage_id, path, content):
+        return self.git_manager.save_file(versioned_storage_id, path, content)
+
     @staticmethod
     def _parse_transfer_storage_path(storage):
         if not storage:

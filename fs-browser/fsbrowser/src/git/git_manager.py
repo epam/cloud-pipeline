@@ -100,6 +100,16 @@ class GitManager:
         self.pool.apply_async(task.push, [self.git_client, full_repo_path, message, files_to_add])
         return task_id
 
+    def save_file(self, versioned_storage_id, path, content):
+        if self.is_head_detached(versioned_storage_id):
+            raise RuntimeError('HEAD detached')
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        task_id = str(uuid.uuid4().hex)
+        task = GitTask(task_id, self.logger)
+        self.tasks.update({task_id: task})
+        self.pool.apply_async(task.save_file, [full_repo_path, path, content])
+        return task_id
+
     def _build_path_to_repo(self, versioned_storage_id):
         versioned_storage = self.api_client.get_pipeline(versioned_storage_id)
         folder_name = versioned_storage.get(VERSION_STORAGE_IDENTIFIER)
