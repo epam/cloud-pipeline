@@ -135,10 +135,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.header-cell:not(:last-child) {
-  border-right: 1px solid #bfbfbf;
+  user-select: none;
 }
 
 .table-cell {
@@ -146,4 +143,22 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.table-divider {
+  cursor: e-resize;
+  background: transparent;
+}
+
+.table-header .table-divider {
+  border-left: 1px solid #8c8c8c;
+}
+
+.table-header .table-divider:last-child {
+  display: none;
+}
+
+.table-divider.divider-active {
+  width: 1px;
+  background: #69c0ff;
 }

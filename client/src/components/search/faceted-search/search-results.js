@@ -36,12 +36,23 @@ class SearchResults extends React.Component {
   state = {
     resultsAreaHeight: undefined,
     hoverInfo: undefined,
-    preview: undefined
+    preview: undefined,
+    resizingColumn: undefined,
+    columnWidths: {}
   };
+
+  dividerRefs = [];
+  animationFrame;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.page !== this.props.page) {
       this.unHoverItem(this.state.hoverInfo)();
+    }
+  }
+
+  componentWillUnmount () {
+    if (this.animationFrame) {
+      cancelAnimationFrame(this.animationFrame);
     }
   }
 
@@ -277,11 +288,48 @@ class SearchResults extends React.Component {
     {key: 'id', name: 'Identifier', width: '2fr'}
   ]
 
-  gridTemplate = `'${this.columns.map(c => c.key).join(' ')}' 1fr /
-      ${this.columns.map(c => c.width || '1fr').join(' ')}`;
+  getGridTemplate = () => {
+    const {columnWidths} = this.state;
+    const columnString = `'${this.columns
+      .map(c => `${c.key} .`).join(' ')}' 1fr /`;
+    const widthString = `${this.columns
+      .map(c => `${columnWidths[c.key] || c.width || '1fr'} 4px`).join(' ')}`;
+    return columnString.concat(widthString);
+  };
+
+  onResize = (event) => {
+    const {resizingColumn, columnWidths} = this.state;
+    if (resizingColumn) {
+      this.animationFrame = requestAnimationFrame(this.onResize);
+      const rect = this.dividerRefs[resizingColumn].getBoundingClientRect();
+      const divider = 5;
+      const offset = event.clientX - (rect.right + divider);
+      if (Math.abs(offset) > 10) {
+        columnWidths[resizingColumn] = `${Math.round(rect.width + offset)}px`;
+        this.setState(columnWidths);
+      }
+    }
+  }
+
+  stopResizing = (event) => {
+    const {resizingColumn} = this.state;
+    event && event.stopPropagation();
+    if (resizingColumn) {
+      this.setState({resizingColumn: undefined});
+    }
+  }
+
+  initResizing = (event, key) => {
+    const {resizingColumn} = this.state;
+    event && event.stopPropagation();
+    if (!resizingColumn) {
+      this.setState({resizingColumn: key});
+    }
+  }
 
   renderTableRow = (resultItem, rowIndex) => {
     const {disabled} = this.props;
+    const {columnWidths, resizingColumn} = this.state;
     if (!resultItem) {
       return null;
     }
@@ -290,16 +338,28 @@ class SearchResults extends React.Component {
         href={!disabled && resultItem.url ? `/#${resultItem.url}` : undefined}
         target="_blank"
         className={styles.tableRow}
-        style={{gridTemplate: this.gridTemplate}}
+        style={{gridTemplate: this.getGridTemplate()}}
         key={rowIndex}
       >
         {this.columns.map(({key, renderFn}, index) => (
-          <div
-            className={styles.tableCell}
-            key={index}
-          >
-            {renderFn ? renderFn(resultItem[key], resultItem) : resultItem[key]}
-          </div>
+          [
+            <div
+              className={styles.tableCell}
+              key={index}
+              style={{width: columnWidths[key]}}
+            >
+              {renderFn
+                ? renderFn(resultItem[key], resultItem)
+                : resultItem[key]
+              }
+            </div>,
+            <div
+              className={classNames(
+                styles.tableDivider,
+                {[styles.dividerActive]: resizingColumn === key}
+              )}
+            />
+          ]
         ))
         }
       </a>
@@ -307,19 +367,34 @@ class SearchResults extends React.Component {
   }
 
   renderTableHeader = () => {
+    const {columnWidths, resizingColumn} = this.state;
     return (
       <div
         className={classNames(
           styles.tableRow,
           styles.tableHeader
         )}
-        style={{gridTemplate: this.gridTemplate}}
+        style={{gridTemplate: this.getGridTemplate()}}
+        onMouseMove={(e) => this.onResize(e)}
       >
-        {this.columns.map(({name}, index) => (
-          <div key={index} className={styles.headerCell}>
+        {this.columns.map(({key, name}, index) => ([
+          <div
+            key={index}
+            className={styles.headerCell}
+            ref={ref => (this.dividerRefs[key] = ref)}
+            style={{width: columnWidths[key]}}
+          >
             {name}
-          </div>
-        ))}
+          </div>,
+          <div
+            style={{userSelect: 'none'}}
+            className={classNames(
+              styles.tableDivider,
+              {[styles.dividerActive]: resizingColumn === key}
+            )}
+            onMouseDown={e => this.initResizing(e, key)}
+          />
+        ]))}
       </div>
     );
   }
@@ -334,7 +409,11 @@ class SearchResults extends React.Component {
       return <Alert type="info" message="Nothing found" />;
     }
     return (
-      <div className={styles.tableContainer}>
+      <div
+        className={styles.tableContainer}
+        onMouseUp={this.stopResizing}
+        onBlur={this.stopResizing}
+      >
         {this.renderTableHeader()}
         {documents.map((document, index) => (
           this.renderTableRow(document, index)
