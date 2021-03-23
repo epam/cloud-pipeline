@@ -56,17 +56,19 @@ public final class AclExpressions {
     public static final String RUN_ID_SSH =
             "hasRole('ADMIN') OR @runPermissionManager.isRunSshAllowed(#runId)";
 
+    public static final String STORAGE_SHARED = "@grantPermissionManager.checkStorageShared(#id)";
+
     public static final String STORAGE_ID_READ =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'READ')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_WRITE =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'WRITE')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_OWNER =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'OWNER')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_PERMISSIONS =
             "("
@@ -76,7 +78,7 @@ public final class AclExpressions {
                         + "AND @grantPermissionManager.storagePermissions(#id, #permissions) "
                     + ") "
             + ") "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_PATHS_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.hasDataStoragePathsPermission(returnObject, 'READ')";

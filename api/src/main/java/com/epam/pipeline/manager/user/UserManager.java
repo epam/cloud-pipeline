@@ -405,11 +405,11 @@ public class UserManager {
     }
 
     PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
-            dataStorageManager.tryInitUserDefaultStorage(newUser)
-                    .ifPresent(storageId -> {
-                        assignDefaultStorageToUser(newUser, storageId);
-                        grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
-                    });
+        dataStorageManager.tryInitUserDefaultStorage(newUser)
+                .ifPresent(storageId -> {
+                    assignDefaultStorageToUser(newUser, storageId);
+                    grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
+                });
         return newUser;
     }
 

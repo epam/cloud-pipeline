@@ -71,8 +71,7 @@ public class ReassignHandler {
         final Map<String, RunningInstance> freeInstances = ListUtils.emptyIfNull(freeNodes)
                 .stream()
                 .collect(HashMap::new,
-                        (map, id) -> map.put(id, autoscalerService.getPreviousRunInstance(id, client)),
-                        HashMap::putAll);
+                    (map, id) -> map.put(id, autoscalerService.getPreviousRunInstance(id, client)), HashMap::putAll);
         // Try to find match with pre-pulled image
         final boolean reassignedWithMatchingImage = attemptReassign(freeInstances,
                 autoscalerService::requirementsMatchWithImages, requiredInstance, runId,

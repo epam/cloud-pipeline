@@ -91,7 +91,7 @@ public class ScaleDownHandler {
             return;
         }
         if (poolNode) {
-            scaleDownPoolNodeIfNotRequired(nodeLabel, client, node, requiredInstances);
+            scaleDownPoolNodeIfNotRequired(nodeLabel, client, requiredInstances);
         } else {
             scaleDownRunNodeIfNotRequired(nodeLabel, client, requiredInstances);
         }
@@ -99,7 +99,6 @@ public class ScaleDownHandler {
 
     private void scaleDownPoolNodeIfNotRequired(final String nodeLabel,
                                                 final KubernetesClient client,
-                                                final Node node,
                                                 final List<InstanceRequest> requiredInstances) {
         final NodePool nodePool = autoscalerService
                 .findPool(nodeLabel, client)

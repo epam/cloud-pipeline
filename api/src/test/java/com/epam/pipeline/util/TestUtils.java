@@ -57,6 +57,10 @@ public final class TestUtils {
     public static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
     public static final String TEMPLATE_REPLACE_MARK = "@@";
 
+    private TestUtils() {
+        // no op
+    }
+
     /**
      * Helper method for mocking DockerClient functionality
      * @param dockerClientMock a {@link DockerClient} mock object

@@ -237,7 +237,7 @@ public class MetadataDaoTest extends AbstractSpringTest {
                 Collections.singletonList(SENSITIVE_DATA_KEY))
                 .stream()
                 .collect(Collectors.toMap(CategoricalAttribute::getKey,
-                attribute -> attribute.getValues().stream()
+                    attribute -> attribute.getValues().stream()
                                           .map(CategoricalAttributeValue::getValue)
                                           .collect(Collectors.toList())));
         Assert.assertEquals(2, metadataDict.size());
