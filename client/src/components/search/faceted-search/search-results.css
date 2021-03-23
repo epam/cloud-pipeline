@@ -108,7 +108,7 @@
   flex-wrap: nowrap;
   flex-direction: column;
   width: 100%;
-  min-width: min-content;
+  min-width: 100%;
   border-radius: 5px 5px 0 0;
   border: 1px solid #ddd;
   overflow: auto;
@@ -121,20 +121,23 @@
   text-decoration: none !important;
   display: grid;
   background: #fafafa;
+  height: 100%;
   transition: background 0.2s ease;
-  border: 1px solid transparent;
 }
 
 .table-row:not(.table-header):hover {
-  background-color: #eef8ff;
-  border: 1px solid #a2d8ff;
   color: #49a9ee;
+}
+
+.table-row:not(.table-header):hover .table-cell,
+.table-row:not(.table-header):hover .table-divider {
+  background-color: #eef8ff;
 }
 
 .table-header {
   position: sticky;
   top: 0;
-  background: white;
+  background: #f0f0f0;
   border-bottom: 1px solid #f0f0f0;
   color: #8c8c8c;
 }
@@ -147,43 +150,35 @@
   text-overflow: ellipsis;
   user-select: none;
   cursor: default;
+  background: #f0f0f0;
 }
 
 .table-cell {
-  margin: 5px 0 5px 5px;
+  margin: 0;
+  padding: 5px 0 5px 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: #fafafa;
 }
 
 .table-divider {
-  background: transparent;
+  background: #fafafa;
   height: 100%;
   user-select: none;
-  width: 1px;
+  width: 4px;
 }
 
 .table-header .table-divider {
   cursor: e-resize;
-  border-left: 1px solid #f0f0f0;
-  width: 4px;
+  background: #f0f0f0;
+  border-left: 1px solid #d9d9d9;
 }
 
 .table-header .table-divider:hover {
-  border-left: 1px solid #bfbfbf
-}
-
-.table-header .table-divider.divider-active {
-  border-left: 1px solid #69c0ff;
-}
-
-.table-header .table-divider:last-child {
-  display: none;
+  border-left: 1px solid #8c8c8c;
 }
 
 .table-divider.divider-active {
-  width: 1px;
-  margin-top: -1px;
-  height: calc(100% + 2px);
-  background:  #69c0ff;
+  border-left: 1px solid #69c0ff;
 }

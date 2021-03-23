@@ -300,7 +300,7 @@ class SearchResults extends React.Component {
   getGridTemplate = () => {
     const {columnWidths} = this.state;
     const cellDefault = '100px';
-    const divider = '1px';
+    const divider = '4px';
     const columnString = `'${this.columns
       .map(c => `${c.key} .`).join(' ')}' 1fr /`;
     const widthString = `${this.columns
@@ -320,7 +320,9 @@ class SearchResults extends React.Component {
       const step = 2;
       const offset = event.clientX - (rect.right + divider);
       const maxWidth = this.tableWidth / 3;
-      if ((rect.width + offset) > maxWidth) {
+      const minWidth = 50;
+      if ((rect.width + offset) > maxWidth ||
+        (rect.width + offset) < minWidth) {
         return null;
       }
       if (Math.abs(offset) > step) {
@@ -365,7 +367,7 @@ class SearchResults extends React.Component {
             <div
               className={styles.tableCell}
               key={index}
-              style={{maxWidth: columnWidths[key], minWidth: '0'}}
+              style={{width: columnWidths[key], minWidth: '0px'}}
             >
               {renderFn
                 ? renderFn(resultItem[key], resultItem)
@@ -401,7 +403,7 @@ class SearchResults extends React.Component {
             key={index}
             className={styles.headerCell}
             ref={ref => (this.dividerRefs[key] = ref)}
-            style={{maxWidth: columnWidths[key], minWidth: '0'}}
+            style={{width: columnWidths[key], minWidth: '0px'}}
           >
             {name}
           </div>,
