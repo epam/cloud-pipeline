@@ -23,13 +23,13 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">4</div>
+<div class="counter">3</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">8m56.05s</div>
+<div class="counter">6m58.77s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">75%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,68 +61,10 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
-</li>
-<li>
-<a href="#tab1">Tests</a>
+<a href="#tab0">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="removePipeline"></a>
-<h3 class="failures">removePipeline</h3>
-<span class="code">
-<pre>Element not found {By.className: ant-modal.findBy(text 'Do you want to delete a pipeline with repository or only unregister it?')}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1616152580566.69.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1616152580566.69.html
-Timeout: 80 s.
-Caused by: Element not found {By.className: ant-modal.findBy(text 'Do you want to delete a pipeline with repository or only unregister it?')}
-Expected: text 'Do you want to delete a pipeline with repository or only unregister it?'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PipelineLibraryContentAO$DeletionConfirmationPopupAO.confirmDeletion(PipelineLibraryContentAO.java:237)
-	at com.epam.pipeline.autotests.ao.PipelineLibraryContentAO.delete(PipelineLibraryContentAO.java:88)
-	at com.epam.pipeline.autotests.AbstractAutoRemovingPipelineRunningTest.lambda$removePipeline$0(AbstractAutoRemovingPipelineRunningTest.java:43)
-	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:345)
-	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:338)
-	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:327)
-	at com.epam.pipeline.autotests.AbstractAutoRemovingPipelineRunningTest.removePipeline(AbstractAutoRemovingPipelineRunningTest.java:40)
-	at sun.reflect.GeneratedMethodAccessor25.invoke(Unknown Source)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {By.className: ant-modal.findBy(text 'Do you want to delete a pipeline with repository or only unregister it?')}
-Expected: text 'Do you want to delete a pipeline with repository or only unregister it?'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 26 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -134,22 +76,17 @@ Timeout: 0 ms.
 </thead>
 <tr>
 <td class="success">launchPipelineWithNewParameter - EPMCMBIBPC-362</td>
-<td>6m21.90s</td>
+<td>6m2.56s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">preparePipeline - EPMCMBIBPC-362</td>
-<td>41.927s</td>
+<td>41.431s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">removePipeline</td>
-<td>1m37.43s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
 <td class="success">shouldSaveOutputToTheStorage - EPMCMBIBPC-362</td>
-<td>14.790s</td>
+<td>14.774s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -162,7 +99,7 @@ Timeout: 0 ms.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 19, 2021 2:15:51 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 24, 2021 3:09:21 PM</p>
 </div>
 </div>
 </body>
