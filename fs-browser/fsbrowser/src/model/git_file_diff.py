@@ -23,6 +23,8 @@ class GitFileDiff:
         self.is_binary = False
         self.new_size = None
         self.old_size = None
+        self.insertions = None
+        self.deletions = None
 
     def to_json(self):
         result = {
@@ -31,9 +33,16 @@ class GitFileDiff:
             "binary": self.is_binary
         }
         if self.is_binary:
-            result.update({"new_size": self.new_size, "old_size": self.old_size})
+            result.update({
+                "new_size": self.new_size,
+                "old_size": self.old_size
+            })
         else:
-            result.update({"lines": self._lines_to_json(self.lines)})
+            result.update({
+                "lines": self._lines_to_json(self.lines),
+                "insertions": self.insertions,
+                "deletions": self.deletions
+            })
         return result
 
     def _lines_to_json(self, lines):

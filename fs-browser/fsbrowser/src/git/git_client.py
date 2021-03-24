@@ -74,16 +74,19 @@ class GitClient:
         delta = diff_patch.delta
         patch_path = self._get_delta_path(delta.new_file)
 
-        change = GitFileDiff(patch_path)
+        git_file_diff = GitFileDiff(patch_path)
         if delta.is_binary:
-            change.is_binary = True
-            change.new_size = self._get_delta_size(delta.new_file)
-            change.old_size = self._get_delta_size(delta.old_file)
+            git_file_diff.is_binary = True
+            git_file_diff.new_size = self._get_delta_size(delta.new_file)
+            git_file_diff.old_size = self._get_delta_size(delta.old_file)
         else:
-            change.lines = self._build_lines(diff_patch)
-        change.new_name = patch_path
-        change.old_name = self._get_delta_path(delta.old_file)
-        return change
+            git_file_diff.lines = self._build_lines(diff_patch)
+            insertions, deletions = self._parse_line_stats(diff_patch.line_stats)
+            git_file_diff.insertions = insertions
+            git_file_diff.deletions = deletions
+        git_file_diff.new_name = patch_path
+        git_file_diff.old_name = self._get_delta_path(delta.old_file)
+        return git_file_diff
 
     def status(self, repo_path):
         repo = self._repository(repo_path)
@@ -283,3 +286,9 @@ class GitClient:
     @staticmethod
     def _build_merge_commit_message(id1, id2):
         return 'Merge: %s %s' % (id1, id2)
+
+    @staticmethod
+    def _parse_line_stats(raw_line_stats):
+        if not raw_line_stats or len(raw_line_stats) < 3:
+            return None, None
+        return raw_line_stats[1], raw_line_stats[2]
