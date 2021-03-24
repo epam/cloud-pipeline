@@ -6,6 +6,8 @@ import java.util.List;
 
 public class WindowIterator<T> implements Iterator<List<T>> {
 
+    private static final double DEFAULT_WINDOW_SIZE_MULTIPLIER = 1.5;
+    
     private final Iterator<List<T>> iterator;
     private final int windowSize;
     private final List<T> window;
@@ -13,7 +15,7 @@ public class WindowIterator<T> implements Iterator<List<T>> {
     public WindowIterator(final Iterator<List<T>> iterator, final int windowSize) {
         this.iterator = iterator;
         this.windowSize = windowSize;
-        this.window = new ArrayList<>((int) (windowSize * 1.5));
+        this.window = new ArrayList<>((int) (windowSize * DEFAULT_WINDOW_SIZE_MULTIPLIER));
     }
 
     @Override

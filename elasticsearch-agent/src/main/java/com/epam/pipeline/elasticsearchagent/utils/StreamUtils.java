@@ -9,6 +9,8 @@ import java.util.stream.StreamSupport;
 
 public final class StreamUtils {
 
+    private static final int DEFAULT_CHUNK_SIZE = 100;
+
     private StreamUtils() {}
 
     public static <T> Stream<T> from(final Iterator<T> iterator) {
@@ -17,10 +19,18 @@ public final class StreamUtils {
     }
 
     public static <T> Stream<List<T>> windowed(final Stream<List<T>> stream) {
-        return windowed(stream, 100);
+        return windowed(stream, DEFAULT_CHUNK_SIZE);
     }
 
     public static <T> Stream<List<T>> windowed(final Stream<List<T>> stream, final int windowSize) {
         return from(IteratorUtils.windowed(stream.iterator(), windowSize));
+    }
+
+    public static <T> Stream<List<T>> chunked(final Stream<T> stream) {
+        return chunked(stream, DEFAULT_CHUNK_SIZE);
+    }
+
+    public static <T> Stream<List<T>> chunked(final Stream<T> stream, final int chunkSize) {
+        return from(IteratorUtils.chunked(stream.iterator(), chunkSize));
     }
 }

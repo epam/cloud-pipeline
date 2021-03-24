@@ -42,6 +42,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
     }
 
     @Override
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started data storage native tags transfer synchronization");
         cloudPipelineAPIClient.loadAllDataStorages()
@@ -53,8 +54,8 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                         final boolean isVersioningEnabled = storage.isVersioningEnabled();
                         Optional.ofNullable(storage.getType()).map(fileManagers::get)
                                 .map(fileManager -> fileManager
-                                        .listVersionsWithNativeTags(storage, getTemporaryCredentials(storage))
-                                        .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : nonVersionedTags(chunk))
+                                        .versionsWithNativeTags(storage, getTemporaryCredentials(storage))
+                                        .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : tags(chunk))
                                         .map(stream -> stream.collect(Collectors.toList()))
                                         .filter(CollectionUtils::isNotEmpty))
                                 .map(StreamUtils::windowed)
@@ -86,7 +87,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                 : dataStorageTagInsertRequestStream;
     }
 
-    private Stream<DataStorageTagInsertRequest> nonVersionedTags(final DataStorageFile file) {
+    private Stream<DataStorageTagInsertRequest> tags(final DataStorageFile file) {
         return MapUtils.emptyIfNull(file.getTags()).entrySet().stream()
                 .map(e -> new DataStorageTagInsertRequest(
                         file.getPath(), null, e.getKey(), e.getValue()));

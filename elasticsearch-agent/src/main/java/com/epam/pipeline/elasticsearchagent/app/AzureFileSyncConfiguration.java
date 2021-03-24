@@ -24,6 +24,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -59,6 +60,7 @@ public class AzureFileSyncConfiguration {
             final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 azFileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.AZ);
+                indexSettingsPath, bulkInsertSize, DataStorageType.AZ,
+                SearchDocumentType.AZ_BLOB_FILE);
     }
 }
