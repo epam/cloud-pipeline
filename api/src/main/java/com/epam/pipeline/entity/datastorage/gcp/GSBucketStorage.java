@@ -41,7 +41,7 @@ public class GSBucketStorage extends AbstractDataStorage {
 
     @Override
     public String getPathMask() {
-        return String.format("gs://%s", getPath());
+        return "gs://" + getPath();
     }
 
     @Override

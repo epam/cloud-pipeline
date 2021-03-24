@@ -41,7 +41,7 @@ public class AzureBlobStorage extends AbstractDataStorage {
 
     @Override
     public String getPathMask() {
-        return String.format("az://%s", getPath());
+        return "az://" + getPath();
     }
 
     @Override
