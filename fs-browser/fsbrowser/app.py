@@ -288,6 +288,19 @@ def remove_version_storage(vs_id):
         return jsonify(error(e.__str__()))
 
 
+@app.route('/vs/<vs_id>/checkout', methods=['POST'])
+@auth.login_required
+def checkout_version_storage(vs_id):
+    manager = app.config['fsbrowser']
+    revision = flask.request.args.get("revision")
+    try:
+        manager.checkout(vs_id, revision)
+        return jsonify(success({}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
 def str_to_bool(input_value):
     return input_value.lower() in ("true", "t")
 
@@ -302,7 +315,7 @@ def main():
     parser.add_argument("--process_count", default=2)
     parser.add_argument("--run_id", required=False)
     parser.add_argument("--log_dir", required=False)
-    parser.add_argument("--exclude", default="/bin,/var,/root,/sbin,/home,/sys,/usr,/boot,/dev,/lib,/proc")
+    parser.add_argument("--exclude", default="/bin,/var,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc")
     parser.add_argument("--follow_symlinks", default="True", type=str_to_bool)
     parser.add_argument("--tmp_directory", default="/tmp")
 

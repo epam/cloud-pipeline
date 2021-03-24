@@ -157,6 +157,15 @@ class GitClient:
         repo = self._repository(repo_path)
         repo.checkout('refs/heads/%s' % branch)
 
+    def checkout(self, repo_path, revision, branch=DEFAULT_BRANCH_NAME):
+        repo = self._repository(repo_path)
+        status_files = self.status(repo_path)
+        if status_files and len(status_files) > 0:
+            self.revert(repo_path, branch)
+        commit = repo.get(revision)
+        repo.checkout_tree(commit)
+        repo.set_head(commit.id)
+
     def _build_callback(self):
         user_pass = pygit2.UserPass(self.user_name, self.token)
         callbacks = pygit2.RemoteCallbacks(credentials=user_pass)

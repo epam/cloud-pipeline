@@ -127,6 +127,12 @@ class GitManager:
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         shutil.rmtree(full_repo_path)
 
+    def checkout(self, versioned_storage_id, revision):
+        if not revision:
+            raise RuntimeError("Checkout revision must be specified")
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        self.git_client.checkout(full_repo_path, revision)
+
     def _build_path_to_repo(self, versioned_storage_id):
         versioned_storage = self.api_client.get_pipeline(versioned_storage_id)
         folder_name = versioned_storage.get(VERSION_STORAGE_IDENTIFIER)

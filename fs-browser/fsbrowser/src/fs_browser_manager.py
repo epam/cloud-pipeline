@@ -141,6 +141,9 @@ class FsBrowserManager(object):
     def get_file_path(self, versioned_storage_id, path):
         return self.git_manager.get_file_path(versioned_storage_id, path)
 
+    def checkout(self, versioned_storage_id, revision):
+        return self.git_manager.checkout(versioned_storage_id, revision)
+
     @staticmethod
     def _parse_transfer_storage_path(storage):
         if not storage:
