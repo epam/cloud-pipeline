@@ -42,6 +42,8 @@ public class S3FileSyncConfiguration {
     private String indexSettingsPath;
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
+    @Value("${sync.s3-file.bulk.load.tags.size:100}")
+    private Integer bulkLoadTagsSize;
 
     @Bean
     public ObjectStorageFileManager s3FileManager() {
@@ -57,7 +59,8 @@ public class S3FileSyncConfiguration {
             final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 s3FileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.S3,
+                indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
+                DataStorageType.S3,
                 SearchDocumentType.S3_FILE);
     }
 

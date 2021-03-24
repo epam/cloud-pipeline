@@ -58,6 +58,7 @@ import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
+import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -268,10 +269,13 @@ public class AclTestBeans {
     protected DataStorageRuleManager mockDataStorageRuleManager;
 
     @MockBean
+    protected DataStorageTagBatchManager mockDataStorageTagBatchManager;
+
+    @MockBean
     protected DataStorageTagManager mockDataStorageTagManager;
 
     @MockBean
-    protected DataStorageTagBatchManager mockDataStorageTagBatchManager;
+    protected DataStorageTagProviderManager mockDataStorageTagProviderManager;
 
     @MockBean
     protected ToolScanScheduler mockToolScanScheduler;

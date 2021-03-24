@@ -42,6 +42,9 @@ public class GSFileSyncConfiguration {
     @Value("${sync.gs-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
 
+    @Value("${sync.gs-file.bulk.load.tags.size:100}")
+    private Integer bulkLoadTagsSize;
+
     @Bean
     public ObjectStorageFileManager gsFileManager() {
         return new GsBucketFileManager();
@@ -56,7 +59,8 @@ public class GSFileSyncConfiguration {
             final @Qualifier("gsFileManager") ObjectStorageFileManager gsFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 gsFileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.GS,
+                indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
+                DataStorageType.GS,
                 SearchDocumentType.GS_FILE);
     }
 

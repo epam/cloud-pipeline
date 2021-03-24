@@ -2,7 +2,7 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
-import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
+import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -33,12 +34,16 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
 
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final Map<DataStorageType, ObjectStorageFileManager> fileManagers;
+    private final int bulkInsertSize;
 
-    public DataStorageNativeTagsTransferSynchronizer(final CloudPipelineAPIClient cloudPipelineAPIClient,
-                                                     final List<ObjectStorageFileManager> fileManagers) {
+    public DataStorageNativeTagsTransferSynchronizer(
+            final CloudPipelineAPIClient cloudPipelineAPIClient,
+            final List<ObjectStorageFileManager> fileManagers,
+            @Value("${sync.native.tags.transfer.bulk.insert.size:1000}") final int bulkInsertSize) {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.fileManagers = fileManagers.stream()
                 .collect(Collectors.toMap(ObjectStorageFileManager::getType, Function.identity()));
+        this.bulkInsertSize = bulkInsertSize;
     }
 
     @Override
@@ -58,7 +63,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                                         .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : tags(chunk))
                                         .map(stream -> stream.collect(Collectors.toList()))
                                         .filter(CollectionUtils::isNotEmpty))
-                                .map(StreamUtils::windowed)
+                                .map(stream -> StreamUtils.windowed(stream, bulkInsertSize))
                                 .orElseGet(Stream::empty)
                                 .map(DataStorageTagInsertBatchRequest::new)
                                 .forEach(request -> {

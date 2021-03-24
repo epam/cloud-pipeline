@@ -42,6 +42,9 @@ public class AzureFileSyncConfiguration {
 
     @Value("${sync.az-blob.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
+    
+    @Value("${sync.az-blob.bulk.load.tags.size:100}")
+    private Integer bulkLoadTagsSize;
 
     @Value("${sync.az-blob.index.name}")
     private String indexName;
@@ -60,7 +63,8 @@ public class AzureFileSyncConfiguration {
             final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 azFileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.AZ,
+                indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
+                DataStorageType.AZ,
                 SearchDocumentType.AZ_BLOB_FILE);
     }
 }

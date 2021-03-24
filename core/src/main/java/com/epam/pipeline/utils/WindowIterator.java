@@ -1,4 +1,4 @@
-package com.epam.pipeline.elasticsearchagent.utils;
+package com.epam.pipeline.utils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -6,7 +6,7 @@ import java.util.List;
 
 public class WindowIterator<T> implements Iterator<List<T>> {
 
-    private static final double DEFAULT_WINDOW_SIZE_MULTIPLIER = 1.5;
+    private static final double DEFAULT_WINDOW_SIZE_MULTIPLIER = 1.1;
     
     private final Iterator<List<T>> iterator;
     private final int windowSize;

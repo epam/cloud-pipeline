@@ -1,4 +1,4 @@
-package com.epam.pipeline.elasticsearchagent.utils;
+package com.epam.pipeline.utils;
 
 import java.util.ArrayList;
 import java.util.Iterator;

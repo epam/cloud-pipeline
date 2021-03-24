@@ -21,7 +21,7 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
-import com.epam.pipeline.elasticsearchagent.utils.StreamUtils;
+import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -59,6 +59,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final String indexPrefix;
     private final String indexMappingFile;
     private final int bulkInsertSize;
+    private final int bulkLoadTagsSize;
     @Getter
     private final DataStorageType storageType;
     @Getter
@@ -90,7 +91,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             elasticIndexService.createIndexIfNotExist(indexName, indexMappingFile);
             final TemporaryCredentials credentials = getTemporaryCredentials(dataStorage);
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
-                StreamUtils.chunked(fileManager.files(dataStorage, credentials))
+                StreamUtils.chunked(fileManager.files(dataStorage, credentials), bulkLoadTagsSize)
                         .flatMap(files -> filesWithIncorporatedTags(dataStorage, files))
                         .map(file -> createIndexRequest(file, dataStorage, permissionsContainer, indexName, 
                                 credentials))
