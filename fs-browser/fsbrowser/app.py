@@ -15,12 +15,14 @@
 import argparse
 import os
 import traceback
+from multiprocessing.pool import ThreadPool
 
 import flask
 from flask import Flask, jsonify, send_from_directory, stream_with_context, Response
 from flask_httpauth import HTTPBasicAuth
 
 from fsbrowser.src.fs_browser_manager import FsBrowserManager
+from fsbrowser.src.git.git_manager import GitManager
 from fsbrowser.src.logger import BrowserLogger
 
 app = Flask(__name__)
@@ -162,9 +164,9 @@ def delete(path):
 @auth.login_required
 def clone_versioned_storage(vs_id):
     revision = flask.request.args.get("revision", None)
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
-        task_id = manager.git_clone(vs_id, revision)
+        task_id = manager.clone(vs_id, revision)
         return jsonify(success({"task": task_id}))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -174,7 +176,7 @@ def clone_versioned_storage(vs_id):
 @app.route('/vs/<vs_id>/detached')
 @auth.login_required
 def is_versioned_storage_detached(vs_id):
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
         is_head_detached = manager.is_head_detached(vs_id)
         return jsonify(success({"detached": is_head_detached}))
@@ -186,9 +188,9 @@ def is_versioned_storage_detached(vs_id):
 @app.route('/vs/list')
 @auth.login_required
 def list_versioned_storages():
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
-        items = manager.list_version_storages()
+        items = manager.list()
         return jsonify(success(items))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -198,9 +200,9 @@ def list_versioned_storages():
 @app.route('/vs/<vs_id>/fetch', methods=['POST'])
 @auth.login_required
 def fetch_versioned_storage(vs_id):
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
-        task_id = manager.git_pull(vs_id)
+        task_id = manager.pull(vs_id)
         return jsonify(success({"task": task_id}))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -210,9 +212,9 @@ def fetch_versioned_storage(vs_id):
 @app.route('/vs/<vs_id>/diff')
 @auth.login_required
 def diff_versioned_storage(vs_id):
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
-        items = manager.git_status(vs_id)
+        items = manager.status(vs_id)
         return jsonify(success(items))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -224,9 +226,9 @@ def diff_versioned_storage(vs_id):
 def diff_versioned_storage_file(vs_id):
     file_path = flask.request.args.get("path")
     lines_count = flask.request.args.get("lines_count", 3)
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
-        items = manager.git_diff(vs_id, file_path, int(lines_count))
+        items = manager.diff(vs_id, file_path, int(lines_count))
         return jsonify(success(items))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -238,9 +240,9 @@ def diff_versioned_storage_file(vs_id):
 def commit_versioned_storage(vs_id):
     message = flask.request.args.get("message")
     files_to_add = flask.request.args.get("files", None)
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
-        task_id = manager.git_push(vs_id, message, files_to_add)
+        task_id = manager.push(vs_id, message, files_to_add)
         return jsonify(success({"task": task_id}))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -251,7 +253,7 @@ def commit_versioned_storage(vs_id):
 @auth.login_required
 def save_versioned_storage_file(vs_id):
     path = flask.request.args.get('path')
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
         if flask.request.method == 'POST':
             content = flask.request.stream.read()
@@ -267,7 +269,7 @@ def save_versioned_storage_file(vs_id):
 @app.route('/vs/<vs_id>/revert', methods=['POST'])
 @auth.login_required
 def revert_versioned_storage(vs_id):
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
         manager.revert(vs_id)
         return jsonify(success({}))
@@ -279,9 +281,9 @@ def revert_versioned_storage(vs_id):
 @app.route('/vs/<vs_id>/remove', methods=['POST'])
 @auth.login_required
 def remove_version_storage(vs_id):
-    manager = app.config['fsbrowser']
+    manager = app.config['git_manager']
     try:
-        manager.remove_version_storage(vs_id)
+        manager.remove(vs_id)
         return jsonify(success({}))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -291,8 +293,8 @@ def remove_version_storage(vs_id):
 @app.route('/vs/<vs_id>/checkout', methods=['POST'])
 @auth.login_required
 def checkout_version_storage(vs_id):
-    manager = app.config['fsbrowser']
     revision = flask.request.args.get("revision")
+    manager = app.config['git_manager']
     try:
         manager.checkout(vs_id, revision)
         return jsonify(success({}))
@@ -321,12 +323,16 @@ def main():
     parser.add_argument("--follow_symlinks", default="True", type=str_to_bool)
     parser.add_argument("--tmp_directory", default="/tmp")
 
-    # TODO: should we move pool and add another manager?
     args = parser.parse_args()
-    app.config['fsbrowser'] = FsBrowserManager(args.working_directory, args.process_count,
-                                               BrowserLogger(args.run_id, args.log_dir), args.transfer_storage,
-                                               args.follow_symlinks, args.tmp_directory, args.exclude,
-                                               args.vs_working_directory, args.git_token, args.git_user)
+
+    logger = BrowserLogger(args.run_id, args.log_dir)
+    pool = ThreadPool(processes=args.process_count)
+    tasks = {}
+
+    app.config['fsbrowser'] = FsBrowserManager(args.working_directory, pool, logger, args.transfer_storage,
+                                               args.follow_symlinks, args.tmp_directory, args.exclude, tasks)
+    app.config['git_manager'] = GitManager(pool, tasks, logger, args.vs_working_directory, args.git_token,
+                                           args.git_user)
 
     app.run(host=args.host, port=args.port)
 

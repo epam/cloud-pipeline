@@ -84,6 +84,8 @@ class GitManager:
 
     def diff(self, versioned_storage_id, file_path, lines_count=3):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        if not file_path:
+            raise RuntimeError('File path shall be specified')
         git_file_diff = self.git_client.diff(full_repo_path, file_path, context_lines=lines_count)
         if not git_file_diff:
             return None
@@ -104,6 +106,8 @@ class GitManager:
     def save_file(self, versioned_storage_id, path, content):
         if self.is_head_detached(versioned_storage_id):
             raise RuntimeError('HEAD detached')
+        if not path:
+            raise RuntimeError('File path shall be specified')
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         task_id = str(uuid.uuid4().hex)
         task = GitTask(task_id, self.logger)
@@ -113,6 +117,8 @@ class GitManager:
 
     def get_file_path(self, versioned_storage_id, path):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        if not path:
+            raise RuntimeError('File path shall be specified')
         path_to_file = os.path.join(full_repo_path, path)
         if not os.path.exists(path_to_file):
             raise RuntimeError("Requested file does not exists")
