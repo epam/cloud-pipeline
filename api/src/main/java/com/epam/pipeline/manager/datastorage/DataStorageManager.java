@@ -1023,9 +1023,10 @@ public class DataStorageManager implements SecuredEntityManager {
         if (StringUtils.isBlank(paramValue)) {
             return Collections.emptyList();
         }
-        final String mask = String.format("%s%s", dataStorage.getPathMask(), ProviderUtils.DELIMITER);
+        final String mask = dataStorage.getPathMask() + ProviderUtils.DELIMITER;
         List<DataStorageLink> links = new ArrayList<>();
-        for (String path : paramValue.split("[,;]")) {
+        String paramDelimiter = paramValue.contains(",") ? "," : ";";
+        for (String path : paramValue.split(paramDelimiter)) {
             if (path.toLowerCase().trim().startsWith(mask.toLowerCase())) {
                 DataStorageLink dataStorageLink = new DataStorageLink();
                 dataStorageLink.setAbsolutePath(path.trim());
