@@ -54,6 +54,8 @@ class GitTask(Task):
     def pull(self, git_client, full_repo_path, is_head_detached):
         try:
             self.pulling()
+            if is_head_detached:
+                git_client.revert(full_repo_path)
             conflicts = git_client.pull(full_repo_path)
             if not conflicts:
                 self.success()
