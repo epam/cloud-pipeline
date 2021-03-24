@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -77,6 +78,7 @@ public class RunApiService {
 
     private final ToolApiService toolApiService;
     private final PipelineRunManager runManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final FilterManager filterManager;
     private final RunLogManager logManager;
     private final InstanceOfferManager offerManager;
@@ -128,7 +130,7 @@ public class RunApiService {
 
     @PreAuthorize(RUN_ID_READ)
     public String downloadLogs(Long runId) {
-        return logManager.downloadLogs(runManager.loadPipelineRun(runId));
+        return logManager.downloadLogs(runCRUDService.loadRunById(runId));
     }
 
     @PreAuthorize(RUN_ID_READ)

@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunScheduleManager;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -68,6 +69,9 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private PipelineRunManager mockPipelineRunManager;
+
+    @Autowired
+    private PipelineRunCRUDService mockRunCRUDService;
 
     @Autowired
     private RunConfigurationManager mockRunConfigurationManager;
@@ -356,14 +360,14 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     }
 
     private void mockPipelineRunPermission(final Permission permission) {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
         initAclEntity(parentPipelineRun, permission);
         mockSecurityContext();
     }
 
     private void mockPipelineRunWithoutPermission() {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
         initAclEntity(parentPipelineRun);
         mockSecurityContext();

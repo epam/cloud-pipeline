@@ -30,7 +30,7 @@ import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -82,9 +82,6 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     private NodesManager mockNodesManager;
 
     @Autowired
-    private PipelineRunManager mockPipelineRunManager;
-
-    @Autowired
     private AuthManager mockAuthManager;
 
     @Autowired
@@ -95,6 +92,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private InstanceOfferManager mockInstanceOfferManager;
+
+    @Autowired
+    private PipelineRunCRUDService mockRunCrudService;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -435,7 +435,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     }
 
     private void mockRun(final PipelineRun pipelineRun) {
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+        doReturn(pipelineRun).when(mockRunCrudService).loadRunById(eq(pipelineRun.getId()));
     }
 
     private void mockUser() {

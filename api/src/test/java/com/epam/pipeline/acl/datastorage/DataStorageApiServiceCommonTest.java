@@ -29,7 +29,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
@@ -72,7 +72,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     private GrantPermissionManager grantPermissionManager;
 
     @Autowired
-    private PipelineRunManager mockPipelineRunManager;
+    private PipelineRunCRUDService mockRunCRUDService;
 
     @Autowired
     private RunMountService mockRunMountService;
@@ -568,7 +568,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     public void shouldGetSharedFSSPathWhenPermissionIsGranted() {
         initAclEntity(pipelinerun, AclPermission.OWNER);
         doReturn(storageMountPath).when(mockRunMountService).getSharedFSSPathForRun(ID, true);
-        doReturn(pipelinerun).when(mockPipelineRunManager).loadPipelineRun(ID);
+        doReturn(pipelinerun).when(mockRunCRUDService).loadRunById(ID);
         mockAuthUser(SIMPLE_USER);
 
         assertThat(dataStorageApiService.getSharedFSSPathForRun(ID, true)).isEqualTo(storageMountPath);
@@ -579,7 +579,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     public void shouldDenyGetSharedFSSPathWhenPermissionIsNotGranted() {
         initAclEntity(pipelinerun);
         doReturn(storageMountPath).when(mockRunMountService).getSharedFSSPathForRun(ID, true);
-        doReturn(pipelinerun).when(mockPipelineRunManager).loadPipelineRun(ID);
+        doReturn(pipelinerun).when(mockRunCRUDService).loadRunById(ID);
         mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () ->

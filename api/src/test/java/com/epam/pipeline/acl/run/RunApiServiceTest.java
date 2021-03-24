@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -70,6 +71,9 @@ public class RunApiServiceTest extends AbstractAclTest {
     private PipelineRunManager mockRunManager;
 
     @Autowired
+    private PipelineRunCRUDService mockRunCRUDService;
+
+    @Autowired
     private PipelineManager mockPipelineManager;
 
     @Autowired
@@ -84,6 +88,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldLoadToolRunForOwner() {
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         mockAuthUser(ANOTHER_SIMPLE_USER);
 
@@ -93,7 +98,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadToolRunForNonOwner() {
-        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
 
         assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID));
     }
@@ -110,6 +115,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldLoadPipelineRunForOwner() {
         final PipelineRun pipelineRun = getPipelineRun(ID, SIMPLE_USER);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         mockAuthUser(SIMPLE_USER);
 
@@ -119,7 +125,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadPipelineRunForNonOwner() {
-        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
         initAclEntity(pipeline);
         mockSecurityContext();
@@ -130,6 +136,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = ANOTHER_SIMPLE_USER)
     public void shouldLoadPipelineRunWhenUserIsOwnerOfPipeline() {
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
         initAclEntity(pipeline);
@@ -144,6 +151,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         final PipelineRun pipelineRun = getPipelineRun(ID, ANOTHER_SIMPLE_USER);
         final Pipeline pipeline = getPipeline(ANOTHER_SIMPLE_USER);
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
         initAclEntity(pipelineRun, AclPermission.READ);
         initAclEntity(pipeline, AclPermission.READ);
@@ -156,7 +164,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = ANOTHER_SIMPLE_USER)
     public void shouldNotInheritPermissionsLoadPipelineRunWithOwnerVisibilityEnabled() {
         enableVisibilityPolicy(RunVisibilityPolicy.OWNER);
-        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
         initAclEntity(pipeline, AclPermission.READ);
         mockSecurityContext();
@@ -177,7 +185,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldFailLoadPipelineRunWithoutPipelineForNotOwner() {
-        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         mockAuthUser(SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID));
