@@ -19,6 +19,7 @@ from fsbrowser.src.model.git_file import GitFile
 
 DEFAULT_REMOTE_NAME = 'origin'
 DEFAULT_BRANCH_NAME = 'master'
+DEFAULT_CONTEXT_LINES_COUNT = 3
 
 
 def insecure(certificate, valid, host):
@@ -66,8 +67,8 @@ class GitClient:
         else:
             raise RuntimeError('Unknown merge analysis result')
 
-    def diff(self, repo_path, file_path):
-        diff_patch = self._find_patch(repo_path, file_path)
+    def diff(self, repo_path, file_path, branch_name=DEFAULT_BRANCH_NAME, context_lines=DEFAULT_CONTEXT_LINES_COUNT):
+        diff_patch = self._find_patch(repo_path, file_path, branch_name, context_lines)
         if not diff_patch:
             self.logger.log("Diff not found")
             return None
@@ -190,7 +191,8 @@ class GitClient:
             repo.create_branch(branch, repo.get(remote_master_id))
         repo.head.set_target(remote_master_id)
 
-    def _find_patch(self, repo_path, file_path, branch_name=DEFAULT_BRANCH_NAME):
+    def _find_patch(self, repo_path, file_path, branch_name=DEFAULT_BRANCH_NAME,
+                    context_lines=DEFAULT_CONTEXT_LINES_COUNT):
         repo = self._repository(repo_path)
         file_status = repo.status_file(file_path)
         if self._is_untracked(file_status):
@@ -198,13 +200,13 @@ class GitClient:
             tree = repo.head.peel().tree
             index = repo.index
             index.add(file_path)
-            repo_diff = tree.diff_to_index(index)
+            repo_diff = tree.diff_to_index(index, context_lines=context_lines)
             index.clear()
         elif self._is_conflicts(file_status) or self._is_index_modified(file_status):
             head_ref = self._get_head(repo, branch_name)
-            repo_diff = repo.diff(head_ref)
+            repo_diff = repo.diff(head_ref, context_lines=context_lines)
         else:
-            repo_diff = repo.diff()
+            repo_diff = repo.diff(context_lines=context_lines)
         for diff_patch in repo_diff:
             delta = diff_patch.delta
             if not delta:

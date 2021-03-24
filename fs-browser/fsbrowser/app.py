@@ -223,9 +223,10 @@ def diff_versioned_storage(vs_id):
 @auth.login_required
 def diff_versioned_storage_file(vs_id):
     file_path = flask.request.args.get("path")
+    lines_count = flask.request.args.get("lines_count", 3)
     manager = app.config['fsbrowser']
     try:
-        items = manager.git_diff(vs_id, file_path)
+        items = manager.git_diff(vs_id, file_path, int(lines_count))
         return jsonify(success(items))
     except Exception as e:
         manager.logger.log(traceback.format_exc())

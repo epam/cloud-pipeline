@@ -123,8 +123,8 @@ class FsBrowserManager(object):
     def git_status(self, versioned_storage_id):
         return self.git_manager.status(versioned_storage_id)
 
-    def git_diff(self, versioned_storage_id, file_path):
-        return self.git_manager.diff(versioned_storage_id, file_path)
+    def git_diff(self, versioned_storage_id, file_path, lines_count=3):
+        return self.git_manager.diff(versioned_storage_id, file_path, lines_count)
 
     def git_push(self, versioned_storage_id, message, files_to_add=None):
         return self.git_manager.push(versioned_storage_id, message, files_to_add)
