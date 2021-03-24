@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeList;
@@ -48,6 +49,7 @@ public class ScaleDownHandler {
     private final CloudFacade cloudFacade;
     private final PipelineRunManager pipelineRunManager;
     private final KubernetesManager kubernetesManager;
+    private final PipelineRunCRUDService runCRUDService;
 
     public void checkFreeNodes(final Set<String> scheduledRuns,
                                final KubernetesClient client,
@@ -175,7 +177,7 @@ public class ScaleDownHandler {
     private void updatePodStatus(final Node node, final Long id) {
         try {
             log.debug("Trying to update pod {} status ", id);
-            final PipelineRun run = pipelineRunManager.loadPipelineRun(id);
+            final PipelineRun run = runCRUDService.loadRunById(id);
             final String currentStatus = run.getPodStatus() == null ? "" : run.getPodStatus();
             final String status = kubernetesManager.updateStatusWithNodeConditions(
                     new StringBuilder(currentStatus), node);
@@ -197,7 +199,7 @@ public class ScaleDownHandler {
                 .map(pod -> pod.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL))
                 .filter(runId -> !scheduledRuns.contains(runId))
                 .map(runId -> {
-                    final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(Long.parseLong(runId));
+                    final PipelineRun pipelineRun = runCRUDService.loadRunById(Long.parseLong(runId));
                     final InstanceRequest instanceRequest = new InstanceRequest();
                     instanceRequest.setRequestedImage(pipelineRun.getActualDockerImage());
                     instanceRequest.setInstance(autoscalerService.fillInstance(pipelineRun.getInstance()));

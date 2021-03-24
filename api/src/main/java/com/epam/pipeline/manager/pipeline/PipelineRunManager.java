@@ -462,7 +462,7 @@ public class PipelineRunManager {
                 .map(Long::parseLong);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.SUPPORTS)
     public PipelineRun loadPipelineRun(Long id) {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
         Assert.notNull(pipelineRun,
@@ -1256,17 +1256,28 @@ public class PipelineRunManager {
             return params;
         }
         params.forEach(p -> p.setResolvedValue(p.getValue()));
+        final List<PipelineRunParameter> paramsWithPossibleEnvVars = params.stream()
+                .filter(p -> org.apache.commons.lang3.StringUtils.isNotBlank(p.getValue()) &&
+                        p.getValue().contains("$"))
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(paramsWithPossibleEnvVars)) {
+            return params;
+        }
         envVars.forEach((key, value) -> {
-            Pattern pattern = Pattern.compile(String.format("[$]%s[^a-zA-Z0-9_]", key));
-            params.forEach(param ->
+            Pattern pattern = Pattern.compile("[$]" + key + "[^a-zA-Z0-9_]");
+            Pattern patternWithBraces = Pattern.compile("[$]" + key + "$|[$][{]" + key + "[}]");
+            paramsWithPossibleEnvVars.forEach(param ->
                     param.setResolvedValue(
-                        replaceEnvVarInParameter(pattern, key, value, param.getResolvedValue())));
+                        replaceEnvVarInParameter(pattern, patternWithBraces, key, value, param.getResolvedValue())));
         });
         return params;
     }
 
-    private String replaceEnvVarInParameter(Pattern pattern, String envVarName,
-            String envVarValue, String parameter) {
+    private String replaceEnvVarInParameter(final Pattern pattern,
+                                            final Pattern patternWithBraces,
+                                            final String envVarName,
+                                            final String envVarValue,
+                                            final String parameter) {
         if (!StringUtils.hasText(parameter) || !StringUtils.hasText(envVarName)
                 || !StringUtils.hasText(envVarValue)) {
             return parameter;
@@ -1278,8 +1289,7 @@ public class PipelineRunManager {
                 char lastSymbol = matcher.group().toCharArray()[matcher.group().length() - 1];
                 resolvedParameter = matcher.replaceAll(envVarValue + lastSymbol);
             }
-            return resolvedParameter.replaceAll(String.format("[$]%s$|[$][{]%s[}]",
-                    envVarName, envVarName), envVarValue);
+            return patternWithBraces.matcher(resolvedParameter).replaceAll(envVarValue);
         } catch (IllegalArgumentException e) {
             LOGGER.trace(e.getMessage(), e);
             return parameter;

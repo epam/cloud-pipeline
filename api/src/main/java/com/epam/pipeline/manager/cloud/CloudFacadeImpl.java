@@ -35,7 +35,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.alive.policy.NodeExpirationService;
 import com.epam.pipeline.manager.execution.SystemParams;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -58,7 +58,7 @@ public class CloudFacadeImpl implements CloudFacade {
     private final MessageHelper messageHelper;
     private final CloudRegionManager regionManager;
     private final PreferenceManager preferenceManager;
-    private final PipelineRunManager pipelineRunManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final KubernetesManager kubernetesManager;
     private final Map<CloudProvider, CloudInstanceService> instanceServices;
     private final Map<CloudProvider, CloudInstancePriceService> instancePriceServices;
@@ -67,7 +67,7 @@ public class CloudFacadeImpl implements CloudFacade {
     public CloudFacadeImpl(final MessageHelper messageHelper,
                            final CloudRegionManager regionManager,
                            final PreferenceManager preferenceManager,
-                           final PipelineRunManager pipelineRunManager,
+                           final PipelineRunCRUDService runCRUDService,
                            final KubernetesManager kubernetesManager,
                            final List<CloudInstanceService> instanceServices,
                            final List<CloudInstancePriceService> instancePriceServices,
@@ -75,7 +75,7 @@ public class CloudFacadeImpl implements CloudFacade {
         this.messageHelper = messageHelper;
         this.regionManager = regionManager;
         this.preferenceManager = preferenceManager;
-        this.pipelineRunManager = pipelineRunManager;
+        this.runCRUDService = runCRUDService;
         this.kubernetesManager = kubernetesManager;
         this.instanceServices = CommonUtils.groupByCloudProvider(instanceServices);
         this.instancePriceServices = CommonUtils.groupByCloudProvider(instancePriceServices);
@@ -261,7 +261,7 @@ public class CloudFacadeImpl implements CloudFacade {
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
         try {
-            final PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
+            final PipelineRun run = runCRUDService.loadRunById(runId);
             return regionManager
                     .load(run.getInstance().getCloudRegionId());
         } catch (IllegalArgumentException e) {

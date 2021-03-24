@@ -38,8 +38,9 @@ public class RunLogManagerTest extends AbstractManagerTest {
 
     private static final String FIRST_TASK = "Task1(param=1)";
     private static final String SECOND_TASK = "Task2";
+
     @Mock
-    private PipelineRunManager runManagerMock;
+    private PipelineRunCRUDService runCRUDServiceMock;
 
     @Mock
     private RunLogDao logDao;
@@ -62,7 +63,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
                 .logText("Second task Log1").build());
         logs.add(RunLog.builder().date(Date.from(Instant.now())).task(new PipelineTask(FIRST_TASK))
                 .logText("First task Log2").build());
-        Mockito.when(runManagerMock.loadPipelineRun(run.getId())).thenReturn(run);
+        Mockito.when(runCRUDServiceMock.loadRunById(run.getId())).thenReturn(run);
         Mockito.when(logDao.loadAllLogsForRun(run.getId())).thenReturn(logs);
         String result = logManager.downloadLogs(run);
         Assert.assertNotNull(result);

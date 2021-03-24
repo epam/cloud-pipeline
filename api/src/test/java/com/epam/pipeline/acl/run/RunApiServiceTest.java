@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;

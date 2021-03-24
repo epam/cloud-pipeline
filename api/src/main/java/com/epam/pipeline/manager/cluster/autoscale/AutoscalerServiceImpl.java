@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -54,6 +55,7 @@ public class AutoscalerServiceImpl implements AutoscalerService {
     private final PreferenceManager preferenceManager;
     private final CloudRegionManager cloudRegionManager;
     private final PipelineRunManager pipelineRunManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final NodePoolManager nodePoolManager;
     private final CloudFacade cloudFacade;
     private final NodeDiskManager nodeDiskManager;
@@ -117,7 +119,7 @@ public class AutoscalerServiceImpl implements AutoscalerService {
                 .map(NodePool::toRunningInstance)
                 .orElseGet(() -> {
                     try {
-                        final PipelineRun run = pipelineRunManager.loadPipelineRun(Long.parseLong(nodeLabel));
+                        final PipelineRun run = runCRUDService.loadRunById(Long.parseLong(nodeLabel));
                         final RunningInstance runningInstance = new RunningInstance();
                         runningInstance.setInstance(run.getInstance());
                         runningInstance.setPrePulledImages(Collections.singleton(run.getActualDockerImage()));
@@ -160,7 +162,7 @@ public class AutoscalerServiceImpl implements AutoscalerService {
     }
 
     private void registerNodeDisks(long runId, List<InstanceDisk> disks) {
-        PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
+        PipelineRun run = runCRUDService.loadRunById(runId);
         String nodeId = run.getInstance().getNodeId();
         LocalDateTime creationDate = DateUtils.convertDateToLocalDateTime(run.getStartDate());
         List<DiskRegistrationRequest> requests = DiskRegistrationRequest.from(disks);

@@ -22,7 +22,7 @@ import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -47,18 +47,18 @@ public class CommonCloudInstanceService {
     private final PreferenceManager preferenceManager;
     private final UserManager userManager;
     private final AuthManager authManager;
-    private final PipelineRunManager pipelineRunManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final KubernetesManager kubernetesManager;
 
     public CommonCloudInstanceService(final PreferenceManager preferenceManager,
                                       final UserManager userManager,
                                       final AuthManager authManager,
-                                      final PipelineRunManager pipelineRunManager,
+                                      final PipelineRunCRUDService runCRUDService,
                                       final KubernetesManager kubernetesManager) {
         this.preferenceManager = preferenceManager;
         this.userManager = userManager;
         this.authManager = authManager;
-        this.pipelineRunManager = pipelineRunManager;
+        this.runCRUDService = runCRUDService;
         this.kubernetesManager = kubernetesManager;
     }
 
@@ -149,7 +149,7 @@ public class CommonCloudInstanceService {
         if (Objects.isNull(runId)) {
             return authManager.issueTokenForCurrentUser().getToken();
         }
-        PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
+        PipelineRun run = runCRUDService.loadRunById(runId);
         UserContext owner = userManager.loadUserContext(run.getOwner());
         return authManager.issueToken(owner, null).getToken();
     }
