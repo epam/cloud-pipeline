@@ -28,7 +28,7 @@ from fsbrowser.src.transfer_task import TransferTask, TaskStatus
 class FsBrowserManager(object):
 
     def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, tmp, exclude,
-                 vs_working_directory):
+                 vs_working_directory, git_token, git_user):
         self.tasks = {}
         self.pool = ThreadPool(processes=process_count)
         self.working_directory = working_directory
@@ -38,7 +38,7 @@ class FsBrowserManager(object):
         self._create_tmp_dir_if_needed(tmp)
         self.tmp = tmp
         self.exclude_list = self._parse_exclude_list(exclude, working_directory)
-        self.git_manager = GitManager(self.pool, self.tasks, self.logger, vs_working_directory)
+        self.git_manager = GitManager(self.pool, self.tasks, self.logger, vs_working_directory, git_token, git_user)
 
     def list(self, path):
         items = []

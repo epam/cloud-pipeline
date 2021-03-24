@@ -157,10 +157,3 @@ class CloudPipelineApiProvider(object):
 
     def log_event(self, run_id, data):
         self.api.log_event(run_id, data)
-
-    def get_git_credentials(self):
-        result = self.api.get_git_credentials()
-        if not result:
-            raise RuntimeError("Failed to find git credentials")
-        return result
-

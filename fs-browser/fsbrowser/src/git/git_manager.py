@@ -25,15 +25,14 @@ VERSION_STORAGE_IDENTIFIER = 'id'
 
 class GitManager:
 
-    def __init__(self, pool, tasks, logger, vs_working_directory):
+    def __init__(self, pool, tasks, logger, vs_working_directory, git_token, git_user):
         self.pool = pool
         self.tasks = tasks
         self.logger = logger
         self.root_folder = vs_working_directory
         self._create_dir_if_needed(self.root_folder)
         self.api_client = CloudPipelineApiProvider()
-        git_credentials = self.api_client.get_git_credentials()
-        self.git_client = GitClient(git_credentials.get('token'), git_credentials.get('userName'), logger)
+        self.git_client = GitClient(git_token, git_user, logger)
 
     def clone(self, versioned_storage_id, revision=None):
         versioned_storage = self.api_client.get_pipeline(versioned_storage_id)
