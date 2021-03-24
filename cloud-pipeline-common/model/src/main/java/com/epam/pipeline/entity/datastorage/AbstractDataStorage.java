@@ -44,6 +44,7 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
 
     private String description;
     private String path;
+    private String root;
     private DataStorageType type;
     private Long parentFolderId;
     private Folder parent;
