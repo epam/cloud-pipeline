@@ -112,6 +112,13 @@ class GitManager:
         self.pool.apply_async(task.save_file, [full_repo_path, path, content])
         return task_id
 
+    def get_file_path(self, versioned_storage_id, path):
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        path_to_file = os.path.join(full_repo_path, path)
+        if not os.path.exists(path_to_file):
+            raise RuntimeError("Requested file does not exists")
+        return path_to_file
+
     def revert(self, versioned_storage_id):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         self.git_client.revert(full_repo_path)

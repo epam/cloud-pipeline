@@ -17,7 +17,7 @@ import os
 import traceback
 
 import flask
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, stream_with_context, Response
 from flask_httpauth import HTTPBasicAuth
 
 from fsbrowser.src.fs_browser_manager import FsBrowserManager
@@ -28,6 +28,11 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 auth = HTTPBasicAuth()
+
+
+def get_file_stream(path_to_file):
+    with open(path_to_file, "r") as f:
+        yield f.read()
 
 
 def success(payload):
@@ -241,15 +246,18 @@ def commit_versioned_storage(vs_id):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/vs/<vs_id>/files', methods=['POST'])
+@app.route('/vs/<vs_id>/files', methods=['POST', 'GET'])
 @auth.login_required
 def save_versioned_storage_file(vs_id):
     path = flask.request.args.get('path')
     manager = app.config['fsbrowser']
     try:
-        content = flask.request.stream.read()
-        task_id = manager.save_file(vs_id, path, content)
-        return jsonify(success({"task": task_id}))
+        if flask.request.method == 'POST':
+            content = flask.request.stream.read()
+            task_id = manager.save_file(vs_id, path, content)
+            return jsonify(success({"task": task_id}))
+        path_to_file = manager.get_file_path(vs_id, path)
+        return Response(stream_with_context(get_file_stream(path_to_file)))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))

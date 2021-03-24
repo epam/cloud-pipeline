@@ -138,6 +138,9 @@ class FsBrowserManager(object):
     def remove_version_storage(self, versioned_storage_id):
         return self.git_manager.remove(versioned_storage_id)
 
+    def get_file_path(self, versioned_storage_id, path):
+        return self.git_manager.get_file_path(versioned_storage_id, path)
+
     @staticmethod
     def _parse_transfer_storage_path(storage):
         if not storage:
