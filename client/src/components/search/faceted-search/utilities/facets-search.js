@@ -27,7 +27,6 @@ export default function facetsSearch (query, filters, offset, pageSize, options)
     stores,
     total
   } = options;
-  console.log('facetssearch', total);
   const facetsToken = getFacetFilterToken(
     query,
     filters,

@@ -367,6 +367,10 @@ class FacetedSearch extends React.Component {
     return dataRange.start > requestedRange.start || dataRange.end < requestedRange.end;
   };
 
+  onChangeQuery = () => {
+    this.doSearch(0, true);
+  };
+
   onChangePage = (page, pageSize) => {
     const {offset, pageSize: oldPageSize} = this.state;
     const newOffset = (page - 1) * pageSize;
@@ -455,13 +459,13 @@ class FacetedSearch extends React.Component {
             className={styles.searchInput}
             value={query}
             onChange={this.onQueryChange}
-            onPressEnter={() => this.onChangePage(1, pageSize)}
+            onPressEnter={this.onChangeQuery}
           />
           <Button
             className={styles.find}
             size="large"
             type="primary"
-            onClick={() => this.onChangePage(1, pageSize)}
+            onClick={this.onChangeQuery}
           >
             <Icon type="search" />
             Search
