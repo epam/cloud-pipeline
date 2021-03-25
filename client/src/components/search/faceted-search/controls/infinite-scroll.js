@@ -32,11 +32,16 @@ class InfiniteScroll extends React.Component {
   scroller;
 
   componentDidMount () {
+    window.addEventListener('resize', this.changePageSize);
     this.updateState();
     const {onInitialized} = this.props;
     if (onInitialized) {
       onInitialized(this);
     }
+  }
+
+  componentWillUnmount () {
+    window.removeEventListener('resize', this.changePageSize);
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
