@@ -29,6 +29,8 @@ import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import styles from './search-results.css';
 
 const RESULT_ITEM_HEIGHT = 38;
+const TABLE_ROW_HEIGHT = 32;
+const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 3;
 const PREVIEW_TIMEOUT = 1000;
 
@@ -286,14 +288,18 @@ class SearchResults extends React.Component {
     {key: 'id', name: 'Identifier', width: '15%'}
   ]
 
-  getGridTemplate = () => {
+  getGridTemplate = (headerTemplate) => {
     const {columnWidths} = this.state;
+    const rowHeight = headerTemplate
+      ? TABLE_HEADER_HEIGHT
+      : TABLE_ROW_HEIGHT;
     const cellDefault = '100px';
     const divider = '4px';
     const columnString = `'${this.columns
-      .map(c => `${c.key} .`).join(' ')}' 1fr /`;
+      .map(c => `${c.key} .`).join(' ')}' ${rowHeight}px /`;
     const widthString = `${this.columns
-      .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${divider}`).join(' ')}`;
+      .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${divider}`)
+      .join(' ')}`;
     return columnString.concat(widthString);
   };
 
@@ -384,7 +390,7 @@ class SearchResults extends React.Component {
           styles.tableRow,
           styles.tableHeader
         )}
-        style={{gridTemplate: this.getGridTemplate()}}
+        style={{gridTemplate: this.getGridTemplate(true)}}
         ref={header => (this.headerRef = header)}
       >
         {this.columns.map(({key, name}, index) => ([
@@ -421,7 +427,6 @@ class SearchResults extends React.Component {
         className={styles.tableContainer}
         onBlur={this.stopResizing}
       >
-        {this.renderTableHeader()}
         <InfiniteScroll
           dataOffset={documentsOffset}
           error={error}
@@ -430,9 +435,10 @@ class SearchResults extends React.Component {
           style={{height: '100%'}}
           onOffsetChanged={this.onInfiniteScrollOffsetChanged}
           elements={documents}
-          rowRenderer={this.renderSearchResultItem}
-          rowMargin={RESULT_ITEM_MARGIN}
-          rowHeight={RESULT_ITEM_HEIGHT}
+          headerRenderer={this.renderTableHeader}
+          rowRenderer={this.renderTableRow}
+          rowMargin={0}
+          rowHeight={TABLE_ROW_HEIGHT}
         />
       </div>
     );

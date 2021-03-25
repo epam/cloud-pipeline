@@ -209,6 +209,7 @@ class InfiniteScroll extends React.Component {
       dataOffset,
       rowHeight,
       rowMargin,
+      headerRenderer,
       rowRenderer,
       total
     } = this.props;
@@ -250,6 +251,7 @@ class InfiniteScroll extends React.Component {
               </div>
             )
           }
+          {headerRenderer && headerRenderer()}
           {
             rowRenderer && (elements || []).map((element, index) => (
               <div
@@ -301,6 +303,7 @@ InfiniteScroll.propTypes = {
   rowHeight: PropTypes.number,
   rowKey: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   rowMargin: PropTypes.number,
+  headerRenderer: PropTypes.func,
   rowRenderer: PropTypes.func,
   style: PropTypes.object,
   total: PropTypes.number
