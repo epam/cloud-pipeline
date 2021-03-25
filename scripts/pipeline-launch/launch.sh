@@ -1808,8 +1808,9 @@ if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
 fi
 
 if ! check_cp_cap "CP_CAP_SKIP_UMOUNT" && check_installed "umount"; then
+      CP_CAP_UMOUNT_TYPES="${CP_CAP_UMOUNT_TYPES:-cifs,fuse,nfs,nfs4,lustre}"
       echo "Unmounting all storage mounts"
-      umount -t cifs,fuse,nfs,nfs4,lustre -lfa
+      umount -t "$CP_CAP_UMOUNT_TYPES" -lfa
       echo "Finished unmounting process"
 fi
 
