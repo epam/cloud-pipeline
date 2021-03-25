@@ -47,10 +47,20 @@ class SearchResults extends React.Component {
   headerRef = null;
   tableWidth = undefined;
   animationFrame;
+  infiniteScroll;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.offset !== this.props.offset) {
       this.unHoverItem(this.state.hoverInfo)();
+    }
+    if (
+      prevState.hoverInfo !== this.state.hoverInfo ||
+      prevState.preview !== this.state.preview ||
+      prevState.columnWidths !== this.state.columnWidths
+    ) {
+      if (this.infiniteScroll) {
+        this.infiniteScroll.forceUpdate();
+      }
     }
   }
 
@@ -114,6 +124,10 @@ class SearchResults extends React.Component {
       default: return resultItem.name;
     }
   }
+
+  onInitializeInfiniteScroll = (infiniteScroll) => {
+    this.infiniteScroll = infiniteScroll;
+  };
 
   renderSearchResultItem = (resultItem) => {
     const {disabled} = this.props;
@@ -213,11 +227,22 @@ class SearchResults extends React.Component {
     const {
       documents,
       documentsOffset,
+      disabled,
       error,
       showResults,
       total,
       offset
     } = this.props;
+    if (error) {
+      return (
+        <Alert type="error" message={error} />
+      );
+    }
+    if (showResults && total === 0) {
+      return (
+        <Alert type="info" message="Nothing found" />
+      );
+    }
     return (
       <div
         className={styles.content}
@@ -232,14 +257,10 @@ class SearchResults extends React.Component {
             )
           }
         >
-          {
-            showResults && total === 0 && (
-              <Alert type="info" message="Nothing found" />
-            )
-          }
           <InfiniteScroll
             className={classNames(styles.infiniteScroll, styles.list)}
             dataOffset={documentsOffset}
+            disabled={disabled}
             error={error}
             offset={offset}
             total={total}
@@ -248,6 +269,7 @@ class SearchResults extends React.Component {
             rowRenderer={this.renderSearchResultItem}
             rowMargin={RESULT_ITEM_MARGIN}
             rowHeight={RESULT_ITEM_HEIGHT}
+            onInitialized={this.onInitializeInfiniteScroll}
           />
         </div>
         {/* TODO: Preview disabled until it will be converted into a popover or something */}
@@ -322,7 +344,7 @@ class SearchResults extends React.Component {
       }
       if (Math.abs(offset) > step) {
         columnWidths[resizingColumn] = `${Math.round(rect.width + offset)}px`;
-        this.setState(columnWidths);
+        this.setState({columnWidths: {...columnWidths}});
       }
     }
   }
@@ -418,10 +440,22 @@ class SearchResults extends React.Component {
     const {
       documents,
       documentsOffset,
+      disabled,
       error,
       total,
-      offset
+      offset,
+      showResults
     } = this.props;
+    if (error) {
+      return (
+        <Alert type="error" message={error} />
+      );
+    }
+    if (showResults && total === 0) {
+      return (
+        <Alert type="info" message="Nothing found" />
+      );
+    }
     return (
       <div
         className={styles.tableContainer}
@@ -430,6 +464,7 @@ class SearchResults extends React.Component {
         <InfiniteScroll
           className={classNames(styles.infiniteScroll, styles.table)}
           dataOffset={documentsOffset}
+          disabled={disabled}
           error={error}
           offset={offset}
           total={total}
@@ -439,6 +474,7 @@ class SearchResults extends React.Component {
           rowRenderer={this.renderTableRow}
           rowMargin={0}
           rowHeight={TABLE_ROW_HEIGHT}
+          onInitialized={this.onInitializeInfiniteScroll}
         />
       </div>
     );

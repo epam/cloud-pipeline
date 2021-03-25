@@ -33,6 +33,10 @@ class InfiniteScroll extends React.Component {
 
   componentDidMount () {
     this.updateState();
+    const {onInitialized} = this.props;
+    if (onInitialized) {
+      onInitialized(this);
+    }
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -326,6 +330,7 @@ InfiniteScroll.propTypes = {
   elements: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   error: PropTypes.string,
   offset: PropTypes.number,
+  onInitialized: PropTypes.func,
   onOffsetChanged: PropTypes.func,
   pageSize: PropTypes.number,
   pending: PropTypes.bool,
