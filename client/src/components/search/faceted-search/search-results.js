@@ -25,7 +25,7 @@ import {PreviewIcons} from '../preview/previewIcons';
 import {SearchItemTypes} from '../../../models/search';
 // TODO: Preview disabled until it will be converted into a popover or something
 // import Preview from '../preview';
-import {PresentationModes} from '../faceted-search/controls';
+import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import styles from './search-results.css';
 
 const RESULT_ITEM_HEIGHT = 38;
@@ -47,7 +47,7 @@ class SearchResults extends React.Component {
   animationFrame;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.page !== this.props.page) {
+    if (prevProps.offset !== this.props.offset) {
       this.unHoverItem(this.state.hoverInfo)();
     }
   }
@@ -65,36 +65,14 @@ class SearchResults extends React.Component {
     window.removeEventListener('mouseup', this.stopResizing);
   }
 
-  initializeResultsArea = (area) => {
-    this.area = area;
-    this.resizeResultsArea();
-  }
-
-  resizeResultsArea = () => {
-    if (this.area) {
-      const height = this.area.clientHeight;
-      const {resultsAreaHeight} = this.state;
-      const {
-        onChangePage,
-        onChangeBottomOffset,
-        page,
-        pageSize
-      } = this.props;
-      if (height !== resultsAreaHeight) {
-        this.setState({
-          resultsAreaHeight: height
-        }, () => {
-          const newPageSize = 2 * Math.floor(height / (RESULT_ITEM_HEIGHT + RESULT_ITEM_MARGIN));
-          if (onChangePage) {
-            const currentItem = (page - 1) * pageSize;
-            const newPage = Math.floor(currentItem / newPageSize) + 1;
-            onChangePage(newPage, newPageSize);
-          }
-          if (onChangeBottomOffset) {
-            onChangeBottomOffset(height - newPageSize * (RESULT_ITEM_HEIGHT + RESULT_ITEM_MARGIN));
-          }
-        });
-      }
+  onInfiniteScrollOffsetChanged = (offset, pageSize) => {
+    const {
+      onChangeOffset,
+      offset: currentOffset,
+      pageSize: currentPageSize
+    } = this.props;
+    if (onChangeOffset && (currentOffset !== offset || currentPageSize !== pageSize)) {
+      onChangeOffset(offset, pageSize);
     }
   };
 
@@ -232,8 +210,11 @@ class SearchResults extends React.Component {
   renderResultsList = () => {
     const {
       documents,
+      documentsOffset,
+      error,
       showResults,
-      total
+      total,
+      offset
     } = this.props;
     return (
       <div
@@ -248,16 +229,24 @@ class SearchResults extends React.Component {
               }
             )
           }
-          ref={this.initializeResultsArea}
         >
           {
             showResults && total === 0 && (
               <Alert type="info" message="Nothing found" />
             )
           }
-          {
-            showResults && total > 0 && documents.map(this.renderSearchResultItem)
-          }
+          <InfiniteScroll
+            dataOffset={documentsOffset}
+            error={error}
+            offset={offset}
+            total={total}
+            style={{height: '100%'}}
+            onOffsetChanged={this.onInfiniteScrollOffsetChanged}
+            elements={documents}
+            rowRenderer={this.renderSearchResultItem}
+            rowMargin={RESULT_ITEM_MARGIN}
+            rowHeight={RESULT_ITEM_HEIGHT}
+          />
         </div>
         {/* TODO: Preview disabled until it will be converted into a popover or something */}
         {/* {
@@ -422,21 +411,29 @@ class SearchResults extends React.Component {
   renderResultsTable = () => {
     const {
       documents,
-      showResults,
-      total
+      documentsOffset,
+      error,
+      total,
+      offset
     } = this.props;
-    if (!showResults || !total) {
-      return <Alert type="info" message="Nothing found" />;
-    }
     return (
       <div
         className={styles.tableContainer}
         onBlur={this.stopResizing}
       >
         {this.renderTableHeader()}
-        {documents.map((document, index) => (
-          this.renderTableRow(document, index)
-        ))}
+        <InfiniteScroll
+          dataOffset={documentsOffset}
+          error={error}
+          offset={offset}
+          total={total}
+          style={{height: '100%'}}
+          onOffsetChanged={this.onInfiniteScrollOffsetChanged}
+          elements={documents}
+          rowRenderer={this.renderSearchResultItem}
+          rowMargin={RESULT_ITEM_MARGIN}
+          rowHeight={RESULT_ITEM_HEIGHT}
+        />
       </div>
     );
   }
@@ -458,8 +455,7 @@ class SearchResults extends React.Component {
         )}
         style={style}
       >
-        {mode === PresentationModes.list && this.renderResultsList()}
-        {mode === PresentationModes.table && this.renderResultsTable()}
+        {mode === PresentationModes.table ? this.renderResultsTable() : this.renderResultsList()}
       </div>
     );
   }
@@ -468,9 +464,11 @@ class SearchResults extends React.Component {
 SearchResults.propTypes = {
   className: PropTypes.string,
   documents: PropTypes.array,
-  onChangePage: PropTypes.func,
+  documentsOffset: PropTypes.number,
+  error: PropTypes.string,
+  onChangeOffset: PropTypes.func,
   onNavigate: PropTypes.func,
-  page: PropTypes.number,
+  offset: PropTypes.number,
   pageSize: PropTypes.number,
   showResults: PropTypes.bool,
   style: PropTypes.object,
@@ -482,7 +480,8 @@ SearchResults.propTypes = {
 
 SearchResults.defaultProps = {
   documents: [],
-  page: 1,
+  documentsOffset: 0,
+  offset: 0,
   pageSize: 20,
   total: 0
 };

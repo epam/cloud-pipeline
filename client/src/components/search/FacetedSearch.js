@@ -41,6 +41,24 @@ import {
 import {SplitPanel} from '../special/splitPanel';
 import styles from './FacetedSearch.css';
 
+function getDisplayRange (offset, pageSize, total) {
+  return {
+    start: Math.max(0, offset - pageSize),
+    end: Math.min(
+      total,
+      Math.max(0, offset - pageSize) + 3 * pageSize
+    )
+  };
+}
+
+function getDataRange (offset, pageSize) {
+  const start = Math.ceil(Math.max(0, offset - 2 * pageSize) / pageSize) * pageSize;
+  return {
+    start,
+    end: start + 5 * pageSize
+  };
+}
+
 @inject('systemDictionaries', 'preferences', 'pipelines')
 @inject((stores, props) => {
   const {location = {}} = props || {};
@@ -62,10 +80,10 @@ class FacetedSearch extends React.Component {
     totalHits: 0,
     facetsCount: {},
     documents: [],
+    documentsOffset: 0,
     query: undefined,
     offset: 0,
     pageSize: undefined,
-    pageSizeInitialized: false,
     presentationMode: PresentationModes.list,
     showResults: false
   }
@@ -74,9 +92,9 @@ class FacetedSearch extends React.Component {
     const {facetedFilters} = this.props;
     if (facetedFilters) {
       const {query, filters} = facetedFilters;
-      this.setState({query, activeFilters: filters}, () => this.doSearch());
+      this.setState({query, activeFilters: filters}, () => this.doSearch(0, true));
     } else {
-      this.doSearch();
+      this.doSearch(0, true);
     }
   }
 
@@ -143,11 +161,8 @@ class FacetedSearch extends React.Component {
   }
 
   get page () {
-    const {offset, pageSize, pageSizeInitialized} = this.state;
-    if (!pageSizeInitialized) {
-      return 1;
-    }
-    return Math.floor(offset / pageSize) + 1;
+    const {offset, pageSize} = this.state;
+    return pageSize ? Math.floor((offset + pageSize - 1) / pageSize) + 1 : 1;
   }
 
   getFilterPreferences = (filterName) => {
@@ -182,23 +197,23 @@ class FacetedSearch extends React.Component {
     } else {
       delete newFilters[group];
     }
-    this.setState({activeFilters: newFilters}, () => this.doSearch());
+    this.setState({activeFilters: newFilters}, () => this.doSearch(0, true));
   }
 
-  doSearch = (offset = 0) => {
+  doSearch = (offset = 0, updateOffset) => {
     this.setState({pending: true}, () => {
       this.loadFacets()
         .then(() => {
+          let {offset: currentOffset} = this.state;
           const {
             activeFilters,
             facets,
             query,
             pageSize,
-            pageSizeInitialized,
             searchToken: currentSearchToken
           } = this.state;
-          if (!pageSizeInitialized) {
-            return;
+          if (updateOffset) {
+            currentOffset = offset;
           }
           if (facets.length === 0) {
             // eslint-disable-next-line
@@ -208,13 +223,19 @@ class FacetedSearch extends React.Component {
             });
             return;
           }
-          const searchToken = getFacetFilterToken(query, activeFilters, offset, pageSize);
+          const dataRange = getDataRange(offset, pageSize);
+          const searchToken = getFacetFilterToken(
+            query,
+            activeFilters,
+            dataRange.start,
+            dataRange.end - dataRange.start
+          );
           if (currentSearchToken === searchToken) {
             return;
           }
           this.setState({
             searchToken,
-            offset
+            offset: currentOffset
           }, () => {
             let queryString = facetedQueryString.build(query, activeFilters);
             if (queryString) {
@@ -225,12 +246,13 @@ class FacetedSearch extends React.Component {
             }
             Promise.all([
               fetchFacets(facets.map(f => f.name), activeFilters, query),
-              doSearch(query, activeFilters, offset, pageSize)
+              doSearch(query, activeFilters, dataRange.start, dataRange.end - dataRange.start)
             ])
               .then(([facetsCount, searchResult]) => {
                 const {
                   error,
                   documents = [],
+                  documentsOffset = 0,
                   totalHits = 0
                 } = searchResult;
                 Promise.all(
@@ -247,6 +269,7 @@ class FacetedSearch extends React.Component {
                         error,
                         facetsCount: {...facetsCount},
                         documents: documents.slice(),
+                        documentsOffset,
                         totalHits,
                         searchToken: undefined,
                         showResults: true
@@ -307,16 +330,47 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  offsetIsNotInRange = () => {
+    const {
+      documentsOffset,
+      documents,
+      offset,
+      pageSize,
+      totalHits
+    } = this.state;
+    const dataRange = {
+      start: (documentsOffset || 0),
+      end: (documentsOffset || 0) + (documents || []).length
+    };
+    const requestedRange = getDisplayRange(offset, pageSize, totalHits);
+    return dataRange.start > requestedRange.start || dataRange.end < requestedRange.end;
+  };
+
   onChangePage = (page, pageSize) => {
-    const {offset, pageSize: oldPageSize, pageSizeInitialized} = this.state;
+    const {offset, pageSize: oldPageSize} = this.state;
     const newOffset = (page - 1) * pageSize;
-    if (pageSizeInitialized || newOffset !== offset || pageSize !== oldPageSize) {
+    if (newOffset !== offset || pageSize !== oldPageSize) {
       this.setState({
         offset: newOffset,
-        pageSize: pageSizeInitialized ? oldPageSize : pageSize,
-        pageSizeInitialized: true
+        pageSize
       }, () => {
-        this.doSearch(newOffset);
+        if (this.offsetIsNotInRange()) {
+          this.doSearch(newOffset);
+        }
+      });
+    }
+  };
+
+  onChangeOffset = (offset, pageSize) => {
+    const {offset: oldOffset, pageSize: oldPageSize} = this.state;
+    if (offset !== oldOffset || pageSize !== oldPageSize) {
+      this.setState({
+        offset,
+        pageSize
+      }, () => {
+        if (this.offsetIsNotInRange()) {
+          this.doSearch(offset);
+        }
       });
     }
   };
@@ -347,7 +401,10 @@ class FacetedSearch extends React.Component {
     const {
       activeFilters,
       documents,
+      documentsOffset,
+      error,
       facetsLoaded,
+      offset,
       pageSize,
       pending,
       presentationMode,
@@ -378,14 +435,14 @@ class FacetedSearch extends React.Component {
             className={styles.searchInput}
             value={query}
             onChange={this.onQueryChange}
-            onPressEnter={() => this.doSearch(0)}
+            onPressEnter={() => this.onChangePage(1, pageSize)}
           />
           <Button
             disabled={pending}
             className={styles.find}
             size="large"
             type="primary"
-            onClick={() => this.doSearch(0)}
+            onClick={() => this.onChangePage(1, pageSize)}
           >
             <Icon type="search" />
             Search
@@ -449,9 +506,11 @@ class FacetedSearch extends React.Component {
               className={classNames(styles.panel, styles.searchResults)}
               disabled={pending}
               documents={(documents || []).slice()}
-              page={this.page}
+              documentsOffset={documentsOffset}
+              error={error}
+              offset={offset}
               pageSize={pageSize}
-              onChangePage={this.onChangePage}
+              onChangeOffset={this.onChangeOffset}
               onNavigate={this.onNavigate}
               showResults={showResults}
               total={totalHits}

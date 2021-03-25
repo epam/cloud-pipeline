@@ -117,11 +117,9 @@
 .table-row {
   cursor: pointer;
   color: inherit;
-  background: inherit;
   text-decoration: none !important;
   display: grid;
   background: #fafafa;
-  height: 100%;
   transition: background 0.2s ease;
 }
 

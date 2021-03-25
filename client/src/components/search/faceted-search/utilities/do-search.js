@@ -22,7 +22,7 @@ function doSearch (query, filters, offset, pageSize) {
     filters: {...filters},
     offset,
     pageSize,
-    highlight: true
+    highlight: false
   };
   return new Promise((resolve) => {
     const request = new FacetedSearch();
@@ -35,7 +35,7 @@ function doSearch (query, filters, offset, pageSize) {
             documents = [],
             totalHits = 0
           } = request.value || {};
-          resolve({documents, totalHits});
+          resolve({documents, documentsOffset: offset, totalHits});
         }
       })
       .catch(e => {

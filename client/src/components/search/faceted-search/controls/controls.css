@@ -153,3 +153,23 @@
 .view-toggler .toggle-btn.toggle-btn-active:hover {
   background-color: #458bd4;
 }
+
+.infinite-scroll {
+  overflow: auto;
+}
+
+.scroll-container {
+  position: relative;
+}
+
+.more {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.more.error {
+  justify-content: flex-start;
+  color: red;
+}
