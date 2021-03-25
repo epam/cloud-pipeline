@@ -15,6 +15,7 @@
  */
 
 import {FacetedSearch} from '../../../../models/search';
+import getFacetFilterToken from './facet-filter-token';
 
 function fetchFacetsGroup (facetNames, filters, query) {
   return new Promise((resolve) => {
@@ -51,6 +52,12 @@ function removeSingleSelection (selection, name) {
 }
 
 function fetchFacets (facets, selection, query = '*') {
+  const facetsToken = getFacetFilterToken(
+    query,
+    selection,
+    0,
+    1
+  );
   const selectedFacets = Object.keys(selection);
   const notSelectedFacets = facets.filter(f => selectedFacets.indexOf(f) === -1);
   return new Promise((resolve) => {
@@ -64,7 +71,10 @@ function fetchFacets (facets, selection, query = '*') {
         for (let p = 0; p < payloads.length; p++) {
           result = {...result, ...(payloads[p])};
         }
-        resolve(result);
+        resolve({
+          facetsCount: result,
+          facetsToken
+        });
       });
   });
 }

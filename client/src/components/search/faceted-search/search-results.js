@@ -238,11 +238,11 @@ class SearchResults extends React.Component {
             )
           }
           <InfiniteScroll
+            className={classNames(styles.infiniteScroll, styles.list)}
             dataOffset={documentsOffset}
             error={error}
             offset={offset}
             total={total}
-            style={{height: '100%'}}
             onOffsetChanged={this.onInfiniteScrollOffsetChanged}
             elements={documents}
             rowRenderer={this.renderSearchResultItem}
@@ -428,11 +428,11 @@ class SearchResults extends React.Component {
         onBlur={this.stopResizing}
       >
         <InfiniteScroll
+          className={classNames(styles.infiniteScroll, styles.table)}
           dataOffset={documentsOffset}
           error={error}
           offset={offset}
           total={total}
-          style={{height: '100%'}}
           onOffsetChanged={this.onInfiniteScrollOffsetChanged}
           elements={documents}
           headerRenderer={this.renderTableHeader}

@@ -32,10 +32,9 @@ import {
 } from './faceted-search/controls';
 import SearchResults from './faceted-search/search-results';
 import {
-  doSearch,
   facetedQueryString,
+  facetsSearch,
   getFacetFilterToken,
-  getItemUrl,
   fetchFacets
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
@@ -85,7 +84,9 @@ class FacetedSearch extends React.Component {
     offset: 0,
     pageSize: undefined,
     presentationMode: PresentationModes.list,
-    showResults: false
+    showResults: false,
+    searchToken: undefined,
+    facetsToken: undefined
   }
 
   componentDidMount () {
@@ -208,9 +209,11 @@ class FacetedSearch extends React.Component {
           const {
             activeFilters,
             facets,
+            facetsCount: currentFacetsCount,
             query,
             pageSize,
-            searchToken: currentSearchToken
+            searchToken: currentSearchToken,
+            facetsToken: currentFacetsToken
           } = this.state;
           if (updateOffset) {
             currentOffset = offset;
@@ -244,38 +247,48 @@ class FacetedSearch extends React.Component {
             if (this.props.router.location.search !== queryString) {
               this.props.router.push(`/search/advanced${queryString || ''}`);
             }
-            Promise.all([
-              fetchFacets(facets.map(f => f.name), activeFilters, query),
-              doSearch(query, activeFilters, dataRange.start, dataRange.end - dataRange.start)
-            ])
-              .then(([facetsCount, searchResult]) => {
+            facetsSearch(
+              query,
+              activeFilters,
+              dataRange.start,
+              dataRange.end - dataRange.start,
+              {
+                facets: facets.map(f => f.name),
+                facetsCount: currentFacetsCount,
+                facetsToken: currentFacetsToken,
+                stores: this.props
+              }
+            )
+              .then(result => {
                 const {
                   error,
+                  facetsCount,
+                  facetsToken,
                   documents = [],
                   documentsOffset = 0,
                   totalHits = 0
-                } = searchResult;
-                Promise.all(
-                  documents.map(doc => getItemUrl(doc, this.props))
-                )
-                  .then(urls => {
-                    urls.forEach((url, index) => {
-                      documents[index].url = url;
-                    });
-                    const {searchToken: actualSearchToken} = this.state;
-                    if (actualSearchToken === searchToken) {
-                      this.setState({
-                        pending: false,
-                        error,
-                        facetsCount: {...facetsCount},
-                        documents: documents.slice(),
-                        documentsOffset,
-                        totalHits,
-                        searchToken: undefined,
-                        showResults: true
-                      });
-                    }
-                  });
+                } = result;
+                const {
+                  searchToken: actualSearchToken,
+                  facetsToken: actualFacetsToken
+                } = this.state;
+                const state = {};
+                if (actualFacetsToken !== facetsToken) {
+                  state.facetsCount = facetsCount;
+                  state.facetsToken = facetsToken;
+                }
+                if (actualSearchToken === searchToken) {
+                  state.pending = false;
+                  state.error = error;
+                  state.documents = documents;
+                  state.documentsOffset = documentsOffset;
+                  state.totalHits = totalHits;
+                  state.searchToken = undefined;
+                  state.showResults = true;
+                }
+                if (Object.keys(state).length > 0) {
+                  this.setState(state);
+                }
               });
           });
         });
@@ -309,9 +322,15 @@ class FacetedSearch extends React.Component {
             values: []
           });
           fetchFacets(facets.map(f => f.name), {}, '*')
-            .then((facetsCount) => {
+            .then((result) => {
+              const {
+                facetsCount,
+                facetsToken
+              } = result || {};
               this.setState({
                 initialFacetsCount: facetsCount,
+                facetsCount,
+                facetsToken,
                 facetsLoaded: true,
                 facets
               }, resolve);
@@ -430,7 +449,6 @@ class FacetedSearch extends React.Component {
           className={styles.search}
         >
           <Input
-            disabled={pending}
             size="large"
             className={styles.searchInput}
             value={query}
@@ -438,7 +456,6 @@ class FacetedSearch extends React.Component {
             onPressEnter={() => this.onChangePage(1, pageSize)}
           />
           <Button
-            disabled={pending}
             className={styles.find}
             size="large"
             type="primary"
@@ -461,7 +478,6 @@ class FacetedSearch extends React.Component {
           />
           <Pagination
             className={styles.pagination}
-            disabled={pending}
             page={this.page}
             pageSize={pageSize}
             onChangePage={this.onChangePage}
@@ -491,7 +507,6 @@ class FacetedSearch extends React.Component {
                     key={filter.name}
                     name={filter.name}
                     className={styles.filter}
-                    disabled={pending}
                     values={filter.values}
                     selection={(activeFilters || {})[filter.name]}
                     onChange={this.onChangeFilter(filter.name)}
@@ -504,9 +519,9 @@ class FacetedSearch extends React.Component {
             <SearchResults
               key="search-results"
               className={classNames(styles.panel, styles.searchResults)}
-              disabled={pending}
-              documents={(documents || []).slice()}
+              documents={documents}
               documentsOffset={documentsOffset}
+              disabled={pending}
               error={error}
               offset={offset}
               pageSize={pageSize}

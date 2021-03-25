@@ -61,6 +61,31 @@ class InfiniteScroll extends React.Component {
     }
   }
 
+  shouldComponentUpdate (nextProps, nextState, nextContext) {
+    const simpleCheck = o => this.props[o] !== nextProps[o];
+    const shouldUpdate = simpleCheck('className') ||
+      simpleCheck('error') ||
+      simpleCheck('pageSize') ||
+      simpleCheck('pending') ||
+      simpleCheck('rowHeight') ||
+      simpleCheck('rowMargin') ||
+      simpleCheck('rowKey') ||
+      simpleCheck('headerRenderer') ||
+      simpleCheck('rowRenderer') ||
+      simpleCheck('style') ||
+      simpleCheck('total') ||
+      simpleCheck('elements') ||
+      simpleCheck('dataOffset');
+    if (shouldUpdate) {
+      return true;
+    }
+    const {
+      offset: nextOffset
+    } = nextProps;
+    const {offset: stateOffset} = this.state;
+    return nextOffset !== stateOffset;
+  }
+
   updateState = () => {
     const state = {
       ...this.updateRowKey(false),
@@ -130,7 +155,11 @@ class InfiniteScroll extends React.Component {
   onScroll = (e) => {
     const obj = e.target;
     if (obj) {
-      const {dataOffset, rowHeight: height, rowMargin} = this.props;
+      const {
+        dataOffset,
+        rowHeight: height,
+        rowMargin
+      } = this.props;
       const {offset: currentOffset} = this.state;
       const rowHeight = height + rowMargin;
       const y = obj.scrollTop - (dataOffset > 0 ? rowHeight : 0);

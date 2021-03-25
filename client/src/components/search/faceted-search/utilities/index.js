@@ -16,8 +16,7 @@
 
 import * as facetedQueryString from './facet-query-string';
 
-export {default as doSearch} from './do-search';
 export {facetedQueryString};
+export {default as facetsSearch} from './facets-search';
 export {default as getFacetFilterToken} from './facet-filter-token';
 export {default as fetchFacets} from './fetch-facets';
-export {default as getItemUrl} from './get-item-url';

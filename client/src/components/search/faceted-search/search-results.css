@@ -189,3 +189,8 @@
 .table-divider.divider-active {
   border-left: 1px solid #69c0ff;
 }
+
+.infinite-scroll.list,
+.infinite-scroll.table {
+  height: 100%;
+}

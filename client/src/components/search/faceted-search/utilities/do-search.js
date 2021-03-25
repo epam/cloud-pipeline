@@ -16,10 +16,11 @@
 
 import {FacetedSearch} from '../../../../models/search';
 
-function doSearch (query, filters, offset, pageSize) {
+function doSearch (query, filters, offset, pageSize, facets) {
   const payload = {
     query: query || '*',
     filters: {...filters},
+    facets,
     offset,
     pageSize,
     highlight: false
@@ -33,9 +34,15 @@ function doSearch (query, filters, offset, pageSize) {
         } else {
           const {
             documents = [],
+            facets = {},
             totalHits = 0
           } = request.value || {};
-          resolve({documents, documentsOffset: offset, totalHits});
+          resolve({
+            documents,
+            documentsOffset: offset,
+            facets,
+            totalHits
+          });
         }
       })
       .catch(e => {
