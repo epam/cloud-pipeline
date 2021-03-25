@@ -66,8 +66,8 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
     public Stream<DataStorageFile> files(final AbstractDataStorage storage,
                                          final TemporaryCredentials credentials) {
         final Storage googleStorage = getGoogleStorage(credentials);
-        final String bucketName = storage.getPath();
-        final Iterator<Blob> iterator = googleStorage.list(bucketName)
+        final Iterator<Blob> iterator = googleStorage.list(storage.getRoot(), 
+                Storage.BlobListOption.prefix(storage.resolveRootPath(StringUtils.EMPTY)))
                 .iterateAll()
                 .iterator();
         return StreamUtils.from(iterator)
@@ -80,8 +80,9 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
     public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
                                                           final TemporaryCredentials credentials) {
         final Storage googleStorage = getGoogleStorage(credentials);
-        final String bucketName = storage.getPath();
-        final Iterator<Blob> iterator = googleStorage.list(bucketName, Storage.BlobListOption.versions(true))
+        final Iterator<Blob> iterator = googleStorage.list(storage.getRoot(), 
+                Storage.BlobListOption.versions(true),
+                Storage.BlobListOption.prefix(storage.resolveRootPath(StringUtils.EMPTY)))
                 .iterateAll()
                 .iterator();
         return StreamUtils.from(iterator)

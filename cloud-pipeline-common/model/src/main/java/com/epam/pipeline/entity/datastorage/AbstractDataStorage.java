@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * An abstract entity, that represents a Data Storage, that is used to store and access data from different sources.
@@ -130,4 +130,16 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * @return
      */
     public abstract boolean isPolicySupported();
+
+    public String resolveRootPath(final String path) {
+        final String storagePath = StringUtils.strip(StringUtils.removeStart(getPath(), getRoot()), getDelimiter());
+        final String relativePath = StringUtils.strip(path, getDelimiter());
+        if (StringUtils.isBlank(storagePath)) {
+            return relativePath;
+        }
+        if (StringUtils.isBlank(relativePath)) {
+            return storagePath;
+        }
+        return storagePath + getDelimiter() + relativePath;
+    }
 }

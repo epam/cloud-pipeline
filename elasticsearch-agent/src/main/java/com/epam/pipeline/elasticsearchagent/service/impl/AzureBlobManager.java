@@ -69,7 +69,8 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     @Override
     public Stream<DataStorageFile> files(final AbstractDataStorage storage,
                                          final TemporaryCredentials credentials) {
-        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), ""))
+        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), 
+                storage.resolveRootPath(StringUtils.EMPTY)))
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
                         .map(BlobFlatListSegment::blobItems)
@@ -92,7 +93,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
         final ServiceURL serviceURL = new ServiceURL(
                 url(String.format(BLOB_URL_FORMAT, credentials.getAccessKey(), credentials.getToken())),
                 StorageURL.createPipeline(creds, new PipelineOptions()));
-        return serviceURL.createContainerURL(storage.getPath());
+        return serviceURL.createContainerURL(storage.getRoot());
     }
 
     private DataStorageFile convertToStorageFile(final BlobItem blob) {

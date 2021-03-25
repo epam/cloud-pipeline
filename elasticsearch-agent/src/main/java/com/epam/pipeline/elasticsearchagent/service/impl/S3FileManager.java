@@ -69,7 +69,8 @@ public class S3FileManager implements ObjectStorageFileManager {
     public Stream<DataStorageFile> files(final AbstractDataStorage storage,
                                          final TemporaryCredentials credentials) {
         final AmazonS3 client = getS3Client(credentials);
-        return StreamUtils.from(new S3PageIterator(client, storage.getPath(), ""))
+        return StreamUtils.from(new S3PageIterator(client, storage.getRoot(), 
+                storage.resolveRootPath(StringUtils.EMPTY)))
                 .flatMap(List::stream);
     }
 
@@ -77,7 +78,8 @@ public class S3FileManager implements ObjectStorageFileManager {
     public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
                                                           final TemporaryCredentials credentials) {
         final AmazonS3 client = getS3Client(credentials);
-        return StreamUtils.from(new S3VersionPageIterator(client, storage.getPath(), ""))
+        return StreamUtils.from(new S3VersionPageIterator(client, storage.getRoot(), 
+                storage.resolveRootPath(StringUtils.EMPTY)))
                 .flatMap(List::stream)
                 .filter(file -> !file.getDeleteMarker())
                 .peek(file -> file.setTags(getNativeTags(client, storage, file)));
