@@ -41,6 +41,9 @@ local function arr_length(T)
 end
 
 local function split_str(inputstr, sep)
+    if inputstr == nil then
+        return {}
+    end
     if sep == nil then
         sep = "%s"
     end
