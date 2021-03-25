@@ -28,10 +28,10 @@ import {SearchItemTypes} from '../../../models/search';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import styles from './search-results.css';
 
-const RESULT_ITEM_HEIGHT = 38;
+const RESULT_ITEM_HEIGHT = 32;
 const TABLE_ROW_HEIGHT = 32;
 const TABLE_HEADER_HEIGHT = 28;
-const RESULT_ITEM_MARGIN = 3;
+const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
 
 class SearchResults extends React.Component {

@@ -100,7 +100,6 @@
 
 .result-item .title {
   font-weight: bold;
-  font-size: larger;
 }
 
 .table-container {
@@ -123,6 +122,10 @@
   transition: background 0.2s ease;
 }
 
+.table-row .icon {
+  font-size: large;
+}
+
 .table-row:not(.table-header):hover {
   color: #49a9ee;
 }
@@ -135,9 +138,10 @@
 .table-header {
   position: sticky;
   top: 0;
-  background: #f0f0f0;
-  border-bottom: 1px solid #f0f0f0;
-  color: #8c8c8c;
+  background: #fafafa;
+  border-bottom: 1px solid #ddd;
+  color: #333;
+  font-weight: bold;
 }
 
 .header-cell {
@@ -148,7 +152,7 @@
   text-overflow: ellipsis;
   user-select: none;
   cursor: default;
-  background: #f0f0f0;
+  background: #fafafa;
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
@@ -178,8 +182,8 @@
 
 .table-header .table-divider {
   cursor: e-resize;
-  background: #f0f0f0;
-  border-left: 1px solid #d9d9d9;
+  background: #fafafa;
+  border-left: 1px solid #ddd;
 }
 
 .table-header .table-divider:hover {
