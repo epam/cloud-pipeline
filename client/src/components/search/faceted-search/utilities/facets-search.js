@@ -24,8 +24,10 @@ export default function facetsSearch (query, filters, offset, pageSize, options)
     facets = [],
     facetsToken: currentFacetsToken,
     facetsCount,
-    stores
+    stores,
+    total
   } = options;
+  console.log('facetssearch', total);
   const facetsToken = getFacetFilterToken(
     query,
     filters,
@@ -56,7 +58,7 @@ export default function facetsSearch (query, filters, offset, pageSize, options)
           documents = [],
           documentsOffset = 0,
           facets: facetsCountFromSearch,
-          totalHits = 0
+          totalHits
         } = searchResult;
         let facetsCountUpdated, facetsTokenUpdated;
         if (facetsCountResult) {
@@ -82,7 +84,9 @@ export default function facetsSearch (query, filters, offset, pageSize, options)
               facetsToken: facetsTokenUpdated,
               documents: documents.slice(),
               documentsOffset,
-              totalHits
+              totalHits: doFetchFacets || totalHits !== undefined
+                ? totalHits
+                : total
             });
           });
       });

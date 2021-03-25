@@ -42,15 +42,22 @@ function SearchResults (
       className={classNames(styles.pagination, className)}
       style={style}
     >
-      <Pagination
-        className="faceted-filters-pagination"
-        disabled={disabled}
-        current={page}
-        total={total}
-        pageSize={pageSize}
-        onChange={onChangePagination}
-        size="small"
-      />
+      {
+        !!total && (
+          <Pagination
+            className="faceted-filters-pagination"
+            disabled={disabled}
+            current={page}
+            total={total}
+            pageSize={pageSize}
+            onChange={onChangePagination}
+            size="small"
+          />
+        )
+      }
+      {
+        !total && '\u00A0'
+      }
     </div>
   );
 }

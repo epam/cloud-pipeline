@@ -213,7 +213,8 @@ class FacetedSearch extends React.Component {
             query,
             pageSize,
             searchToken: currentSearchToken,
-            facetsToken: currentFacetsToken
+            facetsToken: currentFacetsToken,
+            totalHits: currentTotalHits
           } = this.state;
           if (updateOffset) {
             currentOffset = offset;
@@ -256,7 +257,8 @@ class FacetedSearch extends React.Component {
                 facets: facets.map(f => f.name),
                 facetsCount: currentFacetsCount,
                 facetsToken: currentFacetsToken,
-                stores: this.props
+                stores: this.props,
+                total: currentTotalHits
               }
             )
               .then(result => {
