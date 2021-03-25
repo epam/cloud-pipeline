@@ -231,6 +231,7 @@ class InfiniteScroll extends React.Component {
         <div
           className={styles.scrollContainer}
         >
+          {headerRenderer && headerRenderer()}
           {
             dataOffset > 0 && (
               <div
@@ -251,7 +252,6 @@ class InfiniteScroll extends React.Component {
               </div>
             )
           }
-          {headerRenderer && headerRenderer()}
           {
             rowRenderer && (elements || []).map((element, index) => (
               <div
