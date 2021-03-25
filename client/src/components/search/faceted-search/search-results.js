@@ -56,7 +56,8 @@ class SearchResults extends React.Component {
     if (
       prevState.hoverInfo !== this.state.hoverInfo ||
       prevState.preview !== this.state.preview ||
-      prevState.columnWidths !== this.state.columnWidths
+      prevState.columnWidths !== this.state.columnWidths ||
+      prevState.resizingColumn !== this.state.resizingColumn
     ) {
       if (this.infiniteScroll) {
         this.infiniteScroll.forceUpdate();
