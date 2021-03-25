@@ -11,23 +11,36 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from gitreader.src.utils.date_utils import parse_date
+
 
 class GitSearchFilter:
 
-    def __init__(self, author=None, date_from=None, date_to=None, path_masks=None, ref="HEAD"):
+    def __init__(self, authors=None, date_from=None, date_to=None, path_masks=None, ref="HEAD"):
         if path_masks is None:
             path_masks = ["."]
+        if authors is None:
+            authors = []
         self.ref = ref
         self.path_masks = path_masks
         self.date_to = date_to
         self.date_from = date_from
-        self.author = author
+        self.authors = authors
 
     @classmethod
     def from_json(cls, param):
-        return GitSearchFilter(author=param.get("author"),
+        return GitSearchFilter(authors=param.get("authors"),
                                path_masks=param.get("path_masks"),
-                               date_from=param.get("date_from"),
-                               date_to=param.get("date_to"),
+                               date_from=parse_date(param.get("date_from")),
+                               date_to=parse_date(param.get("date_to")),
                                ref=param.get("ref", "HEAD")
                )
+
+    def to_json(self):
+        return {
+            "authors": self.authors,
+            "date_from": self.date_from,
+            "date_to": self.date_to,
+            "path_masks": self.path_masks,
+            "ref": self.ref
+        }

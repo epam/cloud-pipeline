@@ -16,6 +16,8 @@ import git
 import os
 
 from gitreader.src.logger import BrowserLogger
+from gitreader.src.model.git_diff_report import GitDiffReport
+from gitreader.src.model.git_diff_report_entry import GitDiffReportEntry
 from gitreader.src.model.git_object import GitObject
 from gitreader.src.model.git_commit import GitCommit
 from gitreader.src.model.git_object_metadata import GitObjectMetadata
@@ -46,12 +48,18 @@ class GitManager(object):
         return GitListing(self.list_tree(repo, path, ref, page, page_size), page, page_size)
 
     def diff_report(self, repo_path, filters=None, include_diff=False):
-        pass
+        repo = git.repo.Repo(os.path.join(self.git_root, repo_path))
+        commits_for_report = self.get_commits(repo, filters, skip=0, batch_size=2147483647)
+        if include_diff:
+            return GitDiffReport(filters, [GitDiffReportEntry(x, self.get_diff(x, repo, filters)) for x in commits_for_report])
+        else:
+            return GitDiffReport(filters, [GitDiffReportEntry(x, None) for x in commits_for_report])
 
     def get_commits(self, repo, filters, skip, batch_size):
         args = ['--skip={}'.format(skip), '-{}'.format(batch_size), '--format=%h||%ai||%an||%ae||%s']
-        if filters.author:
-            args.append("--author={}".format(filters.author))
+        if filters.authors:
+            for author in filters.authors:
+                args.append("--author={}".format(author))
         if filters.date_from:
             args.append("--since={}".format(filters.date_from))
         if filters.date_to:
@@ -65,6 +73,9 @@ class GitManager(object):
         if git_log_result == "" or git_log_result is None:
             return []
         return [self.parse_git_log(line.split("||")) for line in git_log_result.split("\n")]
+
+    def get_diff(self, commit, repo, filters):
+        return repo.git.diff(commit.sha, commit.sha + "~1", "--", filters.path_masks)
 
     def list_tree(self, repo, path, ref, page, page_size):
         result = []

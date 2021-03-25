@@ -40,7 +40,7 @@ def error(message):
     }
 
 
-@app.route('/git/<repo>/ls_tree')
+@app.route('/git/<path:repo>/ls_tree')
 def git_list_tree(repo):
     manager = app.config['gitmanager']
     try:
@@ -63,7 +63,7 @@ def git_list_tree(repo):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/git/<repo>/logs_tree')
+@app.route('/git/<path:repo>/logs_tree')
 def git_logs_tree(repo):
     manager = app.config['gitmanager']
     try:
@@ -86,7 +86,7 @@ def git_logs_tree(repo):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/git/<repo>/commits', methods=["POST"])
+@app.route('/git/<path:repo>/commits', methods=["POST"])
 def git_list_commits(repo):
     manager = app.config['gitmanager']
     try:
@@ -105,7 +105,7 @@ def git_list_commits(repo):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/git/<repo>/diff', methods=["POST"])
+@app.route('/git/<path:repo>/diff', methods=["POST"])
 def git_diff_report(repo):
     manager = app.config['gitmanager']
     try:
@@ -113,7 +113,7 @@ def git_diff_report(repo):
         filters = GitSearchFilter.from_json(data["filter"]) if "filter" in data else GitSearchFilter()
         include_diff = False
         if request.args.get('include_diff'):
-            include_diff = bool(request.args.get('include_diff'))
+            include_diff = str_to_bool(request.args.get('include_diff'))
         diff_report = manager.diff_report(repo, filters, include_diff)
         return jsonify(success(diff_report.to_json()))
     except Exception as e:
@@ -129,7 +129,7 @@ def load_data_from_request(req):
 
 
 def str_to_bool(input_value):
-    return input_value.lower() in ("true", "t")
+    return input_value and input_value.lower() in ("true", "t")
 
 
 def main():
@@ -138,7 +138,6 @@ def main():
     parser.add_argument("--port", default="5000")
     parser.add_argument("--git_root", default="/var/opt/gitlab/git-data/repositories")
 
-    # TODO: should we move pool and add another manager?
     args = parser.parse_args()
     app.config['gitmanager'] = GitManager(args.git_root)
     app.run(host=args.host, port=args.port)
