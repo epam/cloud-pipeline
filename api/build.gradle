@@ -35,6 +35,11 @@ task copyCommitRunScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/commit-run-scripts"
 }
 
+task copyFsAutoscalerScripts(type: Copy) {
+    from "$rootDir/scripts/autoscaling/fsautoscale.sh"
+    into "$rootDir/api/src/main/resources/static/"
+}
+
 jar {
     archiveName "pipeline.jar"
     manifest {
@@ -225,4 +230,4 @@ dependencies {
 }
 
 // >>>>> processes profiles
-processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts])
+processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts])
