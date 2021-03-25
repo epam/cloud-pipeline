@@ -273,7 +273,7 @@ class SearchResults extends React.Component {
       key: 'name',
       name: 'Name',
       renderFn: (value, resultItem) => (
-        <span>
+        <span className={styles.cellValue}>
           {this.renderIcon(resultItem)}
           <b style={{marginLeft: '5px'}}>
             {this.getResultItemName(resultItem)}
@@ -366,7 +366,7 @@ class SearchResults extends React.Component {
             >
               {renderFn
                 ? renderFn(resultItem[key], resultItem)
-                : resultItem[key]
+                : <span className={styles.cellValue}>{resultItem[key]}</span>
               }
             </div>,
             <div

@@ -157,13 +157,16 @@
 .table-cell {
   margin: 0;
   padding: 5px 0 5px 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   background: #fafafa;
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+.table-cell .cell-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table-divider {
