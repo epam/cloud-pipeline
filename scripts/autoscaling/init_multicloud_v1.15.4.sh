@@ -336,8 +336,23 @@ if [[ $FS_TYPE == "btrfs" ]]; then
   _API_URL="@API_URL@"
   _API_TOKEN="@API_TOKEN@"
   _MOUNT_POINT="/ebs"
+  _FS_AUTOSCALE_PRESENT=0
   _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-  cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+  if [ -f "$_CURRENT_DIR/fsautoscale" ]; then
+    cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+    _FS_AUTOSCALE_PRESENT=1
+  else
+    _FS_AUTO_URL="$(dirname $_API_URL)/fsautoscale.sh"
+    echo "Cannot find $_CURRENT_DIR/fsautoscale, downloading from $_FS_AUTO_URL"
+    curl -skf"$_FS_AUTO_URL" > /usr/bin/fsautoscale
+    if [ $? -ne 0 ]; then
+      echo "Error while downloading fsautoscale script"
+    else
+      _FS_AUTOSCALE_PRESENT=1
+    fi
+  fi
+  if [ $_FS_AUTOSCALE_PRESENT -eq 1 ]; then
+    chmod +x /usr/bin/fsautoscale
 cat >/etc/systemd/system/fsautoscale.service <<EOL
 [Unit]
 Description=Cloud Pipeline Filesystem Autoscaling Daemon
@@ -355,8 +370,9 @@ ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
 [Install]
 WantedBy=multi-user.target
 EOL
-  systemctl enable fsautoscale
-  systemctl start fsautoscale
+    systemctl enable fsautoscale
+    systemctl start fsautoscale
+  fi
 fi
 
 if check_installed "nvidia-smi"; then
