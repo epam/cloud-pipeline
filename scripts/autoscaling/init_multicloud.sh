@@ -322,7 +322,7 @@ if [[ $FS_TYPE == "btrfs" ]]; then
   else
     _FS_AUTO_URL="$(dirname $_API_URL)/fsautoscale.sh"
     echo "Cannot find $_CURRENT_DIR/fsautoscale, downloading from $_FS_AUTO_URL"
-    curl -skf"$_FS_AUTO_URL" > /usr/bin/fsautoscale
+    curl -skf "$_FS_AUTO_URL" > /usr/bin/fsautoscale
     if [ $? -ne 0 ]; then
       echo "Error while downloading fsautoscale script"
     else
