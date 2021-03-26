@@ -247,11 +247,18 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return [];
   };
 
-  launch = async (payload) => {
+  launch = async (payload, hostedApplicationConfiguration) => {
     payload.configurationName = this.currentConfiguration
       ? this.currentConfiguration.name
       : this.configurationName;
-    if (await run(this)(payload)) {
+    if (await run(this)(
+      payload,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      hostedApplicationConfiguration
+    )) {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     }
   };
