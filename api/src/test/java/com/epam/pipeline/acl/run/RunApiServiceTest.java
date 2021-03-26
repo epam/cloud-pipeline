@@ -102,8 +102,9 @@ public class RunApiServiceTest {
 
     @Autowired
     public void setRunAclFactory(final AuthManager authManager,
-                                 final PipelineRunManager mockRunManager) {
-        this.runAclFactory = new RunAclFactory(authManager, mockRunManager);
+                                 final PipelineRunManager mockRunManager,
+                                 final PipelineRunCRUDService mockRunCRUDService) {
+        this.runAclFactory = new RunAclFactory(authManager, mockRunManager, mockRunCRUDService);
     }
 
     @Autowired

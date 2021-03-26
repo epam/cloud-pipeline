@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.run;
 
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class RunAclFactory {
 
     private final AuthManager authManager;
     private final PipelineRunManager mockRunManager;
+    private final PipelineRunCRUDService mockRunCrudService;
 
     public PipelineRun initToolPipelineRunForCurrentUser() {
         return initToolPipelineRunForOwner(authManager.getAuthorizedUser());
@@ -42,6 +44,7 @@ public class RunAclFactory {
         pipelineRun.setId(TEST_RUN_ID);
         pipelineRun.setOwner(owner);
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(eq(TEST_RUN_ID));
+        doReturn(pipelineRun).when(mockRunCrudService).loadRunById(eq(TEST_RUN_ID));
         return pipelineRun;
     }
 
@@ -55,6 +58,7 @@ public class RunAclFactory {
         pipelineRun.setOwner(owner);
         pipelineRun.setPipelineId(parent.getId());
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(eq(TEST_RUN_ID));
+        doReturn(pipelineRun).when(mockRunCrudService).loadRunById(eq(TEST_RUN_ID));
         doReturn(parent).when(mockRunManager).loadRunParent(eq(pipelineRun));
         return pipelineRun;
     }
