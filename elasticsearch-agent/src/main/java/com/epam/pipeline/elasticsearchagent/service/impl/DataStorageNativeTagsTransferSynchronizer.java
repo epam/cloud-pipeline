@@ -62,7 +62,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                                 .map(fileManager -> fileManager
                                         .versionsWithNativeTags(storage.getRoot(),
                                                 Optional.ofNullable(storage.getPrefix()).orElse(StringUtils.EMPTY),
-                                                getTemporaryCredentials(storage))
+                                                () -> getTemporaryCredentials(storage))
                                         .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : tags(chunk))
                                         .map(stream -> stream.collect(Collectors.toList()))
                                         .filter(CollectionUtils::isNotEmpty))
@@ -102,6 +102,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
     }
 
     private TemporaryCredentials getTemporaryCredentials(final AbstractDataStorage storage) {
+        log.debug("Retrieving {} data storage {} temporary credentials...", storage.getType(), storage.getPath());
         final DataStorageAction action = new DataStorageAction();
         action.setBucketName(storage.getPath());
         action.setId(storage.getId());

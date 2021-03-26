@@ -51,6 +51,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.HIDDEN_FILE_NAME;
@@ -68,8 +69,8 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     @Override
     public Stream<DataStorageFile> files(final String storage,
                                          final String path,
-                                         final TemporaryCredentials credentials) {
-        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), path))
+                                         final Supplier<TemporaryCredentials> credentialsSupplier) {
+        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentialsSupplier), path))
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
                         .map(BlobFlatListSegment::blobItems)
@@ -83,16 +84,17 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     @Override
     public Stream<DataStorageFile> versionsWithNativeTags(final String storage,
                                                           final String path,
-                                                          final TemporaryCredentials credentials) {
-        return files(storage, path, credentials);
+                                                          final Supplier<TemporaryCredentials> credentialsSupplier) {
+        return files(storage, path, credentialsSupplier);
     }
 
     private ContainerURL buildContainerUrl(final String storage,
-                                           final TemporaryCredentials credentials) {
-        final AnonymousCredentials creds = new AnonymousCredentials();
+                                           final Supplier<TemporaryCredentials> credentialsSupplier) {
+        // TODO 26.03.2021: Support temporary credentials refresh mechanism
+        final TemporaryCredentials credentials = credentialsSupplier.get();
         final ServiceURL serviceURL = new ServiceURL(
                 url(String.format(BLOB_URL_FORMAT, credentials.getAccessKey(), credentials.getToken())),
-                StorageURL.createPipeline(creds, new PipelineOptions()));
+                StorageURL.createPipeline(new AnonymousCredentials(), new PipelineOptions()));
         return serviceURL.createContainerURL(storage);
     }
 

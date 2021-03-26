@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -31,10 +32,10 @@ public interface ObjectStorageFileManager {
 
     Stream<DataStorageFile> files(String storage,
                                   String path,
-                                  TemporaryCredentials credentials);
+                                  Supplier<TemporaryCredentials> credentialsSupplier);
 
     Stream<DataStorageFile> versionsWithNativeTags(String storage,
                                                    String path,
-                                                   TemporaryCredentials credentials);
+                                                   Supplier<TemporaryCredentials> credentialsSupplier);
 
 }

@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -89,17 +90,18 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         try {
             final String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
             elasticIndexService.createIndexIfNotExist(indexName, indexMappingFile);
-            final TemporaryCredentials credentials = getTemporaryCredentials(dataStorage);
+            final Supplier<TemporaryCredentials> credentialsSupplier = () -> getTemporaryCredentials(dataStorage);
+            final TemporaryCredentials credentials = credentialsSupplier.get();
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
                 final Stream<DataStorageFile> files = fileManager
                         .files(dataStorage.getRoot(),
                                 Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
-                                credentials);
+                                credentialsSupplier);
                 StreamUtils.chunked(files, bulkLoadTagsSize)
                         .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
                         .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())))
                         .map(file -> createIndexRequest(file, dataStorage, permissionsContainer, indexName, 
-                                credentials))
+                                credentials.getRegion()))
                         .forEach(requestContainer::add);
             }
 
@@ -121,6 +123,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     }
 
     private TemporaryCredentials getTemporaryCredentials(final AbstractDataStorage dataStorage) {
+        log.debug("Retrieving {} data storage {} temporary credentials...", getStorageType(), dataStorage.getPath());
         final DataStorageAction action = new DataStorageAction();
         action.setBucketName(dataStorage.getPath());
         action.setId(dataStorage.getId());
@@ -145,9 +148,9 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                                             final AbstractDataStorage dataStorage,
                                             final PermissionsContainer permissionsContainer,
                                             final String indexName,
-                                            final TemporaryCredentials credentials) {
+                                            final String region) {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
-                .source(fileMapper.fileToDocument(file, dataStorage, credentials.getRegion(),
+                .source(fileMapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer,
                         getDocumentType()));
     }

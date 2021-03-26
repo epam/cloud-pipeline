@@ -30,14 +30,13 @@ import com.google.cloud.storage.StorageClass;
 import com.google.cloud.storage.StorageOptions;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.text.ParseException;
 import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -45,6 +44,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -64,8 +64,8 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
     @Override
     public Stream<DataStorageFile> files(final String storage,
                                          final String path,
-                                         final TemporaryCredentials credentials) {
-        final Storage googleStorage = getGoogleStorage(credentials);
+                                         final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final Storage googleStorage = getGoogleStorage(credentialsSupplier);
         final Iterator<Blob> iterator = googleStorage.list(storage, 
                 Storage.BlobListOption.prefix(path))
                 .iterateAll()
@@ -79,8 +79,8 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
     @Override
     public Stream<DataStorageFile> versionsWithNativeTags(final String storage,
                                                           final String path,
-                                                          final TemporaryCredentials credentials) {
-        final Storage googleStorage = getGoogleStorage(credentials);
+                                                          final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final Storage googleStorage = getGoogleStorage(credentialsSupplier);
         final Iterator<Blob> iterator = googleStorage.list(storage,
                 Storage.BlobListOption.prefix(path),
                 Storage.BlobListOption.versions(true))
@@ -92,27 +92,37 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
                 .map(this::convertToStorageFileVersion);
     }
 
-    private Storage getGoogleStorage(final TemporaryCredentials credentials) {
-        final GoogleCredentials googleCredentials = createGoogleCredentials(credentials);
-        return StorageOptions
-                .newBuilder()
-                .setCredentials(googleCredentials)
-                .setProjectId(credentials.getAccessKey())
-                .build()
-                .getService();
+    @RequiredArgsConstructor
+    public static class CloudPipelineRefreshableGoogleCredentials extends GoogleCredentials {
+
+        private final Supplier<TemporaryCredentials> credentialsSupplier;
+        private TemporaryCredentials credentials;
+
+        @Override
+        @SneakyThrows
+        public AccessToken refreshAccessToken() {
+            credentials = credentialsSupplier.get();
+            final Date expirationDate = ESConstants.FILE_DATE_FORMAT.parse(credentials.getExpirationTime());
+            return new AccessToken(credentials.getToken(), expirationDate);
+        }
+        
+        public String getProjectId() {
+            return Optional.ofNullable(credentials).map(TemporaryCredentials::getAccessKey).orElse(null);
+        }
     }
 
-    private GoogleCredentials createGoogleCredentials(final TemporaryCredentials credentials) {
-        try {
-            final Date expirationDate = ESConstants.FILE_DATE_FORMAT.parse(credentials.getExpirationTime());
-            final AccessToken token = new AccessToken(credentials.getToken(), expirationDate);
-            return GoogleCredentials
-                    .create(token)
-                    .createScoped(Collections.singletonList(StorageScopes.DEVSTORAGE_READ_ONLY));
-        } catch (ParseException e) {
-            log.error(e.getMessage());
-            throw new DateTimeParseException(e.getMessage(), credentials.getExpirationTime(), e.getErrorOffset());
-        }
+    @SneakyThrows
+    private Storage getGoogleStorage(final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final CloudPipelineRefreshableGoogleCredentials credentials = 
+                new CloudPipelineRefreshableGoogleCredentials(credentialsSupplier);
+        credentials.createScoped(Collections.singletonList(StorageScopes.DEVSTORAGE_READ_ONLY));
+        credentials.refresh();
+        return StorageOptions
+                .newBuilder()
+                .setCredentials(credentials)
+                .setProjectId(credentials.getProjectId())
+                .build()
+                .getService();
     }
 
     private DataStorageFile convertToStorageFile(final Blob blob) {
