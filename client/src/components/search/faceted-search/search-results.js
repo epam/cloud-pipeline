@@ -32,9 +32,18 @@ const TABLE_ROW_HEIGHT = 32;
 const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
+const HOVER_DELAY = 300;
 const PREVIEW_POSITION = {
-  left: {left: 0},
-  right: {right: 0}
+  left: {
+    top: '85px',
+    left: '140px',
+    maxHeight: 'calc(100vh - 135px)'
+  },
+  right: {
+    top: '85px',
+    right: '50px',
+    maxHeight: 'calc(100vh - 135px)'
+  }
 };
 
 class SearchResults extends React.Component {
@@ -53,10 +62,11 @@ class SearchResults extends React.Component {
   tableWidth = undefined;
   animationFrame;
   infiniteScroll;
+  hoverTimeout;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.offset !== this.props.offset) {
-      this.unHoverItem(this.state.hoverInfo)();
+      this.unHoverItem(this.state.hoverInfo, true)();
     }
     if (
       prevState.hoverInfo !== this.state.hoverInfo ||
@@ -172,10 +182,17 @@ class SearchResults extends React.Component {
     );
   };
 
-  unHoverItem = (info) => () => {
+  unHoverItem = (info, forceUnhover) => () => {
     const {hoverInfo} = this.state;
+    if (forceUnhover) {
+      return this.setState(
+        {hoverInfo: undefined}, () => this.setPreview(undefined, false)
+      );
+    }
     if (hoverInfo === info) {
-      this.setState({hoverInfo: undefined}, () => this.setPreview(undefined));
+      return this.setState(
+        {hoverInfo: undefined}, () => this.setPreview(undefined)
+      );
     }
   }
 
@@ -192,14 +209,19 @@ class SearchResults extends React.Component {
 
   hoverItem = (info, event) => {
     const {hoverInfo, preview} = this.state;
-    const previewPosition = this.getPreviewPosition(event.pageX);
     if (hoverInfo !== info) {
-      this.setState({
-        hoverInfo: info,
-        previewPosition
-      }, () => {
-        this.setPreview(info, !preview);
-      });
+      const previewPosition = this.getPreviewPosition(event.pageX);
+      if (this.hoverTimeout) {
+        clearTimeout(this.hoverTimeout);
+      }
+      this.hoverTimeout = setTimeout(() => {
+        this.setState({
+          hoverInfo: info,
+          previewPosition
+        }, () => {
+          this.setPreview(info, !preview);
+        });
+      }, HOVER_DELAY);
     }
   };
 
@@ -222,6 +244,9 @@ class SearchResults extends React.Component {
   doNotHidePreview = (info) => {
     if (this.previewTimeout) {
       clearTimeout(this.previewTimeout);
+    }
+    if (this.hoverTimeout) {
+      clearTimeout(this.hoverTimeout);
     }
     this.setState({preview: info, hoverInfo: info});
   };

@@ -45,11 +45,8 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
-  position: absolute;
-  min-width: 25%;
-  min-height: 25%;
-  max-width: 50%;
-  max-height: 100%;
+  position: fixed;
+  width: 30vw;
 }
 
 .container .pagination {
