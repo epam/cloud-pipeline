@@ -23,8 +23,7 @@ import {
 } from 'antd';
 import {PreviewIcons} from '../preview/previewIcons';
 import {SearchItemTypes} from '../../../models/search';
-// TODO: Preview disabled until it will be converted into a popover or something
-// import Preview from '../preview';
+import Preview from '../preview';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import styles from './search-results.css';
 
@@ -33,6 +32,10 @@ const TABLE_ROW_HEIGHT = 32;
 const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
+const PREVIEW_POSITION = {
+  left: {left: 0},
+  right: {right: 0}
+};
 
 class SearchResults extends React.Component {
   state = {
@@ -40,11 +43,13 @@ class SearchResults extends React.Component {
     hoverInfo: undefined,
     preview: undefined,
     resizingColumn: undefined,
-    columnWidths: {}
+    columnWidths: {},
+    previewPosition: PREVIEW_POSITION.right
   };
 
   dividerRefs = [];
   headerRef = null;
+  resultsContainerRef = null;
   tableWidth = undefined;
   animationFrame;
   infiniteScroll;
@@ -136,9 +141,12 @@ class SearchResults extends React.Component {
     return (
       <a
         href={!disabled && resultItem.url ? `/#${resultItem.url}` : undefined}
-        target="_blank"
         key={resultItem.elasticId}
         className={styles.resultItemContainer}
+        onMouseOver={(e) => this.hoverItem(resultItem, e)}
+        onMouseEnter={(e) => this.hoverItem(resultItem, e)}
+        onMouseLeave={this.unHoverItem(resultItem)}
+        onClick={this.navigate(resultItem)}
       >
         <div
           id={`search-result-item-${resultItem.elasticId}`}
@@ -152,10 +160,6 @@ class SearchResults extends React.Component {
             )
           }
           style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
-          onMouseOver={this.hoverItem(resultItem)}
-          onMouseEnter={this.hoverItem(resultItem)}
-          onMouseLeave={this.unHoverItem(resultItem)}
-          onClick={this.navigate(resultItem)}
         >
           <div style={{display: 'inline-block'}}>
             {this.renderIcon(resultItem)}
@@ -175,10 +179,25 @@ class SearchResults extends React.Component {
     }
   }
 
-  hoverItem = (info) => () => {
+  getPreviewPosition = (cursorX) => {
+    if (this.resultsContainerRef && cursorX) {
+      const container = this.resultsContainerRef.getBoundingClientRect();
+      const containerCenterX = (container.width / 2) + container.left;
+      return cursorX > containerCenterX
+        ? PREVIEW_POSITION.left
+        : PREVIEW_POSITION.right;
+    }
+    return PREVIEW_POSITION.right;
+  }
+
+  hoverItem = (info, event) => {
     const {hoverInfo, preview} = this.state;
+    const previewPosition = this.getPreviewPosition(event.pageX);
     if (hoverInfo !== info) {
-      this.setState({hoverInfo: info}, () => {
+      this.setState({
+        hoverInfo: info,
+        previewPosition
+      }, () => {
         this.setPreview(info, !preview);
       });
     }
@@ -222,6 +241,23 @@ class SearchResults extends React.Component {
     if (onNavigate) {
       onNavigate(item);
     }
+  }
+
+  renderPreview = () => {
+    const {preview, previewPosition} = this.state;
+    return (
+      <div
+        className={styles.preview}
+        style={previewPosition}
+        onMouseOver={() => this.doNotHidePreview(preview)}
+        onMouseLeave={this.unHoverItem(preview)}
+      >
+        <Preview
+          item={preview}
+          lightMode
+        />
+      </div>
+    );
   }
 
   renderResultsList = () => {
@@ -273,22 +309,8 @@ class SearchResults extends React.Component {
             onInitialized={this.onInitializeInfiniteScroll}
           />
         </div>
-        {/* TODO: Preview disabled until it will be converted into a popover or something */}
-        {/* {
-          preview && showResults && (
-            <div
-              className={styles.preview}
-              onMouseOver={() => this.doNotHidePreview(preview)}
-              onMouseLeave={this.unHoverItem(preview)}
-            >
-              <Preview
-                item={preview}
-                lightMode
-              />
-            </div>
-          )
-        } */}
-      </div>);
+      </div>
+    );
   }
 
   columns = [
@@ -375,10 +397,13 @@ class SearchResults extends React.Component {
     return (
       <a
         href={!disabled && resultItem.url ? `/#${resultItem.url}` : undefined}
-        target="_blank"
         className={styles.tableRow}
         style={{gridTemplate: this.getGridTemplate()}}
         key={rowIndex}
+        onMouseOver={(e) => this.hoverItem(resultItem, e)}
+        onMouseEnter={(e) => this.hoverItem(resultItem, e)}
+        onMouseLeave={this.unHoverItem(resultItem)}
+        onClick={this.navigate(resultItem)}
       >
         {this.columns.map(({key, renderFn}, index) => (
           [
@@ -485,8 +510,10 @@ class SearchResults extends React.Component {
     const {
       className,
       style,
+      showResults,
       mode
     } = this.props;
+    const {preview} = this.state;
     if (!mode) {
       return null;
     }
@@ -497,8 +524,10 @@ class SearchResults extends React.Component {
           className
         )}
         style={style}
+        ref={preview => (this.resultsContainerRef = preview)}
       >
         {mode === PresentationModes.table ? this.renderResultsTable() : this.renderResultsList()}
+        {showResults && preview && this.renderPreview()}
       </div>
     );
   }
