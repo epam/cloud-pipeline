@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">6</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">13m46.98s</div>
+<div class="counter">12m34.47s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">87%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,124 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="preparePipeline - EPMCMBIBPC-1591"></a>
-<h3 class="failures">preparePipeline - EPMCMBIBPC-1591</h3>
-<span class="code">
-<pre>Element should text 'Spot' {combo box of By.xpath: (//*[contains(@class, 'form-item') and .//*[contains(@class, 'ant-form-item-label') and .//*[contains(text(), 'Price type')]]])[last()]}
-Element: '&lt;div class=&quot;ant-select-selection__rendered&quot;&gt;On-demand&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1616659063741.76.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1616659063741.76.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:190)
-	at com.epam.pipeline.autotests.SamplesMetadataTest.lambda$preparePipeline$6(SamplesMetadataTest.java:414)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.configurationWithin(PipelinesLibraryAO.java:420)
-	at com.epam.pipeline.autotests.SamplesMetadataTest.preparePipeline(SamplesMetadataTest.java:407)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validatePipelineParametersForSample - EPMCMBIBPC-1605"></a>
-<h3 class="failures">validatePipelineParametersForSample - EPMCMBIBPC-1605</h3>
-<span class="code">
-<pre>Element not found {By.xpath: //tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), 'PANEL')] and .//td[contains(., 's3://samples-metadata-4593086028843781152/human/gencode.v27.genes.bed')]]}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1616659193620.77.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1616659193620.77.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), 'PANEL')] and .//td[contains(., 's3://samples-metadata-4593086028843781152/human/gencode.v27.genes.bed')]]&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.ensureParameterIsPresent(LogAO.java:328)
-	at com.epam.pipeline.autotests.SamplesMetadataTest.validatePipelineParametersForSample(SamplesMetadataTest.java:571)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), 'PANEL')] and .//td[contains(., 's3://samples-metadata-4593086028843781152/human/gencode.v27.genes.bed')]]&quot;}
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '871a9538c72d', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 62e27068f29964f711557e732a6f11f2
-*** Element info: {Using=xpath, value=//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), 'PANEL')] and .//td[contains(., 's3://samples-metadata-4593086028843781152/human/gencode.v27.genes.bed')]]}
-	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
-	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -190,120 +79,124 @@ Session ID: 62e27068f29964f711557e732a6f11f2
 </thead>
 <tr>
 <td class="success">addDetachedConfigurationToProjectFolder - EPMCMBIBPC-1588</td>
-<td>8.285s</td>
+<td>8.777s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">columnsListCustomization - EPMCMBIBPC-1508</td>
-<td>6.179s</td>
+<td>6.210s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">createProjectFolder - EPMCMBIBPC-1411</td>
-<td>15.305s</td>
+<td>15.097s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">metadataEditAndPrepare - EPMCMBIBPC-1570</td>
-<td>2m6.13s</td>
+<td>2m9.60s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">metadataUploading - EPMCMBIBPC-1412</td>
-<td>23.630s</td>
+<td>23.823s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">navigateToStorageFromMetadataEntity - EPMCMBIBPC-1414</td>
-<td>5.578s</td>
+<td>5.864s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">preparePipeline - EPMCMBIBPC-1591</td>
-<td>2m49.18s</td>
-<td class="failures">failed</td>
+<td class="success">preparePipeline - EPMCMBIBPC-1591</td>
+<td>1m36.16s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runPerSampleValidation - EPMCMBIBPC-1599</td>
-<td>28.136s</td>
+<td>28.492s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">runSampleSetValidation</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">runSampleSetValidation - EPMCMBIBPC-1626</td>
+<td>12.045s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchByMetadataAttributeValues - EPMCMBIBPC-1416</td>
-<td>15.118s</td>
+<td>15.370s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">selectMetadataPopup - EPMCMBIBPC-1596</td>
-<td>5.984s</td>
+<td>6.185s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">setParametersFromMetadataFiles - EPMCMBIBPC-1595</td>
-<td>10.246s</td>
+<td>9.937s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">setParametersFromMetadataFilesSampleSet</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">setParametersFromMetadataFilesSampleSet - EPMCMBIBPC-1624</td>
+<td>14.014s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">setProjectParameters - EPMCMBIBPC-1520</td>
-<td>16.636s</td>
+<td>17.017s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">sortMetadataTable - EPMCMBIBPC-1415</td>
-<td>10.732s</td>
+<td>11.098s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">testDataPreparation - EPMCMBIBPC-1519</td>
-<td>4m50.04s</td>
+<td>4m50.77s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateEntitySelection</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateEntitySelection - EPMCMBIBPC-1623</td>
+<td>5.426s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validatePipelineParametersForSample - EPMCMBIBPC-1605</td>
-<td>1m25.52s</td>
-<td class="failures">failed</td>
+<td class="success">validatePipelineParametersForSample - EPMCMBIBPC-1605</td>
+<td>9.736s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validatePipelineParametersForSampleSet</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validatePipelineParametersForSampleSet - EPMCMBIBPC-1627</td>
+<td>8.685s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateSampleSetPopup</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateSampleSetPopup - EPMCMBIBPC-1625</td>
+<td>16.797s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateSetParametersFromProjectMetadata</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateSetParametersFromProjectMetadata - EPMCMBIBPC-1593</td>
+<td>12.803s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">viewMetadata - EPMCMBIBPC-1413</td>
-<td>10.280s</td>
+<td>10.557s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 63487 from [63487]
+<pre>Returns latest run with runId 63637 from [63637]
+Returns latest run with runId 63637 from [63637]
+Returns latest run with runId 63637 from [63637]
+Returns latest run with runId 63638 from [63637, 63638]
+Returns latest run with runId 63638 from [63637, 63638]
 </pre>
 </span>
 </div>
@@ -315,7 +208,7 @@ Session ID: 62e27068f29964f711557e732a6f11f2
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 25, 2021 2:29:45 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 26, 2021 4:06:30 PM</p>
 </div>
 </div>
 </body>
