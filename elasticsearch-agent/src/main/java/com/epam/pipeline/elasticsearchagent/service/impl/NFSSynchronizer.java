@@ -138,10 +138,11 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         try (IndexRequestContainer walker = new IndexRequestContainer(requests ->
                 elasticsearchServiceClient.sendRequests(indexName, requests), bulkInsertSize);
              Stream<Path> paths = Files.walk(mountFolder)) {
-            StreamUtils.chunked(paths.filter(path -> path.toFile().isFile())
-                    .map(path -> convertToStorageFile(path, mountFolder)),
-                    bulkLoadTagsSize)
-                    .flatMap(files -> filesWithIncorporatedTags(dataStorage, files))
+            final Stream<DataStorageFile> files = paths
+                    .filter(path -> path.toFile().isFile())
+                    .map(path -> convertToStorageFile(path, mountFolder));
+            StreamUtils.chunked(files, bulkLoadTagsSize)
+                    .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
                     .map(file -> createIndexRequest(file, indexName, dataStorage, permissionsContainer))
                     .forEach(walker::add);
         } catch (IOException e) {

@@ -121,15 +121,25 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
         return getPath().split(getDelimiter())[0];
     }
 
-    public String resolveRootPath(final String path) {
-        final String storagePath = StringUtils.strip(StringUtils.removeStart(getPath(), getRoot()), getDelimiter());
-        final String relativePath = StringUtils.strip(path, getDelimiter());
-        if (StringUtils.isBlank(storagePath)) {
-            return relativePath;
+    public String getPrefix() {
+        return StringUtils.strip(StringUtils.removeStart(getPath(), getRoot()), getDelimiter());
+    }
+
+    public String resolveAbsolutePath(final String relativePath) {
+        final String storageAbsolutePrefix = getPrefix();
+        final String strippedRelativePath = StringUtils.strip(relativePath, getDelimiter());
+        if (StringUtils.isBlank(storageAbsolutePrefix)) {
+            return strippedRelativePath;
         }
-        if (StringUtils.isBlank(relativePath)) {
-            return storagePath;
+        if (StringUtils.isBlank(strippedRelativePath)) {
+            return storageAbsolutePrefix;
         }
-        return storagePath + getDelimiter() + relativePath;
+        return storageAbsolutePrefix + getDelimiter() + strippedRelativePath;
+    }
+
+    public String resolveRelativePath(final String absolutePath) {
+        final String storageAbsolutePrefix = getPrefix();
+        final String strippedAbsolutePath = StringUtils.strip(absolutePath, getDelimiter());
+        return StringUtils.strip(StringUtils.removeStart(strippedAbsolutePath, storageAbsolutePrefix), getDelimiter());
     }
 }

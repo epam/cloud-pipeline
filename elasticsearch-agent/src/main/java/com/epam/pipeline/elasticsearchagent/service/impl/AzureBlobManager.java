@@ -19,7 +19,6 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.utils.StreamUtils;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -67,10 +66,10 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     private final DataStorageType type = DataStorageType.AZ;
 
     @Override
-    public Stream<DataStorageFile> files(final AbstractDataStorage storage,
+    public Stream<DataStorageFile> files(final String storage,
+                                         final String path,
                                          final TemporaryCredentials credentials) {
-        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), 
-                storage.resolveRootPath(StringUtils.EMPTY)))
+        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), path))
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
                         .map(BlobFlatListSegment::blobItems)
@@ -82,18 +81,19 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     }
 
     @Override
-    public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
+    public Stream<DataStorageFile> versionsWithNativeTags(final String storage,
+                                                          final String path,
                                                           final TemporaryCredentials credentials) {
-        return files(storage, credentials);
+        return files(storage, path, credentials);
     }
 
-    private ContainerURL buildContainerUrl(final AbstractDataStorage storage,
+    private ContainerURL buildContainerUrl(final String storage,
                                            final TemporaryCredentials credentials) {
         final AnonymousCredentials creds = new AnonymousCredentials();
         final ServiceURL serviceURL = new ServiceURL(
                 url(String.format(BLOB_URL_FORMAT, credentials.getAccessKey(), credentials.getToken())),
                 StorageURL.createPipeline(creds, new PipelineOptions()));
-        return serviceURL.createContainerURL(storage.getRoot());
+        return serviceURL.createContainerURL(storage);
     }
 
     private DataStorageFile convertToStorageFile(final BlobItem blob) {

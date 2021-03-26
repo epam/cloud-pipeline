@@ -31,7 +31,6 @@ import com.amazonaws.services.s3.model.VersionListing;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.utils.StreamUtils;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -66,20 +65,20 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     @Override
-    public Stream<DataStorageFile> files(final AbstractDataStorage storage,
+    public Stream<DataStorageFile> files(final String storage,
+                                         final String path,
                                          final TemporaryCredentials credentials) {
         final AmazonS3 client = getS3Client(credentials);
-        return StreamUtils.from(new S3PageIterator(client, storage.getRoot(), 
-                storage.resolveRootPath(StringUtils.EMPTY)))
+        return StreamUtils.from(new S3PageIterator(client, storage, path))
                 .flatMap(List::stream);
     }
 
     @Override
-    public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
+    public Stream<DataStorageFile> versionsWithNativeTags(final String storage,
+                                                          final String path,
                                                           final TemporaryCredentials credentials) {
         final AmazonS3 client = getS3Client(credentials);
-        return StreamUtils.from(new S3VersionPageIterator(client, storage.getRoot(), 
-                storage.resolveRootPath(StringUtils.EMPTY)))
+        return StreamUtils.from(new S3VersionPageIterator(client, storage, path))
                 .flatMap(List::stream)
                 .filter(file -> !file.getDeleteMarker())
                 .peek(file -> file.setTags(getNativeTags(client, storage, file)));
@@ -96,10 +95,10 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     private Map<String, String> getNativeTags(final AmazonS3 client,
-                                              final AbstractDataStorage dataStorage,
+                                              final String storage,
                                               final DataStorageFile file) {
         final GetObjectTaggingResult tagging = client.getObjectTagging(new GetObjectTaggingRequest(
-                dataStorage.getRoot(), file.getPath(), file.getVersion()));
+                storage, file.getPath(), file.getVersion()));
         return CollectionUtils.emptyIfNull(tagging.getTagSet())
                 .stream()
                 .filter(Objects::nonNull)

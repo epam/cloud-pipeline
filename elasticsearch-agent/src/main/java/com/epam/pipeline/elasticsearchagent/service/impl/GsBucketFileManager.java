@@ -18,7 +18,6 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.utils.StreamUtils;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -63,11 +62,12 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
     }
 
     @Override
-    public Stream<DataStorageFile> files(final AbstractDataStorage storage,
+    public Stream<DataStorageFile> files(final String storage,
+                                         final String path,
                                          final TemporaryCredentials credentials) {
         final Storage googleStorage = getGoogleStorage(credentials);
-        final Iterator<Blob> iterator = googleStorage.list(storage.getRoot(), 
-                Storage.BlobListOption.prefix(storage.resolveRootPath(StringUtils.EMPTY)))
+        final Iterator<Blob> iterator = googleStorage.list(storage, 
+                Storage.BlobListOption.prefix(path))
                 .iterateAll()
                 .iterator();
         return StreamUtils.from(iterator)
@@ -77,12 +77,13 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
     }
 
     @Override
-    public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
+    public Stream<DataStorageFile> versionsWithNativeTags(final String storage,
+                                                          final String path,
                                                           final TemporaryCredentials credentials) {
         final Storage googleStorage = getGoogleStorage(credentials);
-        final Iterator<Blob> iterator = googleStorage.list(storage.getRoot(), 
-                Storage.BlobListOption.versions(true),
-                Storage.BlobListOption.prefix(storage.resolveRootPath(StringUtils.EMPTY)))
+        final Iterator<Blob> iterator = googleStorage.list(storage,
+                Storage.BlobListOption.prefix(path),
+                Storage.BlobListOption.versions(true))
                 .iterateAll()
                 .iterator();
         return StreamUtils.from(iterator)

@@ -34,8 +34,8 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -91,15 +91,20 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             elasticIndexService.createIndexIfNotExist(indexName, indexMappingFile);
             final TemporaryCredentials credentials = getTemporaryCredentials(dataStorage);
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
-                StreamUtils.chunked(fileManager.files(dataStorage, credentials), bulkLoadTagsSize)
-                        .flatMap(files -> filesWithIncorporatedTags(dataStorage, files))
+                final Stream<DataStorageFile> files = fileManager
+                        .files(dataStorage.getRoot(),
+                                Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
+                                credentials)
+                        .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())));
+                StreamUtils.chunked(files, bulkLoadTagsSize)
+                        .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
                         .map(file -> createIndexRequest(file, dataStorage, permissionsContainer, indexName, 
                                 credentials))
                         .forEach(requestContainer::add);
             }
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
-            if (StringUtils.hasText(currentIndexName)) {
+            if (StringUtils.isNotBlank(currentIndexName)) {
                 elasticsearchServiceClient.deleteIndex(currentIndexName);
             }
         } catch (Exception e) {

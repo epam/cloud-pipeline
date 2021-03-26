@@ -94,7 +94,7 @@ public class ObjectStorageIndexTest {
     private void setUpReturnValues(final List<DataStorageFile> files) {
         Mockito.doAnswer(i -> files.stream())
                .when(fileManager)
-               .files(dataStorage, temporaryCredentials);
+               .files(any(), any(), temporaryCredentials);
     }
 
     private void verifyNumberOfInsertions(final int numberOfInvocation) {
