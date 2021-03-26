@@ -82,11 +82,11 @@ class GitManager:
         items = self.git_client.status(full_repo_path)
         return [item.to_json() for item in items]
 
-    def diff(self, versioned_storage_id, file_path, lines_count=3):
+    def diff(self, versioned_storage_id, file_path, show_raw_flag, lines_count=3):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         if not file_path:
             raise RuntimeError('File path shall be specified')
-        git_file_diff = self.git_client.diff(full_repo_path, file_path, context_lines=lines_count)
+        git_file_diff = self.git_client.diff(full_repo_path, file_path, show_raw_flag, context_lines=lines_count)
         if not git_file_diff:
             return None
         return git_file_diff.to_json()

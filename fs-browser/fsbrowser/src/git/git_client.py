@@ -67,7 +67,8 @@ class GitClient:
         else:
             raise RuntimeError('Unknown merge analysis result')
 
-    def diff(self, repo_path, file_path, branch_name=DEFAULT_BRANCH_NAME, context_lines=DEFAULT_CONTEXT_LINES_COUNT):
+    def diff(self, repo_path, file_path, show_raw_flag, branch_name=DEFAULT_BRANCH_NAME,
+             context_lines=DEFAULT_CONTEXT_LINES_COUNT):
         diff_patch = self._find_patch(repo_path, file_path, branch_name, context_lines)
         if not diff_patch:
             self.logger.log("Diff not found")
@@ -81,7 +82,10 @@ class GitClient:
             git_file_diff.new_size = self._get_delta_size(delta.new_file)
             git_file_diff.old_size = self._get_delta_size(delta.old_file)
         else:
-            git_file_diff.lines = self._build_lines(diff_patch)
+            if show_raw_flag:
+                git_file_diff.git_diff_output = diff_patch.text
+            else:
+                git_file_diff.lines = self._build_lines(diff_patch)
             insertions, deletions = self._parse_line_stats(diff_patch.line_stats)
             git_file_diff.insertions = insertions
             git_file_diff.deletions = deletions

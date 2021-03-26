@@ -225,10 +225,12 @@ def diff_versioned_storage(vs_id):
 @auth.login_required
 def diff_versioned_storage_file(vs_id):
     file_path = flask.request.args.get("path")
+    show_raw = flask.request.args.get("raw")
+    show_raw_flag = False if not show_raw else str_to_bool(show_raw)
     lines_count = flask.request.args.get("lines_count", 3)
     manager = app.config['git_manager']
     try:
-        items = manager.diff(vs_id, file_path, int(lines_count))
+        items = manager.diff(vs_id, file_path, show_raw_flag, int(lines_count))
         return jsonify(success(items))
     except Exception as e:
         manager.logger.log(traceback.format_exc())

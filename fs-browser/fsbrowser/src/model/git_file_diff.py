@@ -25,6 +25,7 @@ class GitFileDiff:
         self.old_size = None
         self.insertions = None
         self.deletions = None
+        self.git_diff_output = None
 
     def to_json(self):
         result = {
@@ -38,8 +39,11 @@ class GitFileDiff:
                 "old_size": self.old_size
             })
         else:
+            if self.lines:
+                result.update({"lines": self._lines_to_json(self.lines)})
+            if self.git_diff_output:
+                result.update({"raw_output": self.git_diff_output})
             result.update({
-                "lines": self._lines_to_json(self.lines),
                 "insertions": self.insertions,
                 "deletions": self.deletions
             })
