@@ -24,7 +24,7 @@ cat >$_BUILD_SCRIPT_NAME <<EOL
 mkdir -p ${PYINSTALLER_PATH}
 cd ${PYINSTALLER_PATH}
 git clone --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
-cd ${PYINSTALLER_PATH}/bootloader/
+cd pyinstaller/bootloader/
 python ./waf all
 
 ###

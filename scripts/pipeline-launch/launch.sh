@@ -1193,13 +1193,18 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo "-"
 
       echo "Installing fsbrowser"
-      install_pip_package fsbrowser
+      CP_FSBROWSER_NAME=${CP_FSBROWSER_NAME:-fsbrowser.tar.gz}
+
+      download_file "${DISTRIBUTION_URL}${CP_FSBROWSER_NAME}"
       if [ $? -ne 0 ]; then
             echo "[ERROR] Unable to install FSBrowser"
             exit 1
       fi
-      # If the "private" python distro was used - symlink fsbrowser to the path, which is exported via PATH
-      CP_FSBROWSER_BIN=$(dirname $CP_PYTHON2_PATH)/fsbrowser
+
+      tar -xf "$CP_FSBROWSER_NAME" -C ${CP_USR_BIN}/
+      rm -f "$CP_FSBROWSER_NAME"
+
+      CP_FSBROWSER_BIN=${CP_USR_BIN}/app/app
       if [ -f "$CP_FSBROWSER_BIN" ]; then
             ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
             ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser

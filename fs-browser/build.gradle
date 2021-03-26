@@ -3,6 +3,28 @@ task build(type: Exec, dependsOn: ':fs-browser:fs-browser-client:build') {
     doFirst {
         setFBVersion()
     }
+    environment "FSBROWSER_SOURCES_DIR": "$project.rootDir/fs-browser"
+    environment "FSBROWSER_DIST_PATH": "$project.rootDir/fs-browser/dist/dist-folder"
+    environment "FSBROWSER_RUNTIME_TMP_DIR": "/tmp"
+    environment "PYINSTALLER_PATH": "/pyinstaller"
+
+    commandLine "bash", "$project.rootDir/fs-browser/build.sh"
+    doLast {
+        cleanFBVersion()
+        delete("$project.rootDir/api/src/main/resources/static/fsbrowser.tar.gz")
+        copy {
+            from("$project.rootDir/fs-browser/dist/dist-folder/fsbrowser.tar.gz")
+            into("$project.rootDir/api/src/main/resources/static/")
+        }
+    }
+}
+
+// available for Python 3 only
+task pipBuild(type: Exec, dependsOn: ':fs-browser:fs-browser-client:build') {
+    group = 'build'
+    doFirst {
+        setFBVersion()
+    }
     commandLine 'python', "$project.rootDir/fs-browser/setup.py", 'sdist'
     doLast {
         cleanFBVersion()

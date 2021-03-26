@@ -218,6 +218,8 @@ public class SystemPreferences {
             GIT_GROUP, isGreaterThan(0));
     public static final IntPreference GIT_FORK_RETRY_COUNT = new IntPreference("git.fork.retry.count", 5,
             GIT_GROUP, isGreaterThan(0));
+    public static final StringPreference GIT_FSBROWSER_WD =
+            new StringPreference("git.fsbrowser.workdir", "/git-workdir", GIT_GROUP, pass);
 
     // DOCKER_SECURITY_GROUP
     /**

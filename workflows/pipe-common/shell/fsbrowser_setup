@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,18 +42,36 @@ if [ -z "$CP_FSBROWSER_STORAGE" ]; then
     CP_FSBROWSER_STORAGE="$CP_FSBROWSER_STORAGE/fsbrowser/$RUN_ID"
 fi
 
+if [ -z "$CP_FSBROWSER_VS_WD" ]; then
+    CP_FSBROWSER_VS_WD="$(curl -k \
+                                    -s \
+                                    -X GET \
+                                    -H "Authorization: Bearer ${API_TOKEN}" \
+                                    "${API}preferences/git.fsbrowser.workdir" | \
+                                        jq -r '.payload.value//""')"
+    if [ -z "$CP_FSBROWSER_VS_WD" ]; then
+            echo "[ERROR] Working directory for versioned storages is not defined (git.fsbrowser.workdir). FSBrowser will NOT be configured"
+            exit 1
+    fi
+    mkdir -p ${CP_FSBROWSER_VS_WD}
+fi
+
 if ! fsbrowser -h > /dev/null 2>&1; then
     echo "[ERROR] Cannot load 'fsbrowser' command"
     exit 1
 fi
 
 echo "Starting FSBrowser:"
-echo "- Port:    $CP_FSBROWSER_PORT"
-echo "- WD:      $CP_FSBROWSER_WD"
-echo "- Storage: $CP_FSBROWSER_STORAGE"
+echo "- Port:        $CP_FSBROWSER_PORT"
+echo "- WD:          $CP_FSBROWSER_WD"
+echo "- Git workdir: $CP_FSBROWSER_VS_WD"
+echo "- Storage:     $CP_FSBROWSER_STORAGE"
 nohup fsbrowser --host 0.0.0.0 \
                 --port "${CP_FSBROWSER_PORT}" \
                 --working_directory "${CP_FSBROWSER_WD}" \
+                --vs_working_directory "${CP_FSBROWSER_VS_WD}" \
+                --git_token "${GIT_TOKEN}" \
+                --git_user "${GIT_USER}" \
                 --tmp_directory "${CP_FSBROWSER_TMP}" \
                 --exclude "${CP_FSBROWSER_BLACK_LIST}" \
                 --transfer_storage "${CP_FSBROWSER_STORAGE}" > /var/log/fsbrowser.log 2>&1 &
