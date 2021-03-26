@@ -94,10 +94,10 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 final Stream<DataStorageFile> files = fileManager
                         .files(dataStorage.getRoot(),
                                 Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
-                                credentials)
-                        .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())));
+                                credentials);
                 StreamUtils.chunked(files, bulkLoadTagsSize)
                         .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
+                        .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())))
                         .map(file -> createIndexRequest(file, dataStorage, permissionsContainer, indexName, 
                                 credentials))
                         .forEach(requestContainer::add);
