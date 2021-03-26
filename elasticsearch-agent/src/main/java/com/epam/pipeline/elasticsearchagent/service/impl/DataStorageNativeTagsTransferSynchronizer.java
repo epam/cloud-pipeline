@@ -61,8 +61,8 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                         Optional.ofNullable(storage.getType()).map(fileManagers::get)
                                 .map(fileManager -> fileManager
                                         .versionsWithNativeTags(storage.getRoot(),
-                                                Optional.ofNullable(storage.getPrefix()).orElse(StringUtils.EMPTY),
-                                                () -> getTemporaryCredentials(storage))
+                                            Optional.ofNullable(storage.getPrefix()).orElse(StringUtils.EMPTY),
+                                            () -> getTemporaryCredentials(storage))
                                         .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : tags(chunk))
                                         .map(stream -> stream.collect(Collectors.toList()))
                                         .filter(CollectionUtils::isNotEmpty))
