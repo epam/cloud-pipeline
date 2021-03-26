@@ -14,9 +14,12 @@
 
 import datetime
 import time
+import sys
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 class BrowserLogger(object):
 
@@ -24,7 +27,7 @@ class BrowserLogger(object):
         self.log_dir = log_dir
 
     def log(self, message):
-        print(message)
+        eprint("{} {}".format(BrowserLogger._build_current_date(), message))
 
     @staticmethod
     def _build_current_date():

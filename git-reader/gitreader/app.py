@@ -16,7 +16,7 @@ import argparse
 import traceback
 
 import flask
-from flask import Flask, jsonify, send_from_directory, request
+from flask import Flask, jsonify, request
 
 from gitreader.src.git_manager import GitManager
 from gitreader.src.model.git_search_filter import GitSearchFilter
@@ -44,18 +44,7 @@ def error(message):
 def git_list_tree(repo):
     manager = app.config['gitmanager']
     try:
-        path = "."
-        if request.args.get('path'):
-            path = request.args.get('path')
-        page_size = 20
-        if request.args.get('page_size'):
-            page_size = int(request.args.get('page_size'))
-        page = 0
-        if request.args.get('page'):
-            page = int(request.args.get('page'))
-        ref = "HEAD"
-        if request.args.get('ref'):
-            ref = request.args.get('ref')
+        path, page, page_size, ref = parse_url_params()
         list_tree = manager.ls_tree(repo, path, ref, page, page_size)
         return jsonify(success(list_tree.to_json()))
     except Exception as e:
@@ -63,24 +52,18 @@ def git_list_tree(repo):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/git/<path:repo>/logs_tree')
+@app.route('/git/<path:repo>/logs_tree',  methods=["GET", "POST"])
 def git_logs_tree(repo):
     manager = app.config['gitmanager']
+    path, page, page_size, ref = parse_url_params()
     try:
-        path = "."
-        if request.args.get('path'):
-            path = request.args.get('path')
-        page_size = 20
-        if request.args.get('page_size'):
-            page_size = int(request.args.get('page_size'))
-        page = 0
-        if request.args.get('page'):
-            page = int(request.args.get('page'))
-        ref = "HEAD"
-        if request.args.get('ref'):
-            ref = request.args.get('ref')
-        logs_tree = manager.logs_tree(repo, path, ref, page, page_size)
-        return jsonify(success(logs_tree.to_json()))
+        if request.method == 'POST':
+            data = load_data_from_request(request)
+            logs_tree = manager.logs_paths(repo, ref, data)
+            return jsonify(success(logs_tree.to_json()))
+        else:
+            logs_tree = manager.logs_tree(repo, path, ref, page, page_size)
+            return jsonify(success(logs_tree.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -92,12 +75,7 @@ def git_list_commits(repo):
     try:
         data = load_data_from_request(request)
         filters = GitSearchFilter.from_json(data["filter"]) if "filter" in data else GitSearchFilter()
-        page_size = 20
-        if request.args.get('page_size'):
-            page_size = int(request.args.get('page_size'))
-        page = 0
-        if request.args.get('page'):
-            page = int(request.args.get('page'))
+        _, page, page_size, _ = parse_url_params()
         commits = manager.list_commits(repo, filters, page, page_size)
         return jsonify(success(commits.to_json()))
     except Exception as e:
@@ -114,7 +92,10 @@ def git_diff_report(repo):
         include_diff = False
         if request.args.get('include_diff'):
             include_diff = str_to_bool(request.args.get('include_diff'))
-        diff_report = manager.diff_report(repo, filters, include_diff)
+        unified_lines = 3
+        if request.args.get('unified_lines'):
+            unified_lines = int(request.args.get('unified_lines'))
+        diff_report = manager.diff_report(repo, filters, include_diff, unified_lines)
         return jsonify(success(diff_report.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -130,6 +111,22 @@ def load_data_from_request(req):
 
 def str_to_bool(input_value):
     return input_value and input_value.lower() in ("true", "t")
+
+
+def parse_url_params():
+    path = "."
+    if request.args.get('path'):
+        path = request.args.get('path')
+    page = 0
+    if request.args.get('page'):
+        page = int(request.args.get('page'))
+    page_size = 20
+    if request.args.get('page_size'):
+        page_size = int(request.args.get('page_size'))
+    ref = "HEAD"
+    if request.args.get('ref'):
+        ref = request.args.get('ref')
+    return path, page, page_size, ref
 
 
 def main():

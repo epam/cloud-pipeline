@@ -34,29 +34,42 @@ class GitManager(object):
     def logs_tree(self, repo_path, path, ref="HEAD", page=0, page_size=20):
         repo = git.repo.Repo(os.path.join(self.git_root, repo_path))
         result = []
-        for git_object in self.list_tree(repo, path, ref, page, page_size):
-            result.append(self.get_last_commit_by_object(repo, git_object))
-        return GitListing(result, page, page_size)
+        max_page, listing = self.list_tree(repo, path, ref, page, page_size)
+        for git_object in listing:
+            result.append(self.get_last_commit_by_object(repo, ref, git_object))
+        return GitListing(result, page, page_size, max_page=max_page)
+
+    def logs_paths(self, repo_path, ref="HEAD", paths=None):
+        if paths is None:
+            paths = []
+        repo = git.repo.Repo(os.path.join(self.git_root, repo_path))
+        result = []
+        for path in paths:
+            _, listing = self.list_tree(repo, path, ref, 0, 1)
+            if len(listing) == 1:
+                result.append(self.get_last_commit_by_object(repo, ref, listing[0]))
+        return GitListing(result, 0, len(result))
 
     def list_commits(self, repo_path, filters=None, page=0, page_size=20):
         repo = git.repo.Repo(os.path.join(self.git_root, repo_path))
-        result = self.get_commits(repo, filters, page * page_size, page_size)
-        return GitListing(result, page, page_size)
+        has_next, result = self.get_commits(repo, filters, page * page_size, page_size)
+        return GitListing(result, page, page_size, has_next)
 
     def ls_tree(self, repo_path, path, ref="HEAD", page=0, page_size=20):
         repo = git.repo.Repo(os.path.join(self.git_root, repo_path))
-        return GitListing(self.list_tree(repo, path, ref, page, page_size), page, page_size)
+        max_page, listing = self.list_tree(repo, path, ref, page, page_size)
+        return GitListing(listing, page, page_size, max_page=max_page)
 
-    def diff_report(self, repo_path, filters=None, include_diff=False):
+    def diff_report(self, repo_path, filters=None, include_diff=False, unified_lines=3):
         repo = git.repo.Repo(os.path.join(self.git_root, repo_path))
-        commits_for_report = self.get_commits(repo, filters, skip=0, batch_size=2147483647)
+        _, commits_for_report = self.get_commits(repo, filters, skip=0, batch_size=2147483646)
         if include_diff:
-            return GitDiffReport(filters, [GitDiffReportEntry(x, self.get_diff(x, repo, filters)) for x in commits_for_report])
+            return GitDiffReport(filters, [GitDiffReportEntry(x, self.get_diff(repo, x, unified_lines, filters)) for x in commits_for_report])
         else:
             return GitDiffReport(filters, [GitDiffReportEntry(x, None) for x in commits_for_report])
 
     def get_commits(self, repo, filters, skip, batch_size):
-        args = ['--skip={}'.format(skip), '-{}'.format(batch_size), '--format=%h||%ai||%an||%ae||%s']
+        args = ['--skip={}'.format(skip), '-{}'.format(batch_size + 1), '--format=%h||%ai||%an||%ae||%s']
         if filters.authors:
             for author in filters.authors:
                 args.append("--author={}".format(author))
@@ -71,19 +84,21 @@ class GitManager(object):
             args.append(filters.path_masks)
         git_log_result = repo.git.log(args)
         if git_log_result == "" or git_log_result is None:
-            return []
-        return [self.parse_git_log(line.split("||")) for line in git_log_result.split("\n")]
+            return False, []
+        git_log_result = git_log_result.split("\n")
+        return len(git_log_result) == batch_size + 1, [self.parse_git_log(line.split("||")) for line in git_log_result]
 
-    def get_diff(self, commit, repo, filters):
-        return repo.git.diff(commit.sha, commit.sha + "~1", "--", filters.path_masks)
+    def get_diff(self, repo, commit, unified_lines, filters):
+        return repo.git.diff("-U{}".format(unified_lines), commit.sha, commit.sha + "~1", "--", filters.path_masks)
 
     def list_tree(self, repo, path, ref, page, page_size):
         result = []
         offset = int(page * page_size)
         git_ls_tree_result = repo.git.ls_tree("--full-tree", ref, "--", path)
         if git_ls_tree_result == "" or not git_ls_tree_result:
-            return result
-        for line in git_ls_tree_result.split("\n")[offset:offset + page_size]:
+            return 0, result
+        git_ls_tree_result = git_ls_tree_result.split("\n")
+        for line in git_ls_tree_result[offset:offset + page_size]:
             git_ls_tree_line = line.split()
             name = os.path.basename(git_ls_tree_line[3])
             result.append(GitObject(
@@ -94,10 +109,10 @@ class GitManager(object):
                             mode=git_ls_tree_line[0]
                          )
             )
-        return result
+        return int(len(git_ls_tree_result) / page_size), result
 
-    def get_last_commit_by_object(self, repo, git_object):
-        git_log_result = self.get_commits(repo, GitSearchFilter(path_masks=[git_object.path]), 0, 1)
+    def get_last_commit_by_object(self, repo, ref, git_object):
+        _, git_log_result = self.get_commits(repo, GitSearchFilter(ref=ref, path_masks=[git_object.path]), 0, 1)
         if len(git_log_result) == 0:
             return None
         return GitObjectMetadata(git_object, git_log_result[0])

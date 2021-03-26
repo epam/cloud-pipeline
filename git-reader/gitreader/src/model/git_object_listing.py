@@ -15,14 +15,21 @@
 
 class GitListing:
 
-    def __init__(self, git_objects, page, page_size):
+    def __init__(self, git_objects, page, page_size, max_page=-1, has_next=False):
         self.git_objects = git_objects
         self.page = page
         self.page_size = page_size
+        self.has_next = has_next
+        self.max_page = max_page
 
     def to_json(self):
-        return {
+        result = {
             "listing": [x.to_json() for x in self.git_objects],
             "page": self.page,
             "page_size": self.page_size
         }
+        if self.max_page != -1:
+            result["max_page"] = self.max_page
+        else:
+            result["has_next"] = self.has_next
+        return result
