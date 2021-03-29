@@ -63,7 +63,7 @@ uploaded_objects_container = UploadedObjectsContainer()
 def _put_object_task_main(self, client, fileobj, bucket, key, extra_args):
     with fileobj as body:
         output = client.put_object(Bucket=bucket, Key=key, Body=body, **extra_args)
-        uploaded_objects_container.add(bucket, key, output['VersionId'])
+        uploaded_objects_container.add(bucket, key, output.get('VersionId'))
 
 
 def _complete_multipart_upload_task_main(self, client, bucket, key, upload_id, parts, extra_args):
@@ -71,7 +71,7 @@ def _complete_multipart_upload_task_main(self, client, bucket, key, upload_id, p
         Bucket=bucket, Key=key, UploadId=upload_id,
         MultipartUpload={'Parts': parts},
         **extra_args)
-    uploaded_objects_container.add(bucket, key, output['VersionId'])
+    uploaded_objects_container.add(bucket, key, output.get('VersionId'))
 
 
 def _copy_object_task_main(self, client, copy_source, bucket, key, extra_args, callbacks, size):
@@ -79,7 +79,7 @@ def _copy_object_task_main(self, client, copy_source, bucket, key, extra_args, c
         CopySource=copy_source, Bucket=bucket, Key=key, **extra_args)
     for callback in callbacks:
         callback(bytes_transferred=size)
-    uploaded_objects_container.add(bucket, key, output['VersionId'])
+    uploaded_objects_container.add(bucket, key, output.get('VersionId'))
 
 
 # By default boto library doesn't aggregate uploaded object versions
