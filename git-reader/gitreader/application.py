@@ -22,7 +22,10 @@ from flask import Flask, jsonify, request
 from gitreader.src.git_manager import GitManager
 from gitreader.src.model.git_search_filter import GitSearchFilter
 
+from flasgger import Swagger
+
 app = Flask(__name__)
+swagger = Swagger(app)
 app.config['gitmanager'] = GitManager(os.getenv("CP_GITLAB_REPO_ROOT", "/var/opt/gitlab/git-data/repositories"))
 # Force FLASK to accept both "http://url and http://url/"
 app.url_map.strict_slashes = False
@@ -44,6 +47,68 @@ def error(message):
 
 @app.route('/git/<path:repo>/ls_tree')
 def git_list_tree(repo):
+    """Lists files via specified path on the specific ref(default `HEAD`).
+    `repo` - the path to git repo relative to `git_root`.
+       ---
+       parameters:
+         - name: repo
+           in: path
+           type: string
+           required: true
+         - name: path
+           in: query
+           type: string
+           required: false
+         - name: page
+           in: query
+           type: integer
+           required: false
+           default: 0
+         - name: page_size
+           in: query
+           type: integer
+           required: false
+           default: 20
+         - name: ref
+           in: query
+           type: string
+           required: false
+           default: HEAD
+       definitions:
+         Listing:
+           type: object
+           properties:
+             git_objects:
+               type: array
+               items:
+                 $ref: '#/definitions/GitObject'
+             page:
+               type: integer
+             page_size:
+               type: integer
+             has_next:
+               type: boolean
+             max_page:
+               type: integer
+         GitObject:
+           type: object
+           properties:
+               git_id:
+                 type: string
+               name:
+                 type: string
+               git_type:
+                 type: string
+               path:
+                 type: string
+               mode:
+                 type: string
+       responses:
+         200:
+           description: A listing of objects (files and dirs) with metadata and paging info
+           schema:
+             $ref: '#/definitions/Listing'
+       """
     manager = app.config['gitmanager']
     try:
         path, page, page_size, ref = parse_url_params()
@@ -54,18 +119,165 @@ def git_list_tree(repo):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/git/<path:repo>/logs_tree',  methods=["GET", "POST"])
+@app.route('/git/<path:repo>/logs_tree',  methods=["GET"])
 def git_logs_tree(repo):
+    """Lists files via specified path on the specific ref(default `HEAD`) plus adds additional info about last commit.
+        `repo` - the path to git repo relative to `git_root`.
+           ---
+           parameters:
+             - name: repo
+               in: path
+               type: string
+               required: true
+             - name: path
+               in: query
+               type: string
+               required: false
+             - name: page
+               in: query
+               type: integer
+               required: false
+               default: 0
+             - name: page_size
+               in: query
+               type: integer
+               required: false
+               default: 20
+             - name: ref
+               in: query
+               type: string
+               required: false
+               default: HEAD
+           definitions:
+             GitObjectMetadataListing:
+               type: object
+               properties:
+                 git_object_metadatas:
+                   type: array
+                   items:
+                     $ref: '#/definitions/GitObjectMetadata'
+                 page:
+                   type: integer
+                 page_size:
+                   type: integer
+                 has_next:
+                   type: boolean
+                 max_page:
+                   type: integer
+             GitObjectMetadata:
+               type: object
+               properties:
+                   git_id:
+                     type: string
+                   name:
+                     type: string
+                   git_type:
+                     type: string
+                   path:
+                     type: string
+                   mode:
+                     type: string
+                   commit:
+                     type: string
+                   commit_date:
+                     type: string
+                   commit_message:
+                     type: string
+                   author:
+                     type: string
+                   author_email:
+                     type: string
+           responses:
+             200:
+               description: A listing of objects (files and dirs) with last commit info and paging info
+               schema:
+                 $ref: '#/definitions/GitObjectMetadataListing'
+           """
     manager = app.config['gitmanager']
     path, page, page_size, ref = parse_url_params()
     try:
-        if request.method == 'POST':
-            data = load_data_from_request(request)
-            logs_tree = manager.logs_paths(repo, ref, data)
+        logs_tree = manager.logs_tree(repo, path, ref, page, page_size)
+        return jsonify(success(logs_tree.to_json()))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+@app.route('/git/<path:repo>/logs_tree',  methods=["POST"])
+def git_logs_tree_by_paths(repo):
+    """Lists files via specified path on the specific ref(default `HEAD`) plus adds additional info about last commit.
+        `repo` - the path to git repo relative to `git_root`.
+           ---
+           parameters:
+             - name: repo
+               in: path
+               type: string
+               required: true
+             - name: ref
+               in: query
+               type: string
+               required: false
+               default: HEAD
+             - name: paths
+               in: request
+               type: object
+               properties:
+                   paths:
+                     type: array
+                     items: strings
+           definitions:
+             GitObjectMetadataListing:
+               type: object
+               properties:
+                 git_object_metadatas:
+                   type: array
+                   items:
+                     $ref: '#/definitions/GitObjectMetadata'
+                 page:
+                   type: integer
+                 page_size:
+                   type: integer
+                 has_next:
+                   type: boolean
+                 max_page:
+                   type: integer
+             GitObjectMetadata:
+               type: object
+               properties:
+                   git_id:
+                     type: string
+                   name:
+                     type: string
+                   git_type:
+                     type: string
+                   path:
+                     type: string
+                   mode:
+                     type: string
+                   commit:
+                     type: string
+                   commit_date:
+                     type: string
+                   commit_message:
+                     type: string
+                   author:
+                     type: string
+                   author_email:
+                     type: string
+           responses:
+             200:
+               description: A listing of objects (files and dirs) with last commit info and paging info
+               schema:
+                 $ref: '#/definitions/GitObjectMetadataListing'
+           """
+    manager = app.config['gitmanager']
+    path, page, page_size, ref = parse_url_params()
+    try:
+        data = load_data_from_request(request)
+        if "paths" in data:
+            logs_tree = manager.logs_paths(repo, ref, data['paths'])
             return jsonify(success(logs_tree.to_json()))
         else:
-            logs_tree = manager.logs_tree(repo, path, ref, page, page_size)
-            return jsonify(success(logs_tree.to_json()))
+            raise RuntimeError("Request body doesn't contains 'paths' field")
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -73,6 +285,64 @@ def git_logs_tree(repo):
 
 @app.route('/git/<path:repo>/commits', methods=["POST"])
 def git_list_commits(repo):
+    """Returns commits are related to specific path, author, dates.
+
+               ---
+               parameters:
+                 - name: repo
+                   in: path
+                   type: string
+                   required: true
+                 - name: filters
+                   in: request
+                   type: object
+                   properties:
+                       authors:
+                         type: array
+                         items: string
+                       date_from:
+                         type: string
+                       date_to:
+                         type: string
+                       paths:
+                         type: array
+                         items: string
+                   required: false
+               definitions:
+                CommitListing:
+                   type: object
+                   properties:
+                     commits:
+                       type: array
+                       items:
+                         $ref: '#/definitions/Commit'
+                     page:
+                       type: integer
+                     page_size:
+                       type: integer
+                     has_next:
+                       type: boolean
+                     max_page:
+                       type: integer
+                Commit:
+                  type: object
+                  properties:
+                      commit:
+                        type: string
+                      commit_date:
+                        type: string
+                      commit_message:
+                        type: string
+                      author:
+                        type: string
+                      author_email:
+                        type: string
+               responses:
+                 200:
+                   description: A listing of commits filtered by dates, authors, paths
+                   schema:
+                     $ref: '#/definitions/CommitListing'
+               """
     manager = app.config['gitmanager']
     try:
         data = load_data_from_request(request)
@@ -87,6 +357,71 @@ def git_list_commits(repo):
 
 @app.route('/git/<path:repo>/diff', methods=["POST"])
 def git_diff_report(repo):
+    """Returns commits and its diffs are related to specific path, author, dates.
+
+                   ---
+                   parameters:
+                     - name: repo
+                       in: path
+                       type: string
+                       required: true
+                     - name: include_diff
+                       in: query
+                       type: boolean
+                       required: false
+                       default: true
+                     - name: filters
+                       in: request
+                       type: object
+                       properties:
+                           authors:
+                             type: array
+                             items: string
+                           date_from:
+                             type: string
+                           date_to:
+                             type: string
+                           paths:
+                             type: array
+                             items: string
+                       required: false
+                   definitions:
+                    DiffListing:
+                       type: object
+                       properties:
+                         entries:
+                           type: array
+                           items:
+                             $ref: '#/definitions/DiffEntry'
+                         page:
+                           type: integer
+                         page_size:
+                           type: integer
+                         has_next:
+                           type: boolean
+                         max_page:
+                           type: integer
+                    DiffEntry:
+                      type: object
+                      properties:
+                          commit:
+                            type: string
+                          commit_date:
+                            type: string
+                          commit_message:
+                            type: string
+                          author:
+                            type: string
+                          author_email:
+                            type: string
+                          diff:
+                            type: string
+                   responses:
+                     200:
+                       description: A listing of commits and its diffs filtered by dates, authors, paths
+                       schema:
+                         $ref: '#/definitions/CommitListing'
+                   """
     manager = app.config['gitmanager']
     try:
         data = load_data_from_request(request)

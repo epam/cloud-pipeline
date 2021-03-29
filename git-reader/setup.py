@@ -24,7 +24,8 @@ setup(
     install_requires=[
         'flask==1.1.1',
         'Flask-HTTPAuth==3.3.0',
-        'GitPython==3.1.14'
+        'GitPython==3.1.14',
+        'flasgger'
     ],
     entry_points='''
         [console_scripts]

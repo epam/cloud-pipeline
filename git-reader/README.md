@@ -51,7 +51,7 @@ uwsgi --socket <path to socket file> -w wsgi_starter:app -M -p <number of proces
 ## RESTful API methods
 
 This service provides RESTful API with the following methods:
-- `GET` `/git/<path:repo>/ls_tree` - Lists files via specified path on the specific ref(default `HEAD`). `path` - the path to git repo relative to `git_root`.
+- `GET` `/git/<path:repo>/ls_tree` - Lists files via specified path on the specific ref(default `HEAD`). `repo` - the path to git repo relative to `git_root`.
 
 Possible params:
 
