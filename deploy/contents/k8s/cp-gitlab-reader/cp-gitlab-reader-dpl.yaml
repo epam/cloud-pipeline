@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-gitlab-reader
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cp-gitlab-reader
+      namespace: default
+      labels:
+        cloud-pipeline/cp-gitlab-reader: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-gitlab-reader: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-gitlab-reader
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:gitlab-reader-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init.sh"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /var/opt/gitlab
+              name: git-data
+      volumes:
+        - name: git-data
+          hostPath:
+            path: /opt/gitlab/data
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
+    

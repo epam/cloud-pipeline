@@ -885,6 +885,26 @@ if is_service_requested cp-git-sync; then
     echo
 fi
 
+# GitLab Reader
+if is_service_requested cp-gitlab-reader; then
+    print_ok "[Starting GitLab Reader deployment]"
+
+    print_info "-> Deleting existing instance of GitLab Reader"
+    delete_deployment_and_service   "cp-gitlab-reader" \
+                                    "/opt/gitlab-reader"
+
+    if is_install_requested; then
+        print_info "-> Deploying cp-gitlab-reader"
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-reader/cp-gitlab-reader-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-reader/cp-gitlab-reader-svc.yaml
+
+        print_info "-> Waiting for GitLab Reader to initialize"
+        wait_for_deployment "cp-gitlab-reader"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-reader: deployed"
+    fi
+    echo
+fi
+
 # Docker comp scanner
 if is_service_requested cp-docker-comp; then
     print_ok "[Starting Docker components scanner deployment]"

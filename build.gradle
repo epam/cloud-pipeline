@@ -151,7 +151,8 @@ task installDist() {
                 "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar",
                 "$rootDir/vm-monitor/build/libs/vm-monitor.jar",
                 "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar",
-                "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar"
+                "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar",
+                "$rootDir/git-reader/dist/gitreader.tar.gz"
         )
 
         distFiles.each {
