@@ -783,6 +783,6 @@ public class KubernetesManager {
         final Service item = client.services()
                 .withName(name)
                 .get();
-        return Optional.of(item);
+        return Optional.ofNullable(item);
     }
 }
