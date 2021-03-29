@@ -217,8 +217,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         noAdmins.setUsers(Collections.emptyList());
 
         Pod mockPod = mock(Pod.class);
-        PodStatus podStatus = new PodStatus(null, null, "hostIp", "", "",
-                                            "podIp", "bla-bla", "5 o'clock");
+        PodStatus podStatus = new PodStatus(null, null, "hostIp", null, "", "",
+                                            "podIp", "bla-bla", "5 o'clock",  "");
         podMetadata = new ObjectMeta();
         podMetadata.setLabels(Collections.emptyMap());
 
