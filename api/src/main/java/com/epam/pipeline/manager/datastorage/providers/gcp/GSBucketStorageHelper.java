@@ -95,7 +95,6 @@ public class GSBucketStorageHelper {
     private static final String EMPTY_PREFIX = "";
     private static final int REGION_ZONE_LENGTH = -2;
     private static final String LIFECYCLE_CONTENT_TYPE = "application/json";
-    private static final String LATEST_VERSION_DELETION_MARKER = "_d";
 
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
@@ -209,8 +208,8 @@ public class GSBucketStorageHelper {
             return;
         }
 
-        if (latestVersionHasDeletedMarker(version)) {
-            restoreFileVersion(dataStorage, path, cleanupVersion(version));
+        if (ProviderUtils.isSyntheticDeletionMarker(version)) {
+            restoreFileVersion(dataStorage, path, ProviderUtils.getVersionFromSyntheticDeletionMarker(version));
             return;
         }
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
@@ -588,7 +587,8 @@ public class GSBucketStorageHelper {
             notDeletedLatestVersion.setDeleteMarker(false);
             filesByVersion.put(latestVersionFile.getVersion(), notDeletedLatestVersion);
 
-            latestVersionFile.setVersion(latestVersionFile.getVersion() + LATEST_VERSION_DELETION_MARKER);
+            latestVersionFile.setVersion(ProviderUtils.getSyntheticDeletionMarkerFromVersion(
+                    latestVersionFile.getVersion()));
             latestVersionFile.setSize(0L);
         }
         filesByVersion.put(latestVersionFile.getVersion(), latestVersionFile.copy(latestVersionFile));
@@ -740,20 +740,9 @@ public class GSBucketStorageHelper {
                 .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, folderPath, bucketName));
     }
 
-    private String cleanupVersion(final String version) {
-        if (latestVersionHasDeletedMarker(version)) {
-            return version.replace(LATEST_VERSION_DELETION_MARKER, StringUtils.EMPTY);
-        }
-        return version;
-    }
-
     private void checkVersionHasNotDeletedMarker(final String version) {
-        if (latestVersionHasDeletedMarker(version)) {
+        if (ProviderUtils.isSyntheticDeletionMarker(version)) {
             throw new DataStorageException("Operation is not allowed for deleted version");
         }
-    }
-
-    private boolean latestVersionHasDeletedMarker(final String version) {
-        return StringUtils.isNotBlank(version) && version.endsWith(LATEST_VERSION_DELETION_MARKER);
     }
 }

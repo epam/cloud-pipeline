@@ -29,6 +29,7 @@ public final class ProviderUtils {
     public static final String DELIMITER = "/";
     public static final String FOLDER_TOKEN_FILE = ".DS_Store";
     public static final String OWNER_TAG_KEY = "CP_OWNER";
+    public static final String SYNTHETIC_DELETION_MARKER_SUFFIX = "_d";
 
     private ProviderUtils() {
         //no op
@@ -108,5 +109,17 @@ public final class ProviderUtils {
 
     public static String removePrefix(final String path, final String prefix) {
         return path.startsWith(prefix) ? path.replaceFirst(prefix, StringUtils.EMPTY) : path;
+    }
+
+    public static boolean isSyntheticDeletionMarker(final String version) {
+        return StringUtils.endsWith(version, ProviderUtils.SYNTHETIC_DELETION_MARKER_SUFFIX);
+    }
+
+    public static String getSyntheticDeletionMarkerFromVersion(final String version) {
+        return version + ProviderUtils.SYNTHETIC_DELETION_MARKER_SUFFIX;
+    }
+
+    public static String getVersionFromSyntheticDeletionMarker(final String version) {
+        return StringUtils.removeEnd(version, ProviderUtils.SYNTHETIC_DELETION_MARKER_SUFFIX);
     }
 }

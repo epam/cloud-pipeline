@@ -18,6 +18,7 @@ import socket
 from abc import abstractmethod, ABCMeta
 from datetime import datetime, timedelta
 
+from google.cloud.exceptions import GoogleCloudError
 from requests import RequestException
 from requests.adapters import HTTPAdapter
 from s3transfer import TransferConfig, MultipartUploader, OSUtils, MultipartDownloader
@@ -388,6 +389,17 @@ class GsManager:
             bucket=bucket
         )
 
+    def get_file_version(self, bucket, key):
+        try:
+            bucket = self.client.bucket(bucket)
+            blob = bucket.blob(key)
+            blob.reload()
+            if blob.time_deleted:
+                return None
+            return blob.generation
+        except GoogleCloudError:
+            return None
+
 
 class GsListingManager(GsManager, AbstractListingManager):
 
@@ -518,13 +530,25 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         if not recursive and not hard_delete:
             deleting_blob = bucket.blob(prefix, generation=version)
             deleted = self._delete_blob(deleting_blob, exclude, include)
-            if deleted and (not self.bucket.policy.versioning_enabled or version):
-                self._delete_object_tags([deleting_blob], versions=self.bucket.policy.versioning_enabled)
             if deleted:
-                if self.bucket.policy.versioning_enabled and version:
-                    self._delete_object_tags([deleting_blob, bucket.blob(prefix)], versions=True)
+                if self.bucket.policy.versioning_enabled:
+                    if version:
+                        latest_version = self.get_file_version(self.bucket.path, prefix)
+                        if latest_version:
+                            DataStorage.batch_copy_object_tags(self.bucket.identifier, [{
+                                'source': {
+                                    'path': relative_path,
+                                    'version': latest_version
+                                },
+                                'destination': {
+                                    'path': relative_path
+                                }
+                            }])
+                            self._delete_object_tags([deleting_blob], versions=True)
+                        else:
+                            self._delete_object_tags([deleting_blob, bucket.blob(prefix)], versions=True)
                 else:
-                    self._delete_object_tags([bucket.blob(prefix)], versions=False)
+                    self._delete_object_tags([deleting_blob], versions=False)
         else:
             blobs_for_deletion = []
             listing_manager = self._get_listing_manager(show_versions=version is not None or hard_delete)
