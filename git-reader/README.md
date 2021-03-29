@@ -1,140 +1,330 @@
-# FS Browser
+# Cloud Pipeline GitReader
 
-FS Browser is the `python/flask` service that allows to expose compute node's file system
+GitReader is the `python/flask` service that expose an additional REST API for GitLab instance
 
 ## Requirements
 
-- Python 2.7
-- pipe cli
-- pipe common
+- Python 3.6
 - flask
+- git
+- GitPython 3.1.14
 
 ## Launching
 
 To run app use the following command:
 ```
-python <path to project>/app.py --working_directory=/root/ --host=0.0.0.0 --port=8080 --log_dir=/root/logs --transfer_storage <stoarge path>
+python <path to project>/application.py --git_root=/<git>/<repo>/<root> --host=0.0.0.0 --port=8080
 ```
 
 ## Command line options
-- --working_directory (Required) - the directory on compute node 
-- --transfer_storage (Required) - the cloud path for transferring data: <storage name>/<path to cloud directory>. If the <path to cloud directory> is not specified a bucket root will be used
+- --git_root (Required) - the directory in the local file system, where all git repos are located 
 - --host - the host where this service will be launched. Default: 127.0.0.1
 - --port - the port where this service will be launched. Default: 5000
-- --process_count - the number of threads available for this service. Default: 2
-- --log_dir - the path to log directory
-- --run_id - the run ID for Cloud Pipeline logger. If that value is not specified the stdout will be used. 
+
+## Launching with uWSGI
+
+To be able to run this service in production mode uWSGI server is required
+
+Install virtual env:
+```
+python3.6 -m venv gitreaderenv
+source gitreaderenv/bin/activate
+pip install wheel
+pip install uwsgi flask
+```
+
+Install GitReader app
+```
+python setup.py install
+```
+
+Run GitReader with uWSGI
+```
+uwsgi --socket 0.0.0.0:<port> --protocol=http -w wsgi_starter:app -M -p <number of processes>
+```
+
+Or with file socket:
+```
+uwsgi --socket <path to socket file> -w wsgi_starter:app -M -p <number of processes>
+```
 
 ## RESTful API methods
 
 This service provides RESTful API with the following methods:
--  `/view/<path>` - lists files via specified path. `path` - the path to file/folder relative to `working_directory`. The `working_directory` is the path to directory that will be shared for user. This is the required parameter that should be specified when application is started. 
+- `GET` `/git/<path:repo>/ls_tree` - Lists files via specified path on the specific ref(default `HEAD`). `path` - the path to git repo relative to `git_root`.
+
+Possible params:
+
+- `path` - path inside of repo to list 
+- `page` - number of page for response (default - 0)
+- `page_size` - size of a page for response (default - 20)
+- `ref` - specific reference on which list operation will be performed (default `HEAD`) 
+
 Request example:
 ```
-curl http://127.0.0.1:8080/view/data
+curl http://127.0.0.1:8080/git/<path:repo>/ls_tree
 ```
 Response example:
 ```
-{    
-    "payload": [{
-        "name": "file_name.txt",
-        "path": "data/file_name.txt",
-        "type": "File" (or "Folder"),
-        "size": 1 (size in bytes, avilable for Files only)
-    }],
-    "status":"OK"
-}
-```
-- `/download/<path>` - transfers file/folder via specified path on common object storage. If the user initiate to download the folder the `.tar.gz`  file will be provided for user. This action is long running so launches asynchronously.  The result of this request is the `task_id` that should be used for task status monitoring. When the download operation is completed a new folder with unique name `task_id` will be created on common object storage. The result of the whole download operation is the sign url to the file in `task_id` bucket's folder (e.g. sing url will be generated for object that located with s3://CP_CAP_EXPOSE_FS_STORAGE/3fcecb8986a34c54939dbaf8c4a2238b/data.tar.gz).
-Request example:
-```
-curl http://127.0.0.1:8080/download/data
-```
-Response example:
-```
-{    
-    "payload": {
-        "task": "3fcecb8986a34c54939dbaf8c4a2238b"
+"payload": {
+        "listing": [
+            {
+                "id": "README.md",
+                "mode": "100644",
+                "name": "README.md",
+                "path": "README.md",
+                "type": "blob"
+            },
+            {
+                "id": "api",
+                "mode": "040000",
+                "name": "api",
+                "path": "api",
+                "type": "tree"
+            },
+            {
+                "id": "docs",
+                "mode": "040000",
+                "name": "docs",
+                "path": "docs",
+                "type": "tree"
+            }
+        ],
+        "max_page": 1,
+        "page": 0,
+        "page_size": 20
     },
-    "status":"OK"
+    "status": "OK"
 }
 ```
-- `/status/<task_id>` - returns specified task status. Allowed states:  'pending', 'success', 'running', 'failure' or 'canceled'. If the task is finished with status 'failure' an error message will be returned. If the task is completed successfully the task result will be returned.
+
+
+- `GET` `/git/<path:repo>/logs_tree` - List specific path in repo on specific reference, with additional information for last commit for each listing entry. Paged response.
+
+Possible params:
+
+- `path` - path inside of repo to list 
+- `page` - number of page for response (default - 0)
+- `page_size` - size of a page for response (default - 20)
+- `ref` - specific reference on which list operation will be performed (default `HEAD`) 
+
+
+  
 Request example:
 ```
-curl http://127.0.0.1:8080/status/3fcecb8986a34c54939dbaf8c4a2238b
+curl http://127.0.0.1:8080/git/<path:repo>/logs_tree
 ```
 Response example:
 ```
-{    
-    "payload": {
-       "status":"success",
-	    "result": {
-		    "expires":"2019-05-30 08:53:49.602",
-		    "url":"..."
-	    }
+"payload": {
+        "listing": [
+            {
+                "author": "******",
+                "author_email": "******",
+                "commit": "******",
+                "commit_date": "2020-11-18 14:19:53 +0300",
+                "commit_message": "******",
+                "id": "README.md",
+                "mode": "100644",
+                "name": "README.md",
+                "path": "README.md",
+                "type": "blob"
+            },
+            {
+                "author": "******",
+                "author_email": "******",
+                "commit": "******",
+                "commit_date": "2021-03-09 23:08:24 +0300",
+                "commit_message": "******",
+                "id": "api",
+                "mode": "040000",
+                "name": "api",
+                "path": "api",
+                "type": "tree"
+            }
+        ],
+        "max_page": 1,
+        "page": 0,
+        "page_size": 20
     },
-    "status":"OK"
+    "status": "OK"
 }
 ```
-- `/cancel/<task_id>` - cancels task computation. Cleanups data if needed. 
+
+- `POST` `/git/<path:repo>/logs_tree` - List specific paths in repo on specific reference, with additional information for last commit for each listing entry.
+
+Possible params:
+
+- `ref` - specific reference on which list operation will be performed (default `HEAD`) 
+
+
+Request data: 
+```
+["api", "README.md", "config/checkstyle"]
+```
+
+  
 Request example:
 ```
-curl http://127.0.0.1:8080/cancel/3fcecb8986a34c54939dbaf8c4a2238b
+curl -X POST --data '["api", "README.md", "config/checkstyle"]' http://127.0.0.1:8080/git/<path:repo>/logs_tree
 ```
 Response example:
 ```
-{    
+{
     "payload": {
-       "status":"canceled"
-	}
+        "has_next": false,
+        "listing": [
+            {
+                "author": "******",
+                "author_email": "******",
+                "commit": "******",
+                "commit_date": "2021-03-09 23:08:24 +0300",
+                "commit_message": "******",
+                "id": "api",
+                "mode": "040000",
+                "name": "api",
+                "path": "api",
+                "type": "tree"
+            },
+            {
+                "author": "******",
+                "author_email": "******",
+                "commit": "******",
+                "commit_date": "2020-11-18 14:19:53 +0300",
+                "commit_message": "******",
+                "id": "README.md",
+                "mode": "100644",
+                "name": "README.md",
+                "path": "README.md",
+                "type": "blob"
+            },
+            {
+                "author": "******",
+                "author_email": "******",
+                "commit": "******",
+                "commit_date": "2021-01-28 16:36:28 +0300",
+                "commit_message": "******",
+                "id": "config/checkstyle",
+                "mode": "040000",
+                "name": "checkstyle",
+                "path": "config/checkstyle",
+                "type": "tree"
+            }
+        ],
+        "page": 0,
+        "page_size": 3
     },
-    "status":"OK"
+    "status": "OK"
 }
 ```
-- `/uploadUrl/<path>` - returns presigned url to upload file to storage by path cp://CP_CAP_EXPOSE_FS_STORAGE/<task_id>/<path> where `task_id` - random generated string, `path` - file location on compute node.
+
+
+- `POST` `/git/<path:repo>/commits` - returns commits are related to specific path, author, dates. 
+  
 Request example:
 ```
-curl http://127.0.0.1:8080/uploadUrl/data/file.txt
+curl http://127.0.0.1:8080/git/<path:repo>/commits
 ```
-Response example:
+
+Request data: 
 ```
-{    
-    "payload": {
-       "task":"3fcecb8986a34c54939dbaf8c4a2238b",
-	"url": {
-		"expires":"2019-05-30 08:53:49.602",
-		"url":"..."
-	}
-    },
-    "status":"OK"
+{
+    "filter": {
+      "path_masks": ["client/*.js"],
+      "authors": ["Pavel", "ekaterina"],
+      "date_to": "2021-02-01",
+      "date_from": "2020-01-01",
+      "ref": "develop"
+    }
 }
 ```
-- `/upload/<task_id>` - transfers uploaded file from bucket to compute node. If the current task is still in progress but was canceled the created file will be removed.   
+
+Response example:
+```
+"payload": {
+        "listing": [
+            {
+                "author": "******",
+                "author_email": "******",
+                "commit": "******",
+                "commit_date": "2020-12-23 20:51:12 +0300",
+                "commit_message": "******"
+            },
+            {
+                "author": "******",
+                "author_email": "******",
+                "commit": "******",
+                "commit_date": "2020-01-27 13:54:20 +0300",
+                "commit_message": "******"
+            }
+        ],
+        "max_page": 0,
+        "page": 0,
+        "page_size": 20
+    },
+    "status": "OK"
+}
+```
+- `POST` `/git/<path:repo>/diff` - Sends diff information for each commits for specific path, author, dates. 
 Request example:
 ```
-curl http://127.0.0.1:8080/upload/3fcecb8986a34c54939dbaf8c4a2238b
+curl -X POST --data "{...}" http://127.0.0.1:8080/git/<path:repo>/diff
 ```
-Response example:
+
+Possible params:
+
+- `include_diff` - if true will include output of command `git diff` 
+
+
+Request data: 
 ```
-{    
-    "payload": {
-       "task":"3fcecb8986a34c54939dbaf8c4a2238b"
-    },
-    "status":"OK"
+{
+    "filter": {
+      "path_masks": ["client/*.js"],
+      "authors": ["Pavel", "ekaterina"],
+      "date_to": "2021-02-01",
+      "date_from": "2020-01-01",
+      "ref": "develop"
+    }
 }
 ```
-- `/delete/<path>` - removes file/folder from compute node.
-Request example:
-```
-curl http://127.0.0.1:8080/delete/data/file.txt
-```
+
 Response example:
 ```
-{    
+{
     "payload": {
-       "path":"data/file.txt"
+        "entries": [
+            {
+                "commit": {
+                    "author": "******",
+                    "author_email": "******",
+                    "commit": "******",
+                    "commit_date": "2020-12-23 20:51:12 +0300",
+                    "commit_message": "******"
+                },
+                "diff":"*****"
+            },
+            {
+                "commit": {
+                    "author": "******",
+                    "author_email": "******",
+                    "commit": "******",
+                    "commit_date": "2019-09-18 12:50:49 +0300",
+                    "commit_message": "******"
+                },
+                 "diff":"*****"
+            }
+        ],
+        "filters": {
+            "authors": ["Pavel"],
+            "date_from": null,
+            "date_to": "2021-02-01",
+            "path_masks": ["*.js"],
+            "ref": "HEAD"
+        }
     },
-    "status":"OK"
+    "status": "OK"
+}
 }
 ```
+

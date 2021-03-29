@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import os
 import traceback
 
 import flask
@@ -22,6 +23,7 @@ from gitreader.src.git_manager import GitManager
 from gitreader.src.model.git_search_filter import GitSearchFilter
 
 app = Flask(__name__)
+app.config['gitmanager'] = GitManager(os.getenv("CP_GITLAB_REPO_ROOT", "/var/opt/gitlab/git-data/repositories"))
 # Force FLASK to accept both "http://url and http://url/"
 app.url_map.strict_slashes = False
 

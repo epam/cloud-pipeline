@@ -53,7 +53,7 @@ class GitManager(object):
     def list_commits(self, repo_path, filters=None, page=0, page_size=20):
         repo = git.repo.Repo(os.path.join(self.git_root, repo_path))
         has_next, result = self.get_commits(repo, filters, page * page_size, page_size)
-        return GitListing(result, page, page_size, has_next)
+        return GitListing(result, page, page_size, has_next=has_next)
 
     def ls_tree(self, repo_path, path, ref="HEAD", page=0, page_size=20):
         repo = git.repo.Repo(os.path.join(self.git_root, repo_path))
