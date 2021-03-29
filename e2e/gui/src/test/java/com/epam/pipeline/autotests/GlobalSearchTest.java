@@ -122,8 +122,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .selectStorage(storage)
                 .createFolder(storageFolder)
                 .createAndEditFile(storageFile, storageFileContent);
-        home()
-                .globalSearch()
+        search()
                 .ensureVisible(FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES, SEARCH, QUESTION_MARK)
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .close();

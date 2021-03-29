@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,15 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Selenide;
 import com.epam.pipeline.autotests.utils.C;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -74,9 +75,7 @@ public class NavigationMenuAO {
     }
 
     public GlobalSearchAO search() {
-        $(byId("navigation-button-search")).shouldBe(visible).click();
-        sleep(1, SECONDS);
-        $(byClassName("earch__search-container")).waitUntil(visible, 5000);
+        actions().sendKeys(Keys.chord(Keys.CONTROL, "F")).perform();
         return new GlobalSearchAO();
     }
 
