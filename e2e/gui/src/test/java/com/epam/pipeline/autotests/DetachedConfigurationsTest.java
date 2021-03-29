@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
-import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
-import static com.epam.pipeline.autotests.ao.Configuration.priceType;
-import static com.epam.pipeline.autotests.ao.Configuration.startIdle;
-import static com.epam.pipeline.autotests.ao.Configuration.template;
-import static com.epam.pipeline.autotests.ao.Configuration.timeout;
+import static com.epam.pipeline.autotests.ao.Configuration.*;
 import static com.epam.pipeline.autotests.ao.DetachedConfigurationCreationPopup.templatesList;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
@@ -670,7 +666,7 @@ public class DetachedConfigurationsTest
                     .showLog(getLastRunId())
                     .expandTab(INSTANCE)
                     .instanceParameters(p ->
-                            p.ensure(DISK, text(configurationDefaultProfileDiskSize)));
+                            p.ensure(TYPE, text(defaultInstanceType)));
                 library();
             });
         runsMenu()

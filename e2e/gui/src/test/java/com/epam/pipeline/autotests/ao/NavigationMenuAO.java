@@ -23,8 +23,7 @@ import org.openqa.selenium.Keys;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byId;
-import static com.codeborne.selenide.Selectors.byXpath;
+import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
@@ -76,6 +75,8 @@ public class NavigationMenuAO {
 
     public GlobalSearchAO search() {
         actions().sendKeys(Keys.chord(Keys.CONTROL, "F")).perform();
+        sleep(1, SECONDS);
+        $(byClassName("earch__search-container")).waitUntil(visible, 5000);
         return new GlobalSearchAO();
     }
 
