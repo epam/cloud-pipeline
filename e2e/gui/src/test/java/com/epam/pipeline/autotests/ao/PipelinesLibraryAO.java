@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,8 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
             entry(ADD_EXISTING_STORAGE, $(byClassName("add-existing-storage-button"))),
             entry(CREATE_NFS_MOUNT, $(byClassName("create-new-nfs-mount"))),
             entry(ALL_PIPELINES, $(byText("All pipelines"))),
-            entry(ALL_STORAGES, $(byText("All storages")))
+            entry(ALL_STORAGES, $(byText("All storages"))),
+            entry(TABLE, $(byXpath("//tbody")))
     );
 
     public static final By tree = byId("pipelines-library-tree");

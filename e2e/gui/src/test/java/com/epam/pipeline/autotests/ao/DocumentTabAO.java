@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,10 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
             entry(UPLOAD, $(byXpath("//*[contains(@class, 'ant-upload') and @role = 'button']"))),
             entry(RENAME, $(button("Rename"))),
             entry(DELETE, $(button("Delete"))),
-            entry(DOWNLOAD, $(button("Download")))
+            entry(DOWNLOAD, $(button("Download"))),
+            entry(EDIT, $(button("EDIT"))),
+            entry(SAVE, $(button("SAVE"))),
+            entry(FILE_PREVIEW, $(byClassName("pipeline-documents__md-preview")))
     );
 
     public DocumentTabAO(String pipelineName) {
@@ -109,6 +112,21 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
     public String getVersion() {
         String fullText = $(byClassName("browser__item-header")).text();
         return fullText.substring(fullText.lastIndexOf("-") + 1, fullText.lastIndexOf(")"));
+    }
+
+    public DocumentTabAO addStringToReadMeFile(String text) {
+        click(EDIT);
+        $(byXpath("//textarea")).append(text);
+        return this;
+    }
+
+    public DocumentTabAO saveAndCommitWithMessage(String message) {
+        return openCommitDialog().typeInField(message).ok();
+    }
+
+    public CommitPopupAO<DocumentTabAO> openCommitDialog() {
+        click(SAVE);
+        return new CommitPopupAO<>(this);
     }
 
     public class DocumentRenamingPopupAO extends PopupWithStringFieldAO<DocumentRenamingPopupAO, DocumentTabAO> {

@@ -436,6 +436,12 @@
         </classes>
     </test>
 
+    <test name="PipelineLibraryTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.PipelineLibraryTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
