@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import LoadTool from '../../../models/tools/LoadTool';
 import LoadToolAttributes from '../../../models/tools/LoadToolInfo';
 import ToolImage from '../../../models/tools/ToolImage';
@@ -73,7 +74,8 @@ export default class ToolPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    })
+    }),
+    lightMode: PropTypes.bool
   };
 
   @computed
@@ -308,7 +310,16 @@ export default class ToolPreview extends React.Component {
     const attributes = renderAttributes(this.props.metadata);
     const versions = this.renderVersions();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         {this.renderHeader()}
         <div className={styles.content}>
           {highlights && renderSeparator()}

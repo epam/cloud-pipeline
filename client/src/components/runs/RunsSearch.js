@@ -59,6 +59,9 @@ export default class RunsSearch extends localization.LocalizedReactComponent {
   state = {currentPage: 1};
 
   parametersRenderer = (text) => {
+    if (!text || !this.props.search) {
+      return text;
+    }
     let index = 0;
     const parts = [];
     let found = true;

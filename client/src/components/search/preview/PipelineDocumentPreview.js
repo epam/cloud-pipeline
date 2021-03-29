@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import VersionFile from '../../../models/pipelines/VersionFile';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -78,8 +79,9 @@ export default class PipelineDocumentPreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
-      description: PropTypes.string,
-    })
+      description: PropTypes.string
+    }),
+    lightMode: PropTypes.bool
   };
 
   state = {
@@ -352,7 +354,16 @@ export default class PipelineDocumentPreview extends React.Component {
     const highlights = renderHighlights(this.props.item);
     const preview = this.renderPreview();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
           <Row className={styles.title}>
             <span>{this.fileName}</span>

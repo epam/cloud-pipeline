@@ -31,6 +31,9 @@ import MetadataEntityPreview from './MetadataEntityPreview';
 import IssuePreview from './IssuePreview';
 
 export default function preview (props) {
+  if (!props.item) {
+    return null;
+  }
   let Content = DefaultPreview;
   switch (props.item.type) {
     case SearchItemTypes.azFile:
@@ -56,6 +59,6 @@ export default function preview (props) {
     return null;
   }
   return (
-    <Content item={props.item} />
+    <Content item={props.item} lightMode={props.lightMode} />
   );
 }

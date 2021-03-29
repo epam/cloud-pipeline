@@ -67,12 +67,14 @@ import ToolSettings from '../tools/tool-version/settings';
 import ToolPackages from '../tools/tool-version/packages';
 import ToolHistory from '../tools/tool-version/history';
 import ProjectHistory from '../pipelines/browser/ProjectHistory';
+import {FacetedSearchPage} from '../search';
 
 @inject('history')
 export default class AppRouter extends React.Component {
   render () {
     return <Router history={this.props.history}>
       <Route component={App}>
+        <Route path="search/advanced" component={FacetedSearchPage} />
         <Route path="search" component={RunsSearch} />
         <Redirect from="/settings" to="/settings/cli" />
         <Route path="/settings" component={SettingsForm}>

@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {metadataLoad, renderAttributes} from './renderAttributes';
@@ -82,7 +83,9 @@ const downloadUrlLoad = (params, dataStorageCache) => {
   return {
     preview: previewLoad(params, dataStorageCache),
     downloadUrl: downloadUrlLoad(params, dataStorageCache),
-    dataStorageInfo: params.item && params.item.parentId ? dataStorages.load(params.item.parentId) : null,
+    dataStorageInfo: params.item && params.item.parentId
+      ? dataStorages.load(params.item.parentId)
+      : null,
     metadata: metadataLoad(params, 'DATA_STORAGE_ITEM', stores)
   };
 })
@@ -93,8 +96,9 @@ export default class S3FilePreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
-      description: PropTypes.string,
-    })
+      description: PropTypes.string
+    }),
+    lightMode: PropTypes.bool
   };
 
   state = {
@@ -379,7 +383,16 @@ export default class S3FilePreview extends React.Component {
     const attributes = renderAttributes(this.props.metadata, true);
     const preview = this.renderPreview();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
           <Row className={styles.title}>
             <Icon type={PreviewIcons[this.props.item.type]} />

@@ -15,27 +15,9 @@
  */
 
 import RemotePost from '../basic/RemotePost';
-
-export const SearchItemTypes = {
-  run: 'PIPELINE_RUN',
-  s3Bucket: 'S3_STORAGE',
-  s3File: 'S3_FILE',
-  NFSFile: 'NFS_FILE',
-  NFSBucket: 'NFS_STORAGE',
-  gsFile: 'GS_FILE',
-  gsStorage: 'GS_STORAGE',
-  azFile: 'AZ_BLOB_FILE',
-  azStorage: 'AZ_BLOB_STORAGE',
-  pipeline: 'PIPELINE',
-  tool: 'TOOL',
-  toolGroup: 'TOOL_GROUP',
-  dockerRegistry: 'DOCKER_REGISTRY',
-  issue: 'ISSUE',
-  metadataEntity: 'METADATA_ENTITY',
-  folder: 'FOLDER',
-  configuration: 'CONFIGURATION',
-  pipelineCode: 'PIPELINE_CODE'
-};
+import SearchItemTypes from './search-item-types';
+export {default as FacetedSearch} from './facet';
+export {SearchItemTypes};
 
 export class Search extends RemotePost {
   query;

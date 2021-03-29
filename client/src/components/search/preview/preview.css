@@ -22,6 +22,10 @@
   overflow: auto;
 }
 
+.container.light {
+  color: #555;
+}
+
 .header {
   font-size: x-large;
   padding: 10px;
@@ -60,11 +64,22 @@
   color: #ccc;
 }
 
+.container.light .header span,
+.container.light .header i,
+.container.light .header .description,
+.container.light .header .tool-description {
+  color: #555;
+}
+
 .description.tags > span {
   font-size: small;
   padding: 2px 5px;
   border-radius: 2px;
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.container.light .description.tags > span {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .highlights,
@@ -109,6 +124,18 @@
   word-break: break-all;
 }
 
+.container.light .attribute-name {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.container.light .attribute-value {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.container.light .attribute-value:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
 .highlights > table,
 .info > table,
 .attributes > table,
@@ -128,10 +155,19 @@
   color: #ccc;
 }
 
+.container.light .highlight {
+  background-color: transparent;
+  color: #555;
+}
+
 .csv-table {
   border: 1px solid #666;
   background-color: rgba(255, 255, 255, 0.05);
   min-width: 100%;
+}
+
+.container.light .csv-table {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .run-table {
@@ -146,10 +182,18 @@
   color: #ccc;
 }
 
+.container.light .run-table .run i {
+  color: #555;
+}
+
 .csv-cell {
   white-space: nowrap;
   padding: 5px;
   border: 1px solid #666;
+}
+
+.container.light .csv-cell {
+  border-color: #ccc;
 }
 
 .content-preview .task span,
@@ -171,6 +215,19 @@
 .md-preview h5,
 .md-preview h6 {
   color: #ccc;
+}
+
+.container.light .content-preview .task span,
+.container.light .content-preview .task i,
+.container.light .content-preview .task code,
+.container.light .md-preview,
+.container.light .md-preview h1,
+.container.light .md-preview h2,
+.container.light .md-preview h3,
+.container.light .md-preview h4,
+.container.light .md-preview h5,
+.container.light .md-preview h6 {
+  color: #555;
 }
 
 .md-preview code {

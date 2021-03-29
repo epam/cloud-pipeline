@@ -90,6 +90,7 @@ export default class App extends Component {
       roleModel.isManager.billing(this);
     const isMiewApp = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase() === 'miew';
     const activeTabPath = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase();
+    const isSearch = /[\\/]+search\/advanced/i.test(this.props.router.location.pathname);
     let content;
     if (isMiewApp) {
       content = this.props.children;
@@ -138,7 +139,7 @@ export default class App extends Component {
           <SearchDialog
             onInitialized={this.onSearchDialogInitialized}
             router={this.props.router}
-            blockInput={activeTabPath === 'run'}
+            blockInput={activeTabPath === 'run' || isSearch}
             onVisibilityChanged={this.onSearchControlVisibilityChanged} />
           {content}
           <NotificationCenter delaySeconds={2} />

@@ -15,15 +15,18 @@
  */
 
 import {SearchItemTypes} from '../../models/search';
+import displayCount from '../../utils/displayCount';
+
+const pluralString = (plural) => plural === undefined ? 's' : plural;
 
 const countString = (key, localizationFn, count = 0, plural) =>
-  count === 0 || count === null
-  ? `${localizationFn(key)}${plural === undefined ? 's' : plural}`
-  : (
-    count > 1
-      ? `${count} ${localizationFn(key.toLowerCase())}${plural === undefined ? 's' : plural}`
-      : `${count} ${localizationFn(key.toLowerCase())}`
-  );
+  !count
+    ? `${localizationFn(key)}${pluralString(plural)}`
+    : (
+      count > 1
+        ? `${displayCount(count, true)} ${localizationFn(key.toLowerCase())}${pluralString(plural)}`
+        : `${count} ${localizationFn(key.toLowerCase())}`
+    );
 
 const titleFn = (key, pluralStr) =>
   (localizationFn) =>
@@ -34,22 +37,34 @@ export const SearchGroupTypes = {
   folder: {
     types: [SearchItemTypes.folder, SearchItemTypes.metadataEntity],
     icon: 'folder',
-    title: titleFn('Folder')
+    title: titleFn('Folder'),
+    test (o) {
+      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
+    }
   },
   pipeline: {
     types: [SearchItemTypes.pipeline, SearchItemTypes.configuration, SearchItemTypes.pipelineCode],
     icon: 'fork',
-    title: titleFn('Pipeline')
+    title: titleFn('Pipeline'),
+    test (o) {
+      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
+    }
   },
   run: {
     types: [SearchItemTypes.run],
     icon: 'play-circle',
-    title: titleFn('Run')
+    title: titleFn('Run'),
+    test (o) {
+      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
+    }
   },
   tool: {
     types: [SearchItemTypes.tool, SearchItemTypes.dockerRegistry, SearchItemTypes.toolGroup],
     icon: 'tool',
-    title: titleFn('Tool')
+    title: titleFn('Tool'),
+    test (o) {
+      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
+    }
   },
   storage: {
     types: [
@@ -63,11 +78,17 @@ export const SearchGroupTypes = {
       SearchItemTypes.gsStorage
     ],
     icon: 'file',
-    title: titleFn('Data', '')
+    title: titleFn('Data', ''),
+    test (o) {
+      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
+    }
   },
   issue: {
     types: [SearchItemTypes.issue],
     icon: 'message',
-    title: titleFn('Issue')
+    title: titleFn('Issue'),
+    test (o) {
+      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
+    }
   }
 };

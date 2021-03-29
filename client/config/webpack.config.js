@@ -361,7 +361,7 @@ module.exports = function (webpackEnv) {
                   ? shouldUseSourceMap
                   : isEnvDevelopment
               }),
-              include: /(node_modules|src\/staticStyles)/,
+              include: /(node_modules|src[\\/]staticStyles)/,
               // Don't consider CSS imports dead code even if the
               // containing package claims to have no side effects.
               // Remove this when webpack adds a warning or an error for this.
@@ -380,7 +380,7 @@ module.exports = function (webpackEnv) {
                 localIdentName: '[name]__[local]',
                 getLocalIdent: getLocalIdent
               }),
-              exclude: /(node_modules|src\/staticStyles)/,
+              exclude: /(node_modules|src[\\/]staticStyles)/,
               // Don't consider CSS imports dead code even if the
               // containing package claims to have no side effects.
               // Remove this when webpack adds a warning or an error for this.

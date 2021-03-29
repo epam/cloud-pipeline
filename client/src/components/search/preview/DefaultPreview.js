@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
@@ -29,8 +30,9 @@ export default class DefaultPreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
-      description: PropTypes.string,
-    })
+      description: PropTypes.string
+    }),
+    lightMode: PropTypes.bool
   };
 
   render () {
@@ -39,7 +41,16 @@ export default class DefaultPreview extends React.Component {
     }
     const highlights = renderHighlights(this.props.item);
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
