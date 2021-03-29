@@ -531,6 +531,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
                 .ensure(STATUS, text(testRunID_2668))
                 .shouldHaveStatus(STOPPED);
+        home();
         search()
                 .click(RUNS)
                 .search(testRunID_2668)
