@@ -19,7 +19,6 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.utils.StreamUtils;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -52,6 +51,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.HIDDEN_FILE_NAME;
@@ -67,9 +67,10 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     private final DataStorageType type = DataStorageType.AZ;
 
     @Override
-    public Stream<DataStorageFile> files(final AbstractDataStorage storage,
-                                         final TemporaryCredentials credentials) {
-        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentials), ""))
+    public Stream<DataStorageFile> files(final String storage,
+                                         final String path,
+                                         final Supplier<TemporaryCredentials> credentialsSupplier) {
+        return StreamUtils.from(new AzureFlatSegmentIterator(buildContainerUrl(storage, credentialsSupplier), path))
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
                         .map(BlobFlatListSegment::blobItems)
@@ -81,18 +82,20 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     }
 
     @Override
-    public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
-                                                          final TemporaryCredentials credentials) {
-        return files(storage, credentials);
+    public Stream<DataStorageFile> versionsWithNativeTags(final String storage,
+                                                          final String path,
+                                                          final Supplier<TemporaryCredentials> credentialsSupplier) {
+        return files(storage, path, credentialsSupplier);
     }
 
-    private ContainerURL buildContainerUrl(final AbstractDataStorage storage,
-                                           final TemporaryCredentials credentials) {
-        final AnonymousCredentials creds = new AnonymousCredentials();
+    private ContainerURL buildContainerUrl(final String storage,
+                                           final Supplier<TemporaryCredentials> credentialsSupplier) {
+        // TODO 26.03.2021: Support temporary credentials refresh mechanism
+        final TemporaryCredentials credentials = credentialsSupplier.get();
         final ServiceURL serviceURL = new ServiceURL(
                 url(String.format(BLOB_URL_FORMAT, credentials.getAccessKey(), credentials.getToken())),
-                StorageURL.createPipeline(creds, new PipelineOptions()));
-        return serviceURL.createContainerURL(storage.getPath());
+                StorageURL.createPipeline(new AnonymousCredentials(), new PipelineOptions()));
+        return serviceURL.createContainerURL(storage);
     }
 
     private DataStorageFile convertToStorageFile(final BlobItem blob) {

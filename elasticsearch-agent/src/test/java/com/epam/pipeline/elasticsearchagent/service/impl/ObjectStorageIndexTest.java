@@ -34,6 +34,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,7 +48,7 @@ public class ObjectStorageIndexTest {
     private static final String TEST_BLOB_NAME_2 = "2";
 
     private final AbstractDataStorage dataStorage = new GSBucketStorage();
-    private final TemporaryCredentials temporaryCredentials = new TemporaryCredentials();
+    private final Supplier<TemporaryCredentials> temporaryCredentials = TemporaryCredentials::new;
     
     @Mock
     private IndexRequestContainer requestContainer;
@@ -94,7 +95,7 @@ public class ObjectStorageIndexTest {
     private void setUpReturnValues(final List<DataStorageFile> files) {
         Mockito.doAnswer(i -> files.stream())
                .when(fileManager)
-               .files(dataStorage, temporaryCredentials);
+               .files(any(), any(), temporaryCredentials);
     }
 
     private void verifyNumberOfInsertions(final int numberOfInvocation) {

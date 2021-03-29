@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -59,7 +60,9 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                         final boolean isVersioningEnabled = storage.isVersioningEnabled();
                         Optional.ofNullable(storage.getType()).map(fileManagers::get)
                                 .map(fileManager -> fileManager
-                                        .versionsWithNativeTags(storage, getTemporaryCredentials(storage))
+                                        .versionsWithNativeTags(storage.getRoot(),
+                                            Optional.ofNullable(storage.getPrefix()).orElse(StringUtils.EMPTY),
+                                            () -> getTemporaryCredentials(storage))
                                         .map(chunk -> isVersioningEnabled ? versionedTags(chunk) : tags(chunk))
                                         .map(stream -> stream.collect(Collectors.toList()))
                                         .filter(CollectionUtils::isNotEmpty))
@@ -99,6 +102,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
     }
 
     private TemporaryCredentials getTemporaryCredentials(final AbstractDataStorage storage) {
+        log.debug("Retrieving {} data storage {} temporary credentials...", storage.getType(), storage.getPath());
         final DataStorageAction action = new DataStorageAction();
         action.setBucketName(storage.getPath());
         action.setId(storage.getId());

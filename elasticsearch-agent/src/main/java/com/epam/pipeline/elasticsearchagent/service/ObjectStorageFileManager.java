@@ -16,11 +16,11 @@
 
 package com.epam.pipeline.elasticsearchagent.service;
 
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -30,10 +30,12 @@ public interface ObjectStorageFileManager {
     
     DataStorageType getType();
 
-    Stream<DataStorageFile> files(AbstractDataStorage storage,
-                                  TemporaryCredentials credentials);
+    Stream<DataStorageFile> files(String storage,
+                                  String path,
+                                  Supplier<TemporaryCredentials> credentialsSupplier);
 
-    Stream<DataStorageFile> versionsWithNativeTags(AbstractDataStorage storage,
-                                                   TemporaryCredentials credentials);
+    Stream<DataStorageFile> versionsWithNativeTags(String storage,
+                                                   String path,
+                                                   Supplier<TemporaryCredentials> credentialsSupplier);
 
 }

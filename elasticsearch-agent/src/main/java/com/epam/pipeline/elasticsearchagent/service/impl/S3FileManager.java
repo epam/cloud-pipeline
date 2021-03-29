@@ -15,8 +15,8 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.amazonaws.auth.AWSRefreshableSessionCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
@@ -31,7 +31,6 @@ import com.amazonaws.services.s3.model.VersionListing;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.utils.StreamUtils;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -49,6 +48,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,42 +66,77 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     @Override
-    public Stream<DataStorageFile> files(final AbstractDataStorage storage,
-                                         final TemporaryCredentials credentials) {
-        final AmazonS3 client = getS3Client(credentials);
-        return StreamUtils.from(new S3PageIterator(client, storage.getPath(), ""))
+    public Stream<DataStorageFile> files(final String storage,
+                                         final String path,
+                                         Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier);
+        return StreamUtils.from(new S3PageIterator(client, storage, path))
                 .flatMap(List::stream);
     }
 
     @Override
-    public Stream<DataStorageFile> versionsWithNativeTags(final AbstractDataStorage storage,
-                                                          final TemporaryCredentials credentials) {
-        final AmazonS3 client = getS3Client(credentials);
-        return StreamUtils.from(new S3VersionPageIterator(client, storage.getPath(), ""))
+    public Stream<DataStorageFile> versionsWithNativeTags(final String storage,
+                                                          final String path,
+                                                          final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier);
+        return StreamUtils.from(new S3VersionPageIterator(client, storage, path))
                 .flatMap(List::stream)
                 .filter(file -> !file.getDeleteMarker())
                 .peek(file -> file.setTags(getNativeTags(client, storage, file)));
     }
 
-    private AmazonS3 getS3Client(final TemporaryCredentials credentials) {
-        BasicSessionCredentials sessionCredentials = new BasicSessionCredentials(credentials.getKeyId(),
-                credentials.getAccessKey(), credentials.getToken());
+    private AmazonS3 getS3Client(final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final CloudPipelineAWSRefreshableSessionCredentials credentials = 
+                new CloudPipelineAWSRefreshableSessionCredentials(credentialsSupplier);
+        credentials.refreshCredentials();
 
         return AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                .withCredentials(new AWSStaticCredentialsProvider(credentials))
                 .withRegion(credentials.getRegion())
                 .build();
     }
 
     private Map<String, String> getNativeTags(final AmazonS3 client,
-                                              final AbstractDataStorage dataStorage,
+                                              final String storage,
                                               final DataStorageFile file) {
         final GetObjectTaggingResult tagging = client.getObjectTagging(new GetObjectTaggingRequest(
-                dataStorage.getRoot(), file.getPath(), file.getVersion()));
+                storage, file.getPath(), file.getVersion()));
         return CollectionUtils.emptyIfNull(tagging.getTagSet())
                 .stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(Tag::getKey, Tag::getValue));
+    }
+
+    @RequiredArgsConstructor
+    public static class CloudPipelineAWSRefreshableSessionCredentials implements AWSRefreshableSessionCredentials {
+
+        private final Supplier<TemporaryCredentials> refresh;
+
+        private TemporaryCredentials credentials;
+
+        @Override
+        public String getAWSAccessKeyId() {
+            return credentials.getKeyId();
+        }
+
+        @Override
+        public String getAWSSecretKey() {
+            return credentials.getAccessKey();
+        }
+
+        @Override
+        public String getSessionToken() {
+            return credentials.getToken();
+        }
+
+        @Override
+        public void refreshCredentials() {
+            credentials = refresh.get();
+        }
+
+        public String getRegion() {
+            return Optional.ofNullable(credentials).map(TemporaryCredentials::getRegion).orElse(null);
+        }
     }
 
     @RequiredArgsConstructor

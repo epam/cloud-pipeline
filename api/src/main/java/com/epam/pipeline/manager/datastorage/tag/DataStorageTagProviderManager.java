@@ -44,19 +44,19 @@ public class DataStorageTagProviderManager {
                                final String path,
                                final String version) {
         final String authorizedUser = authManager.getAuthorizedUser();
-        final String relativePath = storage.resolveRootPath(path);
+        final String absolutePath = storage.resolveAbsolutePath(path);
         final Map<String, String> defaultTags = Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, authorizedUser);
-        tagManager.insert(storage.getRootId(), new DataStorageObject(relativePath, null), defaultTags);
+        tagManager.insert(storage.getRootId(), new DataStorageObject(absolutePath, null), defaultTags);
         if (storage.isVersioningEnabled()) {
-            tagManager.insert(storage.getRootId(), new DataStorageObject(relativePath, version), defaultTags);
+            tagManager.insert(storage.getRootId(), new DataStorageObject(absolutePath, version), defaultTags);
         }
     }
 
     public Map<String, String> loadFileTags(final AbstractDataStorage storage,
                                             final String path,
                                             final String version) {
-        final String relativePath = storage.resolveRootPath(path);
-        final DataStorageObject object = new DataStorageObject(relativePath, version);
+        final String absolutePath = storage.resolveAbsolutePath(path);
+        final DataStorageObject object = new DataStorageObject(absolutePath, version);
         return mapFrom(tagManager.load(storage.getRootId(), object));
     }
 
@@ -65,7 +65,7 @@ public class DataStorageTagProviderManager {
                                               final String version,
                                               final Map<String, String> tagsToAdd,
                                               final Boolean rewrite) {
-        final String relativePath = storage.resolveRootPath(path);
+        final String absolutePath = storage.resolveAbsolutePath(path);
         final Function<DataStorageObject, List<DataStorageTag>> updateTags = rewrite
                 ? object -> tagManager.insert(storage.getRootId(), object, tagsToAdd)
                 : object -> tagManager.upsert(storage.getRootId(), object, tagsToAdd);
@@ -74,37 +74,37 @@ public class DataStorageTagProviderManager {
                     .map(DataStorageFile::getVersion)
                     .map(latestVersion ->
                             StringUtils.isBlank(version)
-                                    ? new DataStorageObject(relativePath, latestVersion)
+                                    ? new DataStorageObject(absolutePath, latestVersion)
                                     : latestVersion.equals(version)
-                                    ? new DataStorageObject(relativePath)
+                                    ? new DataStorageObject(absolutePath)
                                     : null)
                     .ifPresent(updateTags::apply);
         }
-        return mapFrom(updateTags.apply(new DataStorageObject(relativePath, version)));
+        return mapFrom(updateTags.apply(new DataStorageObject(absolutePath, version)));
     }
 
     public void moveFileTags(final AbstractDataStorage storage,
                              final String oldPath,
                              final String newPath,
                              final String newVersion) {
-        final String oldRelativePath = storage.resolveRootPath(oldPath);
-        final String newRelativePath = storage.resolveRootPath(newPath);
+        final String oldAbsolutePath = storage.resolveAbsolutePath(oldPath);
+        final String newAbsolutePath = storage.resolveAbsolutePath(newPath);
         final Map<String, String> tagMap = mapFrom(tagManager.load(storage.getRootId(),
-                new DataStorageObject(oldRelativePath)));
-        tagManager.upsert(storage.getRootId(), new DataStorageObject(newRelativePath), tagMap);
+                new DataStorageObject(oldAbsolutePath)));
+        tagManager.upsert(storage.getRootId(), new DataStorageObject(newAbsolutePath), tagMap);
         if (storage.isVersioningEnabled()) {
-            tagManager.upsert(storage.getRootId(), new DataStorageObject(newRelativePath, newVersion), tagMap);
+            tagManager.upsert(storage.getRootId(), new DataStorageObject(newAbsolutePath, newVersion), tagMap);
         } else {
-            tagManager.delete(storage.getRootId(), new DataStorageObject(oldRelativePath));
+            tagManager.delete(storage.getRootId(), new DataStorageObject(oldAbsolutePath));
         }
     }
 
     public void moveFolderTags(final AbstractDataStorage storage,
                                final String oldPath,
                                final String newPath) {
-        final String oldRelativePath = storage.resolveRootPath(oldPath);
-        final String newRelativePath = storage.resolveRootPath(newPath);
-        tagManager.copyFolder(storage.getRootId(), oldRelativePath, newRelativePath);
+        final String oldAbsolutePath = storage.resolveAbsolutePath(oldPath);
+        final String newAbsolutePath = storage.resolveAbsolutePath(newPath);
+        tagManager.copyFolder(storage.getRootId(), oldAbsolutePath, newAbsolutePath);
         if (storage.isVersioningEnabled()) {
             StreamUtils.chunked(storageProviderManager.listFiles(storage, newPath + storage.getDelimiter()),
                     getOperationsBulkSize())
@@ -115,33 +115,33 @@ public class DataStorageTagProviderManager {
                                             DataStorageTagCopyRequest.object(file.getPath(), file.getVersion())))
                                     .collect(Collectors.toList()))));
         } else {
-            tagManager.deleteAllInFolder(storage.getRootId(), oldRelativePath);
+            tagManager.deleteAllInFolder(storage.getRootId(), oldAbsolutePath);
         }
     }
 
     public void restoreFileTags(final AbstractDataStorage storage,
                                 final String path,
                                 final String version) {
-        final String relativePath = storage.resolveRootPath(path);
+        final String absolutePath = storage.resolveAbsolutePath(path);
         storageProviderManager.findFile(storage, path)
                 .map(DataStorageFile::getVersion)
                 .ifPresent(latestVersion -> {
                     tagManager.copy(storage.getRootId(),
-                            new DataStorageObject(relativePath, version),
-                            new DataStorageObject(relativePath));
+                            new DataStorageObject(absolutePath, version),
+                            new DataStorageObject(absolutePath));
                     tagManager.copy(storage.getRootId(),
-                            new DataStorageObject(relativePath, version),
-                            new DataStorageObject(relativePath, latestVersion));
+                            new DataStorageObject(absolutePath, version),
+                            new DataStorageObject(absolutePath, latestVersion));
                 });
-        tagManager.delete(storage.getRootId(), new DataStorageObject(relativePath, version));
+        tagManager.delete(storage.getRootId(), new DataStorageObject(absolutePath, version));
     }
 
     public void deleteFileTags(final AbstractDataStorage storage,
                                final String path,
                                final String version,
                                final Set<String> tags) {
-        final String relativePath = storage.resolveRootPath(path);
-        final DataStorageObject object = new DataStorageObject(relativePath, version);
+        final String absolutePath = storage.resolveAbsolutePath(path);
+        final DataStorageObject object = new DataStorageObject(absolutePath, version);
         final List<DataStorageTag> existingTags = tagManager.load(storage.getRootId(), object);
         tags.forEach(tag -> Assert.isTrue(existingTags.stream().anyMatch(it -> it.getKey().equals(tag)),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag)));
@@ -150,9 +150,9 @@ public class DataStorageTagProviderManager {
                     .map(DataStorageFile::getVersion)
                     .map(latestVersion ->
                             StringUtils.isBlank(version)
-                                    ? new DataStorageObject(relativePath, latestVersion)
+                                    ? new DataStorageObject(absolutePath, latestVersion)
                                     : latestVersion.equals(version)
-                                    ? new DataStorageObject(relativePath)
+                                    ? new DataStorageObject(absolutePath)
                                     : null)
                     .ifPresent(obj -> tagManager.delete(storage.getRootId(), obj, tags));
         }
@@ -163,25 +163,25 @@ public class DataStorageTagProviderManager {
                                final String path,
                                final String version,
                                final Boolean totally) {
-        final String relativePath = storage.resolveRootPath(path);
+        final String absolutePath = storage.resolveAbsolutePath(path);
         if (storage.isVersioningEnabled()) {
             if (version != null) {
                 final Optional<String> latestVersion = storageProviderManager.findFile(storage, path)
                         .map(DataStorageFile::getVersion);
                 if (latestVersion.isPresent()) {
                     tagManager.copy(storage.getRootId(),
-                            new DataStorageObject(relativePath, latestVersion.get()),
-                            new DataStorageObject(relativePath));
-                    tagManager.delete(storage.getRootId(), new DataStorageObject(relativePath, version));
+                            new DataStorageObject(absolutePath, latestVersion.get()),
+                            new DataStorageObject(absolutePath));
+                    tagManager.delete(storage.getRootId(), new DataStorageObject(absolutePath, version));
                 } else {
-                    tagManager.delete(storage.getRootId(), new DataStorageObject(relativePath, version));
-                    tagManager.delete(storage.getRootId(), new DataStorageObject(relativePath));
+                    tagManager.delete(storage.getRootId(), new DataStorageObject(absolutePath, version));
+                    tagManager.delete(storage.getRootId(), new DataStorageObject(absolutePath));
                 }
             } else if (totally) {
-                tagManager.deleteAll(storage.getRootId(), relativePath);
+                tagManager.deleteAll(storage.getRootId(), absolutePath);
             }
         } else {
-            tagManager.deleteAll(storage.getRootId(), relativePath);
+            tagManager.deleteAll(storage.getRootId(), absolutePath);
         }
     }
 
@@ -189,7 +189,7 @@ public class DataStorageTagProviderManager {
                                  final String path,
                                  final Boolean totally) {
         if (!storage.isVersioningEnabled() || totally) {
-            tagManager.deleteAllInFolder(storage.getRootId(), storage.resolveRootPath(path));
+            tagManager.deleteAllInFolder(storage.getRootId(), storage.resolveAbsolutePath(path));
         }
     }
 
