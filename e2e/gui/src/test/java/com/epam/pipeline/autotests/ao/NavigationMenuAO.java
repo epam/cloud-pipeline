@@ -74,7 +74,7 @@ public class NavigationMenuAO {
     }
 
     public GlobalSearchAO search() {
-        actions().sendKeys(Keys.chord(Keys.CONTROL, "F")).perform();
+        actions().sendKeys(Keys.chord(Keys.CONTROL, "F"));
         sleep(3, SECONDS);
         $(byClassName("earch__search-container")).waitUntil(visible, 5000);
         return new GlobalSearchAO();
