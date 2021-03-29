@@ -4,6 +4,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyBatchRequest;
@@ -163,6 +164,10 @@ public class DataStorageTagProviderManager {
                                final String path,
                                final String version,
                                final Boolean totally) {
+        if (storage.getType() == DataStorageType.GS && ProviderUtils.isSyntheticDeletionMarker(version)) {
+            restoreFileTags(storage, path, ProviderUtils.getVersionFromSyntheticDeletionMarker(version));
+            return;
+        }
         final String absolutePath = storage.resolveAbsolutePath(path);
         if (storage.isVersioningEnabled()) {
             if (version != null) {
