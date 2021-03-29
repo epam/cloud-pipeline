@@ -142,7 +142,7 @@ dependencies {
 
     //Kubernetes
     compile "io.fabric8:kubernetes-client:2.2.7"
-    compile "io.fabric8:kubernetes-model:1.0.67"
+    compile "io.fabric8:kubernetes-model:2.1.2"
 
     //Lombok
     compileOnly "org.projectlombok:lombok:1.16.16"

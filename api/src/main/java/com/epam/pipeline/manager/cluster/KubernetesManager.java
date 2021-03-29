@@ -24,6 +24,8 @@ import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
@@ -92,6 +94,9 @@ public class KubernetesManager {
 
     @Autowired
     private MessageHelper messageHelper;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     @Value("${kube.namespace}")
     private String kubeNamespace;
@@ -595,6 +600,19 @@ public class KubernetesManager {
                 .equals(conditions.get(0).getReason());
     }
 
+    public void getOrCreatePodDnsService() {
+        final String name = preferenceManager.getPreference(SystemPreferences.KUBE_POD_SERVICE);
+        try(KubernetesClient client = getKubernetesClient()) {
+            final Optional<Service> service = findServiceByName(client, name);
+            if (service.isPresent()) {
+                return;
+            }
+            createService(name,
+                    Collections.singletonMap(KubernetesConstants.TYPE_LABEL, KubernetesConstants.PIPELINE_TYPE),
+                    null);
+        }
+    }
+
     private ServiceDescription getServiceDescription(final Service service) {
         final Map<String, String> labels = service.getMetadata().getLabels();
         final String scheme = getValueFromLabelsOrDefault(labels, kubeEdgeSchemeLabel, () -> DEFAULT_SVC_SCHEME);
@@ -711,18 +729,18 @@ public class KubernetesManager {
         return !isNodeAvailable(node);
     }
 
-    public Service createService(final String serviceName, final Map<String, String> runIdMap,
+    public Service createService(final String serviceName, final Map<String, String> labels,
                                  final List<ServicePort> ports) {
         try (KubernetesClient client = getKubernetesClient()) {
             final Service service = client.services().createNew()
                     .withNewMetadata()
                     .withName(serviceName)
                     .withNamespace(kubeNamespace)
-                    .withLabels(runIdMap)
+                    .withLabels(labels)
                     .endMetadata()
                     .withNewSpec()
                     .withPorts(ports)
-                    .withSelector(runIdMap)
+                    .withSelector(labels)
                     .endSpec()
                     .done();
             Assert.notNull(service, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, serviceName));
@@ -759,5 +777,12 @@ public class KubernetesManager {
             LOGGER.error("More than one service was found for label {}={}.", labelName, labelValue);
         }
         return Optional.of(items.get(0));
+    }
+
+    private Optional<Service> findServiceByName(final KubernetesClient client, final String name) {
+        final Service item = client.services()
+                .withName(name)
+                .get();
+        return Optional.of(item);
     }
 }
