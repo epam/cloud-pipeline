@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.event;
 
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -35,9 +36,10 @@ public class StartupApplicationListenerTest {
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager =
             mock(PipelineRunDockerOperationManager.class);
     private final ContextRefreshedEvent event = mock(ContextRefreshedEvent.class);
+    private final KubernetesManager kubernetesManager = mock(KubernetesManager.class);
 
     private final StartupApplicationListener listener = new StartupApplicationListener(dockerRegistryManager,
-            cloudRegionManager, pipelineRunDockerOperationManager);
+            cloudRegionManager, pipelineRunDockerOperationManager, kubernetesManager);
 
     @Before
     public void setup() {

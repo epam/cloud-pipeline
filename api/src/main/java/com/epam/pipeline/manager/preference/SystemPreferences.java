@@ -427,6 +427,15 @@ public class SystemPreferences {
     public static final StringPreference KUBE_SERVICE_SUFFIX = new StringPreference("launch.kube.service.suffix",
             "svc.cluster.local", LAUNCH_GROUP, pass);
 
+    public static final BooleanPreference KUBE_POD_DOMAINS_ENABLED = new BooleanPreference(
+            "launch.kube.pod.domains.enabled", true, LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SERVICE = new StringPreference("launch.kube.pod.service",
+            "pods", LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SUBDOMAIN = new StringPreference("launch.kube.pod.subdomain",
+            "pods", LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
+            "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
+
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
             "sleep infinity", DTS_GROUP, pass);
