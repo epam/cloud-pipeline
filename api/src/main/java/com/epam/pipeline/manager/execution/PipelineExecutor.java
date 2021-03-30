@@ -322,7 +322,7 @@ public class PipelineExecutor {
     private Volume createVolume(String name, String hostPath) {
         Volume volume = new Volume();
         volume.setName(name);
-        volume.setHostPath(new HostPathVolumeSource(hostPath, "HostPath"));
+        volume.setHostPath(new HostPathVolumeSource(hostPath, StringUtils.EMPTY));
         return volume;
     }
 
