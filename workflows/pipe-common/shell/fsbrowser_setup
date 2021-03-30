@@ -53,10 +53,13 @@ if [ -z "$CP_FSBROWSER_VS_WD" ]; then
             echo "[ERROR] Working directory for versioned storages is not defined (git.fsbrowser.workdir). FSBrowser will NOT be configured"
             exit 1
     fi
-    mkdir -p ${CP_FSBROWSER_VS_WD}
 fi
 
-if ! fsbrowser -h > /dev/null 2>&1; then
+mkdir -p ${CP_FSBROWSER_VS_WD}
+
+_SSL_CERT_DIR="${SSL_CERT_DIR:-/etc/ssl/certs/}"
+
+if ! env SSL_CERT_DIR="$_SSL_CERT_DIR" fsbrowser -h > /dev/null 2>&1; then
     echo "[ERROR] Cannot load 'fsbrowser' command"
     exit 1
 fi
@@ -66,7 +69,7 @@ echo "- Port:        $CP_FSBROWSER_PORT"
 echo "- WD:          $CP_FSBROWSER_WD"
 echo "- Git workdir: $CP_FSBROWSER_VS_WD"
 echo "- Storage:     $CP_FSBROWSER_STORAGE"
-nohup fsbrowser --host 0.0.0.0 \
+env SSL_CERT_DIR="$_SSL_CERT_DIR" nohup fsbrowser --host 0.0.0.0 \
                 --port "${CP_FSBROWSER_PORT}" \
                 --working_directory "${CP_FSBROWSER_WD}" \
                 --vs_working_directory "${CP_FSBROWSER_VS_WD}" \
