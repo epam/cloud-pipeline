@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">2</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">6m29.40s</div>
+<div class="counter">6m21.46s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">96%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,58 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146"></a>
-<h3 class="failures">validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146</h3>
-<span class="code">
-<pre>Element should text '17' {By.xpath: .//*[contains(@class, 'log__node-parameter-name') and text() = 'Disk']/following-sibling::*[contains(@class, 'log__node-parameter-value')]}
-Element: '&lt;span class=&quot;log__node-parameter-value&quot;&gt;20 Gb&lt;/span&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1617006787333.64.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1617006787333.64.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:227)
-	at com.epam.pipeline.autotests.DetachedConfigurationsTest.lambda$null$46(DetachedConfigurationsTest.java:673)
-	at com.epam.pipeline.autotests.ao.LogAO.instanceParameters(LogAO.java:308)
-	at com.epam.pipeline.autotests.DetachedConfigurationsTest.lambda$validateRunSingleConfigFromDetachedConfiguration$47(DetachedConfigurationsTest.java:672)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.configurationWithin(PipelinesLibraryAO.java:420)
-	at com.epam.pipeline.autotests.DetachedConfigurationsTest.validateRunSingleConfigFromDetachedConfiguration(DetachedConfigurationsTest.java:664)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -124,151 +79,160 @@ Timeout: 80 s.
 </thead>
 <tr>
 <td class="success">addParameterToDetachedConfiguration - EPMCMBIBPC-1601</td>
-<td>13.071s</td>
+<td>14.072s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changeSecondConfigurationProfilePipeline - EPMCMBIBPC-1139</td>
-<td>15.892s</td>
+<td>18.621s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changesValidationInAttachedPipelineConfiguration - EPMCMBIBPC-1544</td>
-<td>23.495s</td>
+<td>25.775s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPipelineConfigAfterChangesInDetachedConfig - EPMCMBIBPC-1141</td>
-<td>6.701s</td>
+<td>6.343s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationChangingValidation - EPMCMBIBPC-1115</td>
-<td>11.702s</td>
+<td>11.668s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationProfileSetAsDefaultBehaviour - EPMCMBIBPC-1144</td>
-<td>12.973s</td>
+<td>12.613s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationRenamingValidation - EPMCMBIBPC-1130</td>
-<td>7.364s</td>
+<td>7.404s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationSavingValidation - EPMCMBIBPC-1114</td>
-<td>17.252s</td>
+<td>16.670s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">deleteDetachedConfigurationValidation - EPMCMBIBPC-1604</td>
-<td>4.204s</td>
+<td>4.630s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationCreatingPopupFocusValidation - EPMCMBIBPC-1493</td>
-<td>5.966s</td>
+<td>6.002s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationCreatingValidation - EPMCMBIBPC-1185</td>
-<td>14.058s</td>
+<td>14.414s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationEditionPopupFocusValidation - EPMCMBIBPC-1495</td>
-<td>15.465s</td>
+<td>18.735s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationProfileAdditionPopupFocusValidation - EPMCMBIBPC-1496</td>
-<td>3.232s</td>
+<td>3.275s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">dockerImageSelection - EPMCMBIBPC-1494</td>
-<td>17.470s</td>
+<td>17.807s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">exitWithoutSavingValidation - EPMCMBIBPC-1113</td>
-<td>2.822s</td>
+<td>2.698s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">fieldsEditingProhibitionValidation - EPMCMBIBPC-1132</td>
-<td>3.490s</td>
+<td>3.945s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">groupAdditionValidation - EPMCMBIBPC-1149</td>
-<td>10.640s</td>
+<td>11.013s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pipelineAdditionValidation - EPMCMBIBPC-1112</td>
-<td>8.983s</td>
+<td>9.044s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">priceTypeValidation - EPMCMBIBPC-1516</td>
-<td>4.258s</td>
+<td>4.506s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">secondConfigurationProfileAddition - EPMCMBIBPC-1129</td>
-<td>5.623s</td>
+<td>5.582s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">templatesListContainsAllProfiles - EPMCMBIBPC-1145</td>
-<td>4.354s</td>
+<td>4.128s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateDetachConfigBehaviorIfUserChangesBasePipelineConfig - EPMCMBIBPC-1151</td>
-<td>33.496s</td>
+<td>36.588s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateRunClusterFromDetachConfiguration</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateRunClusterFromDetachConfiguration - EPMCMBIBPC-1147</td>
+<td>24.411s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146</td>
-<td>1m32.79s</td>
-<td class="failures">failed</td>
+<td class="success">validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146</td>
+<td>17.286s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfConfigWithEmptyParametersInDetachConfiguration - EPMCMBIBPC-1140</td>
-<td>31.880s</td>
+<td>32.605s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfConfigWithNonEmptyParametersInDetachConfiguration - EPMCMBIBPC-1611</td>
-<td>22.217s</td>
+<td>22.514s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validationPriceTypeFieldForClusterRun</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validationPriceTypeFieldForClusterRun - EPMCMBIBPC-1545</td>
+<td>29.112s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 63896 from [63896]
-Returns latest run with runId 63896 from [63896]
-Returns latest run with runId 63896 from [63896]
-Returns latest run with runId 63896 from [63896]
-Returns latest run with runId 63896 from [63896]
-Returns latest run with runId 63896 from [63896]
-Returns latest run with runId 63898 from [63896, 63898]
+<pre>Returns latest run with runId 64033 from [64033]
+Returns latest run with runId 64033 from [64033]
+Returns latest run with runId 64033 from [64033]
+Returns latest run with runId 64033 from [64033]
+Returns latest run with runId 64033 from [64033]
+Returns latest run with runId 64033 from [64033]
+Returns latest run with runId 64035 from [64033, 64035]
+Returns latest run with runId 64035 from [64033, 64035]
+Returns latest run with runId 64036 from [64033, 64035, 64036]
+Returns latest run with runId 64036 from [64033, 64035, 64036]
+Returns latest run with runId 64036 from [64033, 64035, 64036]
+Returns latest run with runId 64036 from [64033, 64035, 64036]
+Returns latest run with runId 64038 from [64033, 64035, 64036, 64038]
+Returns latest run with runId 64038 from [64033, 64035, 64036, 64038]
+Returns latest run with runId 64038 from [64033, 64035, 64036, 64038]
+Returns latest run with runId 64038 from [64033, 64035, 64036, 64038]
 </pre>
 </span>
 </div>
@@ -280,7 +244,7 @@ Returns latest run with runId 63898 from [63896, 63898]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 29, 2021 3:37:29 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 30, 2021 5:19:59 PM</p>
 </div>
 </div>
 </body>
