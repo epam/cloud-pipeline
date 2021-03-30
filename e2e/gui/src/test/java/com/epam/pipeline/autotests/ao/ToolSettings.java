@@ -145,7 +145,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings doNotMountStoragesSelect (boolean isSelected) {
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
-                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected))    {
+                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
             click(DO_NOT_MOUNT_STORAGES);
         }
         return this;
