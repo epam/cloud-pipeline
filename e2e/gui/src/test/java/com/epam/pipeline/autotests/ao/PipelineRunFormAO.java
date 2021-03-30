@@ -71,7 +71,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
             entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
-            entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl")))
+            entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
+            entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -395,6 +396,19 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .map(e -> e.split(" ")[1])
                 .mapToInt(Integer::parseInt)
                 .min().getAsInt();
+    }
+
+    public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {
+        if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+            click(DO_NOT_MOUNT_STORAGES);
+        }
+        return this;
+    }
+
+    public PipelineRunFormAO assertDoNotMountStoragesIsChecked() {
+        get(DO_NOT_MOUNT_STORAGES).shouldHave(cssClass("ant-checkbox-checked"));
+        return this;
     }
 
     @Override

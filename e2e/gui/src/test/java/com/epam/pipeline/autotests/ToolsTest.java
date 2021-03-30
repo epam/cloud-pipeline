@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -455,7 +455,6 @@ public class ToolsTest
                                         parameters.ensure(DEFAULT_COMMAND, text("sleep infinity"))
                                                 .ensure(PRICE_TYPE, text(priceType))
                                                 .ensure(TYPE, text(PipelineRunFormAO.DEFAULT_TYPE))
-                                                .ensure(DISK, diskSize(PipelineRunFormAO.DEFAULT_DISK))
                                 )
                                 .waitFor(LogAO.Status.FAILURE)
                 );

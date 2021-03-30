@@ -15,8 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
-import com.amazonaws.auth.AWSRefreshableSessionCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
@@ -40,6 +41,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -86,13 +90,11 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     private AmazonS3 getS3Client(final Supplier<TemporaryCredentials> credentialsSupplier) {
-        final CloudPipelineAWSRefreshableSessionCredentials credentials = 
-                new CloudPipelineAWSRefreshableSessionCredentials(credentialsSupplier);
-        credentials.refreshCredentials();
-
+        final CloudPipelineRefreshableAWSCredentialsProvider credentialsProvider = 
+                new CloudPipelineRefreshableAWSCredentialsProvider(credentialsSupplier);
         return AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(credentials.getRegion())
+                .withCredentials(credentialsProvider)
+                .withRegion(credentialsProvider.getRegion())
                 .build();
     }
 
@@ -108,34 +110,45 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     @RequiredArgsConstructor
-    public static class CloudPipelineAWSRefreshableSessionCredentials implements AWSRefreshableSessionCredentials {
+    public static class CloudPipelineRefreshableAWSCredentialsProvider implements AWSCredentialsProvider {
 
-        private final Supplier<TemporaryCredentials> refresh;
+        private static final Duration DEFAULT_EXPIRE_DURATION = Duration.ofMinutes(15);
+        private static final DateTimeFormatter TEMPORARY_CREDENTIALS_DATE_TIME_FORMATTER = 
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
 
-        private TemporaryCredentials credentials;
+        private final Supplier<TemporaryCredentials> credentialsSupplier;
+
+        private AWSCredentials credentials;
+        private ZonedDateTime expiration;
+        private String region;
 
         @Override
-        public String getAWSAccessKeyId() {
-            return credentials.getKeyId();
+        public AWSCredentials getCredentials() {
+            if (isCredentialsExpired()) {
+                refresh();
+            }
+            return credentials;
+        }
+
+        private boolean isCredentialsExpired() {
+            return credentials == null 
+                    || Duration.between(ZonedDateTime.now(), expiration).compareTo(DEFAULT_EXPIRE_DURATION) < 0;
         }
 
         @Override
-        public String getAWSSecretKey() {
-            return credentials.getAccessKey();
-        }
-
-        @Override
-        public String getSessionToken() {
-            return credentials.getToken();
-        }
-
-        @Override
-        public void refreshCredentials() {
-            credentials = refresh.get();
+        public void refresh() {
+            final TemporaryCredentials temporaryCredentials = credentialsSupplier.get();
+            credentials = new BasicSessionCredentials(temporaryCredentials.getKeyId(),
+                    temporaryCredentials.getAccessKey(),
+                    temporaryCredentials.getToken());
+            expiration = ZonedDateTime.parse(temporaryCredentials.getExpirationTime(),
+                    TEMPORARY_CREDENTIALS_DATE_TIME_FORMATTER);
+            region = temporaryCredentials.getRegion();
         }
 
         public String getRegion() {
-            return Optional.ofNullable(credentials).map(TemporaryCredentials::getRegion).orElse(null);
+            getCredentials();
+            return region;
         }
     }
 
