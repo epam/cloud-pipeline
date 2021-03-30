@@ -131,14 +131,14 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings disableAllowSensitiveStorage() {
         if (get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
-            get(SENSITIVE_STORAGE).click();
+            click(SENSITIVE_STORAGE);
         }
         return this;
     }
 
     public ToolSettings enableAllowSensitiveStorage() {
         if (!get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
-            get(SENSITIVE_STORAGE).click();
+            click(SENSITIVE_STORAGE);
         }
         return this;
     }
@@ -146,7 +146,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     public ToolSettings doNotMountStoragesSelect (boolean isSelected) {
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected))    {
-            get(DO_NOT_MOUNT_STORAGES).click();
+            click(DO_NOT_MOUNT_STORAGES);
         }
         return this;
     }

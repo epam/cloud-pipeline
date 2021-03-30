@@ -400,8 +400,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
-                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected))    {
-            get(DO_NOT_MOUNT_STORAGES).click();
+                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+            click(DO_NOT_MOUNT_STORAGES);
         }
         return this;
     }
