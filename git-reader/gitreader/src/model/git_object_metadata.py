@@ -21,14 +21,6 @@ class GitObjectMetadata:
 
     def to_json(self):
         return {
-            "id": self.git_object.git_id,
-            "name": self.git_object.name,
-            "type": self.git_object.git_type,
-            "path": self.git_object.path,
-            "mode": self.git_object.mode,
-            "commit": self.git_commit.sha,
-            "commit_date": self.git_commit.date,
-            "commit_message": self.git_commit.commit_message,
-            "author": self.git_commit.author,
-            "author_email": self.git_commit.author_email
+            "git_object": self.git_object.to_json(),
+            "commit": self.git_commit.to_json()
         }

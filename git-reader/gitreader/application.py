@@ -270,7 +270,7 @@ def git_logs_tree_by_paths(repo):
                  $ref: '#/definitions/GitObjectMetadataListing'
            """
     manager = app.config['gitmanager']
-    path, page, page_size, ref = parse_url_params()
+    _, _, _, ref = parse_url_params()
     try:
         data = load_data_from_request(request)
         if "paths" in data:
@@ -345,8 +345,7 @@ def git_list_commits(repo):
                """
     manager = app.config['gitmanager']
     try:
-        data = load_data_from_request(request)
-        filters = GitSearchFilter.from_json(data["filter"]) if "filter" in data else GitSearchFilter()
+        filters = load_filters_from_request(request)
         _, page, page_size, _ = parse_url_params()
         commits = manager.list_commits(repo, filters, page, page_size)
         return jsonify(success(commits.to_json()))
@@ -424,8 +423,7 @@ def git_diff_report(repo):
                    """
     manager = app.config['gitmanager']
     try:
-        data = load_data_from_request(request)
-        filters = GitSearchFilter.from_json(data["filter"]) if "filter" in data else GitSearchFilter()
+        filters = load_filters_from_request(request)
         include_diff = False
         if request.args.get('include_diff'):
             include_diff = str_to_bool(request.args.get('include_diff'))
@@ -438,6 +436,15 @@ def git_diff_report(repo):
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
 
+
+def load_filters_from_request(req):
+    if req.data:
+        try:
+            data = load_data_from_request(req)
+            return GitSearchFilter.from_json(data)
+        except Exception:
+            pass
+    return GitSearchFilter()
 
 def load_data_from_request(req):
     if req.data:

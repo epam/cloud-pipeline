@@ -13,6 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 cd  $CP_GITLAB_READER_HOME/gitreader/gitreader
-uwsgi --socket 0.0.0.0:${CP_GITLAB_READER_PORT:-8080} --protocol http -w wsgi_starter:app -M -p ${CP_GITLAB_READER_WORKER_COUNT:-2}
+uwsgi --socket 0.0.0.0:8080 --protocol http -w wsgi_starter:app -M -p ${CP_GITLAB_READER_WORKER_COUNT:-2}
 
 
