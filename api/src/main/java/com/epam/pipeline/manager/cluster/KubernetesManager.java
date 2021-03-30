@@ -607,9 +607,19 @@ public class KubernetesManager {
             if (service.isPresent()) {
                 return;
             }
-            createService(name,
-                    Collections.singletonMap(KubernetesConstants.TYPE_LABEL, KubernetesConstants.PIPELINE_TYPE),
-                    null);
+            final Service newService = client.services().createNew()
+                    .withNewMetadata()
+                    .withName(name)
+                    .withNamespace(kubeNamespace)
+                    .endMetadata()
+                    .withNewSpec()
+                    .withClusterIP("None")
+                    .withType("ClusterIP")
+                    .withSelector(Collections.singletonMap(KubernetesConstants.TYPE_LABEL,
+                            KubernetesConstants.PIPELINE_TYPE))
+                    .endSpec()
+                    .done();
+            Assert.notNull(newService, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, name));
         }
     }
 
