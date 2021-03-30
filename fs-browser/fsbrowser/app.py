@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 import argparse
 import os
+import sys
 import traceback
 from multiprocessing.pool import ThreadPool
 
@@ -25,7 +26,12 @@ from fsbrowser.src.fs_browser_manager import FsBrowserManager
 from fsbrowser.src.git.git_manager import GitManager
 from fsbrowser.src.logger import BrowserLogger
 
-app = Flask(__name__)
+if getattr(sys, 'frozen', False):
+    static_folder = os.path.join(sys._MEIPASS, 'fsbrowser', 'static')
+    app = Flask(__name__, static_folder=static_folder)
+else:
+    app = Flask(__name__)
+
 # Force FLASK to accept both "http://url and http://url/"
 app.url_map.strict_slashes = False
 
