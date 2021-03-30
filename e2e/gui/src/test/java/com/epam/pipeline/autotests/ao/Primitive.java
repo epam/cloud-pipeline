@@ -280,5 +280,6 @@ public enum Primitive {
     SERVICES,
     NODE_IMAGE,
     GIT_REPOSITORY,
-    ADD_INSTANCE
+    ADD_INSTANCE,
+    DO_NOT_MOUNT_STORAGES
 }

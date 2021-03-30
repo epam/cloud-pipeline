@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,13 @@ import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byValue;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.DO_NOT_MOUNT_STORAGES;
 import static com.epam.pipeline.autotests.ao.Primitive.PORT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -82,7 +84,8 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .find(byClassName("ant-select-selection__rendered"))),
                 entry(SAVE, context().find(button("SAVE"))),
                 entry(SENSITIVE_STORAGE, context().$(byText("Allow sensitive storages"))
-                        .parent().find(By.xpath("following-sibling::div//span")))
+                        .parent().find(By.xpath("following-sibling::div//span"))),
+                entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
         );
     }
 
@@ -128,14 +131,22 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings disableAllowSensitiveStorage() {
         if (get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
-            get(SENSITIVE_STORAGE).click();
+            click(SENSITIVE_STORAGE);
         }
         return this;
     }
 
     public ToolSettings enableAllowSensitiveStorage() {
         if (!get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
-            get(SENSITIVE_STORAGE).click();
+            click(SENSITIVE_STORAGE);
+        }
+        return this;
+    }
+
+    public ToolSettings doNotMountStoragesSelect (boolean isSelected) {
+        if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+            click(DO_NOT_MOUNT_STORAGES);
         }
         return this;
     }
