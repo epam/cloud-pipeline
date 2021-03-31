@@ -421,19 +421,45 @@ class FacetedSearch extends React.Component {
     this.props.router.push(item.url);
   }
 
-  render () {
-    const {systemDictionaries} = this.props;
+  renderSearchResults = () => {
     const {
-      activeFilters,
       documents,
       documentsOffset,
       error,
-      facetsLoaded,
       offset,
       pageSize,
       pending,
       presentationMode,
       showResults,
+      totalHits
+    } = this.state;
+    return (
+      <SearchResults
+        key="search-results"
+        className={classNames(styles.panel, styles.searchResults)}
+        documents={documents}
+        documentsOffset={documentsOffset}
+        disabled={pending}
+        error={error}
+        offset={offset}
+        pageSize={pageSize}
+        onChangeOffset={this.onChangeOffset}
+        onNavigate={this.onNavigate}
+        showResults={showResults}
+        total={totalHits}
+        onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
+        mode={presentationMode}
+      />
+    );
+  }
+
+  render () {
+    const {systemDictionaries} = this.props;
+    const {
+      activeFilters,
+      facetsLoaded,
+      pageSize,
+      presentationMode,
       totalHits,
       query
     } = this.state;
@@ -447,6 +473,7 @@ class FacetedSearch extends React.Component {
         <Alert message={systemDictionaries.error} type="error" />
       );
     }
+    const noFilters = this.filters.filter(f => f.name !== DocumentTypeFilterName).length === 0;
     return (
       <div
         className={styles.container}
@@ -491,54 +518,44 @@ class FacetedSearch extends React.Component {
           />
         </div>
         <div className={styles.content}>
-          <SplitPanel
-            contentInfo={[{
-              key: 'faceted-filter',
-              size: {
-                pxMinimum: 300,
-                percentMaximum: 50,
-                percentDefault: 25
-              }
-            }]}
-            resizerSize={14}
-            resizerStyle={{backgroundColor: '#ececec'}}
-          >
-            <div
-              key="faceted-filter"
-              className={classNames(styles.panel, styles.facetedFilters)}
+          {!noFilters ? (
+            <SplitPanel
+              contentInfo={[{
+                key: 'faceted-filter',
+                size: {
+                  pxMinimum: 300,
+                  percentMaximum: 50,
+                  percentDefault: 25
+                }
+              }]}
+              resizerSize={14}
+              resizerStyle={{backgroundColor: '#ececec'}}
             >
-              {
-                this.filters.map((filter, index) => (
-                  <FacetedFilter
-                    key={filter.name}
-                    name={filter.name}
-                    className={styles.filter}
-                    values={filter.values}
-                    selection={(activeFilters || {})[filter.name]}
-                    onChange={this.onChangeFilter(filter.name)}
-                    preferences={this.getFilterPreferences(filter.name)}
-                    showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY}
-                  />
-                ))
-              }
-            </div>
-            <SearchResults
-              key="search-results"
-              className={classNames(styles.panel, styles.searchResults)}
-              documents={documents}
-              documentsOffset={documentsOffset}
-              disabled={pending}
-              error={error}
-              offset={offset}
-              pageSize={pageSize}
-              onChangeOffset={this.onChangeOffset}
-              onNavigate={this.onNavigate}
-              showResults={showResults}
-              total={totalHits}
-              onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
-              mode={presentationMode}
-            />
-          </SplitPanel>
+              <div
+                key="faceted-filter"
+                className={classNames(styles.panel, styles.facetedFilters)}
+              >
+                {
+                  this.filters.map((filter, index) => (
+                    <FacetedFilter
+                      key={filter.name}
+                      name={filter.name}
+                      className={styles.filter}
+                      values={filter.values}
+                      selection={(activeFilters || {})[filter.name]}
+                      onChange={this.onChangeFilter(filter.name)}
+                      preferences={this.getFilterPreferences(filter.name)}
+                      showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY}
+                    />
+                  ))
+                }
+              </div>
+              {this.renderSearchResults()}
+            </SplitPanel>
+          ) : (
+            this.renderSearchResults()
+          )
+          }
         </div>
       </div>
     );
