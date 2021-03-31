@@ -171,6 +171,7 @@ Response example:
 }
 ```
 - `GET /vs/list` - loads all versioned storage specified for current run
+
 Request example:
 ```
 curl http://127.0.0.1:8080/vs/list
@@ -183,7 +184,9 @@ Response example:
             {
                 "id": "1",
                 "name": "repo_name",
-                "path": "/path/to/repo"
+                "path": "/path/to/repo",
+                "revision": "xxxx",
+                "detached": false
             }, ...
         ]
     },
@@ -232,13 +235,12 @@ Response example:
 ```
 {    
     "payload": {
-       "deatched": false
+       "detached": false
     },
     "status":"OK"
 }
 ```
-- `POST /vs/<id>/fetch` - loads latest version from server. Reverts all local changes if any. This 
-operation returns task ID since may take a long time. Use `status/<task_id>` method to check result.
+- `POST /vs/<id>/fetch` - refreshes repository. If head detached reverts all local changes. If head not detached and conflicts were detected an error with conflicted files will be returned. This operation returns task ID since may take a long time. Use `status/<task_id>` method to check result.
  
 Request example:
 ```
@@ -366,8 +368,8 @@ Response example for binary files:
 }
 ```
 
-- `POST /vs/<id>/commit?message=<message>[&files=file1,file2]` - saves local changes to remote: fetches repo, add 
-changes files, commits changes and pushes to remote. This operation returns task ID since may take a long time.
+- `POST /vs/<id>/commit?message=<message>[&files=file1,file2]` - saves local changes to remote: fetches repo, adds 
+changed files, commits changes and pushes to remote. This operation returns task ID since may take a long time.
  Use `status/<task_id>` method to check result.
 
 Request example:
