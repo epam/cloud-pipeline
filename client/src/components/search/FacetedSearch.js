@@ -170,7 +170,7 @@ class FacetedSearch extends React.Component {
     const {systemDictionaries, preferences} = this.props;
     const {facetedFiltersDictionaries} = preferences;
     if (systemDictionaries.loaded && facetedFiltersDictionaries) {
-      const [filter] = facetedFiltersDictionaries.dictionaries
+      const [filter] = (facetedFiltersDictionaries.dictionaries || [])
         .filter(dict => dict.dictionary === filterName);
       if (!filter) {
         return null;
