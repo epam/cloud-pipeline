@@ -215,7 +215,10 @@ class GitClient:
             index.add(file_path)
             repo_diff = tree.diff_to_index(index, context_lines=context_lines)
             index.clear()
-        elif self._is_conflicts(file_status) or self._is_index_modified(file_status):
+        elif self._is_conflicts(file_status):
+            remote_head_ref = self._get_remote_head(repo)
+            repo_diff = repo.diff(remote_head_ref, context_lines=context_lines)
+        elif self._is_index_modified(file_status):
             head_ref = self._get_head(repo, branch_name)
             repo_diff = repo.diff(head_ref, context_lines=context_lines)
         else:
