@@ -33,6 +33,13 @@ class GitClient:
         self.user_name = user_name
         self.logger = logger
 
+    def get_repo(self, repo_path, branch=DEFAULT_BRANCH_NAME):
+        repo = self._repository(repo_path)
+        return {
+            "detached": repo.head_is_detached,
+            "revision": str(self._get_head(repo, branch).target)
+        }
+
     def head(self, repo_path):
         repo = self._repository(repo_path)
         return repo.head_is_detached

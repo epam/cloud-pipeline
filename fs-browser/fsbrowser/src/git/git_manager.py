@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import shutil
+import traceback
 import uuid
 
 from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
@@ -68,12 +69,19 @@ class GitManager:
             full_item_path = os.path.join(self.root_folder, item_name)
             if os.path.isfile(full_item_path):
                 continue
-            versioned_storage = self.api_client.get_pipeline(item_name)
+            try:
+                versioned_storage = self.api_client.get_pipeline(item_name)
+            except Exception:
+                self.logger.log(traceback.format_exc())
+                continue
             if not versioned_storage:
                 self.logger.log("Versioned storage '%s' was not found" % item_name)
                 continue
             versioned_storage_name = versioned_storage.get('name')
-            items.append(VersionedStorage(item_name, versioned_storage_name, os.path.join(self.root_folder, item_name))
+            repo_path = os.path.join(self.root_folder, item_name)
+            repo = self.git_client.get_repo(repo_path)
+            items.append(VersionedStorage(item_name, versioned_storage_name, repo_path,
+                                          repo.get('revision'), repo.get('detached'))
                          .to_json())
         return items
 

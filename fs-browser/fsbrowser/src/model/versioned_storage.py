@@ -14,14 +14,18 @@
 
 class VersionedStorage:
 
-    def __init__(self, id, name, path):
+    def __init__(self, id, name, path, revision, detached):
         self.id = id
         self.name = name
         self.path = path
+        self.revision = revision
+        self.detached = detached
 
     def to_json(self):
         return {
             "id": self.id,
             "name": self.name,
-            "path": self.path
+            "path": self.path,
+            "revision": self.revision,
+            "detached": self.detached
         }
