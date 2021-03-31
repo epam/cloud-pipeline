@@ -33,11 +33,11 @@ class GitClient:
         self.user_name = user_name
         self.logger = logger
 
-    def get_repo(self, repo_path, branch=DEFAULT_BRANCH_NAME):
+    def get_repo(self, repo_path):
         repo = self._repository(repo_path)
         return {
             "detached": repo.head_is_detached,
-            "revision": str(self._get_head(repo, branch).target)
+            "revision": str(repo.head.target)
         }
 
     def head(self, repo_path):
@@ -75,8 +75,8 @@ class GitClient:
             raise RuntimeError('Unknown merge analysis result')
 
     def diff(self, repo_path, file_path, show_raw_flag, branch_name=DEFAULT_BRANCH_NAME,
-             context_lines=DEFAULT_CONTEXT_LINES_COUNT):
-        diff_patch = self._find_patch(repo_path, file_path, branch_name, context_lines)
+             context_lines=DEFAULT_CONTEXT_LINES_COUNT, remote_name=DEFAULT_REMOTE_NAME):
+        diff_patch = self._find_patch(repo_path, file_path, branch_name, context_lines, remote_name)
         if not diff_patch:
             self.logger.log("Diff not found")
             return None
@@ -212,7 +212,7 @@ class GitClient:
         repo.head.set_target(remote_master_id)
 
     def _find_patch(self, repo_path, file_path, branch_name=DEFAULT_BRANCH_NAME,
-                    context_lines=DEFAULT_CONTEXT_LINES_COUNT):
+                    context_lines=DEFAULT_CONTEXT_LINES_COUNT, remote_name=DEFAULT_REMOTE_NAME):
         repo = self._repository(repo_path)
         file_status = repo.status_file(file_path)
         if self._is_untracked(file_status):
@@ -223,7 +223,7 @@ class GitClient:
             repo_diff = tree.diff_to_index(index, context_lines=context_lines)
             index.clear()
         elif self._is_conflicts(file_status):
-            remote_head_ref = self._get_remote_head(repo)
+            remote_head_ref = self._get_remote_head(repo, remote_name, branch_name)
             repo_diff = repo.diff(remote_head_ref, context_lines=context_lines)
         elif self._is_index_modified(file_status):
             head_ref = self._get_head(repo, branch_name)
