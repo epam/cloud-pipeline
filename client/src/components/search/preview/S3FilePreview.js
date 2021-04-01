@@ -23,6 +23,7 @@ import {Icon, Row} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
+import HTMLRenderer from './HTMLRenderer';
 import {metadataLoad, renderAttributes} from './renderAttributes';
 import {PreviewIcons} from './previewIcons';
 import {SearchItemTypes} from '../../../models/search';
@@ -119,12 +120,14 @@ export default class S3FilePreview extends React.Component {
       const noContent = !preview;
       const mayBeBinary = this.props.preview.value.mayBeBinary;
       const error = this.props.preview.error;
+      const extension = this.props.preview.path?.split('.').pop().toLowerCase();
       return {
         preview,
         truncated,
         noContent,
         error,
-        mayBeBinary
+        mayBeBinary,
+        extension
       };
     }
     return null;
@@ -243,7 +246,15 @@ export default class S3FilePreview extends React.Component {
             <span style={{color: '#ff556b'}}>Error loading .csv visualization: {this.structuredTableData.message}</span>
           </div>
         }
-        <pre dangerouslySetInnerHTML={{__html: this.filePreview.preview}} />
+        {
+          this.filePreview.extension === 'html' ? (
+            <HTMLRenderer
+              htmlString={this.filePreview.preview}
+            />
+          ) : (
+            <pre dangerouslySetInnerHTML={{__html: this.filePreview.preview}} />
+          )
+        }
       </div>
     );
   };
