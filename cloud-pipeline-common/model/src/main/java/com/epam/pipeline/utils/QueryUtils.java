@@ -29,17 +29,14 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.Assert;
 import retrofit2.Call;
 import retrofit2.Response;
 
+/**
+ * @deprecated Use {@link com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor} instead.
+ */
+@Deprecated
 public interface QueryUtils {
-
-    static String normalizeUrl(String url) {
-        Assert.state(StringUtils.isNotBlank(url), "Url shall be specified");
-        return url.endsWith("/") ? url : url + "/";
-    }
 
     static <T> T execute(Call<Result<T>> call) {
         try {
