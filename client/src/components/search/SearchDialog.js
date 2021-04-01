@@ -132,7 +132,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             const path = item.id;
             const parentFolder = path.split('/').slice(0, path.split('/').length - 1).join('/');
             if (parentFolder) {
-              this.props.router.push(`/storage/${item.parentId}?path=${parentFolder}`);
+              this.props.router.push(`/storage/${item.parentId}?path=${encodeURIComponent(parentFolder)}`);
             } else {
               this.props.router.push(`/storage/${item.parentId}`);
             }

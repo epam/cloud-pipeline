@@ -341,7 +341,7 @@ export default class DataStorage extends React.Component {
       path = path.substring(0, path.length - 1);
     }
     if (path) {
-      this.props.router.push(`/storage/${id}?path=${path}&versions=${this.showVersions}`);
+      this.props.router.push(`/storage/${id}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
     } else {
       this.props.router.push(`/storage/${id}?versions=${this.showVersions}`);
     }
@@ -371,7 +371,7 @@ export default class DataStorage extends React.Component {
           relativePath = relativePath.substr(0, relativePath.length - 1);
         }
         if (relativePath) {
-          this.props.router.push(`/storage/${this.props.storageId}?path=${relativePath}&versions=${this.showVersions}`);
+          this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(relativePath)}&versions=${this.showVersions}`);
         } else {
           this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
         }
@@ -1114,7 +1114,7 @@ export default class DataStorage extends React.Component {
         path = path.substring(0, path.length - 1);
       }
       if (path) {
-        this.props.router.push(`/storage/${this.props.storageId}?path=${path}&versions=${this.showVersions}`);
+        this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
       } else {
         this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
       }
