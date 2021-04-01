@@ -104,6 +104,11 @@ cat > /etc/systemd/system/docker.service.d/http-proxy.conf << EOF
 EOF
 fi
 
+CP_KUBE_MASTER_DOCKER_NO_FILE="${CP_KUBE_MASTER_DOCKER_NO_FILE:-"65535:65535"}"
+if [ -f /etc/sysconfig/docker ]; then
+  sed -i "s/--default-ulimit nofile=1024:4096/--default-ulimit nofile=$CP_KUBE_MASTER_DOCKER_NO_FILE/g" /etc/sysconfig/docker
+fi
+
 # Enable forwarding and make sure iptables are used
 # See https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
 modprobe br_netfilter
@@ -177,6 +182,7 @@ fi
 
 # Initialize the kubeadm config and start the master
 export CP_KUBE_FLANNEL_CIDR=${CP_KUBE_FLANNEL_CIDR:-"10.244.0.0/16"}
+export CP_KUBE_NODE_CIDR_MASK=${CP_KUBE_NODE_CIDR_MASK:-"26"}
 export CP_KUBE_KUBELET_PORT="${CP_KUBE_KUBELET_PORT:-10250}"
 CP_KUBEADM_INIT_CONFIG_YAML="$K8S_SPECS_HOME/kube-system/kubeadm-init-config.yaml"
 if [ ! -f "$CP_KUBEADM_INIT_CONFIG_YAML" ]; then
@@ -184,7 +190,7 @@ if [ ! -f "$CP_KUBEADM_INIT_CONFIG_YAML" ]; then
   exit 1
 fi
 CP_KUBEADM_INIT_CONFIG_YAML_TMP="/tmp/$(basename $CP_KUBEADM_INIT_CONFIG_YAML)"
-envsubst '${CP_KUBE_FLANNEL_CIDR} ${CP_KUBE_KUBELET_PORT}' < "$CP_KUBEADM_INIT_CONFIG_YAML" > "$CP_KUBEADM_INIT_CONFIG_YAML_TMP"
+envsubst '${CP_KUBE_FLANNEL_CIDR} ${CP_KUBE_KUBELET_PORT} ${CP_KUBE_NODE_CIDR_MASK}' < "$CP_KUBEADM_INIT_CONFIG_YAML" > "$CP_KUBEADM_INIT_CONFIG_YAML_TMP"
 kubeadm init --config "$CP_KUBEADM_INIT_CONFIG_YAML_TMP"
 sleep 30
 
