@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
 
         $$(".pipeline-code-form__button").findBy(text("Save")).click();
-        $("#message").setValue("pretty commit message");
+        $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
 
         return this;
@@ -213,7 +213,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        public FileEditingPopupAO deleteExtraBrackets() {
+        private FileEditingPopupAO deleteExtraBrackets() {
             return deleteExtraBrackets(100);
         }
 
@@ -227,7 +227,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        public FileEditingPopupAO fillWith(String newText) {
+        private FileEditingPopupAO fillWith(String newText) {
             Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
             return this;
         }
@@ -236,12 +236,12 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return openCommitDialog().typeInField(message).ok();
         }
 
-        public CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {
+        private CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {
             click(SAVE);
             return new CommitPopupAO<>(parentAO);
         }
 
-        public FileEditingPopupAO clear() {
+        private FileEditingPopupAO clear() {
             final SelenideElement editor = $(byClassName("CodeMirror-code"));
             final int codeLength = editor.innerText().length();
             final SelenideElement mirrorLine = editor.find(byClassName("CodeMirror-line")).shouldBe(visible);
@@ -253,12 +253,12 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        public FileEditingPopupAO clickEdit() {
+        private FileEditingPopupAO clickEdit() {
             return click(EDIT);
         }
 
         public FileEditingPopupAO editFile(final UnaryOperator<String> action) {
-            click(EDIT);
+            clickEdit();
             final SelenideElement editor = $(className("code-editor__editor")).should(appear);
             sleep(1, SECONDS);
             editor.click();
