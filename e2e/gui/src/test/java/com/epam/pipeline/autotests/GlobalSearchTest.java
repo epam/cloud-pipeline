@@ -533,6 +533,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                     .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
                     .ensure(STATUS, text(testRunID_2668))
                     .shouldHaveStatus(STOPPED);
+            home();
             endpointPage = search()
                     .click(RUNS)
                     .search(testRunID_2668)
@@ -540,8 +541,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                     .sleep(1, SECONDS)
                     .hover(SEARCH_RESULT)
                     .openSearchResultItemWithText(testRunID_2668)
-                    .clickOnEndpointLink();
-            endpointPage
+                    .clickOnEndpointLink()
                     .sleep(3, SECONDS)
                     .assertPageTitleIs("404 Not Found");
         } finally {
