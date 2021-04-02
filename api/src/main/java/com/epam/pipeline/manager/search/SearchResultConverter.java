@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,11 +59,12 @@ public class SearchResultConverter {
     public SearchResult buildResult(final SearchResponse searchResult,
                                     final String aggregation,
                                     final String typeFieldName,
-                                    final Set<String> aclFilterFields) {
+                                    final Set<String> aclFilterFields,
+                                    final Set<String> metadataSourceFields) {
         return SearchResult.builder()
                 .searchSucceeded(!searchResult.isTimedOut())
                 .totalHits(searchResult.getHits().getTotalHits())
-                .documents(buildDocuments(searchResult.getHits(), typeFieldName, aclFilterFields))
+                .documents(buildDocuments(searchResult.getHits(), typeFieldName, aclFilterFields, metadataSourceFields))
                 .aggregates(buildAggregates(searchResult.getAggregations(), aggregation))
                 .build();
     }
@@ -82,10 +83,11 @@ public class SearchResultConverter {
     }
 
     public FacetedSearchResult buildFacetedResult(final SearchResponse response, final String typeFieldName,
-                                                  final Set<String> aclFilterFields) {
+                                                  final Set<String> aclFilterFields,
+                                                  final Set<String> metadataSourceFields) {
         return FacetedSearchResult.builder()
                 .totalHits(response.getHits().getTotalHits())
-                .documents(buildDocuments(response.getHits(), typeFieldName, aclFilterFields))
+                .documents(buildDocuments(response.getHits(), typeFieldName, aclFilterFields, metadataSourceFields))
                 .facets(buildFacets(response.getAggregations()))
                 .build();
     }
@@ -112,26 +114,31 @@ public class SearchResultConverter {
 
     private List<SearchDocument> buildDocuments(final SearchHits hits,
                                                 final String typeFieldName,
-                                                final Set<String> aclFilterFields) {
+                                                final Set<String> aclFilterFields,
+                                                final Set<String> metadataSourceFields) {
         if (hits == null || hits.getHits() == null) {
             return Collections.emptyList();
         }
         return Arrays.stream(hits.getHits())
-                .map(hit -> buildDocument(hit, typeFieldName, aclFilterFields))
+                .map(hit -> buildDocument(hit, typeFieldName, aclFilterFields, metadataSourceFields))
                 .collect(Collectors.toList());
     }
 
     private SearchDocument buildDocument(final SearchHit hit,
                                          final String typeFieldName,
-                                         final Set<String> aclFilterFields) {
+                                         final Set<String> aclFilterFields,
+                                         final Set<String> metadataSourceFields) {
+        final Map<String, Object> sourceFields = hit.getSourceAsMap();
         return SearchDocument.builder()
                 .elasticId(hit.getId())
                 .score(hit.getScore())
-                .id(getFieldIfPresent(hit, "id"))
-                .name(getFieldIfPresent(hit, "name"))
-                .parentId(getFieldIfPresent(hit, "parentId"))
+                .id(getSourceFieldIfPresent(sourceFields, SearchSourceFields.ID))
+                .name(getSourceFieldIfPresent(sourceFields, SearchSourceFields.NAME))
+                .parentId(getSourceFieldIfPresent(sourceFields, SearchSourceFields.PARENT_ID))
+                .description(getSourceFieldIfPresent(sourceFields, SearchSourceFields.DESCRIPTION))
+                .owner(getSourceFieldIfPresent(sourceFields, SearchSourceFields.OWNER))
+                .attributes(getSourceRemainAttributes(sourceFields, metadataSourceFields))
                 .type(EnumUtils.getEnum(SearchDocumentType.class, getFieldIfPresent(hit, typeFieldName)))
-                .description(getFieldIfPresent(hit, "description"))
                 .highlights(buildHighlights(hit.getHighlightFields(), aclFilterFields))
                 .build();
     }
@@ -141,6 +148,25 @@ public class SearchResultConverter {
                 .map(SearchHitField::getValue)
                 .map(Object::toString)
                 .orElse(null);
+    }
+
+    private String getSourceFieldIfPresent(final Map<String, Object> sourceFields, final SearchSourceFields field) {
+        return Optional.ofNullable(sourceFields.get(field.getFieldName()))
+                .map(Object::toString)
+                .orElse(null);
+    }
+
+    private boolean isFieldAdditionalOrMetadata(final String field, final Set<String> additionalFields,
+                                                final Set<String> metadataSourceFields) {
+        return additionalFields.contains(field) || metadataSourceFields.contains(field);
+    }
+
+    private Map<String, String> getSourceRemainAttributes(final Map<String, Object> sourceFields,
+                                                          final Set<String> metadataSourceFields) {
+        final Set<String> additionalFields = SearchSourceFields.getAdditionalFields();
+        return sourceFields.entrySet().stream()
+                .filter(entry -> isFieldAdditionalOrMetadata(entry.getKey(), additionalFields, metadataSourceFields))
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toString()));
     }
 
     private List<SearchDocument.HightLight> buildHighlights(final Map<String, HighlightField> highlightFields,

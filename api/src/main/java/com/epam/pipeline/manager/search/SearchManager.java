@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,14 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -53,9 +55,11 @@ public class SearchManager {
         validateRequest(searchRequest);
         try {
             final String typeFieldName = getTypeFieldName();
+            final Set<String> metadataSourceFields = Collections.emptySet();
             final SearchResponse searchResult = globalSearchElasticHelper.buildClient().search(
-                    requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION));
-            return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields());
+                    requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION, metadataSourceFields));
+            return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields(),
+                    metadataSourceFields);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
@@ -78,9 +82,11 @@ public class SearchManager {
         Assert.notNull(searchRequest.getOffset(), "Offset is required");
         try {
             final String typeFieldName = getTypeFieldName();
+            final Set<String> metadataSourceFields = getMetadataSourceFields();
             final SearchResponse response = globalSearchElasticHelper.buildClient()
-                    .search(requestBuilder.buildFacetedRequest(searchRequest, typeFieldName));
-            return resultConverter.buildFacetedResult(response, typeFieldName, getAclFilterFields());
+                    .search(requestBuilder.buildFacetedRequest(searchRequest, typeFieldName, metadataSourceFields));
+            return resultConverter.buildFacetedResult(response, typeFieldName, getAclFilterFields(),
+                    metadataSourceFields);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
@@ -98,6 +104,11 @@ public class SearchManager {
         aclFields.add(preferenceManager.getSystemPreference(
                 SystemPreferences.SEARCH_ELASTIC_ALLOWED_USERS_FIELD).getValue());
         return aclFields;
+    }
+
+    private Set<String> getMetadataSourceFields() {
+        return SetUtils.emptyIfNull(preferenceManager.getPreference(
+                SystemPreferences.SEARCH_ELASTIC_INDEX_METADATA_FIELDS));
     }
 
     private void validateRequest(final ElasticSearchRequest request) {

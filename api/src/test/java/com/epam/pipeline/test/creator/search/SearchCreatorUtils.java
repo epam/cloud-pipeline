@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ public final class SearchCreatorUtils {
 
     private static SearchDocument getSearchDocument() {
         return new SearchDocument(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, SEARCH_DOCUMENT_TYPE,
-                Collections.singletonList(new SearchDocument.HightLight(TEST_STRING, TEST_STRING_LIST)), TEST_INT);
+                Collections.singletonList(new SearchDocument.HightLight(TEST_STRING, TEST_STRING_LIST)), TEST_INT,
+                TEST_STRING, null);
     }
 }
