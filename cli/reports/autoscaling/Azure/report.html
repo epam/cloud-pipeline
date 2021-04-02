@@ -228,7 +228,7 @@ function filter_table(elem) {
     not_found_message.hidden = !all_rows_hidden;
 }
 </script>
-    <p>Report generated on 01-Apr-2021 at 19:30:31 by<a href="https://pypi.python.org/pypi/pytest-html"> pytest-html</a> v1.15.2</p>
+    <p>Report generated on 02-Apr-2021 at 19:30:35 by<a href="https://pypi.python.org/pypi/pytest-html"> pytest-html</a> v1.15.2</p>
     <h2>Environment</h2>
     <table id="environment">
       <tr>
@@ -247,7 +247,7 @@ function filter_table(elem) {
         <td>Python</td>
         <td>2.7.17</td></tr></table>
     <h2>Summary</h2>
-    <p>0 tests ran in 3.43 seconds. </p>
+    <p>0 tests ran in 3.19 seconds. </p>
     <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="passed">0 passed</span>, <input checked="true" class="filter" data-test-result="skipped" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="skipped">4 skipped</span>, <input checked="true" class="filter" data-test-result="failed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="failed">0 failed</span>, <input checked="true" class="filter" data-test-result="error" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="error">31 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
     <h2>Results</h2>
     <table id="results-table">
@@ -262,10 +262,70 @@ function filter_table(elem) {
           <th colspan="5">No results found. Try to check the filters</th></tr></thead>
       <tbody class="error results-table-row">
         <tr>
+          <td>TC-SCALING-3</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_pipeline_should_be_completed::setup</td>
+          <td class="col-duration">0.23</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
+          <td>TC-SCALING-3</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_node_should_be_terminated::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
+          <td>TC-SCALING-3</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_instance_should_be_terminated::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
           <td>TC-SCALING-2</td>
           <td class="col-result">Error</td>
           <td class="col-name">e2e/cli/autoscaling/test_node_reassign.py::TestNodeReassign::()::test_node_ip_should_be_the_same::setup</td>
-          <td class="col-duration">0.25</td>
+          <td class="col-duration">0.23</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
+          <td>TC-SCALING-1</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_node_should_be_terminated::setup</td>
+          <td class="col-duration">0.24</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
+          <td>TC-SCALING-13</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_pipline_run_sync.py::TestPipelineRunSync::()::test_pipe_run_sync::setup</td>
+          <td class="col-duration">0.22</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
+          <td>TC-SCALING-3</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_cluster_should_not_have_node_without_label::setup</td>
+          <td class="col-duration">0.00</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -282,20 +342,10 @@ function filter_table(elem) {
             <div class="empty log">No log output captured.</div></td></tr></tbody>
       <tbody class="error results-table-row">
         <tr>
-          <td>TC-SCALING-13</td>
+          <td>TC-SCALING-1</td>
           <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_pipline_run_sync.py::TestPipelineRunSync::()::test_pipe_run_sync::setup</td>
-          <td class="col-duration">0.24</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-3</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_pipeline_should_be_completed::setup</td>
-          <td class="col-duration">0.27</td>
+          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_instance_should_be_terminated::setup</td>
+          <td class="col-duration">0.00</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -314,8 +364,8 @@ function filter_table(elem) {
         <tr>
           <td>TC-SCALING-1</td>
           <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_node_should_be_terminated::setup</td>
-          <td class="col-duration">0.25</td>
+          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_cluster_should_not_have_node_without_label::setup</td>
+          <td class="col-duration">0.00</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -332,79 +382,19 @@ function filter_table(elem) {
             <div class="empty log">No log output captured.</div></td></tr></tbody>
       <tbody class="error results-table-row">
         <tr>
-          <td>TC-SCALING-1</td>
+          <td>TC-SCALING-7</td>
           <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_instance_should_be_terminated::setup</td>
-          <td class="col-duration">0.00</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_pipe_should_still_wait::setup</td>
+          <td class="col-duration">0.20</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
             <div class="empty log">No log output captured.</div></td></tr></tbody>
       <tbody class="error results-table-row">
         <tr>
-          <td>TC-SCALING-3</td>
+          <td>TC-SCALING-7</td>
           <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_node_should_be_terminated::setup</td>
-          <td class="col-duration">0.00</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-1</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_kill_node_manually.py::TestTerminateNodeManually::()::test_cluster_should_not_have_node_without_label::setup</td>
-          <td class="col-duration">0.00</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-3</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_instance_should_be_terminated::setup</td>
-          <td class="col-duration">0.00</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-3</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_instance_kill_by_timout.py::TestTerminateNodeByTimeout::()::test_cluster_should_not_have_node_without_label::setup</td>
-          <td class="col-duration">0.00</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-10</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_node_should_have_label::setup</td>
-          <td class="col-duration">0.21</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-10</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_node_should_reassign::setup</td>
-          <td class="col-duration">0.00</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-10</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_cluster_should_not_have_node_without_label::setup</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_new_node_should_be_created::setup</td>
           <td class="col-duration">0.00</td>
           <td class="col-links"></td></tr>
         <tr>
@@ -422,20 +412,10 @@ function filter_table(elem) {
             <div class="empty log">No log output captured.</div></td></tr></tbody>
       <tbody class="error results-table-row">
         <tr>
-          <td>TC-SCALING-7</td>
+          <td>TC-SCALING-10</td>
           <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_pipe_should_still_wait::setup</td>
-          <td class="col-duration">0.19</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-7</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_new_node_should_be_created::setup</td>
-          <td class="col-duration">0.00</td>
+          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_node_should_have_label::setup</td>
+          <td class="col-duration">0.18</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -455,6 +435,26 @@ function filter_table(elem) {
           <td>TC-SCALING-4</td>
           <td class="col-result">Error</td>
           <td class="col-name">e2e/cli/autoscaling/test_start_stop_pipe.py::TestStartStopPipe::()::test_cluster_should_not_have_node_without_label::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
+          <td>TC-SCALING-10</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_node_should_reassign::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
+          <td>TC-SCALING-7</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_cluster_should_not_have_node_without_label::setup</td>
           <td class="col-duration">0.00</td>
           <td class="col-links"></td></tr>
         <tr>
@@ -482,6 +482,16 @@ function filter_table(elem) {
             <div class="empty log">No log output captured.</div></td></tr></tbody>
       <tbody class="error results-table-row">
         <tr>
+          <td>TC-SCALING-10</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_stop_pipe_before_labeling.py::TestStopPipelineBeforeLabeling::()::test_cluster_should_not_have_node_without_label::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
           <td>TC-SCALING-9</td>
           <td class="col-result">Error</td>
           <td class="col-name">e2e/cli/autoscaling/test_terminate_node_during_pipe_work.py::TestTerminateNodeDuringPipelineWork::()::test_pipeline_should_be_stopped::setup</td>
@@ -492,20 +502,10 @@ function filter_table(elem) {
             <div class="empty log">No log output captured.</div></td></tr></tbody>
       <tbody class="error results-table-row">
         <tr>
-          <td>TC-SCALING-9</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_terminate_node_during_pipe_work.py::TestTerminateNodeDuringPipelineWork::()::test_cluster_should_not_have_node_without_label::setup</td>
-          <td class="col-duration">0.00</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
           <td>TC-SCALING-6</td>
           <td class="col-result">Error</td>
           <td class="col-name">e2e/cli/autoscaling/test_unused_instance_termination.py::TestUnusedInstanceTermination::()::test_node_should_be_terminated::setup</td>
-          <td class="col-duration">0.20</td>
+          <td class="col-duration">0.18</td>
           <td class="col-links"></td></tr>
         <tr>
           <td class="extra" colspan="5">
@@ -532,9 +532,19 @@ function filter_table(elem) {
             <div class="empty log">No log output captured.</div></td></tr></tbody>
       <tbody class="error results-table-row">
         <tr>
-          <td>TC-SCALING-7</td>
+          <td>TC-SCALING-6</td>
           <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_terminate_instance_before_registration.py::TestTerminateInstanceBeforeKubeRegistration::()::test_cluster_should_not_have_node_without_label::setup</td>
+          <td class="col-name">e2e/cli/autoscaling/test_unused_instance_termination.py::TestUnusedInstanceTermination::()::test_cluster_should_not_have_node_without_label::setup</td>
+          <td class="col-duration">0.00</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="5">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="error results-table-row">
+        <tr>
+          <td>TC-SCALING-9</td>
+          <td class="col-result">Error</td>
+          <td class="col-name">e2e/cli/autoscaling/test_terminate_node_during_pipe_work.py::TestTerminateNodeDuringPipelineWork::()::test_cluster_should_not_have_node_without_label::setup</td>
           <td class="col-duration">0.00</td>
           <td class="col-links"></td></tr>
         <tr>
@@ -555,16 +565,6 @@ function filter_table(elem) {
           <td>TC-SCALING-5</td>
           <td class="col-result">Error</td>
           <td class="col-name">e2e/cli/autoscaling/test_two_pipes_simultaneously.py::TestTwoPipesRunSimultaneously::()::test_cluster_should_not_have_node_without_label::setup</td>
-          <td class="col-duration">0.00</td>
-          <td class="col-links"></td></tr>
-        <tr>
-          <td class="extra" colspan="5">
-            <div class="empty log">No log output captured.</div></td></tr></tbody>
-      <tbody class="error results-table-row">
-        <tr>
-          <td>TC-SCALING-6</td>
-          <td class="col-result">Error</td>
-          <td class="col-name">e2e/cli/autoscaling/test_unused_instance_termination.py::TestUnusedInstanceTermination::()::test_cluster_should_not_have_node_without_label::setup</td>
           <td class="col-duration">0.00</td>
           <td class="col-links"></td></tr>
         <tr>
