@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
+import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
@@ -60,7 +61,8 @@ export default class PipelinePreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    })
+    }),
+    lightMode: PropTypes.bool
   };
 
   @computed
@@ -93,7 +95,15 @@ export default class PipelinePreview extends React.Component {
       if (this.props.versions.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.versions.error}</span>
+            <span
+              style={
+                this.props.lightMode
+                  ? {color: '#ff0000'}
+                  : {color: '#ff556b'}
+              }
+            >
+              {this.props.versions.error}
+            </span>
           </div>
         );
       }
@@ -132,7 +142,15 @@ export default class PipelinePreview extends React.Component {
       if (this.props.history.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.history.error}</span>
+            <span
+              style={
+                this.props.lightMode
+                  ? {color: '#ff0000'}
+                  : {color: '#ff556b'}
+              }
+            >
+              {this.props.history.error}
+            </span>
           </div>
         );
       }
@@ -197,7 +215,16 @@ export default class PipelinePreview extends React.Component {
     const attributes = renderAttributes(this.props.metadata);
     const history = this.renderRunHistory();
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            {
+              [styles.light]: this.props.lightMode
+            }
+          )
+        }
+      >
         <div className={styles.header}>
           <Row className={styles.title} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />

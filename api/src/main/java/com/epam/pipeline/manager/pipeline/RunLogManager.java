@@ -26,7 +26,6 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.common.MessageConstants;
-import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -46,13 +45,7 @@ import javax.annotation.PostConstruct;
 public class RunLogManager {
 
     @Autowired
-    private PipelineRunDao pipelineRunDao;
-
-    @Autowired
     private RunLogDao runLogDao;
-
-    @Autowired
-    private PipelineRunManager pipelineRunManager;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -65,6 +58,9 @@ public class RunLogManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private PipelineRunCRUDService runCRUDService;
 
     private RunLogManager self;
 
@@ -86,7 +82,7 @@ public class RunLogManager {
                 "date", RunLog.class.getSimpleName()));
         Assert.notNull(runLog.getStatus(), messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED,
                 "status", RunLog.class.getSimpleName()));
-        PipelineRun run = pipelineRunDao.loadPipelineRun(runLog.getRunId());
+        PipelineRun run = runCRUDService.loadRunById(runLog.getRunId());
         Assert.notNull(run,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runLog.getRunId()));
         if (!StringUtils.isEmpty(runLog.getLogText())) {
@@ -120,13 +116,13 @@ public class RunLogManager {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<RunLog> loadAllLogsByRunId(Long runId) {
-        pipelineRunManager.loadPipelineRun(runId);
+        runCRUDService.loadRunById(runId);
         return runLogDao.loadAllLogsForRun(runId);
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<RunLog> loadAllLogsForTask(Long runId, String taskName, String parameters) {
-        PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
+        PipelineRun run = runCRUDService.loadRunById(runId);
         if (consoleLogTask.equals(taskName)) {
             return getPodLogs(run);
         }
@@ -146,7 +142,7 @@ public class RunLogManager {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineTask> loadTasksByRunId(Long runId) {
-        PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
+        PipelineRun run = runCRUDService.loadRunById(runId);
         List<PipelineTask> tasks = runLogDao.loadTasksForRun(runId);
         tasks.forEach(task -> {
             if (run.getStatus().isFinal() && !task.getStatus().isFinal()) {

@@ -52,11 +52,11 @@ public final class S3ListingHelper {
                     .withKeyMarker(nextKeyMarker)
                     .withVersionIdMarker(nextVersionIdMarker));
             if (versionListing.isTruncated()) {
-                nextKeyMarker = null;
-                nextVersionIdMarker = null;
-            } else {
                 nextKeyMarker = versionListing.getNextKeyMarker();
                 nextVersionIdMarker = versionListing.getNextVersionIdMarker();
+            } else {
+                nextKeyMarker = null;
+                nextVersionIdMarker = null;
             }
             items = versionListing.getVersionSummaries()
                     .stream()

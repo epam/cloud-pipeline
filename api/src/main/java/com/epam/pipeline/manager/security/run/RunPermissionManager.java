@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
@@ -60,6 +61,7 @@ public class RunPermissionManager {
     private static final RunVisibilityPolicy DEFAULT_POLICY = RunVisibilityPolicy.INHERIT;
 
     private final PipelineRunManager runManager;
+    private final PipelineRunCRUDService runCRUDService;
     private final PipelineApiService pipelineApiService;
     private final CheckPermissionHelper permissionsHelper;
     private final AuthManager authManager;
@@ -85,11 +87,11 @@ public class RunPermissionManager {
     }
 
     public boolean runPermission(final Long runId, final String permissionName) {
-        return runPermission(runManager.loadPipelineRun(runId), permissionName);
+        return runPermission(runCRUDService.loadRunById(runId), permissionName);
     }
 
     public boolean runStatusPermission(Long runId, TaskStatus taskStatus, String permissionName) {
-        final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
+        final PipelineRun pipelineRun = runCRUDService.loadRunById(runId);
         if (taskStatus.isFinal()) {
             return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner());
         }
@@ -97,7 +99,7 @@ public class RunPermissionManager {
     }
 
     public boolean isRunSshAllowed(Long runId) {
-        return isRunSshAllowed(runManager.loadPipelineRun(runId));
+        return isRunSshAllowed(runCRUDService.loadRunById(runId));
     }
 
     public boolean isRunSshAllowed(PipelineRun pipelineRun) {

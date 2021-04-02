@@ -75,7 +75,7 @@ public class S3bucketDataStorage extends AbstractDataStorage {
 
     @Override
     public String getPathMask() {
-        return  String.format("s3://%s", getPath());
+        return  "s3://" + getPath();
     }
 
     @Override

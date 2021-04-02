@@ -1140,6 +1140,12 @@ if [ -d $COMMON_REPO_DIR/shell ]; then
       export PATH=$PATH:$COMMON_REPO_DIR/shell
 fi
 
+# Fix /etc/hosts if requested
+CP_ETC_HOSTS_FIXES_ENABLED=${CP_ETC_HOSTS_FIXES_ENABLED:-"true"}
+if [ "$CP_ETC_HOSTS_FIXES_ENABLED" == "true" ]; then
+      etc_hosts_fixes
+fi
+
 # Install pipe CLI
 CP_PIPE_CLI_ENABLED=${CP_PIPE_CLI_ENABLED:-"true"}
 if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
@@ -1807,10 +1813,11 @@ if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
       echo "Failure waiting timeout has been reached, proceeding with the cleanup and termination"
 fi
 
-if check_installed "umount"; then
-  echo "Unmounting all storage mounts"
-  umount -t cifs,fuse,nfs,nfs4,lustre -lfa
-  echo "Finished unmounting process"
+if ! check_cp_cap "CP_CAP_SKIP_UMOUNT" && check_installed "umount"; then
+      CP_CAP_UMOUNT_TYPES="${CP_CAP_UMOUNT_TYPES:-cifs,fuse,nfs,nfs4,lustre}"
+      echo "Unmounting all storage mounts"
+      umount -t "$CP_CAP_UMOUNT_TYPES" -lfa
+      echo "Finished unmounting process"
 fi
 
 if [ "$SINGLE_RUN" = true ] && [ "$cluster_role_type" != "additional" ]; then
@@ -1823,6 +1830,6 @@ else
     rm -Rf $RUN_DIR
 fi
 
-
+echo "Exiting with $CP_EXEC_RESULT"
 exit "$CP_EXEC_RESULT"
 ######################################################

@@ -21,6 +21,7 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -41,6 +42,9 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
+import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -67,6 +71,21 @@ public class CloudPipelineAPIClient {
 
     public AbstractDataStorage loadDataStorage(final Long id) {
         return QueryUtils.execute(cloudPipelineAPI.loadDataStorage(id));
+    }
+
+    public void insertDataStorageTags(final Long id, final DataStorageTagInsertBatchRequest request) {
+        QueryUtils.execute(cloudPipelineAPI.insertDataStorageTags(id, request));
+    }
+
+    public List<DataStorageTag> loadDataStorageTags(final Long id, final DataStorageTagLoadBatchRequest request) {
+        return ListUtils.emptyIfNull(QueryUtils.execute(cloudPipelineAPI.loadDataStorageObjectTags(id, request)));
+    }
+
+    public Map<String, Map<String, String>> loadDataStorageTagsMap(final Long id,
+                                                                   final DataStorageTagLoadBatchRequest request) {
+        return loadDataStorageTags(id, request).stream()
+                .collect(Collectors.groupingBy(tag -> tag.getObject().getPath(),
+                        Collectors.toMap(DataStorageTag::getKey, DataStorageTag::getValue)));
     }
 
     public PipelineRunWithLog loadPipelineRunWithLogs(final Long pipelineRunId) {

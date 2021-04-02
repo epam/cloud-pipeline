@@ -48,7 +48,7 @@ public class NFSDataStorage extends AbstractDataStorage {
 
     @Override
     public String getPathMask() {
-        return String.format("nfs://%s", getPath());
+        return "nfs://" + getPath();
     }
 
     @Override

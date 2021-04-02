@@ -30,6 +30,7 @@ class HostedAppConfigurationDialog extends React.Component {
   state = {
     service: undefined,
     ports: [],
+    validationError: false,
     serviceError: undefined,
     portsErrors: [],
     portsGlobalError: undefined
@@ -51,10 +52,11 @@ class HostedAppConfigurationDialog extends React.Component {
       this.setState({
         service: undefined,
         ports: [{port: undefined, targetPort: undefined}],
+        validationError: false,
         serviceError: undefined,
         portsErrors: [undefined],
         portsGlobalError: undefined
-      });
+      }, () => this.validate(false));
     } else {
       const {
         service,
@@ -63,14 +65,15 @@ class HostedAppConfigurationDialog extends React.Component {
       this.setState({
         service,
         ports: ports.slice().map(p => ({...p, targetPortTouched: true})),
+        validationError: false,
         serviceError: undefined,
         portsErrors: ports.map(p => undefined),
         portsGlobalError: undefined
-      });
+      }, () => this.validate(false));
     }
   };
 
-  validate = () => {
+  validate = (updateState = true) => {
     return new Promise((resolve) => {
       const {service, ports} = this.state;
       let serviceError;
@@ -108,12 +111,19 @@ class HostedAppConfigurationDialog extends React.Component {
         return undefined;
       };
       const portsErrors = (ports || []).map(validatePorts);
-      this.setState({
-        serviceError,
-        portsErrors,
-        portsGlobalError
-      }, () => {
-        resolve(!serviceError && portsErrors.filter(Boolean).length === 0 && !portsGlobalError);
+      const validationError = serviceError ||
+        portsErrors.filter(Boolean).length > 0 ||
+        portsGlobalError;
+      const state = {
+        validationError
+      };
+      if (updateState) {
+        state.serviceError = serviceError;
+        state.portsErrors = portsErrors;
+        state.portsGlobalError = portsGlobalError;
+      }
+      this.setState(state, () => {
+        resolve(!validationError);
       });
     });
   };
@@ -121,7 +131,7 @@ class HostedAppConfigurationDialog extends React.Component {
   onChangeServiceName = (e) => {
     this.setState({
       service: e.target.value
-    }, this.validate);
+    }, () => this.validate());
   };
 
   onChangePort = (index) => (e) => {
@@ -132,7 +142,7 @@ class HostedAppConfigurationDialog extends React.Component {
       if (!port.targetPortTouched) {
         port.targetPort = e;
       }
-      this.setState({ports}, this.validate);
+      this.setState({ports}, () => this.validate());
     }
   };
 
@@ -142,21 +152,21 @@ class HostedAppConfigurationDialog extends React.Component {
       const port = ports[index];
       port.targetPort = e;
       port.targetPortTouched = true;
-      this.setState({ports}, this.validate);
+      this.setState({ports}, () => this.validate());
     }
   };
 
   onAddPorts = () => {
     const {ports} = this.state;
     ports.push({port: undefined, targetPort: undefined});
-    this.setState({ports}, this.validate);
+    this.setState({ports}, () => this.validate());
   };
 
   onRemovePorts = (index) => () => {
     const {ports} = this.state;
     if (ports.length > index) {
       ports.splice(index, 1);
-      this.setState({ports}, this.validate);
+      this.setState({ports}, () => this.validate());
     }
   };
 
@@ -186,6 +196,7 @@ class HostedAppConfigurationDialog extends React.Component {
     const {
       service,
       ports,
+      validationError,
       serviceError,
       portsErrors,
       portsGlobalError
@@ -221,11 +232,7 @@ class HostedAppConfigurationDialog extends React.Component {
                 Cancel
               </Button>
               <Button
-                disabled={
-                  serviceError ||
-                  portsErrors.filter(Boolean).length > 0 ||
-                  portsGlobalError
-                }
+                disabled={validationError}
                 className={styles.button}
                 type="primary"
                 onClick={this.handleSave}

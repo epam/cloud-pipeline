@@ -18,6 +18,7 @@ package com.epam.pipeline.elasticsearchagent.service;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 
 /**
  * Provides common interface for indexing of files in some {@code AbstractDataStorage}
@@ -25,5 +26,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 public interface ObjectStorageIndex extends ElasticsearchSynchronizer {
 
     DataStorageType getStorageType();
+    SearchDocumentType getDocumentType();
     void indexStorage(AbstractDataStorage dataStorage);
 }

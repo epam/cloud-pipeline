@@ -122,8 +122,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .selectStorage(storage)
                 .createFolder(storageFolder)
                 .createAndEditFile(storageFile, storageFileContent);
-        home()
-                .globalSearch()
+        home().sleep(2, SECONDS);
+        search()
                 .ensureVisible(FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES, SEARCH, QUESTION_MARK)
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .close();
@@ -497,6 +497,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .parent()
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
                 .ensure(STATUS, text(testRunID_2668));
+        home();
         search()
                 .click(RUNS)
                 .search(testRunID_2668)
@@ -530,6 +531,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
                 .ensure(STATUS, text(testRunID_2668))
                 .shouldHaveStatus(STOPPED);
+        home();
         search()
                 .click(RUNS)
                 .search(testRunID_2668)
@@ -750,7 +752,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .ensure(RUNS, enabled)
-                .validateCountSearchResults(4)
+                .validateCountSearchResults(1)
                 .search(configuration)
                 .enter()
                 .validateSearchResults(0, "")

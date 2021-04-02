@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.utils;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.apache.commons.lang3.BooleanUtils;
@@ -45,7 +45,7 @@ public class UtilsManager {
     private PreferenceManager preferenceManager;
 
     @Autowired
-    private PipelineRunManager runManager;
+    private PipelineRunCRUDService runCRUDService;
 
     @Value("${kube.edge.label}")
     private String edgeLabel;
@@ -72,7 +72,7 @@ public class UtilsManager {
     }
 
     private boolean runIsNotSensitive(final Long runId) {
-        return !BooleanUtils.toBoolean(runManager.loadPipelineRun(runId).getSensitive());
+        return !BooleanUtils.toBoolean(runCRUDService.loadRunById(runId).getSensitive());
     }
 
     private Boolean isFSBrowserEnabled() {

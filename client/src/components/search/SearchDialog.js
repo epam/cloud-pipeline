@@ -37,6 +37,8 @@ import {
   getPipelineFileInfo,
   PipelineFileTypes
 } from './utilities/getPipelineFileInfo';
+import {facetedQueryString} from './faceted-search/utilities';
+import {DocumentTypeFilterName} from './faceted-search/filter';
 import '../../staticStyles/Search.css';
 
 const PAGE_SIZE = 50;
@@ -130,7 +132,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             const path = item.id;
             const parentFolder = path.split('/').slice(0, path.split('/').length - 1).join('/');
             if (parentFolder) {
-              this.props.router.push(`/storage/${item.parentId}?path=${parentFolder}`);
+              this.props.router.push(`/storage/${item.parentId}?path=${encodeURIComponent(parentFolder)}`);
             } else {
               this.props.router.push(`/storage/${item.parentId}`);
             }
@@ -638,6 +640,24 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     );
   };
 
+  navigateToAdvancedFilter = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const {searchString, selectedGroupTypes} = this.state;
+    const docTypes = (selectedGroupTypes || [])
+      .map(group => SearchGroupTypes.hasOwnProperty(group) ? SearchGroupTypes[group].types : [])
+      .reduce((r, c) => ([...r, ...c]), []);
+    let queryString = facetedQueryString.build(
+      searchString,
+      {[DocumentTypeFilterName]: docTypes}
+    );
+    if (queryString) {
+      queryString = `?${queryString}`;
+    }
+    this.props.router.push(`/search/advanced${queryString}`);
+    this.closeDialog();
+  };
+
   render () {
     const {preferences} = this.props;
     if (preferences.loaded && !preferences.searchEnabled) {
@@ -645,6 +665,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     }
     const searchFormClassNames = [styles.searchForm];
     const searchResultsClassNames = [styles.searchResults];
+    const advancedSearchClassNames = [styles.advanced];
     if (this.state.searchResults.length) {
       searchFormClassNames.push(styles.resultsAvailable);
       searchResultsClassNames.push(styles.resultsAvailable);
@@ -662,6 +683,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     }
     if (this.state.previewAvailable) {
       hintContainerClassNames.push(styles.previewAvailable);
+    }
+    if (this.state.searchResults.length) {
+      advancedSearchClassNames.push(styles.resultsAvailable);
+    }
+    if (this.state.previewAvailable) {
+      advancedSearchClassNames.push(styles.previewAvailable);
     }
     let hintsTooltipPlacement;
     if (this.state.previewAvailable && this.state.searchResults.length) {
@@ -756,6 +783,13 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             </Row>
           }
         </Row>
+        <div
+          className={advancedSearchClassNames.join(' ')}
+          onClick={this.navigateToAdvancedFilter}
+        >
+          <Icon className={styles.icon} type="filter" />
+          <span className={styles.buttonText}>Advanced search</span>
+        </div>
       </div>
     );
   }

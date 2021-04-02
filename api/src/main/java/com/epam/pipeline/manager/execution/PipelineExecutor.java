@@ -34,6 +34,7 @@ import io.fabric8.kubernetes.api.model.HostPathVolumeSource;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodDNSConfig;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.SecurityContext;
@@ -119,12 +120,12 @@ public class PipelineExecutor {
             String runIdLabel = String.valueOf(run.getId());
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-                nodeSelector.put("runid", nodeIdLabel);
+                nodeSelector.put(KubernetesConstants.RUN_ID_LABEL, nodeIdLabel);
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
                 if (run.getPodId().equals(pipelineId) && nodeIdLabel.equals(runIdLabel)) {
-                    labels.put("type", "pipeline");
+                    labels.put(KubernetesConstants.TYPE_LABEL, KubernetesConstants.PIPELINE_TYPE);
                 }
-                labels.put("runid", runIdLabel);
+                labels.put(KubernetesConstants.RUN_ID_LABEL, runIdLabel);
             } else {
                 nodeSelector.put("skill", "luigi");
             }
@@ -169,6 +170,9 @@ public class PipelineExecutor {
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
         spec.setDnsPolicy("ClusterFirst");
         spec.setNodeSelector(nodeSelector);
+        if (preferenceManager.getPreference(SystemPreferences.KUBE_POD_DOMAINS_ENABLED)) {
+            configurePodDns(run, spec);
+        }
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }
@@ -186,6 +190,15 @@ public class PipelineExecutor {
                 envVars, dockerImage, command, imagePullPolicy,
                 isDockerInDockerEnabled, isSystemdEnabled, isParentPod)));
         return spec;
+    }
+
+    private void configurePodDns(final PipelineRun run, final PodSpec spec) {
+        spec.setHostname(run.getPodId());
+        spec.setSubdomain(preferenceManager.getPreference(SystemPreferences.KUBE_POD_SUBDOMAIN));
+        final PodDNSConfig podDNSConfig = new PodDNSConfig();
+        podDNSConfig.setSearches(Collections.singletonList(preferenceManager.getPreference(
+                SystemPreferences.KUBE_POD_SEARCH_PATH)));
+        spec.setDnsConfig(podDNSConfig);
     }
 
     private boolean isParameterEnabled(List<EnvVar> envVars, String parameter) {
@@ -309,7 +322,7 @@ public class PipelineExecutor {
     private Volume createVolume(String name, String hostPath) {
         Volume volume = new Volume();
         volume.setName(name);
-        volume.setHostPath(new HostPathVolumeSource(hostPath));
+        volume.setHostPath(new HostPathVolumeSource(hostPath, StringUtils.EMPTY));
         return volume;
     }
 

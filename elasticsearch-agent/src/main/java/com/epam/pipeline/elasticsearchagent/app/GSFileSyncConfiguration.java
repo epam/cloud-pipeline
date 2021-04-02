@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.*;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,7 +28,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(value = "sync.gs-file.disable", matchIfMissing = true, havingValue = "false")
 public class GSFileSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
@@ -42,12 +42,16 @@ public class GSFileSyncConfiguration {
     @Value("${sync.gs-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
 
+    @Value("${sync.gs-file.bulk.load.tags.size:100}")
+    private Integer bulkLoadTagsSize;
+
     @Bean
     public ObjectStorageFileManager gsFileManager() {
         return new GsBucketFileManager();
     }
 
     @Bean
+    @ConditionalOnProperty(value = "sync.gs-file.disable", matchIfMissing = true, havingValue = "false")
     public ObjectStorageIndex gsFileSynchronizer(
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,
@@ -55,7 +59,9 @@ public class GSFileSyncConfiguration {
             final @Qualifier("gsFileManager") ObjectStorageFileManager gsFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 gsFileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.GS);
+                indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
+                DataStorageType.GS,
+                SearchDocumentType.GS_FILE);
     }
 
 }

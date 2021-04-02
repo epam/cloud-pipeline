@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.event;
 
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -33,13 +34,16 @@ public class StartupApplicationListener {
     private final DockerRegistryManager dockerRegistryManager;
     private final CloudRegionManager cloudRegionManager;
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+    private final KubernetesManager kubernetesManager;
 
     public StartupApplicationListener(final DockerRegistryManager dockerRegistryManager,
                                       final CloudRegionManager cloudRegionManager,
-                                      final PipelineRunDockerOperationManager pipelineRunDockerOperationManager) {
+                                      final PipelineRunDockerOperationManager pipelineRunDockerOperationManager,
+                                      final KubernetesManager kubernetesManager) {
         this.dockerRegistryManager = dockerRegistryManager;
         this.cloudRegionManager = cloudRegionManager;
         this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
+        this.kubernetesManager = kubernetesManager;
     }
 
     @EventListener
@@ -49,6 +53,7 @@ public class StartupApplicationListener {
                 dockerRegistryManager.checkDockerSecrets();
                 cloudRegionManager.refreshCloudRegionCredKubeSecret();
                 pipelineRunDockerOperationManager.rerunPauseAndResume();
+                kubernetesManager.getOrCreatePodDnsService();
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);

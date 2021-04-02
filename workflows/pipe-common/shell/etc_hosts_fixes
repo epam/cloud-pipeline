@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+echo "Applying /etc/hosts fixes"
+
+# Remove the pod's FQDN from the /etc/hosts
+if [ -z "${CP_LOCAL_POD_DOMAIN}" ]; then
+    echo "Local pods domain is not set, will get from the launch.kube.pod.search.path preference"
+    CP_LOCAL_POD_DOMAIN=$(curl -s \
+                         --max-time 30 \
+                         -X GET \
+                         --insecure \
+                         --header 'Accept: application/json' \
+                         --header "Authorization: Bearer $API_TOKEN" \
+                         "$API/preferences/launch.kube.pod.search.path" | jq -r '.payload.value')
+
+    if [ -z "$CP_LOCAL_POD_DOMAIN" ] || \
+        [ "$CP_LOCAL_POD_DOMAIN" == "null" ] || \
+        [ "$CP_LOCAL_POD_DOMAIN" == "None" ]; then
+        echo "launch.kube.pod.search.path preference is not set or is not available"
+        unset CP_LOCAL_POD_DOMAIN
+    fi
+fi
+
+if [ "${CP_LOCAL_POD_DOMAIN}" ]; then
+    local_pod_name_short=$(hostname -s)
+    local_pod_fqdn=$(hostname -f)
+    if [ "$local_pod_name_short" == "$local_pod_fqdn" ]; then
+        echo "Pod short name ($local_pod_name_short) equals to FQDN ($local_pod_fqdn), will not remove it from the /etc/hosts"
+    elif [[ "$local_pod_fqdn" == *"$CP_LOCAL_POD_DOMAIN"* ]]; then
+        tmp_hosts_file=$(mktemp)
+        sed "s/$local_pod_fqdn//" /etc/hosts > $tmp_hosts_file
+        \cp $tmp_hosts_file /etc/hosts
+        rm -f $tmp_hosts_file
+        echo "FQDN ($local_pod_fqdn) has been removed from the /etc/hosts"
+    fi
+else
+    echo "Will not remove FQDN from the /etc/hosts, as the domain is not known"
+fi
+
+echo "Done with /etc/hosts fixes"

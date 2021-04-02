@@ -16,6 +16,7 @@
 
 import AWS from 'aws-sdk/index';
 import Credentials from './credentials';
+import DataStorageTagsUpdate from '../dataStorage/tags/DataStorageTagsUpdate';
 import fetchTempCredentials from './fetch-temp-credentials';
 import displaySize from '../../utils/displaySize';
 
@@ -280,16 +281,43 @@ class S3Storage {
         promise: Promise.all(promises.map(p => p.promise))
       };
     };
+    const fileTags = {CP_OWNER: owner};
     const startUpload = () => {
       return new Promise((resolve, reject) => {
         if (file.size > MAX_FILE_SIZE) {
           reject(new Error(`error: Maximum ${MAX_FILE_SIZE_DESCRIPTION} per file`));
         } else {
-          this.createMultipartUpload(file.name, {CP_OWNER: owner})
+          this.createMultipartUpload(file.name, fileTags)
             .then((data) => {
               resolve(data.UploadId);
             }, reject);
         }
+      });
+    };
+    const updateDataStorageTags = () => {
+      const request = new DataStorageTagsUpdate(
+        this._storage.id,
+        this.prefix + file.name
+      );
+      return new Promise((resolve) => {
+        request
+          .send(fileTags)
+          .then(() => {
+            if (request.error) {
+              console.warn(
+                `Error updating data storage item (${this.prefix + file.name}) tags:`,
+                request.error
+              );
+            }
+            resolve();
+          })
+          .catch((e) => {
+            console.warn(
+              `Error updating data storage item (${this.prefix + file.name}) tags:`,
+              e.message
+            );
+            resolve();
+          });
       });
     };
     const finishUpload = (uploadID, parts, done) => {
@@ -299,7 +327,10 @@ class S3Storage {
         uploadID
       )
         .then(
-          () => done(),
+          () => {
+            updateDataStorageTags()
+              .then(() => done());
+          },
           (error) => {
             onPartError && onPartError(parts.length, error.message);
             done(error.message);

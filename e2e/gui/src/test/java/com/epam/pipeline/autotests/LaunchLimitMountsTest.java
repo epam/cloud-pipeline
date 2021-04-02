@@ -68,6 +68,7 @@ public class LaunchLimitMountsTest
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage2 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage3 = "launchLimitMountsStorage" + Utils.randomSuffix();
+    private String storage4 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storageSensitive = "launchLimitMountsStorage" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
@@ -330,8 +331,6 @@ public class LaunchLimitMountsTest
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
                     .selectDataStoragesToLimitMounts()
-                    .clearSelection()
-                    .selectAll()
                     .countObjectStorages();
             minRAM = tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
@@ -348,6 +347,47 @@ public class LaunchLimitMountsTest
                 addStor.forEach(stor -> library().removeStorage(stor));
             }
         }
+    }
+
+    @Test(priority = 4)
+    @TestCase(value = {"1590"})
+    public void allowToLaunchRunsWithoutMounts() {
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.settings()
+                                .doNotMountStoragesSelect(false)
+                                .save());
+        library()
+                .createStorage(storage4);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
+                .doNotMountStoragesSelect(true)
+                .ensureNotVisible(LIMIT_MOUNTS)
+                .doNotMountStoragesSelect(false)
+                .ensureVisible(LIMIT_MOUNTS)
+                .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
+                .selectDataStoragesToLimitMounts()
+                .click(CLEAR_SELECTION)
+                .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)
+                .ok()
+                .ensureNotVisible(LIMIT_MOUNTS)
+                .assertDoNotMountStoragesIsChecked()
+                .launch(this)
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", "None"), exist)
+                .waitForSshLink()
+                .waitForTask(mountDataStoragesTask)
+                .click(taskWithName(mountDataStoragesTask))
+                .ensure(log(), containsMessages(
+                        "Run is launched with mount limits (None) Only 0 storages will be mounted",
+                        "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
+                .ssh(shell -> shell
+                        .execute("ls -l cloud-data/")
+                        .assertOutputContains("total 0")
+                        .close());
     }
 
     private String mountStorageMessage(String storage) {

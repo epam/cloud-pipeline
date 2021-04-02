@@ -143,6 +143,8 @@ public class SystemPreferences {
                                new TypeReference<DataStorageTemplate>() {},
                                DATA_STORAGE_GROUP,
                                isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
+    public static final IntPreference DATA_STORAGE_OPERATIONS_BULK_SIZE = new IntPreference(
+            "storage.operations.bulk.size", 1000, DATA_STORAGE_GROUP, isGreaterThan(0));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -441,6 +443,15 @@ public class SystemPreferences {
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
     public static final StringPreference KUBE_SERVICE_SUFFIX = new StringPreference("launch.kube.service.suffix",
             "svc.cluster.local", LAUNCH_GROUP, pass);
+
+    public static final BooleanPreference KUBE_POD_DOMAINS_ENABLED = new BooleanPreference(
+            "launch.kube.pod.domains.enabled", true, LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SERVICE = new StringPreference("launch.kube.pod.service",
+            "pods", LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SUBDOMAIN = new StringPreference("launch.kube.pod.subdomain",
+            "pods", LAUNCH_GROUP, pass);
+    public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
+            "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
