@@ -18,6 +18,8 @@
 package com.epam.pipeline.vmmonitor.service.k8s;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -38,6 +40,7 @@ public class KubernetesDeploymentMonitorImpl implements KubernetesDeploymentMoni
 
     private static final String NAMESPACE_DELIMITER = "@";
     private static final String DELIMITER = ",";
+    private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
 
     private final KubernetesNotifier kubernetesNotifier;
     private final List<String> monitoredDeployments;
@@ -64,7 +67,8 @@ public class KubernetesDeploymentMonitorImpl implements KubernetesDeploymentMoni
     }
 
     private void checkDeploymentStatus(final String deploymentName) {
-        try (KubernetesClient client = new DefaultKubernetesClient()) {
+        final Config config = new ConfigBuilder().withConnectionTimeout(CONNECTION_TIMEOUT_MS).build();
+        try (KubernetesClient client = new DefaultKubernetesClient(config)) {
             final String namespace = getDeploymentNamespace(deploymentName);
             final Deployment deployment = client.apps().deployments()
                     .inNamespace(namespace)

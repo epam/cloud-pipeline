@@ -37,18 +37,17 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import io.fabric8.kubernetes.api.model.DoneableNode;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -57,13 +56,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -129,13 +128,14 @@ public class NodesManager {
     }
 
     public List<NodeInstance> getNodes() {
-        List<NodeInstance> result;
-        Config config = new Config();
-        try (KubernetesClient client = new DefaultKubernetesClient(config)) {
-            result = client.nodes().list().getItems().stream().map(NodeInstance::new).collect(Collectors.toList());
-            this.attachRunsInfo(result);
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+            final List<NodeInstance> result = ListUtils.emptyIfNull(client.nodes().list().getItems())
+                    .stream()
+                    .map(NodeInstance::new)
+                    .collect(Collectors.toList());
+            attachRunsInfo(result);
+            return result;
         }
-        return result;
     }
 
     public List<NodeInstance> filterNodes(FilterNodesVO filterNodesVO) {
@@ -185,14 +185,15 @@ public class NodesManager {
     }
 
     public Optional<NodeInstance> findNode(final String name, final FilterPodsRequest request) {
-        try (KubernetesClient client = new DefaultKubernetesClient()) {
-            final Resource<Node, DoneableNode> nodeSearchResult = client.nodes().withName(name);
-            final Node node = nodeSearchResult.get();
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+            final Node node = client.nodes().withName(name).get();
             if (node != null) {
                 final List<String> statuses = request != null ? request.getPodStatuses() : null;
                 final NodeInstance nodeInstance = new NodeInstance(node);
-                this.attachRunsInfo(Collections.singletonList(nodeInstance));
-                nodeInstance.setPods(PodInstance.convertToInstances(client.pods().list(),
+                attachRunsInfo(Collections.singletonList(nodeInstance));
+                nodeInstance.setPods(PodInstance.convertToInstances(client.pods()
+                                .inAnyNamespace()
+                                .withField("spec.nodeName", nodeInstance.getName()).list(),
                         FilterPodsRequest.getPodsByNodeNameAndStatusPredicate(name, statuses))
                 );
                 return Optional.of(nodeInstance);
@@ -222,7 +223,7 @@ public class NodesManager {
     public List<MasterNode> getMasterNodes() {
         final String defMasterPort =
                 String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_MASTER_PORT));
-        try (KubernetesClient client = new DefaultKubernetesClient()) {
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             return client.nodes().withLabel(MASTER_LABEL).list().getItems()
                     .stream()
                     .filter(this::nodeIsReady)
@@ -355,25 +356,24 @@ public class NodesManager {
         });
     }
 
-    private void attachRunsInfo(List<NodeInstance> nodeInstances) {
-        List<Long> ids = new ArrayList<>();
-        nodeInstances.forEach(i -> {
-            try {
-                ids.add(Long.parseLong(i.getRunId()));
-            } catch (NumberFormatException exception) {
-                i.setRunId(null);
-                i.setPipelineRun(null);
-            }
-        });
-        if (ids.isEmpty()) {
+    private void attachRunsInfo(final List<NodeInstance> nodeInstances) {
+        if (CollectionUtils.isEmpty(nodeInstances)) {
             return;
         }
-        List<PipelineRun> runs = pipelineRunManager.loadPipelineRuns(ids);
-        nodeInstances.forEach(i -> {
-            Predicate<? super PipelineRun> filter = r -> r.getId().toString().equals(i.getRunId());
-            Optional<PipelineRun> oPipelineRun = runs.stream().filter(filter).findFirst();
-            oPipelineRun.ifPresent(i::setPipelineRun);
-        });
+        final List<Long> runIds = nodeInstances
+                .stream()
+                .map(NodeInstance::getRunId)
+                .filter(runId -> StringUtils.isNotBlank(runId) &&
+                        NumberUtils.isDigits(runId))
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(runIds)) {
+            return;
+        }
+        final Map<String, PipelineRun> runs = ListUtils.emptyIfNull(pipelineRunManager.loadPipelineRuns(runIds))
+                .stream()
+                .collect(Collectors.toMap(run -> run.getId().toString(), Function.identity(), (r1, r2) -> r1));
+        nodeInstances.forEach(node -> node.setPipelineRun(runs.get(node.getRunId())));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
