@@ -30,13 +30,16 @@ import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -58,9 +61,11 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -96,6 +101,9 @@ public class NodesManager {
 
     @Autowired
     private NodeDiskManager nodeDiskManager;
+
+    @Autowired
+    private PipelineRunCRUDService runCRUDService;
 
     @Value("${kube.protected.node.labels:}")
     private String protectedNodesString;
@@ -230,6 +238,25 @@ public class NodesManager {
                     .map(node -> MasterNode.fromNode(node, defMasterPort))
                     .collect(Collectors.toList());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public RunInfo loadRunIdForNode(final String nodeName) {
+        final List<PipelineRun> runs = runCRUDService.loadRunsForNodeName(nodeName);
+        return CommonUtils.first(
+                //first active
+            () -> runs.stream()
+                        .filter(run -> !run.getStatus().isFinal() && Objects.isNull(run.getEndDate()))
+                        .findFirst(),
+                //latest finished
+            () -> runs.stream()
+                        .max(Comparator.comparing(PipelineRun::getEndDate)),
+                //try to fetch run from node
+            () -> findNode(nodeName)
+                        .filter(node -> Objects.nonNull(node.getPipelineRun()))
+                        .map(NodeInstance::getPipelineRun))
+            .map(run -> new RunInfo(run.getId()))
+            .orElse(null);
     }
 
     private boolean nodeIsReady(final Node node) {
