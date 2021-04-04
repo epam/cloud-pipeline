@@ -535,10 +535,6 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         switchTo().window(tabs.get(0));
     }
 
-    default String getCurrentURL() {
-        return WebDriverRunner.getWebDriver().getCurrentUrl();
-    }
-
     class Entry {
         private final Primitive primitive;
         private final SelenideElement selenideElement;

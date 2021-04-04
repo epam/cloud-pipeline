@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.DocumentTabAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
+import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -28,9 +29,10 @@ import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.FILE_PREVIEW;
 import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
 import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
+import static com.epam.pipeline.autotests.utils.Utils.getCurrentURL;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 
 public class PipelineLibraryTest extends AbstractSeveralPipelineRunningTest implements Authorization {
     private final String pipeline = "pipeline-1353-" + Utils.randomSuffix();
@@ -43,22 +45,23 @@ public class PipelineLibraryTest extends AbstractSeveralPipelineRunningTest impl
     }
 
     @Test
+    @TestCase(value = {"1353"})
     public void checkPipelineSourcesForPreviousDraftVersions() {
         final String[] instanceDisk = new String[1];
-        String pipelineDraftVersionUrl = library()
+        library()
                 .createPipeline(pipeline)
-                .clickOnDraftVersion(pipeline)
-                .getCurrentURL();
-        String pipelineNewVersionUrl1 = new DocumentTabAO(pipeline)
+                .clickOnDraftVersion(pipeline);
+        String pipelineDraftVersionUrl = getCurrentURL();
+        new DocumentTabAO(pipeline)
                 .addStringToReadMeFile(readMeText)
                 .saveAndCommitWithMessage("test: Change ReadMe file")
                 .sleep(3, SECONDS)
-                .ensure(FILE_PREVIEW, text(readMeText))
-                .getCurrentURL();
-        assertFalse(pipelineDraftVersionUrl == pipelineNewVersionUrl1,
+                .ensure(FILE_PREVIEW, text(readMeText));
+        String pipelineNewVersionUrl1 = getCurrentURL();
+        assertNotEquals(pipelineDraftVersionUrl, pipelineNewVersionUrl1,
                 "Initial and new page addresses should be different");
 
-        String pipelineNewVersionUrl2 = new DocumentTabAO(pipeline)
+        new DocumentTabAO(pipeline)
                 .codeTab()
                 .clickOnFile("config.json")
                 .editFile(transferringJsonToObject(profiles -> {
@@ -71,9 +74,9 @@ public class PipelineLibraryTest extends AbstractSeveralPipelineRunningTest impl
                 .sleep(2, SECONDS)
                 .clickOnFile("config.json")
                 .shouldContainInCode(format("\"instance_disk\" : \"%s\"", testInstanceDisk))
-                .close()
-                .getCurrentURL();
-        assertFalse(pipelineNewVersionUrl2 == pipelineNewVersionUrl1,
+                .close();
+        String pipelineNewVersionUrl2 = getCurrentURL();
+        assertNotEquals(pipelineNewVersionUrl2, pipelineNewVersionUrl1,
                 "Initial and new page addresses should be different");
         open(pipelineDraftVersionUrl);
         new DocumentTabAO(pipeline)
