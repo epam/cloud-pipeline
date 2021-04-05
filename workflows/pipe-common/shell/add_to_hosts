@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Adds a new record to /etc/hosts file as well as default hostfile using file system locking.
-# It prevents possible race condition during host files modification.
+# Adds a new host record to default hostfile in a concurrent safe way.
+# Additionally adds a new host record to /etc/hosts if host ip is provided as a second argument.
 # 
 # Usage examples:
 #
 # add_to_hosts "pipeline-12345" \
-#              "127.0.0.2"
+#              "127.0.0.1"
+#
+# add_to_hosts "pipeline-12345"
 
 # Required args
 WORKER_HOST="$1"
@@ -29,7 +31,11 @@ WORKER_IP="$2"
 LOCK_FILE="/var/run/hosts-modification.lock"
 DEFAULT_HOSTFILE="${DEFAULT_HOSTFILE:-/common/hostfile}"
 
-COMMAND="echo -e '$WORKER_IP\t$WORKER_HOST' >> '/etc/hosts';
-         echo -e '$WORKER_HOST' >> '$DEFAULT_HOSTFILE'"
+if [[ -z "$WORKER_IP" ]]; then
+    COMMAND="echo -e '$WORKER_HOST' >> '$DEFAULT_HOSTFILE'"
+else
+    COMMAND="echo -e '$WORKER_HOST' >> '$DEFAULT_HOSTFILE';
+             echo -e '$WORKER_IP\t$WORKER_HOST' >> '/etc/hosts'"
+fi
 
 flock -w 10 "$LOCK_FILE" bash -c "$COMMAND"
