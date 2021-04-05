@@ -73,7 +73,6 @@ public class ClusterApiService {
     }
 
     @PreAuthorize(NODE_READ)
-    @AclMask
     public RunInfo loadRunIdForNode(final String name) {
         return nodesManager.loadRunIdForNode(name);
     }
