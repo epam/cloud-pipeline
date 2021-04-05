@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())
                 .ensureTitleContains("Are you sure you want to launch tool.*with default settings?")
+                .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .ok();
     }
 
@@ -90,6 +91,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         if ($$(className("ant-confirm-body")).findBy(visible).isDisplayed()) {
             new ConfirmationPopupAO<>(new PipelineRunFormAO())
                 .ensureTitleContains(".* Run anyway?")
+                .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .ok();
         }
         return new PipelineRunFormAO(Utils.nameWithoutGroup(toolName));
