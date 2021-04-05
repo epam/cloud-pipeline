@@ -127,6 +127,9 @@ if token then
     local trailing_req_uri = ''
     if (uri_parts_len > 0) then
         trailing_req_uri = arr_to_string(uri_parts, '/')
+        if not string.match(trailing_req_uri, '?') then
+            trailing_req_uri = trailing_req_uri .. '/'
+        end
     end
 
     -- Now we need to get the target IP (i.e. Pod IP) and the access token 
