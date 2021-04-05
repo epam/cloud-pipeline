@@ -75,8 +75,8 @@ function get_current_run_id() {
   _API="$1"
   _API_TOKEN="$2"
   _NODE="$3"
-  call_api "$_API" "$_API_TOKEN" "cluster/node/$_NODE/load" "GET" |
-    jq -r ".payload.labels.runid" |
+  call_api "$_API" "$_API_TOKEN" "cluster/node/$_NODE/run" "GET" |
+    jq -r ".payload.runId" |
     grep -v "^null$"
 }
 
@@ -152,19 +152,6 @@ pipe_log_debug "Starting monitoring service process for node $NODE..."
 while true
 do
   sleep "$MONITORING_DELAY"
-  RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
-  if [[ -z "$RUN_ID" ]]
-  then
-    pipe_log_debug "No run is assigned to the node."
-    continue
-  fi
-  if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]
-  then
-    pipe_log_debug "The run ID $RUN_ID is not a number. Processing will be skipped."
-    continue
-  fi
-  export RUN_ID
-
   LAST_OOM_KILLER_EVENT=$(find_oom_killer_events | tail -1)
   if [[ -z "$LAST_OOM_KILLER_EVENT" ]]
   then
@@ -177,6 +164,18 @@ do
     # No new OOM killer events found
     continue
   fi
+  RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
+  if [[ -z "$RUN_ID" ]]
+  then
+    pipe_log_debug "No run is assigned to the node."
+    continue
+  fi
+  if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+  then
+    pipe_log_debug "The run ID $RUN_ID is not a number. Processing will be skipped."
+    continue
+  fi
+  export RUN_ID
   log_oom_killer_events "$LAST_SYNC_MARK"
   LAST_SYNC_MARK="$LAST_EVENT_MARK"
   echo "$LAST_SYNC_MARK" > "$SYNC_FILE"
