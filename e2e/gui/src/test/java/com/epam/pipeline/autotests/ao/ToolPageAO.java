@@ -30,6 +30,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.title;
 import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
+import static com.epam.pipeline.autotests.utils.Utils.getCurrentURL;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertTrue;
@@ -77,7 +78,7 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
     }
 
     public ToolPageAO assertURLEndsWith(String str) {
-        assertTrue(Utils.getCurrentURL().endsWith(str + "/"),
+        assertTrue(getCurrentURL().endsWith(str + "/"),
                 format("Link from the address bar doesn't end by the '%s'", str));
         return this;
     }

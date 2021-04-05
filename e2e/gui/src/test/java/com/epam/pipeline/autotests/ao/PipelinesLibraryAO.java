@@ -52,8 +52,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
             entry(ADD_EXISTING_STORAGE, $(byClassName("add-existing-storage-button"))),
             entry(CREATE_NFS_MOUNT, $(byClassName("create-new-nfs-mount"))),
             entry(ALL_PIPELINES, $(byText("All pipelines"))),
-            entry(ALL_STORAGES, $(byText("All storages"))),
-            entry(TABLE, $(byXpath("//tbody")))
+            entry(ALL_STORAGES, $(byText("All storages")))
     );
 
     public static final By tree = byId("pipelines-library-tree");
