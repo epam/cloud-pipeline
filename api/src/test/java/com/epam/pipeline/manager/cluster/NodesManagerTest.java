@@ -19,6 +19,9 @@ package com.epam.pipeline.manager.cluster;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.util.KubernetesTestUtils;
 import io.fabric8.kubernetes.api.model.DoneableNode;
@@ -39,12 +42,18 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.sql.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class NodesManagerTest {
@@ -52,7 +61,7 @@ public class NodesManagerTest {
     private static final String TEST_ID = "1";
     private static final String TEST_ADDRESS = "111";
     private static final String ANOTHER_TEST_ADDRESS = "222";
-    private static final String TEST_STRING = "TEST";
+    private static final String TEST_NODENAME = "TEST";
     private static final String TEST_UUID = "0cd07fdc-4364-11eb-b378-0242ac130002";
 
     private FilterNodesVO filterNodesVO;
@@ -67,6 +76,9 @@ public class NodesManagerTest {
     @Mock
     private DefaultKubernetesClient mockKubernetesClient;
 
+    @Mock
+    private PipelineRunCRUDService mockRunCRUDService;
+
     @InjectMocks
     @Autowired
     private NodesManager nodesManager;
@@ -77,19 +89,19 @@ public class NodesManagerTest {
 
         labels = new HashedMap<>();
         labels.put(KubernetesConstants.RUN_ID_LABEL, TEST_ID);
-        labels.put(TEST_STRING, TEST_STRING);
+        labels.put(TEST_NODENAME, TEST_NODENAME);
 
         filterNodesVO = new FilterNodesVO();
         filterNodesVO.setRunId(TEST_ID);
 
         final PipelineRun pipelineRun = new PipelineRun();
-        pipelineRun.setId(1L);
+        pipelineRun.setId(Long.valueOf(TEST_ID));
 
         final ObjectMeta objectMeta = new ObjectMeta();
         objectMeta.setUid(TEST_UUID);
-        objectMeta.setName(TEST_STRING);
-        objectMeta.setCreationTimestamp(TEST_STRING);
-        objectMeta.setClusterName(TEST_STRING);
+        objectMeta.setName(TEST_NODENAME);
+        objectMeta.setCreationTimestamp(TEST_NODENAME);
+        objectMeta.setClusterName(TEST_NODENAME);
         objectMeta.setLabels(labels);
 
         final NodeAddress nodeAddress = new NodeAddress();
@@ -117,7 +129,7 @@ public class NodesManagerTest {
     @Test
     public void shouldReturnListNodeWhenFiltersArePassed() {
         filterNodesVO.setAddress(TEST_ADDRESS);
-        filterNodesVO.setLabels(Collections.singletonMap(TEST_STRING, TEST_STRING));
+        filterNodesVO.setLabels(Collections.singletonMap(TEST_NODENAME, TEST_NODENAME));
 
         final List<NodeInstance> filteredNodes = nodesManager.filterNodes(filterNodesVO);
         final NodeInstance returnedNode = filteredNodes.get(0);
@@ -131,8 +143,42 @@ public class NodesManagerTest {
     @Test
     public void shouldReturnEmptyListNodeWhenAddressFilterIsNotPassed() {
         filterNodesVO.setAddress(ANOTHER_TEST_ADDRESS);
-        filterNodesVO.setLabels(Collections.singletonMap(TEST_STRING, TEST_STRING));
+        filterNodesVO.setLabels(Collections.singletonMap(TEST_NODENAME, TEST_NODENAME));
 
         assertThat(nodesManager.filterNodes(filterNodesVO)).isEmpty();
+    }
+
+    @Test
+    public void shouldReturnActiveRunIdForNode() {
+        final PipelineRun active = new PipelineRun();
+        active.setId(1L);
+        active.setStatus(TaskStatus.RUNNING);
+
+        final PipelineRun finished = new PipelineRun();
+        finished.setId(2L);
+        finished.setStatus(TaskStatus.SUCCESS);
+        finished.setEndDate(DateUtils.now());
+
+        doReturn(Arrays.asList(active, finished)).when(mockRunCRUDService).loadRunsForNodeName(eq(TEST_NODENAME));
+        assertThat(nodesManager.loadRunIdForNode(TEST_NODENAME).getRunId()).isEqualTo(active.getId());
+    }
+
+    @Test
+    public void shouldReturnLastFinishedRunIdForNode() {
+        final LocalDateTime now = LocalDateTime.now();
+        final LocalDateTime twoHoursBefore = now.minus(2, ChronoUnit.HOURS);
+
+        final PipelineRun stopped = new PipelineRun();
+        stopped.setId(1L);
+        stopped.setStatus(TaskStatus.STOPPED);
+        stopped.setEndDate(Date.from(twoHoursBefore.toInstant(ZoneOffset.UTC)));
+
+        final PipelineRun successful = new PipelineRun();
+        successful.setId(2L);
+        successful.setStatus(TaskStatus.SUCCESS);
+        successful.setEndDate(Date.from(now.toInstant(ZoneOffset.UTC)));
+
+        doReturn(Arrays.asList(stopped, successful)).when(mockRunCRUDService).loadRunsForNodeName(eq(TEST_NODENAME));
+        assertThat(nodesManager.loadRunIdForNode(TEST_NODENAME).getRunId()).isEqualTo(successful.getId());
     }
 }
