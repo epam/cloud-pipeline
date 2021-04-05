@@ -47,10 +47,8 @@ class GitClient:
     def clone(self, path, git_url, revision=None):
         callbacks = self._build_callback()
         result_repository = pygit2.clone_repository(git_url, path, callbacks=callbacks)
-        if revision:
-            commit = result_repository.get(revision)
-            result_repository.checkout_tree(commit)
-            result_repository.set_head(commit.id)
+        if revision and not self._revision_is_latest(result_repository, revision):
+            self._checkout(result_repository, revision)
         return result_repository.workdir
 
     def pull(self, path, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
@@ -173,9 +171,10 @@ class GitClient:
         status_files = self.status(repo_path)
         if status_files and len(status_files) > 0:
             self.revert(repo_path, branch)
-        commit = repo.get(revision)
-        repo.checkout_tree(commit)
-        repo.set_head(commit.id)
+        if self._revision_is_latest(repo, revision):
+            repo.checkout('refs/heads/%s' % branch)
+        else:
+            self._checkout(repo, revision)
 
     def _build_callback(self):
         user_pass = pygit2.UserPass(self.user_name, self.token)
@@ -317,3 +316,15 @@ class GitClient:
         if not raw_line_stats or len(raw_line_stats) < 3:
             return None, None
         return raw_line_stats[1], raw_line_stats[2]
+
+    def _revision_is_latest(self, repo, revision):
+        return str(self._get_head(repo).target) == str(revision)
+
+    @staticmethod
+    def _checkout(repo, revision):
+        try:
+            commit = repo.get(revision)
+        except ValueError:
+            raise RuntimeError("Requested revision '%s' doesn't exist" % revision)
+        repo.checkout_tree(commit)
+        repo.set_head(commit.id)
