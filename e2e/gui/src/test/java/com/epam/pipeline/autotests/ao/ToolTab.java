@@ -91,7 +91,6 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         if ($$(className("ant-confirm-body")).findBy(visible).isDisplayed()) {
             new ConfirmationPopupAO<>(new PipelineRunFormAO())
                 .ensureTitleContains(".* Run anyway?")
-                .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .ok();
         }
         return new PipelineRunFormAO(Utils.nameWithoutGroup(toolName));
