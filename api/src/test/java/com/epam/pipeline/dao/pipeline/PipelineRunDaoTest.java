@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -124,6 +125,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
     private static final String TEST_PIPELINE_NAME = "Test";
     private static final String TEST_NEW_PIPELINE_NAME = "AnotherName";
+    private static final String NODE_NAME = "node-12323";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -915,6 +917,16 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertNotNull(result);
         assertThat(result.getPipelineName(), is(TEST_PIPELINE_NAME));
         assertNull(result.getPipelineId());
+    }
+
+    @Test
+    public void shoudlFindRunByNodeName() {
+        final PipelineRun run = buildPipelineRun(null, null);
+        run.getInstance().setNodeName(NODE_NAME);
+        pipelineRunDao.createPipelineRun(run);
+        final List<PipelineRun> loaded = pipelineRunDao.loadRunsByNodeName(NODE_NAME);
+        assertThat(loaded.size(), equalTo(1));
+        assertThat(loaded.get(0).getId(), equalTo(run.getId()));
     }
 
     private PipelineRun createTestPipelineRun() {
