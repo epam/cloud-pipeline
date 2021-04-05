@@ -41,7 +41,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.api.model.Node;
-import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.extern.slf4j.Slf4j;
@@ -148,8 +147,7 @@ public class NodesManager {
 
     public List<NodeInstance> filterNodes(FilterNodesVO filterNodesVO) {
         List<NodeInstance> result;
-        Config config = new Config();
-        try (KubernetesClient client = new DefaultKubernetesClient(config)) {
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             Map<String, String> labelsMap = new HashedMap<>();
             if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
                 labelsMap.put(KubernetesConstants.RUN_ID_LABEL, filterNodesVO.getRunId());

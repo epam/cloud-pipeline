@@ -1765,8 +1765,7 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
-                        kube_service_enabled,
-                        pipeline_name
+                        kube_service_enabled
                     FROM
                         pipeline.pipeline_run
                     WHERE
