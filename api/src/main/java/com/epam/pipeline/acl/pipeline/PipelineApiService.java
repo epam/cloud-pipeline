@@ -28,7 +28,14 @@ import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitEntryIteratorListing;
+import com.epam.pipeline.entity.git.GitEntryListing;
+import com.epam.pipeline.entity.git.GitLogFilter;
+import com.epam.pipeline.entity.git.GitLogsRequest;
+import com.epam.pipeline.entity.git.GitRepositoryCommit;
+import com.epam.pipeline.entity.git.GitRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitRepositoryLogEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -306,5 +313,40 @@ public class PipelineApiService {
             + "hasPermission(#parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
     public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
         return pipelineManager.copyPipeline(id, parentFolderId, newName);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
+                                                                       final String path, final Long page,
+                                                                       final Integer pageSize) {
+        return gitManager.lsTreeRepositoryContent(id, version, path, page, pageSize);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitEntryListing<GitRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
+                                                                            final String path, final Long page,
+                                                                            final Integer pageSize) {
+        return gitManager.logsTreeRepositoryContent(id, version, path, page, pageSize);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitEntryListing<GitRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
+                                                                            final GitLogsRequest paths) {
+        return gitManager.logsTreeRepositoryContent(id, version, paths);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitEntryIteratorListing<GitRepositoryCommit> logRepositoryCommits(final Long id, final Long page,
+                                                                             final Integer pageSize,
+                                                                             final GitLogFilter gitLogFilter) {
+        return gitManager.logRepositoryCommits(id, page, pageSize, gitLogFilter);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitRepositoryCommitDiff logRepositoryCommitDiffs(final Long id,
+                                                            final Boolean includeDiff, final Long page,
+                                                            final Integer pageSize,
+                                                            final GitLogFilter gitLogFilter) {
+        return gitManager.logRepositoryCommitDiffs(id, includeDiff, page, pageSize, gitLogFilter);
     }
 }

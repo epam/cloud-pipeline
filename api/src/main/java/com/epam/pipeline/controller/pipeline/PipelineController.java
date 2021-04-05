@@ -31,7 +31,14 @@ import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitEntryIteratorListing;
+import com.epam.pipeline.entity.git.GitEntryListing;
+import com.epam.pipeline.entity.git.GitLogFilter;
+import com.epam.pipeline.entity.git.GitLogsRequest;
+import com.epam.pipeline.entity.git.GitRepositoryCommit;
+import com.epam.pipeline.entity.git.GitRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitRepositoryLogEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -73,6 +80,7 @@ import java.util.List;
 public class PipelineController extends AbstractRestController {
 
     private static final int BYTES_IN_KB = 1024;
+    public static final String INCLUDE_DIFF = "include_diff";
     @Autowired
     private PipelineApiService pipelineApiService;
 
@@ -81,6 +89,8 @@ public class PipelineController extends AbstractRestController {
     private static final String NAME = "name";
     private static final String VERSION = "version";
     private static final String PATH = "path";
+    private static final String PAGE = "page";
+    private static final String PAGE_SIZE = "page_size";
     private static final String KEEP_REPOSITORY = "keep_repository";
     private static final String RECURSIVE = "recursive";
 
@@ -684,5 +694,92 @@ public class PipelineController extends AbstractRestController {
                                          @RequestParam(value = "parentId", required = false) final Long parentId,
                                          @RequestParam(value = "name", required = false) final String name) {
         return Result.success(pipelineApiService.copyPipeline(id, parentId, name));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/ls_tree", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "List pipeline repository content.",
+            notes = "List pipeline repository content.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitEntryListing<GitRepositoryEntry>> lsTreeRepositoryContent(
+            @PathVariable(value = ID) Long id,
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestParam(value = PATH, required = false) final String path,
+            @RequestParam(value = PAGE, required = false) final Long page,
+            @RequestParam(value = PAGE_SIZE, required = false) final Integer pageSize) throws GitClientException {
+        return Result.success(pipelineApiService.lsTreeRepositoryContent(id, version, path, page, pageSize));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/logs_tree", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Lists pipeline repository content with last commit information.",
+            notes = "Lists pipeline repository content with last commit information.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitEntryListing<GitRepositoryLogEntry>> logsTreeRepositoryContent(
+            @PathVariable(value = ID) Long id,
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestParam(value = PATH, required = false) final String path,
+            @RequestParam(value = PAGE, required = false) final Long page,
+            @RequestParam(value = PAGE_SIZE, required = false) final Integer pageSize) throws GitClientException {
+        return Result.success(pipelineApiService.logsTreeRepositoryContent(id, version, path, page, pageSize));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/logs_tree", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Lists pipeline repository content with last commit information.",
+            notes = "Lists pipeline repository content with last commit information.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitEntryListing<GitRepositoryLogEntry>> logsTreeRepositoryContent(
+            @PathVariable(value = ID) Long id,
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestBody final GitLogsRequest paths) throws GitClientException {
+        return Result.success(pipelineApiService.logsTreeRepositoryContent(id, version, paths));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/commits", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads commit information regarding specified filters.",
+            notes = "Loads commit information regarding specified filters.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitEntryIteratorListing<GitRepositoryCommit>> getRepositoryCommits(
+            @PathVariable(value = ID) Long id,
+            @RequestParam(value = PAGE, required = false) final Long page,
+            @RequestParam(value = PAGE_SIZE, required = false) final Integer pageSize,
+            @RequestBody GitLogFilter gitLogFilter) throws GitClientException {
+        return Result.success(pipelineApiService.logRepositoryCommits(id, page, pageSize, gitLogFilter));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/diff", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads commits and its diffs regarding to specified filters.",
+            notes = "Loads commits and its diffs regarding to specified filters.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitRepositoryCommitDiff> getRepositoryCommitDiffs(
+            @PathVariable(value = ID) Long id,
+            @RequestParam(value = PAGE, required = false) final Long page,
+            @RequestParam(value = PAGE_SIZE, required = false) final Integer pageSize,
+            @RequestParam(value = INCLUDE_DIFF, required = false)  final Boolean includeDiff,
+            @RequestBody GitLogFilter gitLogFilter) throws GitClientException {
+        return Result.success(pipelineApiService.logRepositoryCommitDiffs(id, includeDiff, page, pageSize, gitLogFilter));
     }
 }

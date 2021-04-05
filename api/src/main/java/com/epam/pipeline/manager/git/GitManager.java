@@ -24,11 +24,19 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitEntryIteratorListing;
+import com.epam.pipeline.entity.git.GitEntryListing;
 import com.epam.pipeline.entity.git.GitGroup;
+import com.epam.pipeline.entity.git.GitLogFilter;
+import com.epam.pipeline.entity.git.GitLogsRequest;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
+import com.epam.pipeline.entity.git.GitRepositoryCommit;
+import com.epam.pipeline.entity.git.GitRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitRepositoryLogEntry;
+import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -877,6 +885,98 @@ public class GitManager {
         LOGGER.debug("The temporary git group '{}' was deleted", tmpGroupName);
 
         return forkedProject;
+    }
+
+    public GitEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
+                                                                       final String path, final Long page,
+                                                                       final Integer pageSize) {
+        try {
+            final Pipeline pipeline = pipelineManager.load(id);
+            if (!StringUtils.isNullOrEmpty(version)) {
+                checkRevision(pipeline, version);
+            }
+            return new GitReaderClient(
+                    preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)
+            ).getRepositoryTree(
+                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+            );
+        } catch (GitClientException e) {
+            LOGGER.error(e.getMessage());
+            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+        }
+    }
+
+    public GitEntryListing<GitRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
+                                                                            final String path, final Long page,
+                                                                            final Integer pageSize) {
+        try {
+            final Pipeline pipeline = pipelineManager.load(id);
+            if (!StringUtils.isNullOrEmpty(version)) {
+                checkRevision(pipeline, version);
+            }
+            return new GitReaderClient(
+                    preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)
+            ).getRepositoryTreeLogs(
+                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+            );
+        } catch (GitClientException e) {
+            LOGGER.error(e.getMessage());
+            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+        }
+    }
+
+    public GitEntryListing<GitRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
+                                                                            final GitLogsRequest paths) {
+        try {
+            final Pipeline pipeline = pipelineManager.load(id);
+            if (!StringUtils.isNullOrEmpty(version)) {
+                checkRevision(pipeline, version);
+            }
+            return new GitReaderClient(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST))
+                    .getRepositoryTreeLogs(GitRepositoryUrl.from(pipeline.getRepository()), version, paths);
+        } catch (GitClientException e) {
+            LOGGER.error(e.getMessage());
+            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+        }
+    }
+
+    public GitEntryIteratorListing<GitRepositoryCommit> logRepositoryCommits(final Long id,
+                                                                             final Long page, final Integer pageSize,
+                                                                             final GitLogFilter gitLogFilter) {
+        try {
+            final Pipeline pipeline = pipelineManager.load(id);
+            if (!StringUtils.isNullOrEmpty(gitLogFilter.getRef())) {
+                checkRevision(pipeline, gitLogFilter.getRef());
+            }
+            return new GitReaderClient(
+                    preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)
+            ).getRepositoryCommits(
+                    GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, gitLogFilter
+            );
+        } catch (GitClientException e) {
+            LOGGER.error(e.getMessage());
+            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+        }
+    }
+
+    public GitRepositoryCommitDiff logRepositoryCommitDiffs(final Long id, final Boolean includeDiff,
+                                                            final Long page, final Integer pageSize,
+                                                            final GitLogFilter gitLogFilter) {
+        try {
+            final Pipeline pipeline = pipelineManager.load(id);
+            if (!StringUtils.isNullOrEmpty(gitLogFilter.getRef())) {
+                checkRevision(pipeline, gitLogFilter.getRef());
+            }
+            return new GitReaderClient(
+                    preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)
+            ).getRepositoryCommitDiffs(
+                    GitRepositoryUrl.from(pipeline.getRepository()),
+                    includeDiff, page, pageSize, gitLogFilter
+            );
+        } catch (GitClientException e) {
+            LOGGER.error(e.getMessage());
+            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+        }
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
