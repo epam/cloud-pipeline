@@ -895,11 +895,10 @@ public class GitManager {
             if (!StringUtils.isNullOrEmpty(version)) {
                 checkRevision(pipeline, version);
             }
-            return new GitReaderClient(
-                    preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)
-            ).getRepositoryTree(
-                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
-            );
+            return new GitReaderClient(getGitReaderHostPreference())
+                    .getRepositoryTree(
+                        GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+                    );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
             throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
@@ -914,11 +913,10 @@ public class GitManager {
             if (!StringUtils.isNullOrEmpty(version)) {
                 checkRevision(pipeline, version);
             }
-            return new GitReaderClient(
-                    preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)
-            ).getRepositoryTreeLogs(
-                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
-            );
+            return new GitReaderClient(getGitReaderHostPreference())
+                    .getRepositoryTreeLogs(
+                        GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+                    );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
             throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
@@ -932,8 +930,10 @@ public class GitManager {
             if (!StringUtils.isNullOrEmpty(version)) {
                 checkRevision(pipeline, version);
             }
-            return new GitReaderClient(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST))
-                    .getRepositoryTreeLogs(GitRepositoryUrl.from(pipeline.getRepository()), version, paths);
+            return new GitReaderClient(getGitReaderHostPreference())
+                    .getRepositoryTreeLogs(
+                            GitRepositoryUrl.from(pipeline.getRepository()), version, paths
+                    );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
             throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
@@ -948,11 +948,10 @@ public class GitManager {
             if (!StringUtils.isNullOrEmpty(gitLogFilter.getRef())) {
                 checkRevision(pipeline, gitLogFilter.getRef());
             }
-            return new GitReaderClient(
-                    preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)
-            ).getRepositoryCommits(
-                    GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, gitLogFilter
-            );
+            return new GitReaderClient(getGitReaderHostPreference())
+                    .getRepositoryCommits(
+                        GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, gitLogFilter
+                    );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
             throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
@@ -967,16 +966,21 @@ public class GitManager {
             if (!StringUtils.isNullOrEmpty(gitLogFilter.getRef())) {
                 checkRevision(pipeline, gitLogFilter.getRef());
             }
-            return new GitReaderClient(
-                    preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)
-            ).getRepositoryCommitDiffs(
-                    GitRepositoryUrl.from(pipeline.getRepository()),
-                    includeDiff, page, pageSize, gitLogFilter
-            );
+            return new GitReaderClient(getGitReaderHostPreference())
+                    .getRepositoryCommitDiffs(
+                        GitRepositoryUrl.from(pipeline.getRepository()),
+                        includeDiff, page, pageSize, gitLogFilter
+                    );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
             throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
         }
+    }
+
+    private String getGitReaderHostPreference() {
+        final String gitReaderHost = preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST);
+        Assert.hasText(gitReaderHost, "Preference git.reader.service.host is empty");
+        return gitReaderHost;
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
