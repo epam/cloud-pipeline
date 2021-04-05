@@ -71,4 +71,8 @@ public class PipelineRunCRUDService {
         Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, id));
         return pipelineRun;
     }
+
+    public List<PipelineRun> loadRunsForNodeName(final String nodeName) {
+        return pipelineRunDao.loadRunsByNodeName(nodeName);
+    }
 }

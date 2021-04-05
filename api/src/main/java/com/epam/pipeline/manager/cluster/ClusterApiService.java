@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.utils.UtilsManager;
@@ -65,6 +66,11 @@ public class ClusterApiService {
     @AclMask
     public NodeInstance getNode(final String name) {
         return nodesManager.getNode(name);
+    }
+
+    @PreAuthorize(NODE_READ)
+    public RunInfo loadRunIdForNode(final String name) {
+        return nodesManager.loadRunIdForNode(name);
     }
 
     @PreAuthorize(NODE_READ)

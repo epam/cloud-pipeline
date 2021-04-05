@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import io.swagger.annotations.Api;
@@ -133,6 +134,20 @@ public class ClusterController extends AbstractRestController {
             })
     public Result<NodeInstance> loadNode(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.getNode(name));
+    }
+
+    @RequestMapping(value = "/cluster/node/{name}/run", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns run id associated with nodename.",
+            notes = "Returns run id associated with nodename.",
+            produces = MediaType.APPLICATION_JSON_VALUE
+        )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<RunInfo> loadRunIdForNode(@PathVariable(value = NAME) final String name) {
+        return Result.success(clusterApiService.loadRunIdForNode(name));
     }
 
     @RequestMapping(value = "/cluster/node/{name}/load", method = RequestMethod.POST)

@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -122,6 +123,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     private static final String DOCKER_IMAGE = "dockerImage";
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
+    private static final String NODE_NAME = "node-12323";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -865,6 +867,16 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         pipelineRunDao.updateRun(run);
         final PipelineRun updatedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertTrue(updatedRun.isKubeServiceEnabled());
+    }
+
+    @Test
+    public void shoudlFindRunByNodeName() {
+        final PipelineRun run = buildPipelineRun(null, null);
+        run.getInstance().setNodeName(NODE_NAME);
+        pipelineRunDao.createPipelineRun(run);
+        final List<PipelineRun> loaded = pipelineRunDao.loadRunsByNodeName(NODE_NAME);
+        assertThat(loaded.size(), equalTo(1));
+        assertThat(loaded.get(0).getId(), equalTo(run.getId()));
     }
 
     private PipelineRun createTestPipelineRun() {
