@@ -56,7 +56,17 @@ echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
 echo "idp_sso_target_url: $CP_GITLAB_SLO_TARGET_URL"
 echo
 
+# If the proxies are not set via env vars, gitlab will consider empty values as "no proxy set"
+CP_GITLAB_HTTP_PROXY="${CP_GITLAB_HTTP_PROXY:-$http_proxy}"
+CP_GITLAB_HTTPS_PROXY="${CP_GITLAB_HTTP_PROXY:-$https_proxy}"
+GIT_PROXIES="gitlab_rails['env'] = {
+  \"http_proxy\" => \"$CP_GITLAB_HTTP_PROXY\",
+  \"https_proxy\" => \"$CP_GITLAB_HTTPS_PROXY\"
+}"
+
 cat >> /etc/gitlab/gitlab.rb <<-EOF
+
+${GIT_PROXIES}
 
 gitlab_rails['db_adapter'] = '${GITLAB_DATABASE_ADAPTER}'
 gitlab_rails['db_encoding'] = '${GITLAB_DATABASE_ENCODING}'
