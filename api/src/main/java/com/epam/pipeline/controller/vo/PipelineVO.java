@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo;
 
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -35,6 +36,7 @@ public class PipelineVO {
     private Long parentFolderId;
     private String templateId;
     private RepositoryType repositoryType;
+    private PipelineType pipelineType;
 
     public Pipeline toPipeline() {
         Pipeline pipeline = new Pipeline();
@@ -45,6 +47,7 @@ public class PipelineVO {
         pipeline.setRepository(getRepository());
         pipeline.setRepositorySsh(getRepositorySsh());
         pipeline.setRepositoryToken(getRepositoryToken());
+        pipeline.setType(getPipelineType());
         pipeline.setTemplateId(getTemplateId());
         pipeline.setRepositoryType(getRepositoryType());
         return pipeline;

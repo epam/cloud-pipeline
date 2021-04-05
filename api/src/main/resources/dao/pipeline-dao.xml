@@ -34,6 +34,7 @@
                         owner,
                         repository_token,
                         repository_type,
+                        pipeline_type,
                         locked)
                     VALUES (
                         :PIPELINE_ID,
@@ -46,6 +47,7 @@
                         :OWNER,
                         :REPOSITORY_TOKEN,
                         :REPOSITORY_TYPE,
+                        :PIPELINE_TYPE,
                         :PIPELINE_LOCKED)
                 ]]>
             </value>
@@ -80,6 +82,7 @@
                         owner,
                         repository_token,
                         repository_type,
+                        pipeline_type,
                         locked as pipeline_locked
                     FROM
                         pipeline.pipeline
@@ -108,6 +111,7 @@
                         owner,
                         repository_token,
                         repository_type,
+                        pipeline_type,
                         locked as pipeline_locked
                     FROM
                         pipeline.pipeline
@@ -130,6 +134,7 @@
                         owner,
                         repository_token,
                         repository_type,
+                        pipeline_type,
                         locked as pipeline_locked
                     FROM
                         pipeline.pipeline
@@ -152,6 +157,7 @@
                         owner,
                         repository_token,
                         repository_type,
+                        pipeline_type,
                         locked as pipeline_locked
                     FROM
                         pipeline.pipeline
@@ -174,6 +180,7 @@
                         owner,
                         repository_token,
                         repository_type,
+                        pipeline_type,
                         locked as pipeline_locked
                     FROM
                         pipeline.pipeline
@@ -205,6 +212,7 @@
                             p.pipeline_name,
                             p.repository_token,
                             p.repository_type,
+                            p.pipeline_type,
                             p.locked AS pipeline_locked,
 		                    p.owner,
 		                    c.folder_id,
@@ -226,6 +234,7 @@
                             null AS pipeline_name,
                             null AS repository_token,
                             null AS repository_type,
+                            null AS pipeline_type,
                             null AS pipeline_locked,
 		                    null AS owner,
 		                    m.folder_id,
@@ -249,6 +258,7 @@
                             p.pipeline_name,
                             p.repository_token,
                             p.repository_type,
+                            p.pipeline_type,
                             p.locked AS pipeline_locked,
 		                    p.owner,
 		                    c.folder_id,
@@ -266,6 +276,7 @@
                             null AS pipeline_name,
                             null AS repository_token,
                             null AS repository_type,
+                            null AS pipeline_type,
                             null AS pipeline_locked,
 		                    null AS owner,
 		                    m.folder_id,

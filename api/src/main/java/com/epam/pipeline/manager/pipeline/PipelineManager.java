@@ -27,10 +27,10 @@ import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
-import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -101,6 +101,9 @@ public class PipelineManager implements SecuredEntityManager {
     public Pipeline create(final PipelineVO pipelineVO) throws GitClientException {
         Assert.isTrue(GitUtils.checkGitNaming(pipelineVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_NAME, pipelineVO.getName()));
+        if (pipelineVO.getPipelineType() == null) {
+            pipelineVO.setPipelineType(PipelineType.PIPELINE);
+        }
         if (StringUtils.isEmpty(pipelineVO.getRepository())) {
             Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
                     messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
