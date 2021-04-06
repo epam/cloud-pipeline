@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git;
+package com.epam.pipeline.entity.git.gitreader;
 
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-
-import java.util.List;
 
 
 /**
  * Represents Gitlab repository commit
  */
 @Data
-public class GitRepositoryCommitDiff {
+public class GitReaderDiffEntry {
 
-    @JsonProperty("entries")
-    private List<GitRepositoryCommitDiffEntry> entries;
+    @JsonProperty("commit")
+    private GitReaderRepositoryCommit commit;
 
-    @JsonProperty("filters")
-    private GitLogFilter filters;
+    @JsonProperty("diff")
+    private String diff;
 }

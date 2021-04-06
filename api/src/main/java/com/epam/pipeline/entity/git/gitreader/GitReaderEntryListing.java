@@ -1,4 +1,4 @@
-package com.epam.pipeline.entity.git;
+package com.epam.pipeline.entity.git.gitreader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class GitEntryListing<T> {
+public class GitReaderEntryListing<T> {
     @JsonProperty("listing")
     private List<T> listing;
 

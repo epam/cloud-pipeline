@@ -14,31 +14,32 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git;
+package com.epam.pipeline.entity.git.gitreader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.Data;
+import lombok.Value;
 
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * Represents Gitlab repository commit
- */
-@Data
-public class GitRepositoryCommit {
+@Value
+@Builder
+public class GitReaderLogRequestFilter {
 
-    @JsonProperty("commit")
-    private String commit;
+    @JsonProperty("authors")
+    List<String> authors;
 
-    @JsonProperty("commit_message")
-    private String commitMessage;
+    @JsonProperty("path_masks")
+    List<String> pathMasks;
 
-    @JsonProperty("author")
-    private String author;
+    @JsonProperty("date_from")
+    LocalDateTime dateFrom;
 
-    @JsonProperty("author_email")
-    private String authorEmail;
+    @JsonProperty("date_to")
+    LocalDateTime dateTo;
 
-    @JsonProperty("commit_date")
-    private Date commitDate;
+    @JsonProperty("ref")
+    String ref;
 }

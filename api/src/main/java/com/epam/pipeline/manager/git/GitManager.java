@@ -23,21 +23,21 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.GitEntryIteratorListing;
-import com.epam.pipeline.entity.git.GitEntryListing;
 import com.epam.pipeline.entity.git.GitGroup;
-import com.epam.pipeline.entity.git.GitLogFilter;
-import com.epam.pipeline.entity.git.GitLogsRequest;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
-import com.epam.pipeline.entity.git.GitRepositoryCommit;
-import com.epam.pipeline.entity.git.GitRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
-import com.epam.pipeline.entity.git.GitRepositoryLogEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
@@ -896,9 +896,9 @@ public class GitManager {
         return forkedProject;
     }
 
-    public GitEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
-                                                                       final String path, final Long page,
-                                                                       final Integer pageSize) {
+    public GitReaderEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
+                                                                             final String path, final Long page,
+                                                                             final Integer pageSize) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
             if (!StringUtils.isNullOrEmpty(version)) {
@@ -914,9 +914,9 @@ public class GitManager {
         }
     }
 
-    public GitEntryListing<GitRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
-                                                                            final String path, final Long page,
-                                                                            final Integer pageSize) {
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
+                                                                                        final String path, final Long page,
+                                                                                        final Integer pageSize) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
             if (!StringUtils.isNullOrEmpty(version)) {
@@ -932,8 +932,8 @@ public class GitManager {
         }
     }
 
-    public GitEntryListing<GitRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
-                                                                            final GitLogsRequest paths) {
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
+                                                                                        final GitReaderLogsPathFilter paths) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
             if (!StringUtils.isNullOrEmpty(version)) {
@@ -949,17 +949,17 @@ public class GitManager {
         }
     }
 
-    public GitEntryIteratorListing<GitRepositoryCommit> logRepositoryCommits(final Long id,
-                                                                             final Long page, final Integer pageSize,
-                                                                             final GitLogFilter gitLogFilter) {
+    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(final Long id,
+                                                                                         final Long page, final Integer pageSize,
+                                                                                         final GitCommitsFilter filter) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
-            if (!StringUtils.isNullOrEmpty(gitLogFilter.getRef())) {
-                checkRevision(pipeline, gitLogFilter.getRef());
+            if (!StringUtils.isNullOrEmpty(filter.getRef())) {
+                checkRevision(pipeline, filter.getRef());
             }
             return new GitReaderClient(getGitReaderHostPreference())
                     .getRepositoryCommits(
-                        GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, gitLogFilter
+                        GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, filter
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
@@ -967,18 +967,18 @@ public class GitManager {
         }
     }
 
-    public GitRepositoryCommitDiff logRepositoryCommitDiffs(final Long id, final Boolean includeDiff,
-                                                            final Long page, final Integer pageSize,
-                                                            final GitLogFilter gitLogFilter) {
+    public GitReaderDiff logRepositoryCommitDiffs(final Long id, final Boolean includeDiff,
+                                                  final Long page, final Integer pageSize,
+                                                  final GitCommitsFilter filter) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
-            if (!StringUtils.isNullOrEmpty(gitLogFilter.getRef())) {
-                checkRevision(pipeline, gitLogFilter.getRef());
+            if (!StringUtils.isNullOrEmpty(filter.getRef())) {
+                checkRevision(pipeline, filter.getRef());
             }
             return new GitReaderClient(getGitReaderHostPreference())
                     .getRepositoryCommitDiffs(
                         GitRepositoryUrl.from(pipeline.getRepository()),
-                        includeDiff, page, pageSize, gitLogFilter
+                        includeDiff, page, pageSize, filter
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());

@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git;
+package com.epam.pipeline.entity.git.gitreader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-/**
- * Represents Gitlab repository browsing request result
- */
+import java.util.List;
+
 @Data
-public class GitRepositoryLogEntry {
+public class GitReaderLogsPathFilter {
 
-    @JsonProperty("commit")
-    private GitRepositoryCommit commit;
+    @JsonProperty("paths")
+    private List<String> pathMasks;
 
-    @JsonProperty("git_object")
-    private GitRepositoryEntry gitObject;
 }
