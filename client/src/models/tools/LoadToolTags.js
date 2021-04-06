@@ -19,6 +19,7 @@ import Remote from '../basic/Remote';
 export default class LoadToolTags extends Remote {
   constructor (id) {
     super();
+    this.id = id;
     this.url = `/tool/${id}/tags`;
   }
 }

@@ -56,12 +56,14 @@ import SystemDictionariesLoadAll from '../../models/systemDictionaries/SystemDic
 import GetMetadataKeys from '../../models/metadata/GetMetadataKeys';
 import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
+import HiddenObjects from '../../utils/hidden-objects';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
-const issuesRenderer = new IssuesRenderer(pipelinesLibrary, dockerRegistries, preferences);
+const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
+const issuesRenderer = new IssuesRenderer(pipelinesLibrary, dockerRegistries, preferences, hiddenObjects);
 const notificationsRenderer = new NotificationRenderer();
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
@@ -136,7 +138,8 @@ const Root = () =>
       quotaTemplates: billing.quotas.templates.list,
       billingCenters: new billing.FetchBillingCenters(),
       systemDictionaries,
-      userMetadataKeys
+      userMetadataKeys,
+      [HiddenObjects.injectionName]: hiddenObjects
     }}>
     <AppRouter />
   </Provider>;

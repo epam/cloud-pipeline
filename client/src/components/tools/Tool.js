@@ -17,7 +17,6 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import connect from '../../utils/connect';
 import {
   Alert,
   Button,
@@ -35,7 +34,6 @@ import {
   Tooltip,
   Upload
 } from 'antd';
-import dockerRegistries from '../../models/tools/DockerRegistriesTree';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
 import ToolUpdate from '../../models/tools/ToolUpdate';
@@ -43,7 +41,6 @@ import ToolDelete from '../../models/tools/ToolDelete';
 import ToolSymlink from '../../models/tools/ToolSymlink';
 import LoadToolVersionSettings from '../../models/tools/LoadToolVersionSettings';
 import UpdateToolVersionSettings from '../../models/tools/UpdateToolVersionSettings';
-import preferences from '../../models/preferences/PreferencesLoad';
 import LoadingView from '../special/LoadingView';
 import Metadata from '../special/metadata/Metadata';
 import Issues from '../special/issues/Issues';
@@ -81,6 +78,7 @@ import InstanceTypesManagementForm
 import deleteToolConfirmModal from './tool-deletion-warning';
 import ToolLink from './elements/ToolLink';
 import CreateLinkForm from './forms/CreateLinkForm';
+import HiddenObjects from '../../utils/hidden-objects';
 
 const MarkdownRenderer = new Remarkable('full', {
   html: true,
@@ -109,13 +107,11 @@ const MAX_INLINE_VERSION_ALIASES = 7;
 const DEFAULT_FILE_SIZE_KB = 50;
 
 @localization.localizedComponent
-@connect({
-  dockerRegistries,
-  preferences
-})
 @submitsRun
 @runPipelineActions
-@inject('awsRegions')
+@HiddenObjects.injectToolsFilters
+@HiddenObjects.checkTools(props => props?.params?.id)
+@inject('awsRegions', 'dockerRegistries', 'preferences')
 @inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {params}) => {
   return {
     allowedInstanceTypesCache: allowedInstanceTypes,
@@ -183,10 +179,19 @@ export default class Tool extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get registries () {
+    if (this.props.docker.loaded) {
+      return this.props.hiddenToolsTreeFilter(this.props.docker.value)
+        .registries;
+    }
+    return [];
+  }
+
+  @computed
   get dockerRegistry () {
-    if (this.props.docker.loaded && this.props.tool.loaded) {
-      return (this.props.docker.value.registries || [])
-        .filter(r => r.id === this.props.tool.value.registryId)[0];
+    if (this.registries.length > 0 && this.props.tool.loaded) {
+      return this.registries
+        .find(r => r.id === this.props.tool.value.registryId);
     }
     return null;
   }
@@ -201,11 +206,10 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   @computed
   get hasWritableToolGroups () {
-    if (this.props.docker.loaded && this.props.tool.loaded) {
+    if (this.registries.length > 0 && this.props.tool.loaded) {
       const toolGroupId = +(this.props.tool.value.toolGroupId);
-      const registries = this.props.docker.value.registries || [];
-      for (let r = 0; r < registries.length; r++) {
-        const groups = registries[r].groups || [];
+      for (let r = 0; r < this.registries.length; r++) {
+        const groups = this.registries[r].groups || [];
         if (groups.filter(g => +g.id !== toolGroupId && roleModel.writeAllowed(g)).length > 0) {
           return true;
         }
@@ -550,9 +554,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
 
     let shortDescriptionAndPullCommand;
-    const [registry] = !this.props.docker.loaded
-      ? [null]
-      : (this.props.docker.value.registries || []).filter(r => r.id === this.props.tool.value.registryId);
+    const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
     if (registry && roleModel.readAllowed(this.props.tool.value) && registry.pipelineAuth) {
       const renderPullCommand = () => {
         if (!registry) {
@@ -1311,10 +1313,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       }
       return settingsValue;
     };
-    const [registry] = !this.props.docker.loaded
-      ? [null]
-      : (this.props.docker.value.registries || [])
-        .filter(r => r.id === this.props.tool.value.registryId);
+    const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
     const prepareParameters = (parameters) => {
       const result = {};
       for (let key in parameters) {

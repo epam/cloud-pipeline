@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
-import {computed, observable} from 'mobx';
+import {observable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree} from 'antd';
@@ -40,6 +40,7 @@ import {
 } from '../../model/treeStructureFunctions';
 
 import styles from './Browser.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 const PAGE_SIZE = 40;
 const DTS_ITEM_TYPE = 'DTS';
@@ -58,6 +59,7 @@ const GS_BUCKET_TYPE = 'GS';
   storages: dataStorages,
   library: pipelinesLibrary
 }))
+@HiddenObjects.injectTreeFilter
 @observer
 export default class BucketBrowser extends React.Component {
 
@@ -608,12 +610,18 @@ export default class BucketBrowser extends React.Component {
             null,
             [],
             [ItemTypes.storage],
-            (item, type) => {
-              if (!this.props.bucketTypes || this.props.bucketTypes.length === 0 || type !== ItemTypes.storage) {
-                return true;
+            this.props.hiddenObjectsTreeFilter(
+              (item, type) => {
+                if (
+                  !this.props.bucketTypes ||
+                  this.props.bucketTypes.length === 0 ||
+                  type !== ItemTypes.storage
+                ) {
+                  return true;
+                }
+                return this.props.bucketTypes.indexOf(item.type) >= 0;
               }
-              return this.props.bucketTypes.indexOf(item.type) >= 0;
-            }
+            )
           )
         )];
     }

@@ -23,6 +23,7 @@ export default function runPipelineActions (WrappedComponent) {
     'dockerRegistries',
     'localization',
     'preferences',
-    'pipelines'
+    'pipelines',
+    'hiddenObjects'
   )(observer(WrappedComponent));
 }

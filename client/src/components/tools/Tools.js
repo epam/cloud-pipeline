@@ -18,8 +18,6 @@ import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link} from 'react-router';
-import connect from '../../utils/connect';
-import dockerRegistries from '../../models/tools/DockerRegistriesTree';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';
 import LoadingView from '../special/LoadingView';
 import DockerRegistriesActionsButton from './DockerRegistriesActionsButton';
@@ -37,6 +35,7 @@ import {Alert, Row, Button, Card, Icon, Col} from 'antd';
 import roleModel from '../../utils/roleModel';
 import styles from './Tools.css';
 import ToolsGroupListWithIssues from '../../models/tools/ToolsGroupListWithIssues';
+import HiddenObjects from '../../utils/hidden-objects';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -46,10 +45,10 @@ const findGroupByName = (groups, name) => {
 };
 
 @roleModel.authenticationInfo
-@connect({dockerRegistries})
-@inject(({dockerRegistries}, {params}) => {
+@inject('dockerRegistries')
+@HiddenObjects.injectToolsFilters
+@inject((stores, {params}) => {
   return {
-    dockerRegistries,
     registryId: params.registryId,
     groupId: params.groupId
   };
@@ -78,14 +77,15 @@ export default class ToolsNew extends React.Component {
   @computed
   get registries () {
     if (this.props.dockerRegistries.loaded) {
-      return (this.props.dockerRegistries.value.registries || []).map(r => r);
+      return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
+        .registries;
     }
     return [];
   }
 
   @computed
   get currentRegistry () {
-    return this.registries.filter(r => `${r.id}` === `${this.props.registryId}`)[0];
+    return this.registries.find(r => `${r.id}` === `${this.props.registryId}`);
   }
 
   @computed

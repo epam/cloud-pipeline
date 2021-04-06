@@ -17,10 +17,18 @@
 import Remote from '../basic/Remote';
 import {computed} from 'mobx';
 
+const FETCH_ID_SYMBOL = Symbol('Fetch id');
+
 class PreferencesLoad extends Remote {
   constructor () {
     super();
     this.url = '/preferences';
+    this[FETCH_ID_SYMBOL] = 0;
+  }
+
+  update (value) {
+    this[FETCH_ID_SYMBOL] += 1;
+    super.update(value);
   }
 
   postprocess (value) {
@@ -112,6 +120,20 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('storage.mounts.nfs.sensitive.policy');
   }
 
+
+  @computed
+  get hiddenObjects () {
+    const value = this.getPreferenceValue('ui.hidden.objects');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.hidden.objects" preference:', e);
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
@@ -138,4 +160,5 @@ class PreferencesLoad extends Remote {
   };
 }
 
+export {FETCH_ID_SYMBOL};
 export default new PreferencesLoad();

@@ -56,6 +56,7 @@ import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import displayDate from '../../../utils/displayDate';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
@@ -91,6 +92,8 @@ function getColumnTitle (key) {
   pipelinesLibrary
 })
 @inject('preferences', 'dataStorages')
+@HiddenObjects.checkMetadataFolders(p => (p.params || p).id)
+@HiddenObjects.checkMetadataClassesWithParent(p => (p.params || p).id, p => (p.params || p).class)
 @inject(({folders, pipelinesLibrary, authenticatedUserInfo, preferences, dataStorages}, params) => {
   let componentParameters = params;
   if (params.params) {

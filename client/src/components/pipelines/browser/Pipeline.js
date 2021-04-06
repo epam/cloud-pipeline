@@ -47,6 +47,7 @@ import localization from '../../../utils/localization';
 import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import RegisterVersionFormDialog from './forms/RegisterVersionFormDialog';
 import UserName from '../../special/UserName';
+import HiddenObjects from '../../../utils/hidden-objects';
 import CloneForm from './forms/CloneForm';
 import styles from './Browser.css';
 
@@ -56,6 +57,8 @@ import styles from './Browser.css';
   pipelines
 })
 @localization.localizedComponent
+@HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
+@HiddenObjects.injectTreeFilter
 @inject(({pipelines, folders, pipelinesLibrary}, params) => {
   let componentParameters = params;
   if (params.params) {
@@ -657,7 +660,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   render () {
     let versionsContent;
     if (this.props.versions.loaded) {
-      this._versions = generateTreeData({versions: this.props.versions.value}, true);
+      this._versions = generateTreeData(
+        {versions: this.props.versions.value},
+        true,
+        {id: this.props.pipelineId},
+        undefined,
+        undefined,
+        this.props.hiddenObjectsTreeFilter()
+      );
       versionsContent = (
         <Table
           key={CONTENT_PANEL_KEY}
@@ -823,5 +833,4 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       }
     }
   }
-
 }

@@ -26,6 +26,7 @@ import configurations from '../../../models/configuration/Configurations';
 import pipelines from '../../../models/pipelines/Pipelines';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import styles from './PreviewConfiguration.css';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const EXEC_ENVIRONMENT = 'exec';
 const ADVANCED = 'advanced';
@@ -34,6 +35,7 @@ const SYSTEM_PARAMETERS = 'systemParameters';
 
 @connect({configurations, pipelines})
 @inject('cloudProviders')
+@HiddenObjects.checkConfigurations(props => props?.configurationId)
 @inject(({cloudProviders, configurations, runDefaultParameters, pipelines, onDemandInstanceTypes, spotInstanceTypes}, params) => {
   return {
     cloudProviders,
