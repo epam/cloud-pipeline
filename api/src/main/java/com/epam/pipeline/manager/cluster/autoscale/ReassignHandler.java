@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,12 +31,14 @@ import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -44,6 +46,7 @@ import java.util.function.BiFunction;
 @Component
 @Slf4j
 public class ReassignHandler {
+    private static final String CP_CREATE_NEW_NODE = "CP_CREATE_NEW_NODE";
 
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
@@ -68,6 +71,12 @@ public class ReassignHandler {
                                    final long longId,
                                    final InstanceRequest requiredInstance,
                                    final List<String> freeNodes) {
+        final Optional<PipelineRun> pipelineRun = pipelineRunManager.findRun(longId);
+        if (!reassignAllowed(pipelineRun)) {
+            log.debug("Reassign is not allowed for run '{}'", runId);
+            return false;
+        }
+
         final Map<String, RunningInstance> freeInstances = ListUtils.emptyIfNull(freeNodes)
                 .stream()
                 .collect(HashMap::new,
@@ -75,14 +84,14 @@ public class ReassignHandler {
                     HashMap::putAll);
         // Try to find match with pre-pulled image
         final boolean reassignedWithMatchingImage = attemptReassign(freeInstances,
-                autoscalerService::requirementsMatchWithImages, requiredInstance, runId,
-                longId, scheduledRuns, reassignedNodes);
+                autoscalerService::requirementsMatchWithImages, requiredInstance, runId, longId,
+                pipelineRun, scheduledRuns, reassignedNodes);
         if (reassignedWithMatchingImage) {
             return true;
         }
         return attemptReassign(freeInstances,
-                autoscalerService::requirementsMatch, requiredInstance, runId,
-                longId, scheduledRuns, reassignedNodes);
+                autoscalerService::requirementsMatch, requiredInstance, runId, longId,
+                pipelineRun, scheduledRuns, reassignedNodes);
 
     }
 
@@ -91,6 +100,7 @@ public class ReassignHandler {
                                     final InstanceRequest requiredInstance,
                                     final String runId,
                                     final Long longId,
+                                    final Optional<PipelineRun> pipelineRun,
                                     final Set<String> scheduledRuns,
                                     final Set<String> reassignedNodes) {
         return freeInstances.entrySet()
@@ -102,7 +112,7 @@ public class ReassignHandler {
                         return false;
                     }
                     final boolean passedPoolFilter = Optional.ofNullable(previousInstance.getPool())
-                            .map(pool -> matchesPoolFilter(pool, longId))
+                            .map(pool -> matchesPoolFilter(pool, pipelineRun))
                             .orElse(true);
                     if (!passedPoolFilter) {
                         return false;
@@ -112,12 +122,12 @@ public class ReassignHandler {
                 });
     }
 
-    private boolean matchesPoolFilter(final NodePool pool, final Long runId) {
+    private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun) {
         final PoolFilter filter = pool.getFilter();
         if (filter == null || filter.isEmpty()) {
             return true;
         }
-        return pipelineRunManager.findRun(runId)
+        return pipelineRun
                 .map(run -> matchRun(filter, run))
                 .orElse(false);
     }
@@ -167,5 +177,21 @@ public class ReassignHandler {
         autoscalerService.adjustRunPrices(runId, disks);
         reassignedNodes.add(previousNodeId);
         return true;
+    }
+
+    private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
+        return !pipelineRun
+                .flatMap(run -> run.getPipelineRunParameters().stream()
+                        .filter(parameter -> Objects.equals(parameter.getName(), CP_CREATE_NEW_NODE)
+                                && isValueTrue(parameter.getValue()))
+                        .findAny())
+                .isPresent();
+    }
+
+    private boolean isValueTrue(final String value) {
+        if (StringUtils.isBlank(value)) {
+            return false;
+        }
+        return BooleanUtils.toBoolean(value);
     }
 }
