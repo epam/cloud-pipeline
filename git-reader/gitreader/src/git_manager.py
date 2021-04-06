@@ -71,7 +71,7 @@ class GitManager(object):
             return GitDiffReport(filters, [GitDiffReportEntry(x, None) for x in commits_for_report])
 
     def get_commits(self, repo, filters, skip, batch_size):
-        args = ['--skip={}'.format(skip), '-{}'.format(batch_size + 1), '--follow', '--format=%h||%ai||%an||%ae||%s']
+        args = ['--skip={}'.format(skip), '-{}'.format(batch_size + 1), '--format=%h||%ai||%an||%ae||%s']
         if filters.authors:
             for author in filters.authors:
                 args.append("--author={}".format(author))
@@ -81,9 +81,13 @@ class GitManager(object):
             args.append("--until={}".format(filters.date_to))
         if filters.ref:
             args.append(filters.ref)
+
         if len(filters.path_masks) > 0:
+            if len(filters.path_masks) == 1:
+                args.append("--follow")
             args.append('--')
             args.append(filters.path_masks)
+
         git_log_result = repo.git.log(args)
         if git_log_result == "" or git_log_result is None:
             return False, []

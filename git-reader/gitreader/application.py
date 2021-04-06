@@ -444,11 +444,8 @@ def git_diff_report(repo):
 
 def load_filters_from_request(req):
     if req.data:
-        try:
-            data = load_data_from_request(req)
-            return GitSearchFilter.from_json(data)
-        except Exception:
-            pass
+        data = load_data_from_request(req)
+        return GitSearchFilter.from_json(data)
     return GitSearchFilter()
 
 def load_data_from_request(req):

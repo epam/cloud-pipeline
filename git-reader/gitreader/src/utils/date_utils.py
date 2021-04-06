@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
+
 def parse_date(date_str):
-    if date_str and not date_str.find("\\d\\d\\d\\d-\\d\\d-\\d\\d"):
-        raise AttributeError("Date value is not in format yyyy-mm-dd")
+    if date_str and not (re.match("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d", date_str) or
+                         re.match("\\d\\d\\d\\d-\\d\\d-\\d\\d", date_str)):
+        raise AttributeError("Date value is not in format yyyy-mm-dd or 'yyyy-mm-dd HH:mm:ss.SSS'")
     return date_str
