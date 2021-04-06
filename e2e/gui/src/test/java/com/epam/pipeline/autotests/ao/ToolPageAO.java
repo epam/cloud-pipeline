@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Map;
 

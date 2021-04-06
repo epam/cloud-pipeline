@@ -52,7 +52,7 @@ public class PipelineLibraryTest extends AbstractSeveralPipelineRunningTest impl
                 .createPipeline(pipeline)
                 .clickOnDraftVersion(pipeline);
         String pipelineDraftVersionUrl = getCurrentURL();
-        new DocumentTabAO(pipeline)
+        documentTab(pipeline)
                 .addStringToReadMeFile(readMeText)
                 .saveAndCommitWithMessage("test: Change ReadMe file")
                 .sleep(3, SECONDS)
@@ -61,7 +61,7 @@ public class PipelineLibraryTest extends AbstractSeveralPipelineRunningTest impl
         assertNotEquals(pipelineDraftVersionUrl, pipelineNewVersionUrl1,
                 "Initial and new page addresses should be different");
 
-        new DocumentTabAO(pipeline)
+        documentTab(pipeline)
                 .codeTab()
                 .clickOnFile("config.json")
                 .editFile(transferringJsonToObject(profiles -> {
@@ -79,17 +79,21 @@ public class PipelineLibraryTest extends AbstractSeveralPipelineRunningTest impl
         assertNotEquals(pipelineNewVersionUrl2, pipelineNewVersionUrl1,
                 "Initial and new page addresses should be different");
         open(pipelineDraftVersionUrl);
-        new DocumentTabAO(pipeline)
+        documentTab(pipeline)
                 .ensure(FILE_PREVIEW, not(text(readMeText)))
                 .codeTab()
                 .clickOnFile("config.json")
-                .shouldContainInCode(format("\"instance_disk\" : \"%s\"", instanceDisk));
+                .shouldContainInCode(format("\"instance_disk\" : \"%s\"", instanceDisk[0]));
         open(pipelineNewVersionUrl1);
-        new DocumentTabAO(pipeline)
+        documentTab(pipeline)
                 .ensure(FILE_PREVIEW, text(readMeText))
                 .codeTab()
                 .clickOnFile("config.json")
-                .shouldContainInCode(format("\"instance_disk\" : \"%s\"", instanceDisk))
+                .shouldContainInCode(format("\"instance_disk\" : \"%s\"", instanceDisk[0]))
                 .close();
+    }
+
+    private DocumentTabAO documentTab(String pipelineName) {
+        return new DocumentTabAO(pipelineName);
     }
 }
