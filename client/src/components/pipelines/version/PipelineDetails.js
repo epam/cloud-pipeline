@@ -35,6 +35,7 @@ import GitRepositoryControl from '../../special/git-repository-control';
 import styles from './PipelineDetails.css';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 @connect({
   pipelines,
@@ -42,6 +43,8 @@ import {ItemTypes} from '../model/treeStructureFunctions';
   folders
 })
 @localization.localizedComponent
+@HiddenObjects.checkPipelines(props => props?.params?.id)
+@HiddenObjects.checkPipelineVersions(props => props?.params?.id, props => props?.params?.version)
 @inject(({pipelines, pipelinesLibrary, routing, folders}, {onReloadTree, params}) => ({
   onReloadTree,
   pipelines,

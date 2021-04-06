@@ -46,6 +46,7 @@ import FolderUpdate from '../../models/folders/FolderUpdate';
 import DataStorageUpdate from '../../models/dataStorage/DataStorageUpdate';
 import UpdatePipeline from '../../models/pipelines/UpdatePipeline';
 import AWSRegionTag from '../special/AWSRegionTag';
+import HiddenObjects from '../../utils/hidden-objects';
 
 const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
 
@@ -73,6 +74,7 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
     dataStorages
   };
 })
+@HiddenObjects.injectTreeFilter
 @observer
 export default class PipelinesLibrary extends localization.LocalizedReactComponent {
 
@@ -267,7 +269,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           {versions: versionsRequest.value},
           false,
           item,
-          getExpandedKeys(rootItems)
+          getExpandedKeys(rootItems),
+          undefined,
+          this.props.hiddenObjectsTreeFilter()
         );
         item.isLeaf = !item.children || item.children.length === 0;
       } else if (
@@ -282,7 +286,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           childrenRequest.value,
           false,
           item,
-          getExpandedKeys(rootItems)
+          getExpandedKeys(rootItems),
+          undefined,
+          this.props.hiddenObjectsTreeFilter()
         );
         item.isLeaf = !item.children || item.children.length === 0;
         item.childrenMetadataLoaded = true;
@@ -532,7 +538,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             this.props.pipelinesLibrary.value,
             false,
             item,
-            childExpandedKeys
+            childExpandedKeys,
+            undefined,
+            this.props.hiddenObjectsTreeFilter()
           );
           item.isLeaf = item.children ? item.children.length === 0 : true;
         } else if (item.id === 'pipelines') {
@@ -548,7 +556,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             reloadFolderRequest.value,
             false,
             item,
-            childExpandedKeys
+            childExpandedKeys,
+            undefined,
+            this.props.hiddenObjectsTreeFilter()
           );
           item.isLeaf = item.children.length === 0;
         }
@@ -563,7 +573,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         item.children = generateTreeData(
           {versions: versionsRequest.value},
           false,
-          item
+          item,
+          undefined,
+          undefined,
+          this.props.hiddenObjectsTreeFilter()
         );
       }
         break;
@@ -595,7 +608,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
               this.props.pipelinesLibrary.value,
               false,
               parentFolder,
-              childExpandedKeys
+              childExpandedKeys,
+              undefined,
+              this.props.hiddenObjectsTreeFilter()
             );
             parentFolder.isLeaf = parentFolder.children ? parentFolder.children.length === 0 : true;
           } else if (['pipelines', 'storages'].indexOf(parentFolder.id) === -1) {
@@ -607,7 +622,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
               reloadFolderRequest.value,
               false,
               parentFolder,
-              childExpandedKeys
+              childExpandedKeys,
+              undefined,
+              this.props.hiddenObjectsTreeFilter()
             );
             parentFolder.isLeaf = parentFolder.children.length === 0;
           }
@@ -714,7 +731,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         null,
         [],
         undefined,
-        undefined,
+        this.props.hiddenObjectsTreeFilter(),
         false
       );
       const savedExpandedKeys = this.savedExpandedKeys;

@@ -48,6 +48,7 @@ import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStor
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -58,7 +59,15 @@ const findGroupByName = (groups, name) => {
 
 @roleModel.authenticationInfo
 @submitsRun
-@inject('awsRegions', 'dataStorageAvailable', 'dockerRegistries', 'preferences', 'authenticatedUserInfo')
+@inject(
+  'awsRegions',
+  'dataStorageAvailable',
+  'dockerRegistries',
+  'preferences',
+  'authenticatedUserInfo',
+  'hiddenObjects'
+)
+@HiddenObjects.injectToolsFilters
 @runPipelineActions
 @observer
 export default class PersonalToolsPanel extends React.Component {
@@ -136,10 +145,19 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   @computed
+  get registries () {
+    if (this.props.dockerRegistries.loaded) {
+      return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
+        .registries;
+    }
+    return [];
+  }
+
+  @computed
   get tools () {
     if (this.props.dockerRegistries.loaded) {
       const result = [];
-      const registries = (this.props.dockerRegistries.value.registries || []).map(r => r);
+      const registries = this.registries;
       for (let i = 0; i < registries.length; i++) {
         const registry = registries[i];
         const groups = (registry.groups || []).map(g => g);
@@ -253,8 +271,8 @@ export default class PersonalToolsPanel extends React.Component {
     const toolSettings = new LoadToolVersionSettings(tool.id);
     await toolSettings.fetch();
     await this.props.dockerRegistries.fetchIfNeededOrWait();
-    const [registry] = (this.props.dockerRegistries.value.registries || [])
-      .filter(r => r.id === tool.registryId);
+    const registry = this.registries
+      .find(r => r.id === tool.registryId);
     if (toolRequest.error) {
       hide();
       message.error(toolRequest.error);

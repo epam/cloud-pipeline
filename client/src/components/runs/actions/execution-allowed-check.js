@@ -308,7 +308,7 @@ export function PermissionErrors ({errors}) {
   );
 }
 
-@inject('dataStorages', 'dockerRegistries')
+@inject('dataStorages', 'dockerRegistries', 'hiddenObjects')
 @observer
 class SubmitButton extends React.Component {
   static propTypes = {

@@ -42,6 +42,7 @@ import MetadataClassLoadAll from '../../../../models/folderMetadata/MetadataClas
 import MetadataEntityDelete from '../../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntitySave from '../../../../models/folderMetadata/MetadataEntitySave';
 import styles from './CopyMetadataEntitiesDialog.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 const removeEntity = async (id) => {
   const removeRequest = new MetadataEntityDelete(id);
@@ -87,7 +88,8 @@ class CopyMetadataEntitiesDialog extends React.Component {
         false,
         null,
         [],
-        [ItemTypes.folder]
+        [ItemTypes.folder],
+        this.props.hiddenObjectsTreeFilter()
       );
       this.setState({
         pending: false,
@@ -598,4 +600,8 @@ CopyMetadataEntitiesDialog.propTypes = {
   visible: PropTypes.bool
 };
 
-export default inject('pipelinesLibrary')(observer(CopyMetadataEntitiesDialog));
+export default inject('pipelinesLibrary')(
+  HiddenObjects.injectTreeFilter(
+    observer(CopyMetadataEntitiesDialog)
+  )
+);

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Modal, Row, Button, Dropdown, Icon, Table, Input, Select} from 'antd';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
@@ -39,10 +39,12 @@ export default class DockerImageBrowser extends React.Component {
     tool: null,
     version: null,
     selectedTool: null,
-    shorthandNotation: undefined
+    shorthandNotation: undefined,
+    tagsPending: false,
+    tagsError: undefined,
+    tags: [],
+    tagsRequest: undefined
   };
-
-  @observable _tags = null;
 
   onSave = () => {
     if (this.props.onChange) {
@@ -282,6 +284,61 @@ export default class DockerImageBrowser extends React.Component {
     });
   }
 
+  fetchToolTags = (tool) => {
+    this.setState({
+      tags: [],
+      tagsPending: true,
+      tagsError: undefined,
+      version: undefined,
+      tagsRequest: tool.id
+    }, () => {
+      const request = new LoadToolTags(tool.id);
+      request.fetch()
+        .then(() => {
+          if (this.state.tagsRequest === tool.id) {
+            if (request.loaded) {
+              const options = Array.from(request.value || []);
+              let selectedTool = this.state.registry &&
+              this.state.shorthandNotation !== this.state.registry
+                ? `${this.state.registry}/${tool.image}`
+                : tool.image;
+              let version;
+              if (options.length > 0) {
+                if (options.find(tag => tag === 'latest')) {
+                  version = 'latest';
+                  selectedTool = `${selectedTool}:latest`;
+                } else {
+                  version = options[0];
+                  selectedTool = `${selectedTool}:${options[0]}`;
+                }
+              }
+              this.setState({
+                selectedTool,
+                tagsPending: false,
+                tagsError: undefined,
+                tags: options,
+                version
+              });
+            } else {
+              this.setState({
+                tagsPending: false,
+                tagsError: request.error || 'Error loading tags',
+                tags: []
+              });
+            }
+          }
+        })
+        .catch(e => {
+          if (this.state.tagsRequest === tool.id) {
+            this.setState({
+              tagsPending: false,
+              tagsError: e.message
+            });
+          }
+        });
+    });
+  };
+
   renderToolsTable = () => {
     const parseToolName = (tool) => {
       const toolNameParts = tool.image.split('/');
@@ -296,28 +353,14 @@ export default class DockerImageBrowser extends React.Component {
     const toolIsSelected = (tool) => {
       return parseToolName(tool) === this.state.tool;
     };
-    const onSelect = async (tool) => {
-      this._tags = new LoadToolTags(tool.id);
-      await this._tags.fetch();
-      const options = this._tags.loaded ? (this._tags.value || []).map(t => t) : [];
-      let selectedTool = this.state.registry && this.state.shorthandNotation !== this.state.registry
-        ? `${this.state.registry}/${tool.image}`
-        : tool.image;
-      let version;
-      if (options.length > 0) {
-        const [tag] = options.filter(tag => tag === 'latest');
-        if (tag) {
-          version = tag;
-          selectedTool = `${selectedTool}:${tag}`;
-        } else {
-          version = options[0];
-          selectedTool = `${selectedTool}:${options[0]}`;
-        }
-      }
+    const onSelect = (tool) => {
       this.setState({
-        selectedTool,
-        tool: parseToolName(tool),
-        version
+        selectedTool: this.state.registry && this.state.shorthandNotation !== this.state.registry
+          ? `${this.state.registry}/${tool.image}`
+          : tool.image,
+        tool: parseToolName(tool)
+      }, () => {
+        this.fetchToolTags(tool);
       });
     };
     const onSelectTag = (tool) => (tag) => {
@@ -351,19 +394,19 @@ export default class DockerImageBrowser extends React.Component {
         key: 'version',
         className: styles.toolColumnTags,
         onCellClick: (tool) => {
-          if (!toolIsSelected(tool) || !this._tags) {
+          if (!toolIsSelected(tool)) {
             return onSelect(tool);
           }
         },
         render: (tool) => {
-          if (toolIsSelected(tool) && this._tags) {
-            if (this._tags.pending) {
+          if (toolIsSelected(tool)) {
+            const {tagsPending, tagsError, tags = []} = this.state;
+            if (tagsPending) {
               return <Icon type="loading" />;
             }
-            if (this._tags.error) {
+            if (tagsError) {
               return <i>Error loading tags</i>;
             }
-            const options = this._tags.loaded ? (this._tags.value || []).map(t => t) : [];
             return (
               <Select
                 onSelect={onSelectTag(tool)}
@@ -371,7 +414,7 @@ export default class DockerImageBrowser extends React.Component {
                 style={{width: '100%'}}
                 size="small">
                 {
-                  options.map(tag => {
+                  tags.map(tag => {
                     return (
                       <Select.Option key={tag} data={tag}>{tag}</Select.Option>
                     );
@@ -390,7 +433,7 @@ export default class DockerImageBrowser extends React.Component {
           className={styles.table}
           dataSource={this.tools}
           columns={columns}
-          loading={this._tags ? this._tags.pending : false}
+          loading={this.state.tagsPending}
           showHeader={false}
           rowKey="id"
           rowClassName={() => styles.toolRow}
@@ -430,7 +473,7 @@ export default class DockerImageBrowser extends React.Component {
           version: null,
           selectedTool: image,
           searchString: null,
-          shorthandNotation: undefined,
+          shorthandNotation: undefined
         });
       } else {
         const parts = image.split('/');
@@ -513,23 +556,10 @@ export default class DockerImageBrowser extends React.Component {
     if (!this.currentGroup) {
       return;
     }
-    const [tool] = this.tools.filter(t => t.image === `${this.currentGroup.name}/${this.state.tool}`);
-    if (tool) {
-      this._tags = new LoadToolTags(tool.id);
-      await this._tags.fetch();
-      const tags = this._tags.loaded ? (this._tags.value || []).map(t => t) : [];
-      const [tag] = tags.filter(tag => tag === (this.state.version || 'latest'));
-      if (tag) {
-        this.setState({
-          version: tag
-        });
-      } else if (tags.length > 0) {
-        this.setState({
-          version: tags[0]
-        });
-      }
-    } else {
-      this._tags = null;
+    const [tool] = this.tools
+      .filter(t => t.image === `${this.currentGroup.name}/${this.state.tool}`);
+    if (tool && this.state.tagsRequest !== tool.id) {
+      this.fetchToolTags(tool);
     }
   };
 
