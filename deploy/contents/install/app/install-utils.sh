@@ -821,7 +821,16 @@ function prepare_kube_dns {
     local static_names="$1"
 
     if ! is_kube_dns_configured_for_custom_entries; then
-        # 1. Mount hosts config map into dnsmasq
+        # 1. Grant "kube-dns" permissions to list the pods
+        print_info "Granting 'clusterrole view' permissions to 'system:serviceaccount:kube-system:kube-dns'"
+        kubectl create clusterrolebinding kube-dns-viewer-binding \
+                                            --clusterrole view \
+                                            --user system:serviceaccount:kube-system:kube-dns
+        if [ $? -ne 0 ]; then
+            print_warn "Unable to create clusterrolebinding for the kube-dns cluster viewer role. Deployment will proceed, but the pods DNS sync process won't work properly"
+        fi
+
+        # 2. Mount hosts config map into dnsmasq
         print_info "Configuring kube-dns for custom entries support"
         kubectl patch deployment kube-dns \
             --namespace kube-system \
@@ -917,7 +926,7 @@ function prepare_kube_dns {
             return 1
         fi
 
-        # Wait for the pods restart
+        # 3. Wait for the pods restart
         kubectl rollout status deployment/kube-dns -n kube-system -w
         # Just in case...
         sleep 10
