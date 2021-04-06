@@ -49,7 +49,7 @@ class TestS3TaggingRolModel(object):
         path = 'cp://{}/{}'.format(self.bucket, self.test_file)
         try:
             set_storage_tags(path, [self.tag1])
-            assert_tags_listing(self.bucket, path, [self.tag1], token=self.user_token)
+            assert_tags_listing(path, [self.tag1], token=self.user_token)
         except AssertionError as e:
             raise AssertionError(ERROR_MESSAGE + test_case, e.message)
         except BaseException as e:
