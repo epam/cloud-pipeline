@@ -392,14 +392,19 @@ def git_diff_report(repo):
                            type: array
                            items:
                              $ref: '#/definitions/DiffEntry'
-                         page:
-                           type: integer
-                         page_size:
-                           type: integer
-                         has_next:
-                           type: boolean
-                         max_page:
-                           type: integer
+                         filters:
+                           type: object
+                           properties:
+                             authors:
+                               type: array
+                               items: string
+                             date_from:
+                               type: string
+                             date_to:
+                               type: string
+                             paths:
+                               type: array
+                               items: string
                     DiffEntry:
                       type: object
                       properties:
@@ -419,7 +424,7 @@ def git_diff_report(repo):
                      200:
                        description: A listing of commits and its diffs filtered by dates, authors, paths
                        schema:
-                         $ref: '#/definitions/CommitListing'
+                         $ref: '#/definitions/DiffListing'
                    """
     manager = app.config['gitmanager']
     try:
