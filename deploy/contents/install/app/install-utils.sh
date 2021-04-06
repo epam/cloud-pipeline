@@ -829,6 +829,11 @@ function prepare_kube_dns {
             -p='[
                     {
                         "op": "add",
+                        "path": "/spec/template/spec/shareProcessNamespace",
+                        "value": true
+                    },
+                    {
+                        "op": "add",
                         "path": "/spec/template/spec/volumes/-",
                         "value": {
                             "configMap": {
@@ -840,16 +845,71 @@ function prepare_kube_dns {
                     },
                     {
                         "op": "add",
+                        "path": "/spec/template/spec/volumes/-",
+                        "value": {
+                            "emptyDir": {},
+                            "name": "cp-dnsmasq-pods"
+                        }
+                    },
+                    {
+                        "op": "add",
                         "path": "/spec/template/spec/containers/1/volumeMounts/-",
                         "value": {
-                            "mountPath": "/etc/hosts.d",
+                            "mountPath": "/etc/hosts.d/hosts",
                             "name": "cp-dnsmasq-hosts"
                         }
                     },
                     {
                         "op": "add",
+                        "path": "/spec/template/spec/containers/1/volumeMounts/-",
+                        "value": {
+                            "mountPath": "/etc/hosts.d/pods",
+                            "name": "cp-dnsmasq-pods"
+                        }
+                    },
+                    {
+                        "op": "add",
                         "path": "/spec/template/spec/containers/1/args/-",
-                        "value": "--hostsdir=/etc/hosts.d"
+                        "value": "--dns-forward-max=5000"
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/args/-",
+                        "value": "--hostsdir=/etc/hosts.d/hosts"
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/args/-",
+                        "value": "--hostsdir=/etc/hosts.d/pods"
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/args/-",
+                        "value": "--bind-interfaces"
+                    },
+                    {
+                        "op": "replace",
+                        "path": "/spec/template/spec/containers/2/image",
+                        "value": "gcr.io/google-containers/k8s-dns-sidecar:1.15.11"
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/-",
+                        "value": {
+                            "command": [
+                                "python",
+                                "/sync-hosts.py"
+                            ],
+                            "image": "${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:dns-hosts-sync-$CP_VERSION",
+                            "imagePullPolicy": "IfNotPresent",
+                            "name": "pods",
+                            "volumeMounts": [
+                                {
+                                    "mountPath": "/etc/hosts.d/pods",
+                                    "name": "cp-dnsmasq-pods"
+                                }
+                            ]
+                        }
                     }
                 ]'
         if [ $? -ne 0 ]; then

@@ -262,6 +262,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-run-policy-manager \
                 -t "$CP_RUN_POLICY_MANAGER_DIST_NAME"
 docker push "$CP_RUN_POLICY_MANAGER_DIST_NAME"
 
+# Pods DNS sync
+CP_DNS_PODS_SYNC_DIST_NAME=${CP_DNS_PODS_SYNC_DIST_NAME:-"$CP_DIST_REPO_NAME:dns-hosts-sync-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-dns-hosts-sync \
+                -t "$CP_DNS_PODS_SYNC_DIST_NAME"
+docker push "$CP_DNS_PODS_SYNC_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################
