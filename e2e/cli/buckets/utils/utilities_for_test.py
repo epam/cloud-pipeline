@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ def delete_buckets(*args):
             wait_for_bucket_deletion(bucket_name)
             logging.info("Bucket {} deleted".format(bucket_name))
         except Exception as e:
-            logging.error('Failed to delete bucket %s' % bucket_name, e)
+            logging.error('Failed to delete bucket %s. Error: %s' % (bucket_name, e.message))
 
 
 def prepare_paths_with_slash(source, destination, has_source_slash, has_destination_slash):
