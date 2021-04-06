@@ -14,7 +14,7 @@
 
 class GitCommit:
 
-    def __init__(self, sha, date, commit_message, author, author_email):
+    def __init__(self, sha, date=None, commit_message=None, author=None, author_email=None):
         self.sha = sha
         self.date = date
         self.commit_message = commit_message

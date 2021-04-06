@@ -380,7 +380,7 @@ def git_diff_report(repo):
                              type: string
                            date_to:
                              type: string
-                           paths:
+                           path_masks:
                              type: array
                              items: string
                        required: false
@@ -402,7 +402,7 @@ def git_diff_report(repo):
                                type: string
                              date_to:
                                type: string
-                             paths:
+                             path_masks:
                                type: array
                                items: string
                     DiffEntry:
@@ -442,11 +442,65 @@ def git_diff_report(repo):
         return jsonify(error(e.__str__()))
 
 
+@app.route('/git/<path:repo>/diff/<commit>', methods=["GET"])
+def git_diff_by_commit(repo, commit):
+    """Returns commits and its diffs are related to specific path, author, dates.
+
+                   ---
+                   parameters:
+                     - name: repo
+                       in: path
+                       type: string
+                       required: true
+                     - name: commit
+                       in: request
+                       type: string
+                       required: true
+                   definitions:
+                    DiffEntry:
+                      type: object
+                      properties:
+                          commit:
+                            type: string
+                          commit_date:
+                            type: string
+                          commit_message:
+                            type: string
+                          author:
+                            type: string
+                          author_email:
+                            type: string
+                          diff:
+                            type: string
+                   responses:
+                     200:
+                       description: The diff for specified commit
+                       schema:
+                         $ref: '#/definitions/DiffEntry'
+                   """
+    manager = app.config['gitmanager']
+    try:
+        if request.args.get('path'):
+            path = request.args.get('path')
+        else:
+            path = "."
+
+        unified_lines = 3
+        if request.args.get('unified_lines'):
+            unified_lines = int(request.args.get('unified_lines'))
+        commit_diff = manager.diff(repo, commit, path, unified_lines)
+        return jsonify(success(commit_diff.to_json()))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
 def load_filters_from_request(req):
     if req.data:
         data = load_data_from_request(req)
         return GitSearchFilter.from_json(data)
     return GitSearchFilter()
+
 
 def load_data_from_request(req):
     if req.data:
