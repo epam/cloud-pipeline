@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogRequestFilter;
@@ -26,7 +27,11 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import retrofit2.Call;
-import retrofit2.http.*;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface GitReaderApi {
 
@@ -42,14 +47,14 @@ public interface GitReaderApi {
      * Get a list of repository files and directories in a project.
      * This command provides essentially the same functionality as the git ls-tree command.
      *
-     * @param idOrName  The ID or URL-encoded path of the project
+     * @param name  The ID or URL-encoded path of the project
      * @param path      (optional) - The path inside repository. Used to get contend of subdirectories
      * @param reference (optional) - The name of a repository branch or tag or if not given the default branch
      * @param page (optional) - The number of page to return
      * @param pageSize (optional) - The size of the page to return
      */
     @GET("git/{project}/ls_tree")
-    Call<Result<GitReaderEntryListing<GitRepositoryEntry>>> getRepositoryTree(@Path(PROJECT) String idOrName,
+    Call<Result<GitReaderEntryListing<GitRepositoryEntry>>> getRepositoryTree(@Path(PROJECT) String name,
                                                                               @Query(PATH) String path,
                                                                               @Query(REF) String reference,
                                                                               @Query(PAGE) Long page,
@@ -59,14 +64,14 @@ public interface GitReaderApi {
     /**
      * Get a list of repository files and directories in a project with additional information about last commit.
      *
-     * @param idOrName  The ID or URL-encoded path of the project
+     * @param name  The ID or URL-encoded path of the project
      * @param path  Url encoded full path to new file. Ex. lib%2Fclass%2Erb
      * @param reference The name of branch, tag or commit
      * @param page (optional) - The number of page to return
      * @param pageSize (optional) - The size of the page to return
      */
     @GET("git/{project}/logs_tree")
-    Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(@Path(PROJECT) String idOrName,
+    Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(@Path(PROJECT) String name,
                                                                                            @Query(FILE_PATH) String path,
                                                                                            @Query(REF) String reference,
                                                                                            @Query(PAGE) Long page,
@@ -75,23 +80,23 @@ public interface GitReaderApi {
     /**
      * Get a list of repository files and directories in a project with additional information about last commit.
      *
-     * @param idOrName  The ID or URL-encoded path of the project
+     * @param name  The ID or URL-encoded path of the project
      * @param reference The name of branch, tag or commit
      */
     @POST("git/{project}/logs_tree")
-    Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(@Path(PROJECT) String idOrName,
+    Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(@Path(PROJECT) String name,
                                                                                            @Query(REF) String reference,
                                                                                            @Body GitReaderLogsPathFilter paths);
 
     /**
      * Allows you to receive list of commit for specific filters like, paths, authors, dates
      *
-     * @param idOrName  The ID or URL-encoded path of the project
+     * @param name  The ID or URL-encoded path of the project
      * @param page (optional) - The number of page to return
      * @param pageSize (optional) - The size of the page to return
      */
     @POST("git/{project}/commits")
-    Call<Result<GitReaderEntryIteratorListing<GitReaderRepositoryCommit>>> listCommits(@Path(PROJECT) String idOrName,
+    Call<Result<GitReaderEntryIteratorListing<GitReaderRepositoryCommit>>> listCommits(@Path(PROJECT) String name,
                                                                                        @Query(PAGE) Long page,
                                                                                        @Query(PAGE_SIZE) Integer pageSize,
                                                                                        @Body GitReaderLogRequestFilter filter);
@@ -99,17 +104,27 @@ public interface GitReaderApi {
     /**
      * Allows you to receive list of commit for specific filters like, paths, authors, dates and its diff
      *
-     * @param idOrName  The ID or URL-encoded path of the project
-     * @param reference The name of branch, tag or commit
+     * @param name  The ID or URL-encoded path of the project
      * @param page (optional) - The number of page to return
      * @param pageSize (optional) - The size of the page to return
      */
     @POST("git/{project}/diff")
-    Call<Result<GitReaderRepositoryCommitDiff>> listCommitDiffs(@Path(PROJECT) String idOrName,
+    Call<Result<GitReaderRepositoryCommitDiff>> listCommitDiffs(@Path(PROJECT) String name,
                                                                 @Query(INCLUDE_DIFF) Boolean includeDiff,
                                                                 @Query(PAGE) Long page,
                                                                 @Query(PAGE_SIZE) Integer pageSize,
                                                                 @Body GitReaderLogRequestFilter filter);
+
+    /**
+     * Allows you to get diff by specific commit
+     *
+     * @param name  URL-encoded path of the project
+     * @param commit - The commit sha
+     * @param path (optional) - path to filter diff output
+     */
+    @GET("git/{project}/diff/{commit}")
+    Call<Result<GitReaderDiffEntry>> getCommitDiff(@Path(PROJECT) String name, @Path("commit") String commit,
+                                                   @Query(PATH) String path);
 
 
 }

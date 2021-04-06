@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
@@ -80,7 +81,9 @@ import java.util.List;
 public class PipelineController extends AbstractRestController {
 
     private static final int BYTES_IN_KB = 1024;
-    public static final String INCLUDE_DIFF = "include_diff";
+    private static final String INCLUDE_DIFF = "include_diff";
+    private static final String COMMIT = "commit";
+
     @Autowired
     private PipelineApiService pipelineApiService;
 
@@ -781,5 +784,21 @@ public class PipelineController extends AbstractRestController {
             @RequestParam(value = INCLUDE_DIFF, required = false)  final Boolean includeDiff,
             @RequestBody GitCommitsFilter filter) throws GitClientException {
         return Result.success(pipelineApiService.logRepositoryCommitDiffs(id, includeDiff, page, pageSize, filter));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/diff/{commit}", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads commit diff regarding to specified sha and path.",
+            notes = "Loads commit diff regarding to specified sha and path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitReaderDiffEntry> getRepositoryCommitDiff(
+            @PathVariable(value = ID) Long id,
+            @PathVariable(value = COMMIT) String commit,
+            @RequestParam(value = PATH, required = false) final String path) throws GitClientException {
+        return Result.success(pipelineApiService.getRepositoryCommitDiff(id,commit, path));
     }
 }

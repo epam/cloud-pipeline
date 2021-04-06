@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
@@ -979,6 +980,21 @@ public class GitManager {
                     .getRepositoryCommitDiffs(
                         GitRepositoryUrl.from(pipeline.getRepository()),
                         includeDiff, page, pageSize, filter
+                    );
+        } catch (GitClientException e) {
+            LOGGER.error(e.getMessage());
+            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+        }
+    }
+
+    public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit,
+                                                      final String path) {
+        try {
+            final Pipeline pipeline = pipelineManager.load(id);
+            return new GitReaderClient(getGitReaderHostPreference())
+                    .getRepositoryCommitDiff(
+                            GitRepositoryUrl.from(pipeline.getRepository()),
+                            commit, path
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());

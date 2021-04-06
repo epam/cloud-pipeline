@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
@@ -348,5 +349,10 @@ public class PipelineApiService {
                                                   final Integer pageSize,
                                                   final GitCommitsFilter filter) {
         return gitManager.logRepositoryCommitDiffs(id, includeDiff, page, pageSize, filter);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit, final String path) {
+        return gitManager.getRepositoryCommitDiff(id, commit, path);
     }
 }

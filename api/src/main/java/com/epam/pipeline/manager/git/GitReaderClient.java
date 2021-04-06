@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogRequestFilter;
@@ -91,6 +92,18 @@ public class GitReaderClient {
                         .orElse(Collections.emptyList())
                 ).filters(filter)
                 .build();
+    }
+
+    public GitReaderDiffEntry getRepositoryCommitDiff(final GitRepositoryUrl repo,
+                                                      final String commit,
+                                                      final String path) throws GitClientException {
+        final Result<GitReaderDiffEntry> result = execute(
+                gitReaderApi.getCommitDiff(getRepositoryPath(repo), commit, path)
+        );
+        if (result.getStatus() == ResultStatus.ERROR) {
+            throw new GitClientException(result.getMessage());
+        }
+        return result.getPayload();
     }
 
     public GitReaderEntryListing<GitRepositoryEntry> getRepositoryTree(final GitRepositoryUrl repo, final String path,
