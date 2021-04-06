@@ -1,1 +1,1 @@
-ALTER TABLE pipeline.pipeline ADD COLUMN pipeline_type TEXT NOT NULL DEFAULT 'PIPELINE';
+ALTER TABLE pipeline.pipeline ADD COLUMN pipeline_type INTEGER NOT NULL DEFAULT 0;

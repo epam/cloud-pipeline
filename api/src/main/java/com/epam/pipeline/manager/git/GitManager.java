@@ -735,6 +735,15 @@ public class GitManager {
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
+    public GitProject createRepository(String pipelineName, String description) throws GitClientException {
+        return getDefaultGitlabClient().createEmptyRepository(
+                        pipelineName,
+                        description,
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+                );
+    }
+
     public boolean checkProjectExists(String name) {
         try {
             return getDefaultGitlabClient().projectExists(name);

@@ -107,10 +107,7 @@ public class PipelineManager implements SecuredEntityManager {
         if (StringUtils.isEmpty(pipelineVO.getRepository())) {
             Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
                     messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
-            GitProject project = gitManager.createRepository(
-                    pipelineVO.getTemplateId() == null ? defaultTemplate : pipelineVO.getTemplateId(),
-                    pipelineVO.getName(),
-                    pipelineVO.getDescription());
+            final GitProject project = createGitRepository(pipelineVO);
             pipelineVO.setRepository(project.getRepoUrl());
             pipelineVO.setRepositorySsh(project.getRepoSsh());
         } else {
@@ -310,6 +307,19 @@ public class PipelineManager implements SecuredEntityManager {
 
     public String getPipelineCloneUrl(Long pipelineId) {
         return gitManager.getGitCredentials(pipelineId, false, true).getUrl();
+    }
+
+    private GitProject createGitRepository(final PipelineVO pipelineVO) throws GitClientException {
+        GitProject project;
+        if (pipelineVO.getPipelineType() == PipelineType.PIPELINE) {
+            project = gitManager.createRepository(
+                    pipelineVO.getTemplateId() == null ? defaultTemplate : pipelineVO.getTemplateId(),
+                    pipelineVO.getName(),
+                    pipelineVO.getDescription());
+        } else  {
+            project = gitManager.createRepository(pipelineVO.getName(), pipelineVO.getDescription());
+        }
+        return project;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

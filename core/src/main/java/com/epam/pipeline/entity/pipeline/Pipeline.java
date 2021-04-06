@@ -39,7 +39,7 @@ public class Pipeline extends AbstractSecuredEntity {
     @JsonIgnore
     private String repositoryToken;
     private RepositoryType repositoryType;
-    private PipelineType type;
+    private PipelineType pipelineType;
     private String repositoryError;
     private boolean hasMetadata;
 

@@ -167,7 +167,11 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(OWNER.name(), pipeline.getOwner());
             params.addValue(REPOSITORY_TOKEN.name(), pipeline.getRepositoryToken());
             params.addValue(REPOSITORY_TYPE.name(), pipeline.getRepositoryType());
-            params.addValue(PIPELINE_TYPE.name(), pipeline.getType());
+            params.addValue(PIPELINE_TYPE.name(),
+                    Optional.ofNullable(pipeline.getPipelineType())
+                            .map(PipelineType::getId)
+                            .orElse(PipelineType.PIPELINE.getId())
+            );
             params.addValue(PIPELINE_LOCKED.name(), pipeline.isLocked());
             return params;
         }
@@ -215,7 +219,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setOwner(rs.getString(OWNER.name()));
             pipeline.setRepositoryToken(rs.getString(REPOSITORY_TOKEN.name()));
             pipeline.setRepositoryType(RepositoryType.getById(rs.getLong(REPOSITORY_TYPE.name())));
-            pipeline.setType(PipelineType.getById(rs.getLong(PIPELINE_TYPE.name())));
+            pipeline.setPipelineType(PipelineType.getById(rs.getLong(PIPELINE_TYPE.name())));
             pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
             pipeline.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
             return pipeline;

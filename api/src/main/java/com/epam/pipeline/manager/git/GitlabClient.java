@@ -218,6 +218,15 @@ public class GitlabClient {
                                 indexingEnabled, hookUrl);
     }
 
+    public GitProject createEmptyRepository(String name, String description,
+                                               boolean indexingEnabled, String hookUrl) throws GitClientException {
+        final GitProject project = createRepo(name, description);
+        if (indexingEnabled) {
+            addProjectHook(String.valueOf(project.getId()), hookUrl);
+        }
+        return project;
+    }
+
     public boolean projectExists(final String namespace, final String name) throws GitClientException {
         try {
             String projectId = makeProjectId(namespace, GitUtils.convertPipeNameToProject(name));
@@ -519,10 +528,7 @@ public class GitlabClient {
 
     private GitProject createGitProject(Template template, String description, String repoName,
                                         boolean indexingEnabled, String hookUrl) throws GitClientException {
-        GitProject project = createRepo(repoName, description);
-        if (indexingEnabled) {
-            addProjectHook(String.valueOf(project.getId()), hookUrl);
-        }
+        final GitProject project = createEmptyRepository(repoName, description, indexingEnabled, hookUrl);
         uploadFolder(template, repoName, project);
         try {
             boolean fileExists = getFileContents(project.getId().toString(), DEFAULT_README, DEFAULT_BRANCH) != null;

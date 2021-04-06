@@ -47,7 +47,7 @@ public class PipelineVO {
         pipeline.setRepository(getRepository());
         pipeline.setRepositorySsh(getRepositorySsh());
         pipeline.setRepositoryToken(getRepositoryToken());
-        pipeline.setType(getPipelineType());
+        pipeline.setPipelineType(getPipelineType());
         pipeline.setTemplateId(getTemplateId());
         pipeline.setRepositoryType(getRepositoryType());
         return pipeline;
