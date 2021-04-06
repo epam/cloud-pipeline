@@ -541,7 +541,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                     .sleep(1, SECONDS)
                     .hover(SEARCH_RESULT)
                     .openSearchResultItemWithText(testRunID_2668)
-                    .clickOnEndpointLink()
+                    .clickOnEndpointLink();
+            endpointPage
                     .sleep(3, SECONDS)
                     .assertPageTitleIs("404 Not Found");
         } finally {
