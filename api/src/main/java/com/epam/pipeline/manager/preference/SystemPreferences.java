@@ -496,6 +496,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
             "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, List<Long>>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
+            "ui.hidden.objects", null, new TypeReference<Map<String, List<Long>>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, List<Long>>>() {}));
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
