@@ -1828,7 +1828,6 @@ class Logs extends localization.LocalizedReactComponent {
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               <VSActions
                 run={this.props.run.value}
-                subMenuDirection="left"
                 showDownIcon
               >
                 VERSIONED STORAGE

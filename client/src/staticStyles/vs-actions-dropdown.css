@@ -20,3 +20,7 @@
   margin-left: unset;
   margin-right: 4px;
 }
+
+.vs-actions-dropdown * {
+  animation-duration: 0s !important;
+}

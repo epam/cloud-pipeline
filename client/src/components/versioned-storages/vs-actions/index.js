@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {findDOMNode} from 'react-dom';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
@@ -31,11 +32,19 @@ import '../../../staticStyles/vs-actions-dropdown.css';
 import VSClone from '../../../models/versioned-storage/clone';
 import VSTaskStatus from '../../../models/versioned-storage/status';
 
+const SUBMENU_POSITION = {
+  right: 'right',
+  left: 'left'
+};
+
 class VSActions extends React.Component {
   state = {
     dropDownVisible: false,
-    vsBrowserVisible: false
+    vsBrowserVisible: false,
+    subMenuPosition: SUBMENU_POSITION.right
   };
+
+  menuContainerRef;
 
   @observable vsList;
 
@@ -144,6 +153,26 @@ class VSActions extends React.Component {
     });
   };
 
+  setSubMenuPosition = () => {
+    const {subMenuPosition} = this.state;
+    if (!this.menuContainerRef) {
+      return;
+    }
+    const menuNode = findDOMNode(this.menuContainerRef);
+    if (menuNode && menuNode instanceof HTMLElement) {
+      const menuRect = menuNode.getBoundingClientRect();
+      const padding = 25;
+      const availableSpace = window.innerWidth - menuRect.right;
+      const spaceNeeded = padding + menuRect.width;
+      const preferredPosition = availableSpace > spaceNeeded
+        ? SUBMENU_POSITION.right
+        : SUBMENU_POSITION.left;
+      if (preferredPosition !== subMenuPosition) {
+        this.setState({subMenuPosition: preferredPosition});
+      }
+    }
+  }
+
   renderOverlay = () => {
     const menuItems = [];
     let onChange;
@@ -181,6 +210,7 @@ class VSActions extends React.Component {
           <Container
             key={`-${storage.id}`}
             title={storage.name}
+            ref={(el) => { this.menuContainerRef = el; }}
           >
             <Menu.Item key={`diff-${storage.id}`}>
               <Icon type="exception" /> Diff
@@ -207,17 +237,19 @@ class VSActions extends React.Component {
         });
       };
     }
-    const {subMenuDirection} = this.props;
+    const {subMenuPosition} = this.state;
     return (
       <Menu
         className={
           classNames(
             styles.menu,
             'vs-actions-dropdown',
-            `vs-actions-dropdown-${subMenuDirection}`
+            `vs-actions-dropdown-${subMenuPosition}`
           )
         }
+        openTransition="none"
         onClick={onChange}
+        onOpenChange={this.setSubMenuPosition}
       >
         {menuItems}
       </Menu>
@@ -265,7 +297,6 @@ class VSActions extends React.Component {
 VSActions.propTypes = {
   run: PropTypes.object,
   placement: PropTypes.string,
-  subMenuDirection: PropTypes.oneOf(['left', 'right']),
   getPopupContainer: PropTypes.func,
   trigger: PropTypes.arrayOf(PropTypes.oneOf(['click', 'hover'])),
   onDropDownVisibleChange: PropTypes.func,
@@ -273,7 +304,6 @@ VSActions.propTypes = {
 };
 
 VSActions.defaultProps = {
-  subMenuDirection: 'left',
   getPopupContainer: o => o.parentNode,
   trigger: ['hover']
 };
