@@ -34,11 +34,14 @@ import UploadButton from '../../special/UploadButton';
 import AddInstanceForm from './forms/AddInstanceForm';
 import PropTypes from 'prop-types';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 @connect({
   folders,
   pipelinesLibrary
 })
+@HiddenObjects.injectTreeFilter
+@HiddenObjects.checkMetadataFolders(props => (props.params || props).id)
 @inject(({folders, pipelinesLibrary}, params) => {
   let componentParameters = params;
   if (params.params) {
@@ -317,7 +320,14 @@ export default class MetadataFolder extends React.Component {
   };
 
   render () {
-    const dataFolder = generateTreeData(this.props.folder.value, false);
+    const dataFolder = generateTreeData(
+      this.props.folder.value,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      this.props.hiddenObjectsTreeFilter()
+    );
     const [metadataFolder] = dataFolder.filter(m => m.type === ItemTypes.metadataFolder);
     let data = metadataFolder ? metadataFolder.children : [];
     if (this.props.folderId) {

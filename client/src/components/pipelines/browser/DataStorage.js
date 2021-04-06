@@ -75,6 +75,7 @@ import DataStorageGenerateSharedLink
 import {ItemTypes} from '../model/treeStructureFunctions';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const PAGE_SIZE = 40;
 
@@ -83,6 +84,7 @@ const PAGE_SIZE = 40;
 })
 @roleModel.authenticationInfo
 @inject('awsRegions')
+@HiddenObjects.checkStorages(props => props.params.id)
 @inject(({
   authenticatedUserInfo,
   routing,

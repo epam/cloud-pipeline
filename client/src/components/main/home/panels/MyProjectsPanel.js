@@ -30,7 +30,7 @@ import styles from './Panel.css';
 const MAX_TAGS = 5;
 
 @roleModel.authenticationInfo
-@inject('projects')
+@inject('projects', 'hiddenObjects')
 @localization.localizedComponent
 @observer
 export default class MyProjectsPanel extends localization.LocalizedReactComponent {
@@ -48,7 +48,7 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
 
   @computed
   get projects () {
-    if (this.props.projects.loaded) {
+    if (this.props.projects.loaded && this.props.hiddenObjects.loaded) {
       return (this.props.projects.value.childFolders || []).map(project => {
         return {
           ...project,
@@ -62,7 +62,8 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
             return result;
           })()
         };
-      });
+      })
+        .filter(p => !this.props.hiddenObjects.isFolderHidden(p.id));
     }
     return [];
   }

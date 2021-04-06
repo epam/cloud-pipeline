@@ -26,6 +26,7 @@ import connect from '../../../utils/connect';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
 import moment from 'moment-timezone';
 import styles from './Browser.css';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const PAGE_SIZE = 20;
 
@@ -33,6 +34,7 @@ const PAGE_SIZE = 20;
   folders,
   pipelines
 })
+@HiddenObjects.checkFolders(p => (p.params ? p.params.id : p.id))
 @inject(({folders}, {params}) => {
   const filterParams = {
     page: 1,

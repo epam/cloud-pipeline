@@ -17,25 +17,17 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
-import connect from '../../../../utils/connect';
 import PropTypes from 'prop-types';
-import dockerRegistries from '../../../../models/tools/DockerRegistriesTree';
 import {Button, Modal, Row} from 'antd';
 import localization from '../../../../utils/localization';
 import CommitRunForm from './CommitRunForm';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
-@connect({
-  dockerRegistries
-})
 @localization.localizedComponent
-@inject(({dockerRegistries}) => {
-  return {
-    docker: dockerRegistries
-  };
-})
+@inject('dockerRegistries')
+@HiddenObjects.injectToolsFilters
 @observer
 export default class CommitRunDialog extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -65,11 +57,13 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     }
   };
 
+  @computed
   get registries () {
-    if (!this.props.docker.loaded) {
+    if (!this.props.dockerRegistries.loaded) {
       return [];
     }
-    return (this.props.docker.value.registries || []).map(r => r);
+    return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
+      .registries;
   }
 
   onInitialize = (component) => {

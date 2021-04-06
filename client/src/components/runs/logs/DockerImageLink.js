@@ -18,10 +18,9 @@ import React, {Component} from 'react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import dockerRegistries from '../../../models/tools/DockerRegistriesTree';
-import {inject, observer} from 'mobx-react/index';
-import connect from '../../../utils/connect';
+import {inject, observer} from 'mobx-react';
 import LoadingView from '../../special/LoadingView';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -30,19 +29,15 @@ const findGroupByName = (groups, name) => {
   return groups.filter(findGroupByNameSelector(name))[0] || null;
 };
 
-@connect({dockerRegistries})
-@inject(({dockerRegistries}) => {
-  return {
-    dockerRegistries
-  };
-})
+@inject('dockerRegistries')
+@HiddenObjects.injectToolsFilters
 @observer
 export default class DockerImageLink extends Component {
-
   @computed
   get registries () {
     if (this.props.dockerRegistries.loaded) {
-      return (this.props.dockerRegistries.value.registries || []).map(r => r);
+      return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
+        .registries;
     }
     return [];
   }

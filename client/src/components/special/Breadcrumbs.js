@@ -24,8 +24,10 @@ import EditableField from './EditableField';
 import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
 import Owner from './owner';
 import styles from './Breadcrumbs.css';
+import HiddenObjects from '../../utils/hidden-objects';
 
 @inject('pipelinesLibrary')
+@HiddenObjects.injectTreeFilter
 @observer
 export default class Breadcrumbs extends React.Component {
 
@@ -61,7 +63,14 @@ export default class Breadcrumbs extends React.Component {
       name: 'Library',
       ...this.props.pipelinesLibrary.value
     }];
-    const rootItems = generateTreeData({childFolders: rootElements}, false, null);
+    const rootItems = generateTreeData(
+      {childFolders: rootElements},
+      false,
+      null,
+      undefined,
+      undefined,
+      this.props.hiddenObjectsTreeFilter()
+    );
     this.setState({
       rootItems
     });

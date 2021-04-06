@@ -60,9 +60,13 @@ export function stopRun (parent, callback) {
     console.warn('Parent component should be marked with @runPipelineActions');
     throw new Error('"stopRun" function should be called with parent component passed to arguments:');
   }
-  const {localization, dockerRegistries} = parent.props;
+  const {
+    localization,
+    dockerRegistries,
+    hiddenObjects
+  } = parent.props;
   return function (run) {
-    return stopRunFn(run, callback, {localization, dockerRegistries});
+    return stopRunFn(run, callback, {localization, dockerRegistries, hiddenObjects});
   };
 }
 
@@ -73,9 +77,13 @@ export function terminateRun (parent, callback) {
     console.warn('Parent component should be marked with @runPipelineActions');
     throw new Error('"terminateRun" function should be called with parent component passed to arguments:');
   }
-  const {localization, dockerRegistries} = parent.props;
+  const {
+    localization,
+    dockerRegistries,
+    hiddenObjects
+  } = parent.props;
   return function (run) {
-    return terminateRunFn(run, callback, {localization, dockerRegistries});
+    return terminateRunFn(run, callback, {localization, dockerRegistries, hiddenObjects});
   };
 }
 
