@@ -681,6 +681,10 @@ public class SystemPreferences {
     public static final StringPreference SEARCH_ELASTIC_DENIED_GROUPS_FIELD = new StringPreference(
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
 
+    public static final ObjectPreference<Set<String>> SEARCH_ELASTIC_INDEX_METADATA_FIELDS = new ObjectPreference<>(
+            "search.elastic.index.metadata.fields", null, new TypeReference<Set<String>>() {},
+            SEARCH_GROUP, pass);
+
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
             new IntPreference("ge.autoscaling.scale.up.timeout", 30,
