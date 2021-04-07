@@ -14,8 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Adds a new host record to default hostfile in a concurrent safe way.
-# Additionally adds a new host record to /etc/hosts if host ip is provided as a second argument.
+# Adds a new host records to default hostfile and /etc/hosts in a concurrent safe way.
+#
+# If CP_CAP_AUTOSCALE_DNS_HOSTS run parameter is enabled then /etc/hosts file is not modified
+# and the script will wait until host entry is resolvable.
+#
+# If second argument is omitted then /etc/hosts file is not modified.
 # 
 # Usage examples:
 #
@@ -31,11 +35,16 @@ WORKER_IP="$2"
 LOCK_FILE="/var/run/hosts-modification.lock"
 DEFAULT_HOSTFILE="${DEFAULT_HOSTFILE:-/common/hostfile}"
 
-if [[ -z "$WORKER_IP" ]]; then
-    COMMAND="echo -e '$WORKER_HOST' >> '$DEFAULT_HOSTFILE'"
-else
-    COMMAND="echo -e '$WORKER_HOST' >> '$DEFAULT_HOSTFILE';
-             echo -e '$WORKER_IP\t$WORKER_HOST' >> '/etc/hosts'"
+COMMAND="echo -e '$WORKER_HOST' >> '$DEFAULT_HOSTFILE'"
+
+if [[ "$CP_CAP_AUTOSCALE_DNS_HOSTS" == "true" ]]; then
+    wait_for_host_resolving "$WORKER_HOST" "$WORKER_IP"
+    host_resolving_exit_code=$?
+    if [[ "$host_resolving_exit_code" != "0" ]]; then
+        exit "$host_resolving_exit_code"
+    fi
+elif [[ "$WORKER_IP" ]]; then
+    COMMAND="$COMMAND; echo -e '$WORKER_IP\t$WORKER_HOST' >> '/etc/hosts'"
 fi
 
 flock -w 10 "$LOCK_FILE" bash -c "$COMMAND"

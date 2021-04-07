@@ -678,7 +678,7 @@ class GridEngineScaleUpHandler:
         raise ScalingError(error_msg)
 
     def _add_worker_to_master_hosts(self, pod):
-        self.executor.execute('add_to_hosts "%s" && wait_for_host_resolving "%s" "%s"' % (pod.name, pod.name, pod.ip))
+        self.executor.execute('add_to_hosts "%s" "%s"' % (pod.name, pod.ip))
 
     def _await_worker_initialization(self, run_id):
         Logger.info('Waiting for additional worker with run_id=%s to initialize.' % run_id)
