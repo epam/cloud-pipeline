@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Removes host record from /etc/hosts file as well as default hostfile using file system locking.
-# It prevents possible race condition during host files modification.
+# Removes a host record from default hostfile and /etc/hosts in a concurrent safe way.
+#
+# If CP_CAP_AUTOSCALE_DNS_HOSTS run parameter is enabled then /etc/hosts file is not modified.
 #
 # Usage examples:
 #
@@ -27,7 +28,19 @@ WORKER_HOST="$1"
 LOCK_FILE="/var/run/hosts-modification.lock"
 DEFAULT_HOSTFILE="${DEFAULT_HOSTFILE:-/common/hostfile}"
 
-COMMAND="sed '/\t$WORKER_HOST$/d' /etc/hosts > /etc/hosts_modified; cp /etc/hosts_modified /etc/hosts; rm /etc/hosts_modified;
-         sed '/^$WORKER_HOST$/d' '$DEFAULT_HOSTFILE' > '${DEFAULT_HOSTFILE}_modified'; cp '${DEFAULT_HOSTFILE}_modified' '$DEFAULT_HOSTFILE'; rm '${DEFAULT_HOSTFILE}_modified'"
+COMMAND="if grep $'^$WORKER_HOST$' '$DEFAULT_HOSTFILE' > /dev/null; then
+             sed '/^$WORKER_HOST$/d' '$DEFAULT_HOSTFILE' > '${DEFAULT_HOSTFILE}_modified';
+             cp '${DEFAULT_HOSTFILE}_modified' '$DEFAULT_HOSTFILE';
+             rm '${DEFAULT_HOSTFILE}_modified';
+         fi"
+
+if [[ "$CP_CAP_AUTOSCALE_DNS_HOSTS" != "true" ]]; then
+    COMMAND="$COMMAND;
+             if grep $'\t$WORKER_HOST$' /etc/hosts > /dev/null; then
+                 sed '/\t$WORKER_HOST$/d' /etc/hosts > /etc/hosts_modified;
+                 cp /etc/hosts_modified /etc/hosts;
+                 rm /etc/hosts_modified;
+             fi"
+fi
 
 flock -w 10 "$LOCK_FILE" bash -c "$COMMAND"

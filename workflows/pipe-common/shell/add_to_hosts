@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Adds a new record to /etc/hosts file as well as default hostfile using file system locking.
-# It prevents possible race condition during host files modification.
+# Adds a new host records to default hostfile and /etc/hosts in a concurrent safe way.
+#
+# If CP_CAP_AUTOSCALE_DNS_HOSTS run parameter is enabled then /etc/hosts file is not modified
+# and the script will wait until host entry is resolvable.
+#
+# If second argument is omitted then /etc/hosts file is not modified.
 # 
 # Usage examples:
 #
 # add_to_hosts "pipeline-12345" \
-#              "127.0.0.2"
+#              "127.0.0.1"
+#
+# add_to_hosts "pipeline-12345"
 
 # Required args
 WORKER_HOST="$1"
@@ -29,7 +35,16 @@ WORKER_IP="$2"
 LOCK_FILE="/var/run/hosts-modification.lock"
 DEFAULT_HOSTFILE="${DEFAULT_HOSTFILE:-/common/hostfile}"
 
-COMMAND="echo -e '$WORKER_IP\t$WORKER_HOST' >> '/etc/hosts';
-         echo -e '$WORKER_HOST' >> '$DEFAULT_HOSTFILE'"
+COMMAND="echo -e '$WORKER_HOST' >> '$DEFAULT_HOSTFILE'"
+
+if [[ "$CP_CAP_AUTOSCALE_DNS_HOSTS" == "true" ]]; then
+    wait_for_host_resolving "$WORKER_HOST" "$WORKER_IP"
+    host_resolving_exit_code=$?
+    if [[ "$host_resolving_exit_code" != "0" ]]; then
+        exit "$host_resolving_exit_code"
+    fi
+elif [[ "$WORKER_IP" ]]; then
+    COMMAND="$COMMAND; echo -e '$WORKER_IP\t$WORKER_HOST' >> '/etc/hosts'"
+fi
 
 flock -w 10 "$LOCK_FILE" bash -c "$COMMAND"
