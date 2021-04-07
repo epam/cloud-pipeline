@@ -58,7 +58,7 @@ class GitCommitDialog extends React.Component {
     }
     const lines = commitMessage.split('\n');
     return lines
-      .filter(line => !line.trim().startsWith('#'))
+      .filter(line => !line.startsWith('#'))
       .some(line => line.trim().length > 0);
   }
 
