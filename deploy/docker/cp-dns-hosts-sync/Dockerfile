@@ -12,16 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/ubuntu:16.04
+FROM library/python:3.6-alpine3.12
 
-RUN apt-get update && \
-    apt-get install -y  nginx \
-                        wget \
-                        curl
-
-ADD nginx.conf /etc/nginx/nginx.conf
-
-ARG UPSTREAM_PROXY=""
-RUN sed -i "s/{UPSTREAM_PROXY}/${UPSTREAM_PROXY}/g"
-
-CMD nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf -g 'daemon off;'
+RUN pip install pykube==0.15.0
+ADD sync-hosts.py /sync-hosts.py
