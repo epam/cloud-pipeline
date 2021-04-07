@@ -1,0 +1,84 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.row .main {
+  font-weight: normal;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  overflow: hidden;
+}
+
+.row .main .sub {
+  width: 100%;
+  overflow: hidden;
+  color: #777;
+}
+
+.row .main .name {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.row .main .name .icon {
+  font-weight: normal;
+  font-size: larger;
+  margin-right: 5px;
+}
+
+.row .main .sub .description {
+
+}
+
+.row .main .sub > * {
+  margin-right: 5px;
+}
+
+.row .main .sub > *::after {
+  content: ';';
+  font-weight: normal;
+}
+
+.row .main .name::after,
+.row .main .sub > *:last-child::after {
+  content: '';
+}
+
+.row .author {
+  min-width: 100px;
+  font-weight: normal;
+}
+
+.row .main .attribute {
+
+}
+
+.row .main .ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

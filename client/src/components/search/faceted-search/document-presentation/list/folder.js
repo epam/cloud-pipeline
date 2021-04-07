@@ -14,21 +14,17 @@
  *  limitations under the License.
  */
 
-import RemotePost from '../basic/RemotePost';
-import mapElasticDocument from './map-elastic-document';
+import React from 'react';
+import classNames from 'classnames';
+import styles from './document-list-presentation.css';
 
-class FacetSearch extends RemotePost {
-  constructor () {
-    super();
-    this.url = '/search/facet';
+export default function Folder ({document}) {
+  if (document?.path && document?.path !== document?.name) {
+    return (
+      <span className={classNames(styles.attribute, styles.ellipsis)}>
+        {document?.path}
+      </span>
+    );
   }
-
-  postprocess (value) {
-    if (value && value.payload && value.payload.documents) {
-      value.payload.documents = (value.payload.documents || []).map(mapElasticDocument);
-    }
-    return value.payload;
-  }
+  return null;
 }
-
-export default FacetSearch;

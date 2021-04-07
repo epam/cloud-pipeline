@@ -16,7 +16,9 @@
 
 import RemotePost from '../basic/RemotePost';
 import SearchItemTypes from './search-item-types';
+import mapElasticDocument from './map-elastic-document';
 export {default as FacetedSearch} from './facet';
+export {mapElasticDocument};
 export {SearchItemTypes};
 
 export class Search extends RemotePost {
@@ -46,21 +48,7 @@ export class Search extends RemotePost {
   }
 
   postprocess (value) {
-    value.payload.documents = (value.payload.documents || []).map(processItem);
+    value.payload.documents = (value.payload.documents || []).map(mapElasticDocument);
     return value.payload;
   }
-}
-
-export function processItem (item) {
-  switch (item.type) {
-    case SearchItemTypes.azFile:
-    case SearchItemTypes.s3File:
-    case SearchItemTypes.NFSFile:
-    case SearchItemTypes.gsFile:
-      return {
-        ...item,
-        name: item.name.split('/')[item.name.split('/').length - 1]
-      };
-  }
-  return item;
 }
