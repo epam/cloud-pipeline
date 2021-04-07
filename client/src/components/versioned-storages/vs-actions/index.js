@@ -35,6 +35,7 @@ import VSCommit from '../../../models/versioned-storage/commit';
 import VSDiff from '../../../models/versioned-storage/diff';
 import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
+import {GitCommitDialog} from './components';
 
 const SUBMENU_POSITION = {
   right: 'right',
@@ -44,6 +45,8 @@ const SUBMENU_POSITION = {
 class VSActions extends React.Component {
   state = {
     dropDownVisible: false,
+    commitDialogVisible: false,
+    currentVersionedStorage: null,
     vsBrowserVisible: false,
     subMenuPosition: SUBMENU_POSITION.right,
     gitDiff: undefined
@@ -196,6 +199,10 @@ class VSActions extends React.Component {
     });
   };
 
+  showCommitDialog = () => this.setState({commitDialogVisible: true});
+
+  hideCommitDialog = () => this.setState({commitDialogVisible: false});
+
   onCommitVS = (versionedStorage) => {
     if (!versionedStorage) {
       return Promise.resolve();
@@ -212,7 +219,7 @@ class VSActions extends React.Component {
           if (!diff || !diff.length) {
             message.info('Nothing to save', 5);
           } else {
-            // todo: show commit dialog
+            this.showCommitDialog();
           }
         })
         .then(() => resolve());
@@ -220,18 +227,20 @@ class VSActions extends React.Component {
   };
 
   doCommit = (versionedStorage, message) => {
+    // todo: uncomment code below when GitCommitDialog will be ready and remove setTimeout
     return new Promise((resolve) => {
-      const {id, name} = versionedStorage;
-      const hide = message.loading((
-        <span>
-          Saving changes for the <b>{name}</b> storage...
-        </span>
-      ), 0);
-      this.performRequestWithStatus(
-        new VSCommit(this.props.run?.id, id, message),
-        resolve,
-        hide
-      );
+      // const {id, name} = versionedStorage;
+      // const hide = message.loading((
+      //   <span>
+      //     Saving changes for the <b>{name}</b> storage...
+      //   </span>
+      // ), 0);
+      // this.performRequestWithStatus(
+      //   new VSCommit(this.props.run?.id, id, message),
+      //   resolve,
+      //   hide
+      // );
+      setTimeout(() => resolve(this.hideCommitDialog()), 2000);
     });
   };
 
@@ -404,6 +413,7 @@ class VSActions extends React.Component {
             break;
         }
         this.setState({
+          currentVersionedStorage: storage || null,
           dropDownVisible: false
         });
       };
@@ -438,7 +448,9 @@ class VSActions extends React.Component {
     } = this.props;
     const {
       dropDownVisible,
-      gitDiff
+      gitDiff,
+      commitDialogVisible,
+      currentVersionedStorage
     } = this.state;
     if (!this.fsBrowserAvailable) {
       return null;
@@ -468,6 +480,14 @@ class VSActions extends React.Component {
             fileDiffs={gitDiff?.files}
             onClose={this.closeGitDiffModal}
           />
+          {commitDialogVisible && (
+            <GitCommitDialog
+              visible={commitDialogVisible}
+              onCommit={this.doCommit}
+              onCancel={this.hideCommitDialog}
+              versionedStorage={currentVersionedStorage}
+            />
+          )}
         </a>
       </Dropdown>
     );
