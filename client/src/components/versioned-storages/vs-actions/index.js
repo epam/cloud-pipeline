@@ -30,6 +30,7 @@ import VSList from '../../../models/versioned-storage/list';
 import styles from './vs-actions.css';
 import '../../../staticStyles/vs-actions-dropdown.css';
 import VSClone from '../../../models/versioned-storage/clone';
+import VSDiff from '../../../models/versioned-storage/diff';
 import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
 
@@ -169,6 +170,52 @@ class VSActions extends React.Component {
     });
   };
 
+  getVSDiff = (versionedStorage) => {
+    if (!versionedStorage) {
+      return Promise.resolve([]);
+    }
+    return new Promise((resolve) => {
+      const request = new VSDiff(this.props.run?.id, versionedStorage?.id);
+      request
+        .fetch()
+        .then(() => {
+          if (request.error || !request.loaded) {
+            message.error(request.error || 'Error fetching storage diff', 5);
+            resolve([]);
+          } else {
+            resolve(Array.from(request.value || []));
+          }
+        })
+        .catch(e => {
+          message.error(e.message, 5);
+          resolve([]);
+        });
+    });
+  };
+
+  onCommitVS = (versionedStorage) => {
+    if (!versionedStorage) {
+      return Promise.resolve();
+    }
+    const hide = message.loading((
+      <span>
+        Fetching <b>{versionedStorage.name}</b> diff...
+      </span>
+    ), 0);
+    return new Promise((resolve) => {
+      this.getVSDiff(versionedStorage)
+        .then(diff => {
+          hide();
+          if (!diff || !diff.length) {
+            message.info('Nothing to save', 5);
+          } else {
+            // todo: show commit dialog
+          }
+        })
+        .then(() => resolve());
+    });
+  };
+
   refresh = (force = false) => {
     const {run} = this.props;
     if (!run || !this.fsBrowserAvailable) {
@@ -283,6 +330,11 @@ class VSActions extends React.Component {
           case 'refresh':
             if (storage) {
               this.onFetchVS(storage);
+            }
+            break;
+          case 'save':
+            if (storage) {
+              this.onCommitVS(storage);
             }
             break;
         }
