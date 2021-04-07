@@ -14,21 +14,19 @@
  *  limitations under the License.
  */
 
-import RemotePost from '../basic/RemotePost';
-import mapElasticDocument from './map-elastic-document';
+import SearchItemTypes from './search-item-types';
 
-class FacetSearch extends RemotePost {
-  constructor () {
-    super();
-    this.url = '/search/facet';
+export default function mapElasticDocument (document) {
+  document.name = document.name || document.path;
+  switch (document.type) {
+    case SearchItemTypes.azFile:
+    case SearchItemTypes.s3File:
+    case SearchItemTypes.NFSFile:
+    case SearchItemTypes.gsFile:
+      return {
+        ...document,
+        name: document.name.split('/')[document.name.split('/').length - 1]
+      };
   }
-
-  postprocess (value) {
-    if (value && value.payload && value.payload.documents) {
-      value.payload.documents = (value.payload.documents || []).map(mapElasticDocument);
-    }
-    return value.payload;
-  }
+  return document;
 }
-
-export default FacetSearch;
