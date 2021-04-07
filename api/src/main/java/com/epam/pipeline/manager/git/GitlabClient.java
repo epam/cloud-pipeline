@@ -95,12 +95,13 @@ public class GitlabClient {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    private static final String INITIAL_COMMIT = "New pipeline initial commit";
+    private static final String INITIAL_COMMIT = "Initial commit";
     private static final String PUBLIC_VISIBILITY = "public";
     public static final String NEW_LINE = "\n";
     public static final long MAINTAINER = 40L;
     private static final String DOT_CHAR = ".";
     private static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
+    public static final String GITKEEP_FILE = ".gitkeep";
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -218,11 +219,15 @@ public class GitlabClient {
                                 indexingEnabled, hookUrl);
     }
 
-    public GitProject createEmptyRepository(String name, String description,
-                                               boolean indexingEnabled, String hookUrl) throws GitClientException {
+    public GitProject createEmptyRepository(final String name, final String description,
+                                            final boolean indexingEnabled, final boolean initCommit,
+                                            final String hookUrl) throws GitClientException {
         final GitProject project = createRepo(name, description);
         if (indexingEnabled) {
             addProjectHook(String.valueOf(project.getId()), hookUrl);
+        }
+        if (initCommit) {
+            createFile(project, GITKEEP_FILE, "keep");
         }
         return project;
     }
@@ -528,7 +533,7 @@ public class GitlabClient {
 
     private GitProject createGitProject(Template template, String description, String repoName,
                                         boolean indexingEnabled, String hookUrl) throws GitClientException {
-        final GitProject project = createEmptyRepository(repoName, description, indexingEnabled, hookUrl);
+        final GitProject project = createEmptyRepository(repoName, description, indexingEnabled, false, hookUrl);
         uploadFolder(template, repoName, project);
         try {
             boolean fileExists = getFileContents(project.getId().toString(), DEFAULT_README, DEFAULT_BRANCH) != null;

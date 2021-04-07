@@ -324,20 +324,24 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
-                                                                                        final String path, final Long page,
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
+                                                                                        final String version,
+                                                                                        final String path,
+                                                                                        final Long page,
                                                                                         final Integer pageSize) {
         return gitManager.logsTreeRepositoryContent(id, version, path, page, pageSize);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
+                                                                                        final String version,
                                                                                         final GitReaderLogsPathFilter paths) {
         return gitManager.logsTreeRepositoryContent(id, version, paths);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(final Long id, final Long page,
+    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(final Long id,
+                                                                                         final Long page,
                                                                                          final Integer pageSize,
                                                                                          final GitCommitsFilter filter) {
         return gitManager.logRepositoryCommits(id, page, pageSize, filter);

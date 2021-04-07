@@ -31,7 +31,6 @@ import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -581,7 +580,8 @@ public class GitManagerTest extends AbstractManagerTest {
         );
         Pipeline pipeline = new Pipeline();
         pipeline.setName(REPOSITORY_NAME);
-        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME + "/" + REPOSITORY_NAME + ".git");
+        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME
+                + "/" + REPOSITORY_NAME + ".git");
         when(pipelineManagerMock.load(1L)).thenReturn(pipeline);
         gitManager.lsTreeRepositoryContent(1L, "doesnt_exist", null, null, null);
     }
@@ -600,7 +600,8 @@ public class GitManagerTest extends AbstractManagerTest {
         );
         Pipeline pipeline = new Pipeline();
         pipeline.setName(REPOSITORY_NAME);
-        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME + "/" + REPOSITORY_NAME + ".git");
+        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME +
+                "/" + REPOSITORY_NAME + ".git");
         when(pipelineManagerMock.load(1L)).thenReturn(pipeline);
         gitManager.lsTreeRepositoryContent(1L, "v1.0.0", null, null, null);
     }

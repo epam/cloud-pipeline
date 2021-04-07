@@ -40,7 +40,6 @@ import org.springframework.http.HttpStatus;
 import retrofit2.Call;
 import retrofit2.Response;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -118,7 +117,8 @@ public class GitReaderClient {
         return result.getPayload();
     }
 
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo, final String path,
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo,
+                                                                                    final String path,
                                                                                     final String ref, final Long page,
                                                                                     final Integer pageSize) throws GitClientException {
         final Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>> result = execute(
@@ -130,7 +130,8 @@ public class GitReaderClient {
         return result.getPayload();
     }
 
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo, final String ref,
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo,
+                                                                                    final String ref,
                                                                                     final GitReaderLogsPathFilter paths) throws GitClientException {
         final Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>> result = execute(
                 gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), ref, paths)
@@ -165,13 +166,6 @@ public class GitReaderClient {
 
     private GitReaderApi buildGitLabApi(final String gitReaderUrlRoot) {
         return new GitReaderApiBuilder(gitReaderUrlRoot).build();
-    }
-
-    private String normalizePath(final String path) {
-        if (File.separator.equals("\\")) {
-            return path.replaceAll("\\\\", "/");
-        }
-        return path;
     }
 
     public GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter) {

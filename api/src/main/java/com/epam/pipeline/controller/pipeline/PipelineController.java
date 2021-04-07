@@ -738,8 +738,8 @@ public class PipelineController extends AbstractRestController {
     @RequestMapping(value = "/pipeline/{id}/logs_tree", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Lists pipeline repository content with last commit information.",
-            notes = "Lists pipeline repository content with last commit information.",
+            value = "Lists pipeline repository content with last commit information by specific paths.",
+            notes = "Lists pipeline repository content with last commit information by specific paths.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -799,6 +799,6 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = ID) Long id,
             @PathVariable(value = COMMIT) String commit,
             @RequestParam(value = PATH, required = false) final String path) throws GitClientException {
-        return Result.success(pipelineApiService.getRepositoryCommitDiff(id,commit, path));
+        return Result.success(pipelineApiService.getRepositoryCommitDiff(id, commit, path));
     }
 }

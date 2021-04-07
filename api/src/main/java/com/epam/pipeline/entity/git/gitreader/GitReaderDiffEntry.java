@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.git.gitreader;
 
-import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 

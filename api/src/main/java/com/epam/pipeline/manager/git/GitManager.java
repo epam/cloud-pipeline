@@ -741,6 +741,7 @@ public class GitManager {
                         pipelineName,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                        true,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
                 );
     }
@@ -911,12 +912,14 @@ public class GitManager {
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+            throw new IllegalArgumentException("Something went wrong when trying to list tree from repo", e);
         }
     }
 
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
-                                                                                        final String path, final Long page,
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
+                                                                                        final String version,
+                                                                                        final String path,
+                                                                                        final Long page,
                                                                                         final Integer pageSize) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
@@ -933,7 +936,8 @@ public class GitManager {
         }
     }
 
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id, final String version,
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
+                                                                                        final String version,
                                                                                         final GitReaderLogsPathFilter paths) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
@@ -946,12 +950,14 @@ public class GitManager {
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+            throw new IllegalArgumentException(
+                    "Something went wrong when trying to list tree and last commit information from repo", e);
         }
     }
 
     public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(final Long id,
-                                                                                         final Long page, final Integer pageSize,
+                                                                                         final Long page,
+                                                                                         final Integer pageSize,
                                                                                          final GitCommitsFilter filter) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
@@ -964,7 +970,7 @@ public class GitManager {
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+            throw new IllegalArgumentException("Something went wrong when trying to request commit log from repo", e);
         }
     }
 
@@ -983,7 +989,7 @@ public class GitManager {
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+            throw new IllegalArgumentException("Something went wrong when trying to request commit diffs from repo", e);
         }
     }
 
@@ -998,7 +1004,7 @@ public class GitManager {
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
+            throw new IllegalArgumentException("Something went wrong when trying to request commit diff from repo", e);
         }
     }
 
