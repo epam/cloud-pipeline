@@ -126,7 +126,7 @@ class DataStorageOperations(object):
                     transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
                                                        relative_path=relative_path, clean=clean, quiet=quiet, size=size,
                                                        tags=tags, skip_existing=skip_existing)
-                    if not destination_wrapper.is_local():
+                    if not destination_wrapper.is_local() and transfer_result:
                         transfer_results.append(transfer_result)
                         transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                        transfer_results, clean=clean)
@@ -589,7 +589,7 @@ class DataStorageOperations(object):
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
                                                 relative_path=relative_path, clean=clean, quiet=quiet, size=size,
                                                 tags=tags, skip_existing=skip_existing, lock=lock)
-            if not destination_wrapper.is_local():
+            if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                transfer_results, clean=clean)
