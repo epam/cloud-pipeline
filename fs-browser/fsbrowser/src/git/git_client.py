@@ -214,7 +214,7 @@ class GitClient:
                     context_lines=DEFAULT_CONTEXT_LINES_COUNT, remote_name=DEFAULT_REMOTE_NAME):
         repo = self._repository(repo_path)
         file_status = repo.status_file(file_path)
-        if self._is_untracked(file_status):
+        if self._is_created(file_status):
             # build in-memory index
             tree = repo.head.peel().tree
             index = repo.index
@@ -224,7 +224,7 @@ class GitClient:
         elif self._is_conflicts(file_status):
             remote_head_ref = self._get_remote_head(repo, remote_name, branch_name)
             repo_diff = repo.diff(remote_head_ref, context_lines=context_lines)
-        elif self._is_index_modified(file_status):
+        elif self._is_index_modified(file_status) or self._is_index_deleted(file_status):
             head_ref = self._get_head(repo, branch_name)
             repo_diff = repo.diff(head_ref, context_lines=context_lines)
         else:
@@ -269,8 +269,8 @@ class GitClient:
         return pygit2.Repository(os.path.join(repo_path, '.git'))
 
     @staticmethod
-    def _is_untracked(file_status):
-        return file_status & pygit2.GIT_STATUS_WT_NEW
+    def _is_created(file_status):
+        return file_status & pygit2.GIT_STATUS_WT_NEW or file_status & pygit2.GIT_STATUS_INDEX_NEW
 
     @staticmethod
     def _is_conflicts(file_status):
@@ -279,6 +279,10 @@ class GitClient:
     @staticmethod
     def _is_index_modified(file_status):
         return file_status & pygit2.GIT_STATUS_INDEX_MODIFIED
+
+    @staticmethod
+    def _is_index_deleted(file_status):
+        return file_status & pygit2.GIT_STATUS_INDEX_DELETED
 
     @staticmethod
     def _is_merge_in_progress(repo):
