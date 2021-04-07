@@ -30,6 +30,7 @@ import VSList from '../../../models/versioned-storage/list';
 import styles from './vs-actions.css';
 import '../../../staticStyles/vs-actions-dropdown.css';
 import VSClone from '../../../models/versioned-storage/clone';
+import VSCommit from '../../../models/versioned-storage/commit';
 import VSDiff from '../../../models/versioned-storage/diff';
 import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
@@ -213,6 +214,22 @@ class VSActions extends React.Component {
           }
         })
         .then(() => resolve());
+    });
+  };
+
+  doCommit = (versionedStorage, message) => {
+    return new Promise((resolve) => {
+      const {id, name} = versionedStorage;
+      const hide = message.loading((
+        <span>
+          Saving changes for the <b>{name}</b> storage...
+        </span>
+      ), 0);
+      this.performRequestWithStatus(
+        new VSCommit(this.props.run?.id, id, message),
+        resolve,
+        hide
+      );
     });
   };
 
