@@ -14,3 +14,52 @@
  *  limitations under the License.
  */
 
+.container .file {
+  margin: 0 5px 5px;
+  width: 100%;
+  position: relative;
+}
+
+.file-diff-header {
+  font-family: Source Sans Pro, Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+.file-diff-header > * {
+  margin-right: 5px;
+}
+
+.file-diff-header .type {
+  padding: 1px 3px;
+  border: 1px solid #ccc;
+  border-radius: 1px;
+  text-transform: uppercase;
+  font-size: smaller;
+}
+
+.file-diff-header .type.created {
+  color: #399839;
+  border-color: #399839;
+}
+
+.file-diff-header .type.modified {
+  color: #d0b44c;
+  border-color: #d0b44c;
+}
+
+.file-diff-header .type.deleted,
+.file-diff-header .type.removed {
+  color: #c33;
+  border-color: #c33;
+}
+
+.file-diff-header .type.renamed,
+.file-diff-header .type.moved {
+  color: #3572b0;
+  border-color: #3572b0;
+}
+
+.empty-content {
+  font-style: italic;
+  color: #999;
+  padding: 5px;
+}

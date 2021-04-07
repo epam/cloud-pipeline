@@ -14,16 +14,20 @@
  *  limitations under the License.
  */
 
-import VSRemote from './base/remote';
+.git-diff-collapse .ant-collapse-content {
+  padding: 0;
+}
 
-export default class VSDiff extends VSRemote {
-  constructor (runId, storageId, file = undefined, raw = false) {
-    super(runId);
-    this.runId = runId;
-    this.storageId = storageId;
-    this.url = `vs/${storageId}/diff`;
-    if (file) {
-      this.url = `vs/${storageId}/diff/files?path=${encodeURIComponent(file)}&raw=${raw}`;
-    }
-  }
+.git-diff-collapse .ant-collapse-content .ant-collapse-content-box {
+  padding: 0;
+}
+
+.git-diff-collapse .d2h-file-wrapper {
+  border: none;
+  margin-bottom: 0;
+}
+
+.git-diff-collapse .ant-collapse-item.ant-collapse-item-active .ant-collapse-header {
+  border-bottom: 1px solid #d9d9d9;
+  border-radius: 0;
 }

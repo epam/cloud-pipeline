@@ -14,19 +14,25 @@
  *  limitations under the License.
  */
 
-import React from 'react';
-import PropTypes from 'prop-types';
-import classNames from 'classnames';
-import styles from './diff.css';
-
-class GitDiff extends React.Component {
-  render () {
-    return (
-      <div>
-        Git diff
-      </div>
-    );
-  }
-}
-
-export default GitDiff;
+export default {
+  'generic-file-path': `
+<span class="d2h-file-name-wrapper">
+  <i class="anticon anticon-file-text d2h-icon"></i>
+  <span class="d2h-file-name">{{fileDiffName}}</span>
+  {{>fileTag}}
+</span>
+  `,
+  'line-by-line-file-diff': `
+<div id="{{fileHtmlId}}" class="d2h-file-wrapper" data-lang="{{file.language}}">
+    <div class="d2h-file-diff">
+        <div class="d2h-code-wrapper">
+            <table class="d2h-diff-table">
+                <tbody class="d2h-diff-tbody">
+                {{{diffs}}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+  `
+};

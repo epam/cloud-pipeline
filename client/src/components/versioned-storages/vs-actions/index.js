@@ -26,6 +26,7 @@ import {
   Menu, message
 } from 'antd';
 import VSBrowseDialog from '../vs-browse-dialog';
+import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';
 import styles from './vs-actions.css';
 import '../../../staticStyles/vs-actions-dropdown.css';
@@ -44,7 +45,8 @@ class VSActions extends React.Component {
   state = {
     dropDownVisible: false,
     vsBrowserVisible: false,
-    subMenuPosition: SUBMENU_POSITION.right
+    subMenuPosition: SUBMENU_POSITION.right,
+    gitDiff: undefined
   };
 
   menuContainerRef;
@@ -233,6 +235,47 @@ class VSActions extends React.Component {
     });
   };
 
+  onDiffVS = (versionedStorage) => {
+    if (!versionedStorage) {
+      return Promise.resolve();
+    }
+    const hide = message.loading((
+      <span>
+        Fetching <b>{versionedStorage.name}</b> diff...
+      </span>
+    ), 0);
+    return new Promise((resolve) => {
+      this.getVSDiff(versionedStorage)
+        .then(diff => {
+          hide();
+          if (!diff || !diff.length) {
+            message.info(
+              (
+                <span>
+                  There are no modified files for <b>{versionedStorage.name}</b> storage
+                </span>
+              ),
+              5
+            );
+          } else {
+            this.setState({
+              gitDiff: {
+                storage: versionedStorage,
+                files: diff
+              }
+            });
+          }
+        })
+        .then(() => resolve());
+    });
+  };
+
+  closeGitDiffModal = () => {
+    this.setState({
+      gitDiff: undefined
+    });
+  };
+
   refresh = (force = false) => {
     const {run} = this.props;
     if (!run || !this.fsBrowserAvailable) {
@@ -354,6 +397,11 @@ class VSActions extends React.Component {
               this.onCommitVS(storage);
             }
             break;
+          case 'diff':
+            if (storage) {
+              this.onDiffVS(storage);
+            }
+            break;
         }
         this.setState({
           dropDownVisible: false
@@ -385,10 +433,12 @@ class VSActions extends React.Component {
       placement = 'bottomRight',
       getPopupContainer,
       trigger,
-      showDownIcon
+      showDownIcon,
+      run
     } = this.props;
     const {
-      dropDownVisible
+      dropDownVisible,
+      gitDiff
     } = this.state;
     if (!this.fsBrowserAvailable) {
       return null;
@@ -410,6 +460,13 @@ class VSActions extends React.Component {
             onClose={this.closeVSBrowser}
             onSelect={this.onSelectVS}
             repositories={this.repositories}
+          />
+          <GitDiffModal
+            visible={!!gitDiff}
+            run={run?.id}
+            storage={gitDiff?.storage}
+            fileDiffs={gitDiff?.files}
+            onClose={this.closeGitDiffModal}
           />
         </a>
       </Dropdown>
