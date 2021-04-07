@@ -30,6 +30,7 @@ import VSList from '../../../models/versioned-storage/list';
 import styles from './vs-actions.css';
 import '../../../staticStyles/vs-actions-dropdown.css';
 import VSClone from '../../../models/versioned-storage/clone';
+import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
 
 const SUBMENU_POSITION = {
@@ -47,6 +48,7 @@ class VSActions extends React.Component {
   menuContainerRef;
 
   @observable vsList;
+  statuses = [];
 
   @computed
   get isDtsEnvironment () {
@@ -76,15 +78,29 @@ class VSActions extends React.Component {
 
   componentWillUnmount () {
     this.vsTaskStatus && this.vsTaskStatus.abort();
+    this.statuses.forEach(operation => operation.abort());
+    delete this.statuses;
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.run?.id !== this.props.run?.id) {
-      this.vsTaskStatus && this.vsTaskStatus.abort();
+      this.statuses.forEach(operation => operation.abort());
     }
     if (prevState.dropDownVisible !== this.state.dropDownVisible && this.state.dropDownVisible) {
       this.refresh(prevProps.run?.id !== this.props.run?.id);
     }
+  }
+
+  pushOperation = (operation, promise) => {
+    this.statuses.push(operation);
+    (promise || operation.fetchUntilDone())
+      .catch(console.error)
+      .then(() => {
+        const index = this.statuses.indexOf(operation);
+        if (index >= 0) {
+          this.statuses.splice(index, 1);
+        }
+      });
   }
 
   openVSBrowser = () => {
@@ -93,6 +109,31 @@ class VSActions extends React.Component {
 
   closeVSBrowser = () => {
     this.setState({vsBrowserVisible: false});
+  };
+
+  performRequestWithStatus = (request, resolve, hideMessage) => {
+    request
+      .send()
+      .then(() => {
+        if (request.error) {
+          message.error(request.error, 5);
+        } else {
+          const {task} = request.value;
+          const vsTaskStatus = new VSTaskStatus(this.props.run?.id, task);
+          const promise = vsTaskStatus.fetchUntilDone();
+          this.pushOperation(vsTaskStatus, promise);
+          return promise;
+        }
+      })
+      .then(() => this.refresh(true))
+      .catch(e => {
+        message.error(e.message, 5);
+        console.error(e);
+      })
+      .then(() => {
+        hideMessage && hideMessage();
+      })
+      .then(() => resolve());
   };
 
   onSelectVS = (versionedStorage) => {
@@ -104,28 +145,29 @@ class VSActions extends React.Component {
           Cloning <b>{name}</b> storage (version <b>{version?.name || commitId}</b>)...
         </span>
       ), 0);
-      const request = new VSClone(this.props.run?.id, id, commitId);
-      request
-        .send()
-        .then(() => {
-          if (request.error) {
-            message.error(request.error, 5);
-          } else {
-            const {task} = request.value;
-            this.vsTaskStatus = new VSTaskStatus(this.props.run?.id, task);
-            return this.vsTaskStatus.fetchUntilDone();
-          }
-        })
-        .then(() => this.refresh(true))
-        .catch(e => {
-          message.error(e.message, 5);
-        })
-        .then(() => {
-          hide();
-        })
-        .then(() => resolve());
+      this.performRequestWithStatus(
+        new VSClone(this.props.run?.id, id, commitId),
+        resolve,
+        hide
+      );
     });
   }
+
+  onFetchVS = (versionedStorage) => {
+    return new Promise((resolve) => {
+      const {id, name} = versionedStorage;
+      const hide = message.loading((
+        <span>
+          Refreshing <b>{name}</b> storage...
+        </span>
+      ), 0);
+      this.performRequestWithStatus(
+        new VSFetch(this.props.run?.id, id),
+        resolve,
+        hide
+      );
+    });
+  };
 
   refresh = (force = false) => {
     const {run} = this.props;
@@ -212,13 +254,20 @@ class VSActions extends React.Component {
             title={storage.name}
             ref={(el) => { this.menuContainerRef = el; }}
           >
-            <Menu.Item key={`diff-${storage.id}`}>
+            <Menu.Item
+              key={`diff-${storage.id}`}
+            >
               <Icon type="exception" /> Diff
             </Menu.Item>
-            <Menu.Item key={`save-${storage.id}`}>
+            <Menu.Item
+              key={`save-${storage.id}`}
+              disabled={storage.detached}
+            >
               <Icon type="save" /> Save
             </Menu.Item>
-            <Menu.Item key={`refresh-${storage.id}`}>
+            <Menu.Item
+              key={`refresh-${storage.id}`}
+            >
               <Icon type="sync" /> Refresh
             </Menu.Item>
           </Container>
@@ -230,6 +279,11 @@ class VSActions extends React.Component {
         switch (action) {
           case 'clone':
             this.openVSBrowser();
+            break;
+          case 'refresh':
+            if (storage) {
+              this.onFetchVS(storage);
+            }
             break;
         }
         this.setState({

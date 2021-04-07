@@ -19,6 +19,7 @@ import VSRemote from './base/remote';
 class VSTaskStatus extends VSRemote {
   constructor (runId, statusId) {
     super(runId);
+    this.statusId = statusId;
     this.url = `status/${statusId}`;
   }
 

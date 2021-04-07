@@ -197,6 +197,10 @@ class VSBrowseDialog extends React.Component {
       error,
       pending
     } = this.state;
+    const {
+      repositories
+    } = this.props;
+    console.log(repositories);
     if (pipelineId && +pipelineId === +(storage.id)) {
       if (pending) {
         return (<Icon type="loading" />);
@@ -231,6 +235,11 @@ class VSBrowseDialog extends React.Component {
           }
         </Select>
       );
+    } else {
+      const repo = (repositories || []).find(r => +(r.id) === +(storage.id));
+      if (repo) {
+        return repo.revision;
+      }
     }
     return null;
   };
