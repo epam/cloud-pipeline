@@ -139,10 +139,7 @@ class VSActions extends React.Component {
       .then(() => {
         hideMessage && hideMessage();
       })
-      .then(() => {
-        console.log('resolving');
-        resolve();
-      });
+      .then(() => resolve());
   };
 
   onSelectVS = (versionedStorage) => {
