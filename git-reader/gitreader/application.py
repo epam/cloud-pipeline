@@ -86,8 +86,6 @@ def git_list_tree(repo):
                type: integer
              page_size:
                type: integer
-             has_next:
-               type: boolean
              max_page:
                type: integer
          GitObject:
@@ -160,11 +158,18 @@ def git_logs_tree(repo):
                    type: integer
                  page_size:
                    type: integer
-                 has_next:
-                   type: boolean
                  max_page:
                    type: integer
              GitObjectMetadata:
+               type: object
+               properties:
+                   git_object:
+                     type: object
+                     $ref: '#/definitions/GitObject'
+                   git_commit:
+                     type: object
+                     $ref: '#/definitions/GitCommit'
+             GitObject:
                type: object
                properties:
                    git_id:
@@ -177,16 +182,29 @@ def git_logs_tree(repo):
                      type: string
                    mode:
                      type: string
-                   commit:
+             GitCommit:
+               type: object
+               properties:
+                 commit:
+                   type: string
+                 parent_shas:
+                   type: array
+                   items:
                      type: string
-                   commit_date:
-                     type: string
-                   commit_message:
-                     type: string
-                   author:
-                     type: string
-                   author_email:
-                     type: string
+                 author_date:
+                   type: string
+                 author:
+                   type: string
+                 author_email:
+                   type: string
+                 committer_date:
+                   type: string
+                 committer:
+                   type: string
+                 committer_email:
+                   type: string
+                 commit_message:
+                   type: string
            responses:
              200:
                description: A listing of objects (files and dirs) with last commit info and paging info
@@ -228,7 +246,7 @@ def git_logs_tree_by_paths(repo):
              GitObjectMetadataListing:
                type: object
                properties:
-                 git_object_metadatas:
+                 listing:
                    type: array
                    items:
                      $ref: '#/definitions/GitObjectMetadata'
@@ -238,9 +256,16 @@ def git_logs_tree_by_paths(repo):
                    type: integer
                  has_next:
                    type: boolean
-                 max_page:
-                   type: integer
              GitObjectMetadata:
+               type: object
+               properties:
+                   git_object:
+                     type: object
+                     $ref: '#/definitions/GitObject'
+                   git_commit:
+                     type: object
+                     $ref: '#/definitions/GitCommit'
+             GitObject:
                type: object
                properties:
                    git_id:
@@ -253,16 +278,29 @@ def git_logs_tree_by_paths(repo):
                      type: string
                    mode:
                      type: string
-                   commit:
+             GitCommit:
+               type: object
+               properties:
+                 commit:
+                   type: string
+                 parent_shas:
+                   type: array
+                   items:
                      type: string
-                   commit_date:
-                     type: string
-                   commit_message:
-                     type: string
-                   author:
-                     type: string
-                   author_email:
-                     type: string
+                 author_date:
+                   type: string
+                 author:
+                   type: string
+                 author_email:
+                   type: string
+                 committer_date:
+                   type: string
+                 committer:
+                   type: string
+                 committer_email:
+                   type: string
+                 commit_message:
+                   type: string
            responses:
              200:
                description: A listing of objects (files and dirs) with last commit info and paging info
@@ -312,30 +350,38 @@ def git_list_commits(repo):
                 CommitListing:
                    type: object
                    properties:
-                     commits:
+                     listing:
                        type: array
                        items:
-                         $ref: '#/definitions/Commit'
+                         $ref: '#/definitions/GitCommit'
                      page:
                        type: integer
                      page_size:
                        type: integer
                      has_next:
                        type: boolean
-                     max_page:
-                       type: integer
-                Commit:
+                GitCommit:
                   type: object
                   properties:
                       commit:
                         type: string
-                      commit_date:
-                        type: string
-                      commit_message:
+                      parent_shas:
+                        type: array
+                        items:
+                          type: string
+                      author_date:
                         type: string
                       author:
                         type: string
                       author_email:
+                        type: string
+                      committer_date:
+                        type: string
+                      committer:
+                        type: string
+                      committer_email:
+                        type: string
+                      commit_message:
                         type: string
                responses:
                  200:
@@ -409,17 +455,33 @@ def git_diff_report(repo):
                       type: object
                       properties:
                           commit:
-                            type: string
-                          commit_date:
-                            type: string
-                          commit_message:
-                            type: string
-                          author:
-                            type: string
-                          author_email:
-                            type: string
+                            type: object
+                            $ref: '#/definitions/GitCommit'
                           diff:
                             type: string
+                    GitCommit:
+                       type: object
+                       properties:
+                         commit:
+                           type: string
+                         parent_shas:
+                           type: array
+                           items:
+                             type: string
+                         author_date:
+                           type: string
+                         author:
+                           type: string
+                         author_email:
+                           type: string
+                         committer_date:
+                           type: string
+                         committer:
+                           type: string
+                         committer_email:
+                           type: string
+                         commit_message:
+                           type: string
                    responses:
                      200:
                        description: A listing of commits and its diffs filtered by dates, authors, paths
@@ -461,17 +523,33 @@ def git_diff_by_commit(repo, commit):
                       type: object
                       properties:
                           commit:
-                            type: string
-                          commit_date:
-                            type: string
-                          commit_message:
-                            type: string
-                          author:
-                            type: string
-                          author_email:
-                            type: string
+                            type: object
+                            $ref: '#/definitions/GitCommit'
                           diff:
                             type: string
+                    GitCommit:
+                       type: object
+                       properties:
+                         commit:
+                           type: string
+                         parent_shas:
+                           type: array
+                           items:
+                             type: string
+                         author_date:
+                           type: string
+                         author:
+                           type: string
+                         author_email:
+                           type: string
+                         committer_date:
+                           type: string
+                         committer:
+                           type: string
+                         committer_email:
+                           type: string
+                         commit_message:
+                           type: string
                    responses:
                      200:
                        description: The diff for specified commit

@@ -75,7 +75,7 @@ class GitManager(object):
         return GitDiffReportEntry(GitCommit(sha=commit), self.get_diff(repo, GitCommit(sha=commit), unified_lines, GitSearchFilter(path_masks=[path])))
 
     def get_commits(self, repo, filters, skip, batch_size):
-        args = ['--skip={}'.format(skip), '-{}'.format(batch_size + 1), '--format=%h||%ai||%an||%ae||%s']
+        args = ['--skip={}'.format(skip), '-{}'.format(batch_size + 1), '--format=%H||%P||%ai||%an||%ae||%ci||%cn||%ce||%s']
         if filters.authors:
             for author in filters.authors:
                 args.append("--author={}".format(author))
@@ -137,4 +137,6 @@ class GitManager(object):
         return GitObjectMetadata(git_object, git_log_result[0])
 
     def parse_git_log(self, line):
-        return GitCommit(sha=line[0], date=line[1], commit_message=line[4], author=line[2], author_email=line[3])
+        return GitCommit(sha=line[0], parent_shas=[] if line[1] == "" else line[1].split(" "),
+                         author_date=line[2], author=line[3], author_email=line[4],
+                         committer_date=line[5], committer=line[6], committer_email=line[7], commit_message=line[8])

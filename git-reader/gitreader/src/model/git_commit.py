@@ -14,18 +14,27 @@
 
 class GitCommit:
 
-    def __init__(self, sha, date=None, commit_message=None, author=None, author_email=None):
+    def __init__(self, sha, parent_shas=None, author=None, author_email=None, author_date=None,
+                 committer=None, committer_email=None, committer_date=None, commit_message=None):
         self.sha = sha
-        self.date = date
-        self.commit_message = commit_message
+        self.parent_shas = parent_shas
+        self.author_date = author_date
         self.author = author
         self.author_email = author_email
+        self.committer_date = committer_date
+        self.committer_email = committer_email
+        self.committer = committer
+        self.commit_message = commit_message
 
     def to_json(self):
         return {
             "commit": self.sha,
-            "commit_date": self.date,
-            "commit_message": self.commit_message,
+            "parent_shas": self.parent_shas,
             "author": self.author,
-            "author_email": self.author_email
+            "author_email": self.author_email,
+            "author_date": self.author_date,
+            "committer": self.committer,
+            "committer_email": self.committer_email,
+            "committer_date": self.committer_date,
+            "commit_message": self.commit_message
         }
