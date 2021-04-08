@@ -16,6 +16,8 @@
 - [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
 - [Updates of Metadata object](#updates-of-metadata-object)
+- [Custom node images](#custom-node-images)
+- [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -591,6 +593,54 @@ See after the creation:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
 
 > **_Note_**: IDs still should be unique
+
+## Custom node images
+
+Previously, Cloud Pipeline allowed to run instances only using some default predefined node images.  
+For example, some node image was used for all CPU instance types, another - for GPU ones.  
+Nevertheless there are cases than some of the tools or pipelines require special node images. For example, some tool may require specific `nvidia` driver version which default GPU node image doesn't have.
+
+In the current version, the ability to use a custom node image was implemented.  
+If a custom node image is specified for a pipeline, tool or just a single launch then cloud instance with the required node image will be used for their runs.
+
+In a pipeline config, a custom node is specified in format: `"instance_image": "<custom_node_image>"`.  
+For runs launched via `API`, a custom node is specified in format: `"instanceImage": "<custom_node_image>"`.  
+In both cases, `<custom_node_image>` is the name of the custom image.
+
+For example, to use a custom node for a pipeline:
+
+- open pipeline's **CODE** tab
+- open `config.json` file
+- in the configuration, specify a custom node image:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CustomNode_01.png)
+- save changes
+- when launching such pipeline, you can observe that specified image is used for a node:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CustomNode_02.png)
+
+See an example for a pipeline in details [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#example-configure-a-custom-node-image).
+
+## Launch a tool with "hosted" applications
+
+"Long-running" Cloud Pipeline applications may occasionally failed.  
+And one of the main task caused this situation - saving the internal access to the services (e.g. if a database was hosted) as the IP and name (which match the pod) are being changed during the default run restarts.
+
+To resolve that, a special option to assign an internal DNS name to the run was implemented.
+
+Name of the service and a list of ports can be supplied by the user in the GUI, at the **Launch** form before the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_01.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_02.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_03.png)
+
+Configured DNS service is shown at the **Launch** form:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_04.png)
+
+And [**FQDN**](https://en.wikipedia.org/wiki/Fully_qualified_domain_name) of all configured services are shown during the run - at the **Run logs** page:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_05.png)
+
+Checking that the run is launched with a "hosted" application:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_06.png)
+
+For more details see [here](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-hosted-applications).
 
 ## AWS: seamless authentication
 
