@@ -30,7 +30,6 @@ import org.apache.commons.lang3.EnumUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -138,14 +137,13 @@ public class SearchResultConverter {
                 .description(getSourceFieldIfPresent(sourceFields, SearchSourceFields.DESCRIPTION))
                 .owner(getSourceFieldIfPresent(sourceFields, SearchSourceFields.OWNER))
                 .attributes(getSourceRemainAttributes(sourceFields, metadataSourceFields))
-                .type(EnumUtils.getEnum(SearchDocumentType.class, getFieldIfPresent(hit, typeFieldName)))
+                .type(EnumUtils.getEnum(SearchDocumentType.class, getFieldIfPresent(sourceFields, typeFieldName)))
                 .highlights(buildHighlights(hit.getHighlightFields(), aclFilterFields))
                 .build();
     }
 
-    private String getFieldIfPresent(final SearchHit hit, final String fieldName) {
-        return Optional.ofNullable(hit.getField(fieldName))
-                .map(SearchHitField::getValue)
+    private String getFieldIfPresent(final Map<String, Object> sourceFields, final String fieldName) {
+        return Optional.ofNullable(sourceFields.get(fieldName))
                 .map(Object::toString)
                 .orElse(null);
     }

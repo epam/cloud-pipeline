@@ -92,6 +92,7 @@ public class IssueMapper implements EntityMapper<Issue> {
         if (entity != null) {
             jsonBuilder
                     .field("entityId", entity.getEntityId())
+                    .field("parentId", entity.getEntityId())
                     .field("entityClass", entity.getEntityClass());
         }
     }

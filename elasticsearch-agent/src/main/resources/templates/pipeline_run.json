@@ -21,7 +21,7 @@
         "configurationName": { "type": "text" },
         "configurationId": { "type": "keyword" },
         "environment": { "type": "keyword" },
-        "podId": { "type": "text", "copy_to": "name" },
+        "podId": { "type": "text" },
         "pricePerHour": { "type": "double" },
         "parentRunId": { "type": "keyword"},
         "nodeCount": { "type": "integer" },

@@ -77,6 +77,7 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
                     .field("pricePerHour", run.getPipelineRun().getPricePerHour().doubleValue())
                     .field("parentRunId", run.getPipelineRun().getParentRunId())
                     .field("nodeCount", run.getPipelineRun().getNodeCount())
+                    .field("name", run.getPipelineRun().getPodId())
                     .field("podId", run.getPipelineRun().getPodId());
 
             buildRunInstance(run.getPipelineRun().getInstance(), jsonBuilder);

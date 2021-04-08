@@ -10,7 +10,7 @@
         "id": {"type": "keyword", "store": true },
         "name": {"type": "text", "store": true, "index": false},
         "parentId": {"type": "keyword", "store": true, "index": false },
-        "registryId": { "type": "long", "index": false, "copy_to": "parentId" },
+        "registryId": { "type": "long", "index": false },
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "description": { "type": "text", "store": true },
         "ownerUserId": { "type": "keyword" },
