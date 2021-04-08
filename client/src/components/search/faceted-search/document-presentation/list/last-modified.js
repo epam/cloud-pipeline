@@ -22,7 +22,7 @@ export default function LastModified ({document}) {
   if (document?.lastModified) {
     return (
       <span className={styles.attribute}>
-        {displayDate(document?.lastModified, 'd MMM yyyy, HH:mm')}
+        {displayDate(document?.lastModified, 'MMM d, yyyy, HH:mm')}
       </span>
     );
   }
