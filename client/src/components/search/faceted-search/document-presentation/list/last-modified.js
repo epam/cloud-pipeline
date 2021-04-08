@@ -14,25 +14,17 @@
  *  limitations under the License.
  */
 
-import SearchItemTypes from './search-item-types';
+import React from 'react';
+import displayDate from '../../../../../utils/displayDate';
+import styles from './document-list-presentation.css';
 
-export default function mapElasticDocument (document) {
-  if (!document.name && document.path) {
-    // todo: remove
-    document.name = document.path.split('/').pop();
+export default function LastModified ({document}) {
+  if (document?.lastModified) {
+    return (
+      <span className={styles.attribute}>
+        {displayDate(document?.lastModified, 'd MMM yyyy, HH:mm')}
+      </span>
+    );
   }
-  switch (document.type) {
-    case SearchItemTypes.azFile:
-    case SearchItemTypes.s3File:
-    case SearchItemTypes.NFSFile:
-    case SearchItemTypes.gsFile:
-      return {
-        ...document,
-        name: document.name.split('/').pop()
-      };
-  }
-  if (!document.description && document.text) {
-    document.description = document.text;
-  }
-  return document;
+  return null;
 }

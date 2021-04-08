@@ -22,9 +22,10 @@ import {
   Icon
 } from 'antd';
 import {PreviewIcons} from '../preview/previewIcons';
-import {SearchItemTypes} from '../../../models/search';
 import Preview from '../preview';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
+import DocumentListPresentation from './document-presentation/list';
+import getDocumentName from './document-presentation/utilities/get-document-name';
 import styles from './search-results.css';
 
 const RESULT_ITEM_HEIGHT = 32;
@@ -115,32 +116,6 @@ class SearchResults extends React.Component {
     return null;
   };
 
-  getResultItemName = (resultItem) => {
-    if (!resultItem) {
-      return '';
-    }
-    switch (resultItem.type) {
-      case SearchItemTypes.run: {
-        if (resultItem.description) {
-          const parts = resultItem.description.split('/');
-          if (parts.length > 1) {
-            return `${resultItem.name} - ${parts.pop()}`;
-          }
-          return `${resultItem.name} - ${resultItem.description}`;
-        }
-        return resultItem.name || `Run ${resultItem.elasticId}`;
-      }
-      case SearchItemTypes.NFSFile:
-      case SearchItemTypes.gsFile:
-      case SearchItemTypes.azFile:
-      case SearchItemTypes.s3File: {
-        const path = (resultItem.name || '');
-        return path.split('/').pop().split('\\').pop();
-      }
-      default: return resultItem.name;
-    }
-  }
-
   onInitializeInfiniteScroll = (infiniteScroll) => {
     this.infiniteScroll = infiniteScroll;
   };
@@ -174,9 +149,10 @@ class SearchResults extends React.Component {
           <div style={{display: 'inline-block'}}>
             {this.renderIcon(resultItem)}
           </div>
-          <span className={styles.title}>
-            {this.getResultItemName(resultItem)}
-          </span>
+          <DocumentListPresentation
+            className={styles.title}
+            document={resultItem}
+          />
         </div>
       </a>
     );
@@ -346,7 +322,7 @@ class SearchResults extends React.Component {
         <span className={styles.cellValue}>
           {this.renderIcon(resultItem)}
           <b style={{marginLeft: '5px'}}>
-            {this.getResultItemName(resultItem)}
+            {getDocumentName(resultItem)}
           </b>
         </span>
       ),

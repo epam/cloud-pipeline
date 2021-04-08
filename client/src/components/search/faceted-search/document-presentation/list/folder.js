@@ -14,25 +14,22 @@
  *  limitations under the License.
  */
 
-import SearchItemTypes from './search-item-types';
+import React from 'react';
+import {Icon} from 'antd';
+import classNames from 'classnames';
+import styles from './document-list-presentation.css';
 
-export default function mapElasticDocument (document) {
-  if (!document.name && document.path) {
-    // todo: remove
-    document.name = document.path.split('/').pop();
+export default function Folder ({document}) {
+  if (document?.path) {
+    const path = document.path.split('/').slice(0, -1).join('/');
+    if (path) {
+      return (
+        <span className={classNames(styles.attribute, styles.ellipsis)}>
+          <Icon type="folder" style={{marginRight: 5}} />
+          {path}
+        </span>
+      );
+    }
   }
-  switch (document.type) {
-    case SearchItemTypes.azFile:
-    case SearchItemTypes.s3File:
-    case SearchItemTypes.NFSFile:
-    case SearchItemTypes.gsFile:
-      return {
-        ...document,
-        name: document.name.split('/').pop()
-      };
-  }
-  if (!document.description && document.text) {
-    document.description = document.text;
-  }
-  return document;
+  return null;
 }
