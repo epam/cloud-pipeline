@@ -62,12 +62,6 @@ class FileDiffPresenter extends React.PureComponent {
     const {raw, collapsed} = this.props;
     if (raw) {
       const {initialized, opened} = this.state;
-      const determineOpenedStatus = () => {
-        if (collapsed) {
-          return false;
-        }
-        return initialized ? opened : true;
-      };
       const diffJson = diff2html.parse(raw);
       const diffHtml = diff2html.html(
         diffJson,
@@ -80,7 +74,7 @@ class FileDiffPresenter extends React.PureComponent {
       this.setState({
         rawHtml: diffHtml,
         initialized: true,
-        opened: determineOpenedStatus()
+        opened: initialized ? opened : !collapsed
       });
     } else {
       this.setState({

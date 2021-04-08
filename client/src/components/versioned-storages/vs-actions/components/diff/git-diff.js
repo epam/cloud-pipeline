@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import VSDiff from '../../../../../models/versioned-storage/diff';
 import FileDiffPresenter from './file-diff-presenter';
 import styles from './diff.css';
@@ -138,7 +139,6 @@ class GitDiff extends React.Component {
       files = [],
       diffs = {}
     } = this.state;
-    const classes = [styles.file, className].filter(Boolean).join(' ');
     return (
       <div className={styles.container}>
         {
@@ -146,7 +146,7 @@ class GitDiff extends React.Component {
             <FileDiffPresenter
               key={file}
               file={file}
-              className={classes}
+              className={classNames(styles.file, className)}
               style={style}
               type={diffs[file]?.status}
               binary={diffs[file]?.diff?.binary}
