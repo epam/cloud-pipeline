@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Represents Gitlab repository commit
@@ -39,6 +40,18 @@ public class GitReaderRepositoryCommit {
     @JsonProperty("author_email")
     private String authorEmail;
 
-    @JsonProperty("commit_date")
-    private Date commitDate;
+    @JsonProperty("author_date")
+    private Date authorDate;
+
+    @JsonProperty("committer")
+    private String committer;
+
+    @JsonProperty("committer_email")
+    private String committerEmail;
+
+    @JsonProperty("committer_date")
+    private Date committerDate;
+
+    @JsonProperty("parent_shas")
+    private List<String> parentSHAs;
 }
