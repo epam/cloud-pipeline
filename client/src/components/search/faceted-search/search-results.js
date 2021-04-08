@@ -33,16 +33,16 @@ const TABLE_ROW_HEIGHT = 32;
 const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
-const HOVER_DELAY = 300;
+const HOVER_DELAY = 0;
 const PREVIEW_POSITION = {
   left: {
-    top: '85px',
-    left: '140px',
+    top: '84px',
+    left: '75px',
     maxHeight: 'calc(100vh - 135px)'
   },
   right: {
-    top: '85px',
-    right: '50px',
+    top: '84px',
+    right: '10px',
     maxHeight: 'calc(100vh - 135px)'
   }
 };

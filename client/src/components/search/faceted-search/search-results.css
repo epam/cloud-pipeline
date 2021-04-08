@@ -39,7 +39,7 @@
 
 .container .preview {
   flex: 1;
-  border: 1px solid #8c8c8c;
+  border: 1px solid #ccc;
   border-radius: 5px;
   background-color: white;
   overflow: auto;
