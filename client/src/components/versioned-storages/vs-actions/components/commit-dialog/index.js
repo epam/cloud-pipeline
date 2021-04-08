@@ -22,6 +22,7 @@ import {
   Button
 } from 'antd';
 import PropTypes from 'prop-types';
+import GitDiff from '../diff/git-diff';
 import styles from './commit-dialog.css';
 
 class GitCommitDialog extends React.Component {
@@ -31,11 +32,11 @@ class GitCommitDialog extends React.Component {
   }
 
   onOk = () => {
-    const {onCommit, versionedStorage} = this.props;
+    const {onCommit, storage} = this.props;
     const {commitMessage} = this.state;
     if (onCommit && commitMessage) {
       this.setState({commitInProgress: true}, () => {
-        onCommit(versionedStorage, commitMessage);
+        onCommit(storage, commitMessage);
       });
     }
   }
@@ -63,14 +64,14 @@ class GitCommitDialog extends React.Component {
   }
 
   render () {
-    const {visible, versionedStorage} = this.props;
+    const {visible, storage, files, run} = this.props;
     const {commitMessage, commitInProgress} = this.state;
-    if (!versionedStorage) {
+    if (!storage) {
       return null;
     }
     const title = (
       <span>
-        Commit changes for <b>{versionedStorage.name}</b>
+        Commit changes for <b>{storage.name}</b>
       </span>
     );
     const placeholder = (
@@ -99,12 +100,17 @@ class GitCommitDialog extends React.Component {
         title={title}
         visible={visible}
         footer={footer}
-        width="50%"
+        width="80%"
         onCancel={this.onCancel}
       >
         <div className={styles.modalContent}>
           <div className={styles.inputContainer}>
-            <label htmlFor="commit-message">Commit message:</label>
+            <label
+              htmlFor="commit-message"
+              className={styles.textareaLabel}
+            >
+              Commit message:
+            </label>
             <Input.TextArea
               id="commit-message"
               rows={4}
@@ -113,6 +119,15 @@ class GitCommitDialog extends React.Component {
               placeholder={placeholder}
             />
           </div>
+          <GitDiff
+            fileDiffs={files}
+            run={run}
+            storage={storage?.id}
+            visible={visible}
+            className="commit-dialog"
+            collapsed
+            style={{marginBottom: '3px'}}
+          />
         </div>
       </Modal>
     );
@@ -123,7 +138,9 @@ GitCommitDialog.propTypes = {
   visible: PropTypes.bool,
   onCancel: PropTypes.func,
   onCommit: PropTypes.func,
-  versionedStorage: PropTypes.object
+  gitCommit: PropTypes.object,
+  storage: PropTypes.object,
+  files: PropTypes.array
 };
 
 export default GitCommitDialog;

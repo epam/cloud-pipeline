@@ -129,12 +129,16 @@ class GitDiff extends React.Component {
 
   render () {
     const {
-      visible
+      visible,
+      collapsed,
+      className,
+      style
     } = this.props;
     const {
       files = [],
       diffs = {}
     } = this.state;
+    const classes = [styles.file, className].filter(Boolean).join(' ');
     return (
       <div className={styles.container}>
         {
@@ -142,11 +146,14 @@ class GitDiff extends React.Component {
             <FileDiffPresenter
               key={file}
               file={file}
-              className={styles.file}
+              className={classes}
+              style={style}
               type={diffs[file]?.status}
               binary={diffs[file]?.diff?.binary}
+              // eslint-disable-next-line camelcase
               raw={diffs[file]?.diff?.raw_output}
               visible={visible}
+              collapsed={collapsed}
             />
           ))
         }
@@ -159,11 +166,15 @@ GitDiff.propTypes = {
   run: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   storage: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   fileDiffs: PropTypes.array,
-  visible: PropTypes.bool
+  visible: PropTypes.bool,
+  collapsed: PropTypes.bool,
+  className: PropTypes.string,
+  style: PropTypes.object
 };
 
 GitDiff.defaultProps = {
-  visible: true
+  visible: true,
+  collapsed: false
 };
 
 export default GitDiff;

@@ -31,3 +31,14 @@
   border-bottom: 1px solid #d9d9d9;
   border-radius: 0;
 }
+
+.commit-dialog .git-diff-collapse .ant-collapse-header {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.commit-dialog .git-diff-collapse .ant-collapse-header > .arrow {
+  left: 13px;
+  transform: scale(0.75) rotate(0);
+  top: calc(0px - 12.5%);
+}

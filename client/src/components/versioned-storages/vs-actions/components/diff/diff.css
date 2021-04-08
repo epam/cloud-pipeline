@@ -14,9 +14,13 @@
  *  limitations under the License.
  */
 
+.container {
+  overflow: hidden;
+}
+
 .container .file {
   margin: 0 5px 5px;
-  width: 100%;
+  width: auto;
   position: relative;
 }
 

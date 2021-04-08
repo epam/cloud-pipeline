@@ -45,10 +45,9 @@ const SUBMENU_POSITION = {
 class VSActions extends React.Component {
   state = {
     dropDownVisible: false,
-    commitDialogVisible: false,
-    currentVersionedStorage: null,
     vsBrowserVisible: false,
     subMenuPosition: SUBMENU_POSITION.right,
+    gitCommit: undefined,
     gitDiff: undefined
   };
 
@@ -199,9 +198,16 @@ class VSActions extends React.Component {
     });
   };
 
-  showCommitDialog = () => this.setState({commitDialogVisible: true});
+  showCommitDialog = (versionedStorage, diff) => {
+    if (versionedStorage && diff) {
+      this.setState({gitCommit: {
+        storage: versionedStorage,
+        files: diff
+      }});
+    }
+  };
 
-  hideCommitDialog = () => this.setState({commitDialogVisible: false});
+  closeCommitDialog = () => this.setState({gitCommit: undefined});
 
   onCommitVS = (versionedStorage) => {
     if (!versionedStorage) {
@@ -219,7 +225,7 @@ class VSActions extends React.Component {
           if (!diff || !diff.length) {
             message.info('Nothing to save', 5);
           } else {
-            this.showCommitDialog();
+            this.showCommitDialog(versionedStorage, diff);
           }
         })
         .then(() => resolve());
@@ -240,7 +246,7 @@ class VSActions extends React.Component {
       //   resolve,
       //   hide
       // );
-      setTimeout(() => resolve(this.hideCommitDialog()), 2000);
+      setTimeout(() => resolve(this.closeCommitDialog()), 2000);
     });
   };
 
@@ -412,10 +418,7 @@ class VSActions extends React.Component {
             }
             break;
         }
-        this.setState({
-          currentVersionedStorage: storage || null,
-          dropDownVisible: false
-        });
+        this.setState({dropDownVisible: false});
       };
     }
     const {subMenuPosition} = this.state;
@@ -449,8 +452,7 @@ class VSActions extends React.Component {
     const {
       dropDownVisible,
       gitDiff,
-      commitDialogVisible,
-      currentVersionedStorage
+      gitCommit
     } = this.state;
     if (!this.fsBrowserAvailable) {
       return null;
@@ -480,12 +482,14 @@ class VSActions extends React.Component {
             fileDiffs={gitDiff?.files}
             onClose={this.closeGitDiffModal}
           />
-          {commitDialogVisible && (
+          {gitCommit && (
             <GitCommitDialog
-              visible={commitDialogVisible}
+              visible={!!gitCommit}
+              run={run?.id}
               onCommit={this.doCommit}
-              onCancel={this.hideCommitDialog}
-              versionedStorage={currentVersionedStorage}
+              onCancel={this.closeCommitDialog}
+              storage={gitCommit?.storage}
+              files={gitCommit?.files}
             />
           )}
         </a>

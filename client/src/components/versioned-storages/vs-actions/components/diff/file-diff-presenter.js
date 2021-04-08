@@ -59,9 +59,15 @@ class FileDiffPresenter extends React.PureComponent {
   };
 
   updatePresentation = () => {
-    const {raw} = this.props;
+    const {raw, collapsed} = this.props;
     if (raw) {
       const {initialized, opened} = this.state;
+      const determineOpenedStatus = () => {
+        if (collapsed) {
+          return false;
+        }
+        return initialized ? opened : true;
+      };
       const diffJson = diff2html.parse(raw);
       const diffHtml = diff2html.html(
         diffJson,
@@ -74,7 +80,7 @@ class FileDiffPresenter extends React.PureComponent {
       this.setState({
         rawHtml: diffHtml,
         initialized: true,
-        opened: initialized ? opened : true
+        opened: determineOpenedStatus()
       });
     } else {
       this.setState({
@@ -134,13 +140,18 @@ class FileDiffPresenter extends React.PureComponent {
   render () {
     const {
       className,
-      file
+      file,
+      style
     } = this.props;
     const {
       opened
     } = this.state;
     return (
-      <div key={file} className={className}>
+      <div
+        key={file}
+        className={className}
+        style={style}
+      >
         <Collapse
           className="git-diff-collapse"
           activeKey={opened ? ['presentation'] : []}
@@ -164,7 +175,9 @@ FileDiffPresenter.propTypes = {
   file: PropTypes.string,
   raw: PropTypes.string,
   type: PropTypes.string,
-  visible: PropTypes.bool
+  visible: PropTypes.bool,
+  collapsed: PropTypes.bool,
+  style: PropTypes.object
 };
 
 export default FileDiffPresenter;
