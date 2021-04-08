@@ -139,7 +139,10 @@ class VSActions extends React.Component {
       .then(() => {
         hideMessage && hideMessage();
       })
-      .then(() => resolve());
+      .then(() => {
+        console.log('resolving');
+        resolve();
+      });
   };
 
   onSelectVS = (versionedStorage) => {
@@ -232,21 +235,20 @@ class VSActions extends React.Component {
     });
   };
 
-  doCommit = (versionedStorage, message) => {
-    // todo: uncomment code below when GitCommitDialog will be ready and remove setTimeout
+  doCommit = (versionedStorage, commitMessage) => {
     return new Promise((resolve) => {
-      // const {id, name} = versionedStorage;
-      // const hide = message.loading((
-      //   <span>
-      //     Saving changes for the <b>{name}</b> storage...
-      //   </span>
-      // ), 0);
-      // this.performRequestWithStatus(
-      //   new VSCommit(this.props.run?.id, id, message),
-      //   resolve,
-      //   hide
-      // );
-      setTimeout(() => resolve(this.closeCommitDialog()), 2000);
+      const {id, name} = versionedStorage;
+      const hide = message.loading((
+        <span>
+          Saving changes for the <b>{name}</b> storage...
+        </span>
+      ), 0);
+      this.closeCommitDialog();
+      this.performRequestWithStatus(
+        new VSCommit(this.props.run?.id, id, commitMessage),
+        resolve,
+        hide
+      );
     });
   };
 
