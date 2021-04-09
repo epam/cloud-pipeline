@@ -349,10 +349,9 @@ public class PipelineApiService {
 
     @PreAuthorize(PIPELINE_ID_READ)
     public GitReaderDiff logRepositoryCommitDiffs(final Long id,
-                                                  final Boolean includeDiff, final Long page,
-                                                  final Integer pageSize,
+                                                  final Boolean includeDiff,
                                                   final GitCommitsFilter filter) {
-        return gitManager.logRepositoryCommitDiffs(id, includeDiff, page, pageSize, filter);
+        return gitManager.logRepositoryCommitDiffs(id, includeDiff, filter);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)

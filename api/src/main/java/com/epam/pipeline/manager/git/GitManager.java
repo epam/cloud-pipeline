@@ -975,7 +975,6 @@ public class GitManager {
     }
 
     public GitReaderDiff logRepositoryCommitDiffs(final Long id, final Boolean includeDiff,
-                                                  final Long page, final Integer pageSize,
                                                   final GitCommitsFilter filter) {
         try {
             final Pipeline pipeline = pipelineManager.load(id);
@@ -985,7 +984,7 @@ public class GitManager {
             return new GitReaderClient(getGitReaderHostPreference())
                     .getRepositoryCommitDiffs(
                         GitRepositoryUrl.from(pipeline.getRepository()),
-                        includeDiff, page, pageSize, filter
+                        includeDiff, filter
                     );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());

@@ -105,14 +105,11 @@ public interface GitReaderApi {
      * Allows you to receive list of commit for specific filters like, paths, authors, dates and its diff
      *
      * @param name  The ID or URL-encoded path of the project
-     * @param page (optional) - The number of page to return
-     * @param pageSize (optional) - The size of the page to return
+     * @param includeDiff (optional) - Flag to include diffs from commits
      */
     @POST("git/{project}/diff")
     Call<Result<GitReaderRepositoryCommitDiff>> listCommitDiffs(@Path(PROJECT) String name,
                                                                 @Query(INCLUDE_DIFF) Boolean includeDiff,
-                                                                @Query(PAGE) Long page,
-                                                                @Query(PAGE_SIZE) Integer pageSize,
                                                                 @Body GitReaderLogRequestFilter filter);
 
     /**

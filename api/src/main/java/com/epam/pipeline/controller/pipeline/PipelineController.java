@@ -779,11 +779,9 @@ public class PipelineController extends AbstractRestController {
             })
     public Result<GitReaderDiff> getRepositoryCommitDiffs(
             @PathVariable(value = ID) Long id,
-            @RequestParam(value = PAGE, required = false) final Long page,
-            @RequestParam(value = PAGE_SIZE, required = false) final Integer pageSize,
             @RequestParam(value = INCLUDE_DIFF, required = false)  final Boolean includeDiff,
             @RequestBody GitCommitsFilter filter) throws GitClientException {
-        return Result.success(pipelineApiService.logRepositoryCommitDiffs(id, includeDiff, page, pageSize, filter));
+        return Result.success(pipelineApiService.logRepositoryCommitDiffs(id, includeDiff, filter));
     }
 
     @RequestMapping(value = "/pipeline/{id}/diff/{commit}", method = RequestMethod.GET)

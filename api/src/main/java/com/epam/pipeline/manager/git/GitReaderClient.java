@@ -75,12 +75,10 @@ public class GitReaderClient {
 
     public GitReaderDiff getRepositoryCommitDiffs(final GitRepositoryUrl repo,
                                                   final Boolean includeDiff,
-                                                  final Long page,
-                                                  final Integer pageSize,
                                                   final GitCommitsFilter filter) throws GitClientException {
         final Result<GitReaderRepositoryCommitDiff> result = execute(
                 gitReaderApi.listCommitDiffs(getRepositoryPath(repo), includeDiff,
-                        page, pageSize, toGitReaderRequestFilter(filter))
+                        toGitReaderRequestFilter(filter))
         );
         if (result.getStatus() == ResultStatus.ERROR) {
             throw new GitClientException(result.getMessage());
