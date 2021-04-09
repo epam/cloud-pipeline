@@ -118,7 +118,7 @@ class GitClient:
         index.write()
         self.logger.log("File '%s' added to index for repo '%s'" % (repo_path, file_to_add.path))
 
-    def commit(self, repo_path, files, message, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
+    def commit(self, repo_path, message, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
         head_id = repo.head.target
         merge_in_progress = self._is_merge_in_progress(repo)
@@ -126,21 +126,9 @@ class GitClient:
         remote_master_id = self._get_remote_head(repo, remote_name, branch).target
         parent = [head_id, remote_master_id] if merge_in_progress else [head_id]
 
+        user = self._get_author(repo)
         index = repo.index
         tree = index.write_tree()
-        user = self._get_author(repo)
-
-        for file_to_commit in files:
-            self.logger.log("Preparing file '%s' to commit into repo '%s'" % (file_to_commit.path, repo_path))
-            if file_to_commit.is_deleted():
-                # do nothing since deleted files added to index
-                continue
-            tree_builder = repo.TreeBuilder(tree)
-            blob_id = repo.create_blob_fromdisk(os.path.join(repo_path, file_to_commit.path))
-            tree_builder.insert(file_to_commit.path, blob_id, pygit2.GIT_FILEMODE_BLOB)
-            tree = tree_builder.write()
-
-        index.write()
 
         if merge_in_progress:
             message = self._build_merge_commit_message(head_id, remote_master_id)

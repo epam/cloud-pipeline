@@ -70,10 +70,10 @@ class GitTask(Task):
     def push(self, git_client, full_repo_path, message, files_to_add=None):
         try:
             self.indexing()
-            index_files = self._add_files_to_index(git_client, full_repo_path, files_to_add)
+            self._add_files_to_index(git_client, full_repo_path, files_to_add)
 
             self.committing()
-            git_client.commit(full_repo_path, index_files, message)
+            git_client.commit(full_repo_path, message)
 
             self.pulling()
             conflicts = git_client.pull(full_repo_path)
