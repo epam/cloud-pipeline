@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.search.SearchHit;
@@ -156,14 +157,18 @@ public class SearchResultConverter {
 
     private boolean isFieldAdditionalOrMetadata(final String field, final Set<String> additionalFields,
                                                 final Set<String> metadataSourceFields) {
+        if (StringUtils.isBlank(field)) {
+            return false;
+        }
         return additionalFields.contains(field) || metadataSourceFields.contains(field);
     }
 
     private Map<String, String> getSourceRemainAttributes(final Map<String, Object> sourceFields,
                                                           final Set<String> metadataSourceFields) {
         final Set<String> additionalFields = SearchSourceFields.getAdditionalFields();
-        return sourceFields.entrySet().stream()
-                .filter(entry -> isFieldAdditionalOrMetadata(entry.getKey(), additionalFields, metadataSourceFields))
+        return MapUtils.emptyIfNull(sourceFields).entrySet().stream()
+                .filter(entry -> isFieldAdditionalOrMetadata(entry.getKey(), additionalFields, metadataSourceFields)
+                        && Objects.nonNull(entry.getValue()))
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toString()));
     }
 

@@ -144,6 +144,7 @@ public class SearchRequestBuilder {
 
         return new SearchRequest()
                 .indices(buildAllIndexTypes())
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
                 .source(searchSource);
     }
 
@@ -223,11 +224,7 @@ public class SearchRequestBuilder {
         if (CollectionUtils.isEmpty(filterTypes)) {
             return buildAllIndexTypes();
         }
-        final Map<SearchDocumentType, String> typeIndexPrefixes = preferenceManager
-                .getPreference(SystemPreferences.SEARCH_ELASTIC_TYPE_INDEX_PREFIX);
-        if (MapUtils.isEmpty(typeIndexPrefixes)) {
-            throw new SearchException("Index filtering is not configured");
-        }
+        final Map<SearchDocumentType, String> typeIndexPrefixes = getSearchIndexPrefixes();
         return filterTypes.stream()
                 .map(type -> Optional.ofNullable(typeIndexPrefixes.get(type))
                         .orElseThrow(() -> new SearchException("Missing index name for type: " + type)))
@@ -235,11 +232,20 @@ public class SearchRequestBuilder {
     }
 
     private String[] buildAllIndexTypes() {
-        return new String[]{preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_CP_INDEX_PREFIX)};
+        return getSearchIndexPrefixes().values().toArray(Strings.EMPTY_ARRAY);
+    }
+
+    private Map<SearchDocumentType, String> getSearchIndexPrefixes() {
+        final Map<SearchDocumentType, String> typeIndexPrefixes = preferenceManager
+                .getPreference(SystemPreferences.SEARCH_ELASTIC_TYPE_INDEX_PREFIX);
+        if (MapUtils.isEmpty(typeIndexPrefixes)) {
+            throw new SearchException("Index filtering is not configured");
+        }
+        return typeIndexPrefixes;
     }
 
     private QueryBuilder filterToTermsQuery(final String fieldName, final List<String> values) {
-        return QueryBuilders.termsQuery(fieldName, values);
+        return QueryBuilders.termsQuery(buildKeywordName(fieldName), values);
     }
 
     private QueryBuilder prepareFacetedQuery(final String requestQuery) {
@@ -252,7 +258,11 @@ public class SearchRequestBuilder {
 
     private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
         final TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(facet)
-                .field(String.format("%s.keyword", facet));
+                .field(buildKeywordName(facet));
         searchSource.aggregation(aggregationBuilder);
+    }
+
+    private String buildKeywordName(final String fieldName) {
+        return String.format("%s.keyword", fieldName);
     }
 }
