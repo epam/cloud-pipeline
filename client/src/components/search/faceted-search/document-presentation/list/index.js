@@ -16,9 +16,10 @@
 
 import React from 'react';
 import GeneralPresentation from './general';
-import LastModified from './last-modified';
+import DatePresentation from './date';
 import Size from './size';
 import Folder from './folder';
+import {SearchItemTypes} from '../../../../../models/search';
 
 export default function DocumentListPresentation ({className, document}) {
   if (!document) {
@@ -28,9 +29,38 @@ export default function DocumentListPresentation ({className, document}) {
   const extra = [
     (<Folder key="folder" document={document} />),
     (<Size key="size" document={document} />),
-    (<LastModified key="last modified" document={document} />)
+    (
+      <DatePresentation
+        key="last modified"
+        document={document}
+        field="lastModified"
+        label="changed"
+      />
+    )
   ];
   switch (type) {
+    case SearchItemTypes.run:
+      extra.push(
+        (
+          <DatePresentation
+            key="started"
+            document={document}
+            label="started"
+            field="startDate"
+          />
+        )
+      );
+      extra.push(
+        (
+          <DatePresentation
+            key="finished"
+            document={document}
+            label="finished"
+            field="endDate"
+          />
+        )
+      );
+      break;
     default:
       break;
   }
@@ -38,6 +68,7 @@ export default function DocumentListPresentation ({className, document}) {
     <GeneralPresentation
       className={className}
       document={document}
+      showDescription={document?.name !== document?.description}
     >
       {extra}
     </GeneralPresentation>

@@ -15,10 +15,8 @@
  */
 
 import {SearchItemTypes} from '../../../../models/search';
-import MetadataEntityLoad from '../../../../models/folderMetadata/MetadataEntityLoad';
-import {getPipelineFileInfo, PipelineFileTypes} from '../../utilities/getPipelineFileInfo';
 
-function getItemUrl (item, stores) {
+function getItemUrl (item) {
   return new Promise((resolve) => {
     switch (item.type) {
       case SearchItemTypes.azFile:
@@ -61,17 +59,7 @@ function getItemUrl (item, stores) {
         return;
       case SearchItemTypes.metadataEntity:
         if (item.parentId) {
-          const request = new MetadataEntityLoad(item.id);
-          request
-            .fetch()
-            .then(() => {
-              if (request.loaded && request.value.classEntity && request.value.classEntity.name) {
-                resolve(`/metadata/${item.parentId}/${request.value.classEntity.name}`);
-              } else {
-                resolve(`/metadataFolder/${item.parentId}/`);
-              }
-            })
-            .catch(() => resolve());
+          resolve(`/metadata/redirect/${item.parentId}/${item.id}`);
           return;
         }
         break;
@@ -92,52 +80,25 @@ function getItemUrl (item, stores) {
         }
         break;
       case SearchItemTypes.pipelineCode:
-        if (item.parentId && item.description && item.id) {
-          const {pipelines} = stores || {};
-          const versions = pipelines.versionsForPipeline(item.parentId);
-          versions
-            .fetch()
-            .then(() => {
-              let version = item.description;
-              if (versions.loaded) {
-                let [v] = (versions.value || []).filter(v => v.name === item.description);
-                if (!v && versions.value.length > 0) {
-                  const [draft] = versions.value.filter(v => v.draft);
-                  if (draft) {
-                    version = draft.name;
-                  } else {
-                    version = versions.value[0].name;
-                  }
-                }
-              }
-              let url = `/${item.parentId}/${version}`;
-              getPipelineFileInfo(item.parentId, version, item.id)
-                .then(fileInfo => {
-                  if (fileInfo) {
-                    switch (fileInfo.type) {
-                      case PipelineFileTypes.document:
-                        url = `/${item.parentId}/${version}/documents`;
-                        break;
-                      case PipelineFileTypes.source:
-                        if (fileInfo.path) {
-                          url = `/${item.parentId}/${version}/code&path=${fileInfo.path}`;
-                        } else {
-                          url = `/${item.parentId}/${version}/code`;
-                        }
-                        break;
-                    }
-                  }
-                  resolve(url);
-                });
-            })
-            .catch(() => resolve());
+        const {parentId, description: version, path} = item;
+        if (parentId && version && path) {
+          if (/^docs\//i.test(path)) {
+            resolve(`/${item.parentId}/${version}/documents`);
+          } else if (/^src\//i.test(path)) {
+            const subPath = path.substr(4).split('/').slice(0, -1).join('/');
+            if (!subPath) {
+              resolve(`/${item.parentId}/${version}/code`);
+            } else {
+              resolve(`/${item.parentId}/${version}/code?path=${encodeURIComponent(subPath)}`);
+            }
+            return;
+          }
+          resolve(`/${item.parentId}/${version}/code`);
           return;
-        } else if (item.parentId && item.description) {
-          resolve(`/${item.parentId}/${item.description}`);
-          return;
-        } else if (item.parentId) {
+        } else if (parentId && version) {
+          resolve(`/${item.parentId}/${version}`);
+        } else if (parentId) {
           resolve(`/${item.parentId}`);
-          return;
         }
         break;
     }

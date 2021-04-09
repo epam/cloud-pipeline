@@ -25,40 +25,56 @@
 .row .main {
   font-weight: normal;
   flex: 1;
+  height: 100%;
   display: flex;
+  flex-direction: column;
+  justify-content: space-around;
   overflow: hidden;
+}
+
+.row .main .sub {
+  width: 100%;
+  overflow: hidden;
+  color: #777;
 }
 
 .row .main .name {
   font-weight: bold;
+  display: flex;
+  align-items: center;
 }
 
-.row .main .description {
-  color: #999;
-}
-
-.row .main > * {
+.row .main .name .icon {
+  font-weight: normal;
+  font-size: larger;
   margin-right: 5px;
 }
 
-.row .main > *::after {
+.row .main .sub .description {
+
+}
+
+.row .main .sub > * {
+  margin-right: 5px;
+}
+
+.row .main .sub > *::after {
   content: ';';
   font-weight: normal;
 }
 
 .row .main .name::after,
-.row .main > *:last-child::after {
+.row .main .sub > *:last-child::after {
   content: '';
 }
 
 .row .author {
   min-width: 100px;
-  color: #999;
   font-weight: normal;
 }
 
 .row .main .attribute {
-  color: #999;
+
 }
 
 .row .main .ellipsis {

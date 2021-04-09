@@ -423,6 +423,7 @@ class FacetedSearch extends React.Component {
 
   renderSearchResults = () => {
     const {
+      activeFilters,
       documents,
       documentsOffset,
       error,
@@ -449,6 +450,7 @@ class FacetedSearch extends React.Component {
         total={totalHits}
         onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
         mode={presentationMode}
+        documentTypes={(activeFilters || {})[DocumentTypeFilterName]}
       />
     );
   }

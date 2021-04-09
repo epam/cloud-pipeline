@@ -17,19 +17,21 @@
 import SearchItemTypes from './search-item-types';
 
 export default function mapElasticDocument (document) {
-  if (!document.name && document.path) {
-    // todo: remove
-    document.name = document.path.split('/').pop();
-  }
+  document.elasticId = [
+    document.id || '',
+    document.parentId || '',
+    document.elasticId
+  ].map(o => String(o)).join('-');
   switch (document.type) {
     case SearchItemTypes.azFile:
     case SearchItemTypes.s3File:
     case SearchItemTypes.NFSFile:
     case SearchItemTypes.gsFile:
-      return {
-        ...document,
-        name: document.name.split('/').pop()
-      };
+      document.name = document.name.split('/').pop();
+      break;
+    case SearchItemTypes.dockerRegistry:
+      document.name = document.name || document.description || document.path;
+      break;
   }
   if (!document.description && document.text) {
     document.description = document.text;

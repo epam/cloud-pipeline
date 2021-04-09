@@ -18,11 +18,12 @@ import React from 'react';
 import displayDate from '../../../../../utils/displayDate';
 import styles from './document-list-presentation.css';
 
-export default function LastModified ({document}) {
-  if (document?.lastModified) {
+export default function DatePresentation ({document, field, label}) {
+  if (field && document && document[field]) {
     return (
       <span className={styles.attribute}>
-        {displayDate(document?.lastModified, 'MMM d, yyyy, HH:mm')}
+        {label ? `${label}: ` : false}
+        {displayDate(document[field], 'MMM d, yyyy, HH:mm')}
       </span>
     );
   }

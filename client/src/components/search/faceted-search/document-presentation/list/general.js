@@ -20,6 +20,7 @@ import {Icon} from 'antd';
 import classNames from 'classnames';
 import styles from './document-list-presentation.css';
 import UserName from '../../../../special/UserName';
+import {PreviewIcons} from "../../../preview/previewIcons";
 
 export default function GeneralPresentation (
   {
@@ -29,6 +30,16 @@ export default function GeneralPresentation (
     showDescription = true
   }
 ) {
+  const renderIcon = () => {
+    if (PreviewIcons[document?.type]) {
+      return (
+        <Icon
+          className={styles.icon}
+          type={PreviewIcons[document?.type]} />
+      );
+    }
+    return null;
+  };
   return (
     <div
       className={
@@ -39,26 +50,33 @@ export default function GeneralPresentation (
       }
     >
       <div className={styles.main}>
-        <span className={styles.name}>
+        <div className={styles.name}>
+          {renderIcon()}
           {getDocumentName(document) || '\u00A0'}
-        </span>
-        {
-          showDescription && document?.description && (
-            <span className={classNames(styles.description, styles.ellipsis)}>
-              {document.description}
-            </span>
-          )
-        }
-        {children}
+        </div>
+        <div className={styles.sub}>
+          {
+            showDescription && document?.description && (
+              <span className={classNames(styles.description, styles.ellipsis)}>
+                {document.description}
+              </span>
+            )
+          }
+          {children}
+        </div>
       </div>
-      <div className={styles.author}>
-        {
-          document?.owner && (
-            <Icon type="user" />
-          )
-        }
-        <UserName userName={document?.owner} />
-      </div>
+      {
+        document?.owner && (
+          <div className={styles.author}>
+            {
+              document?.owner && (
+                <Icon type="user" />
+              )
+            }
+            <UserName userName={document?.owner} />
+          </div>
+        )
+      }
     </div>
   );
 }

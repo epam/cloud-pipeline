@@ -22,7 +22,7 @@ export default function Size ({document}) {
   if (document?.size) {
     return (
       <span className={styles.attribute}>
-        {displaySize(document?.size, false)}
+        size: {displaySize(document?.size, false)}
       </span>
     );
   }

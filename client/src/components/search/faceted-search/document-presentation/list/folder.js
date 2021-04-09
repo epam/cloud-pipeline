@@ -15,21 +15,16 @@
  */
 
 import React from 'react';
-import {Icon} from 'antd';
 import classNames from 'classnames';
 import styles from './document-list-presentation.css';
 
 export default function Folder ({document}) {
-  if (document?.path) {
-    const path = document.path.split('/').slice(0, -1).join('/');
-    if (path) {
-      return (
-        <span className={classNames(styles.attribute, styles.ellipsis)}>
-          <Icon type="folder" style={{marginRight: 5}} />
-          {path}
-        </span>
-      );
-    }
+  if (document?.path && document?.path !== document?.name) {
+    return (
+      <span className={classNames(styles.attribute, styles.ellipsis)}>
+        {document?.path}
+      </span>
+    );
   }
   return null;
 }
