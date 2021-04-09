@@ -33,4 +33,5 @@ public class FacetedSearchRequest {
     private Integer pageSize;
     private Integer offset;
     private boolean highlight = false;
+    private Map<String, Object> searchAfter;
 }

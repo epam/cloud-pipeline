@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -79,7 +80,9 @@ public class SearchManager {
 
     public FacetedSearchResult facetedSearch(final FacetedSearchRequest searchRequest) {
         Assert.notNull(searchRequest.getPageSize(), "Page Size is required");
-        Assert.notNull(searchRequest.getOffset(), "Offset is required");
+        if (MapUtils.isEmpty(searchRequest.getSearchAfter())) {
+            Assert.notNull(searchRequest.getOffset(), "Offset is required");
+        }
         try {
             final String typeFieldName = getTypeFieldName();
             final Set<String> metadataSourceFields = getMetadataSourceFields();

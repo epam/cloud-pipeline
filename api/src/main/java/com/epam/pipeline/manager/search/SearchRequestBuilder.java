@@ -30,6 +30,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -44,9 +45,11 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -83,9 +86,12 @@ public class SearchRequestBuilder {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(query)
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
-                .size(searchRequest.getPageSize())
-                .from(searchRequest.getOffset());
-
+                .size(searchRequest.getPageSize());
+        if (MapUtils.isEmpty(searchRequest.getSearchAfter())) {
+            searchSource.from(searchRequest.getOffset());
+        } else {
+            applySearchAfter(searchSource, searchRequest.getSearchAfter());
+        }
         if (searchRequest.isHighlight()) {
             addHighlighterToSource(searchSource);
         }
@@ -132,8 +138,13 @@ public class SearchRequestBuilder {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(boolQueryBuilder)
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
-                .size(facetedSearchRequest.getPageSize())
-                .from(facetedSearchRequest.getOffset());
+                .size(facetedSearchRequest.getPageSize());
+
+        if (MapUtils.isEmpty(facetedSearchRequest.getSearchAfter())) {
+            searchSource.from(facetedSearchRequest.getOffset());
+        } else {
+            applySearchAfter(searchSource, facetedSearchRequest.getSearchAfter());
+        }
 
         if (facetedSearchRequest.isHighlight()) {
             addHighlighterToSource(searchSource);
@@ -145,6 +156,15 @@ public class SearchRequestBuilder {
         return new SearchRequest()
                 .indices(buildAllIndexTypes())
                 .source(searchSource);
+    }
+
+    private void applySearchAfter(final SearchSourceBuilder searchSource, final Map<String, Object> searchAfter) {
+        final List<Object> values = new ArrayList<>();
+        searchAfter.forEach((field, value) -> {
+            searchSource.sort(SortBuilders.fieldSort(field).order(SortOrder.DESC));
+            values.add(value);
+        });
+        searchSource.searchAfter(values.toArray(new Object[0]));
     }
 
     private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {
