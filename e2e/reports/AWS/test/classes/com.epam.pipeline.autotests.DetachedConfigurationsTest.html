@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">5m44.67s</div>
+<div class="counter">5m19.11s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">96%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,87 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146"></a>
+<h3 class="failures">validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146</h3>
+<span class="code">
+<pre>Element not found {#run-65350-stop-button}
+Expected: enabled
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1617961193117.66.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1617961193117.66.html
+Timeout: 5 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-65350-stop-button&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.stopRun(RunsMenuAO.java:106)
+	at com.epam.pipeline.autotests.DetachedConfigurationsTest.validateRunSingleConfigFromDetachedConfiguration(DetachedConfigurationsTest.java:677)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-65350-stop-button&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '6429bafd2eae', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: e1712d94a6485ff37b2ceb4de8e2c017
+*** Element info: {Using=css selector, value=#run-65350-stop-button}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByCssSelector(RemoteWebDriver.java:465)
+	at org.openqa.selenium.By$ByCssSelector.findElement(By.java:430)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,160 +153,152 @@
 </thead>
 <tr>
 <td class="success">addParameterToDetachedConfiguration - EPMCMBIBPC-1601</td>
-<td>12.730s</td>
+<td>13.397s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changeSecondConfigurationProfilePipeline - EPMCMBIBPC-1139</td>
-<td>14.848s</td>
+<td>17.228s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changesValidationInAttachedPipelineConfiguration - EPMCMBIBPC-1544</td>
-<td>21.352s</td>
+<td>23.052s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPipelineConfigAfterChangesInDetachedConfig - EPMCMBIBPC-1141</td>
-<td>6.286s</td>
+<td>6.520s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationChangingValidation - EPMCMBIBPC-1115</td>
-<td>10.777s</td>
+<td>11.953s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationProfileSetAsDefaultBehaviour - EPMCMBIBPC-1144</td>
-<td>11.369s</td>
+<td>12.106s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationRenamingValidation - EPMCMBIBPC-1130</td>
-<td>6.705s</td>
+<td>7.418s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationSavingValidation - EPMCMBIBPC-1114</td>
-<td>15.393s</td>
+<td>16.523s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">deleteDetachedConfigurationValidation - EPMCMBIBPC-1604</td>
-<td>4.179s</td>
+<td>3.940s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationCreatingPopupFocusValidation - EPMCMBIBPC-1493</td>
-<td>5.756s</td>
+<td>5.810s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationCreatingValidation - EPMCMBIBPC-1185</td>
-<td>13.776s</td>
+<td>14.302s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationEditionPopupFocusValidation - EPMCMBIBPC-1495</td>
-<td>14.547s</td>
+<td>16.576s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationProfileAdditionPopupFocusValidation - EPMCMBIBPC-1496</td>
-<td>3.003s</td>
+<td>3.182s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">dockerImageSelection - EPMCMBIBPC-1494</td>
-<td>16.741s</td>
+<td>17.864s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">exitWithoutSavingValidation - EPMCMBIBPC-1113</td>
-<td>2.465s</td>
+<td>2.706s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">fieldsEditingProhibitionValidation - EPMCMBIBPC-1132</td>
-<td>3.288s</td>
+<td>3.373s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">groupAdditionValidation - EPMCMBIBPC-1149</td>
-<td>9.819s</td>
+<td>10.720s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pipelineAdditionValidation - EPMCMBIBPC-1112</td>
-<td>8.983s</td>
+<td>9.772s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">priceTypeValidation - EPMCMBIBPC-1516</td>
-<td>3.982s</td>
+<td>3.993s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">secondConfigurationProfileAddition - EPMCMBIBPC-1129</td>
-<td>5.073s</td>
+<td>5.452s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">templatesListContainsAllProfiles - EPMCMBIBPC-1145</td>
-<td>3.987s</td>
+<td>4.276s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateDetachConfigBehaviorIfUserChangesBasePipelineConfig - EPMCMBIBPC-1151</td>
-<td>32.025s</td>
+<td>34.748s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateRunClusterFromDetachConfiguration - EPMCMBIBPC-1147</td>
-<td>23.707s</td>
-<td class="success">passed</td>
+<td class="skipped">validateRunClusterFromDetachConfiguration</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146</td>
-<td>16.537s</td>
-<td class="success">passed</td>
+<td class="failures">validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146</td>
+<td>19.160s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validationOfConfigWithEmptyParametersInDetachConfiguration - EPMCMBIBPC-1140</td>
-<td>29.317s</td>
+<td>32.498s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfConfigWithNonEmptyParametersInDetachConfiguration - EPMCMBIBPC-1611</td>
-<td>19.922s</td>
+<td>22.545s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationPriceTypeFieldForClusterRun - EPMCMBIBPC-1545</td>
-<td>28.098s</td>
-<td class="success">passed</td>
+<td class="skipped">validationPriceTypeFieldForClusterRun</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 65203 from [65203]
-Returns latest run with runId 65203 from [65203]
-Returns latest run with runId 65203 from [65203]
-Returns latest run with runId 65203 from [65203]
-Returns latest run with runId 65203 from [65203]
-Returns latest run with runId 65203 from [65203]
-Returns latest run with runId 65205 from [65203, 65205]
-Returns latest run with runId 65205 from [65203, 65205]
-Returns latest run with runId 65206 from [65203, 65205, 65206]
-Returns latest run with runId 65206 from [65203, 65205, 65206]
-Returns latest run with runId 65206 from [65203, 65205, 65206]
-Returns latest run with runId 65206 from [65203, 65205, 65206]
-Returns latest run with runId 65208 from [65203, 65205, 65206, 65208]
-Returns latest run with runId 65208 from [65203, 65205, 65206, 65208]
-Returns latest run with runId 65208 from [65203, 65205, 65206, 65208]
-Returns latest run with runId 65208 from [65203, 65205, 65206, 65208]
+<pre>Returns latest run with runId 65348 from [65348]
+Returns latest run with runId 65348 from [65348]
+Returns latest run with runId 65348 from [65348]
+Returns latest run with runId 65348 from [65348]
+Returns latest run with runId 65348 from [65348]
+Returns latest run with runId 65348 from [65348]
+Returns latest run with runId 65350 from [65348, 65350]
+Returns latest run with runId 65350 from [65348, 65350]
 </pre>
 </span>
 </div>
@@ -244,7 +310,7 @@ Returns latest run with runId 65208 from [65203, 65205, 65206, 65208]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 8, 2021 4:09:08 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 9, 2021 5:58:07 PM</p>
 </div>
 </div>
 </body>
