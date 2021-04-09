@@ -162,7 +162,7 @@ public class SearchResultConverter {
     private Map<String, String> getSourceRemainAttributes(final Map<String, Object> sourceFields,
                                                           final Set<String> metadataSourceFields) {
         final Set<String> additionalFields = SearchSourceFields.getAdditionalFields();
-        return sourceFields.entrySet().stream()
+        return MapUtils.emptyIfNull(sourceFields).entrySet().stream()
                 .filter(entry -> isFieldAdditionalOrMetadata(entry.getKey(), additionalFields, metadataSourceFields))
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toString()));
     }
