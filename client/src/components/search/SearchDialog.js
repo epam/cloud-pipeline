@@ -27,6 +27,8 @@ import {
   Row
 } from 'antd';
 import Preview from './preview';
+import {PreviewIcons} from './preview/previewIcons';
+import {SearchItemTypes} from '../../models/search';
 import {SearchGroupTypes} from './searchGroupTypes';
 import localization from '../../utils/localization';
 import styles from './search.css';
@@ -34,7 +36,6 @@ import getStyle from '../../utils/browserDependentStyle';
 import {facetedQueryString} from './faceted-search/utilities';
 import {DocumentTypeFilterName} from './faceted-search/filter';
 import getItemUrl from './faceted-search/utilities/get-item-url';
-import DocumentListPresentation from './faceted-search/document-presentation/list';
 import '../../staticStyles/Search.css';
 
 const PAGE_SIZE = 50;
@@ -258,6 +259,17 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     });
   };
 
+  renderIcon = (resultItem) => {
+    if (PreviewIcons[resultItem.type]) {
+      return (
+        <Icon
+          className={styles.searchResultItemIcon}
+          type={PreviewIcons[resultItem.type]} />
+      );
+    }
+    return null;
+  };
+
   previewAvailableDelay;
   previewAvailableTransition = false;
 
@@ -336,6 +348,21 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         ie: {backgroundColor: 'white'}
       });
     }
+    const renderName = () => {
+      switch (resultItem.type) {
+        case SearchItemTypes.run: {
+          if (resultItem.description) {
+            const parts = resultItem.description.split('/');
+            if (parts.length > 1) {
+              return `${resultItem.name} - ${parts.pop()}`;
+            }
+            return `${resultItem.name} - ${resultItem.description}`;
+          }
+          return resultItem.name || `Run ${resultItem.elasticId}`;
+        }
+        default: return resultItem.name;
+      }
+    };
     return (
       <div
         id={`search-result-item-${index}`}
@@ -351,10 +378,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           align="middle"
           onMouseEnter={this.onHover(index)}
         >
-          <DocumentListPresentation
-            className={styles.title}
-            document={resultItem}
-          />
+          <div style={{display: 'inline-block'}}>
+            {this.renderIcon(resultItem)}
+          </div>
+          <span className={styles.title}>
+            {renderName()}
+          </span>
         </Row>
       </div>
     );

@@ -17,11 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import Preview from '../preview';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
-import DocumentColumns from './utilities/document-columns';
+import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
 import styles from './search-results.css';
 
 const RESULT_ITEM_HEIGHT = 46;
@@ -65,7 +66,8 @@ class SearchResults extends React.Component {
     resizingColumn: undefined,
     columnWidths: {},
     columns: DocumentColumns.map(column => column.key),
-    previewPosition: PREVIEW_POSITION.right
+    previewPosition: PREVIEW_POSITION.right,
+    extraColumnsConfiguration: []
   };
 
   dividerRefs = [];
@@ -100,6 +102,12 @@ class SearchResults extends React.Component {
     window.addEventListener('mousemove', this.onResize);
     window.addEventListener('mouseup', this.stopResizing);
     this.updateDocumentTypes();
+    parseExtraColumns(this.props.preferences)
+      .then(extra => {
+        if (extra && extra.length) {
+          this.setState({extraColumnsConfiguration: extra}, this.updateDocumentTypes);
+        }
+      });
   }
 
   componentWillUnmount () {
@@ -110,20 +118,25 @@ class SearchResults extends React.Component {
     window.removeEventListener('mouseup', this.stopResizing);
   }
 
+  get columnsConfiguration () {
+    const {extraColumnsConfiguration = []} = this.state;
+    return [...DocumentColumns, ...extraColumnsConfiguration];
+  }
+
   get columns () {
     const {columns} = this.state;
     if (!columns || !columns.size) {
-      return DocumentColumns;
+      return this.columnsConfiguration;
     }
-    return DocumentColumns.filter(k => columns.has(k.key));
+    return this.columnsConfiguration.filter(k => columns.has(k.key));
   }
 
   updateDocumentTypes = () => {
     const {documentTypes} = this.props;
     if (!documentTypes || !documentTypes.length) {
-      this.setState({columns: new Set(DocumentColumns.map(column => column.key))});
+      this.setState({columns: new Set(this.columnsConfiguration.map(column => column.key))});
     } else {
-      const columns = DocumentColumns
+      const columns = this.columnsConfiguration
         .filter(column => !column.types || documentTypes.find(type => column.types.has(type)))
         .map(column => column.key);
       this.setState({columns: new Set(columns)});
@@ -565,4 +578,4 @@ SearchResults.defaultProps = {
   documentTypes: []
 };
 
-export default SearchResults;
+export default inject('preferences')(observer(SearchResults));

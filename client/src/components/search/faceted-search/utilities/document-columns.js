@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {Icon} from 'antd';
+import {isObservableArray} from 'mobx';
 import {PreviewIcons} from '../../preview/previewIcons';
 import SearchItemTypes from '../../../../models/search/search-item-types';
 import getDocumentName from '../document-presentation/utilities/get-document-name';
@@ -23,6 +24,52 @@ import UserName from '../../../special/UserName';
 import displaySize from '../../../../utils/displaySize';
 import displayDate from '../../../../utils/displayDate';
 import styles from '../search-results.css';
+
+function parseExtraColumns (preferences) {
+  return new Promise((resolve) => {
+    preferences
+      .fetchIfNeededOrWait()
+      .then(() => {
+        const configuration = preferences.searchExtraFieldsConfiguration;
+        if (configuration) {
+          if (Array.isArray(configuration) || isObservableArray(configuration)) {
+            resolve(
+              configuration.map(field => ({
+                key: field,
+                name: field
+              }))
+            );
+          } else {
+            const result = [];
+            const types = Object.keys(configuration);
+            for (let t = 0; t < types.length; t++) {
+              const type = types[t];
+              const subConfiguration = configuration[type];
+              if (Array.isArray(subConfiguration) || isObservableArray(subConfiguration)) {
+                for (let f = 0; f < subConfiguration.length; f++) {
+                  const field = subConfiguration[f];
+                  let item = result.find(r => r.key === field);
+                  if (!item) {
+                    item = {
+                      key: field,
+                      name: field,
+                      types: new Set()
+                    };
+                    result.push(item);
+                  }
+                  item.types.add(type);
+                }
+              }
+            }
+            resolve(result);
+          }
+        } else {
+          resolve([]);
+        }
+      })
+      .catch(() => resolve([]));
+  });
+}
 
 const renderIcon = (resultItem) => {
   if (PreviewIcons[resultItem.type]) {
@@ -35,7 +82,7 @@ const renderIcon = (resultItem) => {
   return null;
 };
 
-export default [
+const DocumentColumns = [
   {
     key: 'name',
     name: 'Name',
@@ -84,18 +131,20 @@ export default [
     ])
   },
   {
-    key: 'startDate',
-    name: 'Started',
-    width: '15%',
-    renderFn: value => displayDate(value, 'MMM d, YYYY, HH:mm'),
-    types: new Set([SearchItemTypes.run])
-  },
-  {
-    key: 'endDate',
-    name: 'Finished',
-    width: '15%',
-    renderFn: value => displayDate(value, 'MMM d, YYYY, HH:mm'),
-    types: new Set([SearchItemTypes.run])
+    key: 'path',
+    name: 'Path',
+    width: '25%',
+    types: new Set([
+      SearchItemTypes.tool,
+      SearchItemTypes.s3File,
+      SearchItemTypes.gsFile,
+      SearchItemTypes.azFile,
+      SearchItemTypes.NFSFile,
+      SearchItemTypes.NFSBucket,
+      SearchItemTypes.azStorage,
+      SearchItemTypes.gsStorage,
+      SearchItemTypes.s3Bucket
+    ])
   },
   {
     key: 'size',
@@ -110,19 +159,19 @@ export default [
     ])
   },
   {
-    key: 'path',
-    name: 'Path',
+    key: 'startDate',
+    name: 'Started',
     width: '15%',
-    types: new Set([
-      SearchItemTypes.tool,
-      SearchItemTypes.s3File,
-      SearchItemTypes.gsFile,
-      SearchItemTypes.azFile,
-      SearchItemTypes.NFSFile,
-      SearchItemTypes.NFSBucket,
-      SearchItemTypes.azStorage,
-      SearchItemTypes.gsStorage,
-      SearchItemTypes.s3Bucket
-    ])
+    renderFn: value => displayDate(value, 'MMM d, YYYY, HH:mm'),
+    types: new Set([SearchItemTypes.run])
+  },
+  {
+    key: 'endDate',
+    name: 'Finished',
+    width: '15%',
+    renderFn: value => displayDate(value, 'MMM d, YYYY, HH:mm'),
+    types: new Set([SearchItemTypes.run])
   }
 ];
+
+export {DocumentColumns, parseExtraColumns};

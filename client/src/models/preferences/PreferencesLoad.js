@@ -146,6 +146,19 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get searchExtraFieldsConfiguration () {
+    const value = this.getPreferenceValue('search.elastic.index.metadata.fields');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "search.elastic.index.metadata.fields" preference:', e);
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

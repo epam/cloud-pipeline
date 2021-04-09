@@ -23,6 +23,10 @@ export default function mapElasticDocument (document) {
     document.elasticId
   ].map(o => String(o)).join('-');
   switch (document.type) {
+    case SearchItemTypes.pipelineCode:
+      document.pipelineVersion = document.description;
+      delete document.description;
+      break;
     case SearchItemTypes.azFile:
     case SearchItemTypes.s3File:
     case SearchItemTypes.NFSFile:

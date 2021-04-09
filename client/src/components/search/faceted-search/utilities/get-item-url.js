@@ -80,23 +80,24 @@ function getItemUrl (item) {
         }
         break;
       case SearchItemTypes.pipelineCode:
-        const {parentId, description: version, path} = item;
-        if (parentId && version && path) {
+        const {parentId, pipelineVersion, path} = item;
+        if (parentId && pipelineVersion && path) {
           if (/^docs\//i.test(path)) {
-            resolve(`/${item.parentId}/${version}/documents`);
+            resolve(`/${item.parentId}/${pipelineVersion}/documents`);
           } else if (/^src\//i.test(path)) {
             const subPath = path.substr(4).split('/').slice(0, -1).join('/');
             if (!subPath) {
-              resolve(`/${item.parentId}/${version}/code`);
+              resolve(`/${item.parentId}/${pipelineVersion}/code`);
             } else {
-              resolve(`/${item.parentId}/${version}/code?path=${encodeURIComponent(subPath)}`);
+              // eslint-disable-next-line
+              resolve(`/${item.parentId}/${pipelineVersion}/code?path=${encodeURIComponent(subPath)}`);
             }
             return;
           }
-          resolve(`/${item.parentId}/${version}/code`);
+          resolve(`/${item.parentId}/${pipelineVersion}/code`);
           return;
-        } else if (parentId && version) {
-          resolve(`/${item.parentId}/${version}`);
+        } else if (parentId && pipelineVersion) {
+          resolve(`/${item.parentId}/${pipelineVersion}`);
         } else if (parentId) {
           resolve(`/${item.parentId}`);
         }
