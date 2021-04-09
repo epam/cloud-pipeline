@@ -82,7 +82,7 @@ class FacetedSearch extends React.Component {
     documentsOffset: 0,
     query: undefined,
     offset: 0,
-    pageSize: undefined,
+    pageSize: 20,
     presentationMode: PresentationModes.list,
     showResults: false,
     searchToken: undefined,
