@@ -190,7 +190,10 @@ class Synchronizer(threading.Thread):
             window_deadline = time.monotonic() + window
             while True:
                 try:
-                    hosts.append(self._queue.get(timeout=window_deadline - time.monotonic()))
+                    window_timeout = window_deadline - time.monotonic()
+                    if window_timeout <= 0:
+                        break
+                    hosts.append(self._queue.get(timeout=window_timeout))
                 except queue.Empty:
                     break
         return hosts
