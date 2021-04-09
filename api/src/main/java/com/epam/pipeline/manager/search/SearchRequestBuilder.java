@@ -245,7 +245,7 @@ public class SearchRequestBuilder {
     }
 
     private QueryBuilder filterToTermsQuery(final String fieldName, final List<String> values) {
-        return QueryBuilders.termsQuery(fieldName, values);
+        return QueryBuilders.termsQuery(buildKeywordName(fieldName), values);
     }
 
     private QueryBuilder prepareFacetedQuery(final String requestQuery) {
@@ -258,7 +258,11 @@ public class SearchRequestBuilder {
 
     private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
         final TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(facet)
-                .field(String.format("%s.keyword", facet));
+                .field(buildKeywordName(facet));
         searchSource.aggregation(aggregationBuilder);
+    }
+
+    private String buildKeywordName(final String fieldName) {
+        return String.format("%s.keyword", fieldName);
     }
 }
