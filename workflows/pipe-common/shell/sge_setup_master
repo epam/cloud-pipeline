@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -283,6 +283,15 @@ check_last_exit_code() {
     fi
 }
 
+sge_exists_check() {
+  if [ "$LINUX_DISTRIBUTION" = "debian" ] && [ -f "/etc/init.d/gridengine-master" ]; then
+        return
+  elif [ "$LINUX_DISTRIBUTION" = "redhat" ] && [ -f "$SGE_ROOT/$SGE_CELL/common/sgemaster" ]; then
+        return
+  fi
+  false
+}
+
 LINUX_DISTRIBUTION=$( get_linux_dist )
 
 #Remove pipe qsub, if exists
@@ -317,9 +326,9 @@ echo "export CP_CAP_SGE_WORKER_FREE_CORES=$CP_CAP_SGE_WORKER_FREE_CORES" >> $CP_
 cat $CP_CAP_SGE_MASTER_ENV_FILE >> /etc/cp_env.sh
 
 
-# Verify whether it is a resumed run - if so, do not reinstall sge, instead - just rerun master and exec daemon
-if [ "$RESUMED_RUN" = true ]; then
-    pipe_log_info "Run is resumed - SGE master node won't be reconfigured. Starting master and exec daemons" "$SGE_MASTER_SETUP_TASK"
+# Verify whether it is a resumed run or SGE already exists - if so, do not reinstall sge, instead - just rerun master and exec daemon
+if [ "$RESUMED_RUN" = true ] || sge_exists_check; then
+    pipe_log_info "Run is resumed or SGE already exists - SGE master node won't be reconfigured. Starting master and exec daemons" "$SGE_MASTER_SETUP_TASK"
     _SGE_RESUME_RESULT=0
     if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
         /etc/init.d/gridengine-master restart && \
