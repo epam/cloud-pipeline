@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -167,18 +167,23 @@ def run_tool(*args):
 def run_pipe(pipeline_name, *args):
     command = ['pipe', 'run', '--pipeline', pipeline_name, '-y']
 
-    instance_type = os.environ['CP_TEST_INSTANCE_TYPE']
+    instance_type = os.environ.get('CP_TEST_INSTANCE_TYPE')
     if instance_type and "-it" not in args:
         command.append("-it")
         command.append(instance_type)
 
-    price_type = os.environ['CP_TEST_PRICE_TYPE']
+    price_type = os.environ.get('CP_TEST_PRICE_TYPE')
     if price_type and "-pt" not in args:
         command.append("-pt")
         command.append(price_type)
 
     for arg in args:
         command.append(arg)
+
+    disable_reassign = _str_to_bool(os.environ.get('CP_TEST_DISABLE_NODE_REASSIGN', 'True'))
+    if disable_reassign:
+        command.append('--CP_CREATE_NEW_NODE true')
+
     process = subprocess.Popen(command, stdout=subprocess.PIPE)
     process.wait()
     line = process.stdout.readline()
@@ -506,3 +511,7 @@ def get_log_filename():
     if 'RESULTS_DIR' in os.environ:
         return '%s/tests.log' % os.environ['RESULTS_DIR']
     return 'tests.log'
+
+
+def _str_to_bool(input_value):
+    return input_value.lower() in ("true", "t")
