@@ -16,23 +16,11 @@
 
 package com.epam.pipeline.controller.vo.search;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class FacetedSearchRequest {
-    private String query;
-    private Map<String, List<String>> filters;
-    private List<String> facets;
-    private Integer pageSize;
-    private Integer offset;
-    private boolean highlight = false;
-    private List<ScrollingParameter> scrollingParameters;
-    private boolean isScrollingForward = true;
+public class ScrollingParameter {
+
+    private String field;
+    private Object tieBreaker;
 }

@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
+import com.epam.pipeline.controller.vo.search.ScrollingParameter;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -72,6 +73,7 @@ public class SearchRequestBuilder {
     private static final String SIZE_FIELD = "size";
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
+    private static final String ES_DOC_ID_FIELD = "_id";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -87,10 +89,12 @@ public class SearchRequestBuilder {
                 .query(query)
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
-        if (MapUtils.isEmpty(searchRequest.getSearchAfter())) {
+        if (CollectionUtils.isEmpty(searchRequest.getPaginationRules())) {
             searchSource.from(searchRequest.getOffset());
+            applyDefaultSortingOrder(searchSource);
         } else {
-            applySearchAfter(searchSource, searchRequest.getSearchAfter());
+            applyScrollingParameters(searchSource, searchRequest.getPaginationRules(),
+                                     searchRequest.isScrollingForward());
         }
         if (searchRequest.isHighlight()) {
             addHighlighterToSource(searchSource);
@@ -140,10 +144,12 @@ public class SearchRequestBuilder {
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(facetedSearchRequest.getPageSize());
 
-        if (MapUtils.isEmpty(facetedSearchRequest.getSearchAfter())) {
+        if (CollectionUtils.isEmpty(facetedSearchRequest.getScrollingParameters())) {
             searchSource.from(facetedSearchRequest.getOffset());
+            applyDefaultSortingOrder(searchSource);
         } else {
-            applySearchAfter(searchSource, facetedSearchRequest.getSearchAfter());
+            applyScrollingParameters(searchSource, facetedSearchRequest.getScrollingParameters(),
+                                     facetedSearchRequest.isScrollingForward());
         }
 
         if (facetedSearchRequest.isHighlight()) {
@@ -158,13 +164,21 @@ public class SearchRequestBuilder {
                 .source(searchSource);
     }
 
-    private void applySearchAfter(final SearchSourceBuilder searchSource, final Map<String, Object> searchAfter) {
+    private void applyScrollingParameters(final SearchSourceBuilder searchSource,
+                                          final List<ScrollingParameter> scrollingParameters,
+                                          final boolean isScrollingForward) {
         final List<Object> values = new ArrayList<>();
-        searchAfter.forEach((field, value) -> {
-            searchSource.sort(SortBuilders.fieldSort(field).order(SortOrder.DESC));
-            values.add(value);
+        scrollingParameters.forEach(parameter -> {
+            searchSource.sort(SortBuilders.fieldSort(parameter.getField())
+                                  .order(isScrollingForward ? SortOrder.DESC : SortOrder.ASC));
+            values.add(parameter.getTieBreaker());
         });
         searchSource.searchAfter(values.toArray(new Object[0]));
+    }
+
+    private void applyDefaultSortingOrder(final SearchSourceBuilder searchSource) {
+        searchSource.sort(SortBuilders.scoreSort());
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_ID_FIELD).order(SortOrder.DESC));
     }
 
     private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {

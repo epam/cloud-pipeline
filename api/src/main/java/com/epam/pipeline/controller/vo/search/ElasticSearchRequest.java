@@ -22,7 +22,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -35,6 +34,6 @@ public class ElasticSearchRequest {
     private boolean aggregate = false;
     private boolean highlight = false;
     private List<SearchDocumentType> filterTypes;
-    private Map<String, Object> searchAfter;
-
+    private List<ScrollingParameter> paginationRules;
+    private boolean isScrollingForward = true;
 }
