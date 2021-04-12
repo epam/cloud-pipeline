@@ -33,6 +33,5 @@ public class FacetedSearchRequest {
     private Integer pageSize;
     private Integer offset;
     private boolean highlight = false;
-    private List<ScrollingParameter> scrollingParameters;
-    private boolean isScrollingBackward;
+    private ScrollingParameter scrollingParameter;
 }

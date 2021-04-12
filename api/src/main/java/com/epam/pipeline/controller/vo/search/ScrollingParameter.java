@@ -21,6 +21,7 @@ import lombok.Data;
 @Data
 public class ScrollingParameter {
 
-    private String field;
-    private Object tieBreaker;
+    private String docId;
+    private float docScore;
+    private boolean isScrollingBackward;
 }

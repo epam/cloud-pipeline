@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.search;
 
+import com.epam.pipeline.controller.vo.search.ScrollingParameter;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
@@ -60,12 +61,12 @@ public class SearchResultConverter {
                                     final String typeFieldName,
                                     final Set<String> aclFilterFields,
                                     final Set<String> metadataSourceFields,
-                                    final boolean isScrollingBackward) {
+                                    final ScrollingParameter scrollingParameter) {
         return SearchResult.builder()
                 .searchSucceeded(!searchResult.isTimedOut())
                 .totalHits(searchResult.getHits().getTotalHits())
                 .documents(buildDocuments(searchResult, typeFieldName, aclFilterFields, metadataSourceFields,
-                                          isScrollingBackward))
+                                          scrollingParameter))
                 .aggregates(buildAggregates(searchResult.getAggregations(), aggregation))
                 .build();
     }
@@ -86,11 +87,11 @@ public class SearchResultConverter {
     public FacetedSearchResult buildFacetedResult(final SearchResponse response, final String typeFieldName,
                                                   final Set<String> aclFilterFields,
                                                   final Set<String> metadataSourceFields,
-                                                  final boolean isScrollingBackward) {
+                                                  final ScrollingParameter scrollingParameter) {
         return FacetedSearchResult.builder()
                 .totalHits(response.getHits().getTotalHits())
                 .documents(buildDocuments(response, typeFieldName, aclFilterFields, metadataSourceFields,
-                                          isScrollingBackward))
+                                          scrollingParameter))
                 .facets(buildFacets(response.getAggregations()))
                 .build();
     }
@@ -98,10 +99,10 @@ public class SearchResultConverter {
     private List<SearchDocument> buildDocuments(final SearchResponse searchResult, final String typeFieldName,
                                                 final Set<String> aclFilterFields,
                                                 final Set<String> metadataSourceFields,
-                                                final boolean isScrollingBackward) {
+                                                final ScrollingParameter scrollingParameter) {
         final List<SearchDocument> documents =
             buildDocuments(searchResult.getHits(), typeFieldName, aclFilterFields, metadataSourceFields);
-        if (isScrollingBackward) {
+        if (Objects.nonNull(scrollingParameter) && scrollingParameter.isScrollingBackward()) {
             Collections.reverse(documents);
         }
         return documents;

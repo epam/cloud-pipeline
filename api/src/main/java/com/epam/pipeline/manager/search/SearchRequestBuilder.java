@@ -50,11 +50,11 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -74,6 +74,7 @@ public class SearchRequestBuilder {
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
     private static final String ES_DOC_ID_FIELD = "_id";
+    private static final String ES_DOC_SCORE_FIELD = "_score";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -89,12 +90,11 @@ public class SearchRequestBuilder {
                 .query(query)
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
-        if (CollectionUtils.isEmpty(searchRequest.getPaginationRules())) {
+        if (Objects.isNull(searchRequest.getScrollingParameter())) {
             searchSource.from(searchRequest.getOffset());
             applyDefaultSortingOrder(searchSource);
         } else {
-            applyScrollingParameters(searchSource, searchRequest.getPaginationRules(),
-                                     searchRequest.isScrollingBackward());
+            applyScrollingParameter(searchSource, searchRequest.getScrollingParameter());
         }
         if (searchRequest.isHighlight()) {
             addHighlighterToSource(searchSource);
@@ -144,12 +144,11 @@ public class SearchRequestBuilder {
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(facetedSearchRequest.getPageSize());
 
-        if (CollectionUtils.isEmpty(facetedSearchRequest.getScrollingParameters())) {
+        if (Objects.isNull(facetedSearchRequest.getScrollingParameter())) {
             searchSource.from(facetedSearchRequest.getOffset());
             applyDefaultSortingOrder(searchSource);
         } else {
-            applyScrollingParameters(searchSource, facetedSearchRequest.getScrollingParameters(),
-                                     facetedSearchRequest.isScrollingBackward());
+            applyScrollingParameter(searchSource, facetedSearchRequest.getScrollingParameter());
         }
 
         if (facetedSearchRequest.isHighlight()) {
@@ -164,16 +163,13 @@ public class SearchRequestBuilder {
                 .source(searchSource);
     }
 
-    private void applyScrollingParameters(final SearchSourceBuilder searchSource,
-                                          final List<ScrollingParameter> scrollingParameters,
-                                          final boolean isScrollingBackward) {
-        final List<Object> values = new ArrayList<>();
-        scrollingParameters.forEach(parameter -> {
-            searchSource.sort(SortBuilders.fieldSort(parameter.getField())
-                                  .order(isScrollingBackward ? SortOrder.ASC : SortOrder.DESC));
-            values.add(parameter.getTieBreaker());
-        });
-        searchSource.searchAfter(values.toArray(new Object[0]));
+    private void applyScrollingParameter(final SearchSourceBuilder searchSource,
+                                         final ScrollingParameter scrollingParameter) {
+        final SortOrder order = scrollingParameter.isScrollingBackward() ? SortOrder.ASC : SortOrder.DESC;
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_SCORE_FIELD).order(order));
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_ID_FIELD).order(order));
+        searchSource.searchAfter(Arrays.asList(scrollingParameter.getDocScore(), scrollingParameter.getDocId())
+                                     .toArray(new Object[0]));
     }
 
     private void applyDefaultSortingOrder(final SearchSourceBuilder searchSource) {

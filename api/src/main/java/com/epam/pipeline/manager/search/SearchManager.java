@@ -28,7 +28,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -38,6 +37,7 @@ import org.springframework.util.Assert;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -60,7 +60,7 @@ public class SearchManager {
             final SearchResponse searchResult = globalSearchElasticHelper.buildClient().search(
                     requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION, metadataSourceFields));
             return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields(),
-                    metadataSourceFields, searchRequest.isScrollingBackward());
+                    metadataSourceFields, searchRequest.getScrollingParameter());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
@@ -80,7 +80,7 @@ public class SearchManager {
 
     public FacetedSearchResult facetedSearch(final FacetedSearchRequest searchRequest) {
         Assert.notNull(searchRequest.getPageSize(), "Page Size is required");
-        if (CollectionUtils.isEmpty(searchRequest.getScrollingParameters())) {
+        if (Objects.isNull(searchRequest.getScrollingParameter())) {
             Assert.notNull(searchRequest.getOffset(), "Offset is required");
         }
         try {
@@ -89,7 +89,7 @@ public class SearchManager {
             final SearchResponse response = globalSearchElasticHelper.buildClient()
                     .search(requestBuilder.buildFacetedRequest(searchRequest, typeFieldName, metadataSourceFields));
             return resultConverter.buildFacetedResult(response, typeFieldName, getAclFilterFields(),
-                    metadataSourceFields, searchRequest.isScrollingBackward());
+                    metadataSourceFields, searchRequest.getScrollingParameter());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
