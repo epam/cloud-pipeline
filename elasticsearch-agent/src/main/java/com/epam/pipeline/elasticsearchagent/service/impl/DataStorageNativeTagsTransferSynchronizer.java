@@ -8,8 +8,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
-import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
-import com.epam.pipeline.vo.data.storage.DataStorageTagInsertRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -68,9 +68,9 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                                         .filter(CollectionUtils::isNotEmpty))
                                 .map(stream -> StreamUtils.windowed(stream, bulkInsertSize))
                                 .orElseGet(Stream::empty)
-                                .map(DataStorageTagInsertBatchRequest::new)
+                                .map(DataStorageTagUpsertBatchRequest::new)
                                 .forEach(request -> {
-                                    cloudPipelineAPIClient.insertDataStorageTags(storage.getId(), request);
+                                    cloudPipelineAPIClient.upsertDataStorageTags(storage.getId(), request);
                                     log.debug("{} native tags of {} data storage {} have been transferred",
                                             request.getRequests().size(), storage.getType(), storage.getPath());
                                 });
@@ -84,20 +84,20 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
         log.debug("Finished data storage native tags transfer synchronization");
     }
 
-    private Stream<DataStorageTagInsertRequest> versionedTags(final DataStorageFile file) {
-        final Stream<DataStorageTagInsertRequest> dataStorageTagInsertRequestStream =
+    private Stream<DataStorageTagUpsertRequest> versionedTags(final DataStorageFile file) {
+        final Stream<DataStorageTagUpsertRequest> dataStorageTagInsertRequestStream =
                 MapUtils.emptyIfNull(file.getTags()).entrySet().stream()
-                        .map(e -> new DataStorageTagInsertRequest(
+                        .map(e -> new DataStorageTagUpsertRequest(
                                 file.getPath(), file.getVersion(), e.getKey(), e.getValue()));
         return BooleanUtils.toBoolean(MapUtils.emptyIfNull(file.getLabels()).get("LATEST"))
                 ? dataStorageTagInsertRequestStream.flatMap(r -> Stream.of(r,
-                new DataStorageTagInsertRequest(r.getPath(), null, r.getKey(), r.getValue())))
+                new DataStorageTagUpsertRequest(r.getPath(), null, r.getKey(), r.getValue())))
                 : dataStorageTagInsertRequestStream;
     }
 
-    private Stream<DataStorageTagInsertRequest> tags(final DataStorageFile file) {
+    private Stream<DataStorageTagUpsertRequest> tags(final DataStorageFile file) {
         return MapUtils.emptyIfNull(file.getTags()).entrySet().stream()
-                .map(e -> new DataStorageTagInsertRequest(
+                .map(e -> new DataStorageTagUpsertRequest(
                         file.getPath(), null, e.getKey(), e.getValue()));
     }
 
