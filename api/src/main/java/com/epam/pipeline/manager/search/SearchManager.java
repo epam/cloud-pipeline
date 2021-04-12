@@ -60,7 +60,7 @@ public class SearchManager {
             final SearchResponse searchResult = globalSearchElasticHelper.buildClient().search(
                     requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION, metadataSourceFields));
             return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields(),
-                    metadataSourceFields);
+                    metadataSourceFields, searchRequest.isScrollingForward());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
@@ -89,7 +89,7 @@ public class SearchManager {
             final SearchResponse response = globalSearchElasticHelper.buildClient()
                     .search(requestBuilder.buildFacetedRequest(searchRequest, typeFieldName, metadataSourceFields));
             return resultConverter.buildFacetedResult(response, typeFieldName, getAclFilterFields(),
-                    metadataSourceFields);
+                    metadataSourceFields, searchRequest.isScrollingForward());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);

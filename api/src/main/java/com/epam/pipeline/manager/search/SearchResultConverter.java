@@ -59,13 +59,27 @@ public class SearchResultConverter {
                                     final String aggregation,
                                     final String typeFieldName,
                                     final Set<String> aclFilterFields,
-                                    final Set<String> metadataSourceFields) {
+                                    final Set<String> metadataSourceFields,
+                                    final boolean isScrollingForward) {
         return SearchResult.builder()
                 .searchSucceeded(!searchResult.isTimedOut())
                 .totalHits(searchResult.getHits().getTotalHits())
-                .documents(buildDocuments(searchResult.getHits(), typeFieldName, aclFilterFields, metadataSourceFields))
+                .documents(buildDocuments(searchResult, typeFieldName, aclFilterFields, metadataSourceFields,
+                                          isScrollingForward))
                 .aggregates(buildAggregates(searchResult.getAggregations(), aggregation))
                 .build();
+    }
+
+    private List<SearchDocument> buildDocuments(final SearchResponse searchResult, final String typeFieldName,
+                                                final Set<String> aclFilterFields,
+                                                final Set<String> metadataSourceFields,
+                                                final boolean isScrollingForward) {
+        final List<SearchDocument> documents =
+            buildDocuments(searchResult.getHits(), typeFieldName, aclFilterFields, metadataSourceFields);
+        if (!isScrollingForward) {
+            Collections.reverse(documents);
+        }
+        return documents;
     }
 
     public StorageUsage buildStorageUsageResponse(final SearchResponse searchResponse,
@@ -83,10 +97,12 @@ public class SearchResultConverter {
 
     public FacetedSearchResult buildFacetedResult(final SearchResponse response, final String typeFieldName,
                                                   final Set<String> aclFilterFields,
-                                                  final Set<String> metadataSourceFields) {
+                                                  final Set<String> metadataSourceFields,
+                                                  final boolean isScrollingForward) {
         return FacetedSearchResult.builder()
                 .totalHits(response.getHits().getTotalHits())
-                .documents(buildDocuments(response.getHits(), typeFieldName, aclFilterFields, metadataSourceFields))
+                .documents(buildDocuments(response, typeFieldName, aclFilterFields, metadataSourceFields,
+                                          isScrollingForward))
                 .facets(buildFacets(response.getAggregations()))
                 .build();
     }
