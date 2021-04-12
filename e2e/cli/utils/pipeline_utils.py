@@ -182,7 +182,8 @@ def run_pipe(pipeline_name, *args):
 
     disable_reassign = _str_to_bool(os.environ.get('CP_TEST_DISABLE_NODE_REASSIGN', 'True'))
     if disable_reassign:
-        command.append('--CP_CREATE_NEW_NODE true')
+        command.append("--CP_CREATE_NEW_NODE")
+        command.append("true")
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE)
     process.wait()
