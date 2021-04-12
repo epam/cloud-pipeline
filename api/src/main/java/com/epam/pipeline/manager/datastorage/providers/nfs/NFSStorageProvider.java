@@ -367,7 +367,9 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public Optional<DataStorageFile> findFile(final NFSDataStorage dataStorage, final String path) {
+    public Optional<DataStorageFile> findFile(final NFSDataStorage dataStorage,
+                                              final String path,
+                                              final String version) {
         final File dataStorageRoot = mount(dataStorage);
         return Optional.of(new File(dataStorageRoot, path))
                 .filter(File::exists)
@@ -377,7 +379,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                     item.setChanged(S3Constants.getAwsDateFormat().format(new Date(file.lastModified())));
                     item.setName(file.getName());
                     item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
-                    return item;   
+                    return item;
                 });
     }
 

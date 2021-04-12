@@ -107,7 +107,11 @@ public class StorageProviderManager {
     }
 
     public Optional<DataStorageFile> findFile(AbstractDataStorage dataStorage, String path) {
-        return getStorageProvider(dataStorage).findFile(dataStorage, path);
+        return getStorageProvider(dataStorage).findFile(dataStorage, path, null);
+    }
+
+    public Optional<DataStorageFile> findFile(AbstractDataStorage dataStorage, String path, String version) {
+        return getStorageProvider(dataStorage).findFile(dataStorage, path, version);
     }
 
     public Stream<DataStorageFile> listFiles(AbstractDataStorage dataStorage, String path) {

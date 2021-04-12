@@ -151,9 +151,10 @@ public class GSBucketStorageHelper {
         return new DataStorageListing(blobs.getNextPageToken(), items);
     }
 
-    public Optional<DataStorageFile> findFile(final GSBucketStorage storage, final String path) {
+    public Optional<DataStorageFile> findFile(final GSBucketStorage storage, final String path, final String version) {
         final Storage client = gcpClient.buildStorageClient(region);
-        return Optional.ofNullable(client.get(storage.getPath(), path))
+        return Optional.ofNullable(client.get(BlobId.of(storage.getPath(), path,
+                StringUtils.isNotBlank(version) ? Long.valueOf(version) : null)))
                 .map(blob -> {
                     final DataStorageFile file = new DataStorageFile();
                     file.setName(blob.getName());

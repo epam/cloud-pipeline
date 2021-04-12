@@ -58,7 +58,7 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);
 
-    Optional<DataStorageFile> findFile(T dataStorage, String path);
+    Optional<DataStorageFile> findFile(T dataStorage, String path, String version);
 
     DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
                                                    ContentDisposition contentDisposition);

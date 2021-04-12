@@ -95,16 +95,13 @@ class API(object):
                 if response.status_code != 200:
                     raise HTTPError('API responded with http status %s.' % str(response.status_code))
                 response_data = response.json()
-                status = response_data.get('status')
-                message = response_data.get('message')
-                if not status:
-                    raise APIError('API responded without any status.')
+                status = response_data.get('status') or 'ERROR'
+                message = response_data.get('message') or 'No message'
                 if status != 'OK':
-                    if message:
-                        raise APIError('API responded with status %s and error message: %s.' % (status, message))
-                    else:
-                        raise APIError('API responded with status %s.' % status)
+                    raise APIError('%s: %s' % (status, message))
                 return response_data.get('payload')
+            except APIError as e:
+                raise e
             except Exception as e:
                 exceptions.append(e)
             time.sleep(self.__timeout__)

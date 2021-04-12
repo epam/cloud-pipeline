@@ -102,8 +102,9 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public Optional<DataStorageFile> findFile(final GSBucketStorage dataStorage, final String path) {
-        return getHelper(dataStorage).findFile(dataStorage, path);
+    public Optional<DataStorageFile> findFile(final GSBucketStorage dataStorage, final String path, 
+                                              final String version) {
+        return getHelper(dataStorage).findFile(dataStorage, path, version);
     }
 
     @Override

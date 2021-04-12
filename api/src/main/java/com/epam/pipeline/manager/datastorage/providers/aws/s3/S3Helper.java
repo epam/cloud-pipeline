@@ -350,19 +350,23 @@ public class S3Helper {
     }
 
     private DataStorageFile getFile(final AmazonS3 client, final String bucket, final String path) {
-        return findFile(client, bucket, path)
+        return findFile(client, bucket, path, null)
                 .orElseThrow(() -> new DataStorageException(messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket)));
     }
 
-    public Optional<DataStorageFile> findFile(final String bucket, final String path) {
+    public Optional<DataStorageFile> findFile(final String bucket, final String path, final String version) {
         final AmazonS3 client = getDefaultS3Client();
-        return findFile(client, bucket, path);
+        return findFile(client, bucket, path, version);
     }
 
-    private Optional<DataStorageFile> findFile(final AmazonS3 client, final String bucket, final String path) {
+    private Optional<DataStorageFile> findFile(final AmazonS3 client,
+                                               final String bucket,
+                                               final String path,
+                                               final String version) {
         try {
-            final ObjectMetadata metadata = client.getObjectMetadata(new GetObjectMetadataRequest(bucket, path));
+            final GetObjectMetadataRequest metadataRequest = new GetObjectMetadataRequest(bucket, path, version);
+            final ObjectMetadata metadata = client.getObjectMetadata(metadataRequest);
             final TimeZone tz = TimeZone.getTimeZone("UTC");
             final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
             df.setTimeZone(tz);
