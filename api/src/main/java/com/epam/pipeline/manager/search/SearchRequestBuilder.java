@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
-import com.epam.pipeline.controller.vo.search.ScrollingParameter;
+import com.epam.pipeline.controller.vo.search.ScrollingParameters;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -90,11 +90,11 @@ public class SearchRequestBuilder {
                 .query(query)
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
-        if (Objects.isNull(searchRequest.getScrollingParameter())) {
+        if (Objects.isNull(searchRequest.getScrollingParameters())) {
             searchSource.from(searchRequest.getOffset());
             applyDefaultSorting(searchSource);
         } else {
-            applyScrollingParameter(searchSource, searchRequest.getScrollingParameter());
+            applyScrollingParameters(searchSource, searchRequest.getScrollingParameters());
         }
         if (searchRequest.isHighlight()) {
             addHighlighterToSource(searchSource);
@@ -144,11 +144,11 @@ public class SearchRequestBuilder {
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(facetedSearchRequest.getPageSize());
 
-        if (Objects.isNull(facetedSearchRequest.getScrollingParameter())) {
+        if (Objects.isNull(facetedSearchRequest.getScrollingParameters())) {
             searchSource.from(facetedSearchRequest.getOffset());
             applyDefaultSorting(searchSource);
         } else {
-            applyScrollingParameter(searchSource, facetedSearchRequest.getScrollingParameter());
+            applyScrollingParameters(searchSource, facetedSearchRequest.getScrollingParameters());
         }
 
         if (facetedSearchRequest.isHighlight()) {
@@ -163,10 +163,10 @@ public class SearchRequestBuilder {
                 .source(searchSource);
     }
 
-    private void applyScrollingParameter(final SearchSourceBuilder searchSource,
-                                         final ScrollingParameter scrollingParameter) {
-        applySorting(searchSource, scrollingParameter.isScrollingBackward());
-        searchSource.searchAfter(Arrays.asList(scrollingParameter.getDocScore(), scrollingParameter.getDocId())
+    private void applyScrollingParameters(final SearchSourceBuilder searchSource,
+                                          final ScrollingParameters scrollingParameters) {
+        applySorting(searchSource, scrollingParameters.isScrollingBackward());
+        searchSource.searchAfter(Arrays.asList(scrollingParameters.getDocScore(), scrollingParameters.getDocId())
                                      .toArray(new Object[0]));
     }
 

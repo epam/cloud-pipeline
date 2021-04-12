@@ -19,7 +19,7 @@ package com.epam.pipeline.controller.vo.search;
 import lombok.Data;
 
 @Data
-public class ScrollingParameter {
+public class ScrollingParameters {
 
     private String docId;
     private float docScore;
