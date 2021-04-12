@@ -94,7 +94,7 @@ public class SearchRequestBuilder {
             applyDefaultSortingOrder(searchSource);
         } else {
             applyScrollingParameters(searchSource, searchRequest.getPaginationRules(),
-                                     searchRequest.isScrollingForward());
+                                     searchRequest.isScrollingBackward());
         }
         if (searchRequest.isHighlight()) {
             addHighlighterToSource(searchSource);
@@ -149,7 +149,7 @@ public class SearchRequestBuilder {
             applyDefaultSortingOrder(searchSource);
         } else {
             applyScrollingParameters(searchSource, facetedSearchRequest.getScrollingParameters(),
-                                     facetedSearchRequest.isScrollingForward());
+                                     facetedSearchRequest.isScrollingBackward());
         }
 
         if (facetedSearchRequest.isHighlight()) {
@@ -166,11 +166,11 @@ public class SearchRequestBuilder {
 
     private void applyScrollingParameters(final SearchSourceBuilder searchSource,
                                           final List<ScrollingParameter> scrollingParameters,
-                                          final boolean isScrollingForward) {
+                                          final boolean isScrollingBackward) {
         final List<Object> values = new ArrayList<>();
         scrollingParameters.forEach(parameter -> {
             searchSource.sort(SortBuilders.fieldSort(parameter.getField())
-                                  .order(isScrollingForward ? SortOrder.DESC : SortOrder.ASC));
+                                  .order(isScrollingBackward ? SortOrder.ASC : SortOrder.DESC));
             values.add(parameter.getTieBreaker());
         });
         searchSource.searchAfter(values.toArray(new Object[0]));

@@ -35,5 +35,5 @@ public class ElasticSearchRequest {
     private boolean highlight = false;
     private List<SearchDocumentType> filterTypes;
     private List<ScrollingParameter> paginationRules;
-    private boolean isScrollingForward = true;
+    private boolean isScrollingBackward;
 }

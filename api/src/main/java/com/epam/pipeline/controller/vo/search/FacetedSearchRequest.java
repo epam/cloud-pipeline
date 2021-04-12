@@ -34,5 +34,5 @@ public class FacetedSearchRequest {
     private Integer offset;
     private boolean highlight = false;
     private List<ScrollingParameter> scrollingParameters;
-    private boolean isScrollingForward = true;
+    private boolean isScrollingBackward;
 }
