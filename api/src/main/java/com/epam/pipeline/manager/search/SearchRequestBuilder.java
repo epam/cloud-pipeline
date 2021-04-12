@@ -92,7 +92,7 @@ public class SearchRequestBuilder {
                 .size(searchRequest.getPageSize());
         if (Objects.isNull(searchRequest.getScrollingParameter())) {
             searchSource.from(searchRequest.getOffset());
-            applyDefaultSortingOrder(searchSource);
+            applyDefaultSorting(searchSource);
         } else {
             applyScrollingParameter(searchSource, searchRequest.getScrollingParameter());
         }
@@ -146,7 +146,7 @@ public class SearchRequestBuilder {
 
         if (Objects.isNull(facetedSearchRequest.getScrollingParameter())) {
             searchSource.from(facetedSearchRequest.getOffset());
-            applyDefaultSortingOrder(searchSource);
+            applyDefaultSorting(searchSource);
         } else {
             applyScrollingParameter(searchSource, facetedSearchRequest.getScrollingParameter());
         }
@@ -165,16 +165,19 @@ public class SearchRequestBuilder {
 
     private void applyScrollingParameter(final SearchSourceBuilder searchSource,
                                          final ScrollingParameter scrollingParameter) {
-        final SortOrder order = scrollingParameter.isScrollingBackward() ? SortOrder.ASC : SortOrder.DESC;
-        searchSource.sort(SortBuilders.fieldSort(ES_DOC_SCORE_FIELD).order(order));
-        searchSource.sort(SortBuilders.fieldSort(ES_DOC_ID_FIELD).order(order));
+        applySorting(searchSource, scrollingParameter.isScrollingBackward());
         searchSource.searchAfter(Arrays.asList(scrollingParameter.getDocScore(), scrollingParameter.getDocId())
                                      .toArray(new Object[0]));
     }
 
-    private void applyDefaultSortingOrder(final SearchSourceBuilder searchSource) {
-        searchSource.sort(SortBuilders.scoreSort());
-        searchSource.sort(SortBuilders.fieldSort(ES_DOC_ID_FIELD).order(SortOrder.DESC));
+    private void applyDefaultSorting(final SearchSourceBuilder searchSource) {
+        applySorting(searchSource, false);
+    }
+
+    private void applySorting(final SearchSourceBuilder searchSource, final boolean isScrollingBackward) {
+        final SortOrder order = isScrollingBackward ? SortOrder.ASC : SortOrder.DESC;
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_SCORE_FIELD).order(order));
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_ID_FIELD).order(order));
     }
 
     private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {
