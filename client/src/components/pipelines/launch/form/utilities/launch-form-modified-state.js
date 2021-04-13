@@ -270,6 +270,23 @@ function runCapabilitiesCheck (state, parameters) {
     module !== state.module;
 }
 
+function checkRootEntityModified (props, state) {
+  const {
+    configurations = [],
+    currentConfigurationName
+  } = props || {};
+  const {
+    rootEntityId
+  } = state || {};
+  const currentConfiguration =
+      configurations.find(config => config.name === currentConfigurationName);
+  if (currentConfiguration) {
+    const convert = o => o && !Number.isNaN(Number(o)) ? Number(o) : undefined;
+    return convert(rootEntityId) !== convert(currentConfiguration.rootEntityId);
+  }
+  return false;
+}
+
 export default function (props, state, options) {
   const {form, parameters} = props;
   const {
@@ -314,5 +331,7 @@ export default function (props, state, options) {
     // check general parameters
     parametersCheck(form, parameters) ||
     // check additional run capabilities
-    runCapabilitiesCheck(state, parameters);
+    runCapabilitiesCheck(state, parameters) ||
+    // check root entity id
+    checkRootEntityModified(props, state);
 }
