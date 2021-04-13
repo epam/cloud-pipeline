@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Revision;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import io.swagger.annotations.Api;
@@ -798,5 +799,26 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = COMMIT) String commit,
             @RequestParam(value = PATH, required = false) final String path) throws GitClientException {
         return Result.success(pipelineApiService.getRepositoryCommitDiff(id, commit, path));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/report/generate", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Gets file content",
+            notes = "Gets content of the file, specified by path in the repository and pipeline version ID. The file " +
+                    "content is returned Base64 encoded",
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public void generateFileByTemplate(
+            @PathVariable(value = ID) Long id,
+            @RequestParam(required = false, defaultValue = "false") Boolean includeDiffs,
+            @RequestParam(required = false) String reportTemplate,
+            @RequestBody GitCommitsFilter filter,
+            HttpServletResponse response) throws IOException {
+        byte[] bytes = pipelineApiService.generateReportForVersionedStorage(id, includeDiffs, filter, reportTemplate);
+        String name = FilenameUtils.getName("CP-AR-VS-" + id + ".docx");
+        writeFileToResponse(response, bytes, name);
     }
 }

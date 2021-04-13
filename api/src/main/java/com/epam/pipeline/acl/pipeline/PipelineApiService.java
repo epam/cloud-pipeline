@@ -358,4 +358,13 @@ public class PipelineApiService {
     public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit, final String path) {
         return gitManager.getRepositoryCommitDiff(id, commit, path);
     }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public byte[] generateReportForVersionedStorage(final Long id,
+                                                    final boolean includeDiff,
+                                                    final GitCommitsFilter reportFilters,
+                                                    final String templatePath) {
+        return fileGenerationManager
+                .generateVersionStorageReport(id, includeDiff, reportFilters, templatePath);
+    }
 }

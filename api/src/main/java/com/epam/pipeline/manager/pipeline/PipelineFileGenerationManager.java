@@ -17,10 +17,12 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.controller.vo.GenerateFileVO;
+import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplate;
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplateManager;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.pipeline.documents.templates.VersionStorageReportTemplateManager;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,9 @@ public class PipelineFileGenerationManager {
 
     @Autowired
     private PipelineDocumentTemplateManager pipelineDocumentTemplateManager;
+
+    @Autowired
+    private VersionStorageReportTemplateManager vsReportTemplateManager;
 
     @Autowired
     private GitManager gitManager;
@@ -60,6 +65,15 @@ public class PipelineFileGenerationManager {
         documentTemplate.applyLuigiWorkflowGraph(generateFileVO.getLuigiWorkflowGraphVO());
         return this.generateFile(templatePath, documentTemplate);
     }
+
+    public byte[] generateVersionStorageReport(final Long pipelineId,
+                                               final Boolean includeDiffs,
+                                               final GitCommitsFilter reportFilters,
+                                               final String templatePath) {
+        return vsReportTemplateManager.generateReport(pipelineId, includeDiffs, reportFilters, templatePath);
+    }
+
+
 
     private byte[] generateFile(String templatePath, PipelineDocumentTemplate documentTemplate) {
         try {
