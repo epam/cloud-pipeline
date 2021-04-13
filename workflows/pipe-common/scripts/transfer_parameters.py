@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ class InputDataTask:
             dts_registry = self.fetch_dts_registry()
             parameter_types = {ParameterType.INPUT_PARAMETER, ParameterType.COMMON_PARAMETER} if upload else \
                 {ParameterType.OUTPUT_PARAMETER}
-            remote_locations = self.find_remote_locations(dts_registry, parameter_types)
+            remote_locations = self.find_remote_locations(dts_registry, parameter_types, upload)
             if len(remote_locations) == 0:
                 Logger.info('No remote sources found', task_name=self.task_name)
             else:
@@ -264,7 +264,7 @@ class InputDataTask:
                 result[prefix] = registry['url']
         return result
 
-    def find_remote_locations(self, dts_registry, parameter_types):
+    def find_remote_locations(self, dts_registry, parameter_types, upload):
         remote_locations = []
         for env in os.environ:
             param_type_name = env + '_PARAM_TYPE'
@@ -290,7 +290,7 @@ class InputDataTask:
                     paths = []
                     for path in original_paths:
                         if self.match_dts_path(path, dts_registry):
-                            paths.append(self.build_dts_path(path, dts_registry, param_type))
+                            paths.append(self.build_dts_path(path, dts_registry, param_type, upload))
                         elif self.match_cloud_path(path):
                             paths.append(self.build_cloud_path(path, param_type))
                         elif self.match_ftp_or_http_path(path):
@@ -315,13 +315,14 @@ class InputDataTask:
                 return True
         return False
 
-    def build_dts_path(self, path, dts_registry, input_type):
+    def build_dts_path(self, path, dts_registry, input_type, upload):
         for prefix in dts_registry:
             if path.startswith(prefix):
                 if not self.bucket:
                     raise RuntimeError('Transfer bucket shall be set for DTS locations')
                 relative_path = path.replace(prefix, '')
-                cloud_path = self.join_paths(self.bucket, relative_path)
+                cloud_path = self.join_paths(self.bucket if upload else self.build_run_specific_bucket_path(),
+                                             relative_path)
 
                 if input_type == ParameterType.OUTPUT_PARAMETER:
                     local_path = self.analysis_dir
@@ -335,6 +336,12 @@ class InputDataTask:
                                     local_path), task_name=self.task_name)
                 return LocalizedPath(path, cloud_path, local_path, PathType.DTS, prefix=prefix)
         raise RuntimeError('Remote path %s does not match any of DTS prefixes.')
+
+    def build_run_specific_bucket_path(self):
+        run_id = os.getenv('RUN_ID')
+        run_folder_suffix = '{}/'.format(run_id) if run_id else ''
+        bucket_folder = get_path_with_trailing_delimiter(self.bucket) + run_folder_suffix
+        return bucket_folder
 
     def build_cloud_path(self, path, input_type):
         return self._build_remote_path(path, input_type, PathType.CLOUD_STORAGE)
