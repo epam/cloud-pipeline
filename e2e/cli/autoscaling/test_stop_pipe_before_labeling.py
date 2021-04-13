@@ -33,7 +33,7 @@ class TestStopPipelineBeforeLabeling(object):
     new_run_id = None
     state = FailureIndicator()
     test_case = "TC-SCALING-10"
-    instance_type = get_reassign_node_type()
+    instance_type = get_reassign_node_type('CP_TEST_STOP_BEFORE_LABEL_INSTANCE_TYPE')
 
     @classmethod
     def setup_class(cls):

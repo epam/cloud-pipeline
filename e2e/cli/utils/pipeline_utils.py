@@ -210,9 +210,9 @@ def pipe_run(pipeline_name, disable_reassign, *args):
     return run_id, status
 
 
-def get_reassign_node_type():
+def get_reassign_node_type(envvar_name):
     default_instance_type = os.environ.get('CP_TEST_INSTANCE_TYPE')
-    return os.environ.get('CP_TEST_REASSIGN_INSTANCE_TYPE', default_instance_type)
+    return os.environ.get(envvar_name, default_instance_type)
 
 
 def stop_pipe(run_id):
