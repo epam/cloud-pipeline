@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,6 +52,9 @@ pipe_log_info "--> LFS master server installed" "$FS_SETUP_TASK"
 ######################################################
 # Configure LFS Master
 ######################################################
+
+rm -rf /var/lib/mfs/metadata.mfs /etc/mfs/mfsexports.cfg /etc/mfs/mfsmaster.cfg /etc/mfs/mfsgoals.cfg
+rm -rf /var/lib/mfs/*lock
 
 cp /var/lib/mfs/metadata.mfs.empty /var/lib/mfs/metadata.mfs
 cp /etc/mfs/mfsexports.cfg.dist /etc/mfs/mfsexports.cfg
