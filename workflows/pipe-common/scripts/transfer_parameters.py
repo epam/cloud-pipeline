@@ -201,12 +201,15 @@ def transfer_async(chunk):
 
 
 class InputDataTask:
-    def __init__(self, input_dir, common_dir, analysis_dir, task_name, bucket, report_file, rules):
+    def __init__(self, input_dir, common_dir, analysis_dir, task_name, bucket, report_file, rules, upload):
         self.input_dir = input_dir
         self.common_dir = common_dir
         self.analysis_dir = get_path_with_trailing_delimiter(analysis_dir)
         self.task_name = task_name
-        self.bucket = bucket
+        transfer_bucket = bucket
+        if bucket and not upload:
+            transfer_bucket = self.build_run_specific_bucket_path(bucket)
+        self.bucket = transfer_bucket
         self.report_file = report_file
         self.rules = rules
         api_url = os.environ['API']
@@ -222,7 +225,7 @@ class InputDataTask:
             dts_registry = self.fetch_dts_registry()
             parameter_types = {ParameterType.INPUT_PARAMETER, ParameterType.COMMON_PARAMETER} if upload else \
                 {ParameterType.OUTPUT_PARAMETER}
-            remote_locations = self.find_remote_locations(dts_registry, parameter_types, upload)
+            remote_locations = self.find_remote_locations(dts_registry, parameter_types)
             if len(remote_locations) == 0:
                 Logger.info('No remote sources found', task_name=self.task_name)
             else:
@@ -264,7 +267,7 @@ class InputDataTask:
                 result[prefix] = registry['url']
         return result
 
-    def find_remote_locations(self, dts_registry, parameter_types, upload):
+    def find_remote_locations(self, dts_registry, parameter_types):
         remote_locations = []
         for env in os.environ:
             param_type_name = env + '_PARAM_TYPE'
@@ -290,7 +293,7 @@ class InputDataTask:
                     paths = []
                     for path in original_paths:
                         if self.match_dts_path(path, dts_registry):
-                            paths.append(self.build_dts_path(path, dts_registry, param_type, upload))
+                            paths.append(self.build_dts_path(path, dts_registry, param_type))
                         elif self.match_cloud_path(path):
                             paths.append(self.build_cloud_path(path, param_type))
                         elif self.match_ftp_or_http_path(path):
@@ -315,14 +318,20 @@ class InputDataTask:
                 return True
         return False
 
-    def build_dts_path(self, path, dts_registry, input_type, upload):
+    @staticmethod
+    def build_run_specific_bucket_path(bucket):
+        run_id = os.getenv('RUN_ID')
+        run_folder_suffix = '{}/'.format(run_id) if run_id else ''
+        run_specific_bucket_dir = get_path_with_trailing_delimiter(bucket) + run_folder_suffix
+        return run_specific_bucket_dir
+
+    def build_dts_path(self, path, dts_registry, input_type):
         for prefix in dts_registry:
             if path.startswith(prefix):
                 if not self.bucket:
                     raise RuntimeError('Transfer bucket shall be set for DTS locations')
                 relative_path = path.replace(prefix, '')
-                cloud_path = self.join_paths(self.bucket if upload else self.build_run_specific_bucket_path(),
-                                             relative_path)
+                cloud_path = self.join_paths(self.bucket, relative_path)
 
                 if input_type == ParameterType.OUTPUT_PARAMETER:
                     local_path = self.analysis_dir
@@ -336,12 +345,6 @@ class InputDataTask:
                                     local_path), task_name=self.task_name)
                 return LocalizedPath(path, cloud_path, local_path, PathType.DTS, prefix=prefix)
         raise RuntimeError('Remote path %s does not match any of DTS prefixes.')
-
-    def build_run_specific_bucket_path(self):
-        run_id = os.getenv('RUN_ID')
-        run_folder_suffix = '{}/'.format(run_id) if run_id else ''
-        bucket_folder = get_path_with_trailing_delimiter(self.bucket) + run_folder_suffix
-        return bucket_folder
 
     def build_cloud_path(self, path, input_type):
         return self._build_remote_path(path, input_type, PathType.CLOUD_STORAGE)
@@ -504,7 +507,7 @@ def main():
     if not bucket and 'CP_TRANSFER_BUCKET' in os.environ:
         bucket = os.environ['CP_TRANSFER_BUCKET']
     InputDataTask(args.input_dir, args.common_dir, args.analysis_dir,
-                  args.task, bucket, args.report_file, args.storage_rules).run(upload)
+                  args.task, bucket, args.report_file, args.storage_rules, upload).run(upload)
 
 
 if __name__ == '__main__':
