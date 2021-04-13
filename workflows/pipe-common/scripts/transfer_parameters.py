@@ -218,12 +218,13 @@ class InputDataTask:
         self.api_url = api_url
         self.token = os.environ['API_TOKEN']
         self.api = PipelineAPI(os.environ['API'], 'logs')
+        self.is_upload = upload
 
-    def run(self, upload):
+    def run(self):
         Logger.info('Starting localization of remote data...', task_name=self.task_name)
         try:
             dts_registry = self.fetch_dts_registry()
-            parameter_types = {ParameterType.INPUT_PARAMETER, ParameterType.COMMON_PARAMETER} if upload else \
+            parameter_types = {ParameterType.INPUT_PARAMETER, ParameterType.COMMON_PARAMETER} if self.is_upload else \
                 {ParameterType.OUTPUT_PARAMETER}
             remote_locations = self.find_remote_locations(dts_registry, parameter_types)
             if len(remote_locations) == 0:
@@ -231,9 +232,9 @@ class InputDataTask:
             else:
                 dts_locations = [path for location in remote_locations
                                  for path in location.paths if path.type == PathType.DTS]
-                if upload:
-                    self.transfer_dts(dts_locations, dts_registry, upload)
-                    self.localize_data(remote_locations, upload)
+                if self.is_upload:
+                    self.transfer_dts(dts_locations, dts_registry)
+                    self.localize_data(remote_locations)
                     if self.report_file:
                         with open(self.report_file, 'w') as report:
                             for location in remote_locations:
@@ -248,8 +249,8 @@ class InputDataTask:
                     for rule in rule_patterns:
                         if rule.move_to_sts:
                             rules.append(rule.file_mask)
-                    self.localize_data(remote_locations, upload, rules=rules)
-                    self.transfer_dts(dts_locations, dts_registry, upload, rules=rules)
+                    self.localize_data(remote_locations, rules=rules)
+                    self.transfer_dts(dts_locations, dts_registry, rules=rules)
             Logger.success('Finished localization of remote data', task_name=self.task_name)
         except BaseException as e:
             Logger.fail('Localization of remote data failed due to exception: %s' % e.message, task_name=self.task_name)
@@ -373,7 +374,7 @@ class InputDataTask:
         trimmed_suffix = suffix[1:] if suffix.startswith('/') else suffix
         return trimmed_prefix + trimmed_suffix
 
-    def transfer_dts(self, dts_locations, dts_registry, upload, rules=None):
+    def transfer_dts(self, dts_locations, dts_registry, rules=None):
         grouped_paths = {}
         for path in dts_locations:
             if path.prefix not in grouped_paths:
@@ -385,28 +386,29 @@ class InputDataTask:
             dts_url = dts_registry[prefix]
             Logger.info('Uploading {} paths using DTS service {}'.format(len(paths), dts_url),  self.task_name)
             dts_client = DataTransferServiceClient(dts_url, self.token, self.api_url, self.token, 10)
-            dts_client.transfer_data([self.create_dts_path(path, upload, rules) for path in paths], self.task_name)
+            dts_client.transfer_data([self.create_dts_path(path, rules) for path in paths], self.task_name)
 
-    def create_dts_path(self, path, upload, rules):
-        return LocalToS3(path.path, path.cloud_path, rules) if upload else S3ToLocal(path.cloud_path, path.path, rules)
+    def create_dts_path(self, path, rules):
+        return LocalToS3(path.path, path.cloud_path, rules) if self.is_upload \
+            else S3ToLocal(path.cloud_path, path.path, rules)
 
-    def localize_data(self, remote_locations, upload, rules=None):
+    def localize_data(self, remote_locations, rules=None):
         cluster = Cluster.build_cluster(self.api, self.task_name)
         for location in remote_locations:
             for path in location.paths:
-                source, destination = self.get_local_paths(path, upload)
-                self.perform_transfer(path, source, destination, cluster, upload, rules=rules)
+                source, destination = self.get_local_paths(path, self.is_upload)
+                self.perform_transfer(path, source, destination, cluster, rules=rules)
 
-    def perform_transfer(self, path, source, destination, cluster, upload, rules=None):
+    def perform_transfer(self, path, source, destination, cluster, rules=None):
         Logger.info('Uploading files from {} to {}'.format(source, destination), self.task_name)
         if path.type == PathType.HTTP_OR_FTP or cluster is None or self.is_file(source):
-            if upload or self.rules is None:
+            if self.is_upload or self.rules is None:
                 S3Bucket().pipe_copy(source, destination, TRANSFER_ATTEMPTS)
             else:
                 S3Bucket().pipe_copy_with_rules(source, destination, TRANSFER_ATTEMPTS, self.rules)
         else:
             common_folder = os.path.join(os.environ['SHARED_WORK_FOLDER'], 'transfer')
-            applied_rules = None if upload else rules
+            applied_rules = None if self.is_upload else rules
             chunks = self.split_source_into_chunks(cluster, source, destination, common_folder, applied_rules)
             transfer_pool = Pool(len(chunks))
             transfer_pool.map(transfer_async, chunks)
@@ -507,7 +509,7 @@ def main():
     if not bucket and 'CP_TRANSFER_BUCKET' in os.environ:
         bucket = os.environ['CP_TRANSFER_BUCKET']
     InputDataTask(args.input_dir, args.common_dir, args.analysis_dir,
-                  args.task, bucket, args.report_file, args.storage_rules, upload).run(upload)
+                  args.task, bucket, args.report_file, args.storage_rules, upload).run()
 
 
 if __name__ == '__main__':
