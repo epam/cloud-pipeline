@@ -19,7 +19,7 @@ from utils.pipeline_utils import get_log_filename
 from ..utils.assertions_utils import *
 from ..utils.cloud.utilities import *
 from ..utils.file_utils import *
-from ..utils.tag_assertion_utils import compare_tags
+from ..utils.tag_assertion_utils import assert_tags_listing
 from ..utils.utilities_for_test import *
 
 
@@ -336,8 +336,7 @@ class TestCopyWithFiles(object):
             destination = "cp://{}/{}".format(self.bucket_name, file_name)
             pipe_storage_cp(source, destination, tags=[tag1, tag2])
             assert object_exists(self.bucket_name, file_name)
-            actual_tags = list_object_tags(self.bucket_name, file_name)
-            compare_tags('aws get-object-tagging', [tag1, tag2], actual_tags)
+            assert_tags_listing(destination, [tag1, tag2])
             pipe_storage_rm(destination)
             assert not object_exists(self.bucket_name, file_name)
         except AssertionError as e:

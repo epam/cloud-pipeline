@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ def clean_test_data(path):
         else:
             shutil.rmtree(path)
     except Exception as e:
-        logging.error('Filed to delete data from %s' % path, e)
+        logging.error('Filed to delete data from %s. Error: %s' % (path, e.message))
 
 
 def create_test_folder(path):
