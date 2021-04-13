@@ -82,7 +82,7 @@ public class CloudPipelineAPIClient {
     }
 
     public void upsertDataStorageTags(final Long id, final DataStorageTagUpsertBatchRequest request) {
-        QueryUtils.execute(cloudPipelineAPI.upsertDataStorageTags(id, request));
+        executor.execute(cloudPipelineAPI.upsertDataStorageTags(id, request));
     }
 
     public List<DataStorageTag> loadDataStorageTags(final Long id, final DataStorageTagLoadBatchRequest request) {
