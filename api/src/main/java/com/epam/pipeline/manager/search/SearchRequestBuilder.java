@@ -69,6 +69,8 @@ public class SearchRequestBuilder {
     private static final String SIZE_FIELD = "size";
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
+    private static final Set<Character> UNSUPPORTED_SPECIAL_ES_QUERY_CHARACTERS =
+        new HashSet<>(Arrays.asList('\\', '!', ':', '^', '[', ']', '{', '}', '?', '&', '/'));
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -271,8 +273,7 @@ public class SearchRequestBuilder {
         final StringBuilder sb = new StringBuilder();
         for (int i = 0; i < string.length(); i++) {
             final char c = string.charAt(i);
-            if (c == '\\' || c == '!' || c == ':' || c == '^' || c == '[' || c == ']' || c == '{' || c == '}'
-                || c == '?' || c == '&' || c == '/') {
+            if (UNSUPPORTED_SPECIAL_ES_QUERY_CHARACTERS.contains(c)) {
                 sb.append('\\');
             }
             sb.append(c);
