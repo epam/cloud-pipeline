@@ -9,6 +9,7 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteAllBatchRequ
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertBatchRequest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -46,6 +47,21 @@ public class DataStorageTagBatchController extends AbstractRestController {
     public Result insert(@PathVariable(value = ID) final Long id,
                          @RequestBody final DataStorageTagInsertBatchRequest request) {
         dataStorageTagBatchApiService.insert(id, request);
+        return Result.success();
+    }
+
+    @RequestMapping(value = "/datastorage/{id}/tags/batch/upsert", method = RequestMethod.PUT)
+    @ResponseBody
+    @ApiOperation(
+            value = "Upserts data storage object tags overriding already existing ones.",
+            notes = "Upserts data storage object tags overriding already existing ones.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result upsert(@PathVariable(value = ID) final Long id,
+                         @RequestBody final DataStorageTagUpsertBatchRequest request) {
+        dataStorageTagBatchApiService.upsert(id, request);
         return Result.success();
     }
 

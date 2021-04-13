@@ -44,6 +44,7 @@ import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -75,6 +76,10 @@ public class CloudPipelineAPIClient {
 
     public void insertDataStorageTags(final Long id, final DataStorageTagInsertBatchRequest request) {
         QueryUtils.execute(cloudPipelineAPI.insertDataStorageTags(id, request));
+    }
+
+    public void upsertDataStorageTags(final Long id, final DataStorageTagUpsertBatchRequest request) {
+        QueryUtils.execute(cloudPipelineAPI.upsertDataStorageTags(id, request));
     }
 
     public List<DataStorageTag> loadDataStorageTags(final Long id, final DataStorageTagLoadBatchRequest request) {
