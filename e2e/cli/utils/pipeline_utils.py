@@ -165,6 +165,14 @@ def run_tool(*args):
 
 
 def run_pipe(pipeline_name, *args):
+    return pipe_run(pipeline_name, True, *args)
+
+
+def run_pipe_with_reassign(pipeline_name, *args):
+    return pipe_run(pipeline_name, False, *args)
+
+
+def pipe_run(pipeline_name, disable_reassign, *args):
     command = ['pipe', 'run', '--pipeline', pipeline_name, '-y']
 
     instance_type = os.environ.get('CP_TEST_INSTANCE_TYPE')
@@ -180,7 +188,6 @@ def run_pipe(pipeline_name, *args):
     for arg in args:
         command.append(arg)
 
-    disable_reassign = _str_to_bool(os.environ.get('CP_TEST_DISABLE_NODE_REASSIGN', 'True'))
     if disable_reassign:
         command.append("--CP_CREATE_NEW_NODE")
         command.append("true")
@@ -201,6 +208,11 @@ def run_pipe(pipeline_name, *args):
     if not run_id:
         raise RuntimeError('RunID was not found')
     return run_id, status
+
+
+def get_reassign_node_type():
+    default_instance_type = os.environ.get('CP_TEST_INSTANCE_TYPE')
+    return os.environ.get('CP_TEST_REASSIGN_INSTANCE_TYPE', default_instance_type)
 
 
 def stop_pipe(run_id):
@@ -512,7 +524,3 @@ def get_log_filename():
     if 'RESULTS_DIR' in os.environ:
         return '%s/tests.log' % os.environ['RESULTS_DIR']
     return 'tests.log'
-
-
-def _str_to_bool(input_value):
-    return input_value.lower() in ("true", "t")

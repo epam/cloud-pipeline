@@ -33,6 +33,7 @@ class TestNodeReassign(object):
     second_run_id = None
     state = FailureIndicator()
     test_case = 'TC-SCALING-2'
+    instance_type = get_reassign_node_type()
 
     @classmethod
     def setup_class(cls):
@@ -43,7 +44,7 @@ class TestNodeReassign(object):
         logging.info("Pipeline {} with ID {} created.".format(pipeline_name, cls.pipeline_id))
 
         try:
-            run_id = run_pipe(pipeline_name, "-id", "16")[0]
+            run_id = run_pipe(pipeline_name, "-id", "16", "-it", cls.instance_type)[0]
             cls.first_run_id = run_id
             logging.info("Pipeline run with ID {}.".format(cls.first_run_id))
             wait_for_node_up(run_id, MAX_REP_COUNT)
@@ -59,7 +60,7 @@ class TestNodeReassign(object):
             logging.info("Pipeline {} stopped.".format(cls.first_run_id))
             wait_for_end_of_job(node_name, MAX_REP_COUNT)
 
-            run_id = run_pipe(pipeline_name, "-id", "16")[0]
+            run_id = run_pipe_with_reassign(pipeline_name, "-id", "16", "-it", cls.instance_type)[0]
             cls.second_run_id = run_id
             logging.info("Pipeline {} launched".format(run_id))
             node_state = wait_for_node_up(run_id, MAX_REP_COUNT)
