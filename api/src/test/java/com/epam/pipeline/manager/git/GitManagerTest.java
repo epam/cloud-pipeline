@@ -59,6 +59,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -659,7 +660,8 @@ public class GitManagerTest extends AbstractManagerTest {
 
     private String encodeUrlPath(final String filePath) {
         try {
-            return URLEncoder.encode(filePath, "UTF8");
+            return URLEncoder.encode(filePath, StandardCharsets.UTF_8.toString())
+                    .replace(GitlabClient.DOT_CHAR, GitlabClient.DOT_CHAR_URL_ENCODING_REPLACEMENT);
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeIOException(e.getMessage());
         }

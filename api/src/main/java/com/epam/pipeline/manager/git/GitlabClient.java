@@ -99,8 +99,8 @@ public class GitlabClient {
     private static final String PUBLIC_VISIBILITY = "public";
     public static final String NEW_LINE = "\n";
     public static final long MAINTAINER = 40L;
-    private static final String DOT_CHAR = ".";
-    private static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
+    public static final String DOT_CHAR = ".";
+    public static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -340,8 +340,12 @@ public class GitlabClient {
         if (StringUtils.isBlank(projectId)) {
             projectId = makeProjectId(namespace, projectName);
         }
-        GitFile gitFile = execute(gitLabApi.getFiles(projectId, path, revision));
-        return Base64.getDecoder().decode(gitFile.getContent());
+        try {
+            GitFile gitFile = execute(gitLabApi.getFiles(projectId, encodePath(path), revision));
+            return Base64.getDecoder().decode(gitFile.getContent());
+        } catch (IOException e) {
+            throw new GitClientException("Error receiving file content!", e);
+        }
     }
 
     public byte[] getTruncatedFileContents(final String path, final String revision,
