@@ -34,6 +34,7 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -43,6 +44,7 @@ import retrofit2.Response;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -172,16 +174,25 @@ public class GitReaderClient {
                 .dateFrom(filter.getDateFrom())
                 .dateTo(filter.getDateTo())
                 .ref(filter.getRef())
-                .pathMasks(
-                        ListUtils.emptyIfNull(filter.getExtensions())
-                                .stream()
-                                .map(ext -> getPathMask(filter.getPath(), ext))
-                                .collect(Collectors.toList())
-                ).build();
+                .pathMasks(getPathMasks(filter))
+                .build();
+    }
+
+    private List<String> getPathMasks(GitCommitsFilter filter) {
+        if (StringUtils.isBlank(filter.getPath()) && CollectionUtils.isEmpty(filter.getExtensions())) {
+            return null;
+        } else if (CollectionUtils.isEmpty(filter.getExtensions())) {
+            return Collections.singletonList(filter.getPath());
+        }
+        return ListUtils.emptyIfNull(filter.getExtensions())
+                .stream().map(ext -> getPathMask(filter.getPath(), ext))
+                .collect(Collectors.toList());
     }
 
     private String getPathMask(final String path, final String ext) {
-        if (!path.endsWith("/")){
+        if (path == null) {
+            return "*." + ext;
+        }else if (!path.endsWith("/") && StringUtils.isNotBlank(path)){
             return path;
         }
         return Paths.get(path, "*." + ext).toString();
