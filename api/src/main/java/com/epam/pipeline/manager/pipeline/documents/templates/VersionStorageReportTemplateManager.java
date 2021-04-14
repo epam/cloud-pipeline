@@ -27,8 +27,6 @@ import com.epam.pipeline.manager.pipeline.documents.templates.processors.version
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.DiffUtils;
-import com.github.difflib.patch.AbstractDelta;
-import com.github.difflib.unifieddiff.UnifiedDiffReader;
 import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
@@ -82,12 +80,10 @@ public class VersionStorageReportTemplateManager {
         }
     }
 
-    private GitDiff fetchAndNormalizeDiffs(final Long pipelineId, final GitCommitsFilter reportFilters) {
+    protected GitDiff fetchAndNormalizeDiffs(final Long pipelineId, final GitCommitsFilter reportFilters) {
         final DiffParser diffParser = new UnifiedDiffParser();
         final GitReaderDiff gitReaderDiff = gitManager.logRepositoryCommitDiffs(
-                pipelineId,
-                true,
-                reportFilters
+                pipelineId, true, reportFilters
         );
         return GitDiff.builder()
                 .entries(

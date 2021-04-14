@@ -168,7 +168,7 @@ public class GitReaderClient {
         return new GitReaderApiBuilder(gitReaderUrlRoot).build();
     }
 
-    public GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter) {
+    public static GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter) {
         return GitReaderLogRequestFilter.builder()
                 .authors(filter.getAuthors())
                 .dateFrom(filter.getDateFrom())
@@ -178,7 +178,7 @@ public class GitReaderClient {
                 .build();
     }
 
-    private List<String> getPathMasks(GitCommitsFilter filter) {
+    private static List<String> getPathMasks(GitCommitsFilter filter) {
         if (StringUtils.isBlank(filter.getPath()) && CollectionUtils.isEmpty(filter.getExtensions())) {
             return null;
         } else if (CollectionUtils.isEmpty(filter.getExtensions())) {
@@ -189,7 +189,7 @@ public class GitReaderClient {
                 .collect(Collectors.toList());
     }
 
-    private String getPathMask(final String path, final String ext) {
+    private static String getPathMask(final String path, final String ext) {
         if (path == null) {
             return "*." + ext;
         }else if (!path.endsWith("/") && StringUtils.isNotBlank(path)){

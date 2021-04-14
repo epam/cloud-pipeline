@@ -48,8 +48,14 @@ public class DiffUtils {
             } else if (line.contains("Binary files")) {
                 final Matcher matcher = BINARY_PATTERN.matcher(line);
                 if (matcher.matches()) {
-                    oldFile = matcher.group(1).replace("^a/", "");
-                    newFile = matcher.group(2).replace("^b/", "");
+                    oldFile = matcher.group(1).replace("a/", "");
+                    if (oldFile.startsWith("a/")) {
+                        oldFile =oldFile.replace("a/", "");
+                    }
+                    newFile = matcher.group(2).replace("b/", "");
+                    if (newFile.startsWith("b/")) {
+                        newFile = newFile.replace("b/", "");
+                    }
                 }
             }
         }
