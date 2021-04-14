@@ -100,9 +100,9 @@ class GitManager(object):
 
     def get_diff(self, repo, commit, unified_lines, filters):
         try:
-            return repo.git.diff("-U{}".format(unified_lines), commit.sha, commit.sha + "~1", "--", filters.path_masks)
+            return repo.git.diff("-U{}".format(unified_lines), commit.sha + "~1", commit.sha, "--", filters.path_masks)
         except GitCommandError:
-            return repo.git.diff("-U{}".format(unified_lines), commit.sha, "4b825dc642cb6eb9a060e54bf8d69288fbee4904", "--", filters.path_masks)
+            return repo.git.diff("-U{}".format(unified_lines), "4b825dc642cb6eb9a060e54bf8d69288fbee4904", commit.sha, "--", filters.path_masks)
 
     def list_tree(self, repo, path, ref, page, page_size):
         result = []
