@@ -61,7 +61,7 @@ public class FileListTableExtractor implements ReportDataExtractor {
             case AUTHOR:
                 return fileAndCommit.getValue().getAuthor();
             case DATE_CHANGED:
-                return fileAndCommit.getValue().getCommitterDate().toString();
+                return DATE_FORMAT.format(fileAndCommit.getValue().getAuthorDate());
             case REVISION:
                 return fileAndCommit.getValue().getCommit().substring(0, 9);
             case MESSAGE:

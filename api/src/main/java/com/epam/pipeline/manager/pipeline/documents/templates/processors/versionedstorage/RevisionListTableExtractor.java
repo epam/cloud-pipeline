@@ -13,12 +13,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class RevisionListTableExtractor implements ReportDataExtractor{
+public class RevisionListTableExtractor implements ReportDataExtractor {
 
     private final static Pattern PATTERN = Pattern.compile("\\{revision_history_table:?(.*)}");
 
@@ -58,7 +57,7 @@ public class RevisionListTableExtractor implements ReportDataExtractor{
             case AUTHOR:
                 return fileAndCommit.getValue().getAuthor();
             case DATE_CHANGED:
-                return fileAndCommit.getValue().getCommitterDate().toString();
+                return DATE_FORMAT.format(fileAndCommit.getValue().getAuthorDate());
             case REVISION:
                 return fileAndCommit.getValue().getCommit().substring(0, 9);
             case MESSAGE:
