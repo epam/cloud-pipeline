@@ -39,6 +39,7 @@ python ${PYINSTALLER_PATH}/pyinstaller/pyinstaller.py -y --clean \
   --distpath ${FSBROWSER_DIST_PATH} \
   --runtime-tmpdir ${FSBROWSER_RUNTIME_TMP_DIR} \
   --add-data ${FSBROWSER_SOURCES_DIR}/fsbrowser:fsbrowser \
+  --add-data /usr/local/lib/python3.6/site-packages/flasgger:flasgger \
   --hidden-import=pygit2 \
   --hidden-import=requests \
   --hidden-import=pkg_resources.py2_warn ${FSBROWSER_SOURCES_DIR}/fsbrowser/app.py

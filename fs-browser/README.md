@@ -286,9 +286,9 @@ Response example:
 ```
 {    
     "payload": [
-      { "file": "ralative/file_name1"; "status": "modified"},
-      { "file": "ralative/file_name2"; "status": "created"},
-      { "file": "ralative/file_name3"; "status": "deleted"}
+      { "path": "ralative/file_name1"; "status": "modified"},
+      { "path": "ralative/file_name2"; "status": "created"},
+      { "path": "ralative/file_name3"; "status": "deleted"}
     ],
     "status":"OK"
 }
