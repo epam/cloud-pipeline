@@ -991,7 +991,7 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
     "CONFIGURATION": "cp-run-configuration",
     "PIPELINE": "cp-pipeline",
     "ISSUE": "cp-issue",
-    "PIPELINE_CODE": "cp-code*"
+    "PIPELINE_CODE": "cp-pipeline-code*"
 }
 EOF
 
