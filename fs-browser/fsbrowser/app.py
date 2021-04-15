@@ -605,6 +605,8 @@ def commit_versioned_storage(vs_id):
       - name: files
         in: query
         type: array
+        items:
+            type: string
         required: false
     definitions:
       Object:
@@ -625,7 +627,7 @@ def commit_versioned_storage(vs_id):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/vs/<vs_id>/files', methods=['GET'])
+@app.route('/vs/<vs_id>/files', methods=['POST'])
 @auth.login_required
 def save_versioned_storage_file(vs_id):
     """
