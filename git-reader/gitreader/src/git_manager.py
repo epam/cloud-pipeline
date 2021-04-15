@@ -102,6 +102,8 @@ class GitManager(object):
         try:
             return repo.git.diff("-U{}".format(unified_lines), commit.sha + "~1", commit.sha, "--", filters.path_masks)
         except GitCommandError:
+            # If can't get diff with sha~1 - it should be the first one commit, let's get changes from
+            # '4b825dc642cb6eb9a060e54bf8d69288fbee4904' - the empty tree SHA and this commit
             return repo.git.diff("-U{}".format(unified_lines), "4b825dc642cb6eb9a060e54bf8d69288fbee4904", commit.sha, "--", filters.path_masks)
 
     def list_tree(self, repo, path, ref, page, page_size):

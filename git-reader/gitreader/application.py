@@ -23,6 +23,7 @@ from gitreader.src.git_manager import GitManager
 from gitreader.src.model.git_search_filter import GitSearchFilter
 
 from flasgger import Swagger
+from flasgger import swag_from
 
 app = Flask(__name__)
 swagger = Swagger(app)
@@ -46,67 +47,8 @@ def error(message):
 
 
 @app.route('/git/<path:repo>/ls_tree')
+@swag_from('flasgger-doc/list-tree.yml')
 def git_list_tree(repo):
-    """Lists files via specified path on the specific ref(default `HEAD`).
-    `repo` - the path to git repo relative to `git_root`.
-       ---
-       parameters:
-         - name: repo
-           in: path
-           type: string
-           required: true
-         - name: path
-           in: query
-           type: string
-           required: false
-         - name: page
-           in: query
-           type: integer
-           required: false
-           default: 0
-         - name: page_size
-           in: query
-           type: integer
-           required: false
-           default: 20
-         - name: ref
-           in: query
-           type: string
-           required: false
-           default: HEAD
-       definitions:
-         Listing:
-           type: object
-           properties:
-             git_objects:
-               type: array
-               items:
-                 $ref: '#/definitions/GitObject'
-             page:
-               type: integer
-             page_size:
-               type: integer
-             max_page:
-               type: integer
-         GitObject:
-           type: object
-           properties:
-               git_id:
-                 type: string
-               name:
-                 type: string
-               git_type:
-                 type: string
-               path:
-                 type: string
-               mode:
-                 type: string
-       responses:
-         200:
-           description: A listing of objects (files and dirs) with metadata and paging info
-           schema:
-             $ref: '#/definitions/Listing'
-       """
     manager = app.config['gitmanager']
     try:
         path, page, page_size, ref = parse_url_params()
@@ -118,99 +60,8 @@ def git_list_tree(repo):
 
 
 @app.route('/git/<path:repo>/logs_tree',  methods=["GET"])
+@swag_from('flasgger-doc/logs-tree.yml')
 def git_logs_tree(repo):
-    """Lists files via specified path on the specific ref(default `HEAD`) plus adds additional info about last commit.
-        `repo` - the path to git repo relative to `git_root`.
-           ---
-           parameters:
-             - name: repo
-               in: path
-               type: string
-               required: true
-             - name: path
-               in: query
-               type: string
-               required: false
-             - name: page
-               in: query
-               type: integer
-               required: false
-               default: 0
-             - name: page_size
-               in: query
-               type: integer
-               required: false
-               default: 20
-             - name: ref
-               in: query
-               type: string
-               required: false
-               default: HEAD
-           definitions:
-             GitObjectMetadataListing:
-               type: object
-               properties:
-                 git_object_metadatas:
-                   type: array
-                   items:
-                     $ref: '#/definitions/GitObjectMetadata'
-                 page:
-                   type: integer
-                 page_size:
-                   type: integer
-                 max_page:
-                   type: integer
-             GitObjectMetadata:
-               type: object
-               properties:
-                   git_object:
-                     type: object
-                     $ref: '#/definitions/GitObject'
-                   git_commit:
-                     type: object
-                     $ref: '#/definitions/GitCommit'
-             GitObject:
-               type: object
-               properties:
-                   git_id:
-                     type: string
-                   name:
-                     type: string
-                   git_type:
-                     type: string
-                   path:
-                     type: string
-                   mode:
-                     type: string
-             GitCommit:
-               type: object
-               properties:
-                 commit:
-                   type: string
-                 parent_shas:
-                   type: array
-                   items:
-                     type: string
-                 author_date:
-                   type: string
-                 author:
-                   type: string
-                 author_email:
-                   type: string
-                 committer_date:
-                   type: string
-                 committer:
-                   type: string
-                 committer_email:
-                   type: string
-                 commit_message:
-                   type: string
-           responses:
-             200:
-               description: A listing of objects (files and dirs) with last commit info and paging info
-               schema:
-                 $ref: '#/definitions/GitObjectMetadataListing'
-           """
     manager = app.config['gitmanager']
     path, page, page_size, ref = parse_url_params()
     try:
@@ -221,92 +72,8 @@ def git_logs_tree(repo):
         return jsonify(error(e.__str__()))
 
 @app.route('/git/<path:repo>/logs_tree',  methods=["POST"])
+@swag_from('flasgger-doc/logs-tree-by-path.yml')
 def git_logs_tree_by_paths(repo):
-    """Lists files via specified path on the specific ref(default `HEAD`) plus adds additional info about last commit.
-        `repo` - the path to git repo relative to `git_root`.
-           ---
-           parameters:
-             - name: repo
-               in: path
-               type: string
-               required: true
-             - name: ref
-               in: query
-               type: string
-               required: false
-               default: HEAD
-             - name: paths
-               in: request
-               type: object
-               properties:
-                   paths:
-                     type: array
-                     items: strings
-           definitions:
-             GitObjectMetadataListing:
-               type: object
-               properties:
-                 listing:
-                   type: array
-                   items:
-                     $ref: '#/definitions/GitObjectMetadata'
-                 page:
-                   type: integer
-                 page_size:
-                   type: integer
-                 has_next:
-                   type: boolean
-             GitObjectMetadata:
-               type: object
-               properties:
-                   git_object:
-                     type: object
-                     $ref: '#/definitions/GitObject'
-                   git_commit:
-                     type: object
-                     $ref: '#/definitions/GitCommit'
-             GitObject:
-               type: object
-               properties:
-                   git_id:
-                     type: string
-                   name:
-                     type: string
-                   git_type:
-                     type: string
-                   path:
-                     type: string
-                   mode:
-                     type: string
-             GitCommit:
-               type: object
-               properties:
-                 commit:
-                   type: string
-                 parent_shas:
-                   type: array
-                   items:
-                     type: string
-                 author_date:
-                   type: string
-                 author:
-                   type: string
-                 author_email:
-                   type: string
-                 committer_date:
-                   type: string
-                 committer:
-                   type: string
-                 committer_email:
-                   type: string
-                 commit_message:
-                   type: string
-           responses:
-             200:
-               description: A listing of objects (files and dirs) with last commit info and paging info
-               schema:
-                 $ref: '#/definitions/GitObjectMetadataListing'
-           """
     manager = app.config['gitmanager']
     _, _, _, ref = parse_url_params()
     try:
@@ -322,73 +89,8 @@ def git_logs_tree_by_paths(repo):
 
 
 @app.route('/git/<path:repo>/commits', methods=["POST"])
+@swag_from('flasgger-doc/list-commits.yml')
 def git_list_commits(repo):
-    """Returns commits are related to specific path, author, dates.
-
-               ---
-               parameters:
-                 - name: repo
-                   in: path
-                   type: string
-                   required: true
-                 - name: filters
-                   in: request
-                   type: object
-                   properties:
-                       authors:
-                         type: array
-                         items: string
-                       date_from:
-                         type: string
-                       date_to:
-                         type: string
-                       paths:
-                         type: array
-                         items: string
-                   required: false
-               definitions:
-                CommitListing:
-                   type: object
-                   properties:
-                     listing:
-                       type: array
-                       items:
-                         $ref: '#/definitions/GitCommit'
-                     page:
-                       type: integer
-                     page_size:
-                       type: integer
-                     has_next:
-                       type: boolean
-                GitCommit:
-                  type: object
-                  properties:
-                      commit:
-                        type: string
-                      parent_shas:
-                        type: array
-                        items:
-                          type: string
-                      author_date:
-                        type: string
-                      author:
-                        type: string
-                      author_email:
-                        type: string
-                      committer_date:
-                        type: string
-                      committer:
-                        type: string
-                      committer_email:
-                        type: string
-                      commit_message:
-                        type: string
-               responses:
-                 200:
-                   description: A listing of commits filtered by dates, authors, paths
-                   schema:
-                     $ref: '#/definitions/CommitListing'
-               """
     manager = app.config['gitmanager']
     try:
         filters = load_filters_from_request(request)
@@ -401,93 +103,8 @@ def git_list_commits(repo):
 
 
 @app.route('/git/<path:repo>/diff', methods=["POST"])
+@swag_from('flasgger-doc/diff-report.yml')
 def git_diff_report(repo):
-    """Returns commits and its diffs are related to specific path, author, dates.
-
-                   ---
-                   parameters:
-                     - name: repo
-                       in: path
-                       type: string
-                       required: true
-                     - name: include_diff
-                       in: query
-                       type: boolean
-                       required: false
-                       default: true
-                     - name: filters
-                       in: request
-                       type: object
-                       properties:
-                           authors:
-                             type: array
-                             items: string
-                           date_from:
-                             type: string
-                           date_to:
-                             type: string
-                           path_masks:
-                             type: array
-                             items: string
-                       required: false
-                   definitions:
-                    DiffListing:
-                       type: object
-                       properties:
-                         entries:
-                           type: array
-                           items:
-                             $ref: '#/definitions/DiffEntry'
-                         filters:
-                           type: object
-                           properties:
-                             authors:
-                               type: array
-                               items: string
-                             date_from:
-                               type: string
-                             date_to:
-                               type: string
-                             path_masks:
-                               type: array
-                               items: string
-                    DiffEntry:
-                      type: object
-                      properties:
-                          commit:
-                            type: object
-                            $ref: '#/definitions/GitCommit'
-                          diff:
-                            type: string
-                    GitCommit:
-                       type: object
-                       properties:
-                         commit:
-                           type: string
-                         parent_shas:
-                           type: array
-                           items:
-                             type: string
-                         author_date:
-                           type: string
-                         author:
-                           type: string
-                         author_email:
-                           type: string
-                         committer_date:
-                           type: string
-                         committer:
-                           type: string
-                         committer_email:
-                           type: string
-                         commit_message:
-                           type: string
-                   responses:
-                     200:
-                       description: A listing of commits and its diffs filtered by dates, authors, paths
-                       schema:
-                         $ref: '#/definitions/DiffListing'
-                   """
     manager = app.config['gitmanager']
     try:
         filters = load_filters_from_request(request)
@@ -505,57 +122,8 @@ def git_diff_report(repo):
 
 
 @app.route('/git/<path:repo>/diff/<commit>', methods=["GET"])
+@swag_from('flasgger-doc/diff-by-commit.yml')
 def git_diff_by_commit(repo, commit):
-    """Returns commits and its diffs are related to specific path, author, dates.
-
-                   ---
-                   parameters:
-                     - name: repo
-                       in: path
-                       type: string
-                       required: true
-                     - name: commit
-                       in: request
-                       type: string
-                       required: true
-                   definitions:
-                    DiffEntry:
-                      type: object
-                      properties:
-                          commit:
-                            type: object
-                            $ref: '#/definitions/GitCommit'
-                          diff:
-                            type: string
-                    GitCommit:
-                       type: object
-                       properties:
-                         commit:
-                           type: string
-                         parent_shas:
-                           type: array
-                           items:
-                             type: string
-                         author_date:
-                           type: string
-                         author:
-                           type: string
-                         author_email:
-                           type: string
-                         committer_date:
-                           type: string
-                         committer:
-                           type: string
-                         committer_email:
-                           type: string
-                         commit_message:
-                           type: string
-                   responses:
-                     200:
-                       description: The diff for specified commit
-                       schema:
-                         $ref: '#/definitions/DiffEntry'
-                   """
     manager = app.config['gitmanager']
     try:
         if request.args.get('path'):

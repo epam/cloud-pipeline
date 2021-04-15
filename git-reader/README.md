@@ -119,29 +119,25 @@ Response example:
 "payload": {
         "listing": [
             {
-                "author": "******",
-                "author_email": "******",
-                "commit": "******",
-                "commit_date": "2020-11-18 14:19:53 +0300",
-                "commit_message": "******",
-                "id": "README.md",
-                "mode": "100644",
-                "name": "README.md",
-                "path": "README.md",
-                "type": "blob"
+                "commit": {
+                    "commit": "******",
+                    "author": "******",
+                    "author_email": "******",
+                    "author_date": "2020-11-18 14:19:53 +0300",
+                    "committer": "******",
+                    "committer_email": "******",
+                    "committer_date": "******",
+                    "commit_message": "******"
+                },
+                "git_object": {
+                    "id": "README.md",
+                    "mode": "100644",
+                    "name": "README.md",
+                    "path": "README.md",
+                    "type": "blob"
+                }
             },
-            {
-                "author": "******",
-                "author_email": "******",
-                "commit": "******",
-                "commit_date": "2021-03-09 23:08:24 +0300",
-                "commit_message": "******",
-                "id": "api",
-                "mode": "040000",
-                "name": "api",
-                "path": "api",
-                "type": "tree"
-            }
+            ...
         ],
         "max_page": 1,
         "page": 0,
@@ -174,42 +170,24 @@ Response example:
     "payload": {
         "has_next": false,
         "listing": [
-            {
-                "author": "******",
-                "author_email": "******",
-                "commit": "******",
-                "commit_date": "2021-03-09 23:08:24 +0300",
-                "commit_message": "******",
-                "id": "api",
-                "mode": "040000",
-                "name": "api",
-                "path": "api",
-                "type": "tree"
-            },
-            {
-                "author": "******",
-                "author_email": "******",
-                "commit": "******",
-                "commit_date": "2020-11-18 14:19:53 +0300",
-                "commit_message": "******",
-                "id": "README.md",
-                "mode": "100644",
-                "name": "README.md",
-                "path": "README.md",
-                "type": "blob"
-            },
-            {
-                "author": "******",
-                "author_email": "******",
-                "commit": "******",
-                "commit_date": "2021-01-28 16:36:28 +0300",
-                "commit_message": "******",
-                "id": "config/checkstyle",
-                "mode": "040000",
-                "name": "checkstyle",
-                "path": "config/checkstyle",
-                "type": "tree"
-            }
+             "commit": {
+                    "commit": "******",
+                    "author": "******",
+                    "author_email": "******",
+                    "author_date": "2020-11-18 14:19:53 +0300",
+                    "committer": "******",
+                    "committer_email": "******",
+                    "committer_date": "******",
+                    "commit_message": "******"
+                },
+                "git_object": {
+                    "id": "README.md",
+                    "mode": "100644",
+                    "name": "README.md",
+                    "path": "README.md",
+                    "type": "blob"
+                },
+                ...
         ],
         "page": 0,
         "page_size": 3
@@ -244,17 +222,23 @@ Response example:
 "payload": {
         "listing": [
             {
+                "commit": "******",
                 "author": "******",
                 "author_email": "******",
-                "commit": "******",
-                "commit_date": "2020-12-23 20:51:12 +0300",
+                "author_date": "2020-11-18 14:19:53 +0300",
+                "committer": "******",
+                "committer_email": "******",
+                "committer_date": "******",
                 "commit_message": "******"
             },
             {
+                "commit": "******",
                 "author": "******",
                 "author_email": "******",
-                "commit": "******",
-                "commit_date": "2020-01-27 13:54:20 +0300",
+                "author_date": "2020-11-18 14:19:53 +0300",
+                "committer": "******",
+                "committer_email": "******",
+                "committer_date": "******",
                 "commit_message": "******"
             }
         ],
@@ -265,6 +249,7 @@ Response example:
     "status": "OK"
 }
 ```
+
 - `POST` `/git/<path:repo>/diff` - Sends diff information for each commits for specific path, author, dates. 
 Request example:
 ```
@@ -296,20 +281,26 @@ Response example:
         "entries": [
             {
                 "commit": {
+                    "commit": "******",
                     "author": "******",
                     "author_email": "******",
-                    "commit": "******",
-                    "commit_date": "2020-12-23 20:51:12 +0300",
+                    "author_date": "2020-11-18 14:19:53 +0300",
+                    "committer": "******",
+                    "committer_email": "******",
+                    "committer_date": "******",
                     "commit_message": "******"
                 },
                 "diff":"*****"
             },
             {
                 "commit": {
+                    "commit": "******",
                     "author": "******",
                     "author_email": "******",
-                    "commit": "******",
-                    "commit_date": "2019-09-18 12:50:49 +0300",
+                    "author_date": "2020-11-18 14:19:53 +0300",
+                    "committer": "******",
+                    "committer_email": "******",
+                    "committer_date": "******",
                     "commit_message": "******"
                 },
                  "diff":"*****"
@@ -327,4 +318,38 @@ Response example:
 }
 }
 ```
+
+- `GET` `/git/<path:repo>/diff/<commit>` - Sends diff information for specific commit. 
+Request example:
+```
+curl http://127.0.0.1:8080/git/<path:repo>/diff/<commit-sha>
+```
+
+Possible params:
+
+- `unified_lines` - number of unified_lines to be shown in diff
+- `path` - path in the repo to filter out diff output by
+
+Response example:
+```
+{
+    "payload": {
+        "commit": {
+            "commit": "******",
+            "author": "******",
+            "author_email": "******",
+            "author_date": "2020-11-18 14:19:53 +0300",
+            "committer": "******",
+            "committer_email": "******",
+            "committer_date": "******",
+            "commit_message": "******"
+        },
+        "diff":"*****"
+    },
+    "status": "OK"
+}
+}
+```
+
+
 

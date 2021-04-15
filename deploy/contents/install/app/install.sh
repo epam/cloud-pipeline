@@ -203,9 +203,9 @@ CP_DOCKER_COMP_KUBE_NODE_NAME=${CP_DOCKER_COMP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE
 print_info "-> Assigning cloud-pipeline/cp-docker-comp to $CP_DOCKER_COMP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_DOCKER_COMP_KUBE_NODE_NAME" cloud-pipeline/cp-docker-comp="true" --overwrite
 
-# Allow to schedule Docker comp scanner to the master
+# Allow to schedule GitLab Reader scanner to the master
 CP_GITLAB_READER_NODE_NAME=${CP_GITLAB_READER_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
-print_info "-> Assigning cloud-pipeline/cp-docker-comp to $CP_GITLAB_READER_NODE_NAME"
+print_info "-> Assigning cloud-pipeline/cp-gitlab-reader to $CP_GITLAB_READER_NODE_NAME"
 kubectl label nodes "$CP_GITLAB_READER_NODE_NAME" cloud-pipeline/cp-gitlab-reader="true" --overwrite
 
 # Allow to schedule Clair scanner to the master
