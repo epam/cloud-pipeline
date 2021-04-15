@@ -69,7 +69,6 @@ public class SearchRequestBuilder {
     private static final String SIZE_FIELD = "size";
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
-    private static final int MAX_AGGREGATIONS_SIZE = 20;
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -259,7 +258,7 @@ public class SearchRequestBuilder {
 
     private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
         final TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(facet)
-                .size(MAX_AGGREGATIONS_SIZE)
+                .size(preferenceManager.getPreference(SystemPreferences.SEARCH_AGGS_MAX_COUNT))
                 .field(buildKeywordName(facet));
         searchSource.aggregation(aggregationBuilder);
     }
