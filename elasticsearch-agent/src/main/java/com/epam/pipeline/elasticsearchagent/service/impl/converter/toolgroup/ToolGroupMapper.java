@@ -41,6 +41,7 @@ public class ToolGroupMapper implements EntityMapper<ToolGroup> {
                     .field("id", toolGroup.getId())
                     .field("name", toolGroup.getName())
                     .field("registryId", toolGroup.getRegistryId())
+                    .field("parentId", toolGroup.getRegistryId())
                     .field("createdDate", parseDataToString(toolGroup.getCreatedDate()))
                     .field("description", toolGroup.getDescription());
 

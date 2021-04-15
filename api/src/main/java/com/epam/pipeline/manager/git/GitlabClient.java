@@ -354,8 +354,12 @@ public class GitlabClient {
         if (StringUtils.isBlank(projectId)) {
             projectId = makeProjectId(namespace, projectName);
         }
-        GitFile gitFile = execute(gitLabApi.getFiles(projectId, path, revision));
-        return Base64.getDecoder().decode(gitFile.getContent());
+        try {
+            GitFile gitFile = execute(gitLabApi.getFiles(projectId, encodePath(path), revision));
+            return Base64.getDecoder().decode(gitFile.getContent());
+        } catch (IOException e) {
+            throw new GitClientException("Error receiving file content!", e);
+        }
     }
 
     public byte[] getTruncatedFileContents(final String path, final String revision,

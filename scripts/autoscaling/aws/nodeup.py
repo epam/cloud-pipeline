@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -220,7 +220,7 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
     default_embedded_scripts = None
     default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
-        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE}
+        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None }
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
@@ -232,9 +232,10 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
         init_script = image_config.get("init_script", default_object["init_script"])
         embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
+        additional_spec = image_config.get("additional_spec", None)
         if fnmatch.fnmatch(instance_type, instance_mask):
             return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
-                     "embedded_scripts": embedded_scripts, "fs_type": fs_type}
+                     "embedded_scripts": embedded_scripts, "fs_type": fs_type, "additional_spec": additional_spec}
 
     return default_object
 
@@ -349,35 +350,35 @@ def run_id_filter(run_id):
 
 
 def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type,
-                 is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kube_client, pre_pull_images):
+                 is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kube_client, pre_pull_images, instance_additional_spec):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip,
                                             kubeadm_token, swap_size, pre_pull_images)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
-                                            user_data_script, num_rep, time_rep, swap_size, kube_client)
+                                            user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
-                                                num_rep, time_rep, swap_size, kube_client)
+                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec)
     return ins_id, ins_ip
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep,
-                           swap_size, kube_client):
+                           swap_size, kube_client, instance_additional_spec):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
-    additional_args = {}
+    additional_args = instance_additional_spec if instance_additional_spec else {}
     subnet_id = None
     if allowed_networks and len(allowed_networks) > 0:
         az_num = randint(0, len(allowed_networks)-1)
         az_name = allowed_networks.items()[az_num][0]
         subnet_id = allowed_networks.items()[az_num][1]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
-        additional_args = { 'SubnetId': subnet_id, 'SecurityGroupIds': get_security_groups(aws_region)}
+        additional_args.update({ 'SubnetId': subnet_id, 'SecurityGroupIds': get_security_groups(aws_region)})
     else:
         pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
-        additional_args = { 'SecurityGroupIds': get_security_groups(aws_region)}
+        additional_args.update({ 'SecurityGroupIds': get_security_groups(aws_region)})
     response = {}
     try:
         response = ec2.run_instances(
@@ -907,7 +908,7 @@ def exit_if_spot_unavailable(run_id, last_status):
 
 def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
-                       swap_size, kube_client):
+                       swap_size, kube_client, instance_additional_spec):
     pipe_log('Creating spot request')
 
     pipe_log('- Checking spot prices for current region...')
@@ -938,6 +939,9 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     else:
         pipe_log('- Networks list NOT found or cheapest zone can not be determined, default subnet in a random AZ will be used')
         specifications['SecurityGroupIds'] = get_security_groups(aws_region)
+
+    if instance_additional_spec:
+        specifications.update(instance_additional_spec)
 
     current_time = datetime.now(pytz.utc) + timedelta(seconds=10)
 
@@ -1217,6 +1221,7 @@ def main():
         api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
         api.session.verify = False
 
+        instance_additional_spec = None
         if not ins_img or ins_img == 'null':
             # Redefine default instance image if cloud metadata has specific rules for instance type
             allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
@@ -1225,6 +1230,9 @@ def main():
                                                                                                                                                   ami=allowed_instance["instance_mask_ami"],
                                                                                                                                                   instance_type=ins_type))
                 ins_img = allowed_instance["instance_mask_ami"]
+                instance_additional_spec = allowed_instance["additional_spec"]
+                if instance_additional_spec:
+                    pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
         else:
             pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
@@ -1236,7 +1244,7 @@ def main():
             api_url = os.environ["API"]
             api_token = os.environ["API_TOKEN"]
             ins_id, ins_ip = run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
-                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, api, pre_pull_images)
+                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, api, pre_pull_images, instance_additional_spec)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 

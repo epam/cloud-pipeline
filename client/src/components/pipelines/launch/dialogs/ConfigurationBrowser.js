@@ -32,14 +32,14 @@ import {
 
 import styles from './Browser.css';
 import roleModel from '../../../../utils/roleModel';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 @inject(({routing}, params) => ({
   tree: new FolderLoad(params.initialFolderId ? params.initialFolderId : null)
 }))
-
+@HiddenObjects.injectTreeFilter
 @observer
 export default class ConfigurationBrowser extends React.Component {
-
   static propTypes = {
     initialFolderId: PropTypes.number,
     visible: PropTypes.bool,
@@ -307,7 +307,7 @@ export default class ConfigurationBrowser extends React.Component {
         null,
         [],
         [ItemTypes.configuration],
-        this.filterConfigurations
+        this.props.hiddenObjectsTreeFilter(this.filterConfigurations)
       );
     }
     return (

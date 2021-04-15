@@ -40,6 +40,7 @@ import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import highlightText from '../../special/highlightText';
 import styles from './Browser.css';
 import UserName from '../../special/UserName';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const MAX_INLINE_METADATA_KEYS = 10;
 
@@ -49,6 +50,7 @@ const MAX_INLINE_METADATA_KEYS = 10;
   dataStorages
 })
 @roleModel.authenticationInfo
+@HiddenObjects.injectTreeFilter
 @inject(({pipelines, dataStorages}, params) => {
   let {browserLocation, onReloadTree} = params;
   browserLocation = browserLocation || 'pipelines';
@@ -92,7 +94,14 @@ export default class Folder extends localization.LocalizedReactComponent {
       } else {
         payload.pipelines = items;
       }
-      return generateTreeData(payload, true);
+      return generateTreeData(
+        payload,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        this.props.hiddenObjectsTreeFilter()
+      );
     }
     return [];
   }
@@ -375,7 +384,11 @@ export default class Folder extends localization.LocalizedReactComponent {
           <Input
             value={this.state.filter}
             onChange={this.onFilterChanged}
-            placeholder={isStorages ? 'Search storages' : `Search ${this.localizedString('pipeline')}s`}
+            placeholder={
+              isStorages
+                ? 'Search storages'
+                : `Search ${this.localizedString('pipeline')}s`
+            }
           />
         </Row>
         {this.renderContent()}

@@ -13,6 +13,8 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,26 @@ public class DataStorageTagBatchManager {
     }
 
     private DataStorageTag tagFrom(final DataStorageTagInsertRequest request) {
+        final DataStorageObject object = new DataStorageObject(request.getPath(), request.getVersion());
+        return new DataStorageTag(object, request.getKey(), request.getValue());
+    }
+
+    @Transactional
+    public List<DataStorageTag> upsert(final Long storageId, final DataStorageTagUpsertBatchRequest request) {
+        if (CollectionUtils.isEmpty(request.getRequests())) {
+            return Collections.emptyList();
+        }
+        final Optional<Long> root = getRoot(storageId);
+        if (!root.isPresent()) {
+            return Collections.emptyList();
+        }
+        final List<DataStorageTag> tags = request.getRequests().stream()
+                .map(this::tagFrom)
+                .collect(Collectors.toList());
+        return tagDao.batchUpsert(root.get(), tags);
+    }
+
+    private DataStorageTag tagFrom(final DataStorageTagUpsertRequest request) {
         final DataStorageObject object = new DataStorageObject(request.getPath(), request.getVersion());
         return new DataStorageTag(object, request.getKey(), request.getValue());
     }

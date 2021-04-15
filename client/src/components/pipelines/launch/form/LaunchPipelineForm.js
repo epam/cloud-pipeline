@@ -1900,7 +1900,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
                 readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                hideAutoComplete={!this.props.currentConfigurationIsDefault}
                 placeholder={'Value'}
                 parameterKey={key}
                 currentMetadataEntity={this.state.currentMetadataEntity.slice()}
@@ -2068,7 +2067,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
                 readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                hideAutoComplete={!this.props.currentConfigurationIsDefault}
                 placeholder={'Path'}
                 parameterKey={key}
                 currentMetadataEntity={this.state.currentMetadataEntity.slice()}
@@ -2643,7 +2641,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   onChangeRootEntity = (rootEntityId = null) => {
-    this.setState({rootEntityId});
+    this.setState({rootEntityId}, this.formFieldsChanged);
   };
 
   openSystemParameterBrowser = () => {
@@ -2782,8 +2780,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     const renderRootEntity = () => {
-      return this.props.currentConfigurationIsDefault &&
-        this.state.currentMetadataEntity.length > 0 && (
+      return this.state.currentMetadataEntity.length > 0 && (
         <FormItem
           key="root_entity_type_select"
           className={`${styles.formItemRow} ${styles.rootEntityTypeContainer} root_entity`}>
@@ -4206,10 +4203,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
     if (this.props.canRunCluster) {
       const onDropDownSelect = ({key}) => {
-        if (this.state.currentProjectId &&
+        if (
+          this.state.currentProjectId &&
           this.state.rootEntityId &&
-          ((this.props.currentConfigurationIsDefault && key === RUN_SELECTED_KEY) ||
-            key === RUN_CLUSTER_KEY) && this.validateFireCloudConnections()) {
+          this.validateFireCloudConnections()
+        ) {
           this.openMetadataBrowser();
           this.setState({currentLaunchKey: key});
         } else {

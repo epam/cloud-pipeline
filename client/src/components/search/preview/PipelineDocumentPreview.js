@@ -23,6 +23,7 @@ import classNames from 'classnames';
 import VersionFile from '../../../models/pipelines/VersionFile';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
+import HTMLRenderer from './HTMLRenderer';
 import {PreviewIcons} from './previewIcons';
 import styles from './preview.css';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
@@ -54,8 +55,8 @@ const MarkdownRenderer = new Remarkable('commonmark', {
 });
 
 const previewLoad = (params) => {
-  if (params.item && params.item.parentId && params.item.description && params.item.id) {
-    return new VersionFile(params.item.parentId, params.item.id, params.item.description);
+  if (params.item && params.item.parentId && params.item.pipelineVersion && params.item.path) {
+    return new VersionFile(params.item.parentId, params.item.path, params.item.pipelineVersion);
   } else {
     return null;
   }
@@ -66,7 +67,7 @@ const previewLoad = (params) => {
   const {pipelines} = stores;
   return {
     preview: previewLoad(params),
-    version: params.item.description,
+    version: params.item.pipelineVersion,
     pipeline: params.item && params.item.parentId
       ? pipelines.getPipeline(params.item.parentId)
       : null
@@ -79,7 +80,7 @@ export default class PipelineDocumentPreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
-      description: PropTypes.string
+      pipelineVersion: PropTypes.string
     }),
     lightMode: PropTypes.bool
   };
@@ -104,12 +105,14 @@ export default class PipelineDocumentPreview extends React.Component {
         ? atob(this.props.preview.response)
         : '';
       const noContent = !preview;
+      const extension = this.props.preview.path?.split('.').pop().toLowerCase();
       return {
         preview,
         truncated: false,
         noContent,
         error: null,
-        mayBeBinary: false
+        mayBeBinary: false,
+        extension
       };
     }
     return null;
@@ -118,7 +121,7 @@ export default class PipelineDocumentPreview extends React.Component {
   @computed
   get structuredTableData () {
     if (this.filePreview && this.filePreview.preview &&
-      this.props.item && this.props.item.id.split('.').pop().toLowerCase() === 'csv') {
+      this.props.item && this.props.item.path.split('.').pop().toLowerCase() === 'csv') {
       const result = {};
       const parseRes = Papa.parse(this.filePreview.preview);
       if (parseRes.errors.length) {
@@ -135,19 +138,19 @@ export default class PipelineDocumentPreview extends React.Component {
 
   @computed
   get parentFolders () {
-    if (this.props.item.id) {
-      return this.props.item.id.split('/').slice(0, -1);
+    if (this.props.item.path) {
+      return this.props.item.path.split('/').slice(0, -1);
     }
     return [];
   }
 
   @computed
   get fileName () {
-    if (this.props.item.id || this.props.item.name) {
+    if (this.props.item.path || this.props.item.name) {
       return (
         <span>
           <Icon type={PreviewIcons[this.props.item.type]} />
-          {(this.props.item.id || this.props.item.name).split('/').pop()}
+          {(this.props.item.path || this.props.item.name).split('/').pop()}
         </span>
       );
     }
@@ -217,16 +220,28 @@ export default class PipelineDocumentPreview extends React.Component {
         {
           this.state.pdbError &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>Error loading .pdb visualization: {this.state.pdbError}</span>
+            <span style={{color: '#ff556b'}}>
+              Error loading .pdb visualization: {this.state.pdbError}
+            </span>
           </div>
         }
         {
           this.structuredTableData && this.structuredTableData.error &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>Error loading .csv visualization: {this.structuredTableData.message}</span>
+            <span style={{color: '#ff556b'}}>
+              Error loading .csv visualization: {this.structuredTableData.message}
+            </span>
           </div>
         }
-        <pre dangerouslySetInnerHTML={{__html: this.filePreview.preview}} />
+        {
+          this.filePreview.extension === 'html' ? (
+            <HTMLRenderer
+              htmlString={this.filePreview.preview}
+            />
+          ) : (
+            <pre dangerouslySetInnerHTML={{__html: this.filePreview.preview}} />
+          )
+        }
       </div>
     );
   };
@@ -263,7 +278,9 @@ export default class PipelineDocumentPreview extends React.Component {
         <div className={styles.contentPreview}>
           <div className={styles.mdPreview}>
             <div
-              dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(this.filePreview.preview)}} />
+              dangerouslySetInnerHTML={{
+                __html: MarkdownRenderer.render(this.filePreview.preview)
+              }} />
           </div>
         </div>
       );
@@ -297,7 +314,9 @@ export default class PipelineDocumentPreview extends React.Component {
             <img
               style={{width: '100%'}}
               onError={onError}
-              src={this.props.downloadUrl.value.url} alt={this.props.item.id} />
+              src={this.props.downloadUrl.value.url}
+              alt={this.props.item.path}
+            />
           </div>
         );
       }
@@ -318,14 +337,14 @@ export default class PipelineDocumentPreview extends React.Component {
       <div
         className={styles.contentPreview} style={{height: '50vh'}}>
         <EmbeddedMiew
-          s3item={{storageId: this.props.item.parentId, path: this.props.item.id}}
+          s3item={{storageId: this.props.item.parentId, path: this.props.item.path}}
           onError={onError} />
       </div>
     );
   };
 
   renderPreview = () => {
-    const extension = this.props.item.id.split('.').pop().toLowerCase();
+    const extension = this.props.item.path.split('.').pop().toLowerCase();
     const previewRenderers = {
       pdb: this.renderPDBPreview,
       csv: this.renderCSVPreview,

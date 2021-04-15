@@ -515,6 +515,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
             "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
+            "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
@@ -679,6 +682,12 @@ public class SystemPreferences {
 
     public static final StringPreference SEARCH_ELASTIC_DENIED_GROUPS_FIELD = new StringPreference(
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
+
+    public static final ObjectPreference<Set<String>> SEARCH_ELASTIC_INDEX_METADATA_FIELDS = new ObjectPreference<>(
+            "search.elastic.index.metadata.fields", null, new TypeReference<Set<String>>() {},
+            SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
+            20, SEARCH_GROUP, pass);
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =

@@ -37,10 +37,9 @@ import registryName from './registryName';
 import deleteToolConfirmModal from './tool-deletion-warning';
 import styles from './Tools.css';
 
-@observer
 @roleModel.authenticationInfo
+@observer
 export default class DockerRegistriesActionsButton extends React.Component {
-
   state = {
     addRegistryForm: false,
     editRegistryForm: false,

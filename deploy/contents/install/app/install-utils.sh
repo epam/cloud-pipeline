@@ -821,12 +821,26 @@ function prepare_kube_dns {
     local static_names="$1"
 
     if ! is_kube_dns_configured_for_custom_entries; then
-        # 1. Mount hosts config map into dnsmasq
+        # 1. Grant "kube-dns" permissions to list the pods
+        print_info "Granting 'clusterrole view' permissions to 'system:serviceaccount:kube-system:kube-dns'"
+        kubectl create clusterrolebinding kube-dns-viewer-binding \
+                                            --clusterrole view \
+                                            --user system:serviceaccount:kube-system:kube-dns
+        if [ $? -ne 0 ]; then
+            print_warn "Unable to create clusterrolebinding for the kube-dns cluster viewer role. Deployment will proceed, but the pods DNS sync process won't work properly"
+        fi
+
+        # 2. Mount hosts config map into dnsmasq
         print_info "Configuring kube-dns for custom entries support"
         kubectl patch deployment kube-dns \
             --namespace kube-system \
             --type='json' \
             -p='[
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/shareProcessNamespace",
+                        "value": true
+                    },
                     {
                         "op": "add",
                         "path": "/spec/template/spec/volumes/-",
@@ -840,16 +854,71 @@ function prepare_kube_dns {
                     },
                     {
                         "op": "add",
+                        "path": "/spec/template/spec/volumes/-",
+                        "value": {
+                            "emptyDir": {},
+                            "name": "cp-dnsmasq-pods"
+                        }
+                    },
+                    {
+                        "op": "add",
                         "path": "/spec/template/spec/containers/1/volumeMounts/-",
                         "value": {
-                            "mountPath": "/etc/hosts.d",
+                            "mountPath": "/etc/hosts.d/hosts",
                             "name": "cp-dnsmasq-hosts"
                         }
                     },
                     {
                         "op": "add",
+                        "path": "/spec/template/spec/containers/1/volumeMounts/-",
+                        "value": {
+                            "mountPath": "/etc/hosts.d/pods",
+                            "name": "cp-dnsmasq-pods"
+                        }
+                    },
+                    {
+                        "op": "add",
                         "path": "/spec/template/spec/containers/1/args/-",
-                        "value": "--hostsdir=/etc/hosts.d"
+                        "value": "--dns-forward-max=5000"
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/args/-",
+                        "value": "--hostsdir=/etc/hosts.d/hosts"
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/args/-",
+                        "value": "--hostsdir=/etc/hosts.d/pods"
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/args/-",
+                        "value": "--bind-interfaces"
+                    },
+                    {
+                        "op": "replace",
+                        "path": "/spec/template/spec/containers/2/image",
+                        "value": "gcr.io/google-containers/k8s-dns-sidecar:1.15.11"
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/-",
+                        "value": {
+                            "command": [
+                                "python",
+                                "/sync-hosts.py"
+                            ],
+                            "image": "${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:dns-hosts-sync-$CP_VERSION",
+                            "imagePullPolicy": "IfNotPresent",
+                            "name": "pods",
+                            "volumeMounts": [
+                                {
+                                    "mountPath": "/etc/hosts.d/pods",
+                                    "name": "cp-dnsmasq-pods"
+                                }
+                            ]
+                        }
                     }
                 ]'
         if [ $? -ne 0 ]; then
@@ -857,7 +926,7 @@ function prepare_kube_dns {
             return 1
         fi
 
-        # Wait for the pods restart
+        # 3. Wait for the pods restart
         kubectl rollout status deployment/kube-dns -n kube-system -w
         # Just in case...
         sleep 10

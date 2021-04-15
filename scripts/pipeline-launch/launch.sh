@@ -1140,6 +1140,12 @@ if [ -d $COMMON_REPO_DIR/shell ]; then
       export PATH=$PATH:$COMMON_REPO_DIR/shell
 fi
 
+# Fix /etc/hosts if requested
+CP_ETC_HOSTS_FIXES_ENABLED=${CP_ETC_HOSTS_FIXES_ENABLED:-"true"}
+if [ "$CP_ETC_HOSTS_FIXES_ENABLED" == "true" ]; then
+      etc_hosts_fixes
+fi
+
 # Install pipe CLI
 CP_PIPE_CLI_ENABLED=${CP_PIPE_CLI_ENABLED:-"true"}
 if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then

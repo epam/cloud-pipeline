@@ -122,6 +122,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadAllRunsByStatusQuery;
     private String loadAllRunsByIdsQuery;
     private String loadRunByPodIPQuery;
+    private String loadRunsByNodeNameQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -426,6 +427,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .query(loadRunByPodIPQuery, params, PipelineRunParameters.getRowMapper()))
                 .stream()
                 .findFirst();
+    }
+
+    public List<PipelineRun> loadRunsByNodeName(final String nodeName) {
+        return ListUtils.emptyIfNull(getJdbcTemplate()
+                .query(loadRunsByNodeNameQuery, PipelineRunParameters.getRowMapper(), nodeName));
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
@@ -1219,5 +1225,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunByPodIPQuery(final String loadRunByPodIPQuery) {
         this.loadRunByPodIPQuery = loadRunByPodIPQuery;
+    }
+
+    @Required
+    public void setLoadRunsByNodeNameQuery(final String loadRunsByNodeNameQuery) {
+        this.loadRunsByNodeNameQuery = loadRunsByNodeNameQuery;
     }
 }

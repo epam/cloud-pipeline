@@ -99,8 +99,8 @@ function get_current_run_id() {
   _API="$1"
   _API_TOKEN="$2"
   _NODE="$3"
-  call_api "$_API" "$_API_TOKEN" "cluster/node/$_NODE/load" "GET" |
-    jq -r ".payload.labels.runid" |
+  call_api "$_API" "$_API_TOKEN" "cluster/node/$_NODE/run" "GET" |
+    jq -r ".payload.runId" |
     grep -v "^null$"
 }
 

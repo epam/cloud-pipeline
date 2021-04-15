@@ -100,7 +100,9 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
-    public Optional<DataStorageFile> findFile(final AzureBlobStorage dataStorage, final String path) {
+    public Optional<DataStorageFile> findFile(final AzureBlobStorage dataStorage,
+                                              final String path,
+                                              final String version) {
         return getAzureStorageHelper(dataStorage).findFile(dataStorage, path);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -75,12 +76,13 @@ public class SearchRequestBuilder {
 
     public SearchRequest buildRequest(final ElasticSearchRequest searchRequest,
                                       final String typeFieldName,
-                                      final String aggregation) {
+                                      final String aggregation,
+                                      final Set<String> metadataSourceFields) {
         final QueryBuilder query = getQuery(searchRequest.getQuery());
         log.debug("Search query: {} ", query.toString());
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(query)
-                .storedFields(buildStoredFields(typeFieldName))
+                .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize())
                 .from(searchRequest.getOffset());
 
@@ -116,7 +118,7 @@ public class SearchRequestBuilder {
     }
 
     public SearchRequest buildFacetedRequest(final FacetedSearchRequest facetedSearchRequest,
-                                             final String typeFieldName) {
+                                             final String typeFieldName, final Set<String> metadataSourceFields) {
         final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 
         final QueryBuilder queryBuilder = prepareFacetedQuery(facetedSearchRequest.getQuery());
@@ -129,7 +131,7 @@ public class SearchRequestBuilder {
 
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(boolQueryBuilder)
-                .storedFields(buildStoredFields(typeFieldName))
+                .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(facetedSearchRequest.getPageSize())
                 .from(facetedSearchRequest.getOffset());
 
@@ -142,11 +144,17 @@ public class SearchRequestBuilder {
 
         return new SearchRequest()
                 .indices(buildAllIndexTypes())
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
                 .source(searchSource);
     }
 
-    private List<String> buildStoredFields(final String typeFieldName) {
-        return Arrays.asList("id", typeFieldName, "name", "parentId", "description");
+    private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {
+        final List<String> storedFields = Arrays.stream(SearchSourceFields.values())
+                .map(SearchSourceFields::getFieldName)
+                .collect(Collectors.toList());
+        storedFields.add(typeFieldName);
+        storedFields.addAll(metadataSourceFields);
+        return storedFields.toArray(Strings.EMPTY_ARRAY);
     }
 
     private void addHighlighterToSource(final SearchSourceBuilder searchSource) {
@@ -216,11 +224,7 @@ public class SearchRequestBuilder {
         if (CollectionUtils.isEmpty(filterTypes)) {
             return buildAllIndexTypes();
         }
-        final Map<SearchDocumentType, String> typeIndexPrefixes = preferenceManager
-                .getPreference(SystemPreferences.SEARCH_ELASTIC_TYPE_INDEX_PREFIX);
-        if (MapUtils.isEmpty(typeIndexPrefixes)) {
-            throw new SearchException("Index filtering is not configured");
-        }
+        final Map<SearchDocumentType, String> typeIndexPrefixes = getSearchIndexPrefixes();
         return filterTypes.stream()
                 .map(type -> Optional.ofNullable(typeIndexPrefixes.get(type))
                         .orElseThrow(() -> new SearchException("Missing index name for type: " + type)))
@@ -228,11 +232,20 @@ public class SearchRequestBuilder {
     }
 
     private String[] buildAllIndexTypes() {
-        return new String[]{preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_CP_INDEX_PREFIX)};
+        return getSearchIndexPrefixes().values().toArray(Strings.EMPTY_ARRAY);
+    }
+
+    private Map<SearchDocumentType, String> getSearchIndexPrefixes() {
+        final Map<SearchDocumentType, String> typeIndexPrefixes = preferenceManager
+                .getPreference(SystemPreferences.SEARCH_ELASTIC_TYPE_INDEX_PREFIX);
+        if (MapUtils.isEmpty(typeIndexPrefixes)) {
+            throw new SearchException("Index filtering is not configured");
+        }
+        return typeIndexPrefixes;
     }
 
     private QueryBuilder filterToTermsQuery(final String fieldName, final List<String> values) {
-        return QueryBuilders.termsQuery(fieldName, values);
+        return QueryBuilders.termsQuery(buildKeywordName(fieldName), values);
     }
 
     private QueryBuilder prepareFacetedQuery(final String requestQuery) {
@@ -245,7 +258,12 @@ public class SearchRequestBuilder {
 
     private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
         final TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(facet)
-                .field(String.format("%s.keyword", facet));
+                .size(preferenceManager.getPreference(SystemPreferences.SEARCH_AGGS_MAX_COUNT))
+                .field(buildKeywordName(facet));
         searchSource.aggregation(aggregationBuilder);
+    }
+
+    private String buildKeywordName(final String fieldName) {
+        return String.format("%s.keyword", fieldName);
     }
 }

@@ -37,6 +37,7 @@ import {
 } from '../../model/treeStructureFunctions';
 
 import styles from './Browser.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
 @localization.localizedComponent
 @connect({
@@ -46,9 +47,9 @@ import styles from './Browser.css';
 @inject(() => ({
   library: pipelinesLibrary
 }))
+@HiddenObjects.injectTreeFilter
 @observer
 export default class PipelineBrowser extends localization.LocalizedReactComponent {
-
   static propTypes = {
     pipelineId: PropTypes.oneOfType([
       PropTypes.string,
@@ -173,7 +174,12 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
         <span>
           <span>{item.name.substring(0, item.searchResult.index)}</span>
           <span className={styles.searchResult}>
-            {item.name.substring(item.searchResult.index, item.searchResult.index + item.searchResult.length)}
+            {
+              item.name.substring(
+                item.searchResult.index,
+                item.searchResult.index + item.searchResult.length
+              )
+            }
           </span>
           <span>{item.name.substring(item.searchResult.index + item.searchResult.length)}</span>
         </span>
@@ -259,7 +265,8 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
         false,
         null,
         [],
-        [ItemTypes.pipeline, ItemTypes.fireCloud]
+        [ItemTypes.pipeline, ItemTypes.fireCloud],
+        this.props.hiddenObjectsTreeFilter()
       );
     }
     return (
@@ -267,7 +274,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
         className={styles.libraryTree}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         expandedKeys={this.state.expandedKeys}
         selectedKeys={this.state.selectedKeys} >
         {this.generateTreeItems(this.rootItems)}
@@ -336,7 +343,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   };
 
   onSelectPipeline = (pipeline) => {
-    const {id, currentVersion} = pipeline;
+    const {id} = pipeline;
     let expandedKeys = this.state.expandedKeys;
     if (this.rootItems) {
       const item = getTreeItemByKey(`${ItemTypes.pipeline}_${id}`, this.rootItems);
@@ -449,7 +456,10 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
         );
       } else if (this.state.pipelineId) {
         let selectedVersion, selectedConfiguration;
-        if (this.state.selectedPipeline && this.state.selectedPipeline.id === this.state.pipelineId) {
+        if (
+          this.state.selectedPipeline &&
+          this.state.selectedPipeline.id === this.state.pipelineId
+        ) {
           selectedVersion = this.state.selectedPipeline.version;
           selectedConfiguration = this.state.selectedPipeline.configuration;
         }
@@ -459,17 +469,18 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
             selectedVersion={selectedVersion}
             selectedConfiguration={selectedConfiguration}
             onSelectItem={this.onSelectItem}
-            listingMode={true}
-            configurationSelectionMode={true}
-            readOnly={true} />
+            listingMode
+            configurationSelectionMode
+            readOnly
+          />
         );
       } else {
         listingContent = (
           <Folder
-            id={this.state.folderId}
+            id={/^root$/i.test(this.state.folderId) ? undefined : this.state.folderId}
             onSelectItem={this.onSelectItem}
-            listingMode={true}
-            readOnly={true}
+            listingMode
+            readOnly
             supportedTypes={[ItemTypes.folder, ItemTypes.pipeline]} />
         );
       }
@@ -543,7 +554,10 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       !this.props.fireCloudMethodSnapshot) {
       let expandedKeys = this.state.expandedKeys;
       if (this.rootItems) {
-        const item = getTreeItemByKey(`${ItemTypes.pipeline}_${this.props.pipelineId}`, this.rootItems);
+        const item = getTreeItemByKey(
+          `${ItemTypes.pipeline}_${this.props.pipelineId}`,
+          this.rootItems
+        );
         if (item) {
           expandItem(item, this.rootItems);
           expandedKeys = getExpandedKeys(this.rootItems);
@@ -625,14 +639,15 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       this.props.fireCloudNamespace !== prevProps.fireCloudNamespace ||
       this.props.fireCloudMethodSnapshot !== prevProps.fireCloudMethodSnapshot ||
       this.props.fireCloudMethodConfiguration !== prevProps.fireCloudMethodConfiguration ||
-      this.props.fireCloudMethodConfigurationSnapshot !== prevProps.fireCloudMethodConfigurationSnapshot
+      this.props.fireCloudMethodConfigurationSnapshot !==
+      prevProps.fireCloudMethodConfigurationSnapshot
     ) {
       this.updateState();
     } else if (!this.state.treeReady && this.rootItems && this.rootItems.length > 0) {
+      // eslint-disable-next-line
       this.setState({
         treeReady: true
       }, this.updateState);
     }
   }
-
 }

@@ -80,6 +80,7 @@ import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityU
 import UploadButton from '../../special/UploadButton';
 import PreviewConfiguration from '../configuration/PreviewConfiguration';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const MAX_INLINE_METADATA_KEYS = 10;
 
@@ -93,6 +94,8 @@ const MAX_INLINE_METADATA_KEYS = 10;
   folders
 })
 @roleModel.authenticationInfo
+@HiddenObjects.injectTreeFilter
+@HiddenObjects.checkFolders(props => (props?.params ? props.params.id : props.id))
 @inject('awsRegions')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
@@ -115,7 +118,6 @@ const MAX_INLINE_METADATA_KEYS = 10;
 })
 @observer
 export default class Folder extends localization.LocalizedReactComponent {
-
   static propTypes = {
     id: PropTypes.oneOfType([
       PropTypes.string,
@@ -1634,10 +1636,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       let data = generateTreeData(
         this.props.folder.value,
         true,
-        null,
+        {id: this.props.folderId},
         [],
         this.props.supportedTypes,
-        this.props.filterItems
+        this.props.hiddenObjectsTreeFilter(this.props.filterItems)
       );
       if (this.props.isRoot) {
         this._currentFolder = {

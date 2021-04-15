@@ -655,6 +655,7 @@ public class DataStorageManager implements SecuredEntityManager {
     public Map<String, String> loadDataStorageObjectTags(Long id, String path, String version) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
+        checkDataStorageObjectExists(dataStorage, path, version);
         return tagProviderManager.loadFileTags(dataStorage, path, version);
     }
 
@@ -663,6 +664,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                                            Set<String> tags) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
+        checkDataStorageObjectExists(dataStorage, path, version);
         tagProviderManager.deleteFileTags(dataStorage, path, version, tags);
         return tagProviderManager.loadFileTags(dataStorage, path, version);
     }
@@ -695,6 +697,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                                            Boolean rewrite) {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
+        checkDataStorageObjectExists(dataStorage, path, version);
         return tagProviderManager.updateFileTags(dataStorage, path, version, tagsToAdd, rewrite);
     }
 
@@ -1017,6 +1020,14 @@ public class DataStorageManager implements SecuredEntityManager {
             Assert.isTrue(dataStorage.isVersioningEnabled(), messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
+    }
+
+    private void checkDataStorageObjectExists(final AbstractDataStorage dataStorage,
+                                              final String path,
+                                              final String version) {
+        Assert.isTrue(storageProviderManager.findFile(dataStorage, path, version).isPresent(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
+                        path, dataStorage.getRoot()));
     }
 
     private List<DataStorageLink> getLinks(AbstractDataStorage dataStorage, String paramValue) {

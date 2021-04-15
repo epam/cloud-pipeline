@@ -122,7 +122,7 @@ public interface GitLabApi {
      */
     @GET("api/v3/projects/{project}/repository/files/{file_path}")
     Call<GitFile> getFiles(@Path(PROJECT) String idOrName,
-                           @Path(FILE_PATH) String filePath,
+                           @Path(value = FILE_PATH, encoded = true) String filePath,
                            @Query(REF) String reference);
 
     /**

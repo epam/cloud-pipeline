@@ -41,6 +41,7 @@ import styles from './DetachedConfiguration.css';
 import Schedule from './schedule';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
+import HiddenObjects from '../../../utils/hidden-objects';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -52,6 +53,7 @@ const DTS_ENVIRONMENT = 'DTS';
   preferences
 })
 @localization.localizedComponent
+@HiddenObjects.checkConfigurations(props => props?.params?.id)
 @inject(({configurations, folders, pipelinesLibrary, preferences, history, routing}, {onReloadTree, params}) => {
   return {
     history,

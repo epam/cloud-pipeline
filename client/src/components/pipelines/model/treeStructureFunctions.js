@@ -322,7 +322,7 @@ export function generateTreeData (
   }
   if (versions && versions.length && (!types || types.indexOf(ItemTypes.version) >= 0)) {
     for (let i = 0; i < versions.length; i++) {
-      if (!filter(versions[i], ItemTypes.version)) {
+      if (!filter(versions[i], ItemTypes.version, parent)) {
         continue;
       }
       children.push({
@@ -390,7 +390,9 @@ export function generateTreeData (
     }
   }
   if (metadata && Object.keys(metadata).length &&
-    (!types || types.indexOf(ItemTypes.metadata) >= 0)) {
+    (!types || types.indexOf(ItemTypes.metadata) >= 0) &&
+    (!filter || filter({id}, ItemTypes.metadataFolder))
+  ) {
     const metadataFolder = {
       id: `${id}metadataFolder`,
       key: `${ItemTypes.metadataFolder}_${id}metadataFolder`,
@@ -411,6 +413,14 @@ export function generateTreeData (
 
     const metadataChildren = [];
     for (let key in metadata) {
+      if (
+        filter && (
+          !filter({id: key}, ItemTypes.metadata, {id}) ||
+          !filter({id: key}, ItemTypes.metadata)
+        )
+      ) {
+        continue;
+      }
       metadataChildren.push({
         id: `${metadataFolder && metadataFolder.id}${key}`,
         key: `${ItemTypes.metadata}_${metadataFolder && metadataFolder.id}${key}`,

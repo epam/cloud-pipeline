@@ -183,8 +183,11 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public Optional<DataStorageFile> findFile(final S3bucketDataStorage dataStorage, final String path) {
-        return getS3Helper(dataStorage).findFile(dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path));
+    public Optional<DataStorageFile> findFile(final S3bucketDataStorage dataStorage,
+                                              final String path,
+                                              final String version) {
+        return getS3Helper(dataStorage)
+                .findFile(dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), version);
     }
 
     @Override

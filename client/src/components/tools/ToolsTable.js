@@ -82,7 +82,11 @@ export default class ToolsTable extends React.Component {
         {
           tool.iconId &&
           <div style={{margin: 5, overflow: 'hidden', width: 33, height: 33}}>
-            <img src={ToolImage.url(tool.id, tool.iconId)} style={{width: '100%'}} />
+            <img
+              key={tool.image}
+              src={ToolImage.url(tool.id, tool.iconId)}
+              style={{width: '100%'}}
+            />
           </div>
         }
         <Row type="flex" align="middle" justify="space-between" style={{flex: 1}}>

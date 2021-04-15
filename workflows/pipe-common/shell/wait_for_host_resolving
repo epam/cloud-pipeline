@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Waits until the given host resolves to some ip address.
+# Optionally waits until the host resolves to an ip address provided as a second argument.
+# Can be used for waiting for a remote dns server to configure the required host record.
+# Notice that the resolving also considers local /etc/hosts.
+#
+# Usage examples:
+#
+# wait_for_host_resolving "pipeline-12345" \
+#                         "127.0.0.1"
+#
+# wait_for_host_resolving "pipeline-12345"
+
+# Required args
+WORKER_HOST="$1"
+WORKER_IP="$2"
+
+CP_CAP_AUTOSCALE_DNS_HOSTS_RESOLVE_ATTEMPTS="${CP_CAP_AUTOSCALE_DNS_HOSTS_RESOLVE_ATTEMPTS:-12}"
+CP_CAP_AUTOSCALE_DNS_HOSTS_RESOLVE_DELAY="${CP_CAP_AUTOSCALE_DNS_HOSTS_RESOLVE_DELAY:-5}"
+
+for host_resolving_attempt in $(seq 1 "$CP_CAP_AUTOSCALE_DNS_HOSTS_RESOLVE_ATTEMPTS"); do
+    if [[ -z "$WORKER_IP" ]]; then
+        getent hosts "$WORKER_HOST" | grep "\s\+$WORKER_HOST\$" > /dev/null
+    else
+        getent hosts "$WORKER_HOST" | grep "^$WORKER_IP\s\+$WORKER_HOST\$" > /dev/null
+    fi
+    host_resolving_exit_code=$?
+    if [[ "$host_resolving_exit_code" == "0" ]]; then
+        break
+    fi
+    echo "Host resolving has failed after $host_resolving_attempt/$CP_CAP_AUTOSCALE_DNS_HOSTS_RESOLVE_ATTEMPTS attempts. Trying again in $CP_CAP_AUTOSCALE_DNS_HOSTS_RESOLVE_DELAY seconds."
+    sleep "$CP_CAP_AUTOSCALE_DNS_HOSTS_RESOLVE_DELAY"
+done
+
+if [[ "$host_resolving_exit_code" != "0" ]]
+then
+    echo "Host resolving has failed. Exiting..."
+fi
+
+exit "$host_resolving_exit_code"

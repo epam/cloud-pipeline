@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
 import com.epam.pipeline.manager.cluster.container.ContainerResources;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -40,7 +41,6 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.SecurityContext;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
@@ -84,17 +84,20 @@ public class PipelineExecutor {
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
     private final AuthManager authManager;
+    private final KubernetesManager kubernetesManager;
     private final Map<ContainerMemoryResourcePolicy, ContainerMemoryResourceService> memoryRequestServices;
 
     public PipelineExecutor(final PreferenceManager preferenceManager,
                             final AuthManager authManager,
                             final List<ContainerMemoryResourceService> memoryRequestServices,
-                            @Value("${kube.namespace}") final String kubeNamespace) {
+                            @Value("${kube.namespace}") final String kubeNamespace,
+                            final KubernetesManager kubernetesManager) {
         this.preferenceManager = preferenceManager;
         this.kubeNamespace = kubeNamespace;
         this.authManager = authManager;
         this.memoryRequestServices = CommonUtils.groupByKey(memoryRequestServices,
                 ContainerMemoryResourceService::policy);
+        this.kubernetesManager = kubernetesManager;
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
@@ -106,7 +109,7 @@ public class PipelineExecutor {
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
             String pipelineId, String nodeIdLabel, String secretName, String clusterId,
                               ImagePullPolicy imagePullPolicy) {
-        try (KubernetesClient client = new DefaultKubernetesClient()) {
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
@@ -322,7 +325,7 @@ public class PipelineExecutor {
     private Volume createVolume(String name, String hostPath) {
         Volume volume = new Volume();
         volume.setName(name);
-        volume.setHostPath(new HostPathVolumeSource(hostPath, "HostPath"));
+        volume.setHostPath(new HostPathVolumeSource(hostPath, StringUtils.EMPTY));
         return volume;
     }
 

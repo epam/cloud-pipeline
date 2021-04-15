@@ -392,7 +392,7 @@ public class Utils {
     }
 
     public static String entityIDfromURL() {
-        String url = WebDriverRunner.getWebDriver().getCurrentUrl();
+        String url = getCurrentURL();
         return url.substring(url.lastIndexOf("/") + 1);
     }
 
@@ -402,5 +402,9 @@ public class Utils {
         } catch (URISyntaxException e) {
             throw new RuntimeException("Unable to get resource file");
         }
+    }
+
+    public static String getCurrentURL() {
+        return WebDriverRunner.getWebDriver().getCurrentUrl();
     }
 }

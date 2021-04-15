@@ -6,6 +6,7 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteAllBatchRequ
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertBatchRequest;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,12 @@ public class DataStorageTagBatchApiService {
     public List<DataStorageTag> insert(final Long id,
                                        final DataStorageTagInsertBatchRequest request) {
         return dataStorageTagBatchManager.insert(id, request);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public List<DataStorageTag> upsert(final Long id, final DataStorageTagUpsertBatchRequest request) {
+        return dataStorageTagBatchManager.upsert(id, request);
+
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)

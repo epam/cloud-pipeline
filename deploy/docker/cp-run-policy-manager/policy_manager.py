@@ -134,7 +134,9 @@ def is_sensitive_pod(pod):
 def get_pods_owners_set(pods):
     owners = set()
     for pod in pods:
-        owners.add(pod.metadata.labels.get(OWNER_LABEL))
+        pod_owner = pod.metadata.labels.get(OWNER_LABEL)
+        if pod_owner:
+            owners.add(pod_owner)
     return owners
 
 
@@ -165,23 +167,33 @@ def drop_excess_policies(active_pods, active_policies):
 def main():
     log_message('===Starting run policies monitoring===')
     while True:
-        active_policies = load_all_active_policies()
-        sensitive_policies = []
-        common_policies = []
-        for policy in active_policies:
-            sensitive_policies.append(policy) if is_sensitive_policy(policy) else common_policies.append(policy)
+        try:
+            active_policies = load_all_active_policies()
+            sensitive_policies = []
+            common_policies = []
+            for policy in active_policies:
+                sensitive_policies.append(policy) if is_sensitive_policy(policy) else common_policies.append(policy)
 
-        active_pods = load_all_pipeline_pods()
-        sensitive_pods = []
-        common_pods = []
-        for pod in active_pods:
-            sensitive_pods.append(pod) if is_sensitive_pod(pod) else common_pods.append(pod)
+            active_pods = load_all_pipeline_pods()
+            sensitive_pods = []
+            common_pods = []
+            for pod in active_pods:
+                sensitive_pods.append(pod) if is_sensitive_pod(pod) else common_pods.append(pod)
 
-        create_missed_policies(common_pods, common_policies, False)
-        create_missed_policies(sensitive_pods, sensitive_policies, True)
+            try:
+                create_missed_policies(common_pods, common_policies, False)
+                create_missed_policies(sensitive_pods, sensitive_policies, True)
+            except Exception as creation_error:
+                log_message('[ERROR] Error ocurred while CREATING new policies:\n{}'.format(str(creation_error)))
 
-        drop_excess_policies(common_pods, common_policies)
-        drop_excess_policies(sensitive_pods, sensitive_policies)
+            try:
+                drop_excess_policies(common_pods, common_policies)
+                drop_excess_policies(sensitive_pods, sensitive_policies)
+            except Exception as deletion_error:
+                log_message('[ERROR] Error ocurred while DELETING policies:\n{}'.format(str(deletion_error)))
+            
+        except Exception as general_error:
+            log_message('[ERROR] General error ocurred:\n{}'.format(str(general_error)))
 
         time.sleep(float(MONITORING_PERIOD_SEC))
 

@@ -32,9 +32,6 @@ class AzureClient(CloudClient):
             result.append(entry.name)
         return result
 
-    def list_object_tags(self, bucket, key, version=None, args=None):
-        return self._get_client().get_blob_metadata(bucket, key)
-
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
         # TODO 15.02.19: Method is not implemented yet.
         raise RuntimeError('Method is not implemented yet.')

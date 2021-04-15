@@ -514,35 +514,42 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test(dependsOnMethods = {"searchForToolRun"})
     @TestCase(value = {"EPMCMBIBPC-2669"})
     public void searchForCompletedToolRun() {
-        runsMenu()
-                .activeRuns()
-                .stopRun(testRunID_2668);
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
-        search()
-                .click(RUNS)
-                .search(testRunID_2668)
-                .enter()
-                .sleep(1, SECONDS)
-                .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(testRunID_2668)
-                .ensure(TITLE, STOPPED.reached, text(testRunID_2668),
-                        text(String.format("%s:%s", toolEndpoint, toolVersion)))
-                .parent()
-                .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
-                .ensure(STATUS, text(testRunID_2668))
-                .shouldHaveStatus(STOPPED);
-        home();
-        search()
-                .click(RUNS)
-                .search(testRunID_2668)
-                .enter()
-                .sleep(1, SECONDS)
-                .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(testRunID_2668)
-                .clickOnEndpointLink()
-                .sleep(3, SECONDS)
-                .assertPageTitleIs("404 Not Found")
-                .closeTab();
+        ToolPageAO endpointPage = null;
+        try {
+            runsMenu()
+                    .activeRuns()
+                    .stopRun(testRunID_2668);
+            home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+            search()
+                    .click(RUNS)
+                    .search(testRunID_2668)
+                    .enter()
+                    .sleep(1, SECONDS)
+                    .hover(SEARCH_RESULT)
+                    .openSearchResultItemWithText(testRunID_2668)
+                    .ensure(TITLE, STOPPED.reached, text(testRunID_2668),
+                            text(String.format("%s:%s", toolEndpoint, toolVersion)))
+                    .parent()
+                    .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
+                    .ensure(STATUS, text(testRunID_2668))
+                    .shouldHaveStatus(STOPPED);
+            home();
+            endpointPage = search()
+                    .click(RUNS)
+                    .search(testRunID_2668)
+                    .enter()
+                    .sleep(1, SECONDS)
+                    .hover(SEARCH_RESULT)
+                    .openSearchResultItemWithText(testRunID_2668)
+                    .clickOnEndpointLink();
+            endpointPage
+                    .sleep(3, SECONDS)
+                    .assertPageTitleIs("404 Not Found");
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
     }
 
     @Test

@@ -22,6 +22,8 @@ import Browser from '../pipelines/browser/Browser';
 import FolderBrowser from '../pipelines/browser/Folder';
 import StorageBrowser from '../pipelines/browser/DataStorage';
 import PipelineBrowser from '../pipelines/browser/Pipeline';
+import PipelineLatestVersion from '../pipelines/browser/redirections/PipelineLatestVersion';
+import MetadataClassEntityRedirection from '../pipelines/browser/redirections/MetadataClassEntity';
 import MetadataFolderBrowser from '../pipelines/browser/MetadataFolder';
 import MetadataBrowser from '../pipelines/browser/Metadata';
 import PipelineDetails from '../pipelines/version/PipelineDetails';
@@ -74,6 +76,14 @@ export default class AppRouter extends React.Component {
   render () {
     return <Router history={this.props.history}>
       <Route component={App}>
+        <Route
+          path="/:pipeline/refs/heads/master(/:section(/:subSection))"
+          component={PipelineLatestVersion}
+        />
+        <Route
+          path="/metadata/redirect/:folder/:entity"
+          component={MetadataClassEntityRedirection}
+        />
         <Route path="search/advanced" component={FacetedSearchPage} />
         <Route path="search" component={RunsSearch} />
         <Redirect from="/settings" to="/settings/cli" />

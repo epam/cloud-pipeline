@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,10 +88,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
     public void checkDiagramChange() {
         getFirstVersion(pipelineName)
                 .clickOnFile(fileInPipeline)
-                .clickEdit()
-                .clear()
-                .fillWith(Utils.readResourceFully("/extraTask.wdl"))
-                .deleteExtraBrackets()
+                .editFile(code -> Utils.readResourceFully("/extraTask.wdl"))
                 .saveAndCommitWithMessage(commitMessage)
                 .graphTab()
                 .searchLabel("MyTask");
@@ -117,10 +114,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
     public void checkDiagramChangeForScatter() {
         getFirstVersion(pipelineName)
                 .clickOnFile(fileInPipeline)
-                .clickEdit()
-                .clear()
-                .fillWith(Utils.readResourceFully("/extraScatter.wdl"))
-                .deleteExtraBrackets()
+                .editFile(code -> Utils.readResourceFully("/extraScatter.wdl"))
                 .saveAndCommitWithMessage(commitMessage)
                 .sleep(2, SECONDS)
                 .graphTab()
@@ -133,10 +127,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
     public void checkDiagramChangeForScatterWithTask() {
         getFirstVersion(pipelineName)
                 .clickOnFile(fileInPipeline)
-                .clickEdit()
-                .clear()
-                .fillWith(Utils.readResourceFully("/extraScatterTask.wdl"))
-                .deleteExtraBrackets()
+                .editFile(code -> Utils.readResourceFully("/extraScatterTask.wdl"))
                 .saveAndCommitWithMessage(commitMessage)
                 .sleep(2, SECONDS)
                 .graphTab()

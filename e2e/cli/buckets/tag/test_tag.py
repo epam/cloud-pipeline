@@ -176,7 +176,7 @@ class TestTagging(object):
             stderr = delete_storage_tags(path, [self.tag2[1]], expected_status=1)[1]
             assert_error_message_is_present(stderr, "Tag '%s' does not exist" % self.tag2[1])
 
-            assert_tags_listing(self.bucket, path, [self.tag1])
+            assert_tags_listing(path, [self.tag1])
             pipe_storage_rm(path, args=self.rm_arguments())
         except AssertionError as e:
             raise AssertionError(ERROR_MESSAGE + test_case, e.message)
@@ -203,32 +203,32 @@ class TestTagging(object):
         version = get_non_latest_version(get_pipe_listing(path, versioning=True, show_details=True))
         mutable_tag = list(self.tag1)
         set_storage_tags(path, [mutable_tag], version=version, token=token)
-        assert_tags_listing(self.bucket, path, [], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag], version=version, token=token)
+        assert_tags_listing(path, [], token=token)
+        assert_tags_listing(path, [mutable_tag], version=version, token=token)
         set_storage_tags(path, [self.tag2], token=token)
-        assert_tags_listing(self.bucket, path, [self.tag2], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag], version=version, token=token)
+        assert_tags_listing(path, [self.tag2], token=token)
+        assert_tags_listing(path, [mutable_tag], version=version, token=token)
         mutable_tag[1] = 'newvalue'
         set_storage_tags(path, [mutable_tag], version=version, token=token)
-        assert_tags_listing(self.bucket, path, [self.tag2], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag], version=version, token=token)
+        assert_tags_listing(path, [self.tag2], token=token)
+        assert_tags_listing(path, [mutable_tag], version=version, token=token)
         delete_storage_tags(path, [mutable_tag[0]], version=version, token=token)
-        assert_tags_listing(self.bucket, path, [self.tag2], token=token)
-        assert_tags_listing(self.bucket, path, [], version=version, token=token)
+        assert_tags_listing(path, [self.tag2], token=token)
+        assert_tags_listing(path, [], version=version, token=token)
         pipe_storage_rm(path, args=self.rm_arguments())
 
     def assert_tag_commands(self, path, token=None):
         pipe_storage_cp(self.test_file, path, force=True)
         mutable_tag = list(self.tag1)
         set_storage_tags(path, [mutable_tag], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag], token=token)
+        assert_tags_listing(path, [mutable_tag], token=token)
         set_storage_tags(path, [self.tag2, self.tag3], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag, self.tag2, self.tag3], token=token)
+        assert_tags_listing(path, [mutable_tag, self.tag2, self.tag3], token=token)
         mutable_tag[1] = 'newvalue'
         set_storage_tags(path, [mutable_tag], token=token)
-        assert_tags_listing(self.bucket, path, [mutable_tag, self.tag2, self.tag3], token=token)
+        assert_tags_listing(path, [mutable_tag, self.tag2, self.tag3], token=token)
         delete_storage_tags(path, [mutable_tag[0]], token=token)
-        assert_tags_listing(self.bucket, path, [self.tag2, self.tag3], token=token)
+        assert_tags_listing(path, [self.tag2, self.tag3], token=token)
         pipe_storage_rm(path, args=self.rm_arguments())
 
     def rm_arguments(self):

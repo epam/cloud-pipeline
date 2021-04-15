@@ -17,34 +17,46 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  Alert,
-  Icon
-} from 'antd';
-import {PreviewIcons} from '../preview/previewIcons';
-import {SearchItemTypes} from '../../../models/search';
+import {inject, observer} from 'mobx-react';
+import {Alert} from 'antd';
 import Preview from '../preview';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
+import DocumentListPresentation from './document-presentation/list';
+import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
 import styles from './search-results.css';
 
-const RESULT_ITEM_HEIGHT = 32;
+const RESULT_ITEM_HEIGHT = 46;
 const TABLE_ROW_HEIGHT = 32;
 const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
-const HOVER_DELAY = 300;
+const HOVER_DELAY = 0;
 const PREVIEW_POSITION = {
   left: {
-    top: '85px',
-    left: '140px',
+    top: '84px',
+    left: '75px',
     maxHeight: 'calc(100vh - 135px)'
   },
   right: {
-    top: '85px',
-    right: '50px',
+    top: '84px',
+    right: '10px',
     maxHeight: 'calc(100vh - 135px)'
   }
 };
+
+function compareDocumentTypes (prev, next) {
+  const a = (prev || []).sort();
+  const b = (next || []).sort();
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 class SearchResults extends React.Component {
   state = {
@@ -53,7 +65,9 @@ class SearchResults extends React.Component {
     preview: undefined,
     resizingColumn: undefined,
     columnWidths: {},
-    previewPosition: PREVIEW_POSITION.right
+    columns: DocumentColumns.map(column => column.key),
+    previewPosition: PREVIEW_POSITION.right,
+    extraColumnsConfiguration: []
   };
 
   dividerRefs = [];
@@ -68,11 +82,15 @@ class SearchResults extends React.Component {
     if (prevProps.offset !== this.props.offset) {
       this.unHoverItem(this.state.hoverInfo, true)();
     }
+    if (!compareDocumentTypes(prevProps.documentTypes, this.props.documentTypes)) {
+      this.updateDocumentTypes();
+    }
     if (
       prevState.hoverInfo !== this.state.hoverInfo ||
       prevState.preview !== this.state.preview ||
       prevState.columnWidths !== this.state.columnWidths ||
-      prevState.resizingColumn !== this.state.resizingColumn
+      prevState.resizingColumn !== this.state.resizingColumn ||
+      prevState.columns !== this.state.columns
     ) {
       if (this.infiniteScroll) {
         this.infiniteScroll.forceUpdate();
@@ -83,6 +101,13 @@ class SearchResults extends React.Component {
   componentDidMount () {
     window.addEventListener('mousemove', this.onResize);
     window.addEventListener('mouseup', this.stopResizing);
+    this.updateDocumentTypes();
+    parseExtraColumns(this.props.preferences)
+      .then(extra => {
+        if (extra && extra.length) {
+          this.setState({extraColumnsConfiguration: extra}, this.updateDocumentTypes);
+        }
+      });
   }
 
   componentWillUnmount () {
@@ -92,6 +117,31 @@ class SearchResults extends React.Component {
     window.removeEventListener('mousemove', this.onResize);
     window.removeEventListener('mouseup', this.stopResizing);
   }
+
+  get columnsConfiguration () {
+    const {extraColumnsConfiguration = []} = this.state;
+    return [...DocumentColumns, ...extraColumnsConfiguration];
+  }
+
+  get columns () {
+    const {columns} = this.state;
+    if (!columns || !columns.size) {
+      return this.columnsConfiguration;
+    }
+    return this.columnsConfiguration.filter(k => columns.has(k.key));
+  }
+
+  updateDocumentTypes = () => {
+    const {documentTypes} = this.props;
+    if (!documentTypes || !documentTypes.length) {
+      this.setState({columns: new Set(this.columnsConfiguration.map(column => column.key))});
+    } else {
+      const columns = this.columnsConfiguration
+        .filter(column => !column.types || documentTypes.find(type => column.types.has(type)))
+        .map(column => column.key);
+      this.setState({columns: new Set(columns)});
+    }
+  };
 
   onInfiniteScrollOffsetChanged = (offset, pageSize) => {
     const {
@@ -103,43 +153,6 @@ class SearchResults extends React.Component {
       onChangeOffset(offset, pageSize);
     }
   };
-
-  renderIcon = (resultItem) => {
-    if (PreviewIcons[resultItem.type]) {
-      return (
-        <Icon
-          className={styles.icon}
-          type={PreviewIcons[resultItem.type]} />
-      );
-    }
-    return null;
-  };
-
-  getResultItemName = (resultItem) => {
-    if (!resultItem) {
-      return '';
-    }
-    switch (resultItem.type) {
-      case SearchItemTypes.run: {
-        if (resultItem.description) {
-          const parts = resultItem.description.split('/');
-          if (parts.length > 1) {
-            return `${resultItem.name} - ${parts.pop()}`;
-          }
-          return `${resultItem.name} - ${resultItem.description}`;
-        }
-        return resultItem.name || `Run ${resultItem.elasticId}`;
-      }
-      case SearchItemTypes.NFSFile:
-      case SearchItemTypes.gsFile:
-      case SearchItemTypes.azFile:
-      case SearchItemTypes.s3File: {
-        const path = (resultItem.name || '');
-        return path.split('/').pop().split('\\').pop();
-      }
-      default: return resultItem.name;
-    }
-  }
 
   onInitializeInfiniteScroll = (infiniteScroll) => {
     this.infiniteScroll = infiniteScroll;
@@ -171,12 +184,10 @@ class SearchResults extends React.Component {
           }
           style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
         >
-          <div style={{display: 'inline-block'}}>
-            {this.renderIcon(resultItem)}
-          </div>
-          <span className={styles.title}>
-            {this.getResultItemName(resultItem)}
-          </span>
+          <DocumentListPresentation
+            className={styles.title}
+            document={resultItem}
+          />
         </div>
       </a>
     );
@@ -229,6 +240,7 @@ class SearchResults extends React.Component {
     if (this.previewTimeout) {
       clearTimeout(this.previewTimeout);
     }
+    this.previewTimeout = null;
     if (delayed) {
       this.previewTimeout = setTimeout(
         () => {
@@ -245,6 +257,7 @@ class SearchResults extends React.Component {
     if (this.previewTimeout) {
       clearTimeout(this.previewTimeout);
     }
+    this.previewTimeout = null;
     if (this.hoverTimeout) {
       clearTimeout(this.hoverTimeout);
     }
@@ -337,26 +350,6 @@ class SearchResults extends React.Component {
       </div>
     );
   }
-
-  columns = [
-    {
-      key: 'name',
-      name: 'Name',
-      renderFn: (value, resultItem) => (
-        <span className={styles.cellValue}>
-          {this.renderIcon(resultItem)}
-          <b style={{marginLeft: '5px'}}>
-            {this.getResultItemName(resultItem)}
-          </b>
-        </span>
-      ),
-      width: '25%'
-    },
-    {key: 'type', name: 'Type', width: '15%'},
-    {key: 'url', name: 'Url', width: '15%'},
-    {key: 'elasticId', name: 'Elastic id', width: '15%'},
-    {key: 'id', name: 'Identifier', width: '15%'}
-  ]
 
   getGridTemplate = (headerTemplate) => {
     const {columnWidths} = this.state;
@@ -572,7 +565,8 @@ SearchResults.propTypes = {
   total: PropTypes.number,
   onChangeDocumentType: PropTypes.func,
   onChangeBottomOffset: PropTypes.func,
-  mode: PropTypes.oneOf([PresentationModes.list, PresentationModes.table])
+  mode: PropTypes.oneOf([PresentationModes.list, PresentationModes.table]),
+  documentTypes: PropTypes.array
 };
 
 SearchResults.defaultProps = {
@@ -580,7 +574,8 @@ SearchResults.defaultProps = {
   documentsOffset: 0,
   offset: 0,
   pageSize: 20,
-  total: 0
+  total: 0,
+  documentTypes: []
 };
 
-export default SearchResults;
+export default inject('preferences')(observer(SearchResults));
