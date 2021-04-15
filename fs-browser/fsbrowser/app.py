@@ -786,6 +786,40 @@ def checkout_version_storage(vs_id):
         return jsonify(error(e.__str__()))
 
 
+@app.route('/vs/<vs_id>/conflicts', methods=['POST'])
+@auth.login_required
+def version_storage_file_resolve(vs_id):
+    """
+    Registers changes after conflicts resolving for specified file
+    If file has no conflicts an error will be occurred. Performs `git add` operation.
+    ---
+    parameters:
+      - name: vs_id
+        in: path
+        type: string
+        required: true
+      - name: path
+        in: query
+        type: string
+        required: true
+    definitions:
+      Object:
+        type: object
+    responses:
+      200:
+        schema:
+          $ref: '#/definitions/Object'
+    """
+    path = flask.request.args.get('path')
+    manager = app.config['git_manager']
+    try:
+        manager.add(vs_id, path)
+        return jsonify(success({}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
 def str_to_bool(input_value):
     return input_value.lower() in ("true", "t")
 

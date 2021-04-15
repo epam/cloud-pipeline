@@ -51,7 +51,7 @@ class GitClient:
             self._checkout(result_repository, revision)
         return result_repository.workdir
 
-    def pull(self, path, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
+    def pull(self, path, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME, commit_allowed=True):
         callbacks = self._build_callback()
         repo = self._repository(path)
         remote = self._get_remote(repo, remote_name)
@@ -63,14 +63,26 @@ class GitClient:
         if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
             # Up to date, do nothing
             self.logger.log("Repository '%s' already up to date" % path)
-            return None
+            return []
         if merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
             self._fast_forward_pull(repo, path, remote_master_id, branch)
-            return None
+            return []
         if merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
-            return self._merge(repo, remote_master_id)
+            return self._merge(repo, remote_master_id, commit_allowed)
         else:
             raise RuntimeError('Unknown merge analysis result')
+
+    def ahead_behind(self, repo_path):
+        repo = self._repository(repo_path)
+        return repo.ahead_behind(self._get_head(repo).target, self._get_remote_head(repo).target)
+
+    def stash(self, path):
+        repo = self._repository(path)
+        return repo.stash(self._get_author(repo), 'pulling', include_untracked=True)
+
+    def unstash(self, path):
+        repo = self._repository(path)
+        repo.stash_pop()
 
     def diff(self, repo_path, file_path, show_raw_flag, branch_name=DEFAULT_BRANCH_NAME,
              context_lines=DEFAULT_CONTEXT_LINES_COUNT, remote_name=DEFAULT_REMOTE_NAME):
@@ -170,7 +182,7 @@ class GitClient:
         callbacks.certificate_check = insecure
         return callbacks
 
-    def _merge(self, repo, remote_master_id):
+    def _merge(self, repo, remote_master_id, commit_allowed=True):
         repo.merge(remote_master_id)
         head_id = repo.head.target
 
@@ -181,10 +193,11 @@ class GitClient:
             self.logger.log("Conflicts were found in paths: [%s]" % ", ".join(conflict_paths))
             return repo.index.conflicts
 
-        user = self._get_author(repo)
-        tree = repo.index.write_tree()
-        repo.create_commit('HEAD', user, user, self._build_merge_commit_message(head_id, remote_master_id),
-                           tree, [head_id, remote_master_id])
+        if commit_allowed:
+            user = self._get_author(repo)
+            tree = repo.index.write_tree()
+            repo.create_commit('HEAD', user, user, self._build_merge_commit_message(head_id, remote_master_id),
+                               tree, [head_id, remote_master_id])
         self._finish_merge(repo)
         return None
 

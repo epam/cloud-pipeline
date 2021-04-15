@@ -56,13 +56,25 @@ class GitTask(Task):
             self.pulling()
             if is_head_detached:
                 git_client.revert(full_repo_path)
-            conflicts = git_client.pull(full_repo_path)
-            if not conflicts:
-                self.success()
-                if is_head_detached:
-                    git_client.set_head(full_repo_path)
+
+            self._check_pull_possibility(git_client, full_repo_path)
+
+            status_files = git_client.status(full_repo_path)
+            if status_files:
+                git_client.stash(full_repo_path)
+            pull_conflicts = git_client.pull(full_repo_path, commit_allowed=False)
+            if status_files:
+                git_client.unstash(full_repo_path)
+
+            if is_head_detached:
+                git_client.set_head(full_repo_path)
+
+            stash_conflicts = self._conflicts_in_status(git_client, full_repo_path)
+            conflicts = list(set(stash_conflicts + self._build_pull_conflicts(pull_conflicts)))
+            if conflicts:
+                self._conflicts_failure(conflicts)
                 return
-            self._conflicts_failure(conflicts)
+            self.success()
         except Exception as e:
             self.logger.log(traceback.format_exc())
             self.failure(e)
@@ -78,7 +90,7 @@ class GitTask(Task):
             self.pulling()
             conflicts = git_client.pull(full_repo_path)
             if conflicts:
-                self._conflicts_failure(conflicts)
+                self._conflicts_failure(self._build_pull_conflicts(conflicts))
                 return
 
             self.pushing()
@@ -110,8 +122,28 @@ class GitTask(Task):
             index_files.append(git_file)
         return index_files
 
+    @staticmethod
+    def _conflicts_in_status(git_client, full_repo_path):
+        git_files = git_client.status(full_repo_path)
+        return [git_file.path for git_file in git_files if git_file.is_conflicted()]
+
+    def _check_pull_possibility(self, git_client, full_repo_path):
+        local_commits_count, _ = git_client.ahead_behind(full_repo_path)
+        if local_commits_count > 0:
+            raise RuntimeError("Unsaved changes found. Please 'save' changes before 'fetch'")
+        conflicts = self._conflicts_in_status(git_client, full_repo_path)
+        if conflicts:
+            self._conflicts_failure(conflicts)
+            raise RuntimeError('Automatic merge failed. Please resolve conflicts and then try again')
+
+    @staticmethod
+    def _build_pull_conflicts(conflicts):
+        if not conflicts:
+            return []
+        return [conflict[0].path for conflict in conflicts]
+
     def _conflicts_failure(self, conflicts):
-        self.conflicts = [conflict[0].path for conflict in conflicts]
+        self.conflicts = conflicts
         self.failure()
         self.message = 'Automatic merge failed; fix conflicts and then commit the result.'
 

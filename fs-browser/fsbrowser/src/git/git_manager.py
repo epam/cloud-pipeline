@@ -146,6 +146,16 @@ class GitManager:
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         self.git_client.checkout(full_repo_path, revision)
 
+    def add(self, versioned_storage_id, file_path):
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        if not file_path:
+            raise RuntimeError('File path shall be specified')
+        git_files = self.git_client.status(full_repo_path)
+        git_file = [git_file for git_file in git_files if git_file.path == file_path and git_file.is_conflicted()]
+        if not git_file:
+            raise RuntimeError("Path '%s' did not match any conflicted files" % file_path)
+        self.git_client.add(full_repo_path, git_file[0])
+
     def _build_path_to_repo(self, versioned_storage_id):
         versioned_storage = self.api_client.get_pipeline(versioned_storage_id)
         folder_name = versioned_storage.get(VERSION_STORAGE_IDENTIFIER)
