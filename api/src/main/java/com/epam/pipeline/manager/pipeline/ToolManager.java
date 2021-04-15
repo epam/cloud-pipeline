@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -548,8 +548,10 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
-        return dockerRegistryManager.getImageHistory(
-                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
+        return toolVulnerabilityDao.loadToolVersionScan(tool.getId(), tag)
+            .map(ToolVersionScanResult::getImageHistory)
+            .orElseGet(() -> dockerRegistryManager.getImageHistory(
+                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -584,6 +586,8 @@ public class ToolManager implements SecuredEntityManager {
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
         Optional<ToolVersionScanResult> prev = loadToolVersionScan(tool, version);
+        final List<ImageHistoryLayer> imageHistory = dockerRegistryManager.getImageHistory(
+            dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), version);
         if(prev.isPresent()) {
             ToolVersionScanResult scanResult = prev.get();
             boolean whiteList = scanResult.isFromWhiteList();
@@ -592,10 +596,10 @@ public class ToolManager implements SecuredEntityManager {
                 whiteList = false;
             }
             toolVulnerabilityDao.updateToolVersionScan(toolId, version, toolOSVersion, layerRef, digest, newStatus,
-                    scanDate, whiteList, vulnerabilityCount);
+                    scanDate, whiteList, vulnerabilityCount, imageHistory);
         } else {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, toolOSVersion, layerRef,
-                    digest, newStatus, scanDate, vulnerabilityCount);
+                    digest, newStatus, scanDate, vulnerabilityCount, imageHistory);
         }
     }
 
@@ -614,9 +618,11 @@ public class ToolManager implements SecuredEntityManager {
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
         Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
+        final List<ImageHistoryLayer> imageHistory = dockerRegistryManager.getImageHistory(
+            dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), version);
         if (!toolVersionScanResult.isPresent()) {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
-                    DateUtils.now(), new HashMap<>());
+                    DateUtils.now(), new HashMap<>(), imageHistory);
         }
         toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
         return loadToolVersionScan(tool, version).orElse(null);

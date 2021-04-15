@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.scan;
 
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
@@ -48,6 +49,7 @@ public class ToolVersionScanResult {
     private boolean fromWhiteList;
     private Date gracePeriod;
     private Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
+    private List<ImageHistoryLayer> imageHistory = new ArrayList<>();
 
     @JsonIgnore
     private String lastLayerRef;
