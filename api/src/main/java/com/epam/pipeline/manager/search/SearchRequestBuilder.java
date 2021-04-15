@@ -258,6 +258,7 @@ public class SearchRequestBuilder {
 
     private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
         final TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(facet)
+                .size(preferenceManager.getPreference(SystemPreferences.SEARCH_AGGS_MAX_COUNT))
                 .field(buildKeywordName(facet));
         searchSource.aggregation(aggregationBuilder);
     }
