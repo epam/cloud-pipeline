@@ -15,16 +15,16 @@ public class DiffUtils {
 
     public static Diff normalizeDiff(final Diff diff) {
         final Diff result = new Diff();
-        result.setFromFileName(parseName(diff.getFromFileName(), "a/"));
-        result.setToFileName(parseName(diff.getToFileName(), "b/"));
+        result.setFromFileName(parseName(diff.getFromFileName(), "^a/"));
+        result.setToFileName(parseName(diff.getToFileName(), "^b/"));
         result.setHeaderLines(diff.getHeaderLines());
         result.setHunks(diff.getHunks());
         return result;
     }
 
     private static String parseName(final String fileName, final String gitSign) {
-        if (StringUtils.isNotBlank(fileName) && fileName.startsWith(gitSign)) {
-            return fileName.replace(gitSign, "");
+        if (StringUtils.isNotBlank(fileName)) {
+            return fileName.replaceFirst(gitSign, "");
         }
         return fileName;
     }
@@ -48,14 +48,8 @@ public class DiffUtils {
             } else if (line.contains("Binary files")) {
                 final Matcher matcher = BINARY_PATTERN.matcher(line);
                 if (matcher.matches()) {
-                    oldFile = matcher.group(1).replace("a/", "");
-                    if (oldFile.startsWith("a/")) {
-                        oldFile =oldFile.replace("a/", "");
-                    }
-                    newFile = matcher.group(2).replace("b/", "");
-                    if (newFile.startsWith("b/")) {
-                        newFile = newFile.replace("b/", "");
-                    }
+                    oldFile = matcher.group(1).replaceFirst("^a/", "");
+                    newFile = matcher.group(2).replaceFirst("^b/", "");
                 }
             }
         }
@@ -72,5 +66,9 @@ public class DiffUtils {
 
     public static boolean isFileDeleted(final Diff diff) {
         return !diff.getFromFileName().equals("/dev/null") && diff.getToFileName().equals("/dev/null");
+    }
+
+    public static void main(String[] args) {
+        System.out.println("a/asdasdasd".replaceFirst("^a/", ""));
     }
 }

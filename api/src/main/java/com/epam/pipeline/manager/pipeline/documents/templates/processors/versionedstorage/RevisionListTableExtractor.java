@@ -75,6 +75,12 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
         for (String column : tableStructureString.split(";")) {
             final String[] columnAndName = column.split("-");
             final RevisionHistoryTableColumn tableColumn = RevisionHistoryTableColumn.byValue(columnAndName[0]);
+            if (tableColumn == null) {
+                throw new IllegalArgumentException("Report template is invalid. Column " + columnAndName[0] +
+                        " isn't available for revision history table. Possible columns: " +
+                        Arrays.stream(RevisionHistoryTableColumn.values())
+                                .map(c -> c.value).collect(Collectors.joining(", ")));
+            }
             if (columnAndName.length == 2) {
                 result.put(tableColumn, columnAndName[1]);
             } else {
