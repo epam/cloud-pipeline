@@ -31,6 +31,7 @@ const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
 const HOVER_DELAY = 0;
+const DIVIDER_WIDTH = 4;
 const PREVIEW_POSITION = {
   left: {
     top: '84px',
@@ -64,19 +65,26 @@ class SearchResults extends React.Component {
     hoverInfo: undefined,
     preview: undefined,
     resizingColumn: undefined,
+    draggingCell: undefined,
     columnWidths: {},
     columns: DocumentColumns.map(column => column.key),
     previewPosition: PREVIEW_POSITION.right,
-    extraColumnsConfiguration: []
+    extraColumnsConfiguration: [],
+    arrangedColumns: []
   };
 
-  dividerRefs = [];
+  dividerRefs = {};
   headerRef = null;
   resultsContainerRef = null;
   tableWidth = undefined;
   animationFrame;
   infiniteScroll;
   hoverTimeout;
+  rects = {
+    dragger: null,
+    header: null,
+    cells: []
+  };
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.offset !== this.props.offset) {
@@ -90,7 +98,9 @@ class SearchResults extends React.Component {
       prevState.preview !== this.state.preview ||
       prevState.columnWidths !== this.state.columnWidths ||
       prevState.resizingColumn !== this.state.resizingColumn ||
-      prevState.columns !== this.state.columns
+      prevState.columns !== this.state.columns ||
+      prevState.arrangedColumns !== this.state.arrangedColumns ||
+      prevState.draggingCell !== this.state.draggingCell
     ) {
       if (this.infiniteScroll) {
         this.infiniteScroll.forceUpdate();
@@ -99,8 +109,6 @@ class SearchResults extends React.Component {
   }
 
   componentDidMount () {
-    window.addEventListener('mousemove', this.onResize);
-    window.addEventListener('mouseup', this.stopResizing);
     this.updateDocumentTypes();
     parseExtraColumns(this.props.preferences)
       .then(extra => {
@@ -114,8 +122,6 @@ class SearchResults extends React.Component {
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
     }
-    window.removeEventListener('mousemove', this.onResize);
-    window.removeEventListener('mouseup', this.stopResizing);
   }
 
   get columnsConfiguration () {
@@ -129,6 +135,14 @@ class SearchResults extends React.Component {
       return this.columnsConfiguration;
     }
     return this.columnsConfiguration.filter(k => columns.has(k.key));
+  }
+
+  get arrangedColumns () {
+    const {arrangedColumns} = this.state;
+    if (arrangedColumns && arrangedColumns.length) {
+      return arrangedColumns;
+    }
+    return this.columns;
   }
 
   updateDocumentTypes = () => {
@@ -352,16 +366,18 @@ class SearchResults extends React.Component {
   }
 
   getGridTemplate = (headerTemplate) => {
-    const {columnWidths} = this.state;
+    const {columnWidths, draggingCell} = this.state;
     const rowHeight = headerTemplate
       ? TABLE_HEADER_HEIGHT
       : TABLE_ROW_HEIGHT;
     const cellDefault = '100px';
-    const divider = '4px';
-    const columnString = `'${this.columns
+    const columns = draggingCell && draggingCell.key
+      ? this.arrangedColumns.filter(column => column.key !== draggingCell.key)
+      : this.arrangedColumns;
+    const columnString = `'${columns
       .map(c => `${c.key} .`).join(' ')}' ${rowHeight}px /`;
-    const widthString = `${this.columns
-      .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${divider}`)
+    const widthString = `${columns
+      .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${DIVIDER_WIDTH}px`)
       .join(' ')}`;
     return columnString.concat(widthString);
   };
@@ -374,9 +390,8 @@ class SearchResults extends React.Component {
       if (!this.tableWidth) {
         this.tableWidth = this.headerRef.getBoundingClientRect().width;
       }
-      const divider = 5;
       const step = 2;
-      const offset = event.clientX - (rect.right + divider);
+      const offset = event.clientX - (rect.right + DIVIDER_WIDTH);
       const maxWidth = this.tableWidth / 3;
       const minWidth = 50;
       if ((rect.width + offset) > maxWidth ||
@@ -396,19 +411,110 @@ class SearchResults extends React.Component {
     if (resizingColumn) {
       this.setState({resizingColumn: undefined});
     }
+    window.removeEventListener('mousemove', this.onResize);
+    window.removeEventListener('mouseup', this.stopResizing);
   }
 
-  initResizing = (event, key) => {
+  initResizing = (event, column) => {
     const {resizingColumn} = this.state;
     event && event.stopPropagation();
+    window.addEventListener('mousemove', this.onResize);
+    window.addEventListener('mouseup', this.stopResizing);
     if (!resizingColumn) {
-      this.setState({resizingColumn: key});
+      this.setState({resizingColumn: column.key});
     }
+  }
+
+  getDropIndex = (dropX) => {
+    const {draggingCell} = this.state;
+    const {cells} = this.rects;
+    if (!cells || !cells.length) {
+      return -1;
+    }
+    try {
+      const initialIndex = cells.findIndex(({key}) => key === draggingCell.key);
+      const targetIndex = cells.findIndex(({rect}) => {
+        return rect.left - DIVIDER_WIDTH <= dropX && rect.right + DIVIDER_WIDTH >= dropX;
+      });
+      if (initialIndex === targetIndex) {
+        return -1;
+      }
+      if (targetIndex >= 0) {
+        return dropX > cells[targetIndex].rect.left + (cells[targetIndex].rect.width / 2)
+          ? targetIndex + 1
+          : targetIndex;
+      }
+    } catch (___) {}
+    return -1;
+  }
+
+  rearrangeTable = (init, target) => {
+    const columns = [...this.arrangedColumns];
+    const movingColumn = columns.splice(init, 1)[0];
+    columns.splice(target, 0, movingColumn);
+    this.setState({arrangedColumns: columns});
+  }
+
+  initCellDragging = (event, column) => {
+    if (!event) {
+      return;
+    }
+    event.persist();
+    this.setState({draggingCell: column}, () => {
+      if (this.draggerRef) {
+        this.rects.header = this.draggerRef.parentElement.getBoundingClientRect();
+        this.rects.dragger = this.draggerRef.getBoundingClientRect();
+        this.rects.cells = Object.entries(this.dividerRefs).map(([key, value]) => {
+          if (value && value instanceof HTMLElement) {
+            return {
+              rect: value.getBoundingClientRect(),
+              key
+            };
+          }
+        }).sort((a, b) => a.rect.left - b.rect.left);
+        window.addEventListener('mousemove', this.startCellDragging, false);
+        window.addEventListener('mouseup', this.stopCellDragging, false);
+        this.startCellDragging(event);
+      }
+    });
+  }
+
+  startCellDragging = (event) => {
+    const {header, dragger} = this.rects;
+    if (!event || !header || !dragger) {
+      return;
+    }
+    const scrollWidth = 15;
+    const draggerX = event.clientX - header.x + (dragger.width / 2) > header.width - scrollWidth
+      ? header.right - header.x - dragger.width - scrollWidth
+      : Math.max(3, event.clientX - header.x - (dragger.width / 2));
+    this.draggerRef.style.left = `${draggerX}px`;
+  }
+
+  stopCellDragging = (event) => {
+    const {draggingCell} = this.state;
+    const dropX = Math.max(this.rects.header.x, event.clientX);
+    const targetIndex = this.getDropIndex(dropX);
+    const initIndex = this.arrangedColumns.findIndex(({key}) => key === draggingCell.key);
+    if (targetIndex >= 0) {
+      this.rearrangeTable(initIndex, targetIndex);
+    }
+    this.setState({draggingCell: null}, () => {
+      this.rects.header = null;
+      this.rects.dragger = null;
+      this.rects.cells = [];
+    });
+    window.removeEventListener('mousemove', this.startCellDragging, false);
+    window.removeEventListener('mouseup', this.stopCellDragging, false);
   }
 
   renderTableRow = (resultItem, rowIndex) => {
     const {disabled} = this.props;
-    const {columnWidths, resizingColumn} = this.state;
+    const {
+      columnWidths,
+      resizingColumn,
+      draggingCell
+    } = this.state;
     if (!resultItem) {
       return null;
     }
@@ -423,22 +529,29 @@ class SearchResults extends React.Component {
         onMouseLeave={this.unHoverItem(resultItem)}
         onClick={this.navigate(resultItem)}
       >
-        {this.columns.map(({key, renderFn}, index) => (
+        {this.arrangedColumns.map((column, index) => (
           [
             <div
-              className={styles.tableCell}
+              className={classNames(
+                styles.tableCell,
+                {[styles.moving]: draggingCell && draggingCell.key === column.key}
+              )}
               key={index}
-              style={{width: columnWidths[key], minWidth: '0px'}}
+              style={{
+                width: columnWidths[column.key],
+                minWidth: '0px',
+                gridArea: column.key
+              }}
             >
-              {renderFn
-                ? renderFn(resultItem[key], resultItem)
-                : <span className={styles.cellValue}>{resultItem[key]}</span>
+              {column.renderFn
+                ? column.renderFn(resultItem[column.key], resultItem)
+                : <span className={styles.cellValue}>{resultItem[column.key]}</span>
               }
             </div>,
             <div
               className={classNames(
                 styles.tableDivider,
-                {[styles.dividerActive]: resizingColumn === key}
+                {[styles.dividerActive]: resizingColumn === column.key}
               )}
             />
           ]
@@ -449,7 +562,11 @@ class SearchResults extends React.Component {
   }
 
   renderTableHeader = () => {
-    const {columnWidths, resizingColumn} = this.state;
+    const {
+      columnWidths,
+      resizingColumn,
+      draggingCell
+    } = this.state;
     return (
       <div
         className={classNames(
@@ -458,22 +575,32 @@ class SearchResults extends React.Component {
         )}
         style={{gridTemplate: this.getGridTemplate(true)}}
         ref={header => (this.headerRef = header)}
+        onDragStart={this.startCellDragging}
+        onDragEnd={this.stopCellDragging}
       >
-        {this.columns.map(({key, name}, index) => ([
+        {this.arrangedColumns.map((column, index) => ([
           <div
             key={index}
-            className={styles.headerCell}
-            ref={ref => (this.dividerRefs[key] = ref)}
-            style={{width: columnWidths[key], minWidth: '0px'}}
+            className={classNames(
+              styles.headerCell,
+              {[styles.moving]: draggingCell && draggingCell.key === column.key}
+            )}
+            ref={ref => (this.dividerRefs[column.key] = ref)}
+            style={{
+              width: columnWidths[column.key],
+              minWidth: '0px',
+              gridArea: column.key
+            }}
+            onMouseDown={e => this.initCellDragging(e, column)}
           >
-            {name}
+            {column.name}
           </div>,
           <div
             className={classNames(
               styles.tableDivider,
-              {[styles.dividerActive]: resizingColumn === key}
+              {[styles.dividerActive]: resizingColumn === column.key}
             )}
-            onMouseDown={e => this.initResizing(e, key)}
+            onMouseDown={e => this.initResizing(e, column)}
           />
         ]))}
       </div>
@@ -531,7 +658,10 @@ class SearchResults extends React.Component {
       showResults,
       mode
     } = this.props;
-    const {preview} = this.state;
+    const {
+      preview,
+      draggingCell
+    } = this.state;
     if (!mode) {
       return null;
     }
@@ -546,6 +676,14 @@ class SearchResults extends React.Component {
       >
         {mode === PresentationModes.table ? this.renderResultsTable() : this.renderResultsList()}
         {showResults && preview && this.renderPreview()}
+        {draggingCell ? (
+          <div
+            className={classNames(styles.headerCell, styles.dragger)}
+            ref={ref => (this.draggerRef = ref)}
+          >
+            {draggingCell.name || ''}
+          </div>
+        ) : null}
       </div>
     );
   }
