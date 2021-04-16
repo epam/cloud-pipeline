@@ -2,10 +2,7 @@ package com.epam.pipeline.manager.pipeline.documents.templates.processors.versio
 
 import com.amazonaws.util.CollectionUtils;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplateProcessor;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplatePageBreakProcessor;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplateTableProcessor;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplateTextProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.*;
 
 import java.time.format.DateTimeFormatter;
 import java.util.function.Supplier;
@@ -42,7 +39,8 @@ public enum VSReportTemplates {
     FILE_LIST_TABLE("file_list_table.*",
             () -> new VSReportTemplateTableProcessor(new FileListTableExtractor())),
     REVISION_HISTORY_TABLE("revision_history_table.*",
-            () -> new VSReportTemplateTableProcessor(new RevisionListTableExtractor()));
+            () -> new VSReportTemplateTableProcessor(new RevisionListTableExtractor())),
+    COMMIT_DIFFS("commit_diffs.*", () -> new VSReportTemplateMixedProcessor(new CommitDiffExtractor()));
 
     public final String template;
     public final Supplier<VSReportTemplateProcessor> templateResolver;
