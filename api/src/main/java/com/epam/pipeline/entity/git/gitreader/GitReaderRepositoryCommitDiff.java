@@ -23,7 +23,7 @@ import java.util.List;
 
 
 /**
- * Represents Gitlab repository commit
+ * Represents Git Diff by commits and filters that was used to fetch this diffs
  */
 @Data
 public class GitReaderRepositoryCommitDiff {

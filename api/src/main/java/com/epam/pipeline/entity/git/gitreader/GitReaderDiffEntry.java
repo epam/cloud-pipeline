@@ -21,7 +21,7 @@ import lombok.Data;
 
 
 /**
- * Represents Gitlab repository commit
+ * Represents Git Diff and its commit
  */
 @Data
 public class GitReaderDiffEntry {

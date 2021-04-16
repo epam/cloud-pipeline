@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 /**
- * Represents Gitlab repository browsing request result
+ * Represents git object and its last commit
  */
 @Data
 public class GitReaderRepositoryLogEntry {
