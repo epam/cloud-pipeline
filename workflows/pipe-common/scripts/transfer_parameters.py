@@ -474,7 +474,7 @@ class InputDataTask:
                 return True
             # urlparse returns path as /folder/inner
             # convert it to cloud listing representation folder/inner/
-            folder = get_path_with_trailing_delimiter(get_path_without_first_delimiter(source_path.path))
+            folder = get_path_with_trailing_delimiter(source_path.path.split('/')[-1])
             cloud_paths = S3Bucket().pipe_ls(get_path_without_trailing_delimiter(source),
                                           TRANSFER_ATTEMPTS, recursive=False, all=False, show_info=True)
             for path in cloud_paths:
