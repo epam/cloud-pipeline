@@ -203,6 +203,11 @@ CP_DOCKER_COMP_KUBE_NODE_NAME=${CP_DOCKER_COMP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE
 print_info "-> Assigning cloud-pipeline/cp-docker-comp to $CP_DOCKER_COMP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_DOCKER_COMP_KUBE_NODE_NAME" cloud-pipeline/cp-docker-comp="true" --overwrite
 
+# Allow to schedule GitLab Reader scanner to the master
+CP_GITLAB_READER_NODE_NAME=${CP_GITLAB_READER_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-gitlab-reader to $CP_GITLAB_READER_NODE_NAME"
+kubectl label nodes "$CP_GITLAB_READER_NODE_NAME" cloud-pipeline/cp-gitlab-reader="true" --overwrite
+
 # Allow to schedule Clair scanner to the master
 CP_CLAIR_KUBE_NODE_NAME=${CP_CLAIR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-clair to $CP_CLAIR_KUBE_NODE_NAME"
@@ -881,6 +886,26 @@ if is_service_requested cp-git-sync; then
         print_info "-> Waiting for Git Sync to initialize"
         wait_for_deployment "cp-git-sync"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-git-sync: deployed"
+    fi
+    echo
+fi
+
+# GitLab Reader
+if is_service_requested cp-gitlab-reader; then
+    print_ok "[Starting GitLab Reader deployment]"
+
+    print_info "-> Deleting existing instance of GitLab Reader"
+    delete_deployment_and_service   "cp-gitlab-reader" \
+                                    "/opt/gitlab-reader"
+
+    if is_install_requested; then
+        print_info "-> Deploying cp-gitlab-reader"
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-reader/cp-gitlab-reader-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-reader/cp-gitlab-reader-svc.yaml
+
+        print_info "-> Waiting for GitLab Reader to initialize"
+        wait_for_deployment "cp-gitlab-reader"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-reader: deployed"
     fi
     echo
 fi

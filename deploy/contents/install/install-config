@@ -195,3 +195,8 @@ CP_REDIS_INTERNAL_PORT=30097
 
 # Other params, specified on command line
 #
+
+# cp-gitlab-reader
+CP_GITLAB_READER_WORKER_COUNT=2
+CP_GITLAB_READER_INTERNAL_PORT=35800
+CP_GITLAB_READER_LOG_DIR=/var/log/cp-git-reader/
