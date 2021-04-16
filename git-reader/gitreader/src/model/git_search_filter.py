@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from gitreader.src.utils.date_utils import parse_date
+from gitreader.src.utils.date_utils import validate_date
 
 
 class GitSearchFilter:
@@ -31,8 +31,8 @@ class GitSearchFilter:
     def from_json(cls, param):
         return GitSearchFilter(authors=param.get("authors"),
                                path_masks=param.get("path_masks"),
-                               date_from=parse_date(param.get("date_from")),
-                               date_to=parse_date(param.get("date_to")),
+                               date_from=validate_date(param.get("date_from")),
+                               date_to=validate_date(param.get("date_to")),
                                ref=param.get("ref", "HEAD")
                )
 

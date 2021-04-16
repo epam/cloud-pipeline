@@ -25,7 +25,8 @@ setup(
         'flask==1.1.1',
         'Flask-HTTPAuth==3.3.0',
         'GitPython==3.1.14',
-        'flasgger'
+        'flasgger==0.9.5',
+        'datetime==4.3'
     ],
     entry_points='''
         [console_scripts]
