@@ -136,11 +136,18 @@ class FacetedSearch extends React.Component {
       facetsLoaded,
       facets,
       facetsCount,
-      initialFacetsCount = {}
+      initialFacetsCount = {},
+      activeFilters
     } = this.state;
     if (!facetsLoaded || !facetsCount) {
       return [];
     }
+    const isActive = (filterName, valueName) => {
+      if (activeFilters[filterName]) {
+        return activeFilters[filterName].includes(valueName);
+      }
+      return false;
+    };
     return facets
       .filter(d => FacetedSearch.HIDE_VALUE_IF_EMPTY
         ? initialFacetsCount.hasOwnProperty(d.name)
@@ -150,7 +157,9 @@ class FacetedSearch extends React.Component {
         name: d.name,
         values: d.values
           .map(v => ({name: v, count: facetsCount[d.name][v] || 0}))
-          .sort((a, b) => b.count - a.count)
+          .sort((a, b) => {
+            return isActive(d.name, b.name) - isActive(d.name, a.name) || b.count - a.count;
+          })
           .filter(v => FacetedSearch.HIDE_VALUE_IF_EMPTY
             ? v.count > 0
             : (
@@ -176,6 +185,7 @@ class FacetedSearch extends React.Component {
 
   getFilterPreferences = (filterName) => {
     const {systemDictionaries, preferences} = this.props;
+    const {activeFilters} = this.state;
     const {facetedFiltersDictionaries} = preferences;
     if (systemDictionaries.loaded && facetedFiltersDictionaries) {
       const [filter] = (facetedFiltersDictionaries.dictionaries || [])
@@ -183,8 +193,15 @@ class FacetedSearch extends React.Component {
       if (!filter) {
         return null;
       }
-      let entriesToDisplay = filter.defaultDictEntriesToDisplay ||
-      facetedFiltersDictionaries.defaultDictEntriesToDisplay;
+      let minByActiveFilters = 0;
+      if (activeFilters[filter.dictionary]) {
+        minByActiveFilters = activeFilters[filter.dictionary].length;
+      }
+      let entriesToDisplay = Math.max(
+        minByActiveFilters,
+        (filter.defaultDictEntriesToDisplay ||
+        facetedFiltersDictionaries.defaultDictEntriesToDisplay)
+      );
       if (typeof entriesToDisplay === 'string' && entriesToDisplay.toLowerCase() === 'all') {
         entriesToDisplay = Infinity;
       }
