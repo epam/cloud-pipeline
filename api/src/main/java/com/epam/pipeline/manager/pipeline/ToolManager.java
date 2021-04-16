@@ -495,19 +495,14 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public String loadToolDefaultCommand(final Long id, final String tag) {
+        final Tool tool = loadExisting(id);
         return toolVulnerabilityDao.loadToolDefaultCommand(id, tag)
-            .orElseGet(() -> {
-                final Tool tool = loadExisting(id);
-                final List<ImageHistoryLayer> imageHistory = dockerRegistryManager.getImageHistory(
-                    dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
-                return DockerUtils.extractDefaultCommandFromHistory(imageHistory);
-            });
+            .orElseGet(() -> DockerUtils.extractDefaultCommandFromHistory(loadImageHistoryFromRegistry(tool, tag)));
     }
 
     private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
         return toolVulnerabilityDao.loadToolVersionHistory(tool.getId(), tag)
-            .orElseGet(() -> dockerRegistryManager.getImageHistory(
-                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag));
+            .orElseGet(() -> loadImageHistoryFromRegistry(tool, tag));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -542,8 +537,7 @@ public class ToolManager implements SecuredEntityManager {
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
         Optional<ToolVersionScanResult> prev = loadToolVersionScan(tool, version);
-        final List<ImageHistoryLayer> imageHistory = dockerRegistryManager.getImageHistory(
-            dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), version);
+        final List<ImageHistoryLayer> imageHistory = loadImageHistoryFromRegistry(tool, version);
         if(prev.isPresent()) {
             ToolVersionScanResult scanResult = prev.get();
             boolean whiteList = scanResult.isFromWhiteList();
@@ -574,11 +568,9 @@ public class ToolManager implements SecuredEntityManager {
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
         Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
-        final List<ImageHistoryLayer> imageHistory = dockerRegistryManager.getImageHistory(
-            dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), version);
         if (!toolVersionScanResult.isPresent()) {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
-                    DateUtils.now(), new HashMap<>(), imageHistory);
+                    DateUtils.now(), new HashMap<>(), loadImageHistoryFromRegistry(tool, version));
         }
         toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
         return loadToolVersionScan(tool, version).orElse(null);
@@ -955,5 +947,10 @@ public class ToolManager implements SecuredEntityManager {
 
     private ToolVersion getToolVersion(Long toolId, String version) {
         return toolVersionManager.loadToolVersion(toolId, version);
+    }
+
+    private List<ImageHistoryLayer> loadImageHistoryFromRegistry(final Tool tool, final String tag) {
+        return dockerRegistryManager.getImageHistory(
+            dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
     }
 }
