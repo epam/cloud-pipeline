@@ -495,11 +495,9 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public String loadToolDefaultCommand(final Long id, final String tag) {
-        return toolVulnerabilityDao.loadToolVersionScan(id, tag)
-            .map(ToolVersionScanResult::getDefaultCommand)
+        return toolVulnerabilityDao.loadToolDefaultCommand(id, tag)
             .orElseGet(() -> {
-                final Tool tool = load(id);
-                validateToolNotNull(tool, id);
+                final Tool tool = loadExisting(id);
                 final List<ImageHistoryLayer> imageHistory = dockerRegistryManager.getImageHistory(
                     dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
                 return DockerUtils.extractDefaultCommandFromHistory(imageHistory);
@@ -507,8 +505,7 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
-        return toolVulnerabilityDao.loadToolVersionScan(tool.getId(), tag)
-            .map(ToolVersionScanResult::getImageHistory)
+        return toolVulnerabilityDao.loadToolVersionHistory(tool.getId(), tag)
             .orElseGet(() -> dockerRegistryManager.getImageHistory(
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag));
     }
