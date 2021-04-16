@@ -136,18 +136,11 @@ class FacetedSearch extends React.Component {
       facetsLoaded,
       facets,
       facetsCount,
-      initialFacetsCount = {},
-      activeFilters
+      initialFacetsCount = {}
     } = this.state;
     if (!facetsLoaded || !facetsCount) {
       return [];
     }
-    const isActive = (filterName, valueName) => {
-      if (activeFilters[filterName]) {
-        return activeFilters[filterName].includes(valueName);
-      }
-      return false;
-    };
     return facets
       .filter(d => FacetedSearch.HIDE_VALUE_IF_EMPTY
         ? initialFacetsCount.hasOwnProperty(d.name)
@@ -157,9 +150,7 @@ class FacetedSearch extends React.Component {
         name: d.name,
         values: d.values
           .map(v => ({name: v, count: facetsCount[d.name][v] || 0}))
-          .sort((a, b) => {
-            return isActive(d.name, b.name) - isActive(d.name, a.name) || b.count - a.count;
-          })
+          .sort((a, b) => b.count - a.count)
           .filter(v => FacetedSearch.HIDE_VALUE_IF_EMPTY
             ? v.count > 0
             : (
@@ -195,7 +186,12 @@ class FacetedSearch extends React.Component {
       }
       let minByActiveFilters = 0;
       if (activeFilters[filter.dictionary]) {
-        minByActiveFilters = activeFilters[filter.dictionary].length;
+        const currentFilter = this.filters.find(filter => filter.name === filterName);
+        if (currentFilter && currentFilter.values) {
+          minByActiveFilters = currentFilter.values
+            .map(value => activeFilters[filter.dictionary].includes(value.name))
+            .lastIndexOf(true) + 1;
+        }
       }
       let entriesToDisplay = Math.max(
         minByActiveFilters,
@@ -533,14 +529,6 @@ class FacetedSearch extends React.Component {
           </Button>
         </div>
         <div className={styles.actions}>
-          <Icon
-            type="delete"
-            className={classNames(
-              styles.clearFiltersBtn,
-              {[styles.disabled]: this.activeFiltersIsEmpty}
-            )}
-            onClick={this.onClearFilters}
-          />
           <DocumentTypeFilter
             values={this.documentTypeFilter.values}
             selection={(activeFilters || {})[DocumentTypeFilterName]}
@@ -578,6 +566,15 @@ class FacetedSearch extends React.Component {
                 key="faceted-filter"
                 className={classNames(styles.panel, styles.facetedFilters)}
               >
+                <span
+                  className={classNames(
+                    styles.clearFiltersBtn,
+                    {[styles.disabled]: this.activeFiltersIsEmpty}
+                  )}
+                  onClick={this.onClearFilters}
+                >
+                  Clear filters
+                </span>
                 {
                   this.filters.map((filter, index) => (
                     <FacetedFilter

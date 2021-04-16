@@ -40,15 +40,16 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
   }
 
   handleFilterClick = (filter) => () => {
+    const {selection, onChange} = this.props;
+    let newSelection = [];
     if (filter.count > 0) {
-      const {selection, onChange} = this.props;
-      const newSelection = (selection || []).filter(s => !filter.test(s));
+      newSelection = (selection || []).filter(s => !filter.test(s));
       if (!filter.enabled) {
         newSelection.push(...filter.types);
       }
-      if (onChange) {
-        onChange(newSelection);
-      }
+    }
+    if (onChange) {
+      onChange(newSelection);
     }
   };
 
