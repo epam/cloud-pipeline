@@ -46,6 +46,7 @@
 .container .content .panel.faceted-filters {
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .container .content .panel.search-results {
@@ -72,6 +73,7 @@
   flex-direction: row;
   align-items: flex-start;
   justify-content: space-between;
+  align-items: center;
 }
 
 .container .actions > * {
@@ -93,4 +95,24 @@
 .container .actions > *:last-child {
   border-right: none;
   padding-right: 0;
+}
+
+.container .clear-filters-btn {
+  position: sticky;
+  top: 0px;
+  left: 100%;
+  padding: 2px 5px;
+  border-radius: 3px;
+  height: 20px;
+  background: #1890ff;
+  color: white;
+  z-index: 1;
+  margin-bottom: -20px;
+  width: 74px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.container .clear-filters-btn.disabled {
+  transform: translateY(-22px);
 }

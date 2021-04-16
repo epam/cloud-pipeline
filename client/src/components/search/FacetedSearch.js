@@ -161,6 +161,14 @@ class FacetedSearch extends React.Component {
       }));
   }
 
+  get activeFiltersIsEmpty () {
+    const {activeFilters} = this.state;
+    if (activeFilters) {
+      return !Object.keys(activeFilters).length;
+    }
+    return true;
+  }
+
   get page () {
     const {offset, pageSize} = this.state;
     return pageSize ? Math.floor((offset + pageSize - 1) / pageSize) + 1 : 1;
@@ -168,6 +176,7 @@ class FacetedSearch extends React.Component {
 
   getFilterPreferences = (filterName) => {
     const {systemDictionaries, preferences} = this.props;
+    const {activeFilters} = this.state;
     const {facetedFiltersDictionaries} = preferences;
     if (systemDictionaries.loaded && facetedFiltersDictionaries) {
       const [filter] = (facetedFiltersDictionaries.dictionaries || [])
@@ -175,8 +184,20 @@ class FacetedSearch extends React.Component {
       if (!filter) {
         return null;
       }
-      let entriesToDisplay = filter.defaultDictEntriesToDisplay ||
-      facetedFiltersDictionaries.defaultDictEntriesToDisplay;
+      let minByActiveFilters = 0;
+      if (activeFilters[filter.dictionary]) {
+        const currentFilter = this.filters.find(filter => filter.name === filterName);
+        if (currentFilter && currentFilter.values) {
+          minByActiveFilters = currentFilter.values
+            .map(value => activeFilters[filter.dictionary].includes(value.name))
+            .lastIndexOf(true) + 1;
+        }
+      }
+      let entriesToDisplay = Math.max(
+        minByActiveFilters,
+        (filter.defaultDictEntriesToDisplay ||
+        facetedFiltersDictionaries.defaultDictEntriesToDisplay)
+      );
       if (typeof entriesToDisplay === 'string' && entriesToDisplay.toLowerCase() === 'all') {
         entriesToDisplay = Infinity;
       }
@@ -199,6 +220,13 @@ class FacetedSearch extends React.Component {
       delete newFilters[group];
     }
     this.setState({activeFilters: newFilters}, () => this.doSearch(0, true));
+  }
+
+  onClearFilters = () => {
+    if (this.activeFiltersIsEmpty) {
+      return;
+    }
+    this.setState({activeFilters: {}}, () => this.doSearch(0, true));
   }
 
   doSearch = (offset = 0, updateOffset) => {
@@ -505,6 +533,7 @@ class FacetedSearch extends React.Component {
             values={this.documentTypeFilter.values}
             selection={(activeFilters || {})[DocumentTypeFilterName]}
             onChange={this.onChangeFilter(DocumentTypeFilterName)}
+            onClearFilters={this.onClearFilters}
           />
           <TogglePresentationMode
             className={styles.togglePresentationMode}
@@ -537,6 +566,15 @@ class FacetedSearch extends React.Component {
                 key="faceted-filter"
                 className={classNames(styles.panel, styles.facetedFilters)}
               >
+                <span
+                  className={classNames(
+                    styles.clearFiltersBtn,
+                    {[styles.disabled]: this.activeFiltersIsEmpty}
+                  )}
+                  onClick={this.onClearFilters}
+                >
+                  Clear filters
+                </span>
                 {
                   this.filters.map((filter, index) => (
                     <FacetedFilter
