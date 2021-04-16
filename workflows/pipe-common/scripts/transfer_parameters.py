@@ -132,6 +132,9 @@ class Cluster:
         if 'CP_TRANSFER_THREADS' in os.environ:
             return int(os.environ['CP_TRANSFER_THREADS'])
         cpu_number = multiprocessing.cpu_count()
+        if 'CP_TRANSFER_PROC_RATIO' in os.environ:
+            ratio = int(os.environ['CP_TRANSFER_PROC_RATIO'])
+            return max(1, cpu_number/ratio)
         if cpu_number < 32:
             return 1
         if 32 <= cpu_number < 64:
