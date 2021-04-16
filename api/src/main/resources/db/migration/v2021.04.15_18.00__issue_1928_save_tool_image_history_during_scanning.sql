@@ -14,3 +14,4 @@
  */
 
 ALTER TABLE tool_version_scan ADD COLUMN image_history JSONB;
+ALTER TABLE tool_version_scan ADD COLUMN default_command TEXT;

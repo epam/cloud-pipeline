@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +51,7 @@ public class ToolVersionScanResult {
     private Date gracePeriod;
     private Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
     private List<ImageHistoryLayer> imageHistory = new ArrayList<>();
+    private String defaultCommand = StringUtils.EMPTY;
 
     @JsonIgnore
     private String lastLayerRef;
