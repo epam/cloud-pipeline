@@ -66,6 +66,14 @@ class FacetedFilter extends React.Component {
     return this.values.length > this.filtersToShow;
   }
 
+  filterIsChecked = (value) => {
+    const {selection} = this.props;
+    if (!selection || !selection.length) {
+      return false;
+    }
+    return selection.some(s => s === value.name);
+  }
+
   onChangeFilters = (value, selected) => {
     const {selection = [], onChange} = this.props;
     let changed = false;
@@ -97,8 +105,7 @@ class FacetedFilter extends React.Component {
     const {
       className,
       disabled,
-      name,
-      selection = []
+      name
     } = this.props;
     const {filtersExpanded, filterGroupExpanded} = this.state;
     if (this.values.length === 0) {
@@ -142,8 +149,8 @@ class FacetedFilter extends React.Component {
               >
                 <Checkbox
                   onChange={(e) => this.onChangeFilters(v.name, e.target.checked)}
-                  checked={selection.some(s => s === v.name)}
-                  disabled={v.count === 0 || disabled}
+                  checked={this.filterIsChecked(v)}
+                  disabled={(!this.filterIsChecked(v) && v.count === 0) || disabled}
                 >
                   {v.name} ({v.count})
                 </Checkbox>

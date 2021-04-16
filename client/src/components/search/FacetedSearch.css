@@ -94,3 +94,25 @@
   border-right: none;
   padding-right: 0;
 }
+
+.container .actions .clear-filters-btn {
+  font-size: 18px;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+  color: white;
+  border-radius: 5px;
+  margin-right: 5px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.container .actions .clear-filters-btn.disabled {
+  background-color: transparent;
+  color: #999;
+  border-color: transparent;
+  cursor: default;
+}

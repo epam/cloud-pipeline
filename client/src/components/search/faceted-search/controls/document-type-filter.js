@@ -65,7 +65,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
                   styles.filter,
                   {
                     [styles.selected]: f.enabled,
-                    [styles.disabled]: f.count === 0
+                    [styles.disabled]: !f.enabled && f.count === 0
                   }
                 )
               }

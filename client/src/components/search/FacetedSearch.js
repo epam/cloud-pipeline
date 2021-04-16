@@ -161,6 +161,14 @@ class FacetedSearch extends React.Component {
       }));
   }
 
+  get activeFiltersIsEmpty () {
+    const {activeFilters} = this.state;
+    if (activeFilters) {
+      return !Object.keys(activeFilters).length;
+    }
+    return true;
+  }
+
   get page () {
     const {offset, pageSize} = this.state;
     return pageSize ? Math.floor((offset + pageSize - 1) / pageSize) + 1 : 1;
@@ -199,6 +207,13 @@ class FacetedSearch extends React.Component {
       delete newFilters[group];
     }
     this.setState({activeFilters: newFilters}, () => this.doSearch(0, true));
+  }
+
+  onClearFilters = () => {
+    if (this.activeFiltersIsEmpty) {
+      return;
+    }
+    this.setState({activeFilters: {}}, () => this.doSearch(0, true));
   }
 
   doSearch = (offset = 0, updateOffset) => {
@@ -501,10 +516,19 @@ class FacetedSearch extends React.Component {
           </Button>
         </div>
         <div className={styles.actions}>
+          <Icon
+            type="delete"
+            className={classNames(
+              styles.clearFiltersBtn,
+              {[styles.disabled]: this.activeFiltersIsEmpty}
+            )}
+            onClick={this.onClearFilters}
+          />
           <DocumentTypeFilter
             values={this.documentTypeFilter.values}
             selection={(activeFilters || {})[DocumentTypeFilterName]}
             onChange={this.onChangeFilter(DocumentTypeFilterName)}
+            onClearFilters={this.onClearFilters}
           />
           <TogglePresentationMode
             className={styles.togglePresentationMode}
