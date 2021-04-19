@@ -28,7 +28,12 @@ spec:
           volumeMounts:
             - mountPath: /var/opt/gitlab
               name: git-data
+            - mountPath: ${CP_GITLAB_READER_LOG_DIR}
+              name: git-reader-logs
       volumes:
+        - name: git-reader-logs
+          hostPath:
+            path: /opt/git-reader/logs
         - name: git-data
           hostPath:
             path: /opt/gitlab/data

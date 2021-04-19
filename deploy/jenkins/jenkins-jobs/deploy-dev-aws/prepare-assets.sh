@@ -65,7 +65,7 @@ aws s3 cp "$AWS_SSH_KEY_S3" "$AWS_SSH_KEY_PATH_TMP" &>/dev/null &&
 # cp-dav
 
 # For incremental deploys - we do not clear the DBs, restart only cloud pipeline's services and repush changed docker images
-export CP_SERVICES_LIST="-s cp-api-srv -s cp-git-sync -s cp-edge -s cp-notifier -s cp-docker-comp -s cp-docker-registry -s cp-dav"
+export CP_SERVICES_LIST="-s cp-api-srv -s cp-git-sync -s cp-edge -s cp-notifier -s cp-docker-comp -s cp-docker-registry -s cp-dav -s cp-gitlab-reader"
 # And do not clear the data
 unset CP_ERASE_DATA
 

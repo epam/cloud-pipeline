@@ -35,12 +35,14 @@ const PREVIEW_POSITION = {
   left: {
     top: '84px',
     left: '75px',
-    maxHeight: 'calc(100vh - 135px)'
+    maxHeight: 'calc(100vh - 135px)',
+    zIndex: 2
   },
   right: {
     top: '84px',
     right: '10px',
-    maxHeight: 'calc(100vh - 135px)'
+    maxHeight: 'calc(100vh - 135px)',
+    zIndex: 2
   }
 };
 

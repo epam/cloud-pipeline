@@ -17,7 +17,7 @@ import os
 
 from git import GitCommandError
 
-from gitreader.src.logger import BrowserLogger
+from gitreader.src.logger import AppLogger
 from gitreader.src.model.git_diff_report import GitDiffReport
 from gitreader.src.model.git_diff_report_entry import GitDiffReportEntry
 from gitreader.src.model.git_object import GitObject
@@ -26,10 +26,12 @@ from gitreader.src.model.git_object_metadata import GitObjectMetadata
 from gitreader.src.model.git_object_listing import GitListing
 from gitreader.src.model.git_search_filter import GitSearchFilter
 
+EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
 
 class GitManager(object):
 
-    def __init__(self, git_root, logger=BrowserLogger(None)):
+    def __init__(self, git_root, logger=AppLogger()):
         self.logger = logger
         self.git_root = git_root
 
@@ -104,7 +106,7 @@ class GitManager(object):
         except GitCommandError:
             # If can't get diff with sha~1 - it should be the first one commit, let's get changes from
             # '4b825dc642cb6eb9a060e54bf8d69288fbee4904' - the empty tree SHA and this commit
-            return repo.git.diff("-U{}".format(unified_lines), "4b825dc642cb6eb9a060e54bf8d69288fbee4904", commit.sha, "--", filters.path_masks)
+            return repo.git.diff("-U{}".format(unified_lines), EMPTY_TREE_SHA, commit.sha, "--", filters.path_masks)
 
     def list_tree(self, repo, path, ref, page, page_size):
         result = []

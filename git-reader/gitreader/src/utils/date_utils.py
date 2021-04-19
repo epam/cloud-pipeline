@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
+import datetime as datetime
+
+DATE_FORMAT = "%Y-%m-%d"
+DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 
-def parse_date(date_str):
-    if date_str and not (re.match("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d", date_str) or
-                         re.match("\\d\\d\\d\\d-\\d\\d-\\d\\d", date_str)):
-        raise AttributeError("Date value is not in format yyyy-mm-dd or 'yyyy-mm-dd HH:mm:ss.SSS'")
+def validate_date(date_str):
+    if date_str is None:
+        return date_str
+    try:
+        datetime.datetime.strptime(date_str, DATE_FORMAT)
+    except ValueError:
+        try:
+            datetime.datetime.strptime(date_str, DATE_TIME_FORMAT)
+        except ValueError:
+            raise AttributeError("Date value is not in format yyyy-mm-dd or 'yyyy-mm-dd HH:MM:ss.SSS'")
     return date_str
