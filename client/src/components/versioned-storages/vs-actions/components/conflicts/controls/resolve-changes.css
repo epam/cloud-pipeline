@@ -14,21 +14,26 @@
  *  limitations under the License.
  */
 
-import VSRemote from './base/remote';
-import {action, observable} from 'mobx';
+.container {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #ddd;
+}
 
-export default class VSList extends VSRemote {
-  @observable fetchId = 0;
+.container > * {
+  margin-right: 5px;
+}
 
-  constructor (runId) {
-    super(runId);
-    this.runId = runId;
-    this.url = 'vs/list';
-  }
+.container > *:last-child {
+  margin-right: 0;
+}
 
-  @action
-  update (value) {
-    super.update(value);
-    this.fetchId += 1;
-  }
+.total {
+  margin-left: auto;
+}
+
+.button {
+  line-height: 1;
 }

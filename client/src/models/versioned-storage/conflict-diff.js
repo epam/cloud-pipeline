@@ -15,20 +15,21 @@
  */
 
 import VSRemote from './base/remote';
-import {action, observable} from 'mobx';
 
-export default class VSList extends VSRemote {
-  @observable fetchId = 0;
-
-  constructor (runId) {
+export default class VSConflictDiff extends VSRemote {
+  constructor (runId, storageId, file, revision, raw, linesCount) {
     super(runId);
     this.runId = runId;
-    this.url = 'vs/list';
-  }
-
-  @action
-  update (value) {
-    super.update(value);
-    this.fetchId += 1;
+    this.storageId = storageId;
+    let query = [
+      `path=${encodeURIComponent(file)}`,
+      revision && `revision=${revision}`,
+      raw && `raw=${raw}`,
+      linesCount !== undefined && linesCount !== null && `lines_count=${linesCount}`
+    ].filter(Boolean).join('&');
+    if (query.length) {
+      query = `?${query}`;
+    }
+    this.url = `vs/${storageId}/diff/conflicts${query}`;
   }
 }

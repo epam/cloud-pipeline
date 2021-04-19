@@ -15,20 +15,13 @@
  */
 
 import VSRemote from './base/remote';
-import {action, observable} from 'mobx';
 
-export default class VSList extends VSRemote {
-  @observable fetchId = 0;
-
-  constructor (runId) {
+export default class VSFileContent extends VSRemote {
+  constructor (runId, storageId, file) {
     super(runId);
+    this.constructor.isJson = false;
     this.runId = runId;
-    this.url = 'vs/list';
-  }
-
-  @action
-  update (value) {
-    super.update(value);
-    this.fetchId += 1;
+    this.storageId = storageId;
+    this.url = `vs/${storageId}/files?path=${encodeURIComponent(file)}`;
   }
 }

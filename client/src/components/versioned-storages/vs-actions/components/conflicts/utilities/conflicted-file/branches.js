@@ -14,21 +14,13 @@
  *  limitations under the License.
  */
 
-import VSRemote from './base/remote';
-import {action, observable} from 'mobx';
+const head = 'HEAD';
+const remote = 'REMOTE';
+const merged = 'MERGED';
 
-export default class VSList extends VSRemote {
-  @observable fetchId = 0;
-
-  constructor (runId) {
-    super(runId);
-    this.runId = runId;
-    this.url = 'vs/list';
-  }
-
-  @action
-  update (value) {
-    super.update(value);
-    this.fetchId += 1;
-  }
-}
+export default [head, remote, merged];
+export {
+  head as HeadBranch,
+  remote as RemoteBranch,
+  merged as Merged
+};

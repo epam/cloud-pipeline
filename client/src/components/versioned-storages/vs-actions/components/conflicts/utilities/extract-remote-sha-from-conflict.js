@@ -14,21 +14,10 @@
  *  limitations under the License.
  */
 
-import VSRemote from './base/remote';
-import {action, observable} from 'mobx';
-
-export default class VSList extends VSRemote {
-  @observable fetchId = 0;
-
-  constructor (runId) {
-    super(runId);
-    this.runId = runId;
-    this.url = 'vs/list';
+export default function extractRemoteSHA (contents) {
+  const result = /\n<<<<<<< HEAD\n(.*?)\n=======\n(.*?)\n>>>>>>> (.*?)\n/gms.exec(contents);
+  if (result && result.length === 4) {
+    return result[3];
   }
-
-  @action
-  update (value) {
-    super.update(value);
-    this.fetchId += 1;
-  }
+  return undefined;
 }

@@ -14,21 +14,26 @@
  *  limitations under the License.
  */
 
-import VSRemote from './base/remote';
-import {action, observable} from 'mobx';
-
-export default class VSList extends VSRemote {
-  @observable fetchId = 0;
-
-  constructor (runId) {
-    super(runId);
-    this.runId = runId;
-    this.url = 'vs/list';
+export default {
+  background: '#f0f0f0',
+  insertion: {
+    applied: 'rgb(195, 224, 195)',
+    background: 'rgb(195, 224, 195)',
+    color: '#399839'
+  },
+  deletion: {
+    applied: '#d9d9d9',
+    background: '#d9d9d9',
+    color: '#666666'
+  },
+  edition: {
+    applied: 'rgb(201, 228, 255)',
+    background: 'rgb(201, 228, 255)',
+    color: '#3572b0'
+  },
+  conflict: {
+    applied: 'rgb(249, 203, 203)',
+    background: 'rgb(249, 203, 203)',
+    color: '#cc3333'
   }
-
-  @action
-  update (value) {
-    super.update(value);
-    this.fetchId += 1;
-  }
-}
+};

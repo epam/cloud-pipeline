@@ -32,10 +32,11 @@ import styles from './vs-actions.css';
 import '../../../staticStyles/vs-actions-dropdown.css';
 import VSClone from '../../../models/versioned-storage/clone';
 import VSCommit from '../../../models/versioned-storage/commit';
-import VSDiff from '../../../models/versioned-storage/diff';
+import VSCurrentState from '../../../models/versioned-storage/current-state';
 import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
-import {GitCommitDialog} from './components';
+import VSConflictError from '../../../models/versioned-storage/conflict-error';
+import {GitCommitDialog, ConflictsDialog} from './components';
 
 const SUBMENU_POSITION = {
   right: 'right',
@@ -44,11 +45,14 @@ const SUBMENU_POSITION = {
 
 class VSActions extends React.Component {
   state = {
+    fetchId: undefined,
+    storagesStatuses: {},
     dropDownVisible: false,
     vsBrowserVisible: false,
     subMenuPosition: SUBMENU_POSITION.right,
     gitCommit: undefined,
-    gitDiff: undefined
+    gitDiff: undefined,
+    conflicts: undefined
   };
 
   menuContainerRef;
@@ -82,8 +86,13 @@ class VSActions extends React.Component {
     return [];
   }
 
+  componentDidMount () {
+    if (this.vsList && this.vsList.loaded) {
+      this.fetchVersionedStoragesStatus();
+    }
+  }
+
   componentWillUnmount () {
-    this.vsTaskStatus && this.vsTaskStatus.abort();
     this.statuses.forEach(operation => operation.abort());
     delete this.statuses;
   }
@@ -95,7 +104,52 @@ class VSActions extends React.Component {
     if (prevState.dropDownVisible !== this.state.dropDownVisible && this.state.dropDownVisible) {
       this.refresh(prevProps.run?.id !== this.props.run?.id);
     }
+    if (this.vsList && this.vsList.loaded && this.state.fetchId !== this.vsList.fetchId) {
+      this.fetchVersionedStoragesStatus();
+    }
   }
+
+  fetchVersionedStoragesStatus = () => {
+    if (this.vsList && this.vsList.loaded && this.props.run) {
+      this.setState({
+        fetchId: this.vsList.fetchId,
+        storagesStatuses: this.repositories.reduce((acc, cur) => ({
+          ...acc,
+          [cur.id]: {
+            pending: true
+          }
+        }), {})
+      }, () => {
+        console.log('fetch storages info', this.repositories);
+        const wrapFetchRepositoryStatusFn = repository => new Promise((resolve) => {
+          const request = new VSCurrentState(this.props.run?.id, repository.id);
+          request
+            .fetch()
+            .then(() => {
+              if (request.loaded) {
+                resolve({
+                  [repository.id]: request.value
+                });
+              } else {
+                resolve({});
+              }
+            })
+            .catch(() => resolve({}));
+        });
+        Promise.all(this.repositories.map(wrapFetchRepositoryStatusFn))
+          .then(payloads => {
+            const storagesStatuses = payloads
+              .reduce((acc, cur) => ({
+                ...acc,
+                ...cur
+              }), {});
+            this.setState({
+              storagesStatuses
+            });
+          });
+      });
+    }
+  };
 
   pushOperation = (operation, promise) => {
     this.statuses.push(operation);
@@ -117,7 +171,13 @@ class VSActions extends React.Component {
     this.setState({vsBrowserVisible: false});
   };
 
-  performRequestWithStatus = (request, resolve, hideMessage) => {
+  performRequestWithStatus = (
+    request,
+    resolve,
+    hideMessage,
+    onConflicts = undefined,
+    options = {}
+  ) => {
     request
       .send()
       .then(() => {
@@ -135,6 +195,9 @@ class VSActions extends React.Component {
       .catch(e => {
         message.error(e.message, 5);
         console.error(e);
+        if (e instanceof VSConflictError && onConflicts) {
+          onConflicts(e.conflicts, options?.storage);
+        }
       })
       .then(() => {
         hideMessage && hideMessage();
@@ -154,7 +217,11 @@ class VSActions extends React.Component {
       this.performRequestWithStatus(
         new VSClone(this.props.run?.id, id, commitId),
         resolve,
-        hide
+        hide,
+        undefined,
+        {
+          storage: versionedStorage
+        }
       );
     });
   }
@@ -170,7 +237,11 @@ class VSActions extends React.Component {
       this.performRequestWithStatus(
         new VSFetch(this.props.run?.id, id),
         resolve,
-        hide
+        hide,
+        this.onConflictsDetected,
+        {
+          storage: versionedStorage
+        }
       );
     });
   };
@@ -180,7 +251,7 @@ class VSActions extends React.Component {
       return Promise.resolve([]);
     }
     return new Promise((resolve) => {
-      const request = new VSDiff(this.props.run?.id, versionedStorage?.id);
+      const request = new VSCurrentState(this.props.run?.id, versionedStorage?.id);
       request
         .fetch()
         .then(() => {
@@ -188,7 +259,7 @@ class VSActions extends React.Component {
             message.error(request.error || 'Error fetching storage diff', 5);
             resolve([]);
           } else {
-            resolve(Array.from(request.value || []));
+            resolve(Array.from(request.value?.files || []));
           }
         })
         .catch(e => {
@@ -244,10 +315,30 @@ class VSActions extends React.Component {
       this.performRequestWithStatus(
         new VSCommit(this.props.run?.id, id, commitMessage),
         resolve,
-        hide
+        hide,
+        this.onConflictsDetected,
+        undefined,
+        {
+          storage: versionedStorage
+        }
       );
     });
   };
+
+  onConflictsDetected = (conflicts, storage) => {
+    this.setState({
+      conflicts: {
+        files: conflicts,
+        storage
+      }
+    });
+  };
+
+  onCloseConflictsDialog = () => {
+    this.setState({
+      conflicts: undefined
+    });
+  }
 
   onDiffVS = (versionedStorage) => {
     if (!versionedStorage) {
@@ -282,6 +373,21 @@ class VSActions extends React.Component {
         })
         .then(() => resolve());
     });
+  };
+
+  onResolveConflictsVS = (storage) => {
+    const {
+      storagesStatuses
+    } = this.state;
+    if (storagesStatuses && storagesStatuses.hasOwnProperty(storage?.id)) {
+      const {
+        files = []
+      } = storagesStatuses[storage?.id];
+      this.onConflictsDetected(
+        files.filter(file => /^conflict/i.test(file.status)).map(file => file.path),
+        storage
+      );
+    }
   };
 
   closeGitDiffModal = () => {
@@ -337,6 +443,7 @@ class VSActions extends React.Component {
   }
 
   renderOverlay = () => {
+    const {storagesStatuses} = this.state;
     const menuItems = [];
     let onChange;
     if (!this.vsList || (!this.vsList.loaded && this.vsList.pending)) {
@@ -368,29 +475,58 @@ class VSActions extends React.Component {
         menuItems.push((<Menu.Divider key="clone-divider" />));
       }
       storages.forEach((storage, index, array) => {
+        const status = storagesStatuses.hasOwnProperty(storage.id)
+          ? storagesStatuses[storage.id]
+          : {};
+        const {
+          merge_in_progress: mergeInProgress = false,
+          pending = false
+        } = status;
         const Container = array.length === 1 ? Menu.ItemGroup : Menu.SubMenu;
         menuItems.push((
           <Container
             key={`-${storage.id}`}
-            title={storage.name}
-            ref={(el) => { this.menuContainerRef = el; }}
+            title={(
+              <span>
+                {storage.name}
+                {
+                  pending && (
+                    <Icon type="loading" />
+                  )
+                }
+              </span>
+            )}
+            ref={(el) => {
+              this.menuContainerRef = el;
+            }}
           >
             <Menu.Item
               key={`diff-${storage.id}`}
+              disabled={mergeInProgress || pending}
             >
               <Icon type="exception" /> Diff
             </Menu.Item>
             <Menu.Item
               key={`save-${storage.id}`}
-              disabled={storage.detached}
+              disabled={storage.detached || mergeInProgress || pending}
             >
               <Icon type="save" /> Save
             </Menu.Item>
             <Menu.Item
               key={`refresh-${storage.id}`}
+              disabled={mergeInProgress || pending}
             >
               <Icon type="sync" /> Refresh
             </Menu.Item>
+            {
+              mergeInProgress && (
+                <Menu.Item
+                  key={`resolve-${storage.id}`}
+                >
+                  <Icon type="exclamation-circle" /> Resolve conflicts
+                </Menu.Item>
+              )
+            }
           </Container>
         ));
       });
@@ -416,6 +552,10 @@ class VSActions extends React.Component {
               this.onDiffVS(storage);
             }
             break;
+          case 'resolve':
+            if (storage) {
+              this.onResolveConflictsVS(storage);
+            }
         }
         this.setState({dropDownVisible: false});
       };
@@ -451,7 +591,8 @@ class VSActions extends React.Component {
     const {
       dropDownVisible,
       gitDiff,
-      gitCommit
+      gitCommit,
+      conflicts
     } = this.state;
     if (!this.fsBrowserAvailable) {
       return null;
@@ -491,6 +632,13 @@ class VSActions extends React.Component {
               files={gitCommit?.files}
             />
           )}
+          <ConflictsDialog
+            visible={!!conflicts}
+            conflicts={conflicts?.files}
+            onClose={this.onCloseConflictsDialog}
+            run={run?.id}
+            storage={conflicts?.storage}
+          />
         </a>
       </Dropdown>
     );

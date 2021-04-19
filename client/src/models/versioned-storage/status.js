@@ -15,6 +15,7 @@
  */
 
 import VSRemote from './base/remote';
+import VSConflictError from './conflict-error';
 
 class VSTaskStatus extends VSRemote {
   constructor (runId, statusId) {
@@ -60,7 +61,11 @@ class VSTaskStatus extends VSRemote {
                 resolve(self.value);
               } else if (/^failure$/i.test(status)) {
                 self.abortFn = undefined;
-                reject(new Error(message));
+                if (VSConflictError.isConflictError(self.value)) {
+                  reject(new VSConflictError(self.value));
+                } else {
+                  reject(new Error(message));
+                }
               } else {
                 self.timeout = setTimeout(() => fetch(), intervalSec * 1000);
               }

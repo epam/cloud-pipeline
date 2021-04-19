@@ -14,21 +14,15 @@
  *  limitations under the License.
  */
 
-import VSRemote from './base/remote';
-import {action, observable} from 'mobx';
-
-export default class VSList extends VSRemote {
-  @observable fetchId = 0;
-
-  constructor (runId) {
-    super(runId);
-    this.runId = runId;
-    this.url = 'vs/list';
-  }
-
-  @action
-  update (value) {
-    super.update(value);
-    this.fetchId += 1;
-  }
+export default function readBlobContents (blob) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = function () {
+      resolve(this.result);
+    };
+    fr.onerror = function () {
+      reject(new Error('Error reading file contents'));
+    };
+    fr.readAsText(blob);
+  });
 }

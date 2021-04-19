@@ -17,13 +17,10 @@
 import VSRemote from './base/remote';
 
 export default class VSDiff extends VSRemote {
-  constructor (runId, storageId, file = undefined, raw = false) {
+  constructor (runId, storageId, file, raw) {
     super(runId);
     this.runId = runId;
     this.storageId = storageId;
-    this.url = `vs/${storageId}/diff`;
-    if (file) {
-      this.url = `vs/${storageId}/diff/files?path=${encodeURIComponent(file)}&raw=${raw}`;
-    }
+    this.url = `vs/${storageId}/diff/files?path=${encodeURIComponent(file)}&raw=${raw}`;
   }
 }
