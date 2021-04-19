@@ -71,11 +71,12 @@ public interface GitReaderApi {
      * @param pageSize (optional) - The size of the page to return
      */
     @GET("git/{project}/logs_tree")
-    Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(@Path(PROJECT) String name,
-                                                                                           @Query(FILE_PATH) String path,
-                                                                                           @Query(REF) String reference,
-                                                                                           @Query(PAGE) Long page,
-                                                                                           @Query(PAGE_SIZE) Integer pageSize);
+    Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(
+            @Path(PROJECT) String name,
+            @Query(FILE_PATH) String path,
+            @Query(REF) String reference,
+            @Query(PAGE) Long page,
+            @Query(PAGE_SIZE) Integer pageSize);
 
     /**
      * Get a list of repository files and directories in a project with additional information about last commit.
@@ -84,9 +85,10 @@ public interface GitReaderApi {
      * @param reference The name of branch, tag or commit
      */
     @POST("git/{project}/logs_tree")
-    Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(@Path(PROJECT) String name,
-                                                                                           @Query(REF) String reference,
-                                                                                           @Body GitReaderLogsPathFilter paths);
+    Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(
+            @Path(PROJECT) String name,
+            @Query(REF) String reference,
+            @Body GitReaderLogsPathFilter paths);
 
     /**
      * Allows you to receive list of commit for specific filters like, paths, authors, dates
@@ -96,10 +98,11 @@ public interface GitReaderApi {
      * @param pageSize (optional) - The size of the page to return
      */
     @POST("git/{project}/commits")
-    Call<Result<GitReaderEntryIteratorListing<GitReaderRepositoryCommit>>> listCommits(@Path(PROJECT) String name,
-                                                                                       @Query(PAGE) Long page,
-                                                                                       @Query(PAGE_SIZE) Integer pageSize,
-                                                                                       @Body GitReaderLogRequestFilter filter);
+    Call<Result<GitReaderEntryIteratorListing<GitReaderRepositoryCommit>>> listCommits(
+            @Path(PROJECT) String name,
+            @Query(PAGE) Long page,
+            @Query(PAGE_SIZE) Integer pageSize,
+            @Body GitReaderLogRequestFilter filter);
 
     /**
      * Allows you to receive list of commit for specific filters like, paths, authors, dates and its diff

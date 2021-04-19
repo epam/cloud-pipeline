@@ -901,19 +901,10 @@ public class GitManager {
     public GitReaderEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
                                                                              final String path, final Long page,
                                                                              final Integer pageSize) {
-        try {
-            final Pipeline pipeline = pipelineManager.load(id);
-            if (!StringUtils.isNullOrEmpty(version)) {
-                checkRevision(pipeline, version);
-            }
-            return new GitReaderClient(getGitReaderHostPreference())
-                    .getRepositoryTree(
-                        GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
-                    );
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to list tree from repo", e);
-        }
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
+                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+            ));
     }
 
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
@@ -921,90 +912,66 @@ public class GitManager {
                                                                                         final String path,
                                                                                         final Long page,
                                                                                         final Integer pageSize) {
-        try {
-            final Pipeline pipeline = pipelineManager.load(id);
-            if (!StringUtils.isNullOrEmpty(version)) {
-                checkRevision(pipeline, version);
-            }
-            return new GitReaderClient(getGitReaderHostPreference())
-                    .getRepositoryTreeLogs(
-                        GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
-                    );
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request information from repo", e);
-        }
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
+                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+            ));
     }
 
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
-                                                                                        final String version,
-                                                                                        final GitReaderLogsPathFilter paths) {
-        try {
-            final Pipeline pipeline = pipelineManager.load(id);
-            if (!StringUtils.isNullOrEmpty(version)) {
-                checkRevision(pipeline, version);
-            }
-            return new GitReaderClient(getGitReaderHostPreference())
-                    .getRepositoryTreeLogs(
-                            GitRepositoryUrl.from(pipeline.getRepository()), version, paths
-                    );
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException(
-                    "Something went wrong when trying to list tree and last commit information from repo", e);
-        }
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(
+            final Long id,
+            final String version,
+            final GitReaderLogsPathFilter paths) {
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
+                GitRepositoryUrl.from(pipeline.getRepository()), version, paths
+        ));
     }
 
-    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(final Long id,
-                                                                                         final Long page,
-                                                                                         final Integer pageSize,
-                                                                                         final GitCommitsFilter filter) {
-        try {
-            final Pipeline pipeline = pipelineManager.load(id);
-            if (!StringUtils.isNullOrEmpty(filter.getRef())) {
-                checkRevision(pipeline, filter.getRef());
-            }
-            return new GitReaderClient(getGitReaderHostPreference())
-                    .getRepositoryCommits(
-                        GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, filter
-                    );
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request commit log from repo", e);
-        }
+    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(
+            final Long id,
+            final Long page,
+            final Integer pageSize,
+            final GitCommitsFilter filter) {
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommits(
+                    GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, filter
+            ));
     }
 
     public GitReaderDiff logRepositoryCommitDiffs(final Long id, final Boolean includeDiff,
                                                   final GitCommitsFilter filter) {
-        try {
-            final Pipeline pipeline = pipelineManager.load(id);
-            if (!StringUtils.isNullOrEmpty(filter.getRef())) {
-                checkRevision(pipeline, filter.getRef());
-            }
-            return new GitReaderClient(getGitReaderHostPreference())
-                    .getRepositoryCommitDiffs(
-                        GitRepositoryUrl.from(pipeline.getRepository()),
-                        includeDiff, filter
-                    );
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request commit diffs from repo", e);
-        }
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiffs(
+                    GitRepositoryUrl.from(pipeline.getRepository()),
+                    includeDiff, filter
+            ));
     }
 
     public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit,
                                                       final String path) {
-        try {
             final Pipeline pipeline = pipelineManager.load(id);
-            return new GitReaderClient(getGitReaderHostPreference())
-                    .getRepositoryCommitDiff(
-                            GitRepositoryUrl.from(pipeline.getRepository()),
-                            commit, path
-                    );
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiff(
+                    GitRepositoryUrl.from(pipeline.getRepository()),
+                    commit, path
+            ));
+    }
+
+    private <T> T callGitReaderApi(final GitClientMethodCall<GitReaderClient, T> method) {
+        try {
+            return method.apply(new GitReaderClient(getGitReaderHostPreference()));
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request commit diff from repo", e);
+            throw new IllegalArgumentException("Something went wrong when trying to request data from Git Reader service", e);
         }
+    }
+
+    private Pipeline loadPipelineAndCheckRevision(final Long id, final String revision) {
+        final Pipeline pipeline = pipelineManager.load(id);
+        if (!StringUtils.isNullOrEmpty(revision)) {
+            checkRevision(pipeline, revision);
+        }
+        return pipeline;
     }
 
     private String getGitReaderHostPreference() {

@@ -44,7 +44,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 import retrofit2.Call;
@@ -73,6 +72,8 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.manager.git.RestApiUtils.execute;
+
 @Wither
 @AllArgsConstructor
 @NoArgsConstructor
@@ -80,6 +81,7 @@ public class GitlabClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitlabClient.class);
 
+    private static final String DATA_FORMAT = "yyyy-MM-dd";
     private static final String TEMPLATE_DESCRIPTION = "description.txt";
     private static final String README_DEFAULT_CONTENTS = "# Job definition\n\n"
             + "This is an initial job definition `README`\n\n"
@@ -435,20 +437,6 @@ public class GitlabClient {
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
     }
 
-    private <R> R execute(Call<R> call) throws GitClientException {
-        try {
-            Response<R> response = call.execute();
-            if (response.isSuccessful()) {
-                return response.body();
-            } else {
-                throw new UnexpectedResponseStatusException(HttpStatus.valueOf(response.code()),
-                        response.errorBody() != null ? response.errorBody().string() : "");
-            }
-        } catch (IOException e) {
-            throw new GitClientException(e.getMessage(), e);
-        }
-    }
-
     private void createFile(GitProject project, String path, String content) {
         try {
             final Response<GitFile> response = gitLabApi.createFiles(
@@ -553,7 +541,7 @@ public class GitlabClient {
     }
 
     private GitLabApi buildGitLabApi(final String gitHost, final String adminToken) {
-        return new GitLabApiBuilder(gitHost, adminToken).build();
+        return new ApiBuilder<>(GitLabApi.class, gitHost, adminToken, DATA_FORMAT).build();
     }
 
     private void uploadFolder(Template template, String repoName, GitProject project) throws GitClientException {

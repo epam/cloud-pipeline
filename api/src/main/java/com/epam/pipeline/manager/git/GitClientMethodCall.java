@@ -14,25 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git.gitreader;
+package com.epam.pipeline.manager.git;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import com.epam.pipeline.exception.git.GitClientException;
 
-import java.util.List;
-
-@Data
-public class GitReaderEntryIteratorListing<T> {
-
-    @JsonProperty("listing")
-    private List<T> listing;
-
-    @JsonProperty("page")
-    private Long page;
-
-    @JsonProperty("page_size")
-    private Integer pageSize;
-
-    @JsonProperty("has_next")
-    private Boolean hasNext;
+@FunctionalInterface
+public interface GitClientMethodCall<T, R> {
+    R apply(T t) throws GitClientException;
 }

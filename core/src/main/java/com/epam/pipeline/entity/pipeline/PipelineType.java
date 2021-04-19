@@ -22,34 +22,36 @@ import java.util.Map;
 public enum PipelineType {
     PIPELINE(0), VERSIONED_STORAGE(1);
 
-    private long id;
-    private static Map<Long, PipelineType> idMap = new HashMap<>();
+    private final long id;
+
+    private static final Map<Long, PipelineType> ID_MAP = new HashMap<>();
     static {
-        idMap.put(PIPELINE.id, PIPELINE);
-        idMap.put(VERSIONED_STORAGE.id, VERSIONED_STORAGE);
-    }
-    private static Map<String, PipelineType> namesMap = new HashMap<>();
-    static {
-        namesMap.put(PIPELINE.name(), PIPELINE);
-        namesMap.put(VERSIONED_STORAGE.name(), VERSIONED_STORAGE);
+        ID_MAP.put(PIPELINE.id, PIPELINE);
+        ID_MAP.put(VERSIONED_STORAGE.id, VERSIONED_STORAGE);
     }
 
-    PipelineType(long id) {
+    private static final Map<String, PipelineType> NAMES_MAP = new HashMap<>();
+    static {
+        NAMES_MAP.put(PIPELINE.name(), PIPELINE);
+        NAMES_MAP.put(VERSIONED_STORAGE.name(), VERSIONED_STORAGE);
+    }
+
+    PipelineType(final long id) {
         this.id = id;
     }
 
-    public static PipelineType getById(Long id) {
+    public static PipelineType getById(final Long id) {
         if (id == null) {
             return null;
         }
-        return idMap.get(id);
+        return ID_MAP.get(id);
     }
 
-    public static PipelineType getByName(String name) {
+    public static PipelineType getByName(final String name) {
         if (name == null) {
             return null;
         }
-        return namesMap.get(name);
+        return NAMES_MAP.get(name);
     }
 
     public Long getId() {

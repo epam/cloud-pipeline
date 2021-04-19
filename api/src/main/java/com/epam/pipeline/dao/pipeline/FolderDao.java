@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -161,6 +162,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         LOCKED,
         PIPELINE_ID,
         PIPELINE_NAME,
+        PIPELINE_TYPE,
         PIPELINE_REPO,
         PIPELINE_REPO_SSH,
         PIPELINE_DESCRIPTION,
@@ -250,6 +252,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         pipeline.setId(pipelineId);
                         pipeline.setName(rs.getString(PIPELINE_NAME.name()));
                         pipeline.setDescription(rs.getString(PIPELINE_DESCRIPTION.name()));
+                        pipeline.setPipelineType(PipelineType.getById(rs.getLong(PIPELINE_TYPE.name())));
                         pipeline.setRepository(rs.getString(PIPELINE_REPO.name()));
                         pipeline.setRepositorySsh(rs.getString(PIPELINE_REPO_SSH.name()));
                         pipeline.setRepositoryToken(rs.getString(PIPELINE_REPOSITORY_TOKEN.name()));
