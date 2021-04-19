@@ -23,6 +23,7 @@ import Preview from '../preview';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
 import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
+import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
 
 const RESULT_ITEM_HEIGHT = 46;
@@ -165,7 +166,7 @@ class SearchResults extends React.Component {
     const {hoverInfo, preview} = this.state;
     return (
       <a
-        href={!disabled && resultItem.url ? `/#${resultItem.url}` : undefined}
+        href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
         key={resultItem.elasticId}
         className={styles.resultItemContainer}
         onMouseOver={(e) => this.hoverItem(resultItem, e)}
@@ -416,7 +417,7 @@ class SearchResults extends React.Component {
     }
     return (
       <a
-        href={!disabled && resultItem.url ? `/#${resultItem.url}` : undefined}
+        href={!disabled && resultItem.url ? `${resultItem.url}` : undefined}
         className={styles.tableRow}
         style={{gridTemplate: this.getGridTemplate()}}
         key={rowIndex}
