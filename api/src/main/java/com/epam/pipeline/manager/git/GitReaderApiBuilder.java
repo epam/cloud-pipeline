@@ -43,7 +43,7 @@ public class GitReaderApiBuilder {
     private final int readTimeout;
     private final String apiRoot;
 
-    public GitReaderApiBuilder(String apiRoot) {
+    public GitReaderApiBuilder(final String apiRoot) {
         this.connectTimeout = TIMEOUT;
         this.readTimeout = TIMEOUT;
         this.apiRoot = apiRoot;
@@ -92,7 +92,7 @@ public class GitReaderApiBuilder {
         return builder.build();
     }
 
-    private SSLContext buildSSLContext(TrustManager[] trustAllCerts) {
+    private SSLContext buildSSLContext(final TrustManager[] trustAllCerts) {
         try {
             final SSLContext sslContext = SSLContext.getInstance("SSL");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());

@@ -736,7 +736,7 @@ public class GitManager {
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
-    public GitProject createRepository(String pipelineName, String description) throws GitClientException {
+    public GitProject createRepository(final String pipelineName, final String description) throws GitClientException {
         return getDefaultGitlabClient().createEmptyRepository(
                         pipelineName,
                         description,

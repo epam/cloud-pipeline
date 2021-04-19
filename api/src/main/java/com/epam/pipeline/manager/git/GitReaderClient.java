@@ -178,7 +178,7 @@ public class GitReaderClient {
                 .build();
     }
 
-    private List<String> getPathMasks(GitCommitsFilter filter) {
+    private List<String> getPathMasks(final GitCommitsFilter filter) {
         if (StringUtils.isBlank(filter.getPath()) && CollectionUtils.isEmpty(filter.getExtensions())) {
             return null;
         } else if (CollectionUtils.isEmpty(filter.getExtensions())) {

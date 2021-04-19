@@ -709,7 +709,7 @@ public class PipelineController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderEntryListing<GitRepositoryEntry>> lsTreeRepositoryContent(
-            @PathVariable(value = ID) Long id,
+            @PathVariable(value = ID) final Long id,
             @RequestParam(value = VERSION, required = false) final String version,
             @RequestParam(value = PATH, required = false) final String path,
             @RequestParam(value = PAGE, required = false) final Long page,
@@ -727,7 +727,7 @@ public class PipelineController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>> logsTreeRepositoryContent(
-            @PathVariable(value = ID) Long id,
+            @PathVariable(value = ID) final Long id,
             @RequestParam(value = VERSION, required = false) final String version,
             @RequestParam(value = PATH, required = false) final String path,
             @RequestParam(value = PAGE, required = false) final Long page,
@@ -745,7 +745,7 @@ public class PipelineController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>> logsTreeRepositoryContent(
-            @PathVariable(value = ID) Long id,
+            @PathVariable(value = ID) final Long id,
             @RequestParam(value = VERSION, required = false) final String version,
             @RequestBody final GitReaderLogsPathFilter paths) throws GitClientException {
         return Result.success(pipelineApiService.logsTreeRepositoryContent(id, version, paths));
@@ -761,7 +761,7 @@ public class PipelineController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderEntryIteratorListing<GitReaderRepositoryCommit>> getRepositoryCommits(
-            @PathVariable(value = ID) Long id,
+            @PathVariable(value = ID) final Long id,
             @RequestParam(value = PAGE, required = false) final Long page,
             @RequestParam(value = PAGE_SIZE, required = false) final Integer pageSize,
             @RequestBody GitCommitsFilter filter) throws GitClientException {
@@ -778,9 +778,9 @@ public class PipelineController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderDiff> getRepositoryCommitDiffs(
-            @PathVariable(value = ID) Long id,
+            @PathVariable(value = ID) final Long id,
             @RequestParam(value = INCLUDE_DIFF, required = false)  final Boolean includeDiff,
-            @RequestBody GitCommitsFilter filter) throws GitClientException {
+            @RequestBody final GitCommitsFilter filter) throws GitClientException {
         return Result.success(pipelineApiService.logRepositoryCommitDiffs(id, includeDiff, filter));
     }
 
@@ -794,8 +794,8 @@ public class PipelineController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderDiffEntry> getRepositoryCommitDiff(
-            @PathVariable(value = ID) Long id,
-            @PathVariable(value = COMMIT) String commit,
+            @PathVariable(value = ID) final Long id,
+            @PathVariable(value = COMMIT) final String commit,
             @RequestParam(value = PATH, required = false) final String path) throws GitClientException {
         return Result.success(pipelineApiService.getRepositoryCommitDiff(id, commit, path));
     }

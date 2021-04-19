@@ -24,7 +24,7 @@ import java.util.List;
 
 
 /**
- * Represents Gitlab repository commit
+ * Represents Diffs for specific repo with specific filters like author, dates, paths
  */
 @Data
 @Builder
