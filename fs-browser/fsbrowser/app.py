@@ -461,11 +461,11 @@ def fetch_versioned_storage(vs_id):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/vs/<vs_id>/diff')
+@app.route('/vs/<vs_id>/status', methods=['GET'])
 @auth.login_required
-def diff_versioned_storage(vs_id):
+def status_versioned_storage(vs_id):
     """
-    Loads a list of files that were changed
+    Loads repository current status: changed files, merge state and unsaved changes existence
     ---
     parameters:
       - name: vs_id
