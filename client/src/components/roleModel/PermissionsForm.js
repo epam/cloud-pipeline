@@ -16,11 +16,24 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Alert, Row, Col, Button, Icon, AutoComplete, Modal, message, Checkbox} from 'antd';
+import {
+  Alert,
+  AutoComplete,
+  Button,
+  Checkbox,
+  Col,
+  Icon,
+  message,
+  Modal,
+  Popover,
+  Row,
+  Table
+} from 'antd';
 import GrantGet from '../../models/grant/GrantGet';
 import GrantPermission from '../../models/grant/GrantPermission';
 import GrantRemove from '../../models/grant/GrantRemove';
 import GrantOwner from '../../models/grant/GrantOwner';
+import GetAllPermissions from '../../models/grant/GetAllPermissions';
 import UserFind from '../../models/user/UserFind';
 import GroupFind from '../../models/user/GroupFind';
 import Roles from '../../models/user/Roles';
@@ -29,7 +42,15 @@ import {observable} from 'mobx';
 import styles from './PermissionsForm.css';
 import roleModel from '../../utils/roleModel';
 import UserName from '../special/UserName';
+import compareSubObjects from './utilities/compare-sub-objects';
 
+function plural (count, noun) {
+  return `${noun}${count > 1 ? 's' : ''}`;
+}
+
+const MAX_SUB_OBJECTS_WARNINGS_TO_SHOW = 5;
+
+@inject('usersInfo')
 @inject(({routing, authenticatedUserInfo}, params) => ({
   authenticatedUserInfo,
   grant: new GrantGet(params.objectIdentifier, params.objectType),
@@ -37,7 +58,6 @@ import UserName from '../special/UserName';
 }))
 @observer
 export default class PermissionsForm extends React.Component {
-
   state = {
     findUserVisible: false,
     findGroupVisible: false,
@@ -49,7 +69,8 @@ export default class PermissionsForm extends React.Component {
     fetching: false,
     fetchedUsers: [],
     roleName: null,
-    operationInProgress: false
+    operationInProgress: false,
+    subObjectsPermissions: []
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -76,11 +97,20 @@ export default class PermissionsForm extends React.Component {
     ]),
     readonly: PropTypes.bool,
     defaultMask: PropTypes.number,
-    enabledMask: PropTypes.number
+    enabledMask: PropTypes.number,
+    subObjectsPermissionsMaskToCheck: PropTypes.number,
+    subObjectsToCheck: PropTypes.arrayOf(PropTypes.shape({
+      entityId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      entityClass: PropTypes.string,
+      name: PropTypes.node,
+      description: PropTypes.node
+    })),
+    subObjectsPermissionsErrorTitle: PropTypes.node
   };
 
   static defaultProps = {
-    enabledMask: roleModel.buildPermissionsMask(1, 1, 1, 1, 1, 1)
+    enabledMask: roleModel.buildPermissionsMask(1, 1, 1, 1, 1, 1),
+    subObjectsPermissionsMaskToCheck: 0
   }
 
   lastFetchId = 0;
@@ -331,7 +361,140 @@ export default class PermissionsForm extends React.Component {
     if (request.error) {
       message.error(request.error);
     } else {
+      await this.props.grant.fetch();
       this.setState({selectedPermission});
+    }
+  };
+
+  renderSubObjectsWarnings = () => {
+    const {subObjectsPermissionsErrorTitle} = this.props;
+    const users = this.props.usersInfo.loaded
+      ? (this.props.usersInfo.value || []).slice()
+      : [];
+    const granted = this.props.grant.value && this.props.grant.value.permissions
+      ? this.props.grant.value.permissions
+      : [];
+    const {subObjectsPermissionsMaskToCheck} = this.props;
+    const {subObjectsPermissions} = this.state;
+    const check = {
+      read: roleModel.readPermissionEnabled(subObjectsPermissionsMaskToCheck),
+      write: roleModel.writePermissionEnabled(subObjectsPermissionsMaskToCheck),
+      execute: roleModel.executePermissionEnabled(subObjectsPermissionsMaskToCheck)
+    };
+    const warnings = [];
+    for (let d = 0; d < granted.length; d++) {
+      const {mask, sid = {}} = granted[d];
+      const maskToCheck = mask & subObjectsPermissionsMaskToCheck;
+      const {name, principal} = sid;
+      const rolesToCheck = [];
+      if (principal) {
+        const userInfo = users.find(u => u.name === name);
+        if (userInfo && userInfo.roles) {
+          rolesToCheck.push(
+            ...(userInfo.roles || []).map(({name}) => ({name, principal: false}))
+          );
+        }
+      }
+      for (let o = 0; o < subObjectsPermissions.length; o++) {
+        const subObjectPermission = subObjectsPermissions[o];
+        const {
+          read,
+          write,
+          execute
+        } = roleModel.checkObjectPermissionsConflict(
+          maskToCheck,
+          sid,
+          rolesToCheck,
+          subObjectPermission.owner,
+          subObjectPermission.permissions
+        );
+        if (check.read && read) {
+          // Read conflict
+          warnings.push((
+            <span>
+              {subObjectPermission.object.name}: read denied for <b>{name}</b>
+            </span>
+          ));
+        }
+        if (check.write && write) {
+          // Write conflict
+          warnings.push((
+            <span>
+              {subObjectPermission.object.name}: write denied for <b>{name}</b>
+            </span>
+          ));
+        }
+        if (check.execute && execute) {
+          // Execute conflict
+          warnings.push((
+            <span>
+              {subObjectPermission.object.name}: execute denied for <b>{name}</b>
+            </span>
+          ));
+        }
+      }
+    }
+    if (warnings.length > 0) {
+      const title = subObjectsPermissionsErrorTitle && (
+        <div style={{marginBottom: 5}}>
+          {subObjectsPermissionsErrorTitle}
+        </div>
+      );
+      const content = (
+        <div>
+          {
+            warnings.map((warning, index) => (
+              <div key={index}>
+                {warning}
+              </div>
+            ))
+          }
+        </div>
+      );
+      if (warnings.length > MAX_SUB_OBJECTS_WARNINGS_TO_SHOW) {
+        const rest = warnings.length - MAX_SUB_OBJECTS_WARNINGS_TO_SHOW;
+        return (
+          <Alert
+            showIcon
+            style={{marginBottom: 5}}
+            message={(
+              <div>
+                {title}
+                {
+                  warnings.slice(0, MAX_SUB_OBJECTS_WARNINGS_TO_SHOW).map((warning, index) => (
+                    <div key={index}>
+                      {warning}
+                    </div>
+                  ))
+                }
+                <div>
+                  <Popover
+                    content={content}
+                  >
+                    <a>
+                      ... and {rest} more {plural(rest, 'warning')}
+                    </a>
+                  </Popover>
+                </div>
+              </div>
+            )}
+            type="warning"
+          />
+        );
+      }
+      return (
+        <Alert
+          showIcon
+          style={{marginBottom: 5}}
+          message={(
+            <div>
+              {title}
+              {content}
+            </div>
+          )}
+          type="warning"
+        />
+      );
     }
   };
 
@@ -422,8 +585,8 @@ export default class PermissionsForm extends React.Component {
         <Table
           style={{marginTop: 10}}
           key="user permissions"
-          loading={this.props.grant.pending}
-          showHeader={true}
+          loading={!this.props.grant.loaded && this.props.grant.pending}
+          showHeader
           size="small"
           columns={columns}
           pagination={false}
@@ -515,7 +678,7 @@ export default class PermissionsForm extends React.Component {
         }}
         rowClassName={getRowClassName}
         onRowClick={selectPermission}
-        loading={this.props.grant.pending}
+        loading={!this.props.grant.loaded && this.props.grant.pending}
         title={() => title}
         showHeader={false}
         size="small"
@@ -612,6 +775,7 @@ export default class PermissionsForm extends React.Component {
     return (
       <Row>
         {this.renderOwner()}
+        {this.renderSubObjectsWarnings()}
         {this.renderUsers()}
         <Modal
           title="Select user"
@@ -666,8 +830,39 @@ export default class PermissionsForm extends React.Component {
     }
   };
 
+  fetchSubObjectsPermissions = () => {
+    const wrapPermissionsFetch = (subObject) => new Promise((resolve) => {
+      const request = new GetAllPermissions(subObject.entityId, subObject.entityClass);
+      request.fetch()
+        .then(() => {
+          if (request.loaded) {
+            const {owner, permissions = []} = request.value || {};
+            resolve({object: subObject, permissions, owner});
+          } else {
+            resolve({object: subObject, permissions: []});
+          }
+        })
+        .catch(() => {
+          resolve({object: subObject, permissions: []});
+        });
+    });
+    this.setState({
+      subObjectsPermissions: []
+    }, () => {
+      Promise.all(
+        (this.props.subObjectsToCheck || []).map(wrapPermissionsFetch)
+      )
+        .then(payloads => {
+          this.setState({
+            subObjectsPermissions: payloads
+          });
+        });
+    });
+  };
+
   componentDidMount () {
     this.selectFirstPermission();
+    this.fetchSubObjectsPermissions();
   }
 
   componentDidUpdate (prevProps) {
@@ -675,6 +870,9 @@ export default class PermissionsForm extends React.Component {
       this.setState({
         selectedPermission: null
       }, this.selectFirstPermission);
+    }
+    if (!compareSubObjects(this.props.subObjectsToCheck, prevProps.subObjectsToCheck)) {
+      this.fetchSubObjectsPermissions();
     }
   }
 }

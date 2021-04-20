@@ -129,13 +129,192 @@ const buildPermissionsMask = (ra, rd, wa, wd, ea, ed) => {
   );
 };
 
+/**
+ * Checks if specific permission (i.e. read, write or execute) specified by
+ * `testMinifiedMask` conflict with corresponding permission for the object (`objectMinifiedMask`).
+ * "Conflict" is a situation when object has a "DENY" rule, but permission (`testMinifiedMask`)
+ * requests "ALLOW" one.
+ * @returns {boolean | undefined} `true` if permissions conflict, `false` if dont,
+ * `undefined` if it depends on inheritance
+ * @param testMinifiedMask {number} permission mask (2-bit value; first bit describes "allow" rule,
+ * second bit describes "deny" rule)
+ * @param objectMinifiedMask {number} object's permission mask (2-bit value; first bit describes
+ * "allow" rule, second bit describes "deny" rule)
+ */
+const checkPermissionConflicting = (testMinifiedMask, objectMinifiedMask) => {
+  if (testMinifiedMask === 0b00) {
+    return false;
+  }
+  if (
+    testMinifiedMask === 0b11 ||
+    objectMinifiedMask === 0b00 ||
+    objectMinifiedMask === 0b11
+  ) {
+    // for 00 values: permissions are inherited
+    // for 11 values (impossible situation: both "allow" and "deny" rules): skip
+    return undefined;
+  }
+  return testMinifiedMask === 0b01 && objectMinifiedMask === 0b10;
+};
+
+/**
+ * Checks if permissions specified by `testMask` conflict
+ * with permissions for the object (`objectMask`). "Conflict" is a situation when
+ * object has a "DENY" rule, but permissions (`testMask`) request "ALLOW" one.
+ * @returns {{read: boolean | undefined, write: boolean | undefined, execute: boolean | undefined}}
+ * For each permission (read, write, execute): `true` if permissions conflict, `false` if dont,
+ * `undefined` if it depends on inheritance
+ * @param testMask {number} permissions to check
+ * @param objectMask {number} object's permissions mask
+ * @param extendedMask {boolean} true if provided masks are of extended format (i.e. 6-bit format)
+ */
+const checkPermissionsConflicting = (testMask, objectMask, extendedMask = false) => {
+  const testMaskExtended = extendedMask ? testMask : extendMask(testMask);
+  const objectMaskExtended = extendedMask ? objectMask : extendMask(objectMask);
+  const extractMinifiedPermissionsMask = (mask, shift = 0) => (mask >> shift) & 0b11;
+  return {
+    read: checkPermissionConflicting(
+      extractMinifiedPermissionsMask(testMaskExtended),
+      extractMinifiedPermissionsMask(objectMaskExtended)
+    ),
+    write: checkPermissionConflicting(
+      extractMinifiedPermissionsMask(testMaskExtended, 2),
+      extractMinifiedPermissionsMask(objectMaskExtended, 2)
+    ),
+    execute: checkPermissionConflicting(
+      extractMinifiedPermissionsMask(testMaskExtended, 4),
+      extractMinifiedPermissionsMask(objectMaskExtended, 4)
+    )
+  };
+};
+
+/**
+ * Checks if permissions specified by `testMask` conflict
+ * with permissions set for the object (`objectMasks`). "Conflict" is a situation when
+ * object has a "DENY" rule, but permissions (`testMask`) request "ALLOW" one.
+ * @returns {{read: boolean, write: boolean, execute: boolean}}
+ * For each permission (read, write, execute): `true` if permissions conflict, `false` if dont
+ * @param testMask {number} permissions to check
+ * @param objectMasks {number} object's permissions masks
+ * @param extendedMask {boolean} true if provided masks are of extended format (i.e. 6-bit format)
+ */
+/*
+  Unlike `checkPermissionsConflicting` method, this one does not return `undefined`;
+  if all permissions specify `undefined` value (i.e. rule is inherited) then there are no "allow"
+  rules provided and access is denied therefore.
+ */
+const checkPermissionsSetConflicting = (testMask, objectMasks = [], extendedMask = false) => {
+  const merged = objectMasks
+    .map(objectMask => checkPermissionsConflicting(testMask, objectMask, extendedMask))
+    .reduce((acc, cur) => ({
+      read: [...(acc.read || []), cur.read],
+      write: [...(acc.write || []), cur.write],
+      execute: [...(acc.execute || []), cur.execute]
+    }), {});
+  const getResolution = conflictResults => {
+    const filtered = (conflictResults || []).filter(result => result !== undefined);
+    if (filtered.length === 0) {
+      // conflict!
+      return true;
+    }
+    // if we have at least one "true" - there is a conflict
+    return filtered.find(o => o);
+  };
+  return {
+    read: getResolution(merged.read),
+    write: getResolution(merged.write),
+    execute: getResolution(merged.execute)
+  };
+};
+
+/**
+ * Checks if user or group specified by `sid` has conflicting permissions (`mask`) with ones
+ * provided for the object (objectPermissions). "Conflict" means that "allow" permission was
+ * requested but there is at least one "deny" permission for user/group or/and user groups.
+ * Exceptions: if user is owner or admin, no conflicts will occur.
+ * @param mask {number} requested access permissions (6-bit format)
+ * @param sid {{name: string, principal: boolean}} requester
+ * @param sidRoles {{name: string}[]} user's roles
+ * @param objectOwner {string} object's owner.
+ * @param objectPermissions {{mask: number, sid: {name: string, principal: boolean}}[]}
+ * object permissions
+ * @returns {{read: boolean, write: boolean, execute: boolean}}
+ * For each permission (read, write, execute): `true` if permissions conflict (i.e. "allow"
+ * requested, but object has at least one "deny" rule), `false` if dont
+ */
+const checkObjectPermissionsConflict = (mask, sid, sidRoles, objectOwner, objectPermissions) => {
+  const {name, principal} = sid;
+  const roleNames = (sidRoles || []).map(r => r.name);
+  if (principal && (name === objectOwner || (roleNames || []).indexOf('ROLE_ADMIN') >= 0)) {
+    // there are no conflicts if user is owner or admin
+    return {
+      read: false,
+      write: false,
+      execute: false
+    };
+  }
+  const findMask = (testSid) => (objectPermissions || [])
+    .find(op => op.sid && op.sid.name === testSid.name && op.sid.principal === testSid.principal)
+    ?.mask;
+  const findConflicts = (testSid) => {
+    const objectMask = findMask(testSid);
+    if (objectMask !== undefined) {
+      return checkPermissionsConflicting(
+        mask,
+        objectMask,
+        true
+      );
+    }
+    return {};
+  };
+  const sids = [sid, ...sidRoles.map(({name}) => ({name, principal: false}))];
+  const getResolution = conflictResults => {
+    const filtered = (conflictResults || []).filter(result => result !== undefined);
+    if (filtered.length === 0) {
+      // conflict!
+      return true;
+    }
+    // if we have at least one "true" - there is a conflict
+    return !!filtered.find(o => o);
+  };
+  const merged = sids
+    .map(findConflicts)
+    .reduce((acc, cur) => ({
+      read: [...(acc.read || []), cur.read],
+      write: [...(acc.write || []), cur.write],
+      execute: [...(acc.execute || []), cur.execute]
+    }), {});
+  return {
+    read: getResolution(merged.read),
+    write: getResolution(merged.write),
+    execute: getResolution(merged.execute)
+  };
+};
+
+const permissionEnabled = (extendedMask, shift = 0) => {
+  return (extendedMask >> shift) & 0b11 > 0;
+};
+
+const readPermissionEnabled = (extendedMask) => {
+  return permissionEnabled(extendedMask);
+};
+
+const writePermissionEnabled = (extendedMask) => {
+  return permissionEnabled(extendedMask, 2);
+};
+
+const executePermissionEnabled = (extendedMask) => {
+  return permissionEnabled(extendedMask, 4);
+};
+
 const management = (roleName) => (WrappedComponent, key) => {
   const Component = inject('authenticatedUserInfo')(
     observer(
       ({authenticatedUserInfo}) => {
         if (authenticatedUserInfo.loaded &&
           (authenticatedUserInfo.value.admin ||
-          (authenticatedUserInfo.value.roles || []).filter(r => r.name === roleName).length === 1)) {
+          (authenticatedUserInfo.value.roles || [])
+            .filter(r => r.name === roleName).length === 1)) {
           return WrappedComponent;
         }
         return null;
@@ -209,5 +388,10 @@ export default {
   authenticationInfo,
   refreshAuthenticationInfo,
   buildMask,
-  buildPermissionsMask
+  buildPermissionsMask,
+  checkPermissionsSetConflicting,
+  checkObjectPermissionsConflict,
+  readPermissionEnabled,
+  writePermissionEnabled,
+  executePermissionEnabled
 };
