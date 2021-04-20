@@ -268,6 +268,15 @@ Response example:
     "status":"OK"
 }
 ```
+
+- `POST /vs/<id>/conflicts` - registers changes after conflicts resolving for specified file in `path` request
+parameter. If file has no conflicts an error will be occurred. Performs `git add` operation.
+
+Request example:
+```
+curl -X POST http://127.0.0.1:8080/vs/1/conflicts?path=<path/to/file>
+```
+
 - `POST /vs/<id>/checkout?revision=<revision_number>` - checkouts to specified revision number. After checkout 
 operation a `READ ONLY` regime will be enabled. To switch `READ ONLY` regime fetch data from server. Reverts 
 all local changes if any.
@@ -276,7 +285,7 @@ Request example:
 ```
 curl -X POST http://127.0.0.1:8080/vs/1/checkout?revision=aaa
 ```
-- `GET /vs/<id>/diff` - loads a list of files that were changed
+- `GET /vs/<id>/status` - loads repository current status: changed files, merge state and unsaved changes existence
 
 Request example:
 ```
@@ -285,15 +294,19 @@ curl http://127.0.0.1:8080/vs/1/diff
 Response example:
 ```
 {    
-    "payload": [
-      { "path": "ralative/file_name1"; "status": "modified"},
-      { "path": "ralative/file_name2"; "status": "created"},
-      { "path": "ralative/file_name3"; "status": "deleted"}
-    ],
+    "payload": {
+       "files": [
+          { "file": "relative/file_name1"; "status": "modified"},
+          { "file": "relative/file_name2"; "status": "created"},
+          { "file": "relative/file_name3"; "status": "deleted"}
+       ],
+       "merge_in_progress": false,
+       "unsaved": false
+    },
     "status":"OK"
 }
 ```
-- `GET /vs/<id>/diff/files?path=<relative_path_to_file>[&raw=<true/false>&lines_count=1] ` - loads diff for specified 
+- `GET /vs/<id>/diff/files?path=<relative_path_to_file>[&raw=<true/false>&lines_count=1]` - loads diff for specified
 file. If `raw` request parameter specified this method returns `git diff` output. Specify `lines_count` to adjust 
 additional lines count into the output (default: 3).
 
@@ -367,6 +380,11 @@ Response example for binary files:
     "status": "OK"
 }
 ```
+
+- `GET /vs/<id>/diff/conflicts?path=<relative_path_to_file>[&revision=<revision>&raw=<true/false>&lines_count=1]` -
+returns `git diff` for specified `path` when merge is in progress. Returns diff between `revision` and last common
+commit between local and remote trees. If `revision` not specified the `HEAD` will be used.
+The response is similar to `GET /vs/<id>/diff/files` request.
 
 - `POST /vs/<id>/commit?message=<message>[&files=file1,file2]` - saves local changes to remote: fetches repo, adds 
 changed files, commits changes and pushes to remote. This operation returns task ID since may take a long time.
