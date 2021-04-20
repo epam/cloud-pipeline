@@ -55,7 +55,7 @@ import org.springframework.stereotype.Service;
         return permissionManager.changeOwner(id, aclClass, userName);
     }
 
-    @PreAuthorize(ACL_ENTITY_OWNER)
+    @PreAuthorize("hasRole('ADMIN') or @grantPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
     public EntityPermissionVO loadEntityPermission(final Long id, final AclClass aclClass) {
         return permissionManager.loadEntityPermission(aclClass, id);
     }
