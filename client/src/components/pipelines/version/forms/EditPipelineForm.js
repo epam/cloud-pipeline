@@ -16,6 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import {Button, Modal, Form, Input, Row, Col, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
@@ -23,9 +25,19 @@ import localization from '../../../../utils/localization';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
+@inject('dockerRegistries', 'pipelines')
+@inject((stores, props) => {
+  const {pipelines} = stores;
+  const {pipeline} = props;
+  return {
+    configurations: pipeline
+      ? pipelines.getConfiguration(pipeline.id, pipeline.currentVersion?.name)
+      : undefined
+  };
+})
 @Form.create()
+@observer
 export default class EditPipelineForm extends localization.LocalizedReactComponent {
-
   state = {
     activeTab: 'info',
     deleteDialogVisible: false,
@@ -38,6 +50,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         PropTypes.string,
         PropTypes.number
       ]),
+      currentVersion: PropTypes.shape({
+        name: PropTypes.string
+      }),
       name: PropTypes.string,
       description: PropTypes.string,
       mask: PropTypes.number,
@@ -63,6 +78,46 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       sm: {span: 18}
     }
   };
+
+  @computed
+  get latestConfigurationsTools () {
+    if (this.props.configurations && this.props.configurations.loaded) {
+      return (this.props.configurations.value || [])
+        .filter(c => c.configuration && c.configuration.docker_image)
+        .map(c => c.configuration && c.configuration.docker_image);
+    }
+    return [];
+  }
+
+  @computed
+  get tools () {
+    if (this.props.dockerRegistries.loaded && this.latestConfigurationsTools.length > 0) {
+      const {registries = []} = this.props.dockerRegistries.value;
+      const pipelineTools = this.latestConfigurationsTools.slice();
+      const toolObjects = [];
+      for (let r = 0; r < registries.length; r++) {
+        const registry = registries[r];
+        const {groups = []} = registry;
+        for (let g = 0; g < groups.length; g++) {
+          const group = groups[g];
+          const {tools = []} = group;
+          for (let t = 0; t < tools.length; t++) {
+            const tool = tools[t];
+            const imageRegExp = new RegExp(`^${registry.path}/${tool.image}(:.+)$`, 'i');
+            if (pipelineTools.find(t => imageRegExp.test(t))) {
+              toolObjects.push({
+                ...tool,
+                registry,
+                group
+              });
+            }
+          }
+        }
+      }
+      return toolObjects;
+    }
+    return [];
+  }
 
   handleSubmit = (e) => {
     e.preventDefault();
@@ -320,7 +375,25 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
                   <PermissionsForm
                     readonly={isReadOnly || !roleModel.writeAllowed(this.props.pipeline)}
                     objectIdentifier={this.props.pipeline.id}
-                    objectType="pipeline" />
+                    objectType="pipeline"
+                    subObjectsPermissionsMaskToCheck={
+                      roleModel.buildPermissionsMask(1, 1, 0, 0, 1, 1)
+                    }
+                    subObjectsToCheck={
+                      this.tools.map(({aclClass: entityClass, id: entityId, image}) => ({
+                        entityId,
+                        entityClass,
+                        name: (<b>{image}</b>)
+                      }))
+                    }
+                    subObjectsPermissionsErrorTitle={(
+                      <span>
+                        Users shall have Read and Execute permissions for the docker images,
+                        used in a current {this.localizedString('pipeline')}.
+                        Please review and fix permissions issues below:
+                      </span>
+                    )}
+                  />
                 </Tabs.TabPane>
               }
             </Tabs>
