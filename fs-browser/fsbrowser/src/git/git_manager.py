@@ -19,6 +19,7 @@ import uuid
 from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
 from fsbrowser.src.git.git_client import GitClient
 from fsbrowser.src.git.git_task import GitTask
+from fsbrowser.src.model.git_repo_status import GitRepositoryStatus
 from fsbrowser.src.model.versioned_storage import VersionedStorage
 
 VERSION_STORAGE_IDENTIFIER = 'id'
@@ -88,7 +89,12 @@ class GitManager:
     def status(self, versioned_storage_id):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         items = self.git_client.status(full_repo_path)
-        return [item.to_json() for item in items]
+        local_commits_count, _ = self.git_client.ahead_behind(full_repo_path)
+        repo_status = GitRepositoryStatus()
+        repo_status.files = [item.to_json() for item in items]
+        repo_status.unsaved = local_commits_count > 0
+        repo_status.merge_in_progress = self.git_client.merge_in_progress(full_repo_path)
+        return repo_status.to_json()
 
     def diff(self, versioned_storage_id, file_path, show_raw_flag, lines_count=3):
         full_repo_path = self._build_path_to_repo(versioned_storage_id)

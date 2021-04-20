@@ -473,10 +473,6 @@ def diff_versioned_storage(vs_id):
         type: string
         required: true
     definitions:
-      DiffList:
-        type: array
-        items:
-          $ref: '#/definitions/Diff'
       Diff:
         type: object
         properties:
@@ -484,10 +480,21 @@ def diff_versioned_storage(vs_id):
             type: string
           path:
             type: string
+      RepoStatus:
+        type: object
+        properties:
+          merge_in_progress:
+            type: boolean
+          unsaved:
+            type: boolean
+          files:
+            type: array
+            items:
+              $ref: '#/definitions/Diff'
     responses:
       200:
         schema:
-          $ref: '#/definitions/DiffList'
+          $ref: '#/definitions/RepoStatus'
     """
     manager = app.config['git_manager']
     try:
