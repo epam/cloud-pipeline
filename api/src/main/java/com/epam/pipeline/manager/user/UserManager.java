@@ -180,8 +180,10 @@ public class UserManager {
         return userDao.loadAllUsers();
     }
 
-    public List<UserInfo> loadUsersInfo() {
-        return this.loadAllUsers().stream()
+    public List<UserInfo> loadUsersInfo(final List<String> userNames) {
+        final Collection<PipelineUser> users = CollectionUtils.isEmpty(userNames) ? loadAllUsers() :
+                loadUsersByNames(userNames);
+        return users.stream()
             .map(UserInfo::new)
             .collect(Collectors.toList());
     }

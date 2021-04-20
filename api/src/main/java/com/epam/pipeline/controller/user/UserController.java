@@ -54,6 +54,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -235,7 +236,22 @@ public class UserController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<UserInfo>> loadUsersInfo() {
-        return Result.success(userApiService.loadUsersInfo());
+        return Result.success(userApiService.loadUsersInfo(Collections.emptyList()));
+    }
+
+    @PostMapping(value = "/users/info")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads all users' brief information. Allows to filter users by list of usernames.",
+            notes = "Loads all registered users, but instead of providing detailed description only the general "
+                    + "information is returned. Allows to filter users by list of usernames.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<UserInfo>> loadUsersInfo(
+            @RequestBody(required = false) final List<String> userNames) {
+        return Result.success(userApiService.loadUsersInfo(userNames));
     }
 
     @RequestMapping(value = "/user/controls", method = RequestMethod.GET)
