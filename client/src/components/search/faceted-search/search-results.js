@@ -417,7 +417,7 @@ class SearchResults extends React.Component {
     }
     return (
       <a
-        href={!disabled && resultItem.url ? `${resultItem.url}` : undefined}
+        href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
         className={styles.tableRow}
         style={{gridTemplate: this.getGridTemplate()}}
         key={rowIndex}
