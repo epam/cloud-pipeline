@@ -99,6 +99,21 @@ class GitManager:
             return None
         return git_file_diff.to_json()
 
+    def conflicts_diff(self, versioned_storage_id, file_path, revision, show_raw_flag, lines_count=3):
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        if not file_path:
+            raise RuntimeError('File path shall be specified')
+        if not self.git_client.merge_in_progress(full_repo_path):
+            raise RuntimeError('Merge is not in progress')
+        if not revision:
+            revision = self.git_client.get_head_id(full_repo_path)
+        remote_revision = self.git_client.get_last_pushed_commit_id(full_repo_path)
+        git_file_diff = self.git_client.diff_between_revisions(full_repo_path, file_path, remote_revision, revision,
+                                                               show_raw_flag, context_lines=lines_count)
+        if not git_file_diff:
+            return None
+        return git_file_diff.to_json()
+
     def push(self, versioned_storage_id, message, files_to_add=None):
         if self.is_head_detached(versioned_storage_id):
             raise RuntimeError('HEAD detached')

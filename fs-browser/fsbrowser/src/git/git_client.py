@@ -87,28 +87,13 @@ class GitClient:
     def diff(self, repo_path, file_path, show_raw_flag, branch_name=DEFAULT_BRANCH_NAME,
              context_lines=DEFAULT_CONTEXT_LINES_COUNT, remote_name=DEFAULT_REMOTE_NAME):
         diff_patch = self._find_patch(repo_path, file_path, branch_name, context_lines, remote_name)
-        if not diff_patch:
-            self.logger.log("Diff not found")
-            return None
-        delta = diff_patch.delta
-        patch_path = self._get_delta_path(delta.new_file)
+        return self._build_diff_object(diff_patch, show_raw_flag)
 
-        git_file_diff = GitFileDiff(patch_path)
-        if delta.is_binary:
-            git_file_diff.is_binary = True
-            git_file_diff.new_size = self._get_delta_size(delta.new_file)
-            git_file_diff.old_size = self._get_delta_size(delta.old_file)
-        else:
-            if show_raw_flag:
-                git_file_diff.git_diff_output = diff_patch.text
-            else:
-                git_file_diff.lines = self._build_lines(diff_patch)
-            insertions, deletions = self._parse_line_stats(diff_patch.line_stats)
-            git_file_diff.insertions = insertions
-            git_file_diff.deletions = deletions
-        git_file_diff.new_name = patch_path
-        git_file_diff.old_name = self._get_delta_path(delta.old_file)
-        return git_file_diff
+    def diff_between_revisions(self, repo_path, file_path, revision_a, revision_b, show_raw_flag,
+                               context_lines=DEFAULT_CONTEXT_LINES_COUNT):
+        repo = self._repository(repo_path)
+        diff_patch = self._find_patch_between_revisions(repo, file_path, revision_a, revision_b, context_lines)
+        return self._build_diff_object(diff_patch, show_raw_flag)
 
     def status(self, repo_path):
         repo = self._repository(repo_path)
@@ -165,6 +150,25 @@ class GitClient:
     def set_head(self, repo_path, branch=DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
         repo.checkout('refs/heads/%s' % branch)
+
+    def get_head_id(self, repo_path, branch=DEFAULT_BRANCH_NAME):
+        repo = self._repository(repo_path)
+        return str(self._get_head(repo, branch).target)
+
+    def get_last_pushed_commit_id(self, repo_path, branch=DEFAULT_BRANCH_NAME):
+        repo = self._repository(repo_path)
+        local_commits_count, _ = self.ahead_behind(repo_path)
+        git_log = self._get_head(repo, branch).log()
+        if not git_log:
+            raise RuntimeError('Failed to get git log')
+        last_pushed_log_entry = [r for r in git_log][local_commits_count]
+        if not last_pushed_log_entry:
+            raise RuntimeError('Failed to find last pushed commit')
+        return str(last_pushed_log_entry.oid_new)
+
+    def merge_in_progress(self, repo_path):
+        repo = self._repository(repo_path)
+        return self._is_merge_in_progress(repo)
 
     def checkout(self, repo_path, revision, branch=DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
@@ -239,6 +243,43 @@ class GitClient:
                 continue
             return diff_patch
         return None
+
+    def _find_patch_between_revisions(self, repo, file_path, revision_a, revision_b,
+                                      context_lines=DEFAULT_CONTEXT_LINES_COUNT):
+        repo_diff = repo.diff(revision_a, revision_b, context_lines=context_lines)
+        for diff_patch in repo_diff:
+            delta = diff_patch.delta
+            if not delta:
+                continue
+            patch_path = self._get_delta_path(delta.new_file) or self._get_delta_path(delta.old_file)
+            if not patch_path or not patch_path == file_path:
+                continue
+            return diff_patch
+        return None
+
+    def _build_diff_object(self, diff_patch, show_raw_flag):
+        if not diff_patch:
+            self.logger.log("Diff not found")
+            return None
+        delta = diff_patch.delta
+        patch_path = self._get_delta_path(delta.new_file)
+
+        git_file_diff = GitFileDiff(patch_path)
+        if delta.is_binary:
+            git_file_diff.is_binary = True
+            git_file_diff.new_size = self._get_delta_size(delta.new_file)
+            git_file_diff.old_size = self._get_delta_size(delta.old_file)
+        else:
+            if show_raw_flag:
+                git_file_diff.git_diff_output = diff_patch.text
+            else:
+                git_file_diff.lines = self._build_lines(diff_patch)
+            insertions, deletions = self._parse_line_stats(diff_patch.line_stats)
+            git_file_diff.insertions = insertions
+            git_file_diff.deletions = deletions
+        git_file_diff.new_name = patch_path
+        git_file_diff.old_name = self._get_delta_path(delta.old_file)
+        return git_file_diff
 
     def _get_author(self, repo):
         return repo.default_signature

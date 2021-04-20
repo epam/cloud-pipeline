@@ -820,6 +820,58 @@ def version_storage_file_resolve(vs_id):
         return jsonify(error(e.__str__()))
 
 
+@app.route('/vs/<vs_id>/diff/conflicts', methods=['GET'])
+@auth.login_required
+def version_storage_diff_conflicts(vs_id):
+    """
+    Returns `git diff` for files when merge is in progress. Returns `diff` between `revision` and last common commit
+    between local and remote trees. If `revision` not specified the `HEAD` will be used.
+    ---
+    parameters:
+      - name: vs_id
+        in: path
+        type: string
+        required: true
+      - name: path
+        in: query
+        type: string
+        required: true
+      - name: revision
+        in: query
+        type: string
+        required: false
+      - name: raw
+        in: query
+        type: boolean
+        required: false
+        default: false
+      - name: lines_count
+        in: query
+        type: integer
+        required: false
+        default: 3
+    definitions:
+      Object:
+        type: object
+    responses:
+      200:
+        schema:
+          $ref: '#/definitions/Object'
+    """
+    path = flask.request.args.get('path')
+    revision = flask.request.args.get('revision', None)
+    show_raw = flask.request.args.get("raw")
+    show_raw_flag = False if not show_raw else str_to_bool(show_raw)
+    lines_count = flask.request.args.get("lines_count", 3)
+    manager = app.config['git_manager']
+    try:
+        result = manager.conflicts_diff(vs_id, path, revision, show_raw_flag, int(lines_count))
+        return jsonify(success(result))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
 def str_to_bool(input_value):
     return input_value.lower() in ("true", "t")
 
