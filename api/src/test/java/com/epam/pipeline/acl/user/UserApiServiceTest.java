@@ -285,33 +285,33 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUsersInfoForAdmin() {
-        doReturn(userInfoList).when(mockUserManager).loadUsersInfo();
+        doReturn(userInfoList).when(mockUserManager).loadUsersInfo(null);
 
-        assertThat(userApiService.loadUsersInfo()).isEqualTo(userInfoList);
+        assertThat(userApiService.loadUsersInfo(null)).isEqualTo(userInfoList);
     }
 
     @Test
     @WithMockUser
     public void shouldLoadUsersInfoForUserRole() {
-        doReturn(userInfoList).when(mockUserManager).loadUsersInfo();
+        doReturn(userInfoList).when(mockUserManager).loadUsersInfo(null);
 
-        assertThat(userApiService.loadUsersInfo()).isEqualTo(userInfoList);
+        assertThat(userApiService.loadUsersInfo(null)).isEqualTo(userInfoList);
     }
 
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUsersInfoForUserReader() {
-        doReturn(userInfoList).when(mockUserManager).loadUsersInfo();
+        doReturn(userInfoList).when(mockUserManager).loadUsersInfo(null);
 
-        assertThat(userApiService.loadUsersInfo()).isEqualTo(userInfoList);
+        assertThat(userApiService.loadUsersInfo(null)).isEqualTo(userInfoList);
     }
 
     @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyLoadUsersInfoForNotUserReader() {
-        doReturn(userInfoList).when(mockUserManager).loadUsersInfo();
+        doReturn(userInfoList).when(mockUserManager).loadUsersInfo(null);
 
-        assertThrows(AccessDeniedException.class, () -> userApiService.loadUsersInfo());
+        assertThrows(AccessDeniedException.class, () -> userApiService.loadUsersInfo(null));
     }
 
     @Test

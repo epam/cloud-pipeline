@@ -17,9 +17,11 @@
 package com.epam.pipeline.entity.info;
 
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
+import java.util.List;
 import java.util.Map;
 
 @Value
@@ -29,10 +31,14 @@ public class UserInfo {
     private final Long id;
     private final String name;
     private final Map<String, String> attributes;
+    private final List<Role> roles;
+    private final List<String> groups;
 
     public UserInfo(final PipelineUser user) {
         this.attributes = user.getAttributes();
         this.id = user.getId();
         this.name = user.getUserName();
+        this.roles = user.getRoles();
+        this.groups = user.getGroups();
     }
 }
