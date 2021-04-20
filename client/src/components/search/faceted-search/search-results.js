@@ -60,11 +60,12 @@ function compareDocumentTypes (prev, next) {
   return true;
 }
 
-function cellStringWithDivider (column) {
+function cellString (column, withDivider) {
   if (!column || !column.key) {
-    return '.';
+    return;
   }
-  return `${column.key.replaceAll(' ', '___')} .`;
+  const cellString = column.key.replaceAll(' ', '___');
+  return withDivider ? `${cellString} .` : cellString;
 }
 
 class SearchResults extends React.Component {
@@ -346,7 +347,7 @@ class SearchResults extends React.Component {
       ? this.arrangedColumns.filter(column => column.key !== draggingCell.key)
       : this.arrangedColumns;
     const columnString = `'${columns
-      .map(c => `${c.key} .`).join(' ')}' ${rowHeight}px /`;
+      .map(column => cellString(column, true)).join(' ')}' ${rowHeight}px /`;
     const widthString = `${columns
       .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${DIVIDER_WIDTH}px`)
       .join(' ')}`;
@@ -508,7 +509,7 @@ class SearchResults extends React.Component {
               style={{
                 width: columnWidths[column.key],
                 minWidth: '0px',
-                gridArea: column.key
+                gridArea: cellString(column)
               }}
             >
               {column.renderFn
@@ -557,7 +558,7 @@ class SearchResults extends React.Component {
             style={{
               width: columnWidths[column.key],
               minWidth: '0px',
-              gridArea: column.key
+              gridArea: cellString(column)
             }}
             onMouseDown={e => this.initCellDragging(e, column)}
           >
