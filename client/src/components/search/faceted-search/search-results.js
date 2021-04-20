@@ -61,6 +61,13 @@ function compareDocumentTypes (prev, next) {
   return true;
 }
 
+function cellStringWithDivider (column) {
+  if (!column || !column.key) {
+    return '.';
+  }
+  return `${column.key.replaceAll(' ', '___')} .`;
+}
+
 class SearchResults extends React.Component {
   state = {
     resultsAreaHeight: undefined,
@@ -362,7 +369,7 @@ class SearchResults extends React.Component {
     const cellDefault = '100px';
     const divider = '4px';
     const columnString = `'${this.columns
-      .map(c => `${c.key} .`).join(' ')}' ${rowHeight}px /`;
+      .map(cellStringWithDivider).join(' ')}' ${rowHeight}px /`;
     const widthString = `${this.columns
       .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${divider}`)
       .join(' ')}`;
