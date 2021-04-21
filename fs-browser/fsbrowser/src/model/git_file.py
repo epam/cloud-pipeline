@@ -41,6 +41,13 @@ class GitFile:
     def is_conflicted(self):
         return self.state_code & pygit2.GIT_STATUS_CONFLICTED
 
+    def is_staged(self):
+        return self.state_code & pygit2.GIT_STATUS_INDEX_NEW \
+               or self.state_code & pygit2.GIT_STATUS_INDEX_MODIFIED \
+               or self.state_code & pygit2.GIT_STATUS_INDEX_RENAMED \
+               or self.state_code & pygit2.GIT_STATUS_INDEX_TYPECHANGE \
+               or self.state_code & pygit2.GIT_STATUS_INDEX_DELETED
+
     def set_state(self, state_code):
         self.state_code = state_code
         if self.is_modified():

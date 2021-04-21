@@ -115,6 +115,28 @@ class GitClient:
         index.write()
         self.logger.log("File '%s' added to index for repo '%s'" % (repo_path, file_to_add.path))
 
+    def prepare_index(self, repo_path, files_to_add):
+        git_files = self.status(repo_path)
+        repo = self._repository(repo_path)
+        index = repo.index
+        for git_file in git_files:
+            if files_to_add and git_file.path not in files_to_add:
+                if not git_file.is_staged():
+                    continue
+                self._unstage_file(repo, index, git_file)
+                continue
+            path_to_stage = git_file.path
+            if not git_file.is_staged() and git_file.is_deleted():
+                index.remove(path_to_stage)
+                self.logger.log("File '%s' removed from index" % path_to_stage)
+                continue
+            if git_file.is_staged() and git_file.is_deleted():
+                self.logger.log("File '%s' already staged" % path_to_stage)
+                continue
+            index.add(path_to_stage)
+            self.logger.log("File '%s' staged" % path_to_stage)
+        index.write()
+
     def commit(self, repo_path, message, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
         head_id = repo.head.target
@@ -280,6 +302,20 @@ class GitClient:
         git_file_diff.new_name = patch_path
         git_file_diff.old_name = self._get_delta_path(delta.old_file)
         return git_file_diff
+
+    def _unstage_file(self, repo, index, git_file):
+        path_to_unstage = git_file.path
+        if git_file.is_created():
+            index.remove(path_to_unstage)
+            self.logger.log("File '%s' removed from index" % path_to_unstage)
+            return
+        try:
+            obj = repo.revparse_single('HEAD').tree[path_to_unstage]
+        except KeyError:
+            self.logger.log("Can not remove file '%s' from index" % path_to_unstage)
+            return
+        index.add(pygit2.IndexEntry(path_to_unstage, obj.oid, obj.filemode))
+        self.logger.log("File '%s' removed from index" % path_to_unstage)
 
     def _get_author(self, repo):
         return repo.default_signature

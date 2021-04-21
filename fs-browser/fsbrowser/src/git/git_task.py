@@ -82,7 +82,7 @@ class GitTask(Task):
     def push(self, git_client, full_repo_path, message, files_to_add=None):
         try:
             self.indexing()
-            self._add_files_to_index(git_client, full_repo_path, files_to_add)
+            git_client.prepare_index(full_repo_path, files_to_add)
 
             self.committing()
             git_client.commit(full_repo_path, message)
@@ -110,17 +110,6 @@ class GitTask(Task):
         except Exception as e:
             self.logger.log(traceback.format_exc())
             self.failure(e)
-
-    @staticmethod
-    def _add_files_to_index(git_client, full_repo_path, files_to_add):
-        git_files = git_client.status(full_repo_path)
-        index_files = []
-        for git_file in git_files:
-            if files_to_add and git_file.path not in files_to_add:
-                continue
-            git_client.add(full_repo_path, git_file)
-            index_files.append(git_file)
-        return index_files
 
     @staticmethod
     def _conflicts_in_status(git_client, full_repo_path):
