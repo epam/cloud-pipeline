@@ -33,6 +33,7 @@ class TestStopPipelineBeforeLabeling(object):
     new_run_id = None
     state = FailureIndicator()
     test_case = "TC-SCALING-10"
+    instance_type = get_reassign_node_type('CP_TEST_STOP_BEFORE_LABEL_INSTANCE_TYPE')
 
     @classmethod
     def setup_class(cls):
@@ -44,7 +45,7 @@ class TestStopPipelineBeforeLabeling(object):
         logging.info("Pipeline {} with ID {} created.".format(pipeline_name, cls.pipeline_id))
 
         try:
-            run_id = run_pipe(pipeline_name, "-id", "21")[0]
+            run_id = run_pipe(pipeline_name, "-id", "21", "-it", cls.instance_type)[0]
             cls.run_id = run_id
             logging.info("Pipeline run with ID {}.".format(cls.run_id))
             wait_for_required_status("SCHEDULED", run_id, MAX_REP_COUNT)
@@ -88,7 +89,7 @@ class TestStopPipelineBeforeLabeling(object):
     @pytest.mark.run(order=2)
     def test_node_should_reassign(self):
         try:
-            run_id = run_pipe(self.pipeline_name, "-id", "21")[0]
+            run_id = run_pipe_with_reassign(self.pipeline_name, "-id", "21", "-it", self.instance_type)[0]
             self.new_run_id = run_id
             logging.info("Pipeline run with ID {}.".format(run_id))
             node_state = wait_for_node_up(run_id, MAX_REP_COUNT)

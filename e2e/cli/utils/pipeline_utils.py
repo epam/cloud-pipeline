@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -165,20 +165,33 @@ def run_tool(*args):
 
 
 def run_pipe(pipeline_name, *args):
+    return pipe_run(pipeline_name, True, *args)
+
+
+def run_pipe_with_reassign(pipeline_name, *args):
+    return pipe_run(pipeline_name, False, *args)
+
+
+def pipe_run(pipeline_name, disable_reassign, *args):
     command = ['pipe', 'run', '--pipeline', pipeline_name, '-y']
 
-    instance_type = os.environ['CP_TEST_INSTANCE_TYPE']
+    instance_type = os.environ.get('CP_TEST_INSTANCE_TYPE')
     if instance_type and "-it" not in args:
         command.append("-it")
         command.append(instance_type)
 
-    price_type = os.environ['CP_TEST_PRICE_TYPE']
+    price_type = os.environ.get('CP_TEST_PRICE_TYPE')
     if price_type and "-pt" not in args:
         command.append("-pt")
         command.append(price_type)
 
     for arg in args:
         command.append(arg)
+
+    if disable_reassign:
+        command.append("--CP_CREATE_NEW_NODE")
+        command.append("true")
+
     process = subprocess.Popen(command, stdout=subprocess.PIPE)
     process.wait()
     line = process.stdout.readline()
@@ -195,6 +208,11 @@ def run_pipe(pipeline_name, *args):
     if not run_id:
         raise RuntimeError('RunID was not found')
     return run_id, status
+
+
+def get_reassign_node_type(envvar_name):
+    default_instance_type = os.environ.get('CP_TEST_INSTANCE_TYPE')
+    return os.environ.get(envvar_name, default_instance_type)
 
 
 def stop_pipe(run_id):
