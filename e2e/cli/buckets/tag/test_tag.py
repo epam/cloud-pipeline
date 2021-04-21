@@ -23,9 +23,6 @@ ERROR_MESSAGE = "An error occurred in case "
 
 class TestTagging(object):
     test_file = "test-tag1.txt"
-    test_file2 = "test-tag2.txt"
-    test_file_in_folder = "tags/" + test_file
-    test_file2_in_folder = "tags/" + test_file2
     bucket = format_name('tagging{}'.format(get_test_prefix()).lower())
     path_to_bucket = 'cp://{}'.format(bucket)
     tag1 = ("key1", "value1")
@@ -55,9 +52,6 @@ class TestTagging(object):
     @classmethod
     def teardown_class(cls):
         clean_test_data(os.path.abspath(cls.test_file))
-        clean_test_data(os.path.abspath(cls.test_file2))
-        clean_test_data(os.path.abspath(cls.test_file2_in_folder))
-        clean_test_data(os.path.abspath(cls.test_file))
         delete_data_storage(cls.bucket)
         manager = EntityManager.get_manager('FOLDER')
         folder_id = manager.get_id_by_name(cls.bucket)
@@ -68,8 +62,8 @@ class TestTagging(object):
         2. path
     """
     test_case_for_tagging = [
-        ("TC-PIPE-TAG-18", 'cp://{}/{}'.format(bucket, test_file)),
-        ("TC-PIPE-TAG-19", 'cp://{}/{}'.format(bucket, test_file_in_folder)),
+        ("TC-PIPE-TAG-18", 'cp://{}/{}'.format(bucket, "TC-PIPE-TAG-18.txt")),
+        ("TC-PIPE-TAG-19", 'cp://{}/{}'.format(bucket, "tags/TC-PIPE-TAG-19.txt")),
     ]
 
     @pytest.mark.parametrize("test_case,path", test_case_for_tagging)
@@ -86,8 +80,8 @@ class TestTagging(object):
           2. path
       """
     test_case_for_tagging_owner = [
-        ("TC-PIPE-TAG-22", 'cp://{}/{}'.format(bucket, test_file)),
-        ("TC-PIPE-TAG-23", 'cp://{}/{}'.format(bucket, test_file_in_folder))
+        ("TC-PIPE-TAG-22", 'cp://{}/{}'.format(bucket, "TC-PIPE-TAG-22.txt")),
+        ("TC-PIPE-TAG-23", 'cp://{}/{}'.format(bucket, "tags/TC-PIPE-TAG-23.txt"))
     ]
 
     @pytest.mark.parametrize("test_case,path", test_case_for_tagging_owner)
@@ -104,8 +98,8 @@ class TestTagging(object):
         2. path
     """
     test_case_for_tagging_version = [
-        ("TC-PIPE-TAG-20", 'cp://{}/{}'.format(bucket, test_file2)),
-        ("TC-PIPE-TAG-21", 'cp://{}/{}'.format(bucket, test_file2_in_folder))
+        ("TC-PIPE-TAG-20", 'cp://{}/{}'.format(bucket, "TC-PIPE-TAG-20.txt")),
+        ("TC-PIPE-TAG-21", 'cp://{}/{}'.format(bucket, "tags/TC-PIPE-TAG-21.txt"))
     ]
 
     @pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name,
@@ -124,8 +118,8 @@ class TestTagging(object):
         2. path
     """
     test_case_for_tagging_version_owner = [
-        ("TC-PIPE-TAG-24", 'cp://{}/{}'.format(bucket, test_file2)),
-        ("TC-PIPE-TAG-25", 'cp://{}/{}'.format(bucket, test_file2_in_folder))
+        ("TC-PIPE-TAG-24", 'cp://{}/{}'.format(bucket, "TC-PIPE-TAG-24.txt")),
+        ("TC-PIPE-TAG-25", 'cp://{}/{}'.format(bucket, "tags/TC-PIPE-TAG-25.txt"))
     ]
 
     @pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name,
@@ -168,8 +162,9 @@ class TestTagging(object):
     def test_delete_non_existing_tag(self):
         """TC-PIPE-TAG-30"""
         test_case = "TC-PIPE-TAG-30"
+        test_file = test_case + ".txt"
         try:
-            path = 'cp://{}/{}'.format(self.bucket, self.test_file)
+            path = 'cp://{}/{}'.format(self.bucket, test_file)
             pipe_storage_cp(self.test_file, path, force=True)
             set_storage_tags(path, [self.tag1])
 
@@ -186,8 +181,9 @@ class TestTagging(object):
     def test_set_wrong_format(self):
         """TC-PIPE-TAG-29"""
         test_case = "TC-PIPE-TAG-29"
+        test_file = test_case + ".txt"
         try:
-            path = 'cp://{}/{}'.format(self.bucket, self.test_file)
+            path = 'cp://{}/{}'.format(self.bucket, test_file)
             pipe_storage_cp(self.test_file, path, force=True)
             stderr = set_storage_tags(path, [], args=["key"], expected_status=1)[1]
             assert_error_message_is_present(stderr, 'Tags must be specified as KEY=VALUE pair')
