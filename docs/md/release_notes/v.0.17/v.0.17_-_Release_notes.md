@@ -18,6 +18,7 @@
 - [Updates of Metadata object](#updates-of-metadata-object)
 - [Custom node images](#custom-node-images)
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
+- [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -641,6 +642,59 @@ Checking that the run is launched with a "hosted" application:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_06.png)
 
 For more details see [here](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-hosted-applications).
+
+## Advanced global search with faceted filters
+
+In **`v0.14`**, the **Global search** over the platform was [introduced](../v.0.14/v.0.14_-_Release_notes.md#global-search).  
+Now, in **`v0.17`**, the new version of the search was implemented - **Advanced search**.  
+**Advanced search** repeats the functionality of the **Simple search** but has some advanced capabilities.
+
+To open the **Advanced search** click the **Search** icon in the main menu:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_01.png)
+
+> Please note, the previous form of the global search is still available - by pressing "Ctrl+F". Currently, **Advanced search** is available for admins only
+
+To start searching, a query string shall be entered (search can be triggered by pressing the "Enter" button or by the correspoding **Search** button near the search bar), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_02.png)
+
+As in the previous form, you can:
+
+- restrict search results selecting desired object types from all results scope (the corresponding panel with the object types selector is placed under the search bar):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_03.png)
+- open the "Preview" pane for the certain result hovering mouse point over it
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_04.png)
+- scroll search results to view more or use the paging control
+
+New features:
+
+- "**Faceted filters**" panel at the left side of the search form.  
+    It allows to search objects by their attributes (tags). Operating principle is similar to the E-Commerce sites.  
+    Tags' keys and values displayed in this panel are loaded from separate **System Dictionaries** marked as filter sources.  
+    User can restrict (filter) search results - by checking/unchecking desired filters.  
+    In the search results, only objects were associated with the checked filter value (dictionary entry) will remain, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_05.png)
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_06.png)  
+    I.e. only objects **tagged** by this dictionary entry remained in the search results.  
+    You can select several filters values from different facets. Each time, other filters will be updated, and also displayed search results will be changed according to the selected filters.  
+    You can hover over any displayed search result to check that the object is really tagged by selected filters (attributes), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_07.png)  
+    More details - how to add dictionaries to the "Faceted filters" panel, how to configure filters and use them for the search - see [here](../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md).
+- Changeable view of the search results output:  
+    Results output in the **Simple search** has the view as simple list of the object names only.  
+    In the **Advanced search**, that output contains the additional info - according to the entity type of the certain result - it can be `OWNER`, `DESCRIPTION`, `DATE_CHANGED`, `PATH`, etc.  
+    Also user can switch between output view formats - `list` and `table` - by special control ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_08.png):  
+    - `list` view (_default_) - each result is presented by the "row" in the list, _additional_ info is placed in line, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_09.png)
+    - `table` view - all results are presented by the single table, _additional_ info is placed in columns, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_10.png)  
+    Also the `table` view can be customized by the admin user.  
+    To the existing columns, user can add ones for the object attributes (tags) values, where the attribute `key` becomes the column header. If the object in results has the `value` for that attribute - it will be displayed in the corresponding column.  
+    Customizing of additional attribute columns is being performed by the new system preference - **`search.elastic.index.metadata.fields`**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_11.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_12.png)  
+    For more details about the view of the results output see [here](../../manual/19_Search/19._Global_search.md#results-output-view).
+
+For more details about **Advanced search** see [here](../../manual/19_Search/19._Global_search.md).
 
 ## AWS: seamless authentication
 
