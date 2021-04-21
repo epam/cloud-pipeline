@@ -38,6 +38,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final String instanceImage;
     private final String instanceType;
     private final String instanceDisk;
+    private final String instancePlatform;
     private final String kubeIP;
     private final String kubeToken;
     private final String region;
@@ -63,6 +64,8 @@ public class NodeUpCommand extends AbstractClusterCommand {
         commands.add(instanceType);
         commands.add("--ins_hdd");
         commands.add(instanceDisk);
+        commands.add("--ins_platform");
+        commands.add(instancePlatform);
         commands.add("--kube_ip");
         commands.add(kubeIP);
         commands.add("--kubeadm_token");
