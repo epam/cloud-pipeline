@@ -183,7 +183,9 @@ public class PipelineExecutor {
                 KubernetesConstants.CP_CAP_DIND_NATIVE);
         boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
-        spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
+        if (!"windows".equals(run.getPlatform())) {
+            spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
+        }
 
         if (envVars.stream().anyMatch(envVar -> envVar.getName().equals(USE_HOST_NETWORK))){
             spec.setHostNetwork(true);
@@ -225,13 +227,22 @@ public class PipelineExecutor {
         container.setSecurityContext(securityContext);
         container.setEnv(envVars);
         container.setImage(dockerImage);
-        container.setCommand(Collections.singletonList("/bin/bash"));
-        if (!StringUtils.isEmpty(command)) {
-            container.setArgs(Arrays.asList("-c", command));
+        if ("windows".equals(run.getPlatform())) {
+            container.setCommand(Collections.singletonList("powershell"));
+            if (!StringUtils.isEmpty(command)) {
+                container.setArgs(Arrays.asList("-command", command));
+            }
+        } else {
+            container.setCommand(Collections.singletonList("/bin/bash"));
+            if (!StringUtils.isEmpty(command)) {
+                container.setArgs(Arrays.asList("-c", command));
+            }
         }
         container.setTerminationMessagePath("/dev/termination-log");
         container.setImagePullPolicy(imagePullPolicy.getName());
-        container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled));
+        if (!"windows".equals(run.getPlatform())) {
+            container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled));
+        }
         if (isParentPod) {
             buildContainerResources(run, envVars, container);
         }

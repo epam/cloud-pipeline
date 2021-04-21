@@ -994,4 +994,8 @@ public class ToolManager implements SecuredEntityManager {
     private ToolVersion getToolVersion(Long toolId, String version) {
         return toolVersionManager.loadToolVersion(toolId, version);
     }
+
+    public Optional<ToolVersion> findToolVersion(final Tool tool) {
+        return toolVersionManager.findToolVersion(tool.getId(), getTagFromImageName(tool.getImage()));
+    }
 }

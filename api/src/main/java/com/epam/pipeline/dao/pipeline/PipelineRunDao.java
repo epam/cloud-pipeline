@@ -715,8 +715,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         NODE_NAME,
         NODE_CLOUD_REGION,
         NODE_CLOUD_PROVIDER,
+        NODE_PLATFORM,
         DOCKER_IMAGE,
         ACTUAL_DOCKER_IMAGE,
+        PLATFORM,
         CMD_TEMPLATE,
         ACTUAL_CMD,
         TIMEOUT,
@@ -779,6 +781,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(TIMEOUT.name(), run.getTimeout());
             params.addValue(DOCKER_IMAGE.name(), run.getDockerImage());
             params.addValue(ACTUAL_DOCKER_IMAGE.name(), run.getActualDockerImage());
+            params.addValue(PLATFORM.name(), run.getPlatform());
             params.addValue(CMD_TEMPLATE.name(), run.getCmdTemplate());
             params.addValue(ACTUAL_CMD.name(), run.getActualCmd());
             params.addValue(OWNER.name(), run.getOwner());
@@ -823,6 +826,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(NODE_REAL_DISK.name(), instance.map(RunInstance::getEffectiveNodeDisk).orElse(null));
             params.addValue(NODE_CLOUD_PROVIDER.name(),
                     instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
+            params.addValue(NODE_PLATFORM.name(), instance.map(RunInstance::getNodePlatform).orElse(null));
         }
 
         static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
@@ -888,6 +892,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
             run.setDockerImage(rs.getString(DOCKER_IMAGE.name()));
             run.setActualDockerImage(rs.getString(ACTUAL_DOCKER_IMAGE.name()));
+            run.setPlatform(rs.getString(PLATFORM.name()));
             run.setCmdTemplate(rs.getString(CMD_TEMPLATE.name()));
             run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
             run.setSensitive(rs.getBoolean(SENSITIVE.name()));
@@ -902,6 +907,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             instance.setNodeName(rs.getString(NODE_NAME.name()));
             instance.setCloudRegionId(rs.getLong(NODE_CLOUD_REGION.name()));
             instance.setCloudProvider(CloudProvider.valueOf(rs.getString(NODE_CLOUD_PROVIDER.name())));
+            instance.setNodePlatform(rs.getString(NODE_PLATFORM.name()));
 
             boolean spot = rs.getBoolean(IS_SPOT.name());
             if (!rs.wasNull()) {
