@@ -73,6 +73,9 @@
   height: 21px;
   visibility: visible;
   transition: all 0.2s ease-in-out;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .filter .option-hidden {

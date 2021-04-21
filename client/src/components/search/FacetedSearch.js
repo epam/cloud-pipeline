@@ -184,7 +184,18 @@ class FacetedSearch extends React.Component {
       if (!filter) {
         return null;
       }
-      let minByActiveFilters = 0;
+      let entriesToDisplay;
+      let minByActiveFilters;
+      let preferenceAmount = filter.defaultDictEntriesToDisplay !== undefined
+        ? filter.defaultDictEntriesToDisplay
+        : facetedFiltersDictionaries.defaultDictEntriesToDisplay;
+      if (typeof preferenceAmount === 'string') {
+        if (preferenceAmount.toLowerCase() === 'all') {
+          preferenceAmount = Infinity;
+        } else if (!isNaN(Number(preferenceAmount))) {
+          preferenceAmount = Number(preferenceAmount);
+        }
+      }
       if (activeFilters[filter.dictionary]) {
         const currentFilter = this.filters.find(filter => filter.name === filterName);
         if (currentFilter && currentFilter.values) {
@@ -193,16 +204,14 @@ class FacetedSearch extends React.Component {
             .lastIndexOf(true) + 1;
         }
       }
-      let entriesToDisplay = Math.max(
-        minByActiveFilters,
-        (filter.defaultDictEntriesToDisplay ||
-        facetedFiltersDictionaries.defaultDictEntriesToDisplay)
-      );
-      if (typeof entriesToDisplay === 'string' && entriesToDisplay.toLowerCase() === 'all') {
-        entriesToDisplay = Infinity;
+      if (preferenceAmount >= 0 || minByActiveFilters) {
+        entriesToDisplay = Math.max(...[
+          minByActiveFilters,
+          preferenceAmount
+        ].filter(Number));
       }
       return {
-        entriesToDisplay: Number(entriesToDisplay)
+        entriesToDisplay
       };
     }
     return null;
