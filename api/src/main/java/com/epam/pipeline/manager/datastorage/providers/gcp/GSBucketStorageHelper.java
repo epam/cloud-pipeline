@@ -227,7 +227,7 @@ public class GSBucketStorageHelper {
 
         final String bucketName = dataStorage.getPath();
         if (totally) {
-            deleteAllVersions(bucketName, path, client);
+            deleteAllVersions(bucketName, folderPath, client);
             return;
         }
 
