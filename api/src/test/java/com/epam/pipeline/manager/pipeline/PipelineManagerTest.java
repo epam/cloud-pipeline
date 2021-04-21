@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
@@ -96,6 +97,7 @@ public class PipelineManagerTest {
         gitProject.setRepoUrl(REPOSITORY_HTTPS);
         gitProject.setRepoSsh(REPOSITORY_SSH);
         when(gitManager.createRepository(any(), eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
+        when(gitManager.createRepository(eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
         when(gitManager.createRepository(any(), any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
                 .thenReturn(gitProject);
         when(gitManager.getRepository(eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN))).thenReturn(gitProject);
@@ -112,6 +114,27 @@ public class PipelineManagerTest {
         pipelineManager.create(pipelineVO);
 
         verify(gitManager).createRepository(any(), eq(REPOSITORY_NAME), any());
+    }
+
+    @Test
+    public void createShouldCreateVersionedStorageRepositoryIfItIsSpecifiedInVO() throws GitClientException {
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setName(REPOSITORY_NAME);
+        pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
+        Pipeline pipeline = pipelineManager.create(pipelineVO);
+
+        verify(gitManager).createRepository(eq(REPOSITORY_NAME), any());
+        Assert.assertEquals(pipeline.getPipelineType(), PipelineType.VERSIONED_STORAGE);
+    }
+
+    @Test
+    public void createShouldCreatePipelineTypeRepositoryIfItIsNotSpecifiedInVO() throws GitClientException {
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setName(REPOSITORY_NAME);
+        Pipeline pipeline = pipelineManager.create(pipelineVO);
+
+        verify(gitManager).createRepository(any(), eq(REPOSITORY_NAME), any());
+        Assert.assertEquals(pipeline.getPipelineType(), PipelineType.PIPELINE);
     }
 
     @Test

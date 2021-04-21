@@ -30,6 +30,7 @@ import java.util.Set;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
@@ -149,6 +150,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         OWNER,
         REPOSITORY_TOKEN,
         REPOSITORY_TYPE,
+        PIPELINE_TYPE,
         PIPELINE_LOCKED,
         PARENT_FOLDER_ID;
 
@@ -165,6 +167,11 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(OWNER.name(), pipeline.getOwner());
             params.addValue(REPOSITORY_TOKEN.name(), pipeline.getRepositoryToken());
             params.addValue(REPOSITORY_TYPE.name(), pipeline.getRepositoryType());
+            params.addValue(PIPELINE_TYPE.name(),
+                    Optional.ofNullable(pipeline.getPipelineType())
+                            .map(PipelineType::getId)
+                            .orElse(PipelineType.PIPELINE.getId())
+            );
             params.addValue(PIPELINE_LOCKED.name(), pipeline.isLocked());
             return params;
         }
@@ -212,6 +219,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setOwner(rs.getString(OWNER.name()));
             pipeline.setRepositoryToken(rs.getString(REPOSITORY_TOKEN.name()));
             pipeline.setRepositoryType(RepositoryType.getById(rs.getLong(REPOSITORY_TYPE.name())));
+            pipeline.setPipelineType(PipelineType.getById(rs.getLong(PIPELINE_TYPE.name())));
             pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
             pipeline.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
             return pipeline;

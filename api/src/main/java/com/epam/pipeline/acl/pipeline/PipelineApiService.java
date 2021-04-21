@@ -27,9 +27,17 @@ import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -306,5 +314,50 @@ public class PipelineApiService {
             + "hasPermission(#parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
     public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
         return pipelineManager.copyPipeline(id, parentFolderId, newName);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
+                                                                             final String path, final Long page,
+                                                                             final Integer pageSize) {
+        return gitManager.lsTreeRepositoryContent(id, version, path, page, pageSize);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
+                                                                                        final String version,
+                                                                                        final String path,
+                                                                                        final Long page,
+                                                                                        final Integer pageSize) {
+        return gitManager.logsTreeRepositoryContent(id, version, path, page, pageSize);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(
+            final Long id,
+            final String version,
+            final GitReaderLogsPathFilter paths) {
+        return gitManager.logsTreeRepositoryContent(id, version, paths);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(
+            final Long id,
+            final Long page,
+            final Integer pageSize,
+            final GitCommitsFilter filter) {
+        return gitManager.logRepositoryCommits(id, page, pageSize, filter);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderDiff logRepositoryCommitDiffs(final Long id,
+                                                  final Boolean includeDiff,
+                                                  final GitCommitsFilter filter) {
+        return gitManager.logRepositoryCommitDiffs(id, includeDiff, filter);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit, final String path) {
+        return gitManager.getRepositoryCommitDiff(id, commit, path);
     }
 }

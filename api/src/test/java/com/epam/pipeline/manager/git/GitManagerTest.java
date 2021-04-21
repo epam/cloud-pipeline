@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -151,6 +152,7 @@ public class GitManagerTest extends AbstractManagerTest {
     @Before
     public void describePreferenceManager() {
         when(preferenceManager.getPreference(SystemPreferences.GIT_HOST)).thenReturn(gitHost.asString());
+        when(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)).thenReturn(gitHost.asString());
         when(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID)).thenReturn(ROOT_USER_ID);
         when(preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME)).thenReturn(ROOT_USER_NAME);
     }
@@ -566,6 +568,46 @@ public class GitManagerTest extends AbstractManagerTest {
         final GitProject updatedProject = gitManager.updateRepositoryName(projectName, newProjectName);
         assertThat(updatedProject, is(expectedProject));
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void gitLsTreeShouldFailIfRepoVersionDoesntExists() {
+        givenThat(
+                get(urlPathEqualTo(api(REPOSITORY_TAGS + "/doesnt_exist")))
+                        .willReturn(notFound())
+        );
+        givenThat(
+                get(urlPathEqualTo("/git/" + getUrlEncodedNamespacePath(REPOSITORY_NAME) + "/ls_tree"))
+                        .willReturn(WireMock.ok())
+        );
+        Pipeline pipeline = new Pipeline();
+        pipeline.setName(REPOSITORY_NAME);
+        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME
+                + "/" + REPOSITORY_NAME + ".git");
+        when(pipelineManagerMock.load(1L)).thenReturn(pipeline);
+        gitManager.lsTreeRepositoryContent(1L, "doesnt_exist", null, null, null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void gitLsTreeShouldFailIfPrefGitReaderHostIsNotSpecified() {
+        when(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)).thenReturn(null);
+        final GitTagEntry tag = new GitTagEntry();
+        givenThat(
+                get(urlPathEqualTo(api(REPOSITORY_TAGS + "/" + TEST_REVISION)))
+                        .willReturn(okJson(with(tag)))
+        );
+        givenThat(
+                get(urlPathEqualTo("/git/" + getUrlEncodedNamespacePath(REPOSITORY_NAME) + "/ls_tree"))
+                        .willReturn(WireMock.ok())
+        );
+        Pipeline pipeline = new Pipeline();
+        pipeline.setName(REPOSITORY_NAME);
+        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME +
+                "/" + REPOSITORY_NAME + ".git");
+        when(pipelineManagerMock.load(1L)).thenReturn(pipeline);
+        gitManager.lsTreeRepositoryContent(1L, "v1.0.0", null, null, null);
+    }
+
+
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForNonExistentProject() {

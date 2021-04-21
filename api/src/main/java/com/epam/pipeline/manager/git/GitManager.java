@@ -23,13 +23,22 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitGroup;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
+import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
+import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
@@ -727,6 +736,16 @@ public class GitManager {
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
+    public GitProject createRepository(final String pipelineName, final String description) throws GitClientException {
+        return getDefaultGitlabClient().createEmptyRepository(
+                        pipelineName,
+                        description,
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                        true,
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+                );
+    }
+
     public boolean checkProjectExists(String name) {
         try {
             return getDefaultGitlabClient().projectExists(name);
@@ -877,6 +896,88 @@ public class GitManager {
         LOGGER.debug("The temporary git group '{}' was deleted", tmpGroupName);
 
         return forkedProject;
+    }
+
+    public GitReaderEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
+                                                                             final String path, final Long page,
+                                                                             final Integer pageSize) {
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
+                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+            ));
+    }
+
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
+                                                                                        final String version,
+                                                                                        final String path,
+                                                                                        final Long page,
+                                                                                        final Integer pageSize) {
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
+                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+            ));
+    }
+
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(
+            final Long id,
+            final String version,
+            final GitReaderLogsPathFilter paths) {
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
+                GitRepositoryUrl.from(pipeline.getRepository()), version, paths
+        ));
+    }
+
+    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(
+            final Long id,
+            final Long page,
+            final Integer pageSize,
+            final GitCommitsFilter filter) {
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommits(
+                    GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, filter
+            ));
+    }
+
+    public GitReaderDiff logRepositoryCommitDiffs(final Long id, final Boolean includeDiff,
+                                                  final GitCommitsFilter filter) {
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiffs(
+                    GitRepositoryUrl.from(pipeline.getRepository()),
+                    includeDiff, filter
+            ));
+    }
+
+    public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit,
+                                                      final String path) {
+            final Pipeline pipeline = pipelineManager.load(id);
+            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiff(
+                    GitRepositoryUrl.from(pipeline.getRepository()),
+                    commit, path
+            ));
+    }
+
+    private <T> T callGitReaderApi(final GitClientMethodCall<GitReaderClient, T> method) {
+        try {
+            return method.apply(new GitReaderClient(getGitReaderHostPreference()));
+        } catch (GitClientException e) {
+            LOGGER.error(e.getMessage());
+            throw new IllegalArgumentException("Something went wrong when trying to request data from Git Reader service", e);
+        }
+    }
+
+    private Pipeline loadPipelineAndCheckRevision(final Long id, final String revision) {
+        final Pipeline pipeline = pipelineManager.load(id);
+        if (!StringUtils.isNullOrEmpty(revision)) {
+            checkRevision(pipeline, revision);
+        }
+        return pipeline;
+    }
+
+    private String getGitReaderHostPreference() {
+        final String gitReaderHost = preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST);
+        Assert.hasText(gitReaderHost, "Preference git.reader.service.host is empty");
+        return gitReaderHost;
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
