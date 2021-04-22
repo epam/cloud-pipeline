@@ -14,7 +14,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
 import java.util.List;
 
-public class VSReportTemplateTableProcessor extends AbstractVersionedTemplateProcessor {
+public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProcessor {
 
     public VSReportTemplateTableProcessor(ReportDataExtractor dataProducer) {
         super(dataProducer);
@@ -118,6 +118,7 @@ public class VSReportTemplateTableProcessor extends AbstractVersionedTemplatePro
                     }
                     String text = "";
                     XWPFTableCell xwpfTableCell = xwpfTableRow.addNewTableCell();
+                    xwpfTableCell.removeParagraph(0);
                     XWPFParagraph xwpfParagraph = xwpfTableCell.addParagraph();
                     xwpfParagraph.setAlignment(ParagraphAlignment.CENTER);
                     xwpfParagraph.setVerticalAlignment(TextAlignment.CENTER);

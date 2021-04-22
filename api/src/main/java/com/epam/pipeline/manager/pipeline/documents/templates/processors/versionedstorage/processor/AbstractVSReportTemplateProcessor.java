@@ -9,7 +9,7 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class AbstractVersionedTemplateProcessor implements VSReportTemplateProcessor {
+public abstract class AbstractVSReportTemplateProcessor implements VSReportTemplateProcessor {
 
     protected final ReportDataExtractor dataProducer;
 
@@ -18,7 +18,7 @@ public abstract class AbstractVersionedTemplateProcessor implements VSReportTemp
     protected XWPFRun xwpfRun;
     protected int pos = -1;
 
-    public AbstractVersionedTemplateProcessor(ReportDataExtractor dataProducer) {
+    public AbstractVSReportTemplateProcessor(ReportDataExtractor dataProducer) {
         this.dataProducer = dataProducer;
     }
 

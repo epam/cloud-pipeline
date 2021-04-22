@@ -5,20 +5,24 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.TableRow;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
+import java.io.IOException;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class FileListTableExtractor implements ReportDataExtractor {
 
-    private final static Pattern PATTERN = Pattern.compile("\\{file_list_table:?(.*)}");
+    private final static Pattern PATTERN = Pattern.compile("\\{\"file_list_table\":?(.*)}");
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
     public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitDiff diff) {
@@ -28,7 +32,8 @@ public class FileListTableExtractor implements ReportDataExtractor {
             final String tableStructure = matcher.group(1);
             tableColumns = parseTableStructure(tableStructure);
         } else {
-            tableColumns = Arrays.stream(FileListTableColumn.values()).collect(Collectors.toMap(c -> c, c -> c.value));
+            tableColumns = Arrays.stream(FileListTableColumn.values())
+                    .collect(Collectors.toMap(c -> c, c -> c.defaultColumn));
         }
         final Table result = new Table();
         result.setContainsHeaderRow(true);
@@ -75,33 +80,37 @@ public class FileListTableExtractor implements ReportDataExtractor {
         if (StringUtils.isBlank(tableStructureString)) {
             return FileListTableColumn.DEFAULT;
         }
-        final Map<FileListTableColumn, String> result = new LinkedHashMap<>();
-        for (String column : tableStructureString.split(";")) {
-            final String[] columnAndName = column.split("-");
-            final FileListTableColumn tableColumn = FileListTableColumn.byValue(columnAndName[0]);
-            if (tableColumn == null) {
-                throw new IllegalArgumentException("Report template is invalid. Column " + columnAndName[0] +
-                        " isn't available for files table. Possible columns: " +
-                        Arrays.stream(FileListTableColumn.values())
-                        .map(c -> c.value).collect(Collectors.joining(", ")));
-            }
-            if (columnAndName.length == 2) {
-                result.put(tableColumn, columnAndName[1]);
-            } else {
-                result.put(tableColumn, tableColumn.value);
-            }
+        try {
+            return OBJECT_MAPPER.readValue(
+                    tableStructureString,
+                    new TypeReference<LinkedHashMap<FileListTableColumn, String>>() {}
+            );
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Report template is invalid. Possible columns: " +
+                    Arrays.stream(FileListTableColumn.values())
+                            .map(c -> c.value).collect(Collectors.joining(", ")));
         }
-        return result;
     }
 
-    enum FileListTableColumn {
+    public enum FileListTableColumn {
 
-        NAME("Name"),
-        PATH("Path"),
-        REVISION("Revision"),
-        DATE_CHANGED("Date changed"),
-        AUTHOR("Author"),
-        MESSAGE("Message");
+        @JsonProperty("name")
+        NAME("name", "Name"),
+
+        @JsonProperty("path")
+        PATH("path", "Path"),
+
+        @JsonProperty("revision")
+        REVISION("revision", "Revision"),
+
+        @JsonProperty("date_changed")
+        DATE_CHANGED("date_changed", "Date changed"),
+
+        @JsonProperty("author")
+        AUTHOR("author", "Author"),
+
+        @JsonProperty("message")
+        MESSAGE("message", "Message");
 
         private static final Map<String, FileListTableColumn> BY_VALUE = new HashMap<>();
         private static final Map<FileListTableColumn, String> DEFAULT = new LinkedHashMap<>();
@@ -115,14 +124,16 @@ public class FileListTableExtractor implements ReportDataExtractor {
             BY_VALUE.put(MESSAGE.value, MESSAGE);
 
             for (FileListTableColumn value : FileListTableColumn.values()) {
-                DEFAULT.put(value, value.value);
+                DEFAULT.put(value, value.defaultColumn);
             }
         }
 
         private final String value;
+        private final String defaultColumn;
 
-        FileListTableColumn(String value) {
+        FileListTableColumn(String value, String defaultColumn) {
             this.value = value;
+            this.defaultColumn = defaultColumn;
         }
 
         public static FileListTableColumn byValue(final String value) {

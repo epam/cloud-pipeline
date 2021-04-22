@@ -5,7 +5,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 
 
-public class VSReportTemplatePageBreakProcessor extends AbstractVersionedTemplateProcessor {
+public class VSReportTemplatePageBreakProcessor extends AbstractVSReportTemplateProcessor {
 
     public VSReportTemplatePageBreakProcessor(ReportDataExtractor dataProducer) {
         super(dataProducer);

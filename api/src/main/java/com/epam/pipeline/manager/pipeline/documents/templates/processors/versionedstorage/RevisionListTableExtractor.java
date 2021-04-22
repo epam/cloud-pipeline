@@ -5,10 +5,14 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.TableRow;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -19,7 +23,8 @@ import java.util.stream.Collectors;
 
 public class RevisionListTableExtractor implements ReportDataExtractor {
 
-    private final static Pattern PATTERN = Pattern.compile("\\{revision_history_table:?(.*)}");
+    private final static Pattern PATTERN = Pattern.compile("\\{\"revision_history_table\":?(.*)}");
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
     public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitDiff diff) {
@@ -29,7 +34,8 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
             final String tableStructure = matcher.group(1);
             tableColumns = parseTableStructure(tableStructure);
         } else {
-            tableColumns = Arrays.stream(RevisionHistoryTableColumn.values()).collect(Collectors.toMap(c -> c, c -> c.value));
+            tableColumns = Arrays.stream(RevisionHistoryTableColumn.values())
+                    .collect(Collectors.toMap(c -> c, c -> c.defaultColumn));
         }
         final Table result = new Table();
         result.setContainsHeaderRow(true);
@@ -71,32 +77,34 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
         if (StringUtils.isBlank(tableStructureString)) {
             return RevisionHistoryTableColumn.DEFAULT;
         }
-        final Map<RevisionHistoryTableColumn, String> result = new LinkedHashMap<>();
-        for (String column : tableStructureString.split(";")) {
-            final String[] columnAndName = column.split("-");
-            final RevisionHistoryTableColumn tableColumn = RevisionHistoryTableColumn.byValue(columnAndName[0]);
-            if (tableColumn == null) {
-                throw new IllegalArgumentException("Report template is invalid. Column " + columnAndName[0] +
-                        " isn't available for revision history table. Possible columns: " +
-                        Arrays.stream(RevisionHistoryTableColumn.values())
-                                .map(c -> c.value).collect(Collectors.joining(", ")));
-            }
-            if (columnAndName.length == 2) {
-                result.put(tableColumn, columnAndName[1]);
-            } else {
-                result.put(tableColumn, tableColumn.value);
-            }
+        try {
+            return OBJECT_MAPPER.readValue(
+                    tableStructureString,
+                    new TypeReference<LinkedHashMap<RevisionHistoryTableColumn, String>>() {}
+            );
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Report template is invalid. Possible columns: " +
+                    Arrays.stream(RevisionHistoryTableColumn.values())
+                            .map(c -> c.value).collect(Collectors.joining(", ")));
         }
-        return result;
     }
 
-    enum RevisionHistoryTableColumn {
+    public enum RevisionHistoryTableColumn {
 
-        REVISION("Revision"),
-        DATE_CHANGED("Date changed"),
-        PATH("Path"),
-        AUTHOR("Author"),
-        MESSAGE("Message");
+        @JsonProperty("revision")
+        REVISION("revision", "Revision"),
+
+        @JsonProperty("date_changed")
+        DATE_CHANGED("date_changed", "Date changed"),
+
+        @JsonProperty("path")
+        PATH("path", "Path"),
+
+        @JsonProperty("author")
+        AUTHOR("author", "Author"),
+
+        @JsonProperty("message")
+        MESSAGE("message", "Message");
 
         private static final Map<String, RevisionHistoryTableColumn> BY_VALUE = new HashMap<>();
         private static final Map<RevisionHistoryTableColumn, String> DEFAULT = new LinkedHashMap<>();
@@ -109,15 +117,17 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
             BY_VALUE.put(MESSAGE.value, MESSAGE);
 
             for (RevisionHistoryTableColumn value : RevisionHistoryTableColumn.values()) {
-                DEFAULT.put(value, value.value);
+                DEFAULT.put(value, value.defaultColumn);
             }
 
         }
 
         private final String value;
+        private final String defaultColumn;
 
-        RevisionHistoryTableColumn(String value) {
+        RevisionHistoryTableColumn(String value, String defaultColumn) {
             this.value = value;
+            this.defaultColumn = defaultColumn;
         }
 
         public static RevisionHistoryTableColumn byValue(final String value) {

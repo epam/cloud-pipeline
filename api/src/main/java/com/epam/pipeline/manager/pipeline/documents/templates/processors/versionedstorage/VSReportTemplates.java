@@ -36,11 +36,11 @@ public enum VSReportTemplates {
         }
         return diff.getFilters().getExtensions();
     })),
-    FILE_LIST_TABLE("file_list_table.*",
+    FILE_LIST_TABLE("\"file_list_table\".*",
             () -> new VSReportTemplateTableProcessor(new FileListTableExtractor())),
-    REVISION_HISTORY_TABLE("revision_history_table.*",
+    REVISION_HISTORY_TABLE("\"revision_history_table\".*",
             () -> new VSReportTemplateTableProcessor(new RevisionListTableExtractor())),
-    COMMIT_DIFFS("commit_diffs.*", () -> new VSReportTemplateMixedProcessor(new CommitDiffExtractor()));
+    COMMIT_DIFFS("commit_diffs", () -> new VSReportTemplateDiffProcessor(new CommitDiffExtractor()));
 
     public final String template;
     public final Supplier<VSReportTemplateProcessor> templateResolver;

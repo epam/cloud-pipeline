@@ -5,7 +5,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 
 
-public class VSReportTemplateTextProcessor extends AbstractVersionedTemplateProcessor {
+public class VSReportTemplateTextProcessor extends AbstractVSReportTemplateProcessor {
 
     public VSReportTemplateTextProcessor(ReportDataExtractor dataProducer) {
         super(dataProducer);

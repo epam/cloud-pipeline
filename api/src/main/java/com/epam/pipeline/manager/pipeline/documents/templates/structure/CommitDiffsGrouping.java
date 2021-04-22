@@ -16,7 +16,7 @@ public class CommitDiffsGrouping {
 
     public enum GroupType {
         BY_COMMIT,
-        BY_FILE;
+        BY_FILE
     }
 
 }

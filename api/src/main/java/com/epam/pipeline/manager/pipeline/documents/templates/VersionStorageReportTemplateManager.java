@@ -91,8 +91,7 @@ public class VersionStorageReportTemplateManager {
                             String[] diffsByFile = diff.getDiff().split(GIT_DIFF_HEADER);
                             return Arrays.stream(diffsByFile)
                                     .filter(StringUtils::isNotBlank)
-                                    .map(fileDiff ->
-                                    {
+                                    .map(fileDiff -> {
                                         try {
                                             final Diff parsed = diffParser.parse(
                                                     (GIT_DIFF_HEADER + fileDiff).getBytes(StandardCharsets.UTF_8)
@@ -101,7 +100,8 @@ public class VersionStorageReportTemplateManager {
                                                     .commit(diff.getCommit())
                                                     .diff(DiffUtils.normalizeDiff(parsed)).build();
                                         } catch (Exception e) {
-                                            // If we fail to parse diff with diffParser lets try to parse it as binary diffs
+                                            // If we fail to parse diff with diffParser lets
+                                            // try to parse it as binary diffs
                                             return GitDiffEntry.builder()
                                                     .commit(diff.getCommit())
                                                     .diff(DiffUtils.parseBinaryDiff(GIT_DIFF_HEADER + fileDiff))
@@ -109,8 +109,7 @@ public class VersionStorageReportTemplateManager {
                                         }
                                     });
                             }).collect(Collectors.toList())
-                )
-                .filters(gitReaderDiff.getFilters()).build();
+                ).filters(gitReaderDiff.getFilters()).build();
     }
 
 
