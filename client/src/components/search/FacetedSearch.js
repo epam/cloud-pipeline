@@ -35,7 +35,8 @@ import {
   facetedQueryString,
   facetsSearch,
   getFacetFilterToken,
-  fetchFacets
+  fetchFacets,
+  FacetModeStorage
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
 import styles from './FacetedSearch.css';
@@ -83,7 +84,7 @@ class FacetedSearch extends React.Component {
     query: undefined,
     offset: 0,
     pageSize: 20,
-    presentationMode: PresentationModes.list,
+    presentationMode: FacetModeStorage.load() || PresentationModes.list,
     showResults: false,
     searchToken: undefined,
     facetsToken: undefined
@@ -442,7 +443,9 @@ class FacetedSearch extends React.Component {
     if (mode === presentationMode) {
       return null;
     }
-    this.setState({presentationMode: mode});
+    this.setState({presentationMode: mode}, () => {
+      FacetModeStorage.save(mode);
+    });
   }
 
   onQueryChange = (e) => {

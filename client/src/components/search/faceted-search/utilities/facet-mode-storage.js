@@ -12,12 +12,20 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- */
+*/
 
-import * as facetedQueryString from './facet-query-string';
+import {PresentationModes} from '../controls';
 
-export {facetedQueryString};
-export {default as facetsSearch} from './facets-search';
-export {default as getFacetFilterToken} from './facet-filter-token';
-export {default as fetchFacets} from './fetch-facets';
-export {default as FacetModeStorage} from './facet-mode-storage';
+class FacetModeStorage {
+  static load () {
+    return localStorage.getItem('facetMode');
+  }
+
+  static save (viewMode) {
+    if (viewMode && PresentationModes[viewMode]) {
+      localStorage.setItem('facetMode', viewMode);
+    }
+  }
+};
+
+export default FacetModeStorage;
