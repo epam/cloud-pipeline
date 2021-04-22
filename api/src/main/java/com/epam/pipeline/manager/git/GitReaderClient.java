@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
+import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.exception.git.GitClientException;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -53,8 +54,10 @@ public class GitReaderClient {
     private static final String DATA_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
 
     private GitReaderApi gitReaderApi;
+    private JwtRawToken userJwtToken;
 
-    GitReaderClient(final String gitReaderUrlRoot) {
+    GitReaderClient(final String gitReaderUrlRoot, JwtRawToken userJwtToken) {
+        this.userJwtToken = userJwtToken;
         if (StringUtils.isBlank(gitReaderUrlRoot)) {
             throw new IllegalArgumentException("Cannot get GitReader Service URL.");
         }
@@ -151,7 +154,7 @@ public class GitReaderClient {
     }
 
     private GitReaderApi buildGitLabApi(final String gitReaderUrlRoot) {
-        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, null, DATA_FORMAT).build();
+        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, null, userJwtToken.toHeader(), DATA_FORMAT).build();
     }
 
     private List<String> getPathMasks(final GitCommitsFilter filter) {

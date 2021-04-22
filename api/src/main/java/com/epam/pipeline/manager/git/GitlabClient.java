@@ -541,7 +541,7 @@ public class GitlabClient {
     }
 
     private GitLabApi buildGitLabApi(final String gitHost, final String adminToken) {
-        return new ApiBuilder<>(GitLabApi.class, gitHost, adminToken, DATA_FORMAT).build();
+        return new ApiBuilder<>(GitLabApi.class, gitHost, adminToken, null, DATA_FORMAT).build();
     }
 
     private void uploadFolder(Template template, String repoName, GitProject project) throws GitClientException {

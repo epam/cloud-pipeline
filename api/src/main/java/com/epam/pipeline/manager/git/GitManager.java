@@ -959,7 +959,12 @@ public class GitManager {
 
     private <T> T callGitReaderApi(final GitClientMethodCall<GitReaderClient, T> method) {
         try {
-            return method.apply(new GitReaderClient(getGitReaderHostPreference()));
+            return method.apply(
+                    new GitReaderClient(
+                            getGitReaderHostPreference(),
+                            authManager.issueAdminToken(null)
+                    )
+            );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
             throw new IllegalArgumentException("Something went wrong when trying to request data from Git Reader service", e);

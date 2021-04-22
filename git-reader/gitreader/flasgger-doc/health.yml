@@ -1,0 +1,18 @@
+Health check to be able to know that this service is healthy and responding
+---
+definitions:
+  Health:
+     type: object
+     properties:
+       payload:
+         type: object
+         properties:
+           healthy:
+             type: boolean
+       status:
+         type: string
+responses:
+ 200:
+   description: Health check to be able to know that this service is healthy and responding
+   schema:
+     $ref: '#/definitions/Health'

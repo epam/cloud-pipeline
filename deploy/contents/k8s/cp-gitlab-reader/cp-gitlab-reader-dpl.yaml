@@ -30,6 +30,16 @@ spec:
               name: git-data
             - mountPath: ${CP_GITLAB_READER_LOG_DIR}
               name: git-reader-logs
+            - mountPath: /opt/api/pki
+              name: api-pki
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
       volumes:
         - name: git-reader-logs
           hostPath:
@@ -37,6 +47,9 @@ spec:
         - name: git-data
           hostPath:
             path: /opt/gitlab/data
+        - name: api-pki
+          hostPath:
+            path: /opt/api/pki
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
     

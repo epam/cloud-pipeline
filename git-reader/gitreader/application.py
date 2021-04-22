@@ -24,6 +24,7 @@ from gitreader.src.model.git_search_filter import GitSearchFilter
 
 from flasgger import Swagger
 from flasgger import swag_from
+from gitreader.src.utils.auth_utils import auth
 
 app = Flask(__name__)
 swagger = Swagger(app)
@@ -45,15 +46,20 @@ def error(message):
         "status": "ERROR"
     }
 
+@app.route('/health')
+@swag_from('flasgger-doc/health.yml')
+def health():
+    return jsonify(success({"healthy": True}))
 
 @app.route('/git/<path:repo>/ls_tree')
 @swag_from('flasgger-doc/list-tree.yml')
 def git_list_tree(repo):
     manager = app.config['gitmanager']
     try:
-        path, page, page_size, ref = parse_url_params()
-        list_tree = manager.ls_tree(repo, path, ref, page, page_size)
-        return jsonify(success(list_tree.to_json()))
+        if auth(request):
+            path, page, page_size, ref = parse_url_params()
+            list_tree = manager.ls_tree(repo, path, ref, page, page_size)
+            return jsonify(success(list_tree.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -65,24 +71,27 @@ def git_logs_tree(repo):
     manager = app.config['gitmanager']
     path, page, page_size, ref = parse_url_params()
     try:
-        logs_tree = manager.logs_tree(repo, path, ref, page, page_size)
-        return jsonify(success(logs_tree.to_json()))
+        if auth(request):
+            logs_tree = manager.logs_tree(repo, path, ref, page, page_size)
+            return jsonify(success(logs_tree.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
+
 
 @app.route('/git/<path:repo>/logs_tree',  methods=["POST"])
 @swag_from('flasgger-doc/logs-tree-by-path.yml')
 def git_logs_tree_by_paths(repo):
     manager = app.config['gitmanager']
-    _, _, _, ref = parse_url_params()
     try:
-        data = load_data_from_request(request)
-        if "paths" in data:
-            logs_tree = manager.logs_paths(repo, ref, data['paths'])
-            return jsonify(success(logs_tree.to_json()))
-        else:
-            raise RuntimeError("Request body doesn't contains 'paths' field")
+        if auth(request):
+            _, _, _, ref = parse_url_params()
+            data = load_data_from_request(request)
+            if "paths" in data:
+                logs_tree = manager.logs_paths(repo, ref, data['paths'])
+                return jsonify(success(logs_tree.to_json()))
+            else:
+                raise RuntimeError("Request body doesn't contains 'paths' field")
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -93,10 +102,11 @@ def git_logs_tree_by_paths(repo):
 def git_list_commits(repo):
     manager = app.config['gitmanager']
     try:
-        filters = load_filters_from_request(request)
-        _, page, page_size, _ = parse_url_params()
-        commits = manager.list_commits(repo, filters, page, page_size)
-        return jsonify(success(commits.to_json()))
+        if auth(request):
+            filters = load_filters_from_request(request)
+            _, page, page_size, _ = parse_url_params()
+            commits = manager.list_commits(repo, filters, page, page_size)
+            return jsonify(success(commits.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -107,15 +117,16 @@ def git_list_commits(repo):
 def git_diff_report(repo):
     manager = app.config['gitmanager']
     try:
-        filters = load_filters_from_request(request)
-        include_diff = False
-        if request.args.get('include_diff'):
-            include_diff = str_to_bool(request.args.get('include_diff'))
-        unified_lines = 3
-        if request.args.get('unified_lines'):
-            unified_lines = int(request.args.get('unified_lines'))
-        diff_report = manager.diff_report(repo, filters, include_diff, unified_lines)
-        return jsonify(success(diff_report.to_json()))
+        if auth(request):
+            filters = load_filters_from_request(request)
+            include_diff = False
+            if request.args.get('include_diff'):
+                include_diff = str_to_bool(request.args.get('include_diff'))
+            unified_lines = 3
+            if request.args.get('unified_lines'):
+                unified_lines = int(request.args.get('unified_lines'))
+            diff_report = manager.diff_report(repo, filters, include_diff, unified_lines)
+            return jsonify(success(diff_report.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -126,16 +137,17 @@ def git_diff_report(repo):
 def git_diff_by_commit(repo, commit):
     manager = app.config['gitmanager']
     try:
-        if request.args.get('path'):
-            path = request.args.get('path')
-        else:
-            path = "."
+        if auth(request):
+            if request.args.get('path'):
+                path = request.args.get('path')
+            else:
+                path = "."
 
-        unified_lines = 3
-        if request.args.get('unified_lines'):
-            unified_lines = int(request.args.get('unified_lines'))
-        commit_diff = manager.diff(repo, commit, path, unified_lines)
-        return jsonify(success(commit_diff.to_json()))
+            unified_lines = 3
+            if request.args.get('unified_lines'):
+                unified_lines = int(request.args.get('unified_lines'))
+            commit_diff = manager.diff(repo, commit, path, unified_lines)
+            return jsonify(success(commit_diff.to_json()))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
