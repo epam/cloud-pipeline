@@ -38,7 +38,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -139,19 +139,19 @@ public class CommonCloudInstanceService {
     }
 
     private Map<String, String> buildPipeAuthEnvVars(final Long id) {
-        final Map<String, String> envVars = new HashMap<>();
-        envVars.put("API", preferenceManager.getPreference(SystemPreferences.BASE_API_HOST));
-        envVars.put("API_TOKEN", getApiTokenForRun(id));
-        return envVars;
+        return buildPipeAuthEnvVars(Optional.ofNullable(id)
+                .map(runCRUDService::loadRunById)
+                .map(PipelineRun::getOwner)
+                .map(userManager::loadUserContext)
+                .orElseGet(authManager::getUserContext));
     }
 
-    private String getApiTokenForRun(final Long runId) {
-        if (Objects.isNull(runId)) {
-            return authManager.issueTokenForCurrentUser().getToken();
-        }
-        PipelineRun run = runCRUDService.loadRunById(runId);
-        UserContext owner = userManager.loadUserContext(run.getOwner());
-        return authManager.issueToken(owner, null).getToken();
+    private Map<String, String> buildPipeAuthEnvVars(final UserContext user) {
+        final Map<String, String> envVars = new HashMap<>();
+        envVars.put("API", preferenceManager.getPreference(SystemPreferences.BASE_API_HOST));
+        envVars.put("API_TOKEN", authManager.issueToken(user, null).getToken());
+        envVars.put("API_USER", user.getUsername());
+        return envVars;
     }
 
     private void executeCmd(final CmdExecutor cmdExecutor,
