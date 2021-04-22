@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,29 +21,35 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"id"})
+@EqualsAndHashCode(of = {"key", "value", "autofill", "links"})
 public class CategoricalAttributeValue {
 
     private Long id;
     private String key;
     private String value;
     private Boolean autofill;
+    private Long attributeId;
+    private String owner;
+    private Date createdDate;
     private List<CategoricalAttributeValue> links;
 
     public CategoricalAttributeValue(final String key, final String value) {
-        this(null, key, value);
+        this(null, null, key, value, null, null);
     }
 
-    public CategoricalAttributeValue(final Long id, final String key, final String value) {
-        this(id, key, value, null);
+    public CategoricalAttributeValue(final Long id, final Long attributeId, final String key, final String value,
+                                     final String owner, final Date createdDate) {
+        this(id, attributeId, key, value, null, owner, createdDate);
     }
 
-    public CategoricalAttributeValue(final Long id, final String key, final String value, final Boolean autofill) {
-        this(id, key, value, autofill, Collections.emptyList());
+    public CategoricalAttributeValue(final Long id, final Long attributeId, final String key, final String value,
+                                     final Boolean autofill, final String owner, final Date createdDate) {
+        this(id, key, value, autofill, attributeId, owner, createdDate, Collections.emptyList());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.metadata.CategoricalAttributeDao;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -42,6 +43,7 @@ public class CategoricalAttributeManager {
     private final CategoricalAttributeDao categoricalAttributesDao;
     private final MetadataManager metadataManager;
     private final MessageHelper messageHelper;
+    private final AuthManager securityManager;
 
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -62,14 +64,14 @@ public class CategoricalAttributeManager {
         final List<CategoricalAttribute> attributesWithValuesToInsert =
             keepAttributesWithValuesToInsert(dict, currentValues);
         final boolean valuesInserted =  CollectionUtils.isNotEmpty(attributesWithValuesToInsert)
-               && categoricalAttributesDao.insertAttributesValues(attributesWithValuesToInsert);
+               && categoricalAttributesDao.insertAttributesValues(setOwner(attributesWithValuesToInsert));
 
         return categoricalAttributesDao.insertValuesLinks(dict) || valuesInserted || valuesRemoved || linksRemoved;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesDao.insertAttributesValues(dict);
+        return categoricalAttributesDao.insertAttributesValues(setOwner(dict));
     }
 
     public List<CategoricalAttribute> loadAll() {
@@ -97,6 +99,15 @@ public class CategoricalAttributeManager {
     public void syncWithMetadata() {
         final List<CategoricalAttribute> fullMetadataDict = metadataManager.buildFullMetadataDict();
         insertAttributesValues(fullMetadataDict);
+    }
+
+    private List<CategoricalAttribute> setOwner(final List<CategoricalAttribute> attributes) {
+        return attributes.stream().map(this::setOwner).collect(Collectors.toList());
+    }
+
+    private CategoricalAttribute setOwner(final CategoricalAttribute attribute) {
+        attribute.setOwner(securityManager.getAuthorizedUser());
+        return attribute;
     }
 
     private List<CategoricalAttribute> keepAttributesWithValuesToRemove(final List<CategoricalAttribute> receivedState,

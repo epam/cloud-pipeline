@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,52 @@
 
 package com.epam.pipeline.entity.metadata;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.manager.security.AuthManager;
+import lombok.Setter;
 import lombok.Value;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Value
-public class CategoricalAttribute {
+@Setter
+public class CategoricalAttribute extends AbstractSecuredEntity {
 
     private String key;
     private List<CategoricalAttributeValue> values;
+    private AclClass aclClass = AclClass.CATEGORICAL_ATTRIBUTE;
+
+    public CategoricalAttribute() {
+        this.key = null;
+        this.values = Collections.emptyList();
+    }
+
+    public CategoricalAttribute(final String key, final List<CategoricalAttributeValue> values) {
+        this.key = key;
+        this.values = values;
+        setName(key);
+        setCreatedDate(createdFromValues(values));
+        final Optional<CategoricalAttributeValue> attributeValue = values.stream().findAny();
+        setId(attributeValue.map(CategoricalAttributeValue::getAttributeId).orElse(null));
+        setOwner(attributeValue.map(CategoricalAttributeValue::getOwner).orElse(AuthManager.UNAUTHORIZED_USER));
+    }
+
+    @Override
+    public AbstractSecuredEntity getParent() {
+        return null;
+    }
+
+    private Date createdFromValues(final List<CategoricalAttributeValue> values) {
+        return values.stream()
+            .map(CategoricalAttributeValue::getCreatedDate)
+            .filter(Objects::nonNull)
+            .min(Comparator.naturalOrder())
+            .orElse(new Date());
+    }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -19,13 +19,23 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="com.epam.pipeline.dao.metadata.CategoricalAttributeDao" id="categoricalAttributesDao" autowire="byName">
+        <property name="createAttributeQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.categorical_attributes (name, owner)
+                    VALUES (:NAME, :OWNER)
+                ]]>
+            </value>
+        </property>
         <property name="insertAttributeValueQuery">
             <value>
                 <![CDATA[
-                    INSERT INTO pipeline.categorical_attributes (
+                    INSERT INTO pipeline.categorical_attributes_values (
+                        attribute_id,
                         key,
                         value)
                     VALUES (
+                        (SELECT id FROM pipeline.categorical_attributes WHERE name=:KEY),
                         :KEY,
                         :VALUE)
                     ON CONFLICT (key, value) DO NOTHING
@@ -35,7 +45,15 @@
         <property name="loadAllAttributesValuesWithoutLinksQuery">
             <value>
                 <![CDATA[
-                    SELECT key, value, id FROM pipeline.categorical_attributes
+                    SELECT
+                        attributes.name as key,
+                        attributes_values.value,
+                        attributes_values.id,
+                        attributes_values.attribute_id,
+                        attributes.owner,
+                        attributes.created_date
+                    FROM pipeline.categorical_attributes attributes
+                    LEFT JOIN pipeline.categorical_attributes_values attributes_values on attributes.id = attributes_values.attribute_id
                 ]]>
             </value>
         </property>
@@ -43,16 +61,21 @@
             <value>
                 <![CDATA[
                     SELECT
-                        attributes.key,
-                        attributes.value,
-                        attributes.id,
+                        attributes.name as key,
+                        attributes_values.value,
+                        attributes_values.id,
+                        attributes_values.attribute_id,
+                        attributes.owner,
+                        attributes.created_date,
                         links.child_id,
                         links.autofill,
                         links_values.key child_key,
-                        links_values.value as child_value
+                        links_values.value as child_value,
+                        links_values.attribute_id as child_attribute_id
                     FROM pipeline.categorical_attributes attributes
-                    LEFT JOIN pipeline.categorical_attributes_links links on attributes.id=links.parent_id
-                    LEFT JOIN pipeline.categorical_attributes links_values on links_values.id = links.child_id
+                    LEFT JOIN pipeline.categorical_attributes_values attributes_values on attributes.id = attributes_values.attribute_id
+                    LEFT JOIN pipeline.categorical_attributes_values_links links on attributes_values.id=links.parent_id
+                    LEFT JOIN pipeline.categorical_attributes_values links_values on links_values.id = links.child_id
                 ]]>
             </value>
         </property>
@@ -60,17 +83,22 @@
             <value>
                 <![CDATA[
                     SELECT
-                        attributes.key,
-                        attributes.value,
-                        attributes.id,
+                        attributes.name as key,
+                        attributes_values.value,
+                        attributes_values.id,
+                        attributes_values.attribute_id,
+                        attributes.owner,
+                        attributes.created_date,
                         links.child_id,
                         links.autofill,
                         links_values.key child_key,
-                        links_values.value as child_value
+                        links_values.value as child_value,
+                        links_values.attribute_id as child_attribute_id
                     FROM pipeline.categorical_attributes attributes
-                    LEFT OUTER JOIN pipeline.categorical_attributes_links links on attributes.id=links.parent_id
-                    LEFT JOIN pipeline.categorical_attributes links_values on links_values.id = links.child_id
-                    WHERE attributes.key=:KEY
+                    LEFT JOIN pipeline.categorical_attributes_values attributes_values on attributes.id = attributes_values.attribute_id
+                    LEFT OUTER JOIN pipeline.categorical_attributes_values_links links on attributes_values.id=links.parent_id
+                    LEFT JOIN pipeline.categorical_attributes_values links_values on links_values.id = links.child_id
+                    WHERE attributes_values.key=:KEY
                 ]]>
             </value>
         </property>
@@ -78,38 +106,43 @@
             <value>
                 <![CDATA[
                     SELECT
-                        attributes.key,
-                        attributes.value,
-                        attributes.id,
+                        attributes.name as key,
+                        attributes_values.value,
+                        attributes_values.id,
+                        attributes_values.attribute_id,
+                        attributes.owner,
+                        attributes.created_date,
                         links.child_id,
                         links.autofill,
                         links_values.key child_key,
-                        links_values.value as child_value
+                        links_values.value as child_value,
+                        links_values.attribute_id as child_attribute_id
                     FROM pipeline.categorical_attributes attributes
-                    LEFT OUTER JOIN pipeline.categorical_attributes_links links on attributes.id=links.parent_id
-                    LEFT JOIN pipeline.categorical_attributes links_values on links_values.id = links.child_id
-                    WHERE attributes.key IN (:list)
+                    LEFT JOIN pipeline.categorical_attributes_values attributes_values on attributes.id = attributes_values.attribute_id
+                    LEFT OUTER JOIN pipeline.categorical_attributes_values_links links on attributes_values.id=links.parent_id
+                    LEFT JOIN pipeline.categorical_attributes_values links_values on links_values.id = links.child_id
+                    WHERE attributes_values.key IN (:list)
                 ]]>
             </value>
         </property>
         <property name="deleteAttributeValuesQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.categorical_attributes WHERE key IN (:list)
+                    DELETE FROM pipeline.categorical_attributes WHERE name IN (:list)
                 ]]>
             </value>
         </property>
         <property name="deleteAttributeValueQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.categorical_attributes WHERE key=:KEY AND value=:VALUE
+                    DELETE FROM pipeline.categorical_attributes_values WHERE key=:KEY AND value=:VALUE
                 ]]>
             </value>
         </property>
         <property name="insertAttributeValueLinkQuery">
             <value>
                 <![CDATA[
-                    INSERT INTO pipeline.categorical_attributes_links (
+                    INSERT INTO pipeline.categorical_attributes_values_links (
                         parent_id,
                         child_id,
                         autofill)
@@ -124,7 +157,7 @@
         <property name="deleteAttributeValueLinkQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.categorical_attributes_links WHERE parent_id=:PARENT_ID AND child_id=:CHILD_ID
+                    DELETE FROM pipeline.categorical_attributes_values_links WHERE parent_id=:PARENT_ID AND child_id=:CHILD_ID
                 ]]>
             </value>
         </property>
