@@ -137,6 +137,19 @@ else
 fi
 echo
 
+set -o pipefail
+export CP_KUBE_KUBEADM_CERT_HASH="$(openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1)"
+set +o pipefail
+if [ $? -ne 0 ]; then
+    print_err "Errors occured during retrieval of the kubeadm cert hash. Please review any output above, exiting"
+    exit 1
+else
+    print_info "-> kubeadm cert hash retrieved: $CP_KUBE_KUBEADM_CERT_HASH"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_KUBE_KUBEADM_CERT_HASH" \
+                        "$CP_KUBE_KUBEADM_CERT_HASH"
+fi
+echo
 
 ##########
 # Setup config for Kube
