@@ -66,6 +66,7 @@ import java.util.Optional;
 public class PipelineExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineExecutor.class);
 
+    private static final String HOST_DATA_MOUNT = "host-data";
     private static final String REF_DATA_MOUNT = "ref-data";
     private static final String RUNS_DATA_MOUNT = "runs-data";
     private static final String EMPTY_MOUNT = "dshm";
@@ -183,7 +184,9 @@ public class PipelineExecutor {
                 KubernetesConstants.CP_CAP_DIND_NATIVE);
         boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
-        if (!"windows".equals(run.getPlatform())) {
+        if ("windows".equals(run.getPlatform())) {
+            spec.setVolumes(getWindowsVolumes());
+        } else {
             spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
         }
 
@@ -232,17 +235,17 @@ public class PipelineExecutor {
             if (!StringUtils.isEmpty(command)) {
                 container.setArgs(Arrays.asList("-command", command));
             }
+            container.setVolumeMounts(getWindowsMounts());
+            container.setTerminationMessagePath("c:\\termination-log");
         } else {
             container.setCommand(Collections.singletonList("/bin/bash"));
             if (!StringUtils.isEmpty(command)) {
                 container.setArgs(Arrays.asList("-c", command));
             }
-        }
-        container.setTerminationMessagePath("/dev/termination-log");
-        container.setImagePullPolicy(imagePullPolicy.getName());
-        if (!"windows".equals(run.getPlatform())) {
             container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled));
+            container.setTerminationMessagePath("/dev/termination-log");
         }
+        container.setImagePullPolicy(imagePullPolicy.getName());
         if (isParentPod) {
             buildContainerResources(run, envVars, container);
         }
@@ -285,6 +288,11 @@ public class PipelineExecutor {
                 .orElse(ContainerResources.empty());
     }
 
+    private List<Volume> getWindowsVolumes() {
+        return Arrays.asList(createVolume(HOST_DATA_MOUNT, "c:\\host"),
+                createVolume(RUNS_DATA_MOUNT, "c:\\runs"));
+    }
+
     private List<Volume> getVolumes(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
         final List<Volume> volumes = new ArrayList<>();
         volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
@@ -300,6 +308,11 @@ public class PipelineExecutor {
             volumes.add(createVolume(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getHostPath()));
         }
         return volumes;
+    }
+
+    private List<VolumeMount> getWindowsMounts() {
+        return Arrays.asList(getVolumeMount(HOST_DATA_MOUNT, "c:\\host"),
+                getVolumeMount(RUNS_DATA_MOUNT, "c:\\runs"));
     }
 
     private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
