@@ -181,6 +181,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.admin;
   };
 
+  friendlyUrlAvailable = () => {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      admin,
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return admin || roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
+  };
+
   static propTypes = {
     pipeline: PropTypes.shape(),
     pipelines: PropTypes.array,
@@ -3179,7 +3190,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderPrettyUrlFormItem = () => {
-    if (this.prettyUrlEnabled && this.isAdmin()) {
+    if (this.prettyUrlEnabled && this.friendlyUrlAvailable()) {
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
