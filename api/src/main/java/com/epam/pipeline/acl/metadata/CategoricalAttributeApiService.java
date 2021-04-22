@@ -33,7 +33,7 @@ public class CategoricalAttributeApiService {
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesManager.updateCategoricalAttributes(dict);
+        return categoricalAttributesManager.updateAll(dict);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
@@ -43,12 +43,12 @@ public class CategoricalAttributeApiService {
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public CategoricalAttribute loadAllValuesForKey(final String key) {
-        return categoricalAttributesManager.loadAllValuesForKey(key);
+        return categoricalAttributesManager.loadByNameOrId(key);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public boolean deleteAttributeValues(final String key) {
-        return categoricalAttributesManager.deleteAttributeValues(key);
+        return categoricalAttributesManager.delete(key);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

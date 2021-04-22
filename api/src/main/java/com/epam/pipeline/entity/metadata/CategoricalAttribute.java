@@ -18,7 +18,6 @@ package com.epam.pipeline.entity.metadata;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.manager.security.AuthManager;
 import lombok.Setter;
 import lombok.Value;
 
@@ -49,7 +48,7 @@ public class CategoricalAttribute extends AbstractSecuredEntity {
         setCreatedDate(createdFromValues(values));
         final Optional<CategoricalAttributeValue> attributeValue = values.stream().findAny();
         setId(attributeValue.map(CategoricalAttributeValue::getAttributeId).orElse(null));
-        setOwner(attributeValue.map(CategoricalAttributeValue::getOwner).orElse(AuthManager.UNAUTHORIZED_USER));
+        setOwner(attributeValue.map(CategoricalAttributeValue::getOwner).orElse(null));
     }
 
     @Override

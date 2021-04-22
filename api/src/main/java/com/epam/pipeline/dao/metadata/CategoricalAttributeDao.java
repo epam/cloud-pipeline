@@ -59,6 +59,8 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     private String deleteAttributeValueQuery;
     private String insertAttributeValueLinkQuery;
     private String deleteAttributeValueLinkQuery;
+    private String updateAttributeOwnerQuery;
+    private String loadAttributeValuesByAttributeIdQuery;
 
     public static List<CategoricalAttribute> convertPairsToAttributesList(final List<Pair<String, String>> pairs) {
         return pairs.stream()
@@ -153,6 +155,14 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
         return mapValuesToAttributes(values);
     }
 
+    public CategoricalAttribute loadAttributeById(final Long attributeId) {
+        final List<CategoricalAttributeValue> values = getNamedParameterJdbcTemplate()
+            .query(loadAttributeValuesByAttributeIdQuery,
+                   new MapSqlParameterSource(AttributeValueParameters.ATTRIBUTE_ID.name(), attributeId),
+                   AttributeValueParameters.getRowMapper(true));
+        return mapValuesToAttributes(values).stream().findAny().orElse(null);
+    }
+
     @Transactional(propagation = Propagation.MANDATORY)
     public boolean deleteAttributeValues(final String key) {
         return deleteAttributeValues(Collections.singletonList(key));
@@ -198,6 +208,12 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                 .batchUpdate(deleteAttributeValueLinkQuery, valuesToRemove));
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean updateOwner(final Long attributeId, final String owner) {
+        return getNamedParameterJdbcTemplate()
+                   .update(updateAttributeOwnerQuery,
+                           AttributeValueParameters.getAttributeOwnerParameters(attributeId, owner)) > 0;
+    }
 
     private MapSqlParameterSource getLinkParameters(final Map<Pair<String, String>, Long> pairsIds,
                                                     final CategoricalAttributeValue attributeValue,
@@ -268,6 +284,13 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(NAME.name(), attribute.getKey());
             params.addValue(OWNER.name(), attribute.getOwner());
+            return params;
+        }
+
+        private static MapSqlParameterSource getAttributeOwnerParameters(final Long attributeId, final String owner) {
+            final MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue(ATTRIBUTE_ID.name(), attributeId);
+            params.addValue(OWNER.name(), owner);
             return params;
         }
 
@@ -373,5 +396,15 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteAttributeValueLinkQuery(String deleteAttributeValueLinkQuery) {
         this.deleteAttributeValueLinkQuery = deleteAttributeValueLinkQuery;
+    }
+
+    @Required
+    public void setUpdateAttributeOwnerQuery(String updateAttributeOwnerQuery) {
+        this.updateAttributeOwnerQuery = updateAttributeOwnerQuery;
+    }
+
+    @Required
+    public void setLoadAttributeValuesByAttributeIdQuery(String loadAttributeValuesByAttributeIdQuery) {
+        this.loadAttributeValuesByAttributeIdQuery = loadAttributeValuesByAttributeIdQuery;
     }
 }

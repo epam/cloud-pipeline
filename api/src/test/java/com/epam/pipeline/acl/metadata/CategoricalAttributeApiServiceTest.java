@@ -49,7 +49,7 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateAttributesForAdmin() {
-        doReturn(true).when(mockAttributeManager).updateCategoricalAttributes(attributeList);
+        doReturn(true).when(mockAttributeManager).updateAll(attributeList);
 
         assertThat(attributeApiService.updateCategoricalAttributes(attributeList)).isEqualTo(true);
     }
@@ -57,7 +57,7 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUpdateAttributesForNotAdmin() {
-        doReturn(true).when(mockAttributeManager).updateCategoricalAttributes(attributeList);
+        doReturn(true).when(mockAttributeManager).updateAll(attributeList);
 
         assertThrows(AccessDeniedException.class, () -> attributeApiService.updateCategoricalAttributes(attributeList));
     }
@@ -81,7 +81,7 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadAllValuesForKeyForAdmin() {
-        doReturn(attribute).when(mockAttributeManager).loadAllValuesForKey(TEST_STRING);
+        doReturn(attribute).when(mockAttributeManager).loadByNameOrId(TEST_STRING);
 
         assertThat(attributeApiService.loadAllValuesForKey(TEST_STRING)).isEqualTo(attribute);
     }
@@ -89,7 +89,7 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadAllValuesForKeyForNotAdmin() {
-        doReturn(attribute).when(mockAttributeManager).loadAllValuesForKey(TEST_STRING);
+        doReturn(attribute).when(mockAttributeManager).loadByNameOrId(TEST_STRING);
 
         assertThrows(AccessDeniedException.class, () -> attributeApiService.loadAllValuesForKey(TEST_STRING));
     }
@@ -97,7 +97,7 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteAttributeValuesForAdmin() {
-        doReturn(true).when(mockAttributeManager).deleteAttributeValues(TEST_STRING);
+        doReturn(true).when(mockAttributeManager).delete(TEST_STRING);
 
         assertThat(attributeApiService.deleteAttributeValues(TEST_STRING)).isEqualTo(true);
     }
@@ -105,7 +105,7 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyDeleteAttributeValuesForNotAdmin() {
-        doReturn(true).when(mockAttributeManager).deleteAttributeValues(TEST_STRING);
+        doReturn(true).when(mockAttributeManager).delete(TEST_STRING);
 
         assertThrows(AccessDeniedException.class, () -> attributeApiService.deleteAttributeValues(TEST_STRING));
     }

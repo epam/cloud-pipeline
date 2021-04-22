@@ -61,7 +61,7 @@ public class UsersFileImportManager {
         final List<PipelineUserWithStoragePath> users =
                 new UserImporter(categoricalAttributes, attributesToCreate, events).importUsers(file);
         if (CollectionUtils.isNotEmpty(categoricalAttributes)) {
-            categoricalAttributeManager.updateCategoricalAttributes(categoricalAttributes);
+            categoricalAttributeManager.updateAll(categoricalAttributes);
         }
 
         events.addAll(users.stream()

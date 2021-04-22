@@ -19,9 +19,12 @@ package com.epam.pipeline.manager.metadata;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.metadata.CategoricalAttributeDao;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.SecuredEntityManager;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -38,16 +41,20 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class CategoricalAttributeManager {
+public class CategoricalAttributeManager implements SecuredEntityManager {
 
     private final CategoricalAttributeDao categoricalAttributesDao;
     private final MetadataManager metadataManager;
     private final MessageHelper messageHelper;
     private final AuthManager securityManager;
 
+    @Override
+    public AclClass getSupportedClass() {
+        return AclClass.CATEGORICAL_ATTRIBUTE;
+    }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
+    public boolean updateAll(final List<CategoricalAttribute> dict) {
         final List<CategoricalAttribute> currentValues =
             categoricalAttributesDao.loadAllValuesForKeys(dict.stream()
                                                               .map(CategoricalAttribute::getKey)
@@ -70,23 +77,37 @@ public class CategoricalAttributeManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
+    public boolean createAll(final List<CategoricalAttribute> dict) {
         return categoricalAttributesDao.insertAttributesValues(setOwner(dict));
+    }
+
+    @Override
+    public CategoricalAttribute load(final Long id) {
+        final CategoricalAttribute attribute = categoricalAttributesDao.loadAttributeById(id);
+        Assert.notNull(attribute,
+                       messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_ID_DOESNT_EXIST, id));
+        return attribute;
+    }
+
+    @Override
+    public CategoricalAttribute loadWithParents(final Long id) {
+        return load(id);
     }
 
     public List<CategoricalAttribute> loadAll() {
         return categoricalAttributesDao.loadAll();
     }
 
-    public CategoricalAttribute loadAllValuesForKey(final String key) {
+    @Override
+    public CategoricalAttribute loadByNameOrId(final String key) {
         final CategoricalAttribute categoricalAttribute = categoricalAttributesDao.loadAllValuesForKey(key);
         Assert.notNull(categoricalAttribute,
-                       messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST, key));
+                       messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_KEY_DOESNT_EXIST, key));
         return categoricalAttribute;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean deleteAttributeValues(final String key) {
+    public boolean delete(final String key) {
         return categoricalAttributesDao.deleteAttributeValues(key);
     }
 
@@ -98,7 +119,25 @@ public class CategoricalAttributeManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void syncWithMetadata() {
         final List<CategoricalAttribute> fullMetadataDict = metadataManager.buildFullMetadataDict();
-        insertAttributesValues(fullMetadataDict);
+        createAll(fullMetadataDict);
+    }
+
+    @Override
+    public CategoricalAttribute changeOwner(final Long id, final String owner) {
+        final CategoricalAttribute attribute = load(id);
+        categoricalAttributesDao.updateOwner(id, owner);
+        attribute.setOwner(owner);
+        return attribute;
+    }
+
+    @Override
+    public Integer loadTotalCount() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Collection<? extends AbstractSecuredEntity> loadAllWithParents(final Integer page, final Integer pageSize) {
+        throw new UnsupportedOperationException();
     }
 
     private List<CategoricalAttribute> setOwner(final List<CategoricalAttribute> attributes) {
@@ -106,7 +145,9 @@ public class CategoricalAttributeManager {
     }
 
     private CategoricalAttribute setOwner(final CategoricalAttribute attribute) {
-        attribute.setOwner(securityManager.getAuthorizedUser());
+        if (attribute.getOwner() == null) {
+            attribute.setOwner(securityManager.getAuthorizedUser());
+        }
         return attribute;
     }
 
