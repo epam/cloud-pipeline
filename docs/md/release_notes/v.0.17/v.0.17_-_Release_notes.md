@@ -19,6 +19,7 @@
 - [Custom node images](#custom-node-images)
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
+- [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -695,6 +696,21 @@ New features:
     For more details about the view of the results output see [here](../../manual/19_Search/19._Global_search.md#results-output-view).
 
 For more details about **Advanced search** see [here](../../manual/19_Search/19._Global_search.md).
+
+## Explicitly "immutable" pipeline parameters
+
+Previously, if the pipeline parameter had a default value - it could not be changed in the detached configuration that used this pipeline.  
+In different cases, it might be convenient to provide the ability to specify the own parameter value before the configuration launch or vice versa - the ability to launch the configuration with only defaults parameter values.  
+
+In the current version, the special option was implemented that allows/denies the parameter value overriding for described cases - `no_override` (_boolean_). This option can be specified for the pipeline parameter via `config.json` file:
+
+- if a pipeline parameter has a default value and `no_override` is `true` - the parameter field will be read-only in the detached configuration that uses this pipeline:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_01.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_02.png)
+- if a pipeline parameter has a default value and `no_override` is `false` or not set - the parameter field will be writable in the detached configuration that uses this pipeline:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_03.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_04.png)
+- if a pipeline parameter has no default value - `no_override` is ignored and the parameter field will be writable in the detached configuration that uses this pipeline
 
 ## AWS: seamless authentication
 
