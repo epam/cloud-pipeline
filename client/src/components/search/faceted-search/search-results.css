@@ -142,7 +142,6 @@
   position: sticky;
   top: 0;
   background: #fafafa;
-  border-bottom: 1px solid #ddd;
   color: #333;
   font-weight: bold;
 }
@@ -159,6 +158,7 @@
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+  border-bottom: 1px solid #ddd;
 }
 
 .table-cell {
@@ -187,6 +187,10 @@
   cursor: col-resize;
   background: #fafafa;
   border-left: 1px solid #ddd;
+}
+
+.table-header .table-divider:not(:last-child) {
+  border-bottom: 1px solid #ddd;
 }
 
 .table-header .table-divider:hover {
