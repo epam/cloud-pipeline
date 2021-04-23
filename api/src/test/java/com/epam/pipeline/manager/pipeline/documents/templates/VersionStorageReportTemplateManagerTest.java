@@ -4,6 +4,7 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitDiff;
 import com.epam.pipeline.entity.git.GitDiffEntry;
+import com.epam.pipeline.entity.git.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
@@ -11,6 +12,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.documents.templates.structure.CommitDiffsGrouping;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,15 +24,25 @@ import java.util.Collections;
 
 public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest {
 
-    public static final GitCommitsFilter GIT_COMMITS_FILTER = GitCommitsFilter
+    public static final GitDiffReportFilter GIT_COMMITS_FILTER = GitDiffReportFilter
             .builder()
-            .authors(Collections.singletonList("user1@test.com")
-            ).build();
+            .commitsFilter(
+                    GitCommitsFilter
+                        .builder()
+                        .authors(Collections.singletonList("user1@test.com")
+                        ).build()
+            ).groupType(CommitDiffsGrouping.GroupType.BY_COMMIT).build();
 
-    public static final GitCommitsFilter GIT_COMMITS_FILTER_2 = GitCommitsFilter
-            .builder()
-            .authors(Collections.singletonList("user2@test.com")
-            ).build();
+
+    public static final GitDiffReportFilter GIT_COMMITS_FILTER_2 =
+            GitDiffReportFilter
+                    .builder()
+                    .commitsFilter(
+                            GitCommitsFilter
+                                    .builder()
+                                    .authors(Collections.singletonList("user2@test.com"))
+                                    .build()
+                    ).groupType(CommitDiffsGrouping.GroupType.BY_COMMIT).build();
 
     @MockBean
     private PipelineManager pipelineManager;
@@ -55,17 +67,17 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
                 gitManager.logRepositoryCommitDiffs(
                         1L,
                         true,
-                        GIT_COMMITS_FILTER
+                        GIT_COMMITS_FILTER.getCommitsFilter()
                 )
         ).thenReturn(GitReaderDiff.builder()
-                .filters(GIT_COMMITS_FILTER)
+                .filters(GIT_COMMITS_FILTER.getCommitsFilter())
                 .entries(
                         Collections.singletonList(
                                 GitReaderDiffEntry.builder()
                                         .commit(GitReaderRepositoryCommit.builder()
-                                                .author(GIT_COMMITS_FILTER.getAuthors().get(0))
+                                                .author(GIT_COMMITS_FILTER.getCommitsFilter().getAuthors().get(0))
                                                 .authorDate(DateUtils.now())
-                                                .authorEmail(GIT_COMMITS_FILTER.getAuthors().get(0))
+                                                .authorEmail(GIT_COMMITS_FILTER.getCommitsFilter().getAuthors().get(0))
                                                 .commit("aaa111bbb222")
                                                 .parentSHAs(Collections.emptyList())
                                                 .build())
@@ -88,17 +100,17 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
                 gitManager.logRepositoryCommitDiffs(
                         1L,
                         true,
-                        GIT_COMMITS_FILTER_2
+                        GIT_COMMITS_FILTER_2.getCommitsFilter()
                 )
         ).thenReturn(GitReaderDiff.builder()
-                .filters(GIT_COMMITS_FILTER_2)
+                .filters(GIT_COMMITS_FILTER_2.getCommitsFilter())
                 .entries(
                         Collections.singletonList(
                                 GitReaderDiffEntry.builder()
                                         .commit(GitReaderRepositoryCommit.builder()
-                                                .author(GIT_COMMITS_FILTER_2.getAuthors().get(0))
+                                                .author(GIT_COMMITS_FILTER_2.getCommitsFilter().getAuthors().get(0))
                                                 .authorDate(DateUtils.now())
-                                                .authorEmail(GIT_COMMITS_FILTER_2.getAuthors().get(0))
+                                                .authorEmail(GIT_COMMITS_FILTER_2.getCommitsFilter().getAuthors().get(0))
                                                 .commit("ccc111ddd222")
                                                 .parentSHAs(Collections.emptyList())
                                                 .build())
@@ -129,11 +141,11 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
         Assert.assertEquals("src/test", second.getDiff().getFromFileName());
         Assert.assertEquals("src/test", second.getDiff().getToFileName());
 
-        Assert.assertEquals(GIT_COMMITS_FILTER.getDateFrom(), gitDiff.getFilters().getDateFrom());
-        Assert.assertEquals(GIT_COMMITS_FILTER.getDateTo(), gitDiff.getFilters().getDateTo());
-        Assert.assertEquals(GIT_COMMITS_FILTER.getPath(), gitDiff.getFilters().getPath());
-        Assert.assertEquals(GIT_COMMITS_FILTER.getRef(), gitDiff.getFilters().getRef());
-        Assert.assertArrayEquals(GIT_COMMITS_FILTER.getAuthors().toArray(), gitDiff.getFilters().getAuthors().toArray());
+        Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getDateFrom(), gitDiff.getFilters().getDateFrom());
+        Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getDateTo(), gitDiff.getFilters().getDateTo());
+        Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getPath(), gitDiff.getFilters().getPath());
+        Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getRef(), gitDiff.getFilters().getRef());
+        Assert.assertArrayEquals(GIT_COMMITS_FILTER.getCommitsFilter().getAuthors().toArray(), gitDiff.getFilters().getAuthors().toArray());
     }
 
     @Test
@@ -147,11 +159,11 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
         Assert.assertEquals("test.csv", first.getDiff().getToFileName());
 
 
-        Assert.assertEquals(GIT_COMMITS_FILTER_2.getDateFrom(), gitDiff.getFilters().getDateFrom());
-        Assert.assertEquals(GIT_COMMITS_FILTER_2.getDateTo(), gitDiff.getFilters().getDateTo());
-        Assert.assertEquals(GIT_COMMITS_FILTER_2.getPath(), gitDiff.getFilters().getPath());
-        Assert.assertEquals(GIT_COMMITS_FILTER_2.getRef(), gitDiff.getFilters().getRef());
-        Assert.assertArrayEquals(GIT_COMMITS_FILTER_2.getAuthors().toArray(), gitDiff.getFilters().getAuthors().toArray());
+        Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getDateFrom(), gitDiff.getFilters().getDateFrom());
+        Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getDateTo(), gitDiff.getFilters().getDateTo());
+        Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getPath(), gitDiff.getFilters().getPath());
+        Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getRef(), gitDiff.getFilters().getRef());
+        Assert.assertArrayEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getAuthors().toArray(), gitDiff.getFilters().getAuthors().toArray());
     }
 
 }

@@ -26,11 +26,7 @@ import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
-import com.epam.pipeline.entity.git.GitCommitEntry;
-import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
-import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.*;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -360,11 +356,8 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public byte[] generateReportForVersionedStorage(final Long id,
-                                                    final boolean includeDiff,
-                                                    final GitCommitsFilter reportFilters,
-                                                    final String templatePath) {
+    public byte[] generateReportForVersionedStorage(final Long id, final GitDiffReportFilter reportFilters) {
         return fileGenerationManager
-                .generateVersionStorageReport(id, includeDiff, reportFilters, templatePath);
+                .generateVersionStorageReport(id, reportFilters);
     }
 }

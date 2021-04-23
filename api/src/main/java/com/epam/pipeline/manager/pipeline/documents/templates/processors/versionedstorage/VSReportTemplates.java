@@ -8,29 +8,29 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Supplier;
 
 public enum VSReportTemplates {
-    VERSIONED_STORAGE("versioned_storage", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff) -> storage.getName())),
-    PAGE_BREAK("page_break", () -> new VSReportTemplatePageBreakProcessor((paragraph, storage, diff) -> "")),
-    REPORT_DATE("report_date", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff) ->
+    VERSIONED_STORAGE("versioned_storage", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> storage.getName())),
+    PAGE_BREAK("page_break", () -> new VSReportTemplatePageBreakProcessor((paragraph, storage, diff, reportFilter) -> "")),
+    REPORT_DATE("report_date", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) ->
             DateUtils.nowUTC().format(Constants.DATE_TIME_FORMATTER))),
-    FILTER_AUTHORS("filter_authors", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff) -> {
+    FILTER_AUTHORS("filter_authors", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
         if (CollectionUtils.isNullOrEmpty(diff.getFilters().getAuthors())) {
             return "All Authors";
         }
         return diff.getFilters().getAuthors();
     })),
-    FILTER_FROM("filter_from", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff) -> {
+    FILTER_FROM("filter_from", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
         if (diff.getFilters().getDateFrom() == null) {
             return "-";
         }
         return diff.getFilters().getDateFrom().format(Constants.DATE_TIME_FORMATTER);
     })),
-    FILTER_TO("filter_to", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff) -> {
+    FILTER_TO("filter_to", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
         if (diff.getFilters().getDateTo() == null) {
             return "-";
         }
         return diff.getFilters().getDateTo().format(Constants.DATE_TIME_FORMATTER);
     })),
-    FILTER_TYPES("filter_types", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff) -> {
+    FILTER_TYPES("filter_types", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
         if (CollectionUtils.isNullOrEmpty(diff.getFilters().getExtensions())) {
             return "All Files";
         }

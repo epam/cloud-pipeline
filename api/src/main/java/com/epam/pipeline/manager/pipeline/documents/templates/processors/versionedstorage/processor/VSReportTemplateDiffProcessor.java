@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.ReportUtils.copyParagraphProperties;
+import static com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.ReportUtils.copyRunProperties;
+
 public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProcessor {
 
     private XWPFParagraph paragraph;
@@ -41,60 +44,57 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
         if (this.paragraph == null || this.paragraph != paragraph) {
             return;
         }
-        XWPFParagraph nextP = paragraph.getDocument().insertNewParagraph(paragraph.getCTP().newCursor());
-        copyParagraphProperties(paragraph, nextP);
-        XWPFRun newRun = nextP.createRun();
-        copyRunProperties(paragraph.getRuns().get(0), newRun);
-        while (!paragraph.getRuns().isEmpty()){
+        while (paragraph.getRuns().size() != 1) {
             paragraph.removeRun(0);
         }
-        paragraph = nextP;
-        insertData(paragraph, paragraph.getRuns().get(0), paragraph.getCTP().newCursor(), data);
+        for (int pos = 0; pos < paragraph.getRuns().get(0).getCTR().sizeOfTArray(); pos++) {
+            paragraph.getRuns().get(0).setText("", pos);
+        }
+        insertData(paragraph, paragraph.getRuns().get(0), data);
     }
 
-    void insertData(XWPFParagraph splittedParagraph, XWPFRun runTemplate, XmlCursor cursor, Object data) {
+    void insertData(XWPFParagraph paragraph, XWPFRun runTemplate, Object data) {
         if (data instanceof CommitDiffsGrouping) {
             CommitDiffsGrouping diffsGrouping = (CommitDiffsGrouping)data;
-            XWPFParagraph lastP = splittedParagraph;
-            for (Map.Entry<String, List<GitDiffEntry>> entry : diffsGrouping.getDiffGrouping().entrySet()) {
-                final String key = entry.getKey();
-                final List<GitDiffEntry> diffEntries = entry.getValue();
-                addHeader(lastP, runTemplate, diffsGrouping.getType(), key, diffEntries);
-                for (GitDiffEntry diffEntry : diffEntries) {
-                    addDescription(
-                            lastP, runTemplate, diffsGrouping.getType(), key, diffEntry
-                    );
-                }
-                lastP.setPageBreak(true);
-                XWPFParagraph nextP = lastP.getDocument().insertNewParagraph(lastP.getCTP().newCursor());
-                copyParagraphProperties(lastP, nextP);
-                lastP = nextP;
+            if (!diffsGrouping.isIncludeDiff() || diffsGrouping.isArchive()) {
+                return;
             }
-            cursor.toNextSibling();
+            XWPFParagraph lastP = paragraph;
+            lastP.setPageBreak(true);
+            for (Map.Entry<String, List<GitDiffEntry>> entry : diffsGrouping.getDiffGrouping().entrySet()) {
+                final String diffGroupKey = entry.getKey();
+                final List<GitDiffEntry> diffEntries = entry.getValue();
+
+                addHeader(lastP, runTemplate, diffsGrouping.getType(), diffGroupKey, diffEntries);
+                for (GitDiffEntry diffEntry : diffEntries) {
+                    lastP.setPageBreak(true);
+                    lastP = addDescription(lastP, runTemplate, diffsGrouping.getType(), diffEntry);
+                }
+            }
         }
     }
 
-    private void addHeader(XWPFParagraph header, XWPFRun runTemplate,
+    private void addHeader(XWPFParagraph paragraph, XWPFRun runTemplate,
                            CommitDiffsGrouping.GroupType type, String key,
                            List<GitDiffEntry> diffEntries) {
         if (type.equals(CommitDiffsGrouping.GroupType.BY_COMMIT)) {
-            XWPFRun run = header.createRun();
+            XWPFRun run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setText("In revision ");
 
-            run = header.createRun();
+            run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setBold(true);
             run.setText(key.substring(0, 9));
 
-            run = header.createRun();
+            run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setText(" by ");
 
-            run = header.createRun();
+            run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setBold(true);
@@ -102,12 +102,12 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
                     .map(GitDiffEntry::getCommit)
                     .map(GitReaderRepositoryCommit::getAuthor).orElse(""));
 
-            run = header.createRun();
+            run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setText(" at ");
 
-            run = header.createRun();
+            run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setBold(true);
@@ -115,28 +115,27 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
                     .map(GitDiffEntry::getCommit)
                     .map(c -> ReportDataExtractor.DATE_FORMAT.format(c.getAuthorDate())).orElse(""));
         } else {
-            XWPFRun run = header.createRun();
+            XWPFRun run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setText("Changes of file ");
 
-            run = header.createRun();
+            run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setBold(true);
             run.setText(key);
 
-            run = header.createRun();
+            run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
             run.setFontSize(runTemplate.getFontSize() + 2);
             run.setText(":");
         }
-        header.createRun().addBreak();
+        paragraph.createRun().addBreak(BreakType.TEXT_WRAPPING);
     }
 
-    private void addDescription(XWPFParagraph paragraph, XWPFRun runTemplate,
-                                CommitDiffsGrouping.GroupType type, String key,
-                                GitDiffEntry diffEntry) {
+    private XWPFParagraph addDescription(XWPFParagraph paragraph, XWPFRun runTemplate,
+                                         CommitDiffsGrouping.GroupType type, GitDiffEntry diffEntry) {
         if (type.equals(CommitDiffsGrouping.GroupType.BY_COMMIT)) {
             XWPFRun run = paragraph.createRun();
             copyRunProperties(runTemplate, run);
@@ -157,37 +156,27 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
             run.setText(diffEntry.getCommit().getCommit().substring(0, 9));
         }
 
+        paragraph.createRun().addBreak(BreakType.TEXT_WRAPPING);
+
         for (String headerLine : diffEntry.getDiff().getHeaderLines()) {
-            XWPFRun run = paragraph.createRun();
-            copyRunProperties(runTemplate, run);
-            run.addBreak();
-            run.setText(headerLine);
+            if (StringUtils.isNotBlank(headerLine)) {
+                XWPFRun run = paragraph.createRun();
+                copyRunProperties(runTemplate, run);
+                run.setText(headerLine);
+                run.addBreak(BreakType.TEXT_WRAPPING);
+            }
         }
 
-        XmlCursor cursor = paragraph.getCTP().newCursor();
-        cursor.toNextSibling();
-        XWPFTable xwpfTable = paragraph.getDocument().insertNewTbl(cursor);
-        xwpfTable.removeRow(0);
-        CTTblPr properties = xwpfTable.getCTTbl().getTblPr();
-        if (properties == null) {
-            properties = xwpfTable.getCTTbl().addNewTblPr();
+        return generateDiffTable(paragraph, runTemplate, diffEntry);
+    }
+
+    private XWPFParagraph generateDiffTable(final XWPFParagraph paragraph,
+                                            final XWPFRun runTemplate, final GitDiffEntry diffEntry) {
+        if (diffEntry.getDiff().getHunks().isEmpty()) {
+            return createNewParagraph(paragraph, paragraph.getCTP().newCursor());
         }
-        CTJc jc = (properties.isSetJc() ? properties.getJc() : properties.addNewJc());
-        jc.setVal(STJc.CENTER);
 
-        CTTblBorders borders = properties.addNewTblBorders();
-        borders.addNewBottom().setVal(STBorder.SINGLE);
-        borders.addNewLeft().setVal(STBorder.SINGLE);
-        borders.addNewRight().setVal(STBorder.SINGLE);
-        borders.addNewTop().setVal(STBorder.SINGLE);
-
-        borders.addNewInsideH().setVal(STBorder.SINGLE);
-        borders.addNewInsideV().setVal(STBorder.SINGLE);
-
-        xwpfTable.getCTTbl().addNewTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(8704));
+        XWPFTable xwpfTable = createTable(paragraph);
 
         for (Hunk hunk : diffEntry.getDiff().getHunks()) {
             final List<Line> lines = hunk.getLines();
@@ -201,11 +190,13 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
 
                 for (int colIndex = 0; colIndex < 4; colIndex++) {
                     XWPFTableCell xwpfTableCell = xwpfTableRow.addNewTableCell();
-                    xwpfTableCell.removeParagraph(0);
+                    while (!xwpfTableCell.getParagraphs().isEmpty()) {
+                        xwpfTableCell.removeParagraph(0);
+                    }
                     XWPFParagraph xwpfParagraph = xwpfTableCell.addParagraph();
                     XWPFRun xwpfRun = xwpfParagraph.createRun();
                     xwpfParagraph.setAlignment(ParagraphAlignment.LEFT);
-                    this.copyRunProperties(runTemplate, xwpfRun);
+                    copyRunProperties(runTemplate, xwpfRun);
 
                     String cellData = "";
                     String color = "ffffff";
@@ -249,17 +240,49 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
                 }
             }
         }
+        return createNewParagraph(paragraph, xwpfTable.getCTTbl().newCursor());
     }
 
-    void copyParagraphProperties(XWPFParagraph original, XWPFParagraph copy) {
-        CTPPr pPr = copy.getCTP().isSetPPr() ? copy.getCTP().getPPr() : copy.getCTP().addNewPPr();
-        pPr.set(original.getCTP().getPPr());
+    private XWPFTable createTable(XWPFParagraph paragraph) {
+        XmlCursor cursor = paragraph.getCTP().newCursor();
+        moveCursorToTheEndOfTheToken(cursor);
+        XWPFTable xwpfTable = paragraph.getDocument().insertNewTbl(cursor);
+        if (xwpfTable.getRow(0) != null) {
+            xwpfTable.removeRow(0);
+        }
+        CTTblPr properties = xwpfTable.getCTTbl().getTblPr();
+        if (properties == null) {
+            properties = xwpfTable.getCTTbl().addNewTblPr();
+        }
+        CTJc jc = (properties.isSetJc() ? properties.getJc() : properties.addNewJc());
+        jc.setVal(STJc.CENTER);
+
+        CTTblBorders borders = properties.addNewTblBorders();
+        borders.addNewBottom().setVal(STBorder.SINGLE);
+        borders.addNewLeft().setVal(STBorder.SINGLE);
+        borders.addNewRight().setVal(STBorder.SINGLE);
+        borders.addNewTop().setVal(STBorder.SINGLE);
+
+        borders.addNewInsideH().setVal(STBorder.SINGLE);
+        borders.addNewInsideV().setVal(STBorder.SINGLE);
+
+        xwpfTable.getCTTbl().addNewTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
+        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
+        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
+        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(8704));
+        return xwpfTable;
     }
 
-    void copyRunProperties(XWPFRun original, XWPFRun copy) {
-        CTRPr rPr = copy.getCTR().isSetRPr() ? copy.getCTR().getRPr() : copy.getCTR().addNewRPr();
-        rPr.set(original.getCTR().getRPr());
+    private XWPFParagraph createNewParagraph(XWPFParagraph paragraph, XmlCursor lastPosition) {
+        moveCursorToTheEndOfTheToken(lastPosition);
+        XWPFParagraph nextP = paragraph.getDocument().insertNewParagraph(lastPosition);
+        copyParagraphProperties(paragraph, nextP);
+        nextP.setPageBreak(false);
+        return nextP;
     }
 
-
+    private void moveCursorToTheEndOfTheToken(XmlCursor lastPosition) {
+        lastPosition.toEndToken();
+        while (lastPosition.toNextToken() != XmlCursor.TokenType.START) ;
+    }
 }

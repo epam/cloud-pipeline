@@ -1,38 +1,43 @@
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
 
 import com.epam.pipeline.entity.git.GitDiff;
+import com.epam.pipeline.entity.git.GitDiffReportFilter;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.CommitDiffsGrouping;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class CommitDiffExtractor implements ReportDataExtractor {
 
-    private final static Pattern PATTERN = Pattern.compile("\\{commit_diffs:?(.*)}");
-
     @Override
-    public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitDiff diff) {
-        Matcher matcher = PATTERN.matcher(xwpfParagraph.getText());
-        CommitDiffsGrouping.GroupType groupType = getGroupType(matcher);
+    public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage,
+                        final GitDiff diff, final GitDiffReportFilter reportFilter) {
+        final CommitDiffsGrouping.GroupType groupType = getGroupType(reportFilter);
 
-        return CommitDiffsGrouping.builder()
+        CommitDiffsGrouping.CommitDiffsGroupingBuilder diffsGroupingBuilder = CommitDiffsGrouping.builder()
                 .type(groupType)
-                .diffGrouping(
-                        groupType == CommitDiffsGrouping.GroupType.BY_COMMIT
-                        ? diff.getEntries().stream().collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
-                        : diff.getEntries().stream().collect(Collectors.groupingBy(e -> e.getDiff().getToFileName()))
-                ).build();
+                .includeDiff(reportFilter.isIncludeDiff())
+                .archive(reportFilter.isArchive());
+
+        if (reportFilter.isIncludeDiff()) {
+            diffsGroupingBuilder
+                    .diffGrouping(
+                            groupType == CommitDiffsGrouping.GroupType.BY_COMMIT
+                                    ? diff.getEntries().stream()
+                                        .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
+                                    : diff.getEntries().stream()
+                                        .collect(Collectors.groupingBy(e -> e.getDiff().getToFileName()))
+                    );
+        }
+        return diffsGroupingBuilder.build();
     }
 
-    private CommitDiffsGrouping.GroupType getGroupType(Matcher matcher) {
-        CommitDiffsGrouping.GroupType groupType = null;
-        if (groupType == null) {
-            groupType = CommitDiffsGrouping.GroupType.BY_COMMIT;
+    private CommitDiffsGrouping.GroupType getGroupType(GitDiffReportFilter reportFilter) {
+        if (reportFilter.getGroupType() == null) {
+            return CommitDiffsGrouping.GroupType.BY_COMMIT;
         }
-        return groupType;
+        return reportFilter.getGroupType();
     }
 
 }

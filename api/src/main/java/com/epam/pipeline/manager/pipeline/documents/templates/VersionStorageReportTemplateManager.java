@@ -19,11 +19,15 @@ package com.epam.pipeline.manager.pipeline.documents.templates;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitDiff;
 import com.epam.pipeline.entity.git.GitDiffEntry;
+import com.epam.pipeline.entity.git.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.VSReportTemplates;
+import com.epam.pipeline.manager.pipeline.documents.templates.structure.CommitDiffsGrouping;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.DiffUtils;
@@ -31,22 +35,24 @@ import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.poi.xwpf.model.XWPFHeaderFooterPolicy;
 import org.apache.poi.xwpf.usermodel.*;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 
 @Service
@@ -64,26 +70,50 @@ public class VersionStorageReportTemplateManager {
     @Autowired
     private PreferenceManager preferenceManager;
 
-    public byte[] generateReport(final Long pipelineId, final Boolean includeDiffs,
-                                 final GitCommitsFilter reportFilters,
-                                 final String templatePath) {
+    public byte[] generateReport(final Long pipelineId,
+                                 final GitDiffReportFilter reportFilters) {
+        Pipeline loaded = pipelineManager.load(pipelineId);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        GitDiff gitDiff = fetchAndNormalizeDiffs(loaded.getId(), reportFilters);
         try {
-            Pipeline loaded = pipelineManager.load(pipelineId);
-            FileInputStream inputStream = new FileInputStream(getVersionStorageTemplatePath(templatePath));
-            XWPFDocument document = new XWPFDocument(inputStream);
-            fillTemplate(document, loaded, fetchAndNormalizeDiffs(pipelineId, reportFilters), includeDiffs);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            document.write(outputStream);
+            final List<Pair<String, XWPFDocument>> diffReportFiles = prepareReportDocs(
+                    loaded, gitDiff, reportFilters
+            );
+
+            if (diffReportFiles.isEmpty()) {
+                return new byte[0];
+            }
+
+            if (diffReportFiles.size() == 1) {
+                diffReportFiles.get(0).getSecond().write(outputStream);
+            } else {
+                ZipOutputStream zipOut = new ZipOutputStream(outputStream);
+                for (Pair<String, XWPFDocument> diffReportFile : diffReportFiles) {
+                    ByteArrayOutputStream dos = new ByteArrayOutputStream();
+                    diffReportFile.getSecond().write(dos);
+                    InputStream fis = new ByteArrayInputStream(dos.toByteArray());
+                    ZipEntry zipEntry = new ZipEntry(diffReportFile.getFirst());
+                    zipOut.putNextEntry(zipEntry);
+                    byte[] bytes = new byte[1024];
+                    int length;
+                    while ((length = fis.read(bytes)) >= 0) {
+                        zipOut.write(bytes, 0, length);
+                    }
+                }
+                zipOut.close();
+            }
             return outputStream.toByteArray();
         } catch (IOException e) {
-            return null;
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
     }
 
-    protected GitDiff fetchAndNormalizeDiffs(final Long pipelineId, final GitCommitsFilter reportFilters) {
+    protected GitDiff fetchAndNormalizeDiffs(final Long pipelineId, final GitDiffReportFilter reportFilters) {
         final DiffParser diffParser = new UnifiedDiffParser();
         final GitReaderDiff gitReaderDiff = gitManager.logRepositoryCommitDiffs(
-                pipelineId, true, reportFilters
+                pipelineId, true, Optional.ofNullable(reportFilters.getCommitsFilter())
+                        .orElse(GitCommitsFilter.builder().build())
         );
         return GitDiff.builder()
                 .entries(
@@ -112,73 +142,150 @@ public class VersionStorageReportTemplateManager {
                 ).filters(gitReaderDiff.getFilters()).build();
     }
 
-
-    private String getVersionStorageTemplatePath(String templatePath) {
-        if (StringUtils.isNotBlank(templatePath)) {
-            try {
-                if (Files.exists(Paths.get(templatePath))) {
-                    return templatePath;
-                }
-            } catch (Exception e) {
-                return preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_REPORT_TEMPLATE);
-            }
+    private List<Pair<String, XWPFDocument>> prepareReportDocs(final Pipeline loaded, final GitDiff gitDiff,
+                                                 final GitDiffReportFilter reportFilters) throws IOException {
+        final List<Pair<String, XWPFDocument>> results = new ArrayList<>();
+        final XWPFDocument report = new XWPFDocument(
+                new FileInputStream(getVersionStorageTemplatePath())
+        );
+        fillTemplate(report, loaded, gitDiff, reportFilters);
+        results.add(Pair.of("vs_report_" + loaded.getName() + "_" + ReportDataExtractor.DATE_FORMAT.format(DateUtils.now()) + ".docx", report));
+        if (reportFilters.isArchive()) {
+            results.addAll(
+                    prepareDiffsForReportDoc(loaded, gitDiff,
+                        GitDiffReportFilter.builder()
+                            .groupType(reportFilters.getGroupType())
+                            .commitsFilter(reportFilters.getCommitsFilter())
+                            .includeDiff(reportFilters.isIncludeDiff())
+                            .build()
+                    )
+            );
         }
+        return results;
+    }
+
+    private List<Pair<String, XWPFDocument>> prepareDiffsForReportDoc(final Pipeline loaded, final GitDiff gitDiff,
+                                                             final GitDiffReportFilter reportFilters) {
+        return CommitDiffsGrouping.builder()
+                .includeDiff(reportFilters.isIncludeDiff())
+                .diffGrouping(
+                        getGroupType(reportFilters) == CommitDiffsGrouping.GroupType.BY_COMMIT
+                            ? gitDiff.getEntries().stream()
+                            .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
+                            : gitDiff.getEntries().stream()
+                            .collect(Collectors.groupingBy(e -> e.getDiff().getToFileName()))
+                ).build().getDiffGrouping()
+                .entrySet()
+                .stream()
+                .map(e -> Pair.of(e.getKey(), e.getValue()))
+                .map(pair ->
+                        Pair.of(
+                            pair.getFirst(),
+                            GitDiff.builder()
+                                .entries(pair.getSecond())
+                                .filters(gitDiff.getFilters())
+                                .build()
+                        )
+                ).map(p -> {
+                    try {
+                        final XWPFDocument report = new XWPFDocument(
+                                new FileInputStream(getVersionStorageTemplatePath())
+                        );
+                        int toDelete = 0;
+                        while (report.getBodyElements().size() != 1) {
+                            IBodyElement element = report.getBodyElements().get(toDelete);
+                            if (element.getElementType() == BodyElementType.PARAGRAPH &&
+                                    ((XWPFParagraph) element).getText()
+                                            .contains(VSReportTemplates.COMMIT_DIFFS.template)) {
+                                toDelete += 1;
+                            }
+                            report.removeBodyElement(toDelete);
+                        }
+                        fillTemplate(report, loaded, p.getSecond(), reportFilters);
+                        return Pair.of(
+                                (getGroupType(reportFilters) == CommitDiffsGrouping.GroupType.BY_COMMIT
+                                        ? "revision_" : "file_"
+                                ) + p.getFirst().replace("/", "_") + ".docx",
+                                report
+                        );
+                    } catch (IOException e) {
+                        log.error(e.getMessage(), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private CommitDiffsGrouping.GroupType getGroupType(GitDiffReportFilter reportFilter) {
+        if (reportFilter.getGroupType() == null) {
+            return CommitDiffsGrouping.GroupType.BY_COMMIT;
+        }
+        return reportFilter.getGroupType();
+    }
+
+    private String getVersionStorageTemplatePath() {
         return preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_REPORT_TEMPLATE);
     }
 
-    public void fillTemplate(XWPFDocument docxTemplate, Pipeline storage, GitDiff diff, Boolean includeDiffs) {
-        this.changeHeadersAndFooters(docxTemplate, storage, diff);
-        this.changeBodyElements(docxTemplate::getBodyElements, storage, diff);
+    public void fillTemplate(XWPFDocument docxTemplate, Pipeline storage,
+                             GitDiff diff, GitDiffReportFilter reportFilter) {
+        this.changeHeadersAndFooters(docxTemplate, storage, diff, reportFilter);
+        this.changeBodyElements(docxTemplate::getBodyElements, storage, diff, reportFilter);
     }
 
-    private void changeHeadersAndFooters(XWPFDocument document, Pipeline storage, GitDiff diff) {
+    private void changeHeadersAndFooters(XWPFDocument document, Pipeline storage, GitDiff diff,
+                                         GitDiffReportFilter reportFilter) {
         XWPFHeaderFooterPolicy policy = document.getHeaderFooterPolicy();
-        this.changeHeader(policy.getDefaultHeader(), storage, diff);
-        this.changeFooter(policy.getDefaultFooter(), storage, diff);
-        this.changeHeader(policy.getEvenPageHeader(), storage, diff);
-        this.changeFooter(policy.getEvenPageFooter(), storage, diff);
-        this.changeHeader(policy.getOddPageHeader(), storage, diff);
-        this.changeFooter(policy.getEvenPageFooter(), storage, diff);
+        this.changeHeader(policy.getDefaultHeader(), storage, diff, reportFilter);
+        this.changeFooter(policy.getDefaultFooter(), storage, diff, reportFilter);
+        this.changeHeader(policy.getEvenPageHeader(), storage, diff, reportFilter);
+        this.changeFooter(policy.getEvenPageFooter(), storage, diff, reportFilter);
+        this.changeHeader(policy.getOddPageHeader(), storage, diff, reportFilter);
+        this.changeFooter(policy.getEvenPageFooter(), storage, diff, reportFilter);
         for (XWPFHeader header : document.getHeaderList()) {
-            this.changeHeader(header, storage, diff);
+            this.changeHeader(header, storage, diff, reportFilter);
         }
     }
 
-    private void changeHeader(XWPFHeader header, Pipeline storage, GitDiff diff) {
+    private void changeHeader(XWPFHeader header, Pipeline storage, GitDiff diff, GitDiffReportFilter reportFilter) {
         if (header == null) {
             return;
         }
-        this.changeBodyElements(header::getBodyElements, storage, diff);
+        this.changeBodyElements(header::getBodyElements, storage, diff, reportFilter);
     }
 
-    private void changeFooter(XWPFFooter footer, Pipeline storage, GitDiff diff) {
+    private void changeFooter(XWPFFooter footer, Pipeline storage, GitDiff diff, GitDiffReportFilter reportFilter) {
         if (footer == null) {
             return;
         }
-        this.changeBodyElements(footer::getBodyElements, storage, diff);
+        this.changeBodyElements(footer::getBodyElements, storage, diff, reportFilter);
     }
 
     /**
      * Modifies elements. Replaces all occurrences of placeholders with corresponding values
-     *  @param getBodyElements is supplier which returns list of elements
+     * @param getBodyElements is supplier which returns list of elements
      * @param storage
      * @param diff
+     * @param reportFilter
      */
-    private void changeBodyElements(Supplier<List<IBodyElement>> getBodyElements, Pipeline storage, GitDiff diff) {
+    private void changeBodyElements(Supplier<List<IBodyElement>> getBodyElements, Pipeline storage, GitDiff diff,
+                                    GitDiffReportFilter reportFilter) {
         int size = getBodyElements.get().size();
         for (int i = 0; i < size; i++) {
-            this.changeBodyElement(getBodyElements.get().get(i), storage, diff);
+            this.changeBodyElement(getBodyElements.get().get(i), storage, diff, reportFilter);
             size = getBodyElements.get().size();
         }
     }
 
-    private void changeBodyElement(IBodyElement element, Pipeline storage, GitDiff diff) {
+    private void changeBodyElement(IBodyElement element, Pipeline storage, GitDiff diff,
+                                   GitDiffReportFilter reportFilter) {
         switch (element.getElementType()) {
             case TABLE:
-                this.changeTable((XWPFTable) element, storage, diff);
+                this.changeTable((XWPFTable) element, storage, diff, reportFilter);
                 break;
             case PARAGRAPH:
-                this.changeParagraph((XWPFParagraph) element, storage, diff);
+                this.changeParagraph((XWPFParagraph) element, storage, diff, reportFilter);
                 break;
             default:
                 break;
@@ -191,9 +298,10 @@ public class VersionStorageReportTemplateManager {
      * @param storage
      * @param diff
      */
-    private void changeParagraph(XWPFParagraph paragraph, Pipeline storage, GitDiff diff) {
+    private void changeParagraph(XWPFParagraph paragraph, Pipeline storage, GitDiff diff,
+                                 GitDiffReportFilter reportFilter) {
         for (VSReportTemplates template : VSReportTemplates.values()) {
-            template.templateResolver.get().process(paragraph, template.template, storage, diff);
+            template.templateResolver.get().process(paragraph, template.template, storage, diff, reportFilter);
         }
     }
 
@@ -203,13 +311,13 @@ public class VersionStorageReportTemplateManager {
      * @param table XWPFTable to be modified
      * @param diff
      */
-    private void changeTable(XWPFTable table, Pipeline storage, GitDiff diff) {
+    private void changeTable(XWPFTable table, Pipeline storage, GitDiff diff, GitDiffReportFilter reportFilter) {
         if (table == null) {
             return;
         }
         for (XWPFTableRow row : table.getRows()) {
             for (XWPFTableCell cell : row.getTableCells()) {
-                this.changeBodyElements(cell::getBodyElements, storage, diff);
+                this.changeBodyElements(cell::getBodyElements, storage, diff, reportFilter);
             }
         }
     }

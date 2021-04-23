@@ -1,6 +1,7 @@
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
 
 import com.epam.pipeline.entity.git.GitDiff;
+import com.epam.pipeline.entity.git.GitDiffReportFilter;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -23,12 +24,13 @@ public abstract class AbstractVSReportTemplateProcessor implements VSReportTempl
     }
 
     @Override
-    public void process(XWPFParagraph paragraph, String template, Pipeline storage, GitDiff diff) {
+    public void process(XWPFParagraph paragraph, String template, Pipeline storage, GitDiff diff,
+                        GitDiffReportFilter reportFilter) {
         if (paragraph == null) {
             return;
         }
         while (this.find(paragraph, template)) {
-            this.replacePlaceholderWithData(paragraph, dataProducer.apply(paragraph, storage, diff));
+            this.replacePlaceholderWithData(paragraph, dataProducer.apply(paragraph, storage, diff, reportFilter));
         }
     }
 

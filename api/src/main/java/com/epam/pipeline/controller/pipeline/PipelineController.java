@@ -29,11 +29,7 @@ import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
-import com.epam.pipeline.entity.git.GitCommitEntry;
-import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
-import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.*;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -814,15 +810,12 @@ public class PipelineController extends AbstractRestController {
             })
     public void generateFileByTemplate(
             @PathVariable(value = ID) final Long id,
-            @RequestParam(required = false, defaultValue = "false") final Boolean includeDiffs,
-            @RequestParam(required = false) final String reportTemplate,
-            @RequestBody final GitCommitsFilter filter,
+            @RequestBody final GitDiffReportFilter filter,
             final HttpServletResponse response) throws IOException {
-        final byte[] bytes = pipelineApiService.generateReportForVersionedStorage(
-                id, includeDiffs, filter, reportTemplate);
+        final byte[] bytes = pipelineApiService.generateReportForVersionedStorage(id, filter);
         final String name = FilenameUtils.getName(
                 "versioned-storage_report_" + id + "_"
-                        + ReportDataExtractor.DATE_FORMAT.format(DateUtils.now()) + ".docx"
+                        + ReportDataExtractor.DATE_FORMAT.format(DateUtils.now()) + ".zip"
         );
         writeFileToResponse(response, bytes, name);
     }

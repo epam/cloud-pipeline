@@ -1,6 +1,7 @@
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
 
 import com.epam.pipeline.entity.git.GitDiff;
+import com.epam.pipeline.entity.git.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
@@ -25,7 +26,7 @@ public class FileListTableExtractor implements ReportDataExtractor {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
-    public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitDiff diff) {
+    public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitDiff diff, GitDiffReportFilter reportFilter) {
         Matcher matcher = PATTERN.matcher(xwpfParagraph.getText());
         final Map<FileListTableColumn, String> tableColumns;
         if(matcher.matches()) {

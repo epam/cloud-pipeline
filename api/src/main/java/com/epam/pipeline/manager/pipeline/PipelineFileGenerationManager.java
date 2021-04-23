@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.controller.vo.GenerateFileVO;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
+import com.epam.pipeline.entity.git.GitDiffReportFilter;
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplate;
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplateManager;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -67,10 +68,8 @@ public class PipelineFileGenerationManager {
     }
 
     public byte[] generateVersionStorageReport(final Long pipelineId,
-                                               final Boolean includeDiffs,
-                                               final GitCommitsFilter reportFilters,
-                                               final String templatePath) {
-        return vsReportTemplateManager.generateReport(pipelineId, includeDiffs, reportFilters, templatePath);
+                                               final GitDiffReportFilter reportFilters) {
+        return vsReportTemplateManager.generateReport(pipelineId, reportFilters);
     }
 
 
