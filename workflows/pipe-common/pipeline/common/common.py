@@ -85,9 +85,9 @@ $encodedPayload=@"
 "@
 $tempDir = Join-Path $Env:Temp $(New-Guid)
 New-Item -Type Directory -Path $tempDir
-[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($encodedPayload)) `
-    | Out-File -FilePath $tempDir\\payload.tar.gz -Encoding ascii -Force
-tar -xzf $tempDir\\payload.tar.gz -C $tempDir
+$decodedPayloadBytes = [Convert]::FromBase64String($encodedPayload)
+[IO.File]::WriteAllBytes("$tempDir\\payload.tar.gz", $decodedPayloadBytes)
+tar -xzf "$tempDir\\payload.tar.gz" -C "$tempDir"
 & powershell -Command "$tempDir\\init.ps1"
 Remove-Item -Recurse -Path $tempDir
 </powershell>

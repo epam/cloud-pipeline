@@ -616,17 +616,20 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
         fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
         if fs_type not in SUPPORTED_FS_TYPES:
             pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
-                          fs_type, DEFAULT_FS_TYPE)
+                          (fs_type, DEFAULT_FS_TYPE))
             fs_type = DEFAULT_FS_TYPE
+        with open('/root/.kube/config', mode='r') as f:
+            kube_config = f.read()
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
-                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
-                                            .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
-                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
-                                            .replace('@API_URL@', api_url) \
-                                            .replace('@API_TOKEN@', api_token) \
-                                            .replace('@API_USER@', api_user) \
-                                            .replace('@FS_TYPE@', fs_type)
+                                           .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                           .replace('@KUBE_IP@', kube_ip) \
+                                           .replace('@KUBE_CONFIG@', kube_config) \
+                                           .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                           .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
+                                           .replace('@API_URL@', api_url) \
+                                           .replace('@API_TOKEN@', api_token) \
+                                           .replace('@API_USER@', api_user) \
+                                           .replace('@FS_TYPE@', fs_type)
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
