@@ -68,12 +68,12 @@ public class GitReaderClient {
                                                                                          final Long page,
                                                                                          final Integer pageSize,
                                                                                          final GitCommitsFilter filter)
-            throws GitClientException {
-                return callAndCheckResult(
-                        gitReaderApi.listCommits(
-                                getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter)
-                        )
-                ).getPayload();
+        throws GitClientException {
+        return callAndCheckResult(
+                gitReaderApi.listCommits(
+                        getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter)
+                )
+        ).getPayload();
     }
 
     public GitReaderDiff getRepositoryCommitDiffs(final GitRepositoryUrl repo,
@@ -154,7 +154,8 @@ public class GitReaderClient {
     }
 
     private GitReaderApi buildGitLabApi(final String gitReaderUrlRoot) {
-        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, null, userJwtToken.toHeader(), DATA_FORMAT).build();
+        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, null,
+                userJwtToken.toHeader(), DATA_FORMAT).build();
     }
 
     private List<String> getPathMasks(final GitCommitsFilter filter) {
