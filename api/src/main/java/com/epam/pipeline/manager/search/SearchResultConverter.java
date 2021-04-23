@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.search;
 
+import com.epam.pipeline.controller.vo.search.ScrollingParameters;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
@@ -60,11 +61,13 @@ public class SearchResultConverter {
                                     final String aggregation,
                                     final String typeFieldName,
                                     final Set<String> aclFilterFields,
-                                    final Set<String> metadataSourceFields) {
+                                    final Set<String> metadataSourceFields,
+                                    final ScrollingParameters scrollingParameters) {
         return SearchResult.builder()
                 .searchSucceeded(!searchResult.isTimedOut())
                 .totalHits(searchResult.getHits().getTotalHits())
-                .documents(buildDocuments(searchResult.getHits(), typeFieldName, aclFilterFields, metadataSourceFields))
+                .documents(buildDocuments(searchResult, typeFieldName, aclFilterFields, metadataSourceFields,
+                                          scrollingParameters))
                 .aggregates(buildAggregates(searchResult.getAggregations(), aggregation))
                 .build();
     }
@@ -84,12 +87,26 @@ public class SearchResultConverter {
 
     public FacetedSearchResult buildFacetedResult(final SearchResponse response, final String typeFieldName,
                                                   final Set<String> aclFilterFields,
-                                                  final Set<String> metadataSourceFields) {
+                                                  final Set<String> metadataSourceFields,
+                                                  final ScrollingParameters scrollingParameters) {
         return FacetedSearchResult.builder()
                 .totalHits(response.getHits().getTotalHits())
-                .documents(buildDocuments(response.getHits(), typeFieldName, aclFilterFields, metadataSourceFields))
+                .documents(buildDocuments(response, typeFieldName, aclFilterFields, metadataSourceFields,
+                                          scrollingParameters))
                 .facets(buildFacets(response.getAggregations()))
                 .build();
+    }
+
+    private List<SearchDocument> buildDocuments(final SearchResponse searchResult, final String typeFieldName,
+                                                final Set<String> aclFilterFields,
+                                                final Set<String> metadataSourceFields,
+                                                final ScrollingParameters scrollingParameters) {
+        final List<SearchDocument> documents =
+            buildDocuments(searchResult.getHits(), typeFieldName, aclFilterFields, metadataSourceFields);
+        if (Objects.nonNull(scrollingParameters) && scrollingParameters.isScrollingBackward()) {
+            Collections.reverse(documents);
+        }
+        return documents;
     }
 
     private Map<SearchDocumentType, Long> buildAggregates(final Aggregations aggregations,

@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
+import com.epam.pipeline.controller.vo.search.ScrollingParameters;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -30,6 +31,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -44,13 +46,15 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,6 +73,8 @@ public class SearchRequestBuilder {
     private static final String SIZE_FIELD = "size";
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
+    private static final String ES_DOC_ID_FIELD = "_id";
+    private static final String ES_DOC_SCORE_FIELD = "_score";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -83,9 +89,13 @@ public class SearchRequestBuilder {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(query)
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
-                .size(searchRequest.getPageSize())
-                .from(searchRequest.getOffset());
-
+                .size(searchRequest.getPageSize());
+        if (Objects.isNull(searchRequest.getScrollingParameters())) {
+            searchSource.from(searchRequest.getOffset());
+            applyDefaultSorting(searchSource);
+        } else {
+            applyScrollingParameters(searchSource, searchRequest.getScrollingParameters());
+        }
         if (searchRequest.isHighlight()) {
             addHighlighterToSource(searchSource);
         }
@@ -132,8 +142,14 @@ public class SearchRequestBuilder {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(boolQueryBuilder)
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
-                .size(facetedSearchRequest.getPageSize())
-                .from(facetedSearchRequest.getOffset());
+                .size(facetedSearchRequest.getPageSize());
+
+        if (Objects.isNull(facetedSearchRequest.getScrollingParameters())) {
+            searchSource.from(facetedSearchRequest.getOffset());
+            applyDefaultSorting(searchSource);
+        } else {
+            applyScrollingParameters(searchSource, facetedSearchRequest.getScrollingParameters());
+        }
 
         if (facetedSearchRequest.isHighlight()) {
             addHighlighterToSource(searchSource);
@@ -146,6 +162,23 @@ public class SearchRequestBuilder {
                 .indices(buildAllIndexTypes())
                 .indicesOptions(IndicesOptions.lenientExpandOpen())
                 .source(searchSource);
+    }
+
+    private void applyScrollingParameters(final SearchSourceBuilder searchSource,
+                                          final ScrollingParameters scrollingParameters) {
+        applySorting(searchSource, scrollingParameters.isScrollingBackward());
+        searchSource.searchAfter(Arrays.asList(scrollingParameters.getDocScore(), scrollingParameters.getDocId())
+                                     .toArray(new Object[0]));
+    }
+
+    private void applyDefaultSorting(final SearchSourceBuilder searchSource) {
+        applySorting(searchSource, false);
+    }
+
+    private void applySorting(final SearchSourceBuilder searchSource, final boolean isScrollingBackward) {
+        final SortOrder order = isScrollingBackward ? SortOrder.ASC : SortOrder.DESC;
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_SCORE_FIELD).order(order));
+        searchSource.sort(SortBuilders.fieldSort(ES_DOC_ID_FIELD).order(order));
     }
 
     private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {
