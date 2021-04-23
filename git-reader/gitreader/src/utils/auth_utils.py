@@ -25,7 +25,7 @@ def auth(request):
                 open(
                     os.getenv("CP_API_JWT_PUB_KEY",
                               os.path.join(
-                                os.getenv("CP_GITLAB_READER_HOME", "/opt/gitlab-reader/gitreader"),
+                                os.getenv("CP_GITLAB_READER_HOME", "/opt/gitlab-reader"),
                                 "pub-jwt-key.pem"
                               )
                     )
