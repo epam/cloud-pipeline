@@ -4,7 +4,9 @@ $KubeIp="@KUBE_IP@"
 $HostIp=$KubeIp.split(":",2)[0]
 $KubeToken="@KUBE_TOKEN@"
 $KubeCertHash="@KUBE_CERT_HASH@"
-$kubeConfigFile = [IO.File]::ReadAllText("/root/.kube/config")
+$kubeConfigFile = @"
+@KUBE_CONFIG@
+"@
 
 $userName="$env:username"
 $homeDir="$env:USERPROFILE"
