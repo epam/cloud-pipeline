@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public class UserImporter {
     private Map<String, PipeConfValue> processMetadata(final Map<String, String> valuesByHeader,
                                                        final List<String> metadataHeaders) {
         final Map<String, CategoricalAttribute> attributes = currentAttributes.stream()
-                .collect(Collectors.toMap(CategoricalAttribute::getKey, Function.identity()));
+                .collect(Collectors.toMap(CategoricalAttribute::getName, Function.identity()));
         final Map<String, PipeConfValue> userMetadata = new HashMap<>();
         valuesByHeader.entrySet().stream()
                 .filter(entry -> StringUtils.isNotBlank(entry.getValue()))

@@ -236,7 +236,7 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         final Map<String, List<String>> metadataDict = metadataDao.buildFullMetadataDict(
                 Collections.singletonList(SENSITIVE_DATA_KEY))
                 .stream()
-                .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                .collect(Collectors.toMap(CategoricalAttribute::getName,
                     attribute -> attribute.getValues().stream()
                         .map(CategoricalAttributeValue::getValue)
                         .collect(Collectors.toList())));

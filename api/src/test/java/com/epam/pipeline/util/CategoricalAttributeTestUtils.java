@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,14 @@ import java.util.stream.Stream;
 
 public final class CategoricalAttributeTestUtils {
 
+    private static final String DEFAULT_OWNER = "owner";
+
     private CategoricalAttributeTestUtils() {
     }
 
     public static void assertAttribute(final CategoricalAttribute attributeAfter, final String key,
                                        final String... values) {
-        Assert.assertEquals(key, attributeAfter.getKey());
+        Assert.assertEquals(key, attributeAfter.getName());
         final CategoricalAttributeValue[] attributeValues = Stream.of(values)
             .map(v -> new CategoricalAttributeValue(key, v))
             .toArray(CategoricalAttributeValue[]::new);
@@ -45,7 +47,7 @@ public final class CategoricalAttributeTestUtils {
 
     public static Map<String, List<String>> convertToMap(final Collection<CategoricalAttribute> attributes) {
         return attributes.stream()
-            .collect(Collectors.toMap(CategoricalAttribute::getKey,
+            .collect(Collectors.toMap(CategoricalAttribute::getName,
                 attribute -> CollectionUtils.emptyIfNull(attribute.getValues()).stream()
                     .map(CategoricalAttributeValue::getValue)
                     .collect(Collectors.toList())));
@@ -62,6 +64,7 @@ public final class CategoricalAttributeTestUtils {
     public static List<CategoricalAttributeValue> fromStrings(final String key, final List<String> strings) {
         return strings.stream()
             .map(s -> new CategoricalAttributeValue(key, s))
+            .peek(value -> value.setOwner(DEFAULT_OWNER))
             .collect(Collectors.toList());
     }
 }

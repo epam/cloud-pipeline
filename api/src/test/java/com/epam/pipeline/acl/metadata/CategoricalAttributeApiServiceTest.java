@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,18 +48,33 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldUpdateAttributesForAdmin() {
-        doReturn(true).when(mockAttributeManager).updateAll(attributeList);
+    public void shouldCreateAttributeForAdmin() {
+        doReturn(attribute).when(mockAttributeManager).create(attribute);
+        assertThat(attributeApiService.createCategoricalAttribute(attribute)).isEqualTo(attribute);
+    }
 
-        assertThat(attributeApiService.updateCategoricalAttributes(attributeList)).isEqualTo(true);
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyCreateAttributesForNotAdmin() {
+        doReturn(attribute).when(mockAttributeManager).create(attribute);
+        assertThrows(AccessDeniedException.class, () -> attributeApiService.createCategoricalAttribute(attribute));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldUpdateAttributeForAdmin() {
+        doReturn(attribute).when(mockAttributeManager).update(attribute.getName(), attribute);
+
+        assertThat(attributeApiService.updateCategoricalAttribute(attribute.getName(), attribute)).isEqualTo(attribute);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUpdateAttributesForNotAdmin() {
-        doReturn(true).when(mockAttributeManager).updateAll(attributeList);
+        doReturn(attribute).when(mockAttributeManager).update(attribute.getName(), attribute);
 
-        assertThrows(AccessDeniedException.class, () -> attributeApiService.updateCategoricalAttributes(attributeList));
+        assertThrows(AccessDeniedException.class, () ->
+            attributeApiService.updateCategoricalAttribute(attribute.getName(), attribute));
     }
 
     @Test

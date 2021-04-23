@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,14 +48,27 @@ public class CategoricalAttributeController extends AbstractRestController {
 
     @PostMapping
     @ApiOperation(
-        value = "Update categorical attributes values.",
-        notes = "Update categorical attributes values",
+        value = "Create new categorical attribute.",
+        notes = "Create new categorical attribute.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Boolean> updateCategoricalAttributes(@RequestBody final List<CategoricalAttribute> dict) {
-        return Result.success(categoricalAttributeApiService.updateCategoricalAttributes(dict));
+    public Result<CategoricalAttribute> createCategoricalAttribute(@RequestBody final CategoricalAttribute attribute) {
+        return Result.success(categoricalAttributeApiService.createCategoricalAttribute(attribute));
+    }
+
+    @PutMapping(value = "/{attributeKey}")
+    @ApiOperation(
+        value = "Update existing categorical attribute.",
+        notes = "Update existing categorical attribute.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<CategoricalAttribute> updateCategoricalAttribute(@PathVariable String attributeKey ,
+                                                                   @RequestBody final CategoricalAttribute attribute) {
+        return Result.success(categoricalAttributeApiService.updateCategoricalAttribute(attributeKey, attribute));
     }
 
     @GetMapping
@@ -71,8 +85,8 @@ public class CategoricalAttributeController extends AbstractRestController {
 
     @GetMapping(value = "{attributeKey}")
     @ApiOperation(
-        value = "Load all requested attributes with values.",
-        notes = "Load all requested attributes with values.",
+        value = "Load requested attribute with all values.",
+        notes = "Load requested attribute with all values.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)

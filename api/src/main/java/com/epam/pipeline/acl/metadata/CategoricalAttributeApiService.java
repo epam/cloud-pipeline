@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,14 @@ public class CategoricalAttributeApiService {
     private final CategoricalAttributeManager categoricalAttributesManager;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesManager.updateAll(dict);
+    public CategoricalAttribute createCategoricalAttribute(final CategoricalAttribute attribute) {
+        return categoricalAttributesManager.create(attribute);
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public CategoricalAttribute updateCategoricalAttribute(final String attributeKey,
+                                                           final CategoricalAttribute attribute) {
+        return categoricalAttributesManager.update(attributeKey, attribute);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

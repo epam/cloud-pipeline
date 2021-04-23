@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
+import com.epam.pipeline.manager.security.acl.AclSync;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@AclSync
 public class CategoricalAttributeManager implements SecuredEntityManager {
 
     private final CategoricalAttributeDao categoricalAttributesDao;
@@ -54,10 +56,36 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean updateAll(final List<CategoricalAttribute> dict) {
+    public CategoricalAttribute create(final CategoricalAttribute attribute) {
+        final String key = attribute.getName();
+        Assert.isNull(categoricalAttributesDao.loadAllValuesForKey(key),
+                      messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY, key));
+        final CategoricalAttribute attributeToCreate = setOwner(attribute);
+        categoricalAttributesDao.createAttribute(attributeToCreate);
+        updateValues(Collections.singletonList(attribute));
+        return attributeToCreate;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public CategoricalAttribute update(final String attributeKey, final CategoricalAttribute attribute) {
+        final CategoricalAttribute existingAttribute = loadByNameOrId(attributeKey);
+        if (attribute.getOwner() == null) {
+            attribute.setOwner(existingAttribute.getOwner());
+        }
+        if (!(existingAttribute.getOwner().equals(attribute.getOwner())
+              && existingAttribute.getName().equals(attribute.getName()))) {
+            attribute.setId(existingAttribute.getId());
+            categoricalAttributesDao.updateAttribute(attribute);
+        }
+        updateValues(Collections.singletonList(attribute));
+        return attribute;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public boolean updateValues(final List<CategoricalAttribute> dict) {
         final List<CategoricalAttribute> currentValues =
             categoricalAttributesDao.loadAllValuesForKeys(dict.stream()
-                                                              .map(CategoricalAttribute::getKey)
+                                                              .map(CategoricalAttribute::getName)
                                                               .collect(Collectors.toList()));
         final List<CategoricalAttribute> attributeWithValuesToRemove =
             keepAttributesWithValuesToRemove(dict, currentValues);
@@ -74,11 +102,6 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
                && categoricalAttributesDao.insertAttributesValues(setOwner(attributesWithValuesToInsert));
 
         return categoricalAttributesDao.insertValuesLinks(dict) || valuesInserted || valuesRemoved || linksRemoved;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public boolean createAll(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesDao.insertAttributesValues(setOwner(dict));
     }
 
     @Override
@@ -119,14 +142,14 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void syncWithMetadata() {
         final List<CategoricalAttribute> fullMetadataDict = metadataManager.buildFullMetadataDict();
-        createAll(fullMetadataDict);
+        fullMetadataDict.forEach(this::create);
     }
 
     @Override
     public CategoricalAttribute changeOwner(final Long id, final String owner) {
         final CategoricalAttribute attribute = load(id);
-        categoricalAttributesDao.updateOwner(id, owner);
         attribute.setOwner(owner);
+        categoricalAttributesDao.updateAttribute(attribute);
         return attribute;
     }
 
@@ -155,13 +178,13 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
                                                                         final List<CategoricalAttribute> currentState) {
         final Map<String, Set<String>> receivedValues = collectAttributesToMap(receivedState);
         return currentState.stream()
-            .filter(value -> receivedValues.containsKey(value.getKey()))
+            .filter(value -> receivedValues.containsKey(value.getName()))
             .map(attribute -> {
                 final List<CategoricalAttributeValue> newValues = CollectionUtils.emptyIfNull(attribute.getValues())
                     .stream()
                     .filter(value -> !receivedValues.get(value.getKey()).contains(value.getValue()))
                     .collect(Collectors.toList());
-                return new CategoricalAttribute(attribute.getKey(), newValues);
+                return new CategoricalAttribute(attribute.getName(), newValues);
             })
             .filter(attribute -> CollectionUtils.isNotEmpty(attribute.getValues()))
             .collect(Collectors.toList());
@@ -174,10 +197,10 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
             .map(attribute -> {
                 final List<CategoricalAttributeValue> newValues = CollectionUtils.emptyIfNull(attribute.getValues())
                     .stream()
-                    .filter(value -> !currentValues.containsKey(attribute.getKey())
-                                        || !currentValues.get(attribute.getKey()).contains(value.getValue()))
+                    .filter(value -> !currentValues.containsKey(attribute.getName())
+                                        || !currentValues.get(attribute.getName()).contains(value.getValue()))
                     .collect(Collectors.toList());
-                return new CategoricalAttribute(attribute.getKey(), newValues);
+                return new CategoricalAttribute(attribute.getName(), newValues);
             })
             .filter(attribute -> CollectionUtils.isNotEmpty(attribute.getValues()))
             .collect(Collectors.toList());
@@ -185,7 +208,7 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
 
     private Map<String, Set<String>> collectAttributesToMap(final List<CategoricalAttribute> attributes) {
         return attributes.stream()
-            .collect(Collectors.toMap(CategoricalAttribute::getKey,
+            .collect(Collectors.toMap(CategoricalAttribute::getName,
                 attribute -> attribute
                     .getValues()
                     .stream()
@@ -196,7 +219,7 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
     private List<Pair<Long, Long>> getDeletedLinks(final List<CategoricalAttribute> receivedState,
                                                    final List<CategoricalAttribute> currentState) {
         final Map<String, List<CategoricalAttributeValue>> newStateMap = receivedState.stream()
-                .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                .collect(Collectors.toMap(CategoricalAttribute::getName,
                         CategoricalAttribute::getValues, (a1, a2) -> a2));
         return ListUtils.emptyIfNull(currentState)
                 .stream()
@@ -209,7 +232,7 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
             final Map<String, List<CategoricalAttributeValue>> newStateMap,
             final CategoricalAttribute currentAttribute) {
         final Map<String, CategoricalAttributeValue> newValues = ListUtils.emptyIfNull(
-                newStateMap.get(currentAttribute.getKey()))
+                newStateMap.get(currentAttribute.getName()))
                 .stream()
                 .collect(Collectors.toMap(
                         CategoricalAttributeValue::getValue, Function.identity(), (v1, v2) -> v2));

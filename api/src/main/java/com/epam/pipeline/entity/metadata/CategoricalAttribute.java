@@ -32,17 +32,15 @@ import java.util.Optional;
 @Setter
 public class CategoricalAttribute extends AbstractSecuredEntity {
 
-    private String key;
     private List<CategoricalAttributeValue> values;
     private AclClass aclClass = AclClass.CATEGORICAL_ATTRIBUTE;
 
     public CategoricalAttribute() {
-        this.key = null;
+        setName(null);
         this.values = Collections.emptyList();
     }
 
     public CategoricalAttribute(final String key, final List<CategoricalAttributeValue> values) {
-        this.key = key;
         this.values = values;
         setName(key);
         setCreatedDate(createdFromValues(values));

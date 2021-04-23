@@ -74,11 +74,12 @@ public class CategoricalAttributeDaoTest extends AbstractJdbcTest {
         values.add(new CategoricalAttribute(ATTRIBUTE_KEY_2,
                                             fromStrings(ATTRIBUTE_KEY_2,
                                                         Arrays.asList(ATTRIBUTE_VALUE_2, ATTRIBUTE_VALUE_3))));
+        values.forEach(categoricalAttributeDao::createAttribute);
         Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
         values.add(new CategoricalAttribute(ATTRIBUTE_KEY_1,
                                             fromStrings(ATTRIBUTE_KEY_1,
                                                         Collections.singletonList(ATTRIBUTE_VALUE_1))));
-        Assert.assertFalse(categoricalAttributeDao.insertAttributesValues(values));
+        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
         values.add(new CategoricalAttribute(ATTRIBUTE_KEY_1,
                                             fromStrings(ATTRIBUTE_KEY_1,
                                                         Collections.singletonList(ATTRIBUTE_VALUE_3))));
@@ -95,6 +96,7 @@ public class CategoricalAttributeDaoTest extends AbstractJdbcTest {
                                                                   Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2))),
             new CategoricalAttribute(ATTRIBUTE_KEY_2, fromStrings(ATTRIBUTE_KEY_2,
                                                                   Collections.singletonList(ATTRIBUTE_VALUE_3))));
+        values.forEach(categoricalAttributeDao::createAttribute);
         categoricalAttributeDao.insertAttributesValues(values);
         final Map<String, List<String>> attributesWithValues = convertToMap(categoricalAttributeDao.loadAll());
         Assert.assertEquals(2, attributesWithValues.size());
@@ -116,10 +118,11 @@ public class CategoricalAttributeDaoTest extends AbstractJdbcTest {
             new CategoricalAttribute(ATTRIBUTE_KEY_1, key1Values),
             new CategoricalAttribute(ATTRIBUTE_KEY_2, fromStrings(ATTRIBUTE_KEY_2,
                                                                   Collections.singletonList(ATTRIBUTE_VALUE_3))));
+        values.forEach(categoricalAttributeDao::createAttribute);
         categoricalAttributeDao.insertAttributesValues(values);
         final CategoricalAttribute attributeWithValues = categoricalAttributeDao.loadAllValuesForKey(ATTRIBUTE_KEY_1);
         Assert.assertNotNull(attributeWithValues);
-        Assert.assertEquals(ATTRIBUTE_KEY_1, attributeWithValues.getKey());
+        Assert.assertEquals(ATTRIBUTE_KEY_1, attributeWithValues.getName());
         Assert.assertThat(attributeWithValues.getValues(), containsInAnyOrder(key1Values.toArray()));
     }
 
@@ -136,6 +139,7 @@ public class CategoricalAttributeDaoTest extends AbstractJdbcTest {
                                                                   Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2))),
             new CategoricalAttribute(ATTRIBUTE_KEY_2, fromStrings(ATTRIBUTE_KEY_2,
                                                                   Collections.singletonList(ATTRIBUTE_VALUE_3))));
+        values.forEach(categoricalAttributeDao::createAttribute);
         categoricalAttributeDao.insertAttributesValues(values);
         Assert.assertTrue(categoricalAttributeDao.deleteAttributeValues(ATTRIBUTE_KEY_2));
         final Map<String, List<String>> attributesWithValues = convertToMap(categoricalAttributeDao.loadAll());
@@ -151,6 +155,7 @@ public class CategoricalAttributeDaoTest extends AbstractJdbcTest {
                                                                   Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2))),
             new CategoricalAttribute(ATTRIBUTE_KEY_2, fromStrings(ATTRIBUTE_KEY_2,
                                                                   Collections.singletonList(ATTRIBUTE_VALUE_3))));
+        values.forEach(categoricalAttributeDao::createAttribute);
         categoricalAttributeDao.insertAttributesValues(values);
         Assert.assertTrue(categoricalAttributeDao.deleteAttributeValue(ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1));
         final Map<String, List<String>> attributesWithValues = convertToMap(categoricalAttributeDao.loadAll());

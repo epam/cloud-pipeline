@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @WebMvcTest(controllers = CategoricalAttributeController.class)
 public class CategoricalAttributeControllerTest extends AbstractControllerTest {
@@ -56,14 +57,26 @@ public class CategoricalAttributeControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldUpdateAttributes() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(attributeList);
-        doReturn(true).when(mockCategoricalAttributeApiService).updateCategoricalAttributes(attributeList);
-
+    public void shouldCreateAttribute() throws Exception {
+        final String content = getObjectMapper().writeValueAsString(attribute);
+        doReturn(attribute).when(mockCategoricalAttributeApiService).createCategoricalAttribute(attribute);
         final MvcResult mvcResult = performRequest(post(CATEGORICAL_ATTRIBUTE_URL).content(content));
+        verify(mockCategoricalAttributeApiService).createCategoricalAttribute(attribute);
+        assertResponse(mvcResult, attribute, MetadataCreatorUtils.ATTRIBUTE_INSTANCE_TYPE);
+    }
 
-        verify(mockCategoricalAttributeApiService).updateCategoricalAttributes(attributeList);
-        assertResponse(mvcResult, true, CommonCreatorConstants.BOOLEAN_INSTANCE_TYPE);
+    @Test
+    @WithMockUser
+    public void shouldUpdateAttribute() throws Exception {
+        final String content = getObjectMapper().writeValueAsString(attribute);
+        doReturn(attribute).when(mockCategoricalAttributeApiService)
+            .updateCategoricalAttribute(attribute.getName(), attribute);
+
+        final MvcResult mvcResult =
+            performRequest(put(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, attribute.getName())).content(content));
+
+        verify(mockCategoricalAttributeApiService).updateCategoricalAttribute(attribute.getName(), attribute);
+        assertResponse(mvcResult, attribute, MetadataCreatorUtils.ATTRIBUTE_INSTANCE_TYPE);
     }
 
     @Test
