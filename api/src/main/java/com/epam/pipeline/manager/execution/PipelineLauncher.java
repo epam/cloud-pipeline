@@ -82,8 +82,9 @@ public class PipelineLauncher {
             "\"@\n" +
             "[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy\n" +
             "Invoke-WebRequest %s -Outfile .\\launch.ps1\n" +
-            ".\\launch.ps1\n" +
-            "%s";
+            ".\\launch.ps1 -Command {\n" +
+            "%s\n" +
+            "}";
     private static final String EMPTY_PARAMETER = "";
     private static final String DEFAULT_CLUSTER_NAME = "CLOUD_PIPELINE";
     private static final String ENV_DELIMITER = ",";
