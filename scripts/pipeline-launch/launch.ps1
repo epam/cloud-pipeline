@@ -1,3 +1,5 @@
+param ($Command)
+
 function Request-Api($HttpMethod, $ApiMethod, $Body) {
     $headers = @{
         "Authorization" = "Bearer $env:API_TOKEN"
@@ -75,8 +77,8 @@ $env:COMMON_REPO_DIR\powershell\AddUser.ps1 -UserName $env:OWNER -UserPassword $
 }
 Write-Host "------"
 
-Write-Host  Executing task
-Write-Host  "-"
+Write-Host "Executing task"
+Write-Host "-"
 Request-Api -HttpMethod "POST" -ApiMethod "run/$env:RUN_ID/log" -Body @"
 {
     "date": "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff")",
@@ -85,7 +87,17 @@ Request-Api -HttpMethod "POST" -ApiMethod "run/$env:RUN_ID/log" -Body @"
     "taskName": "InitializeEnvironment"
 }
 "@
-
-# todo: Execute target command here
-
+try {
+    & $Command
+    $CP_EXEC_RESULT = 0
+} catch {
+    Write-Error "$_"
+    $CP_EXEC_RESULT = 1
+}
 Write-Host "------"
+
+Write-Host "Finalizing execution"
+Write-Host "-"
+
+Write-Host "Exiting with $CP_EXEC_RESULT"
+exit $CP_EXEC_RESULT
