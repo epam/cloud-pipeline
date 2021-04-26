@@ -67,4 +67,11 @@ public final class CategoricalAttributeTestUtils {
             .peek(value -> value.setOwner(DEFAULT_OWNER))
             .collect(Collectors.toList());
     }
+
+    public static Map<String, List<String>> extractAttributesContent(final List<CategoricalAttribute> attributes) {
+        return attributes.stream().collect(Collectors.toMap(CategoricalAttribute::getName, attribute ->
+            attribute.getValues().stream()
+                .map(CategoricalAttributeValue::getValue)
+                .collect(Collectors.toList())));
+    }
 }
