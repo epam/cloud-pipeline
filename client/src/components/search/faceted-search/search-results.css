@@ -37,7 +37,25 @@
   display: flex;
 }
 
+.container .preview-wrapper {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 100%;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
 .container .preview {
+  max-width: 60%;
+  max-height: calc(100vh - 135px);
+  cursor: default;
   flex: 1;
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -46,7 +64,6 @@
   display: flex;
   flex-direction: column;
   position: fixed;
-  width: 30vw;
 }
 
 .container .pagination {
@@ -66,13 +83,30 @@
 
 .result-item-container {
   color: inherit;
-  text-decoration: none;
+  text-decoration: none !important;
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.result-item-container .preview-btn {
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-right: none;
+  margin-right: 0;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 5px 0 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 }
 
 .result-item {
   background-color: #fafafa;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-left: none;
+  border-radius: 0 5px 5px 0;
   padding: 10px;
   display: flex;
   flex-direction: row;
@@ -84,9 +118,15 @@
   cursor: pointer;
 }
 
-.result-item.hovered {
+.result-item-container:hover .result-item,
+.result-item-container:hover .preview-btn {
   background-color: #eef8ff;
   border-color: #a2d8ff;
+}
+
+.result-item-container .preview-btn:hover {
+  background-color: #1890ff;
+  color: white;
 }
 
 .result-item.disabled {
@@ -127,6 +167,23 @@
 
 .table-row .icon {
   font-size: large;
+}
+
+.table-row .preview-btn {
+  margin-right: 0;
+  padding: 5px;
+  margin-right: 3px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.table-row .preview-btn:hover {
+  border: 1px solid #a2d8ff;
+  background: #1890ff;
+  color: white;
 }
 
 .table-row:not(.table-header):hover {

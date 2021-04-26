@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import {Icon} from 'antd';
 import {isObservableArray} from 'mobx';
 import {PreviewIcons} from '../../preview/previewIcons';
@@ -86,8 +87,20 @@ const DocumentColumns = [
   {
     key: 'name',
     name: 'Name',
-    renderFn: (value, document) => (
+    renderFn: (value, document, onClick) => (
       <span className={styles.cellValue}>
+        <Icon
+          type="info-circle-o"
+          className={classNames(
+            styles.previewBtn,
+            styles.previewBtnTable
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onClick && onClick(document);
+          }}
+        />
         {renderIcon(document)}
         <b style={{marginLeft: '5px'}}>
           {getDocumentName(document)}
