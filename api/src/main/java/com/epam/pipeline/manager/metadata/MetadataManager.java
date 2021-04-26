@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
@@ -301,12 +302,15 @@ public class MetadataManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void syncWithCategoricalAttributes() {
         final List<CategoricalAttribute> fullMetadataDict = buildFullMetadataDict();
-        final Set<String> existingAttributes = categoricalAttributeManager.loadAll().stream()
-            .map(BaseEntity::getName)
-            .collect(Collectors.toSet());
+        final Map<String, CategoricalAttribute> existingAttributes = categoricalAttributeManager.loadAll().stream()
+            .collect(Collectors.toMap(BaseEntity::getName, Function.identity()));
         fullMetadataDict.forEach(attributeFromMetadata -> {
-            if (existingAttributes.contains(attributeFromMetadata.getName())) {
-                categoricalAttributeManager.update(attributeFromMetadata.getName(), attributeFromMetadata);
+            final String name = attributeFromMetadata.getName();
+            if (existingAttributes.containsKey(name)) {
+                final CategoricalAttribute existingAttribute = existingAttributes.get(name);
+                attributeFromMetadata.setId(existingAttribute.getId());
+                attributeFromMetadata.setOwner(existingAttribute.getOwner());
+                categoricalAttributeManager.update(name, attributeFromMetadata);
             } else {
                 categoricalAttributeManager.create(attributeFromMetadata);
             }
