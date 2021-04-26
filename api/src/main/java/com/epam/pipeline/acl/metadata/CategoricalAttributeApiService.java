@@ -18,8 +18,12 @@ package com.epam.pipeline.acl.metadata;
 
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
+import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -42,12 +46,14 @@ public class CategoricalAttributeApiService {
         return categoricalAttributesManager.update(attributeKey, attribute);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PostFilter(AclExpressions.ADMIN_OR_HAS_READ_ACCESS_ON_ENTITIES_FROM_LIST)
+    @AclMaskList
     public List<CategoricalAttribute> loadAll() {
         return categoricalAttributesManager.loadAll();
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PostAuthorize(AclExpressions.ADMIN_OR_HAS_READ_ACCESS_ON_ENTITY)
+    @AclMask
     public CategoricalAttribute loadAllValuesForKey(final String key) {
         return categoricalAttributesManager.loadByNameOrId(key);
     }
