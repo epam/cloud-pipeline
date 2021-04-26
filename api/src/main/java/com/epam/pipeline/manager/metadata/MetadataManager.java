@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
@@ -62,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
 @Service
@@ -92,6 +94,9 @@ public class MetadataManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private CategoricalAttributeManager categoricalAttributeManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -291,6 +296,21 @@ public class MetadataManager {
                                                            final String value) {
         Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
         return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void syncWithCategoricalAttributes() {
+        final List<CategoricalAttribute> fullMetadataDict = buildFullMetadataDict();
+        final Set<String> existingAttributes = categoricalAttributeManager.loadAll().stream()
+            .map(BaseEntity::getName)
+            .collect(Collectors.toSet());
+        fullMetadataDict.forEach(attributeFromMetadata -> {
+            if (existingAttributes.contains(attributeFromMetadata.getName())) {
+                categoricalAttributeManager.update(attributeFromMetadata.getName(), attributeFromMetadata);
+            } else {
+                categoricalAttributeManager.create(attributeFromMetadata);
+            }
+        });
     }
 
     public List<CategoricalAttribute> buildFullMetadataDict() {

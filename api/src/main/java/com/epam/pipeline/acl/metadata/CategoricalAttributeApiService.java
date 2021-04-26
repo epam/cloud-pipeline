@@ -61,9 +61,4 @@ public class CategoricalAttributeApiService {
     public boolean deleteAttributeValue(final String key, final String value) {
         return categoricalAttributesManager.deleteAttributeValue(key, value);
     }
-
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public void syncWithMetadata() {
-        categoricalAttributesManager.syncWithMetadata();
-    }
 }

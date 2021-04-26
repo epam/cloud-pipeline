@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 public class CategoricalAttributeManager implements SecuredEntityManager {
 
     private final CategoricalAttributeDao categoricalAttributesDao;
-    private final MetadataManager metadataManager;
     private final MessageHelper messageHelper;
     private final AuthManager securityManager;
 
@@ -137,12 +136,6 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean deleteAttributeValue(final String key, final String value) {
         return categoricalAttributesDao.deleteAttributeValue(key, value);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void syncWithMetadata() {
-        final List<CategoricalAttribute> fullMetadataDict = metadataManager.buildFullMetadataDict();
-        fullMetadataDict.forEach(this::create);
     }
 
     @Override

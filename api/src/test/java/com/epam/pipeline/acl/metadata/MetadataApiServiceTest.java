@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -832,6 +832,12 @@ public class MetadataApiServiceTest extends AbstractAclTest {
         doReturn(TEST_STRING_SET).when(mockMetadataManager).getMetadataKeys(ENTITY_ACL_CLASS);
 
         assertThrows(AccessDeniedException.class, () -> metadataApiService.getMetadataKeys(ENTITY_ACL_CLASS));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenySyncWithMetadataForNotAdmin() {
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.syncWithCategoricalAttributes());
     }
 
     private void mockLoadEntity(final AbstractSecuredEntity entity, final Long id) {

@@ -31,9 +31,7 @@ import java.util.List;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.verify;
 
 public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
 
@@ -140,23 +138,5 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
 
         assertThrows(AccessDeniedException.class, () ->
                 attributeApiService.deleteAttributeValue(TEST_STRING, TEST_STRING));
-    }
-
-    @Test
-    @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldSyncWithMetadataForAdmin() {
-        doNothing().when(mockAttributeManager).syncWithMetadata();
-
-        attributeApiService.syncWithMetadata();
-
-        verify(mockAttributeManager).syncWithMetadata();
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenySyncWithMetadataForNotAdmin() {
-        doNothing().when(mockAttributeManager).syncWithMetadata();
-
-        assertThrows(AccessDeniedException.class, () -> attributeApiService.syncWithMetadata());
     }
 }

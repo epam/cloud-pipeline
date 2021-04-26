@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -143,16 +142,6 @@ public class CategoricalAttributeControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailDeleteAttributeValue() {
         performUnauthorizedRequest(delete(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, TEST_STRING)));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldSyncAttributesWithMetadata() {
-        doNothing().when(mockCategoricalAttributeApiService).syncWithMetadata();
-
-        performRequestWithoutResponse(post(CATEGORICAL_ATTRIBUTE_SYNC_URL));
-
-        verify(mockCategoricalAttributeApiService).syncWithMetadata();
     }
 
     @Test

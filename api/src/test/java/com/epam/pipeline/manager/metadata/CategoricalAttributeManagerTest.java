@@ -23,19 +23,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
 
 import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
-import com.epam.pipeline.entity.metadata.PipeConfValue;
-import com.epam.pipeline.entity.preference.Preference;
-import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.user.UserManager;
 import org.apache.commons.collections4.CollectionUtils;
-import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,59 +45,14 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
     private static final String KEY_1 = "key1";
     private static final String KEY_2 = "key2";
     private static final String INVALID_KEY = "invalid_key";
-    private static final String SENSITIVE_KEY = "sensitive_metadata_key";
     private static final String VALUE_1 = "valueA";
     private static final String VALUE_2 = "valueB";
     private static final String VALUE_3 = "valueC";
-    private static final String TYPE = "string";
-    private static final String TEST_USER = "TEST_USER";
     private static final String OWNER_1 = "OWNER_1";
     private static final String OWNER_2 = "OWNER_2";
 
     @Autowired
     private CategoricalAttributeManager categoricalAttributeManager;
-
-    @Autowired
-    private MetadataManager metadataManager;
-
-    @Autowired
-    private UserManager userManager;
-
-    @Autowired
-    private PreferenceManager preferenceManager;
-
-    @Test
-    public void syncWithMetadata() {
-        preferenceManager.update(Collections.singletonList(new Preference(
-                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS.getKey(),
-                String.format("[\"%s\"]", SENSITIVE_KEY))));
-        Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
-
-        final PipelineUser testUser = userManager
-            .createUser(TEST_USER, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(), null);
-        final EntityVO entityVO = new EntityVO(testUser.getId(), AclClass.PIPELINE_USER);
-        final Map<String, PipeConfValue> data = new HashMap<>();
-        data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
-        data.put(KEY_2, new PipeConfValue(TYPE, VALUE_2));
-        data.put(SENSITIVE_KEY, new PipeConfValue(TYPE, VALUE_2));
-        final MetadataVO metadataVO = new MetadataVO();
-        metadataVO.setEntity(entityVO);
-        metadataVO.setData(data);
-        metadataManager.updateMetadataItem(metadataVO);
-        categoricalAttributeManager.syncWithMetadata();
-
-        final Map<String, List<String>> categoricalAttributesAfterSync = categoricalAttributeManager.loadAll().stream()
-            .collect(Collectors.toMap(CategoricalAttribute::getName,
-                attribute -> attribute.getValues().stream()
-                                          .map(CategoricalAttributeValue::getValue)
-                                          .collect(Collectors.toList())));
-        Assert.assertEquals(2, categoricalAttributesAfterSync.size());
-        assertThat(categoricalAttributesAfterSync.get(KEY_1),
-                          CoreMatchers.is(Collections.singletonList(VALUE_1)));
-        assertThat(categoricalAttributesAfterSync.get(KEY_2),
-                          CoreMatchers.is(Collections.singletonList(VALUE_2)));
-        Assert.assertFalse(categoricalAttributesAfterSync.containsKey(SENSITIVE_KEY));
-    }
 
     @Test
     public void testLinkCreationAndCleanup() {
