@@ -10,27 +10,39 @@ $kubeConfigFile = @"
 
 $userName="$env:username"
 $homeDir="$env:USERPROFILE"
-$workingDir="C:\init"
+$workingDir="c:\init"
+$hostDir="c:\host"
+$runsDir="c:\runs"
 $computerName=$(hostname)
 $instanceId=$(Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/instance-id)
 
 Write-Host "User: $userName"
 Write-Host "User Home: $homeDir"
 Write-Host "Working Directory: $workingDir"
+Write-Host "Host Directory: $hostDir"
+Write-Host "Runs Directory: $runsDir"
 Write-Host "Computer Name: $computerName"
 Write-Host "Instance Id: $instanceId"
 
-Write-Host "Changing working directory..."
+Write-Host "Creating system directories..."
 if (-not(Test-Path $workingDir)) {
     New-Item -Path "$workingDir" -ItemType "Directory" -Force
 }
+if (-not(Test-Path "$hostDir")) {
+    New-Item -Path "$hostDir" -ItemType "Directory" -Force
+}
+if (-not(Test-Path "$runsDir")) {
+    New-Item -Path "$runsDir" -ItemType "Directory" -Force
+}
+
+Write-Host "Changing working directory..."
 Set-Location -Path "$workingDir"
 
 $restartRequired=$false
 
 $nomachineInstalled = Get-Service -Name nxservice `
     | Measure-Object `
-    | ForEach-Object { $_.Count > 0 }
+    | ForEach-Object { $_.Count -gt 0 }
 if (-not($nomachineInstalled)) {
     Write-Host "Installing nomachine..."
     Invoke-WebRequest 'https://download.nomachine.com/download/7.4/Windows/nomachine_7.4.1_1.exe' -Outfile .\nomachine.exe
@@ -88,6 +100,7 @@ $rules = $acl.Access `
 $acl.SetAccessRuleProtection($true, $false)
 $rules | ForEach-Object { $acl.AddAccessRule($_) }
 $acl | Set-Acl C:\ProgramData\ssh\administrators_authorized_keys
+Copy-Item -Path "$homeDir\.ssh" -Destination "$hostDir\.ssh" -Recurse
 
 Write-Host "Configuring docker registry..."
 $etchostsconfigfile=@"
@@ -103,6 +116,7 @@ $dockerdaemonconfigfile = @"
 }
 "@
 $dockerdaemonconfigfile|Out-File -FilePath C:\ProgramData\docker\config\daemon.json -Encoding ascii -Force
+Restart-Service docker -Force
 docker login ${HostIp}:31443 -u $ApiUser -p $ApiToken
 
 $configfile = @"
