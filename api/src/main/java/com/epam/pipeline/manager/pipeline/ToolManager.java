@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
+import com.epam.pipeline.utils.DockerUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -100,9 +101,6 @@ public class ToolManager implements SecuredEntityManager {
     private static final String LATEST_TAG = "latest";
     private static final int KB_SIZE = 1000;
     private static final long SECONDS_IN_HOUR = 3600;
-    private static final String CMD_DOCKER_COMMAND = "CMD";
-    private static final String ENTRYPOINT_DOCKER_COMMAND = "ENTRYPOINT";
-    private static final String SHELL_FORM_PREFIX = "\"/bin/sh\" \"-c\"";
 
     @Autowired
     private ToolDao toolDao;
@@ -497,59 +495,14 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public String loadToolDefaultCommand(final Long id, final String tag) {
-        final List<String> commands = loadToolHistory(id, tag)
-            .stream()
-            .map(ImageHistoryLayer::getCommand)
-            .collect(Collectors.toList());
-        final Pair<Integer, Integer> defaultsPositions = getDefaultsPositions(commands);
-        final int entrypointPos = defaultsPositions.getLeft();
-        final int cmdPos = defaultsPositions.getRight();
-
-        if (entrypointPos > -1) {
-            final String entrypointInstruction =
-                getTrimmedInstruction(commands.get(entrypointPos));
-            if (cmdPos > entrypointPos) {
-                final String cmdInstruction =
-                    getTrimmedInstruction(commands.get(cmdPos));
-                if (!(entrypointInstruction.startsWith(SHELL_FORM_PREFIX)
-                      && cmdInstruction.startsWith(SHELL_FORM_PREFIX))) {
-                    return String.join(" ", entrypointInstruction, cmdInstruction);
-                }
-            }
-            return entrypointInstruction;
-        } else if (cmdPos > -1) {
-            return getTrimmedInstruction(commands.get(cmdPos));
-        }
-        return "";
-    }
-
-    private String getTrimmedInstruction(final String command) {
-        return command.substring(command.indexOf('[') + 1, command.lastIndexOf(']')).trim();
-    }
-
-    /**
-     * Searches for ENTRYPOINT and CMD instructions in tool's image history.
-     *
-     * @param commands list, containing image's commands history
-     * @return 2 long values, describing last positions of ENTRYPOINT and CMD instruction (-1 if none found)
-     */
-    private Pair<Integer, Integer> getDefaultsPositions(final List<String> commands) {
-        int entrypointPos = -1;
-        int cmdPos = -1;
-        for (int i = 0; i < commands.size(); i++) {
-            final String command = commands.get(i);
-            if (command.toUpperCase().trim().startsWith(ENTRYPOINT_DOCKER_COMMAND)) {
-                entrypointPos = i;
-            } else if (command.toUpperCase().trim().startsWith(CMD_DOCKER_COMMAND)) {
-                cmdPos = i;
-            }
-        }
-        return Pair.of(entrypointPos, cmdPos);
+        final Tool tool = loadExisting(id);
+        return toolVulnerabilityDao.loadToolDefaultCommand(id, tag)
+            .orElseGet(() -> DockerUtils.extractDefaultCommandFromHistory(loadImageHistoryFromRegistry(tool, tag)));
     }
 
     private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
-        return dockerRegistryManager.getImageHistory(
-                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
+        return toolVulnerabilityDao.loadToolVersionHistory(tool.getId(), tag)
+            .orElseGet(() -> loadImageHistoryFromRegistry(tool, tag));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -584,6 +537,7 @@ public class ToolManager implements SecuredEntityManager {
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
         Optional<ToolVersionScanResult> prev = loadToolVersionScan(tool, version);
+        final List<ImageHistoryLayer> imageHistory = loadImageHistoryFromRegistry(tool, version);
         if(prev.isPresent()) {
             ToolVersionScanResult scanResult = prev.get();
             boolean whiteList = scanResult.isFromWhiteList();
@@ -592,10 +546,10 @@ public class ToolManager implements SecuredEntityManager {
                 whiteList = false;
             }
             toolVulnerabilityDao.updateToolVersionScan(toolId, version, toolOSVersion, layerRef, digest, newStatus,
-                    scanDate, whiteList, vulnerabilityCount);
+                    scanDate, whiteList, vulnerabilityCount, imageHistory);
         } else {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, toolOSVersion, layerRef,
-                    digest, newStatus, scanDate, vulnerabilityCount);
+                    digest, newStatus, scanDate, vulnerabilityCount, imageHistory);
         }
     }
 
@@ -616,7 +570,7 @@ public class ToolManager implements SecuredEntityManager {
         Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
         if (!toolVersionScanResult.isPresent()) {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
-                    DateUtils.now(), new HashMap<>());
+                    DateUtils.now(), new HashMap<>(), loadImageHistoryFromRegistry(tool, version));
         }
         toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
         return loadToolVersionScan(tool, version).orElse(null);
@@ -993,5 +947,10 @@ public class ToolManager implements SecuredEntityManager {
 
     private ToolVersion getToolVersion(Long toolId, String version) {
         return toolVersionManager.loadToolVersion(toolId, version);
+    }
+
+    private List<ImageHistoryLayer> loadImageHistoryFromRegistry(final Tool tool, final String tag) {
+        return dockerRegistryManager.getImageHistory(
+            dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
     }
 }
