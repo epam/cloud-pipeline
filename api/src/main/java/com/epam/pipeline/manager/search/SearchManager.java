@@ -117,7 +117,9 @@ public class SearchManager {
     private void validateRequest(final ElasticSearchRequest request) {
         Assert.isTrue(StringUtils.isNotBlank(request.getQuery()), "Search Query is required");
         Assert.notNull(request.getPageSize(), "Page Size is required");
-        Assert.notNull(request.getOffset(), "Offset is required");
+        if (Objects.isNull(request.getScrollingParameters())) {
+            Assert.notNull(request.getOffset(), "Offset is required");
+        }
     }
 
     private String getTypeFieldName() {
