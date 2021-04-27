@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.metadata;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import com.epam.pipeline.util.CustomAssertions;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
@@ -86,7 +87,14 @@ public class CategoricalAttributeDaoTest extends AbstractJdbcTest {
         Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
     }
 
-
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testInsertAttributeWithDuplicatedNameFails() {
+        final CategoricalAttribute attribute = new CategoricalAttribute(
+            ATTRIBUTE_KEY_1, fromStrings(ATTRIBUTE_KEY_1, Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2)));
+        categoricalAttributeDao.createAttribute(attribute);
+        CustomAssertions.assertThrows(() -> categoricalAttributeDao.createAttribute(attribute));
+    }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)

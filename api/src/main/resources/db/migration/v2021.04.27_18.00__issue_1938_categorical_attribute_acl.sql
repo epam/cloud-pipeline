@@ -6,7 +6,7 @@ CREATE SEQUENCE IF NOT EXISTS pipeline.s_categorical_attributes START WITH 1 INC
 
 CREATE TABLE IF NOT EXISTS pipeline.categorical_attributes (
   id BIGINT PRIMARY KEY DEFAULT nextval('pipeline.s_categorical_attributes'),
-  name TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
   created_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   owner TEXT DEFAULT 'Unauthorized' NOT NULL
 );
