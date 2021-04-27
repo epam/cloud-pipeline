@@ -50,6 +50,9 @@ else
     CHECK_LUSTRE_CMD="dpkg -l | grep lustre-client"
     LUSTRE_VERSION=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
     LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/deb/lustre-client-$LUSTRE_VERSION.tar.gz"
+    if ! command -v depmod &> /dev/null; then
+        apt-get install -y -qq kmod
+    fi
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
       apt-get install wget -y -qq  &&
       wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
