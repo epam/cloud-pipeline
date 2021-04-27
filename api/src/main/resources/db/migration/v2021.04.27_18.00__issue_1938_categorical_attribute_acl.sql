@@ -20,6 +20,7 @@ UPDATE pipeline.categorical_attributes_values
     SET attribute_id = categorical_attributes.id
     FROM pipeline.categorical_attributes
     WHERE pipeline.categorical_attributes_values.key = pipeline.categorical_attributes.name;
+ALTER TABLE pipeline.categorical_attributes_values DROP COLUMN key;
 
 ALTER TABLE pipeline.categorical_attributes_values ADD CONSTRAINT categorical_attributes_values_attribute_id_fk
     FOREIGN KEY (attribute_id) REFERENCES categorical_attributes(id) ON DELETE CASCADE ON UPDATE CASCADE;
