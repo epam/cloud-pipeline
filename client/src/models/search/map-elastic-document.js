@@ -17,11 +17,6 @@
 import SearchItemTypes from './search-item-types';
 
 export default function mapElasticDocument (document) {
-  document.elasticId = [
-    document.id || '',
-    document.parentId || '',
-    document.elasticId
-  ].map(o => String(o)).join('-');
   switch (document.type) {
     case SearchItemTypes.pipelineCode:
       document.pipelineVersion = document.description;

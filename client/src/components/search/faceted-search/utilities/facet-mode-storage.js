@@ -26,6 +26,6 @@ class FacetModeStorage {
       localStorage.setItem('facetMode', viewMode);
     }
   }
-};
+}
 
 export default FacetModeStorage;

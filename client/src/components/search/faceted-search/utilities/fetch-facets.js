@@ -55,7 +55,6 @@ function fetchFacets (facets, selection, query = '*') {
   const facetsToken = getFacetFilterToken(
     query,
     selection,
-    0,
     1
   );
   const selectedFacets = Object.keys(selection);
