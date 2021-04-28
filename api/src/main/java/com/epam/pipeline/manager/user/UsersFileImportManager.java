@@ -25,7 +25,6 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,9 +59,7 @@ public class UsersFileImportManager {
         final List<PipelineUserEvent> events = new ArrayList<>();
         final List<PipelineUserWithStoragePath> users =
                 new UserImporter(categoricalAttributes, attributesToCreate, events).importUsers(file);
-        if (CollectionUtils.isNotEmpty(categoricalAttributes)) {
-            categoricalAttributeManager.updateValues(categoricalAttributes);
-        }
+        categoricalAttributes.forEach(attribute -> categoricalAttributeManager.update(attribute.getName(), attribute));
 
         events.addAll(users.stream()
                 .flatMap(user -> {
