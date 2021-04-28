@@ -34,14 +34,22 @@
 
 .row .main .sub {
   width: 100%;
-  overflow: hidden;
   color: #777;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .row .main .name {
   font-weight: bold;
   display: flex;
   align-items: center;
+}
+
+.row .main .name span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .row .main .name .icon {

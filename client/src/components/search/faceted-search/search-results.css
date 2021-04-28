@@ -44,7 +44,7 @@
   left: 0;
   top: 0;
   right: 100%;
-  z-index: 1;
+  z-index: 3;
   background: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: center;
@@ -261,4 +261,10 @@
 .infinite-scroll.list,
 .infinite-scroll.table {
   height: 100%;
+}
+
+.overflow-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

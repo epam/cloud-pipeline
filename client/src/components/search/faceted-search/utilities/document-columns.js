@@ -113,7 +113,16 @@ const DocumentColumns = [
     key: 'owner',
     name: 'Owner',
     width: '15%',
-    renderFn: (value) => (<UserName userName={value} />)
+    renderFn: (value) => (
+      <UserName
+        userName={value}
+        style={{
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}
+      />
+    )
   },
   {
     key: 'description',
@@ -135,7 +144,11 @@ const DocumentColumns = [
     key: 'lastModified',
     name: 'Changed',
     width: '15%',
-    renderFn: value => displayDate(value, 'MMM d, YYYY, HH:mm'),
+    renderFn: value => (
+      <span className={styles.overflowEllipsis}>
+        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+      </span>
+    ),
     types: new Set([
       SearchItemTypes.s3File,
       SearchItemTypes.gsFile,
@@ -163,7 +176,11 @@ const DocumentColumns = [
     key: 'size',
     name: 'Size',
     width: '15%',
-    renderFn: value => displaySize(value, false),
+    renderFn: value => (
+      <span className={styles.overflowEllipsis}>
+        {displaySize(value, false)}
+      </span>
+    ),
     types: new Set([
       SearchItemTypes.s3File,
       SearchItemTypes.gsFile,
@@ -175,14 +192,22 @@ const DocumentColumns = [
     key: 'startDate',
     name: 'Started',
     width: '15%',
-    renderFn: value => displayDate(value, 'MMM d, YYYY, HH:mm'),
+    renderFn: value => (
+      <span className={styles.overflowEllipsis}>
+        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+      </span>
+    ),
     types: new Set([SearchItemTypes.run])
   },
   {
     key: 'endDate',
     name: 'Finished',
     width: '15%',
-    renderFn: value => displayDate(value, 'MMM d, YYYY, HH:mm'),
+    renderFn: value => (
+      <span className={styles.overflowEllipsis}>
+        {displayDate(value, 'MMM d, YYYY, HH:mm')}
+      </span>
+    ),
     types: new Set([SearchItemTypes.run])
   }
 ];

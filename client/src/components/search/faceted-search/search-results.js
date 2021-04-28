@@ -88,6 +88,7 @@ class SearchResults extends React.Component {
   componentDidMount () {
     window.addEventListener('mousemove', this.onResize);
     window.addEventListener('mouseup', this.stopResizing);
+    window.addEventListener('keydown', this.onKeyDown);
     this.updateDocumentTypes();
     parseExtraColumns(this.props.preferences)
       .then(extra => {
@@ -103,6 +104,7 @@ class SearchResults extends React.Component {
     }
     window.removeEventListener('mousemove', this.onResize);
     window.removeEventListener('mouseup', this.stopResizing);
+    window.removeEventListener('keydown', this.onKeyDown);
   }
 
   get columnsConfiguration () {
@@ -183,6 +185,13 @@ class SearchResults extends React.Component {
     );
   };
 
+  onKeyDown = (event) => {
+    const {preview} = this.state;
+    if (preview && event.key && event.key.toLowerCase() === 'escape') {
+      this.closePreview();
+    }
+  }
+
   setPreview = (info, delayed) => {
     if (this.previewTimeout) {
       clearTimeout(this.previewTimeout);
@@ -200,9 +209,13 @@ class SearchResults extends React.Component {
     }
   };
 
+  closePreview = () => {
+    this.setState({preview: undefined});
+  }
+
   onPreviewWrapperClick = (event) => {
     if (event && event.target === event.currentTarget) {
-      this.setState({preview: undefined});
+      this.closePreview();
     }
   }
 
