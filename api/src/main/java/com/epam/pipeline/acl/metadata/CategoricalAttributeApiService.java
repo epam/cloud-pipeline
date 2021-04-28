@@ -52,7 +52,7 @@ public class CategoricalAttributeApiService {
         return categoricalAttributesManager.loadAll();
     }
 
-    @PostAuthorize(AclExpressions.ADMIN_OR_HAS_READ_ACCESS_ON_ENTITY)
+    @PostAuthorize(AclExpressions.ADMIN_OR_HAS_READ_ACCESS_ON_RETURN_OBJECT)
     @AclMask
     public CategoricalAttribute loadAllValuesForKey(final String key) {
         return categoricalAttributesManager.loadByNameOrId(key);
