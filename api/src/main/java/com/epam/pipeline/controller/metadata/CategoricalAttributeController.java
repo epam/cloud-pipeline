@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -54,21 +53,8 @@ public class CategoricalAttributeController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<CategoricalAttribute> createCategoricalAttribute(@RequestBody final CategoricalAttribute attribute) {
-        return Result.success(categoricalAttributeApiService.createCategoricalAttribute(attribute));
-    }
-
-    @PutMapping(value = "/{attributeKey}")
-    @ApiOperation(
-        value = "Update existing categorical attribute.",
-        notes = "Update existing categorical attribute.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
-    public Result<CategoricalAttribute> updateCategoricalAttribute(@PathVariable String attributeKey ,
-                                                                   @RequestBody final CategoricalAttribute attribute) {
-        return Result.success(categoricalAttributeApiService.updateCategoricalAttribute(attributeKey, attribute));
+    public Result<CategoricalAttribute> updateCategoricalAttribute(@RequestBody final CategoricalAttribute attribute) {
+        return Result.success(categoricalAttributeApiService.updateCategoricalAttribute(attribute));
     }
 
     @GetMapping

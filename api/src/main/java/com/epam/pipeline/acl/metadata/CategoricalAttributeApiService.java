@@ -36,14 +36,10 @@ public class CategoricalAttributeApiService {
     private final CategoricalAttributeManager categoricalAttributesManager;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public CategoricalAttribute createCategoricalAttribute(final CategoricalAttribute attribute) {
-        return categoricalAttributesManager.create(attribute);
-    }
-
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public CategoricalAttribute updateCategoricalAttribute(final String attributeKey,
-                                                           final CategoricalAttribute attribute) {
-        return categoricalAttributesManager.update(attributeKey, attribute);
+    public CategoricalAttribute updateCategoricalAttribute(final CategoricalAttribute attribute) {
+        return attribute.getId() == null
+               ? categoricalAttributesManager.create(attribute)
+               : categoricalAttributesManager.update(attribute);
     }
 
     @PostFilter(AclExpressions.ADMIN_OR_HAS_READ_ACCESS_ON_ENTITIES_FROM_LIST)

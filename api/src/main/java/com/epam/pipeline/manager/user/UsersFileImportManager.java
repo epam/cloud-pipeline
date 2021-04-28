@@ -59,7 +59,7 @@ public class UsersFileImportManager {
         final List<PipelineUserEvent> events = new ArrayList<>();
         final List<PipelineUserWithStoragePath> users =
                 new UserImporter(categoricalAttributes, attributesToCreate, events).importUsers(file);
-        categoricalAttributes.forEach(attribute -> categoricalAttributeManager.update(attribute.getName(), attribute));
+        categoricalAttributes.forEach(categoricalAttributeManager::update);
 
         events.addAll(users.stream()
                 .flatMap(user -> {

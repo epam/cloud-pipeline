@@ -39,6 +39,7 @@ import static org.mockito.Mockito.doReturn;
 public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
 
     private final CategoricalAttribute attribute = MetadataCreatorUtils.getCategoricalAttribute();
+    private final CategoricalAttribute existingAttribute = MetadataCreatorUtils.getCategoricalAttributeWithId();
 
     @Autowired
     private CategoricalAttributeApiService attributeApiService;
@@ -50,31 +51,31 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCreateAttributeForAdmin() {
         doReturn(attribute).when(mockAttributeManager).create(attribute);
-        assertThat(attributeApiService.createCategoricalAttribute(attribute)).isEqualTo(attribute);
+        assertThat(attributeApiService.updateCategoricalAttribute(attribute)).isEqualTo(attribute);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyCreateAttributesForNotAdmin() {
         doReturn(attribute).when(mockAttributeManager).create(attribute);
-        assertThrows(AccessDeniedException.class, () -> attributeApiService.createCategoricalAttribute(attribute));
+        assertThrows(AccessDeniedException.class, () -> attributeApiService.updateCategoricalAttribute(attribute));
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateAttributeForAdmin() {
-        doReturn(attribute).when(mockAttributeManager).update(attribute.getName(), attribute);
+        doReturn(existingAttribute).when(mockAttributeManager).update(existingAttribute);
 
-        assertThat(attributeApiService.updateCategoricalAttribute(attribute.getName(), attribute)).isEqualTo(attribute);
+        assertThat(attributeApiService.updateCategoricalAttribute(existingAttribute)).isEqualTo(existingAttribute);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUpdateAttributesForNotAdmin() {
-        doReturn(attribute).when(mockAttributeManager).update(attribute.getName(), attribute);
+        doReturn(existingAttribute).when(mockAttributeManager).update(existingAttribute);
 
         assertThrows(AccessDeniedException.class, () ->
-            attributeApiService.updateCategoricalAttribute(attribute.getName(), attribute));
+            attributeApiService.updateCategoricalAttribute(existingAttribute));
     }
 
     @Test

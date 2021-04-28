@@ -148,7 +148,7 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
 
         loadedAttrWithLink.getValues().get(0).setLinks(
                 Collections.singletonList(new CategoricalAttributeValue(KEY_1, VALUE_2)));
-        categoricalAttributeManager.update(loadedAttrWithLink.getName(), loadedAttrWithLink);
+        categoricalAttributeManager.update(loadedAttrWithLink);
 
         final CategoricalAttribute loadedAttrWithoutLink = categoricalAttributeManager.loadByNameOrId(KEY_2);
         assertThat(loadedAttrWithoutLink.getValues(), hasSize(1));

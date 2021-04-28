@@ -310,7 +310,7 @@ public class MetadataManager {
                 final CategoricalAttribute existingAttribute = existingAttributes.get(name);
                 attributeFromMetadata.setId(existingAttribute.getId());
                 attributeFromMetadata.setOwner(existingAttribute.getOwner());
-                categoricalAttributeManager.update(name, attributeFromMetadata);
+                categoricalAttributeManager.update(attributeFromMetadata);
             } else {
                 categoricalAttributeManager.create(attributeFromMetadata);
             }

@@ -77,6 +77,12 @@ public final class MetadataCreatorUtils {
 
     }
 
+    public static CategoricalAttribute getCategoricalAttributeWithId() {
+        final CategoricalAttribute attribute = getCategoricalAttribute();
+        attribute.setId(ID);
+        return attribute;
+    }
+
     public static CategoricalAttribute getCategoricalAttribute() {
         return new CategoricalAttribute(TEST_STRING, Collections.singletonList(getCategoricalAttributeValue()));
     }

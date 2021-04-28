@@ -66,8 +66,8 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public CategoricalAttribute update(final String attributeKey, final CategoricalAttribute attribute) {
-        final CategoricalAttribute existingAttribute = loadByNameOrId(attributeKey);
+    public CategoricalAttribute update(final CategoricalAttribute attribute) {
+        final CategoricalAttribute existingAttribute = load(attribute.getId());
         if (attribute.getOwner() == null) {
             attribute.setOwner(existingAttribute.getOwner());
         }

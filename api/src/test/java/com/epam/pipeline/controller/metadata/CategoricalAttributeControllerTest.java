@@ -48,6 +48,7 @@ public class CategoricalAttributeControllerTest extends AbstractControllerTest {
     private static final String VALUE = "value";
 
     private final CategoricalAttribute attribute = MetadataCreatorUtils.getCategoricalAttribute();
+    private final CategoricalAttribute existingAttribute = MetadataCreatorUtils.getCategoricalAttributeWithId();
     private final List<CategoricalAttribute> attributeList =
             Collections.singletonList(MetadataCreatorUtils.getCategoricalAttribute());
 
@@ -58,24 +59,24 @@ public class CategoricalAttributeControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldCreateAttribute() throws Exception {
         final String content = getObjectMapper().writeValueAsString(attribute);
-        doReturn(attribute).when(mockCategoricalAttributeApiService).createCategoricalAttribute(attribute);
+        doReturn(attribute).when(mockCategoricalAttributeApiService).updateCategoricalAttribute(attribute);
         final MvcResult mvcResult = performRequest(post(CATEGORICAL_ATTRIBUTE_URL).content(content));
-        verify(mockCategoricalAttributeApiService).createCategoricalAttribute(attribute);
+        verify(mockCategoricalAttributeApiService).updateCategoricalAttribute(attribute);
         assertResponse(mvcResult, attribute, MetadataCreatorUtils.ATTRIBUTE_INSTANCE_TYPE);
     }
 
     @Test
     @WithMockUser
     public void shouldUpdateAttribute() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(attribute);
+        final String content = getObjectMapper().writeValueAsString(existingAttribute);
         doReturn(attribute).when(mockCategoricalAttributeApiService)
-            .updateCategoricalAttribute(attribute.getName(), attribute);
+            .updateCategoricalAttribute(existingAttribute);
 
         final MvcResult mvcResult =
             performRequest(put(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, attribute.getName())).content(content));
 
-        verify(mockCategoricalAttributeApiService).updateCategoricalAttribute(attribute.getName(), attribute);
-        assertResponse(mvcResult, attribute, MetadataCreatorUtils.ATTRIBUTE_INSTANCE_TYPE);
+        verify(mockCategoricalAttributeApiService).updateCategoricalAttribute(existingAttribute);
+        assertResponse(mvcResult, existingAttribute, MetadataCreatorUtils.ATTRIBUTE_INSTANCE_TYPE);
     }
 
     @Test
