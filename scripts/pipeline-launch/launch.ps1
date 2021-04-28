@@ -69,8 +69,10 @@ Write-Host "Configure owner account"
 Write-Host "-"
 if (-not([string]::IsNullOrEmpty($env:OWNER))) {
     $env:OWNER_PASSWORD = New-Guid
-    ssh -i $env:HOST_ROOT\.ssh\id_rsa "Administrator@$env:nodeIp" powershell -Command @"
+    ssh -o "StrictHostKeyChecking no" -i $env:HOST_ROOT\.ssh\id_rsa "Administrator@$env:NODE_IP" powershell -Command @"
 $env:COMMON_REPO_DIR\powershell\AddUser.ps1 -UserName $env:OWNER -UserPassword $env:OWNER_PASSWORD
+$env:COMMON_REPO_DIR\powershell\EnableAutoLogin.ps1 -UserName $env:OWNER -UserPassword $env:OWNER_PASSWORD
+c:\ProgramData\NoMachine\nxserver\nxserver --startup
 "@
 } else {
 	Write-Host "OWNER is not set - skipping owner account configuration"
