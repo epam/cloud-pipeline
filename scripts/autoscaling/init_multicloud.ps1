@@ -7,6 +7,7 @@ $KubeCertHash="@KUBE_CERT_HASH@"
 $kubeConfigFile = @"
 @KUBE_CONFIG@
 "@
+$dnsProxyPost="@dns_proxy_post@"
 
 $userName="$env:username"
 $homeDir="$env:USERPROFILE"
@@ -89,7 +90,6 @@ if (!(Test-Path "$homeDir\.ssh")) {
     New-Item -Path "$homeDir\.ssh" -ItemType "Directory" -Force
 }
 cmd /c "ssh-keygen.exe -t rsa -N """" -f ""$homeDir\.ssh\id_rsa"""
-cmd /c "ssh-keyscan.exe $($HostIp) 2>NUL" | Out-File -Encoding utf8 "$homeDir\.ssh\known_hosts"
 
 Write-Host "Adding generated ssh keys to administrators authorized hosts..."
 Get-Content "$homeDir\.ssh\id_rsa.pub" `
@@ -102,23 +102,27 @@ $rules | ForEach-Object { $acl.AddAccessRule($_) }
 $acl | Set-Acl C:\ProgramData\ssh\administrators_authorized_keys
 Copy-Item -Path "$homeDir\.ssh" -Destination "$hostDir\.ssh" -Recurse
 
-Write-Host "Configuring docker registry..."
-$etchostsconfigfile=@"
-$HostIp	cp-docker-registry.default.svc.cluster.local
-$HostIp	cp-api-srv.default.svc.cluster.local
-"@
-$etchostsconfigfile|Out-File -FilePath C:\Windows\System32\drivers\etc\hosts -Encoding ascii -Force
+#Write-Host "Configuring docker daemon to use default docker registy..."
+#$dockerdaemonconfigfile = @"
+#{
+#    "insecure-registries" : ["cp-docker-registry.default.svc.cluster.local:31443"],
+#    "allow-nondistributable-artifacts": ["cp-docker-registry.default.svc.cluster.local:31443"]
+#}
+#"@
+#$dockerdaemonconfigfile|Out-File -FilePath C:\ProgramData\docker\config\daemon.json -Encoding ascii -Force
+#Restart-Service docker -Force
 
-$dockerdaemonconfigfile = @"
-{
-    "insecure-registries" : ["${HostIp}:31443"],
-    "allow-nondistributable-artifacts": ["${HostIp}:31443"]
-}
-"@
-$dockerdaemonconfigfile|Out-File -FilePath C:\ProgramData\docker\config\daemon.json -Encoding ascii -Force
-Restart-Service docker -Force
-docker login ${HostIp}:31443 -u $ApiUser -p $ApiToken
+Write-Host "Downloading scripts for cluster joining..."
+Invoke-WebRequest 'https://github.com/kubernetes-sigs/sig-windows-tools/archive/00012ee6d171b105e7009bff8b2e42d96a45426f.zip' -Outfile .\sig-windows-tools.zip
+if (!(Test-Path .\sig-windows-tools)) { New-Item -Path .\sig-windows-tools -ItemType "Directory" -Force }
+tar -xvf .\sig-windows-tools.zip --strip-components=1 -C sig-windows-tools
 
+Write-Host "Patching KubeClusterHelper.psm1 script to ignore all preflight errors..."
+$kubeClusterHelperContent = Get-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
+$kubeClusterHelperContent[783] = '& cmd /c kubeadm join "$(GetAPIServerEndpoint)" --token "$Global:Token" --discovery-token-ca-cert-hash "$Global:CAHash" --ignore-preflight-errors "all" ''2>&1'''
+$kubeClusterHelperContent | Set-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
+
+Write-Host "Writing kubernetes node joining config..."
 $configfile = @"
 {
     "Cri" : {
@@ -167,16 +171,6 @@ $configfile = @"
 "@
 $configfile|Out-File -FilePath .\Kubeclustervxlan.json -Encoding ascii -Force
 
-Write-Host "Downloading scripts for cluster joining..."
-Invoke-WebRequest 'https://github.com/kubernetes-sigs/sig-windows-tools/archive/00012ee6d171b105e7009bff8b2e42d96a45426f.zip' -Outfile .\sig-windows-tools.zip
-if (!(Test-Path .\sig-windows-tools)) { New-Item -Path .\sig-windows-tools -ItemType "Directory" -Force }
-tar -xvf .\sig-windows-tools.zip --strip-components=1 -C sig-windows-tools
-
-Write-Host "Patching KubeClusterHelper.psm1 script to ignore all preflight errors..."
-$kubeClusterHelperContent = Get-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
-$kubeClusterHelperContent[783] = '& cmd /c kubeadm join "$(GetAPIServerEndpoint)" --token "$Global:Token" --discovery-token-ca-cert-hash "$Global:CAHash" --ignore-preflight-errors "all" ''2>&1'''
-$kubeClusterHelperContent | Set-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
-
 Write-Host "Writing kubernetes config..."
 if (!(Test-Path "C:\ProgramData\Kubernetes")) { New-Item -Path "C:\ProgramData\Kubernetes" -ItemType "Directory" -Force }
 $kubeConfigFile|Out-File -FilePath C:\ProgramData\Kubernetes\config -Encoding ascii -Force
@@ -186,6 +180,24 @@ Write-Host "Preparing node for joining cluster..."
 
 Write-Host "Joining cluster..."
 .\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -join
+
+if (-not([string]::IsNullOrEmpty($dnsProxyPost))) {
+    Write-Host "Waiting for dns to be accessible..."
+    while ($true) {
+        try {
+            Resolve-DnsName kubernetes.default.svc.cluster.local -Server $dnsProxyPost -QuickTimeout
+            break
+        } catch {
+            Write-Error "$_"
+        }
+    }
+    Write-Host "Adding dns to network interface..."
+    $interfaceIndex = Get-NetAdapter "vEthernet (Ethernet 3)" | ForEach-Object { $_.ifIndex }
+    Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ServerAddresses ("$dnsProxyPost")
+}
+
+#Write-Host "Authorizing docker registry..."
+#docker login cp-docker-registry.default.svc.cluster.local:31443 -u $ApiUser -p $ApiToken
 
 Write-Host "Listening on port 8888..."
 $endpoint = New-Object System.Net.IPEndPoint ([System.Net.IPAddress]::Any, 8888)
