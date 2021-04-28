@@ -30,9 +30,9 @@ public enum AclClass {
     METADATA_ENTITY,
     ATTACHMENT,
     CLOUD_REGION,
-    CATEGORICAL_ATTRIBUTE,
     PIPELINE_USER(false),
-    ROLE(false);
+    ROLE(false),
+    CATEGORICAL_ATTRIBUTE;
 
     private final boolean supportsEntityManager;
 
