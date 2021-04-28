@@ -48,6 +48,7 @@ if (-not($nomachineInstalled)) {
     Write-Host "Installing nomachine..."
     Invoke-WebRequest 'https://download.nomachine.com/download/7.4/Windows/nomachine_7.4.1_1.exe' -Outfile .\nomachine.exe
     cmd /c "nomachine.exe /verysilent"
+    c:\ProgramData\NoMachine\nxserver\nxserver --startmode manual
     $restartRequired=$true
 }
 
@@ -63,13 +64,13 @@ if ($restartRequired) {
 }
 
 Write-Host "Configuring farewall..."
-New-NetFirewallRule -DisplayName "NoMachine Inbound 4000 Port" `
+New-NetFirewallRule -DisplayName "Cloud Pipeline NoMachine Inbound 4000 Port" `
                     -Direction Inbound `
                     -LocalPort 4000 `
                     -Protocol TCP `
                     -Action Allow
 
-New-NetFirewallRule -DisplayName "Node Readiness Inbound 8888 Port" `
+New-NetFirewallRule -DisplayName "Cloud Pipeline Node Readiness Inbound 8888 Port" `
                     -Direction Inbound `
                     -LocalPort 8888 `
                     -Protocol TCP `
@@ -101,16 +102,22 @@ $acl.SetAccessRuleProtection($true, $false)
 $rules | ForEach-Object { $acl.AddAccessRule($_) }
 $acl | Set-Acl C:\ProgramData\ssh\administrators_authorized_keys
 Copy-Item -Path "$homeDir\.ssh" -Destination "$hostDir\.ssh" -Recurse
+$acl = Get-Acl "$hostDir\.ssh\id_rsa"
+$rules = $acl.Access `
+    | Where-Object { $_.IdentityReference -in "NT AUTHORITY\SYSTEM","BUILTIN\Administrators" }
+$acl.SetAccessRuleProtection($true, $false)
+$rules | ForEach-Object { $acl.AddAccessRule($_) }
+$acl | Set-Acl "$hostDir\.ssh\id_rsa"
 
-#Write-Host "Configuring docker daemon to use default docker registy..."
-#$dockerdaemonconfigfile = @"
-#{
-#    "insecure-registries" : ["cp-docker-registry.default.svc.cluster.local:31443"],
-#    "allow-nondistributable-artifacts": ["cp-docker-registry.default.svc.cluster.local:31443"]
-#}
-#"@
-#$dockerdaemonconfigfile|Out-File -FilePath C:\ProgramData\docker\config\daemon.json -Encoding ascii -Force
-#Restart-Service docker -Force
+Write-Host "Configuring docker daemon to use default docker registy..."
+$dockerdaemonconfigfile = @"
+{
+   "insecure-registries" : ["cp-docker-registry.default.svc.cluster.local:31443"],
+   "allow-nondistributable-artifacts": ["cp-docker-registry.default.svc.cluster.local:31443"]
+}
+"@
+$dockerdaemonconfigfile|Out-File -FilePath C:\ProgramData\docker\config\daemon.json -Encoding ascii -Force
+Restart-Service docker -Force
 
 Write-Host "Downloading scripts for cluster joining..."
 Invoke-WebRequest 'https://github.com/kubernetes-sigs/sig-windows-tools/archive/00012ee6d171b105e7009bff8b2e42d96a45426f.zip' -Outfile .\sig-windows-tools.zip
@@ -195,9 +202,6 @@ if (-not([string]::IsNullOrEmpty($dnsProxyPost))) {
     $interfaceIndex = Get-NetAdapter "vEthernet (Ethernet 3)" | ForEach-Object { $_.ifIndex }
     Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ServerAddresses ("$dnsProxyPost")
 }
-
-#Write-Host "Authorizing docker registry..."
-#docker login cp-docker-registry.default.svc.cluster.local:31443 -u $ApiUser -p $ApiToken
 
 Write-Host "Listening on port 8888..."
 $endpoint = New-Object System.Net.IPEndPoint ([System.Net.IPAddress]::Any, 8888)
