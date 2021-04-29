@@ -53,56 +53,30 @@ import styles from './versioned-storage.css';
 @observer
 class VersionedStorage extends localization.LocalizedReactComponent {
   state = {
-    showIssuesPanel: false,
-    showMetadataPanel: false
+    editStorageDialog: false,
+    showHistoryPanel: false
   };
 
   get actions () {
     return {
-      openIssuesPanel: this.openIssuesPanel,
-      closeIssuesPanel: this.closeIssuesPanel,
-      openMetadataPanel: this.openMetadataPanel,
-      closeMetadataPanel: this.closeMetadataPanel,
-      openEditPipelineDialog: this.openEditPipelineDialog,
-      openClonePipelineDialog: this.openClonePipelineDialog
+      openHistoryPanel: this.openHistoryPanel,
+      closeHistoryPanel: this.closeHistoryPanel,
+      openEditSorageDialog: this.openEditSorageDialog
     };
   }
 
   updateVSRequest = new UpdatePipeline();
 
-  openIssuesPanel = () => {
-    this.setState({showIssuesPanel: true});
+  openHistoryPanel = () => {
+    this.setState({showHistoryPanel: true});
   };
 
-  closeIssuesPanel = () => {
-    this.setState({showIssuesPanel: false});
+  closeHistoryPanel = () => {
+    this.setState({showHistoryPanel: false});
   };
 
-  openMetadataPanel = () => {
-    this.setState({showMetadataPanel: true});
-  };
-
-  closeMetadataPanel = () => {
-    this.setState({showMetadataPanel: false});
-  };
-
-  openEditPipelineDialog = () => {
-    this.setState({editPipelineDialog: true});
-  };
-
-  openClonePipelineDialog = () => {
-    this.setState({clonePipelineDialog: true});
-  };
-
-  onSplitPanelClose = (key) => {
-    switch (key) {
-      case METADATA_PANEL_KEY:
-        this.closeMetadataPanel();
-        break;
-      case ISSUES_PANEL_KEY:
-        this.closeIssuesPanel();
-        break;
-    }
+  openEditSorageDialog = () => {
+    this.setState({editStorageDialog: true});
   };
 
   renameVersionedStorage = async (name) => {
@@ -143,8 +117,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       listingMode
     } = this.props;
     const {
-      showIssuesPanel,
-      showMetadataPanel
+      showHistoryPanel
     } = this.state;
     if (!pipeline.loaded && pipeline.pending) {
       return (
@@ -165,32 +138,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           onRenameStorage={this.renameVersionedStorage}
           actions={this.actions}
           listingMode={listingMode}
-          issuesPanelOpen={showIssuesPanel}
-          metadataPanelOpen={showMetadataPanel}
+          historyPanelOpen={showHistoryPanel}
         />
-        <ContentIssuesMetadataPanel
-          style={{flex: 1, overflow: 'auto'}}
-          onPanelClose={this.onSplitPanelClose}
-        >
-          {showIssuesPanel &&
-            <Issues
-              key={ISSUES_PANEL_KEY}
-              onCloseIssuePanel={this.closeIssuesPanel}
-              entityId={pipelineId}
-              entityClass="PIPELINE"
-              entity={pipeline.value}
-            />
-          }
-          {showMetadataPanel &&
-            <Metadata
-              key={METADATA_PANEL_KEY}
-              readOnly={!roleModel.isOwner(pipeline.value)}
-              entityName={pipeline.value.name}
-              entityId={pipelineId}
-              entityClass="PIPELINE"
-            />
-          }
-        </ContentIssuesMetadataPanel>
       </div>
     );
   }

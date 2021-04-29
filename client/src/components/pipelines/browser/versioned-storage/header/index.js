@@ -51,20 +51,14 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
     const {
       actions,
       listingMode,
-      issuesPanelOpen,
-      metadataPanelOpen
+      historyPanelOpen
     } = this.props;
     const onSelectDisplayOption = ({key}) => {
       switch (key) {
-        case 'metadata':
-          metadataPanelOpen
-            ? actions.closeMetadataPanel()
-            : actions.openMetadataPanel();
-          break;
-        case 'issues':
-          issuesPanelOpen
-            ? actions.closeIssuesPanel()
-            : actions.openIssuesPanel();
+        case 'history':
+          historyPanelOpen
+            ? actions.closeHistoryPanel()
+            : actions.openHistoryPanel();
           break;
       }
     };
@@ -72,39 +66,15 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
     if (!listingMode) {
       displayOptionsMenuItems.push(
         <Menu.Item
-          id={metadataPanelOpen
-            ? 'hide-metadata-button'
-            : 'show-metadata-button'
-          }
-          key="metadata"
+          key="history"
         >
           <Row
             type="flex"
             justify="space-between"
             align="middle"
           >
-            <span>Attributes</span>
-            {metadataPanelOpen && (
-              <Icon type="check-circle" />
-            )}
-          </Row>
-        </Menu.Item>
-      );
-      displayOptionsMenuItems.push(
-        <Menu.Item
-          id={issuesPanelOpen
-            ? 'hide-issues-panel-button'
-            : 'show-issues-panel-button'
-          }
-          key="issues"
-        >
-          <Row
-            type="flex"
-            justify="space-between"
-            align="middle"
-          >
-            <span>{this.localizedString('Issue')}s</span>
-            {issuesPanelOpen && (
+            <span>History</span>
+            {historyPanelOpen && (
               <Icon type="check-circle" />
             )}
           </Row>
@@ -136,35 +106,19 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
   };
 
   renderConfigAction = () => {
-    const {readOnly, actions, pipeline} = this.props;
+    const {readOnly, actions} = this.props;
     const menuItems = [];
     const onClick = ({key}) => {
       switch (key) {
         case 'edit':
-          actions && actions.openEditPipelineDialog();
-          break;
-        case 'clone':
-          actions && actions.openClonePipelineDialog();
+          actions && actions.openEditSorageDialog();
           break;
       }
     };
     if (!readOnly) {
       menuItems.push(
-        <Menu.Item
-          id="edit-pipeline-button"
-          key="edit"
-        >
+        <Menu.Item key="edit">
           <Icon type="edit" /> Edit
-        </Menu.Item>
-      );
-    }
-    if (!readOnly && roleModel.isOwner(pipeline.value)) {
-      menuItems.push(
-        <Menu.Item
-          key="clone"
-          id="clone-pipeline-button"
-        >
-          <Icon type="copy" /> Clone
         </Menu.Item>
       );
     }
@@ -265,12 +219,9 @@ VersionedStorageHeader.propTypes = {
   ]),
   onRenameStorage: PropTypes.func,
   actions: PropTypes.shape({
-    openIssuesPanel: PropTypes.func,
-    closeIssuesPanel: PropTypes.func,
-    openMetadataPanel: PropTypes.func,
-    closeMetadataPanel: PropTypes.func,
-    openEditPipelineDialog: PropTypes.func,
-    openClonePipelineDialog: PropTypes.func
+    openHistoryPanel: PropTypes.func,
+    closeHistoryPanel: PropTypes.func,
+    openEditSorageDialog: PropTypes.func
   }),
   listingMode: PropTypes.bool,
   readOnly: PropTypes.bool,
