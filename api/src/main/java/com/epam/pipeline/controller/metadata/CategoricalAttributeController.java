@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,14 +47,14 @@ public class CategoricalAttributeController extends AbstractRestController {
 
     @PostMapping
     @ApiOperation(
-        value = "Update categorical attributes values.",
-        notes = "Update categorical attributes values",
+        value = "Create new categorical attribute.",
+        notes = "Create new categorical attribute.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Boolean> updateCategoricalAttributes(@RequestBody final List<CategoricalAttribute> dict) {
-        return Result.success(categoricalAttributeApiService.updateCategoricalAttributes(dict));
+    public Result<CategoricalAttribute> updateCategoricalAttribute(@RequestBody final CategoricalAttribute attribute) {
+        return Result.success(categoricalAttributeApiService.updateCategoricalAttribute(attribute));
     }
 
     @GetMapping
@@ -71,8 +71,8 @@ public class CategoricalAttributeController extends AbstractRestController {
 
     @GetMapping(value = "{attributeKey}")
     @ApiOperation(
-        value = "Load all requested attributes with values.",
-        notes = "Load all requested attributes with values.",
+        value = "Load requested attribute with all values.",
+        notes = "Load requested attribute with all values.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -95,17 +95,5 @@ public class CategoricalAttributeController extends AbstractRestController {
         return Result.success(value != null
                               ? categoricalAttributeApiService.deleteAttributeValue(attributeKey, value)
                               : categoricalAttributeApiService.deleteAttributeValues(attributeKey));
-    }
-
-    @PostMapping("/sync")
-    @ApiOperation(
-        value = "Fill in categorical attributes table based on a current metadata.",
-        notes = "Fill in categorical attributes table based on a current metadata.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
-    public void syncCategoricalAttributesWithMetadata() {
-        categoricalAttributeApiService.syncWithMetadata();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,13 @@ package com.epam.pipeline.manager.metadata;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.metadata.CategoricalAttributeDao;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.SecuredEntityManager;
+import com.epam.pipeline.manager.security.acl.AclSync;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -37,18 +42,51 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class CategoricalAttributeManager {
+@AclSync
+public class CategoricalAttributeManager implements SecuredEntityManager {
 
     private final CategoricalAttributeDao categoricalAttributesDao;
-    private final MetadataManager metadataManager;
     private final MessageHelper messageHelper;
+    private final AuthManager securityManager;
 
+    @Override
+    public AclClass getSupportedClass() {
+        return AclClass.CATEGORICAL_ATTRIBUTE;
+    }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
+    public CategoricalAttribute create(final CategoricalAttribute attribute) {
+        verifyAttribute(attribute);
+        final String key = attribute.getName();
+        Assert.isNull(categoricalAttributesDao.loadAllValuesForKey(key),
+                      messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY, key));
+        final CategoricalAttribute attributeToCreate = setOwner(attribute);
+        categoricalAttributesDao.createAttribute(attributeToCreate);
+        updateValues(Collections.singletonList(attribute));
+        return attributeToCreate;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public CategoricalAttribute update(final CategoricalAttribute attribute) {
+        verifyAttribute(attribute);
+        final CategoricalAttribute existingAttribute = load(attribute.getId());
+        if (attribute.getOwner() == null) {
+            attribute.setOwner(existingAttribute.getOwner());
+        }
+        if (!(existingAttribute.getOwner().equals(attribute.getOwner())
+              && existingAttribute.getName().equals(attribute.getName()))) {
+            attribute.setId(existingAttribute.getId());
+            categoricalAttributesDao.updateAttribute(attribute);
+        }
+        updateValues(Collections.singletonList(attribute));
+        return attribute;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public boolean updateValues(final List<CategoricalAttribute> dict) {
         final List<CategoricalAttribute> currentValues =
             categoricalAttributesDao.loadAllValuesForKeys(dict.stream()
-                                                              .map(CategoricalAttribute::getKey)
+                                                              .map(CategoricalAttribute::getName)
                                                               .collect(Collectors.toList()));
         final List<CategoricalAttribute> attributeWithValuesToRemove =
             keepAttributesWithValuesToRemove(dict, currentValues);
@@ -62,29 +100,38 @@ public class CategoricalAttributeManager {
         final List<CategoricalAttribute> attributesWithValuesToInsert =
             keepAttributesWithValuesToInsert(dict, currentValues);
         final boolean valuesInserted =  CollectionUtils.isNotEmpty(attributesWithValuesToInsert)
-               && categoricalAttributesDao.insertAttributesValues(attributesWithValuesToInsert);
+               && categoricalAttributesDao.insertAttributesValues(setOwner(attributesWithValuesToInsert));
 
         return categoricalAttributesDao.insertValuesLinks(dict) || valuesInserted || valuesRemoved || linksRemoved;
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
-    public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesDao.insertAttributesValues(dict);
+    @Override
+    public CategoricalAttribute load(final Long id) {
+        final CategoricalAttribute attribute = categoricalAttributesDao.loadAttributeById(id);
+        Assert.notNull(attribute,
+                       messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_ID_DOESNT_EXIST, id));
+        return attribute;
+    }
+
+    @Override
+    public CategoricalAttribute loadWithParents(final Long id) {
+        return load(id);
     }
 
     public List<CategoricalAttribute> loadAll() {
         return categoricalAttributesDao.loadAll();
     }
 
-    public CategoricalAttribute loadAllValuesForKey(final String key) {
+    @Override
+    public CategoricalAttribute loadByNameOrId(final String key) {
         final CategoricalAttribute categoricalAttribute = categoricalAttributesDao.loadAllValuesForKey(key);
         Assert.notNull(categoricalAttribute,
-                       messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST, key));
+                       messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_KEY_DOESNT_EXIST, key));
         return categoricalAttribute;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean deleteAttributeValues(final String key) {
+    public boolean delete(final String key) {
         return categoricalAttributesDao.deleteAttributeValues(key);
     }
 
@@ -93,23 +140,46 @@ public class CategoricalAttributeManager {
         return categoricalAttributesDao.deleteAttributeValue(key, value);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void syncWithMetadata() {
-        final List<CategoricalAttribute> fullMetadataDict = metadataManager.buildFullMetadataDict();
-        insertAttributesValues(fullMetadataDict);
+    @Override
+    public CategoricalAttribute changeOwner(final Long id, final String owner) {
+        final CategoricalAttribute attribute = load(id);
+        attribute.setOwner(owner);
+        categoricalAttributesDao.updateAttribute(attribute);
+        return attribute;
+    }
+
+    @Override
+    public Integer loadTotalCount() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Collection<? extends AbstractSecuredEntity> loadAllWithParents(final Integer page, final Integer pageSize) {
+        throw new UnsupportedOperationException();
+    }
+
+    private List<CategoricalAttribute> setOwner(final List<CategoricalAttribute> attributes) {
+        return attributes.stream().map(this::setOwner).collect(Collectors.toList());
+    }
+
+    private CategoricalAttribute setOwner(final CategoricalAttribute attribute) {
+        if (attribute.getOwner() == null) {
+            attribute.setOwner(securityManager.getAuthorizedUser());
+        }
+        return attribute;
     }
 
     private List<CategoricalAttribute> keepAttributesWithValuesToRemove(final List<CategoricalAttribute> receivedState,
                                                                         final List<CategoricalAttribute> currentState) {
         final Map<String, Set<String>> receivedValues = collectAttributesToMap(receivedState);
         return currentState.stream()
-            .filter(value -> receivedValues.containsKey(value.getKey()))
+            .filter(value -> receivedValues.containsKey(value.getName()))
             .map(attribute -> {
                 final List<CategoricalAttributeValue> newValues = CollectionUtils.emptyIfNull(attribute.getValues())
                     .stream()
                     .filter(value -> !receivedValues.get(value.getKey()).contains(value.getValue()))
                     .collect(Collectors.toList());
-                return new CategoricalAttribute(attribute.getKey(), newValues);
+                return new CategoricalAttribute(attribute.getName(), newValues);
             })
             .filter(attribute -> CollectionUtils.isNotEmpty(attribute.getValues()))
             .collect(Collectors.toList());
@@ -122,10 +192,10 @@ public class CategoricalAttributeManager {
             .map(attribute -> {
                 final List<CategoricalAttributeValue> newValues = CollectionUtils.emptyIfNull(attribute.getValues())
                     .stream()
-                    .filter(value -> !currentValues.containsKey(attribute.getKey())
-                                        || !currentValues.get(attribute.getKey()).contains(value.getValue()))
+                    .filter(value -> !currentValues.containsKey(attribute.getName())
+                                        || !currentValues.get(attribute.getName()).contains(value.getValue()))
                     .collect(Collectors.toList());
-                return new CategoricalAttribute(attribute.getKey(), newValues);
+                return new CategoricalAttribute(attribute.getName(), newValues);
             })
             .filter(attribute -> CollectionUtils.isNotEmpty(attribute.getValues()))
             .collect(Collectors.toList());
@@ -133,7 +203,7 @@ public class CategoricalAttributeManager {
 
     private Map<String, Set<String>> collectAttributesToMap(final List<CategoricalAttribute> attributes) {
         return attributes.stream()
-            .collect(Collectors.toMap(CategoricalAttribute::getKey,
+            .collect(Collectors.toMap(CategoricalAttribute::getName,
                 attribute -> attribute
                     .getValues()
                     .stream()
@@ -144,7 +214,7 @@ public class CategoricalAttributeManager {
     private List<Pair<Long, Long>> getDeletedLinks(final List<CategoricalAttribute> receivedState,
                                                    final List<CategoricalAttribute> currentState) {
         final Map<String, List<CategoricalAttributeValue>> newStateMap = receivedState.stream()
-                .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                .collect(Collectors.toMap(CategoricalAttribute::getName,
                         CategoricalAttribute::getValues, (a1, a2) -> a2));
         return ListUtils.emptyIfNull(currentState)
                 .stream()
@@ -157,7 +227,7 @@ public class CategoricalAttributeManager {
             final Map<String, List<CategoricalAttributeValue>> newStateMap,
             final CategoricalAttribute currentAttribute) {
         final Map<String, CategoricalAttributeValue> newValues = ListUtils.emptyIfNull(
-                newStateMap.get(currentAttribute.getKey()))
+                newStateMap.get(currentAttribute.getName()))
                 .stream()
                 .collect(Collectors.toMap(
                         CategoricalAttributeValue::getValue, Function.identity(), (v1, v2) -> v2));
@@ -186,5 +256,12 @@ public class CategoricalAttributeManager {
                                final CategoricalAttributeValue newLink) {
         return newLink.getKey().equals(currentLink.getKey()) &&
                 newLink.getValue().equals(currentLink.getValue());
+    }
+
+    private void verifyAttribute(final CategoricalAttribute attribute) {
+        if (attribute.getName() == null && attribute.getKey() == null) {
+            throw new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_NULL_KEY_NAME));
+        }
     }
 }

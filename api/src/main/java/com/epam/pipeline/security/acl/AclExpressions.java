@@ -132,6 +132,12 @@ public final class AclExpressions {
     public static final String OR_HAS_ASSIGNED_USER_OR_ROLE =
             " OR @grantPermissionManager.hasCloudProfilePermissions(#profileId)";
 
+    public static final String ADMIN_OR_HAS_READ_ACCESS_ON_ENTITIES_FROM_LIST =
+        ADMIN_ONLY + OR + "hasPermission(filterObject, 'READ')";
+
+    public static final String ADMIN_OR_HAS_READ_ACCESS_ON_RETURN_OBJECT =
+        ADMIN_ONLY + OR + "hasPermission(returnObject, 'READ')";
+
     private AclExpressions() {
         // no op
     }

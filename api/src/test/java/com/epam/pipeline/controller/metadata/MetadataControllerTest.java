@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_SET;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -63,6 +64,7 @@ public class MetadataControllerTest extends AbstractControllerTest {
     private static final String UPLOAD_URL = METADATA_URL + "/upload";
     private static final String FOLDER_URL = METADATA_URL + "/folder";
     private static final String SEARCH_URL = METADATA_URL + "/search";
+    private static final String SYNC_WITH_CATEGORICAL_ATTRIBUTES_URL = METADATA_URL + "/sync/categoricalAttributes";
 
     private static final String ENTITY_CLASS = "entityClass";
     private static final String ACL_CLASS = "class";
@@ -298,5 +300,16 @@ public class MetadataControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailSearchMetadataByClassAndKeyValue() {
         performUnauthorizedRequest(get(SEARCH_URL));
+    }
+
+
+    @Test
+    @WithMockUser
+    public void shouldSyncAttributesWithMetadata() {
+        doNothing().when(mockMetadataApiService).syncWithCategoricalAttributes();
+
+        performRequestWithoutResponse(post(SYNC_WITH_CATEGORICAL_ATTRIBUTES_URL));
+
+        verify(mockMetadataApiService).syncWithCategoricalAttributes();
     }
 }

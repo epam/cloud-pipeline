@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public class UserImporterTest {
         assertThat(resultUser.getMetadata().get(KEY2).getValue()).isEqualTo(VALUE2);
         assertThat(resultUser.getMetadata().get(KEY3).getValue()).isEqualTo(VALUE3);
         assertThat(attributes).hasSize(3);
-        assertThat(attributes.stream().map(CategoricalAttribute::getKey).collect(Collectors.toList()))
+        assertThat(attributes.stream().map(CategoricalAttribute::getName).collect(Collectors.toList()))
                 .contains(KEY1, KEY2, KEY4);
         attributes.forEach(attribute -> {
             assertAttributeValue(attribute, KEY1, Collections.singletonList(VALUE1));
@@ -120,7 +120,7 @@ public class UserImporterTest {
 
     private void assertAttributeValue(final CategoricalAttribute attribute,
                                       final String expectedKey, final List<String> expectedValues) {
-        if (Objects.equals(attribute.getKey(), expectedKey)) {
+        if (Objects.equals(attribute.getName(), expectedKey)) {
             assertThat(attribute.getValues().stream()
                     .peek(attributeValue -> assertThat(attributeValue.getKey()).isEqualTo(expectedKey))
                     .map(CategoricalAttributeValue::getValue)
