@@ -22,14 +22,6 @@ import {
   message
 } from 'antd';
 import VersionedStorageHeader from './header';
-import {
-  ContentIssuesMetadataPanel,
-  METADATA_PANEL_KEY,
-  ISSUES_PANEL_KEY
-} from '../../../special/splitPanel';
-import Issues from '../../../special/issues/Issues';
-import Metadata from '../../../special/metadata/Metadata';
-import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
