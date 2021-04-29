@@ -51,6 +51,7 @@ import static com.epam.pipeline.manager.git.RestApiUtils.execute;
 @NoArgsConstructor
 public class GitReaderClient {
 
+    private static final String AUTHORIZATION = "Authorization";
     private static final String DATA_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
 
     private GitReaderApi gitReaderApi;
@@ -154,7 +155,7 @@ public class GitReaderClient {
     }
 
     private GitReaderApi buildGitLabApi(final String gitReaderUrlRoot) {
-        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, null,
+        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, AUTHORIZATION,
                 userJwtToken.toHeader(), DATA_FORMAT).build();
     }
 

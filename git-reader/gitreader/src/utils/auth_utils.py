@@ -16,20 +16,27 @@ import os
 import jwt
 
 
-def auth(request):
-    jwt_token = request.headers.get('Authorization', None)
+def get_and_normalize_pub_key():
+    read_pub_key = open(
+                  os.path.join(os.getenv("CP_API_SRV_CERT_DIR", "/opt/api/pki"), "jwt.key.public")
+    ).read().strip()
+    if "BEGIN PUBLIC KEY" not in read_pub_key:
+        return "-----BEGIN PUBLIC KEY-----\n" \
+               + read_pub_key \
+               + "\n-----END PUBLIC KEY-----"
+    else:
+        return read_pub_key
+
+
+public_key = get_and_normalize_pub_key()
+
+
+def verify_auth_token(jwt_token):
     if jwt_token:
         try:
             payload = jwt.decode(
                 jwt_token.replace("Bearer ", ""),
-                open(
-                    os.getenv("CP_API_JWT_PUB_KEY",
-                              os.path.join(
-                                os.getenv("CP_GITLAB_READER_HOME", "/opt/gitlab-reader"),
-                                "pub-jwt-key.pem"
-                              )
-                    )
-                ).read(),
+                public_key,
                 algorithms=["RS512"]
             )
             if not payload or 'roles' not in payload or 'ROLE_ADMIN' not in payload['roles']:

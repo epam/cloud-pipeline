@@ -46,20 +46,20 @@ public class ApiBuilder<T> {
     private final int connectTimeout;
     private final int readTimeout;
     private final String apiHost;
-    private final String adminToken;
-    private final String bearerToken;
+    private final String token;
     private Class<T> apiClientClass;
+    private String authHeaderName;
     private String dateFormat;
 
     public ApiBuilder(final Class<T> apiClientClass, final String apiHost,
-                      final String adminToken, final String bearerToken, final String dateFormat) {
+                      final String authHeaderName, final String token, final String dateFormat) {
         this.apiClientClass = apiClientClass;
+        this.authHeaderName = authHeaderName;
         this.dateFormat = dateFormat;
         this.connectTimeout = TIMEOUT;
         this.readTimeout = TIMEOUT;
         this.apiHost = apiHost;
-        this.adminToken = adminToken;
-        this.bearerToken = bearerToken;
+        this.token = token;
     }
 
     public T build() {
@@ -69,12 +69,12 @@ public class ApiBuilder<T> {
                         .create(new JsonMapper()
                                 .setDateFormat(new SimpleDateFormat(dateFormat))
                                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
-                .client(buildHttpClient(adminToken, bearerToken))
+                .client(buildHttpClient(token))
                 .build()
                 .create(apiClientClass);
     }
 
-    private OkHttpClient buildHttpClient(final String token, final String bearerToken) {
+    private OkHttpClient buildHttpClient(final String token) {
 
         final TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
@@ -103,10 +103,7 @@ public class ApiBuilder<T> {
                 .connectTimeout(connectTimeout, TimeUnit.SECONDS)
                 .hostnameVerifier((s, sslSession) -> true);
         if (StringUtils.isNotBlank(token)) {
-            builder.addInterceptor(new TokenInterceptor(TokenInterceptor.PRIVATE_TOKEN, token));
-        }
-        if (StringUtils.isNotBlank(bearerToken)) {
-            builder.addInterceptor(new TokenInterceptor(TokenInterceptor.AUTHORIZATION, bearerToken));
+            builder.addInterceptor(new TokenInterceptor(authHeaderName, token));
         }
         return builder.build();
     }
@@ -125,9 +122,6 @@ public class ApiBuilder<T> {
     @AllArgsConstructor
     public class TokenInterceptor implements Interceptor {
 
-        private static final String PRIVATE_TOKEN = "PRIVATE-TOKEN";
-        private static final String AUTHORIZATION = "Authorization";
-
         private final String headerName;
         private final String userToken;
 
@@ -139,7 +133,7 @@ public class ApiBuilder<T> {
         @Override
         public Response intercept(final Interceptor.Chain chain) throws IOException {
             final Request original = chain.request();
-            if (StringUtils.isEmpty(original.headers().get(PRIVATE_TOKEN))) {
+            if (StringUtils.isEmpty(original.headers().get(headerName))) {
                 final Request request = original.newBuilder()
                         .header(headerName, userToken)
                         .build();
