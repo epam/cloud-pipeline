@@ -177,6 +177,7 @@ export default class Folder extends localization.LocalizedReactComponent {
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
+      case ItemTypes.versionedStorage: return <Icon type="share-alt" style={{color: '#2696dd'}} />;
       case ItemTypes.folder:
         let icon = 'folder';
         if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
@@ -412,6 +413,22 @@ export default class Folder extends localization.LocalizedReactComponent {
             </Button>
           );
         }
+        if (roleModel.writeAllowed(item)) {
+          actions.push(
+            <Button
+              key="edit"
+              id={`folder-item-${item.key}-edit-button`}
+              size="small"
+              onClick={(event) => this.openEditPipelineDialog(item, event)}>
+              <Icon type="edit" />
+            </Button>
+          );
+        }
+        break;
+      case ItemTypes.versionedStorage:
+        actions.push(
+          issuesButton
+        );
         if (roleModel.writeAllowed(item)) {
           actions.push(
             <Button
@@ -1019,7 +1036,11 @@ export default class Folder extends localization.LocalizedReactComponent {
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
   editPipeline = async ({name, description, token}) => {
-    const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
+    const {pipelineType} = this.state.editablePipeline;
+    const objectName = /^versioned_storage$/i.test(pipelineType)
+      ? 'versioned storage'
+      : 'pipeline';
+    const hide = message.loading(`Updating ${this.localizedString(objectName)} ${name}...`, 0);
     await this.updatePipelineRequest.send({
       id: this.state.editablePipeline.id,
       name: name,
@@ -1058,8 +1079,12 @@ export default class Folder extends localization.LocalizedReactComponent {
   };
 
   deletePipeline = async (keepRepository) => {
+    const {pipelineType} = this.state.editablePipeline;
+    const objectName = /^versioned_storage$/i.test(pipelineType)
+      ? 'versioned storage'
+      : 'pipeline';
     const request = new DeletePipeline(this.state.editablePipeline.id, keepRepository);
-    const hide = message.loading(`Deleting ${this.localizedString('pipeline')} ${this.state.editablePipeline.name}...`, 0);
+    const hide = message.loading(`Deleting ${this.localizedString(objectName)} ${this.state.editablePipeline.name}...`, 0);
     await request.fetch();
     hide();
     if (request.error) {
