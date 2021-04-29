@@ -662,8 +662,9 @@ As in the previous form, you can:
 
 - restrict search results selecting desired object types from all results scope (the corresponding panel with the object types selector is placed under the search bar):  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_03.png)
-- open the "Preview" pane for the certain result hovering mouse point over it
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_04.png)
+- open the "Preview" pane for the certain result hovering mouse point over it and click the **Info** icon:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_04.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_13.png)
 - scroll search results to view more or use the paging control
 
 New features:
@@ -677,8 +678,9 @@ New features:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_06.png)  
     I.e. only objects **tagged** by this dictionary entry remained in the search results.  
     You can select several filters values from different facets. Each time, other filters will be updated, and also displayed search results will be changed according to the selected filters.  
-    You can hover over any displayed search result to check that the object is really tagged by selected filters (attributes), e.g.:  
+    You can hover over any displayed search result and click the **Info** icon to check that the object is really tagged by selected filters (attributes), e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_07.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_14.png)  
     More details - how to add dictionaries to the "Faceted filters" panel, how to configure filters and use them for the search - see [here](../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md).
 - Changeable view of the search results output:  
     Results output in the **Simple search** has the view as simple list of the object names only.  
