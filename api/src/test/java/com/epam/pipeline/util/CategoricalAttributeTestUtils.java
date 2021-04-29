@@ -31,8 +31,6 @@ import java.util.stream.Stream;
 
 public final class CategoricalAttributeTestUtils {
 
-    private static final String DEFAULT_OWNER = "owner";
-
     private CategoricalAttributeTestUtils() {
     }
 
@@ -64,7 +62,6 @@ public final class CategoricalAttributeTestUtils {
     public static List<CategoricalAttributeValue> fromStrings(final String key, final List<String> strings) {
         return strings.stream()
             .map(s -> new CategoricalAttributeValue(key, s))
-            .peek(value -> value.setOwner(DEFAULT_OWNER))
             .collect(Collectors.toList());
     }
 

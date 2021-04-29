@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.metadata;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import org.apache.commons.collections4.CollectionUtils;
@@ -35,9 +36,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -128,36 +131,34 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<CategoricalAttribute> loadAll(final boolean loadWithLinks) {
-        final List<CategoricalAttributeValue> allValues = getNamedParameterJdbcTemplate()
+        final List<CategoricalAttribute> allValues = getNamedParameterJdbcTemplate()
             .query(loadWithLinks
                    ? loadAllAttributesValuesQuery
                    : loadAllAttributesValuesWithoutLinksQuery,
                    AttributeValueParameters.getRowMapper(loadWithLinks));
-        return mapValuesToAttributes(allValues);
+        return mergeAttributes(allValues);
     }
 
     public CategoricalAttribute loadAllValuesForKey(final String key) {
-        final List<CategoricalAttributeValue> values = getNamedParameterJdbcTemplate()
+        final List<CategoricalAttribute> values = getNamedParameterJdbcTemplate()
             .query(loadAttributeValuesQuery, AttributeValueParameters.getValueParameters(key),
                    AttributeValueParameters.getRowMapper(true));
-        return CollectionUtils.isEmpty(values)
-               ? null
-               : new CategoricalAttribute(key, mergeLinks(values));
+        return mergeAttributes(values).stream().findAny().orElse(null);
     }
 
     public List<CategoricalAttribute> loadAllValuesForKeys(final Collection<String> keys) {
-        final List<CategoricalAttributeValue> values = getNamedParameterJdbcTemplate()
+        final List<CategoricalAttribute> values = getNamedParameterJdbcTemplate()
             .query(loadAttributesValuesQuery, new MapSqlParameterSource(LIST_PARAMETER, keys),
                    AttributeValueParameters.getRowMapper(true));
-        return mapValuesToAttributes(values);
+        return mergeAttributes(values);
     }
 
     public CategoricalAttribute loadAttributeById(final Long attributeId) {
-        final List<CategoricalAttributeValue> values = getNamedParameterJdbcTemplate()
+        final List<CategoricalAttribute> values = getNamedParameterJdbcTemplate()
             .query(loadAttributeValuesByAttributeIdQuery,
                    new MapSqlParameterSource(AttributeValueParameters.ATTRIBUTE_ID.name(), attributeId),
                    AttributeValueParameters.getRowMapper(true));
-        return mapValuesToAttributes(values).stream().findAny().orElse(null);
+        return mergeAttributes(values).stream().findAny().orElse(null);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -239,9 +240,7 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                 final CategoricalAttributeValue value = new CategoricalAttributeValue(entry.getKey(),
                                                                                       firstValue.getAttributeId(),
                                                                                       firstValue.getKey(),
-                                                                                      firstValue.getValue(),
-                                                                                      firstValue.getOwner(),
-                                                                                      firstValue.getCreatedDate());
+                                                                                      firstValue.getValue());
                 final List<CategoricalAttributeValue> allLinks = valuesWithLink.stream()
                     .map(CategoricalAttributeValue::getLinks)
                     .flatMap(Collection::stream).collect(Collectors.toList());
@@ -251,14 +250,18 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             .collect(Collectors.toList());
     }
 
-    private List<CategoricalAttribute> mapValuesToAttributes(final List<CategoricalAttributeValue> values) {
-        return values
-            .stream()
-            .collect(Collectors.groupingBy(CategoricalAttributeValue::getKey))
-            .entrySet()
-            .stream()
-            .map(entry -> new CategoricalAttribute(entry.getKey(), mergeLinks(entry.getValue())))
-            .collect(Collectors.toList());
+    private List<CategoricalAttribute> mergeAttributes(final List<CategoricalAttribute> values) {
+        return new ArrayList<>(
+            values.stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity(), this::mergeAttributes))
+                .values());
+    }
+
+    private CategoricalAttribute mergeAttributes(final CategoricalAttribute attribute1,
+                                                 final CategoricalAttribute attribute2) {
+        final Set<CategoricalAttributeValue> mergedValues = new HashSet<>(attribute1.getValues());
+        mergedValues.addAll(attribute2.getValues());
+        attribute1.setValues(mergeLinks(new ArrayList<>(mergedValues)));
+        return attribute1;
     }
 
     enum AttributeValueParameters {
@@ -309,14 +312,14 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             return params;
         }
 
-        private static RowMapper<CategoricalAttributeValue> getRowMapper(final boolean mappingWithLinks) {
+        private static RowMapper<CategoricalAttribute> getRowMapper(final boolean mappingWithLinks) {
             return (rs, rowNum) -> {
+                final String attributeName = rs.getString(NAME.name());
+                final long attributeId = rs.getLong(ATTRIBUTE_ID.name());
                 final CategoricalAttributeValue value = new CategoricalAttributeValue(rs.getLong(ID.name()),
-                                                                                      rs.getLong(ATTRIBUTE_ID.name()),
-                                                                                      rs.getString(NAME.name()),
-                                                                                      rs.getString(VALUE.name()),
-                                                                                      rs.getString(OWNER.name()),
-                                                                                      rs.getDate(CREATED_DATE.name()));
+                                                                                      attributeId,
+                                                                                      attributeName,
+                                                                                      rs.getString(VALUE.name()));
                 if (mappingWithLinks) {
                     final String childKey = rs.getString(CHILD_NAME.name());
                     final List<CategoricalAttributeValue> links = new ArrayList<>();
@@ -326,14 +329,17 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                                                           rs.getLong(CHILD_ATTRIBUTE_ID.name()),
                                                           rs.getString(CHILD_NAME.name()),
                                                           rs.getString(CHILD_VALUE.name()),
-                                                          rs.getBoolean(AUTOFILL.name()),
-                                                          rs.getString(OWNER.name()),
-                                                          rs.getDate(CREATED_DATE.name()));
+                                                          rs.getBoolean(AUTOFILL.name()));
                         links.add(link);
                     }
                     value.setLinks(links);
                 }
-                return value;
+                final CategoricalAttribute attribute =
+                    new CategoricalAttribute(attributeName, Collections.singletonList(value));
+                attribute.setId(attributeId);
+                attribute.setOwner(rs.getString(OWNER.name()));
+                attribute.setCreatedDate(rs.getDate(CREATED_DATE.name()));
+                return attribute;
             };
         }
     }

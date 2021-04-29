@@ -21,7 +21,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -35,21 +34,18 @@ public class CategoricalAttributeValue {
     private String value;
     private Boolean autofill;
     private Long attributeId;
-    private String owner;
-    private Date createdDate;
     private List<CategoricalAttributeValue> links;
 
     public CategoricalAttributeValue(final String key, final String value) {
-        this(null, null, key, value, null, null);
+        this(null, null, key, value);
+    }
+
+    public CategoricalAttributeValue(final Long id, final Long attributeId, final String key, final String value) {
+        this(id, attributeId, key, value, null);
     }
 
     public CategoricalAttributeValue(final Long id, final Long attributeId, final String key, final String value,
-                                     final String owner, final Date createdDate) {
-        this(id, attributeId, key, value, null, owner, createdDate);
-    }
-
-    public CategoricalAttributeValue(final Long id, final Long attributeId, final String key, final String value,
-                                     final Boolean autofill, final String owner, final Date createdDate) {
-        this(id, key, value, autofill, attributeId, owner, createdDate, Collections.emptyList());
+                                     final Boolean autofill) {
+        this(id, key, value, autofill, attributeId, Collections.emptyList());
     }
 }

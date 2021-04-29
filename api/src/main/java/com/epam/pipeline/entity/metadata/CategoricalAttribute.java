@@ -21,10 +21,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import lombok.Data;
 
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Data
@@ -35,17 +32,19 @@ public class CategoricalAttribute extends AbstractSecuredEntity {
     private AclClass aclClass = AclClass.CATEGORICAL_ATTRIBUTE;
 
     public CategoricalAttribute() {
-        setName(null);
-        this.values = Collections.emptyList();
+        this(null, Collections.emptyList());
     }
 
     public CategoricalAttribute(final String key, final List<CategoricalAttributeValue> values) {
+        this(key, values, null);
+    }
+
+    public CategoricalAttribute(final String key, final List<CategoricalAttributeValue> values, final String owner) {
         this.values = values;
+        setOwner(owner);
         setName(key);
-        setCreatedDate(createdFromValues(values));
         final Optional<CategoricalAttributeValue> attributeValue = values.stream().findAny();
         setId(attributeValue.map(CategoricalAttributeValue::getAttributeId).orElse(null));
-        setOwner(attributeValue.map(CategoricalAttributeValue::getOwner).orElse(null));
     }
 
     public void setKey(final String key) {
@@ -61,13 +60,5 @@ public class CategoricalAttribute extends AbstractSecuredEntity {
     @Override
     public AbstractSecuredEntity getParent() {
         return null;
-    }
-
-    private Date createdFromValues(final List<CategoricalAttributeValue> values) {
-        return values.stream()
-            .map(CategoricalAttributeValue::getCreatedDate)
-            .filter(Objects::nonNull)
-            .min(Comparator.naturalOrder())
-            .orElse(new Date());
     }
 }
