@@ -36,7 +36,6 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @WebMvcTest(controllers = CategoricalAttributeController.class)
 public class CategoricalAttributeControllerTest extends AbstractControllerTest {
@@ -69,11 +68,11 @@ public class CategoricalAttributeControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldUpdateAttribute() throws Exception {
         final String content = getObjectMapper().writeValueAsString(existingAttribute);
-        doReturn(attribute).when(mockCategoricalAttributeApiService)
+        doReturn(existingAttribute).when(mockCategoricalAttributeApiService)
             .updateCategoricalAttribute(existingAttribute);
 
         final MvcResult mvcResult =
-            performRequest(put(String.format(CATEGORICAL_ATTRIBUTE_KEY_URL, attribute.getName())).content(content));
+            performRequest(post(CATEGORICAL_ATTRIBUTE_URL).content(content));
 
         verify(mockCategoricalAttributeApiService).updateCategoricalAttribute(existingAttribute);
         assertResponse(mvcResult, existingAttribute, MetadataCreatorUtils.ATTRIBUTE_INSTANCE_TYPE);
