@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">5</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">15m44.40s</div>
+<div class="counter">28m2.26s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">85%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,79 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724"></a>
-<h3 class="failures">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</h3>
-<span class="code">
-<pre>Element not found {By.className: ant-confirm}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1619582220858.13.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1619582220858.13.html
-Timeout: 80 s.
-Caused by: Element not found {By.className: ant-confirm.findBy(visible)}
-Expected: visible
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:51)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldHave(Unknown Source)
-	at com.epam.pipeline.autotests.ao.ConfirmationPopupAO.ensureTitleIs(ConfirmationPopupAO.java:86)
-	at com.epam.pipeline.autotests.ao.ConfirmationPopupAO.lambda$confirmCommittingToExistingTool$0(ConfirmationPopupAO.java:100)
-	at com.epam.pipeline.autotests.ao.AccessObject.also(AccessObject.java:423)
-	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateDeleteRuntimeFilesFlagWorksProperly$13(DockerCommitTest.java:240)
-	at com.epam.pipeline.autotests.ao.LogAO.commit(LogAO.java:130)
-	at com.epam.pipeline.autotests.DockerCommitTest.validateDeleteRuntimeFilesFlagWorksProperly(DockerCommitTest.java:233)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {By.className: ant-confirm.findBy(visible)}
-Expected: visible
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 35 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -145,77 +79,88 @@ Timeout: 0 ms.
 </thead>
 <tr>
 <td class="success">checkListOfRegistry - EPMCMBIBPC-693</td>
-<td>2.744s</td>
+<td>2.782s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">commitDockerValidation - EPMCMBIBPC-694</td>
-<td>3m5.70s</td>
+<td>2m12.95s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">listOfGroupInRegistry - EPMCMBIBPC-1350</td>
-<td>2.734s</td>
+<td>2.786s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pushDockerFormValidation - EPMCMBIBPC-692</td>
-<td>3m35.17s</td>
+<td>3m43.59s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateCommitDockerImageWithTag</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
+<td>1m23.16s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDocker - EPMCMBIBPC-695</td>
-<td>4m41.93s</td>
+<td>4m41.00s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateCommittedDockerInGroup</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCommittedDockerInGroup - EPMCMBIBPC-1353</td>
+<td>5m8.28s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateCommittedDockerInPersonalGroup</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352</td>
+<td>6m11.82s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</td>
+<td>23.820s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
-<td>2m19.53s</td>
-<td class="failures">failed</td>
+<td class="success">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
+<td>1m52.32s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateLaunchSpecificVersion</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateLaunchSpecificVersion - EPMCMBIBPC-1409</td>
+<td>26.315s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
-<td>1m56.60s</td>
+<td>1m53.45s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 67748 from [67748]
-Returns latest run with runId 67748 from [67748]
-Returns latest run with runId 67748 from [67748]
-Returns latest run with runId 67748 from [67748]
-Returns latest run with runId 67749 from [67748, 67749]
-Returns latest run with runId 67749 from [67748, 67749]
-Returns latest run with runId 67750 from [67748, 67749, 67750]
-Returns latest run with runId 67751 from [67748, 67749, 67750, 67751]
+<pre>Returns latest run with runId 67900 from [67900]
+Returns latest run with runId 67900 from [67900]
+Returns latest run with runId 67900 from [67900]
+Returns latest run with runId 67900 from [67900]
+Returns latest run with runId 67901 from [67900, 67901]
+Returns latest run with runId 67901 from [67900, 67901]
+Returns latest run with runId 67902 from [67900, 67901, 67902]
+Returns latest run with runId 67903 from [67900, 67901, 67902, 67903]
+Returns latest run with runId 67904 from [67900, 67901, 67902, 67903, 67904]
+Returns latest run with runId 67904 from [67900, 67901, 67902, 67903, 67904]
+Returns latest run with runId 67905 from [67900, 67901, 67902, 67903, 67904, 67905]
+Returns latest run with runId 67905 from [67900, 67901, 67902, 67903, 67904, 67905]
+Returns latest run with runId 67905 from [67900, 67901, 67902, 67903, 67904, 67905]
+Returns latest run with runId 67906 from [67900, 67901, 67902, 67903, 67904, 67905, 67906]
+Returns latest run with runId 67906 from [67900, 67901, 67902, 67903, 67904, 67905, 67906]
+Returns latest run with runId 67907 from [67900, 67901, 67902, 67903, 67904, 67905, 67906, 67907]
+Returns latest run with runId 67907 from [67900, 67901, 67902, 67903, 67904, 67905, 67906, 67907]
+Returns latest run with runId 67908 from [67900, 67901, 67902, 67903, 67904, 67905, 67906, 67907, 67908]
+Returns latest run with runId 67908 from [67900, 67901, 67902, 67903, 67904, 67905, 67906, 67907, 67908]
 </pre>
 </span>
 </div>
@@ -227,7 +172,7 @@ Returns latest run with runId 67751 from [67748, 67749, 67750, 67751]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 28, 2021 4:35:22 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 29, 2021 3:13:53 PM</p>
 </div>
 </div>
 </body>
