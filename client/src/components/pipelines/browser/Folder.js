@@ -873,7 +873,7 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   createPipelineRequest = new CreatePipeline();
 
-  createPipeline = async (opts) => {
+  createPipeline = async (opts = {}) => {
     const {name, description, repository, token} = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
@@ -897,7 +897,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
 
-  createVersionedStorage = async (opts) => {
+  createVersionedStorage = async (opts = {}) => {
     const {name, description} = opts;
     const pipelineType = 'VERSIONED_STORAGE';
     const hide = message.loading(`Creating versioned storage ${name}...`, 0);
@@ -922,7 +922,7 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   checkRequest = new CheckPipelineRepository();
 
-  checkRepositoryExistance = async (pipelineOpts, callback) => {
+  checkRepositoryExistence = async (pipelineOpts, callback) => {
     const {repository, token} = pipelineOpts;
     if ((token && token.length) || (repository && repository.length)) {
       const hide = message.loading('Checking repository existence...', -1);
@@ -1838,7 +1838,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           onCancel={this.closeRenameFolderDialog} />
         <EditPipelineForm
           onSubmit={this.folderOperationWrapper(opts =>
-            this.checkRepositoryExistance(opts, this.createPipeline))}
+            this.checkRepositoryExistence(opts, this.createPipeline))}
           onCancel={this.closeCreatePipelineDialog}
           visible={this.state.createPipelineDialog}
           pipelineTemplate={this.state.pipelineTemplate}
@@ -1860,7 +1860,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           pending={this.state.operationInProgress} />
         <VersionedStorageDialog
           onSubmit={this.folderOperationWrapper(opts =>
-            this.checkRepositoryExistance(opts, this.createVersionedStorage))}
+            this.checkRepositoryExistence(opts, this.createVersionedStorage))}
           onCancel={this.closeCreateVersionedStorageDialog}
           visible={this.state.createVersionedStorageDialog}
           pending={this.state.operationInProgress} />
