@@ -171,4 +171,11 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
         final CategoricalAttribute updatedAttribute = categoricalAttributeManager.load(createdAttribute.getId());
         Assert.assertEquals(OWNER_2, updatedAttribute.getOwner());
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowExceptionOnAttributeNullNameKey() {
+        final CategoricalAttribute attributeWithNullKeyAndName =
+            new CategoricalAttribute(null, fromStrings(KEY_1, Arrays.asList(VALUE_1, VALUE_2)));
+        categoricalAttributeManager.create(attributeWithNullKeyAndName);
+    }
 }

@@ -56,6 +56,7 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public CategoricalAttribute create(final CategoricalAttribute attribute) {
+        verifyAttribute(attribute);
         final String key = attribute.getName();
         Assert.isNull(categoricalAttributesDao.loadAllValuesForKey(key),
                       messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY, key));
@@ -67,6 +68,7 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public CategoricalAttribute update(final CategoricalAttribute attribute) {
+        verifyAttribute(attribute);
         final CategoricalAttribute existingAttribute = load(attribute.getId());
         if (attribute.getOwner() == null) {
             attribute.setOwner(existingAttribute.getOwner());
@@ -254,5 +256,12 @@ public class CategoricalAttributeManager implements SecuredEntityManager {
                                final CategoricalAttributeValue newLink) {
         return newLink.getKey().equals(currentLink.getKey()) &&
                 newLink.getValue().equals(currentLink.getValue());
+    }
+
+    private void verifyAttribute(final CategoricalAttribute attribute) {
+        if (attribute.getName() == null && attribute.getKey() == null) {
+            throw new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_NULL_KEY_NAME));
+        }
     }
 }

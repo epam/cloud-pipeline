@@ -18,8 +18,7 @@ package com.epam.pipeline.entity.metadata;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import lombok.Setter;
-import lombok.Value;
+import lombok.Data;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,10 +27,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-@Value
-@Setter
+@Data
 public class CategoricalAttribute extends AbstractSecuredEntity {
 
+    private String key;
     private List<CategoricalAttributeValue> values;
     private AclClass aclClass = AclClass.CATEGORICAL_ATTRIBUTE;
 
@@ -47,6 +46,16 @@ public class CategoricalAttribute extends AbstractSecuredEntity {
         final Optional<CategoricalAttributeValue> attributeValue = values.stream().findAny();
         setId(attributeValue.map(CategoricalAttributeValue::getAttributeId).orElse(null));
         setOwner(attributeValue.map(CategoricalAttributeValue::getOwner).orElse(null));
+    }
+
+    public void setKey(final String key) {
+        setName(key);
+    }
+
+    @Override
+    public void setName(final String name) {
+        this.key = name;
+        super.setName(key);
     }
 
     @Override
