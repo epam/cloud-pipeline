@@ -873,7 +873,8 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   createPipelineRequest = new CreatePipeline();
 
-  createPipeline = async ({name, description, repository, token}) => {
+  createPipeline = async (opts) => {
+    const {name, description, repository, token} = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -896,50 +897,14 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
 
-  checkRequest = new CheckPipelineRepository();
-
-  onCreatePipeline = async ({name, description, repository, token}) => {
-    if ((token && token.length) || (repository && repository.length)) {
-      const hide = message.loading('Checking repository existence...', -1);
-      await this.checkRequest.send({
-        repository,
-        token
-      });
-      hide();
-      if (this.checkRequest.error) {
-        message.error(this.checkRequest.error);
-        return;
-      } else if (!this.checkRequest.value.repositoryExists) {
-        Modal.confirm({
-          title: 'Repository does not exist. Create?',
-          style: {
-            wordWrap: 'break-word'
-          },
-          content: null,
-          okText: 'OK',
-          cancelText: 'Cancel',
-          onOk: async () => {
-            await this.createPipeline({name, description, repository, token});
-          }
-        });
-        return;
-      }
-    }
-    await this.createPipeline({name, description, repository, token});
-  };
-
-  createVersionedStorage = async ({
-    name,
-    description,
-    repository,
-    pipelineType
-  }) => {
+  createVersionedStorage = async (opts) => {
+    const {name, description} = opts;
+    const pipelineType = 'VERSIONED_STORAGE';
     const hide = message.loading(`Creating versioned storage ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
       description: description,
       parentFolderId: this._currentFolder.folder.id,
-      repository: repository,
       pipelineType
     });
     hide();
@@ -955,19 +920,22 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
 
-  onCreateVersionedStorage = async ({name, description, repository}) => {
-    const pipelineType = 'VERSIONED_STORAGE';
-    if ((repository && repository.length)) {
+  checkRequest = new CheckPipelineRepository();
+
+  checkRepositoryExistance = async (pipelineOpts, callback) => {
+    const {repository, token} = pipelineOpts;
+    if ((token && token.length) || (repository && repository.length)) {
       const hide = message.loading('Checking repository existence...', -1);
       await this.checkRequest.send({
-        repository
+        repository,
+        token
       });
       hide();
       if (this.checkRequest.error) {
-        message.error(this.checkRequest.error);
-        return;
-      } else if (!this.checkRequest.value.repositoryExists) {
-        Modal.confirm({
+        return message.error(this.checkRequest.error);
+      }
+      if (!this.checkRequest.value.repositoryExists) {
+        return Modal.confirm({
           title: 'Repository does not exist. Create?',
           style: {
             wordWrap: 'break-word'
@@ -976,23 +944,12 @@ export default class Folder extends localization.LocalizedReactComponent {
           okText: 'OK',
           cancelText: 'Cancel',
           onOk: async () => {
-            await this.createVersionedStorage({
-              name,
-              description,
-              repository,
-              pipelineType
-            });
+            await callback(pipelineOpts);
           }
         });
-        return;
       }
     }
-    await this.createVersionedStorage({
-      name,
-      description,
-      repository,
-      pipelineType
-    });
+    return callback(pipelineOpts);
   }
 
   openCloneFolderDialog = () => {
@@ -1880,7 +1837,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           onSubmit={this.folderOperationWrapper(this.renameFolder)}
           onCancel={this.closeRenameFolderDialog} />
         <EditPipelineForm
-          onSubmit={this.folderOperationWrapper(this.onCreatePipeline)}
+          onSubmit={this.folderOperationWrapper(opts =>
+            this.checkRepositoryExistance(opts, this.createPipeline))}
           onCancel={this.closeCreatePipelineDialog}
           visible={this.state.createPipelineDialog}
           pipelineTemplate={this.state.pipelineTemplate}
@@ -1901,7 +1859,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           addExistingStorageFlag={!this.state.createNewStorageFlag}
           pending={this.state.operationInProgress} />
         <VersionedStorageDialog
-          onSubmit={this.folderOperationWrapper(this.onCreateVersionedStorage)}
+          onSubmit={this.folderOperationWrapper(opts =>
+            this.checkRepositoryExistance(opts, this.createVersionedStorage))}
           onCancel={this.closeCreateVersionedStorageDialog}
           visible={this.state.createVersionedStorageDialog}
           pending={this.state.operationInProgress} />
