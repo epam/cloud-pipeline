@@ -37,9 +37,12 @@ if [[ "$IS_RPM_BASED" = 0 ]]; then
         _LFS_INSTALL_RESULT=$?
     fi
 else
-    apt-get install lsb-release gnupg -y -qq && \
-    apt-get install -t stable lizardfs-master -y -qq
-    _LFS_INSTALL_RESULT=$?
+    _LFS_INSTALL_RESULT=0
+    if ! dpkg -l | grep -q "lizardfs-master"; then
+        apt-get install lsb-release gnupg -y -qq && \
+        apt-get install -t stable lizardfs-master -y -qq
+        _LFS_INSTALL_RESULT=$?
+    fi
 fi
 
 if [ $_LFS_INSTALL_RESULT -ne 0 ]; then

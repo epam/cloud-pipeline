@@ -70,6 +70,9 @@ class Cluster:
         self.nodes = nodes
         self.slots_per_node = slots_per_node
 
+    def get_size(self):
+        return len(self.nodes) * self.slots_per_node
+
     @classmethod
     def build_cluster(cls, api, task_name):
         if 'CP_PARALLEL_TRANSFER' not in os.environ:
@@ -129,6 +132,9 @@ class Cluster:
         if 'CP_TRANSFER_THREADS' in os.environ:
             return int(os.environ['CP_TRANSFER_THREADS'])
         cpu_number = multiprocessing.cpu_count()
+        if 'CP_TRANSFER_PROC_RATIO' in os.environ:
+            ratio = int(os.environ['CP_TRANSFER_PROC_RATIO'])
+            return max(1, cpu_number/ratio)
         if cpu_number < 32:
             return 1
         if 32 <= cpu_number < 64:
@@ -163,14 +169,14 @@ class ParameterType(object):
 
 
 class LocalizedPath:
-    
+
     def __init__(self, path, cloud_path, local_path, type, prefix=None):
         self.path = path
         self.cloud_path = cloud_path
         self.local_path = local_path
         self.type = type
         self.prefix = prefix
-        
+
 
 class RemoteLocation:
 
@@ -182,15 +188,24 @@ class RemoteLocation:
         self.delimiter = delimiter
 
 
-def transfer_async(chunk):
-    if not chunk.files:
+def split(list, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in xrange(0, len(list), n):
+        yield list[i:i + n]
+
+
+def transfer_async(chunk, with_file_list=True):
+    if with_file_list and not chunk.files:
         Logger.info('Skipping empty chunk', task_name=chunk.task_name)
         return
-    file_list_name = ''.join(random.choice(string.ascii_lowercase) for _ in range(10)) + '.list'
-    file_list_path = os.path.join(chunk.common_folder, file_list_name)
-    with open(file_list_path, 'w') as file_list:
-        for file in chunk.files:
-            file_list.write('%s\t%d\n' % (file.filename, file.size))
+    if with_file_list:
+        file_list_name = ''.join(random.choice(string.ascii_lowercase) for _ in range(10)) + '.list'
+        file_list_path = os.path.join(chunk.common_folder, file_list_name)
+        with open(file_list_path, 'w') as file_list:
+            for file in chunk.files:
+                file_list.write('%s\t%d\n' % (file.filename, file.size))
+    else:
+        file_list_path = None
     bucket = S3Bucket()
     cmd = bucket.build_pipe_cp_command(chunk.source, chunk.destination, file_list=file_list_path, include=chunk.rules)
     if chunk.hostname != 'localhost':
@@ -198,6 +213,10 @@ def transfer_async(chunk):
               (chunk.hostname, cmd)
     Logger.info('Executing chunk transfer with cmd: %s' % cmd, task_name=chunk.task_name)
     bucket.execute_command(cmd, TRANSFER_ATTEMPTS)
+
+
+def transfer_async_without_file_list(chunk):
+    transfer_async(chunk, with_file_list=False)
 
 
 class InputDataTask:
@@ -394,25 +413,59 @@ class InputDataTask:
 
     def localize_data(self, remote_locations, rules=None):
         cluster = Cluster.build_cluster(self.api, self.task_name)
+        files = []
         for location in remote_locations:
             for path in location.paths:
                 source, destination = self.get_local_paths(path, self.is_upload)
-                self.perform_transfer(path, source, destination, cluster, rules=rules)
+                if cluster is None or path.type == PathType.HTTP_OR_FTP:
+                    self.perform_local_transfer(source, destination)
+                elif not self.is_file(source):
+                    self.perform_cluster_folder_transfer(source, destination, cluster, rules=rules)
+                else:
+                    files.append((source, destination))
+        if files:
+            self.perform_cluster_file_transfer(files, cluster, rules=rules)
 
-    def perform_transfer(self, path, source, destination, cluster, rules=None):
-        Logger.info('Uploading files from {} to {}'.format(source, destination), self.task_name)
-        if path.type == PathType.HTTP_OR_FTP or cluster is None or self.is_file(source):
-            if self.is_upload or self.rules is None:
-                S3Bucket().pipe_copy(source, destination, TRANSFER_ATTEMPTS)
-            else:
-                S3Bucket().pipe_copy_with_rules(source, destination, TRANSFER_ATTEMPTS, self.rules)
+    def perform_local_transfer(self, source, destination):
+        Logger.info('Uploading files from {} to {} using local pipe'.format(source, destination), self.task_name)
+        if self.is_upload or self.rules is None:
+            S3Bucket().pipe_copy(source, destination, TRANSFER_ATTEMPTS)
         else:
-            common_folder = os.path.join(os.environ['SHARED_WORK_FOLDER'], 'transfer')
-            applied_rules = None if self.is_upload else rules
-            chunks = self.split_source_into_chunks(cluster, source, destination, common_folder, applied_rules)
-            transfer_pool = Pool(len(chunks))
-            transfer_pool.map(transfer_async, chunks)
-            shutil.rmtree(common_folder, ignore_errors=True)
+            S3Bucket().pipe_copy_with_rules(source, destination, TRANSFER_ATTEMPTS, self.rules)
+
+    def perform_cluster_file_transfer(self, files, cluster, rules=None):
+        Logger.info('Uploading {} files using cluster'.format(len(files)), self.task_name)
+        common_folder = os.path.join(os.environ['SHARED_WORK_FOLDER'], 'transfer')
+        applied_rules = None if self.is_upload else rules
+        if not os.path.exists(common_folder):
+            os.makedirs(common_folder)
+        chunks = self.split_files_into_chunks(applied_rules, cluster, common_folder, files)
+        transfer_pool = Pool(cluster.get_size())
+        for part in split(chunks, cluster.get_size()):
+            transfer_pool.map(transfer_async_without_file_list, part)
+        shutil.rmtree(common_folder, ignore_errors=True)
+
+    def split_files_into_chunks(self, applied_rules, cluster, common_folder, files):
+        slots = []
+        for node in cluster.nodes:
+            for slot in range(0, cluster.slots_per_node):
+                slots.append(node.hostname)
+        chunks = []
+        for i in range(0, len(files)):
+            source, destination = files[i]
+            current_host = slots[i % len(slots)]
+            chunks.append(TransferChunk(current_host, [], source,
+                                        destination, common_folder, self.task_name, applied_rules))
+        return chunks
+
+    def perform_cluster_folder_transfer(self, source, destination, cluster, rules=None):
+        Logger.info('Uploading folders from {} to {} using cluster'.format(source, destination), self.task_name)
+        common_folder = os.path.join(os.environ['SHARED_WORK_FOLDER'], 'transfer')
+        applied_rules = None if self.is_upload else rules
+        chunks = self.split_source_into_chunks(cluster, source, destination, common_folder, applied_rules)
+        transfer_pool = Pool(len(chunks))
+        transfer_pool.map(transfer_async, chunks)
+        shutil.rmtree(common_folder, ignore_errors=True)
 
     def is_file(self, source):
         if source.endswith('/'):
@@ -424,7 +477,7 @@ class InputDataTask:
                 return True
             # urlparse returns path as /folder/inner
             # convert it to cloud listing representation folder/inner/
-            folder = get_path_with_trailing_delimiter(get_path_without_first_delimiter(source_path.path))
+            folder = get_path_with_trailing_delimiter(source_path.path.split('/')[-1])
             cloud_paths = S3Bucket().pipe_ls(get_path_without_trailing_delimiter(source),
                                           TRANSFER_ATTEMPTS, recursive=False, all=False, show_info=True)
             for path in cloud_paths:

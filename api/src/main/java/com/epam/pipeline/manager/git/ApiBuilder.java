@@ -39,33 +39,37 @@ import java.text.SimpleDateFormat;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
-public class GitLabApiBuilder {
+public class ApiBuilder<T> {
 
-    private static final String DATA_FORMAT = "yyyy-MM-dd";
     private static final int TIMEOUT = 30;
 
     private final int connectTimeout;
     private final int readTimeout;
     private final String apiHost;
     private final String adminToken;
+    private Class<T> apiClientClass;
+    private String dateFormat;
 
-    public GitLabApiBuilder(String apiHost, String adminToken) {
+    public ApiBuilder(final Class<T> apiClientClass, final String apiHost,
+                      final String adminToken, final String dateFormat) {
+        this.apiClientClass = apiClientClass;
+        this.dateFormat = dateFormat;
         this.connectTimeout = TIMEOUT;
         this.readTimeout = TIMEOUT;
         this.apiHost = apiHost;
         this.adminToken = adminToken;
     }
 
-    public GitLabApi build() {
+    public T build() {
         return new Retrofit.Builder()
                 .baseUrl(normalizeUrl(apiHost))
                 .addConverterFactory(JacksonConverterFactory
                         .create(new JsonMapper()
-                                .setDateFormat(new SimpleDateFormat(DATA_FORMAT))
+                                .setDateFormat(new SimpleDateFormat(dateFormat))
                                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
                 .client(buildHttpClient(adminToken))
                 .build()
-                .create(GitLabApi.class);
+                .create(apiClientClass);
     }
 
     private OkHttpClient buildHttpClient(final String token) {

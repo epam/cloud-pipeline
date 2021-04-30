@@ -52,7 +52,9 @@ export default function GeneralPresentation (
       <div className={styles.main}>
         <div className={styles.name}>
           {renderIcon()}
-          {getDocumentName(document) || '\u00A0'}
+          <span>
+            {getDocumentName(document) || '\u00A0'}
+          </span>
         </div>
         <div className={styles.sub}>
           {

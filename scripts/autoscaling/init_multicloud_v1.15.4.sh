@@ -83,44 +83,43 @@ setup_swap_device "${swap_size:-0}"
 
 FS_TYPE="@FS_TYPE@"
 
-UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
-DRIVE_NUM=0
-for DRIVE_NAME in $UNMOUNTED_DRIVES
-do
-  MOUNT_POINT="/ebs"
-
+UNMOUNTED_DRIVES=($(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }'))
+if [[ ${#UNMOUNTED_DRIVES[@]} > 1 ]]; then
+  pvcreate ${UNMOUNTED_DRIVES[@]}
+  vgcreate nvmevg ${UNMOUNTED_DRIVES[@]}
+  lvcreate -l 100%FREE nvmevg -n nvmelv
+  DRIVE_NAME=/dev/nvmevg/nvmelv
+elif [[ ${#UNMOUNTED_DRIVES[@]} == 1 ]]; then
+  DRIVE_NAME=${UNMOUNTED_DRIVES[0]}
   PARTITION_RESULT=$(sfdisk -d $DRIVE_NAME 2>&1)
   if [[ $PARTITION_RESULT == "" ]]; then
       (echo o; echo n; echo p; echo; echo; echo; echo w) | fdisk $DRIVE_NAME
       DRIVE_NAME="${DRIVE_NAME}1"
   elif [[ $PARTITION_RESULT == *"No such device or address"* ]]; then
-      continue
+      echo "Cannot create partition for ${DRIVE_NAME}, falling back to root volume"
+      unset DRIVE_NAME
   fi
+else
+  echo "No unmounted drives found. Root volume is used as for the /ebs"
+fi
 
-  DRIVE_NUM=$((DRIVE_NUM+1))
-
-  if [[ $DRIVE_NUM != 1 ]]
-  then
-    MOUNT_POINT=$MOUNT_POINT$DRIVE_NUM
-  fi
-
-  mkdir $MOUNT_POINT
-
+MOUNT_POINT="/ebs"
+mkdir -p $MOUNT_POINT
+if [ "$DRIVE_NAME" ]; then
   if [[ $FS_TYPE == "ext4" ]]; then
-    mkfs -t ext4 $DRIVE_NAME
-    mount $DRIVE_NAME $MOUNT_POINT
-    echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+      mkfs -t ext4 $DRIVE_NAME
+      mount $DRIVE_NAME $MOUNT_POINT
+      echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
   else
     mkfs.btrfs -f -d single $DRIVE_NAME
     mount $DRIVE_NAME $MOUNT_POINT
     DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
     echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
   fi
-
-  mkdir -p $MOUNT_POINT/runs
-  mkdir -p $MOUNT_POINT/reference
-  rm -rf $MOUNT_POINT/lost+found/
-done
+fi
+mkdir -p $MOUNT_POINT/runs
+mkdir -p $MOUNT_POINT/reference
+rm -rf $MOUNT_POINT/lost+found
 
 systemctl stop docker
 

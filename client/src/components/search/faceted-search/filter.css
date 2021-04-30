@@ -73,13 +73,48 @@
   height: 21px;
   visibility: visible;
   transition: all 0.2s ease-in-out;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.filter .option:first-child {
+  margin-top: 5px;
+}
+
+.filter .search-input {
+  height: 21px;
+  width: 100%;
+  margin: 0;
+  font-size: 12px;
+  visibility: visible;
+  transition: all 0.2s ease-in-out;
+  border-radius: 0 0 3px 3px;
+}
+
+.filter .search-input input {
+  border-top: 1px solid transparent;
+  border-radius: 0 0 3px 3px;
+}
+
+.filter .search-input:hover input {
+  border-radius: 3px;
+}
+
+.filter .search-input .clear-btn {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.filter .search-input .clear-btn:hover {
+  color: #1890ff;
 }
 
 .filter .option-hidden {
   transform: scaleY(0);
   border: 0;
   padding: 0;
-  margin: 0;
+  margin: 0 !important;
   visibility: hidden;
   height: 0;
 }

@@ -25,7 +25,8 @@ import {Row, Tooltip} from 'antd';
 export default class UserName extends React.Component {
 
   static propTypes = {
-    userName: PropTypes.string
+    userName: PropTypes.string,
+    style: PropTypes.object
   };
 
   @computed
@@ -70,10 +71,11 @@ export default class UserName extends React.Component {
   };
 
   render () {
+    const {style = {}} = this.props;
     if (this.user) {
       return (
         <Tooltip overlay={this.renderUserAttributes(this.user)}>
-          <span style={{cursor: 'default'}}>
+          <span style={Object.assign({cursor: 'default'}, style)}>
             {this.renderUserName(this.user)}
           </span>
         </Tooltip>

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {isObservableArray} from 'mobx';
 import {SearchItemTypes} from '../../models/search';
 import displayCount from '../../utils/displayCount';
 
@@ -33,38 +34,36 @@ const titleFn = (key, pluralStr) =>
     (count = 0) =>
       countString(key, localizationFn, count, pluralStr);
 
-export const SearchGroupTypes = {
+function test (o) {
+  if (!o) {
+    return false;
+  }
+  const set = Array.isArray(o) || isObservableArray(o)
+    ? new Set(o)
+    : new Set([o]);
+  return !!(this.types || []).find(t => set.has(t));
+}
+
+const SearchGroupTypes = {
   folder: {
     types: [SearchItemTypes.folder, SearchItemTypes.metadataEntity],
     icon: 'folder',
-    title: titleFn('Folder'),
-    test (o) {
-      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
-    }
+    title: titleFn('Folder')
   },
   pipeline: {
     types: [SearchItemTypes.pipeline, SearchItemTypes.configuration, SearchItemTypes.pipelineCode],
     icon: 'fork',
-    title: titleFn('Pipeline'),
-    test (o) {
-      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
-    }
+    title: titleFn('Pipeline')
   },
   run: {
     types: [SearchItemTypes.run],
     icon: 'play-circle',
-    title: titleFn('Run'),
-    test (o) {
-      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
-    }
+    title: titleFn('Run')
   },
   tool: {
     types: [SearchItemTypes.tool, SearchItemTypes.dockerRegistry, SearchItemTypes.toolGroup],
     icon: 'tool',
-    title: titleFn('Tool'),
-    test (o) {
-      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
-    }
+    title: titleFn('Tool')
   },
   storage: {
     types: [
@@ -78,17 +77,17 @@ export const SearchGroupTypes = {
       SearchItemTypes.gsStorage
     ],
     icon: 'file',
-    title: titleFn('Data', ''),
-    test (o) {
-      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
-    }
+    title: titleFn('Data', '')
   },
   issue: {
     types: [SearchItemTypes.issue],
     icon: 'message',
-    title: titleFn('Issue'),
-    test (o) {
-      return this.types.filter(t => ((o || []).indexOf(t) >= 0)).length > 0;
-    }
+    title: titleFn('Issue')
   }
 };
+
+Object.values(SearchGroupTypes).forEach(value => {
+  value.test = test.bind(value);
+});
+
+export {SearchGroupTypes};

@@ -31,26 +31,26 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.HttpStatus;
 import retrofit2.Call;
-import retrofit2.Response;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.git.RestApiUtils.execute;
+
 @AllArgsConstructor
 @NoArgsConstructor
 public class GitReaderClient {
+
+    private static final String DATA_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
 
     private GitReaderApi gitReaderApi;
 
@@ -64,27 +64,22 @@ public class GitReaderClient {
     public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> getRepositoryCommits(final GitRepositoryUrl repo,
                                                                                          final Long page,
                                                                                          final Integer pageSize,
-                                                                                         final GitCommitsFilter filter) throws GitClientException {
-
-        final Result<GitReaderEntryIteratorListing<GitReaderRepositoryCommit>> result = execute(
-                gitReaderApi.listCommits(getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter))
-        );
-        if (result.getStatus() == ResultStatus.ERROR) {
-            throw new GitClientException(result.getMessage());
-        }
-        return result.getPayload();
+                                                                                         final GitCommitsFilter filter)
+            throws GitClientException {
+                return callAndCheckResult(
+                        gitReaderApi.listCommits(
+                                getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter)
+                        )
+                ).getPayload();
     }
 
     public GitReaderDiff getRepositoryCommitDiffs(final GitRepositoryUrl repo,
                                                   final Boolean includeDiff,
                                                   final GitCommitsFilter filter) throws GitClientException {
-        final Result<GitReaderRepositoryCommitDiff> result = execute(
+        final Result<GitReaderRepositoryCommitDiff> result = callAndCheckResult(
                 gitReaderApi.listCommitDiffs(getRepositoryPath(repo), includeDiff,
                         toGitReaderRequestFilter(filter))
         );
-        if (result.getStatus() == ResultStatus.ERROR) {
-            throw new GitClientException(result.getMessage());
-        }
         return GitReaderDiff.builder()
                 .entries(Optional.ofNullable(result.getPayload())
                         .map(GitReaderRepositoryCommitDiff::getEntries)
@@ -96,64 +91,55 @@ public class GitReaderClient {
     public GitReaderDiffEntry getRepositoryCommitDiff(final GitRepositoryUrl repo,
                                                       final String commit,
                                                       final String path) throws GitClientException {
-        final Result<GitReaderDiffEntry> result = execute(
+        return callAndCheckResult(
                 gitReaderApi.getCommitDiff(getRepositoryPath(repo), commit, path)
-        );
-        if (result.getStatus() == ResultStatus.ERROR) {
-            throw new GitClientException(result.getMessage());
-        }
-        return result.getPayload();
+        ).getPayload();
     }
 
     public GitReaderEntryListing<GitRepositoryEntry> getRepositoryTree(final GitRepositoryUrl repo, final String path,
                                                                        final String ref, final Long page,
-                                                                       final Integer pageSize) throws GitClientException {
-        final Result<GitReaderEntryListing<GitRepositoryEntry>> result = execute(
+                                                                       final Integer pageSize)
+            throws GitClientException {
+        return callAndCheckResult(
                 gitReaderApi.getRepositoryTree(getRepositoryPath(repo), path, ref, page, pageSize)
-        );
-        if (result.getStatus() == ResultStatus.ERROR) {
-            throw new GitClientException(result.getMessage());
-        }
-        return result.getPayload();
+        ).getPayload();
     }
 
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo,
                                                                                     final String path,
                                                                                     final String ref, final Long page,
-                                                                                    final Integer pageSize) throws GitClientException {
-        final Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>> result = execute(
+                                                                                    final Integer pageSize)
+            throws GitClientException {
+        return callAndCheckResult(
                 gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), path, ref, page, pageSize)
-        );
-        if (result.getStatus() == ResultStatus.ERROR) {
-            throw new GitClientException(result.getMessage());
-        }
-        return result.getPayload();
+        ).getPayload();
     }
 
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo,
                                                                                     final String ref,
-                                                                                    final GitReaderLogsPathFilter paths) throws GitClientException {
-        final Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>> result = execute(
+                                                                                    final GitReaderLogsPathFilter paths)
+            throws GitClientException {
+        return callAndCheckResult(
                 gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), ref, paths)
-        );
+        ).getPayload();
+    }
+
+    private <T> Result<T> callAndCheckResult(Call<Result<T>> call) throws GitClientException {
+        final Result<T> result = execute(call);
         if (result.getStatus() == ResultStatus.ERROR) {
             throw new GitClientException(result.getMessage());
         }
-        return result.getPayload();
+        return result;
     }
 
-    private <R> R execute(final Call<R> call) throws GitClientException {
-        try {
-            final Response<R> response = call.execute();
-            if (response.isSuccessful()) {
-                return response.body();
-            } else {
-                throw new UnexpectedResponseStatusException(HttpStatus.valueOf(response.code()),
-                        response.errorBody() != null ? response.errorBody().string() : "");
-            }
-        } catch (IOException e) {
-            throw new GitClientException(e.getMessage(), e);
-        }
+    private GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter) {
+        return GitReaderLogRequestFilter.builder()
+                .authors(filter.getAuthors())
+                .dateFrom(filter.getDateFrom())
+                .dateTo(filter.getDateTo())
+                .ref(filter.getRef())
+                .pathMasks(getPathMasks(filter))
+                .build();
     }
 
     private String getRepositoryPath(final GitRepositoryUrl gitRepositoryUrl) {
@@ -165,20 +151,10 @@ public class GitReaderClient {
     }
 
     private GitReaderApi buildGitLabApi(final String gitReaderUrlRoot) {
-        return new GitReaderApiBuilder(gitReaderUrlRoot).build();
+        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, null, DATA_FORMAT).build();
     }
 
-    public static GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter) {
-        return GitReaderLogRequestFilter.builder()
-                .authors(filter.getAuthors())
-                .dateFrom(filter.getDateFrom())
-                .dateTo(filter.getDateTo())
-                .ref(filter.getRef())
-                .pathMasks(getPathMasks(filter))
-                .build();
-    }
-
-    private static List<String> getPathMasks(GitCommitsFilter filter) {
+    private List<String> getPathMasks(final GitCommitsFilter filter) {
         if (StringUtils.isBlank(filter.getPath()) && CollectionUtils.isEmpty(filter.getExtensions())) {
             return null;
         } else if (CollectionUtils.isEmpty(filter.getExtensions())) {
@@ -189,7 +165,7 @@ public class GitReaderClient {
                 .collect(Collectors.toList());
     }
 
-    private static String getPathMask(final String path, final String ext) {
+    private String getPathMask(final String path, final String ext) {
         if (path == null) {
             return "*." + ext;
         }else if (!path.endsWith("/") && StringUtils.isNotBlank(path)){

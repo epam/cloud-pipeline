@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.entity.git.gitreader;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
 import lombok.Data;
 
 
@@ -25,12 +23,7 @@ import lombok.Data;
  * Represents Git Diff and its commit
  */
 @Data
-@Builder
 public class GitReaderDiffEntry {
-
-    @JsonProperty("commit")
     private GitReaderRepositoryCommit commit;
-
-    @JsonProperty("diff")
     private String diff;
 }

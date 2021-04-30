@@ -47,6 +47,7 @@ CP_GITLAB_SSO_TARGET_URL="${CP_GITLAB_SSO_TARGET_URL:-"https://${CP_IDP_EXTERNAL
 CP_GITLAB_SLO_TARGET_URL="${CP_GITLAB_SLO_TARGET_URL:-"https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"}"
 CP_GITLAB_WINDOW_MEMORY="${CP_GITLAB_WINDOW_MEMORY:-"128m"}"
 CP_GITLAB_PACK_SIZE_LIMIT="${CP_GITLAB_PACK_SIZE_LIMIT:-"512m"}"
+CP_GITLAB_BLOCK_AUTO_CREATED_USERS="${CP_GITLAB_BLOCK_AUTO_CREATED_USERS:-"false"}"
 CP_GITLAB_EXTERNAL_URL="${CP_GITLAB_EXTERNAL_URL:-https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}}"
 CP_GITLAB_SSO_ENDPOINT_ID="${CP_GITLAB_SSO_ENDPOINT_ID:-https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}}"
 CP_GITLAB_SAML_USER_ATTRIBUTES="${CP_GITLAB_SAML_USER_ATTRIBUTES:-email: ['email']}"
@@ -86,7 +87,7 @@ omnibus_gitconfig['system'] = { "pack" => ["windowMemory = ${CP_GITLAB_WINDOW_ME
 gitlab_rails['omniauth_enabled'] = true
 gitlab_rails['omniauth_allow_single_sign_on'] = ['saml']
 gitlab_rails['omniauth_auto_link_saml_user'] = true
-gitlab_rails['omniauth_block_auto_created_users'] = false
+gitlab_rails['omniauth_block_auto_created_users'] = ${CP_GITLAB_BLOCK_AUTO_CREATED_USERS}
 gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'saml'
 gitlab_rails['omniauth_providers'] = [
 {

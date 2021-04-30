@@ -16,6 +16,7 @@
 
 import {SearchItemTypes} from '../../../../models/search';
 
+// URL should starts with slash, i.e. '/storage/id', '/folder/id' etc.
 function getItemUrl (item) {
   return new Promise((resolve) => {
     switch (item.type) {

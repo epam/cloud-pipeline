@@ -766,7 +766,7 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PAGE, required = false) final Long page,
             @RequestParam(value = PAGE_SIZE, required = false) final Integer pageSize,
-            @RequestBody final GitCommitsFilter filter) throws GitClientException {
+            @RequestBody GitCommitsFilter filter) throws GitClientException {
         return Result.success(pipelineApiService.logRepositoryCommits(id, page, pageSize, filter));
     }
 

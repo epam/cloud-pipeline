@@ -330,11 +330,11 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadUsersInfo() {
-        doReturn(userInfoList).when(mockUserApiService).loadUsersInfo();
+        doReturn(userInfoList).when(mockUserApiService).loadUsersInfo(Collections.emptyList());
 
         final MvcResult mvcResult = performRequest(get(USERS_INFO_URL));
 
-        verify(mockUserApiService).loadUsersInfo();
+        verify(mockUserApiService).loadUsersInfo(Collections.emptyList());
         assertResponse(mvcResult, userInfoList, UserCreatorUtils.USER_INFO_LIST_INSTANCE_TYPE);
     }
 

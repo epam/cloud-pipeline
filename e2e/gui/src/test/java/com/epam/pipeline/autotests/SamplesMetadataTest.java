@@ -482,6 +482,7 @@ public class SamplesMetadataTest
                                 .ensure(rootEntityType(), text(rootEntityTypeSample))
                                 .selectValue(rootEntityType(), rootEntityTypeSampleSet)
                                 .ensure(rootEntityType(), text(rootEntityTypeSampleSet))
+                                .click(save())
                 );
     }
 
