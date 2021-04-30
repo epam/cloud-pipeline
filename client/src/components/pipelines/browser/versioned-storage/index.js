@@ -219,28 +219,26 @@ class VersionedStorage extends localization.LocalizedReactComponent {
             />
           )
         }
-        <div
-          className={styles.paginationRow}
-        >
-          {
-            lastPage >= 0 && (
-              <Pagination
-                current={page + 1}
-                total={(lastPage + 10) * PAGE_SIZE}
-                pageSize={PAGE_SIZE}
-                size="small"
-                onChange={
-                  newPage => newPage === (page + 1)
-                    ? undefined
-                    : this.fetchPage(newPage - 1)
-                }
-              />
-            )
-          }
-        </div>
         <VersionedStorageTable
           contents={contents}
         />
+        <div
+          className={styles.paginationRow}
+        >
+          {lastPage >= 0 && (
+            <Pagination
+              current={page + 1}
+              total={(lastPage + 1) * PAGE_SIZE}
+              pageSize={PAGE_SIZE}
+              size="small"
+              onChange={
+                newPage => newPage === (page + 1)
+                  ? undefined
+                  : this.fetchPage(newPage - 1)
+              }
+            />
+          )}
+        </div>
       </div>
     );
   }

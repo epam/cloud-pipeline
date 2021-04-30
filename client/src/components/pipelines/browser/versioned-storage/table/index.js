@@ -21,7 +21,8 @@ import {
   Spin,
   Dropdown,
   Button,
-  Menu
+  Menu,
+  Icon
 } from 'antd';
 import COLUMNS from './columns';
 import styles from './table.css';
@@ -58,52 +59,75 @@ class VersionedStorageTable extends React.Component {
     }
   }
 
-  onCreateMenuClick = (event) => {
-    console.log(`create ${event.key}`);
-  }
-
-  onCreate = (event) => {
-    event && event.stopPropagation();
+  onCreateActionSelect = (event) => {
+    console.log(event);
   }
 
   onUpload = (event) => {
     event && event.stopPropagation();
   }
 
+  renderTableControls = () => {
+    return (
+      <div className={styles.tableControls}>
+        <Dropdown
+          placement="bottomRight"
+          trigger={['hover']}
+          overlay={
+            <Menu
+              selectedKeys={[]}
+              onClick={this.onCreateActionSelect}
+              style={{width: 200}}>
+              <Menu.Item
+                key="folder"
+              >
+                <Icon type="folder" /> Folder
+              </Menu.Item>
+              <Menu.Item
+                key="file"
+              >
+                <Icon type="file" /> File
+              </Menu.Item>
+            </Menu>
+          }
+          key="create actions">
+          <Button
+            type="primary"
+            id="create-button"
+            size="small"
+            className={styles.tableControl}
+          >
+            <Icon type="plus" />
+            Create
+            <Icon type="down" />
+          </Button>
+        </Dropdown>
+        <Button
+          className={styles.tableControl}
+          onClick={this.onUpload}
+          size="small"
+        >
+          Upload
+        </Button>
+      </div>
+    );
+  }
+
   render () {
     if (!this.data) {
       return <Spin />;
     }
-    const menu = (
-      <Menu onClick={this.onCreateMenuClick}>
-        <Menu.Item key="file">File</Menu.Item>
-        <Menu.Item key="folder">Folder</Menu.Item>
-      </Menu>
-    );
     return (
       <div className={styles.tableContainer}>
-        <div className={styles.tableControls}>
-          <Dropdown.Button
-            onClick={this.onCreate}
-            overlay={menu}
-            className={styles.tableControl}
-            type="primary"
-          >
-            Create
-          </Dropdown.Button>
-          <Button
-            className={styles.tableControl}
-            onClick={this.onUpload}
-          >
-            Upload
-          </Button>
-        </div>
+        {this.renderTableControls()}
         <Table
           columns={COLUMNS}
           rowKey={(record) => record.id}
           dataSource={this.data}
           size="small"
           onRowClick={this.onRowClick}
+          pagination={false}
+          rowClassName={() => styles.tableRow}
         />
       </div>
     );

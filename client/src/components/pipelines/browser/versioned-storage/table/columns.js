@@ -28,7 +28,12 @@ const FILES = {
 
 const ACTIONS = {
   blob: (
-    <span className={styles.cellRow}>
+    <span
+      className={classNames(
+        styles.cellContent,
+        styles.rowActions
+      )}
+    >
       <Icon
         type="download"
         className={styles.action}
@@ -49,7 +54,12 @@ const ACTIONS = {
       />
     </span>),
   tree: (
-    <span className={styles.cellRow}>
+    <span
+      className={classNames(
+        styles.cellContent,
+        styles.rowActions
+      )}
+    >
       <Icon
         type="edit"
         className={styles.action}
@@ -72,7 +82,7 @@ const COLUMNS = [{
   key: 'name',
   render: (name, record) => {
     return (
-      <span className={styles.cellRow}>
+      <span className={styles.cellContent}>
         <span className={styles.fileIcon}>
           {FILES[record.type]}
         </span>
@@ -111,7 +121,14 @@ const COLUMNS = [{
 }, {
   title: 'Author',
   dataIndex: 'author',
-  key: 'author'
+  key: 'author',
+  render: (name) => {
+    return (
+      <span className={styles.textEllipsis}>
+        {name}
+      </span>
+    );
+  }
 }, {
   title: 'Message',
   dataIndex: 'commit_message',
@@ -119,7 +136,7 @@ const COLUMNS = [{
   render: (name) => {
     return (
       <span className={styles.textEllipsis}>
-        {name.substring(0, 19)}
+        {name}
       </span>
     );
   }
