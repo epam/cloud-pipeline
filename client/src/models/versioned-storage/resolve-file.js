@@ -14,10 +14,14 @@
  *  limitations under the License.
  */
 
-export default function extractRemoteSHA (contents) {
-  const result = /^<<<<<<< [^\n]+\n(.*?)\n=======\n(.*?)\n>>>>>>> (.*?)$/gms.exec(contents);
-  if (result && result.length === 4) {
-    return result[3];
+import VSRemotePost from './base/remote-post';
+
+export default class VSResolveFile extends VSRemotePost {
+  constructor (runId, storageId, file) {
+    super(runId);
+    this.constructor.isJson = false;
+    this.runId = runId;
+    this.storageId = storageId;
+    this.url = `vs/${storageId}/conflicts?path=${encodeURIComponent(file)}`;
   }
-  return undefined;
 }

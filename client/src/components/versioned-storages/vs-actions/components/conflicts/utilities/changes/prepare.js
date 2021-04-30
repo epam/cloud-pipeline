@@ -118,7 +118,7 @@ function markLines (list, branch, modifications = []) {
     });
 }
 
-export default function buildModifications (conflictedFile) {
+export default function prepare (conflictedFile) {
   const result = [
     ...processBranch(conflictedFile, HeadBranch),
     ...processBranch(conflictedFile, RemoteBranch),

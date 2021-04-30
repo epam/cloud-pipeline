@@ -278,6 +278,7 @@ BranchCode.propTypes = {
 
 function renderLineNumberWithActions (line, props) {
   const {
+    disabled = false,
     rtl,
     hideModificationActions,
     modificationAction: modification,
@@ -287,10 +288,13 @@ function renderLineNumberWithActions (line, props) {
   const index = line.lineNumber[branch];
   if (index >= 0) {
     const wrapAction = action => e => {
+      if (disabled) {
+        return;
+      }
       e.stopPropagation();
       e.preventDefault();
       if (modification && modification.conflictedFile) {
-        modification.conflictedFile.registerChange(action());
+        modification.conflictedFile.registerUndoOperation(action());
       }
     };
     const actions = (
@@ -343,6 +347,7 @@ function renderLineNumberWithActions (line, props) {
 function BranchCodeLineNumbers (
   {
     branch,
+    disabled = false,
     hideModificationActions = false,
     lines,
     modificationsBranch,
@@ -363,7 +368,7 @@ function BranchCodeLineNumbers (
       onMouseDown={onMouseDown}
       onRefresh={onRefresh}
       renderContent={renderLineNumberWithActions}
-      renderOptions={{rtl, hideModificationActions}}
+      renderOptions={{disabled, rtl, hideModificationActions}}
       style={
         Object.assign(
           {

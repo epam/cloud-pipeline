@@ -19,6 +19,7 @@ import LineStates from './conflicted-file/line-states';
 import {HeadBranch, RemoteBranch, Merged} from './conflicted-file/branches';
 import readBlobContents from './read-blob-contents';
 import extractRemoteSHA from './extract-remote-sha-from-conflict';
+import prepareChanges from './changes/prepare';
 import VSFileContent from '../../../../../../models/versioned-storage/file-content';
 import VSConflictDiff from '../../../../../../models/versioned-storage/conflict-diff';
 
@@ -30,9 +31,18 @@ function tempWarn (...o) {
   // console.warn(...o);
 }
 
-function fetchDiff (run, storage, file, revision) {
+function fetchDiff (run, storage, file, revision, mergeInProgress) {
   return new Promise((resolve) => {
-    const request = new VSConflictDiff(run, storage?.id, file, revision, false, 0);
+    const request = new VSConflictDiff(
+      run,
+      storage?.id,
+      file,
+      revision,
+      {
+        linesCount: 0,
+        mergeInProgress
+      }
+    );
     request
       .fetch()
       .then(() => {
@@ -50,18 +60,18 @@ function parse (contents) {
   tempLog('CONTENTS:');
   tempLog(contents.replace(/\n/g, '↵'));
   const linkedList = new ConflictedFile();
-  const regExp = /\n<<<<<<< HEAD\n(.*?)=======\n(.*?)>>>>>>> (.*?)\n/gms;
+  const regExp = /^<<<<<<< [^\n]+\n(.*?)=======\n(.*?)>>>>>>> (.*?)$/gms;
   let result = regExp.exec(contents);
   let previousIndex = 0;
   let conflictId = 0;
   while (result && result.length === 4) {
     const conflict = {id: conflictId};
-    linkedList.appendText(contents.slice(previousIndex, result.index).concat('\n'), {});
+    linkedList.appendText(contents.slice(previousIndex, result.index), {});
     linkedList.appendConflictStart({conflict});
     linkedList.appendHeadText(result[1], {conflict});
     linkedList.appendRemoteText(result[2], {conflict});
     linkedList.appendConflictEnd({conflict});
-    previousIndex = result.index + result[0].length;
+    previousIndex = result.index + result[0].length + 1;
     result = regExp.exec(contents);
     conflictId += 1;
   }
@@ -90,8 +100,8 @@ function processDiffs (contents, head, remote) {
   const list = parse(contents);
   tempLog(list);
   tempLog(head, remote);
-  const headRest = head.slice();
-  const remoteRest = remote.slice();
+  const headRest = (head || []).slice();
+  const remoteRest = (remote || []).slice();
   const printLineNo = no => no > 0 ? no : '.';
   const printModification = modification => [
     `${printLineNo(modification.old_lineno)} -> ${printLineNo(modification.new_lineno)}`,
@@ -251,6 +261,7 @@ function processDiffs (contents, head, remote) {
   list.buildLineNumbers(HeadBranch);
   list.buildLineNumbers(RemoteBranch);
   list.buildLineNumbers(Merged);
+  prepareChanges(list);
   console.log('FINAL:');
   const skip = new Set([LineStates.omit]);
   const str = (o, length) => (new Array(Math.max(length, o.toString().length)))
@@ -288,7 +299,7 @@ function processDiffs (contents, head, remote) {
   return list;
 }
 
-export default function analyzeConflicts (run, storage, file) {
+export default function analyzeConflicts (run, storage, mergeInProgress, file) {
   if (!run || !storage || !file) {
     return Promise.resolve({});
   }
@@ -303,11 +314,29 @@ export default function analyzeConflicts (run, storage, file) {
         } else {
           readBlobContents(request.response)
             .then((contents) => {
-              const remoteSHA = extractRemoteSHA(contents);
-              Promise.all([
-                fetchDiff(run, storage, file),
-                remoteSHA && fetchDiff(run, storage, file, remoteSHA)
-              ].filter(Boolean))
+              const remoteSHA = mergeInProgress ? extractRemoteSHA(contents) : undefined;
+              const promises = [];
+              if (mergeInProgress) {
+                // merge conflict
+                // head:
+                promises.push(
+                  fetchDiff(run, storage, file, undefined, mergeInProgress)
+                );
+                // remote:
+                promises.push(
+                  remoteSHA
+                    ? fetchDiff(run, storage, file, remoteSHA, mergeInProgress)
+                    : Promise.resolve(undefined)
+                );
+              } else {
+                // todo: stash conflict
+                // head:
+                // promises.push(fetchDiff(run, storage, file, undefined, mergeInProgress));
+                promises.push(Promise.resolve(undefined));
+                // remote:
+                promises.push(Promise.resolve(undefined));
+              }
+              Promise.all(promises)
                 .then((payloads) => {
                   const [
                     head,

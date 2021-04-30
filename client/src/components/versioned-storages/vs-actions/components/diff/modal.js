@@ -36,6 +36,7 @@ class GitDiffModal extends React.Component {
     const {
       fileDiffs,
       onClose,
+      mergeInProgress,
       run,
       storage,
       visible
@@ -52,6 +53,7 @@ class GitDiffModal extends React.Component {
           fileDiffs={fileDiffs}
           run={run}
           storage={storage?.id}
+          mergeInProgress={mergeInProgress}
           visible={visible}
         />
       </Modal>
@@ -62,6 +64,7 @@ class GitDiffModal extends React.Component {
 GitDiffModal.propTypes = {
   fileDiffs: PropTypes.array,
   onClose: PropTypes.func,
+  mergeInProgress: PropTypes.bool,
   run: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   storage: PropTypes.object,
   visible: PropTypes.bool

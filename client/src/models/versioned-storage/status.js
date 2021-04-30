@@ -30,7 +30,7 @@ class VSTaskStatus extends VSRemote {
     }
   };
 
-  fetchUntilDone = (intervalSec = 5) => {
+  fetchUntilDone = (intervalSec = 1) => {
     if (this.fetchUntilDonePromise) {
       return this.fetchUntilDonePromise;
     }

@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import VSDiff from '../../../../../models/versioned-storage/diff';
+import VSConflictDiff from '../../../../../models/versioned-storage/conflict-diff';
 import FileDiffPresenter from './file-diff-presenter';
 import styles from './diff.css';
 
@@ -43,9 +44,12 @@ function compareFiles (a, b) {
   return true;
 }
 
-function loadDiff (runId, storage, file) {
+function loadDiff (runId, storage, file, mergeInProgress) {
   return new Promise((resolve) => {
-    const request = new VSDiff(runId, storage, file, true);
+    const {path, status} = file || {};
+    const request = /^conflicts$/i.test(status)
+      ? new VSConflictDiff(runId, storage, path, undefined, {raw: true, mergeInProgress})
+      : new VSDiff(runId, storage, path, true);
     request
       .fetch()
       .then(() => {
@@ -91,7 +95,12 @@ class GitDiff extends React.Component {
   }
 
   fetchDiffs = () => {
-    const {run, storage, fileDiffs} = this.props;
+    const {
+      run,
+      storage,
+      fileDiffs,
+      mergeInProgress
+    } = this.props;
     if (run && storage && fileDiffs) {
       this.setState({
         files: (fileDiffs || []).map(f => f.path),
@@ -107,7 +116,7 @@ class GitDiff extends React.Component {
           }), {})
       }, () => {
         const fetchSingleFileDiff = (fileDiff) => {
-          loadDiff(run, storage, fileDiff.path)
+          loadDiff(run, storage, fileDiff, mergeInProgress)
             .then(result => {
               const {diffs} = this.state;
               const {error, diff} = result;
@@ -165,6 +174,7 @@ class GitDiff extends React.Component {
 GitDiff.propTypes = {
   run: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   storage: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  mergeInProgress: PropTypes.bool,
   fileDiffs: PropTypes.array,
   visible: PropTypes.bool,
   collapsed: PropTypes.bool,

@@ -97,7 +97,7 @@ function getModificationIndexRanges (modification, branch) {
   };
 }
 
-export default function renderModifications (canvas, list, modifications, branch, options = {}) {
+export default function renderModifications (canvas, conflictedFile, branch, options = {}) {
   if (canvas && canvas.getContext) {
     const {
       width = canvas.width / window.devicePixelRatio,
@@ -115,7 +115,7 @@ export default function renderModifications (canvas, list, modifications, branch
       context.fillStyle = modificationsRenderConfig.background;
       context.rect(0, 0, canvas.width, canvas.height);
       context.fill();
-      const currentModifications = (modifications || [])
+      const currentModifications = (conflictedFile?.changes || [])
         .filter(m => m.branch === branch);
       for (let i = 0; i < currentModifications.length; i++) {
         const modification = currentModifications[i];

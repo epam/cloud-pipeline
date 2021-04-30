@@ -79,8 +79,12 @@ class VSRemote extends Remote {
     return this.fetchEndpointPromise;
   }
 
+  async doRegularFetch () {
+    return super.fetch();
+  }
+
   async fetch () {
-    return this.fetchEndpoint().then(() => super.fetch());
+    return this.fetchEndpoint().then(() => this.doRegularFetch());
   }
 
   async silentFetch () {

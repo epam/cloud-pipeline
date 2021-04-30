@@ -56,19 +56,11 @@ export default class ConflictedFileLine {
     this.isFirstLineOfChange = {};
     this.isLastLineOfChange = {};
     this.isChangeMarker = {};
-    if (meta.conflict) {
-      this.state = {
-        [HeadBranch]: States.conflict(meta.conflict),
-        [RemoteBranch]: States.conflict(meta.conflict),
-        [Merged]: States.conflict(meta.conflict)
-      };
-    } else {
-      this.state = {
-        [HeadBranch]: States.original,
-        [RemoteBranch]: States.original,
-        [Merged]: States.original
-      };
-    }
+    this.state = {
+      [HeadBranch]: States.original,
+      [RemoteBranch]: States.original,
+      [Merged]: States.original
+    };
   }
 
   getBranchState (branch) {

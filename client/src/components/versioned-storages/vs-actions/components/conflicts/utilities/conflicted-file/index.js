@@ -28,11 +28,11 @@ const ChangesHistory = Symbol('changes history');
 
 export default class ConflictedFile {
   @observable changesHash = 0;
+  @observable changes = [];
   constructor () {
     this[ConflictedFileStart] = new ConflictedFileLine('', {start: true});
     this.items = [];
     this[ChangesHistory] = [];
-    this.changes = [];
   }
 
   @action
@@ -57,10 +57,10 @@ export default class ConflictedFile {
           currentRevert();
         }
       }, () => {});
-    this.registerChange(revert);
+    this.registerUndoOperation(revert);
   }
 
-  registerChange (revert) {
+  registerUndoOperation (revert) {
     this[ChangesHistory].push(revert);
     this.notify();
   }
@@ -111,9 +111,6 @@ export default class ConflictedFile {
   appendLine (line, meta, ...branches) {
     const item = new ConflictedFileLine(line, meta);
     this.items.push(item);
-    if (meta && meta.conflict) {
-      console.log('append', line, item.key, branches, item);
-    }
     branches.forEach(branch => {
       this.move(branch, item);
     });
@@ -366,14 +363,7 @@ export default class ConflictedFile {
   }
 
   getMergedLines () {
-    return this
-      .getLines(Merged)
-      .slice(1)
-      .filter(line => [
-        line.state[HeadBranch],
-        line.state[RemoteBranch],
-        line.state[Merged]
-      ].indexOf(LineStates.original) >= 0);
+    return this.getLines(Merged).slice(1);
   }
 
   getHeadText () {

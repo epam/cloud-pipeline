@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+import {computed, observable} from 'mobx';
 import LineStates from '../conflicted-file/line-states';
 import ModificationType from './types';
 import ChangeStatuses from './statuses';
@@ -57,7 +58,7 @@ export default class Change {
    * Identifies whether change is a conflict
    * @type {boolean}
    */
-  conflict = false;
+  @observable conflict = false;
   /**
    * Change type
    * @type {string}
@@ -69,19 +70,20 @@ export default class Change {
    * @type {Change[]}
    * @private
    */
-  _parentChanges = [];
+  @observable _parentChanges = [];
 
   /**
    * Nested change; applicable only for conflicts
    * @private
    */
-  _childChange;
+  @observable _childChange;
 
-  _status;
+  @observable _status;
   /**
    * Change's status
    * @type {string}
    */
+  @computed
   get status () {
     if (this._parentChanges.length > 0) {
       const applied = this._parentChanges
@@ -102,6 +104,11 @@ export default class Change {
     if (this._parentChanges.length === 0) {
       this._status = value;
     }
+  }
+
+  @computed
+  get resolved () {
+    return this.status === ChangeStatuses.applied || this.status === ChangeStatuses.discarded;
   }
 
   constructor (conflictedFile, line, branch) {
@@ -308,7 +315,7 @@ export default class Change {
         // of the conflict.
         const lastNotRevertedChange = !(
           this._childChange._parentChanges
-            .find(c => c.status !== ChangeStatuses.prepared)
+            .find(c => c.status === ChangeStatuses.applied)
         );
         if (lastNotRevertedChange) {
           // if so, we need to re-build fake "MERGED" branch

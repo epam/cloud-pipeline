@@ -18,12 +18,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Alert} from 'antd';
 import classNames from 'classnames';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import ResolveChanges from './controls/resolve-changes';
 import ConflictedFile from './utilities/conflicted-file';
 import Branches, {HeadBranch, RemoteBranch, Merged} from './utilities/conflicted-file/branches';
-import analyzeConflicts from './utilities/analyze-conflicts';
-import buildModifications from './utilities/changes/build';
 import renderModifications from './utilities/modifications-canvas';
 import BranchCode from './utilities/branch-code';
 import StickyDiv from './utilities/sticky-div';
@@ -50,11 +48,7 @@ const getGridColumns = (panels) => {
 class Conflict extends React.PureComponent {
   state = {
     error: undefined,
-    analysis: undefined,
-    modifications: [],
-    contents: undefined,
-    headRaw: undefined,
-    remoteRaw: undefined,
+    conflictedFile: undefined,
     ide: {
       width: undefined,
       height: undefined
@@ -93,11 +87,7 @@ class Conflict extends React.PureComponent {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (
-      prevProps.run !== this.props.run ||
-      prevProps.storage !== this.props.storage ||
-      prevProps.file !== this.props.file
-    ) {
+    if (prevProps.file !== this.props.file) {
       this.updateFromProps();
     }
     this.draw();
@@ -105,31 +95,31 @@ class Conflict extends React.PureComponent {
 
   updateFromProps = () => {
     const {
-      file,
-      storage,
-      run
+      conflictsSession,
+      file
     } = this.props;
-    if (storage && file && run) {
-      analyzeConflicts(run, storage, file)
-        .then((analysis) => {
-          this.setState({
-            error: undefined,
-            analysis,
-            modifications: buildModifications(analysis)
-          }, this.draw);
-        })
-        .catch(e => {
-          this.setState({
-            error: e.message,
-            analysis: undefined,
-            modifications: []
-          }, this.draw);
-        });
+    if (conflictsSession && file) {
+      const conflictsSessionFile = conflictsSession.getFile(file);
+      if (conflictsSessionFile) {
+        conflictsSessionFile
+          .getInfo()
+          .then((conflictedFile) => {
+            this.setState({
+              conflictedFile,
+              error: undefined
+            }, this.draw);
+          })
+          .catch(e => {
+            this.setState({
+              conflictedFile: undefined,
+              error: e.message
+            }, this.draw);
+          });
+      }
     } else {
       this.setState({
-        error: undefined,
-        analysis: undefined,
-        modifications: []
+        conflictedFile: undefined,
+        error: undefined
       }, this.draw);
     }
   };
@@ -141,13 +131,17 @@ class Conflict extends React.PureComponent {
   };
 
   undoLastChange = (e) => {
+    const {disabled} = this.props;
+    if (disabled) {
+      return;
+    }
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    const {analysis} = this.state;
-    if (analysis && typeof analysis.undo === 'function') {
-      analysis.undo(this.refresh);
+    const {conflictedFile} = this.state;
+    if (conflictedFile && typeof conflictedFile.undo === 'function') {
+      conflictedFile.undo(this.refresh);
     }
   };
 
@@ -225,20 +219,23 @@ class Conflict extends React.PureComponent {
 
   renderIDE = () => {
     const {
-      analysis,
+      conflictedFile,
       error,
       ide = {}
     } = this.state;
-    if (!error && analysis) {
+    const {
+      disabled
+    } = this.props;
+    if (!error && conflictedFile) {
       const branches = {
-        [HeadBranch]: analysis.getLines(HeadBranch),
-        [Merged]: analysis.getLines(Merged),
-        [RemoteBranch]: analysis.getLines(RemoteBranch)
+        [HeadBranch]: conflictedFile.getLines(HeadBranch),
+        [Merged]: conflictedFile.getLines(Merged),
+        [RemoteBranch]: conflictedFile.getLines(RemoteBranch)
       };
       const rawBranches = {
-        [HeadBranch]: analysis.getLines(HeadBranch, new Set([])),
-        [Merged]: analysis.getLines(Merged, new Set([])),
-        [RemoteBranch]: analysis.getLines(RemoteBranch, new Set([]))
+        [HeadBranch]: conflictedFile.getLines(HeadBranch, new Set([])),
+        [Merged]: conflictedFile.getLines(Merged, new Set([])),
+        [RemoteBranch]: conflictedFile.getLines(RemoteBranch, new Set([]))
       };
       const attachScrollArea = (node, name) => {
         this.scrolls[name] = node;
@@ -349,6 +346,7 @@ class Conflict extends React.PureComponent {
       };
       const renderBranchCodeLineNumbers = (branch, modificationsBranch, rtl = false) => (
         <BranchCode.LineNumbers
+          disabled={disabled}
           key={`${branch}-code-line-numbers`}
           branch={branch}
           hideModificationActions={branch === Merged}
@@ -490,11 +488,10 @@ class Conflict extends React.PureComponent {
   }
 
   draw = () => {
-    const {analysis, modifications} = this.state;
+    const {conflictedFile} = this.state;
     renderModifications(
       this.canvases[HeadBranch],
-      analysis,
-      modifications,
+      conflictedFile,
       HeadBranch,
       {
         width: CANVAS_WIDTH,
@@ -507,8 +504,7 @@ class Conflict extends React.PureComponent {
     );
     renderModifications(
       this.canvases[RemoteBranch],
-      analysis,
-      modifications,
+      conflictedFile,
       RemoteBranch,
       {
         width: CANVAS_WIDTH,
@@ -544,7 +540,7 @@ class Conflict extends React.PureComponent {
 
   render () {
     const {
-      analysis,
+      conflictedFile,
       error,
       panels
     } = this.state;
@@ -557,10 +553,10 @@ class Conflict extends React.PureComponent {
         }
         <ResolveChanges
           className={styles.resolveChanges}
-          conflictedFile={analysis}
+          conflictedFile={conflictedFile}
         />
         <div
-          data-conflicted-file-changes-hash={analysis ? analysis.changesHash : 0}
+          data-conflicted-file-changes-hash={conflictedFile ? conflictedFile.changesHash : 0}
           className={styles.resolveArea}
           ref={this.initializeIDEContainer}
           style={{
@@ -575,9 +571,8 @@ class Conflict extends React.PureComponent {
 }
 
 Conflict.propTypes = {
-  file: PropTypes.string,
-  run: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  storage: PropTypes.object
+  disabled: PropTypes.bool,
+  file: PropTypes.string
 };
 
-export default observer(Conflict);
+export default inject('conflictsSession')(observer(Conflict));

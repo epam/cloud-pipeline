@@ -24,33 +24,91 @@ import Conflicts from './conflicts';
 import styles from './conflicts.css';
 
 class ConflictsDialog extends React.Component {
+  state = {
+    resolved: false,
+    files: {}
+  };
+
+  onResolvedStatusChanged = (session) => {
+    if (session.resolved) {
+      session.getAllFilesContents()
+        .then(files => {
+          this.setState({
+            resolved: session.resolved,
+            files
+          });
+        });
+    } else {
+      this.setState({
+        resolved: session.resolved,
+        files: {}
+      });
+    }
+  };
+
+  onAbortClicked = () => {
+    const onAbort = () => {
+      const {onAbort: onAbortCallback} = this.props;
+      onAbortCallback && onAbortCallback();
+    };
+    Modal.confirm({
+      title: 'Are you sure you want to abort conflicts resolving?',
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk: () => onAbort(),
+      okText: 'ABORT',
+      cancelText: 'CANCEL'
+    });
+  };
+
+  onResolveClicked = () => {
+    const {
+      files
+    } = this.state;
+    const {onResolve} = this.props;
+    onResolve && onResolve(files);
+  };
+
   render () {
     const {
       conflicts,
+      disabled,
       run,
       storage,
-      visible
+      visible,
+      onClose,
+      mergeInProgress
     } = this.props;
+    const {
+      resolved
+    } = this.state;
     return (
       <Modal
         title="Resolve conflicts"
-        closable={false}
+        closable={!disabled}
+        maskClosable={!disabled}
         visible={visible}
         width="98%"
         style={{
           top: 10
         }}
+        onCancel={onClose}
         footer={(
           <div
             className={styles.dialogActions}
           >
             <Button
               type="danger"
+              disabled={disabled}
+              onClick={this.onAbortClicked}
             >
               ABORT
             </Button>
             <Button
               type="primary"
+              disabled={!resolved || disabled}
+              onClick={this.onResolveClicked}
             >
               RESOLVE
             </Button>
@@ -58,9 +116,12 @@ class ConflictsDialog extends React.Component {
         )}
       >
         <Conflicts
+          disabled={disabled}
           conflicts={conflicts}
           run={run}
           storage={storage}
+          mergeInProgress={mergeInProgress}
+          onResolvedStatusChanged={this.onResolvedStatusChanged}
         />
       </Modal>
     );
@@ -69,7 +130,11 @@ class ConflictsDialog extends React.Component {
 
 ConflictsDialog.propTypes = {
   conflicts: PropTypes.arrayOf(PropTypes.string),
+  disabled: PropTypes.bool,
+  onAbort: PropTypes.func,
   onClose: PropTypes.func,
+  onResolve: PropTypes.func,
+  mergeInProgress: PropTypes.bool,
   run: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   storage: PropTypes.object,
   visible: PropTypes.bool

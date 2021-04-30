@@ -30,6 +30,22 @@
   width: 200px;
 }
 
+.conflicts-ide .files-table table {
+  padding: 0;
+}
+
+.conflicts-ide .files-table .file {
+  cursor: pointer;
+}
+
+.conflicts-ide .files-table .file .resolved-cell {
+  text-align: right;
+}
+
+.resolved-cell .resolved {
+  color: #399839;
+}
+
 .conflicts-ide .resolve-area-container {
   margin-left: 10px;
   flex: 1;
@@ -46,10 +62,9 @@
 }
 
 .resolve-area {
-  max-height: 70vh;
+  height: 70vh;
   overflow: hidden;
   display: grid;
-  height: 100%;
   position: relative;
 }
 

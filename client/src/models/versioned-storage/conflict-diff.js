@@ -17,15 +17,22 @@
 import VSRemote from './base/remote';
 
 export default class VSConflictDiff extends VSRemote {
-  constructor (runId, storageId, file, revision, raw, linesCount) {
+  constructor (runId, storageId, file, revision, options = {}) {
     super(runId);
+    const {
+      raw = false,
+      linesCount = undefined,
+      mergeInProgress = false
+    } = options;
     this.runId = runId;
     this.storageId = storageId;
+    console.log('vs-conflict-diff', file, mergeInProgress);
     let query = [
       `path=${encodeURIComponent(file)}`,
       revision && `revision=${revision}`,
       raw && `raw=${raw}`,
-      linesCount !== undefined && linesCount !== null && `lines_count=${linesCount}`
+      linesCount !== undefined && linesCount !== null && `lines_count=${linesCount}`,
+      `fetch_conflicts=${!mergeInProgress}`
     ].filter(Boolean).join('&');
     if (query.length) {
       query = `?${query}`;

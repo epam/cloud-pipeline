@@ -64,7 +64,13 @@ class GitCommitDialog extends React.Component {
   }
 
   render () {
-    const {visible, storage, files, run} = this.props;
+    const {
+      visible,
+      storage,
+      files,
+      run,
+      mergeInProgress
+    } = this.props;
     const {commitMessage, commitInProgress} = this.state;
     if (!storage) {
       return null;
@@ -123,6 +129,7 @@ class GitCommitDialog extends React.Component {
             fileDiffs={files}
             run={run}
             storage={storage?.id}
+            mergeInProgress={mergeInProgress}
             visible={visible}
             className="commit-dialog"
             collapsed
@@ -140,6 +147,7 @@ GitCommitDialog.propTypes = {
   onCommit: PropTypes.func,
   gitCommit: PropTypes.object,
   storage: PropTypes.object,
+  mergeInProgress: PropTypes.bool,
   files: PropTypes.array
 };
 

@@ -17,11 +17,15 @@
 import VSRemote from './base/remote';
 
 export default class VSFileContent extends VSRemote {
+  static getUrl (runId, storageId, file) {
+    return `vs/${storageId}/files?path=${encodeURIComponent(file)}`;
+  }
+
   constructor (runId, storageId, file) {
     super(runId);
     this.constructor.isJson = false;
     this.runId = runId;
     this.storageId = storageId;
-    this.url = `vs/${storageId}/files?path=${encodeURIComponent(file)}`;
+    this.url = VSFileContent.getUrl(runId, storageId, file);
   }
 }
