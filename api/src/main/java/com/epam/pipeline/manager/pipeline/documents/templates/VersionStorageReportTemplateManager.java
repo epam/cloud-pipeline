@@ -110,13 +110,11 @@ public class VersionStorageReportTemplateManager {
         final String reportFileName;
         if (diffReportFiles.size() == 1) {
             reportFileName = VERSIONED_STORAGE_REPORT + "_" + loaded.getName() + "_"
-                            + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now() + DOCX
-            );
+                            + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now()) + DOCX;
             diffReportFiles.get(0).getSecond().write(outputStream);
         } else {
             reportFileName = VERSIONED_STORAGE_REPORT + "_" + loaded.getName() + "_"
-                            + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now() + ZIP
-            );
+                            + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now()) + ZIP;
             writeToZipStream(outputStream, diffReportFiles);
         }
         return reportFileName;
