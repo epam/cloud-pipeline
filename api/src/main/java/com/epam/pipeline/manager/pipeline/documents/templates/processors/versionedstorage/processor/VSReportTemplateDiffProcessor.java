@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
 
 import com.epam.pipeline.entity.git.GitDiffEntry;
@@ -25,6 +41,8 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     private static final String EMPTY = "";
     private static final String ADDITION_SIGN = "+";
     private static final String DELETION_SIGN = "-";
+    public static final int SMALL_COLUMN_SIZE = 512;
+    public static final int CONTENT_COLUMN_SIZE = 8960;
 
     private XWPFParagraph paragraph;
 
@@ -250,10 +268,10 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
         borders.addNewInsideH().setVal(STBorder.SINGLE);
         borders.addNewInsideV().setVal(STBorder.SINGLE);
 
-        xwpfTable.getCTTbl().addNewTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(512));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(8704));
+        xwpfTable.getCTTbl().addNewTblGrid().addNewGridCol().setW(BigInteger.valueOf(SMALL_COLUMN_SIZE));
+        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(SMALL_COLUMN_SIZE));
+        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(SMALL_COLUMN_SIZE));
+        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(CONTENT_COLUMN_SIZE));
         return xwpfTable;
     }
 
