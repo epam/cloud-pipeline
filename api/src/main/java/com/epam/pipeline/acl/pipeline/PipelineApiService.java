@@ -50,6 +50,7 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -356,7 +357,7 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public byte[] generateReportForVersionedStorage(final Long id, final GitDiffReportFilter reportFilters) {
+    public Pair<String, byte[]> generateReportForVersionedStorage(final Long id, final GitDiffReportFilter reportFilters) {
         return fileGenerationManager
                 .generateVersionStorageReport(id, reportFilters);
     }

@@ -29,7 +29,12 @@ import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
-import com.epam.pipeline.entity.git.*;
+import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCommitsFilter;
+import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -41,10 +46,8 @@ import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Revision;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -54,6 +57,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -801,9 +805,8 @@ public class PipelineController extends AbstractRestController {
     @RequestMapping(value = "/pipeline/{id}/report/generate", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Gets file content",
-            notes = "Gets content of the file, specified by path in the repository and pipeline version ID. The file " +
-                    "content is returned Base64 encoded",
+            value = "Generate Version Storage Report",
+            notes = "Generate Version Storage Report, based on provided filters",
             produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -812,11 +815,7 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestBody final GitDiffReportFilter filter,
             final HttpServletResponse response) throws IOException {
-        final byte[] bytes = pipelineApiService.generateReportForVersionedStorage(id, filter);
-        final String name = FilenameUtils.getName(
-                "versioned-storage_report_" + id + "_"
-                        + ReportDataExtractor.DATE_FORMAT.format(DateUtils.now()) + ".zip"
-        );
-        writeFileToResponse(response, bytes, name);
+        final Pair<String, byte[]> report = pipelineApiService.generateReportForVersionedStorage(id, filter);
+        writeFileToResponse(response, report.getSecond(), report.getFirst());
     }
 }

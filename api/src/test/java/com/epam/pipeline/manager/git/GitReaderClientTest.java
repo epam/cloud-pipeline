@@ -17,11 +17,8 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogRequestFilter;
-import com.epam.pipeline.exception.git.GitClientException;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;

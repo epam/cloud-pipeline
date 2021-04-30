@@ -20,9 +20,6 @@ import com.epam.pipeline.manager.pipeline.documents.templates.structure.CommitDi
 import lombok.Builder;
 import lombok.Value;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Value
 @Builder
 public class GitDiffReportFilter {

@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.controller.vo.GenerateFileVO;
-import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitDiffReportFilter;
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplate;
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplateManager;
@@ -26,6 +25,7 @@ import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.documents.templates.VersionStorageReportTemplateManager;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -67,8 +67,8 @@ public class PipelineFileGenerationManager {
         return this.generateFile(templatePath, documentTemplate);
     }
 
-    public byte[] generateVersionStorageReport(final Long pipelineId,
-                                               final GitDiffReportFilter reportFilters) {
+    public Pair<String, byte[]> generateVersionStorageReport(final Long pipelineId,
+                                                             final GitDiffReportFilter reportFilters) {
         return vsReportTemplateManager.generateReport(pipelineId, reportFilters);
     }
 

@@ -99,8 +99,8 @@ public class GitlabClient {
     private static final String PUBLIC_VISIBILITY = "public";
     public static final String NEW_LINE = "\n";
     public static final long MAINTAINER = 40L;
-    private static final String DOT_CHAR = ".";
-    private static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
+    public static final String DOT_CHAR = ".";
+    public static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
     public static final String GITKEEP_FILE = ".gitkeep";
 
     static {
