@@ -19,25 +19,35 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
-  message
+  message,
+  Pagination
 } from 'antd';
 import VersionedStorageHeader from './header';
 import localization from '../../../../utils/localization';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
 import UpdatePipeline from '../../../../models/pipelines/UpdatePipeline';
+import VersionedStorageListWithInfo from '../../../../models/versioned-storages/list-with-info';
 import styles from './versioned-storage.css';
+
+const PAGE_SIZE = 20;
 
 @localization.localizedComponent
 @HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
 @HiddenObjects.injectTreeFilter
 @inject('pipelines', 'folders', 'pipelinesLibrary')
 @inject(({pipelines}, params) => {
+  const {location} = params;
+  let path;
+  if (location && location.query.path) {
+    path = location.query.path;
+  }
   let componentParameters = params;
   if (params.params) {
     componentParameters = params.params;
   }
   return {
+    path,
     pipelineId: componentParameters.id,
     pipeline: pipelines.getPipeline(componentParameters.id)
   };
@@ -45,15 +55,74 @@ import styles from './versioned-storage.css';
 @observer
 class VersionedStorage extends localization.LocalizedReactComponent {
   state = {
+    contents: [],
     editStorageDialog: false,
+    error: undefined,
+    lastPage: 0,
+    page: 0,
+    pending: false,
     showHistoryPanel: false
+  };
+
+  componentDidMount () {
+    this.pathWasChanged();
+  }
+
+  componentDidUpdate (prevProps) {
+    if (prevProps.path !== this.props.path) {
+      this.pathWasChanged();
+    }
+  }
+
+  pathWasChanged = () => {
+    this.fetchPage(0);
+  };
+
+  fetchPage = (page) => {
+    const {
+      path,
+      pipelineId
+    } = this.props;
+    this.setState({
+      pending: true
+    }, () => {
+      const resolve = (result = {}) => {
+        this.setState({
+          page,
+          pending: false,
+          ...result
+        });
+      };
+      const request = new VersionedStorageListWithInfo(
+        pipelineId,
+        {
+          page,
+          pageSize: PAGE_SIZE,
+          path
+        }
+      );
+      request
+        .fetch()
+        .then(() => {
+          if (request.error || !request.loaded) {
+            resolve({error: request.error || 'Error fetching versioned storage contents'});
+          } else {
+            const {
+              listing = [],
+              max_page: lastPage
+            } = request.value;
+            resolve({contents: listing.slice(), lastPage});
+          }
+        })
+        .catch(e => resolve({error: e.message}));
+    });
   };
 
   get actions () {
     return {
       openHistoryPanel: this.openHistoryPanel,
       closeHistoryPanel: this.closeHistoryPanel,
-      openEditSorageDialog: this.openEditSorageDialog
+      openEditStorageDialog: this.openEditStorageDialog
     };
   }
 
@@ -67,7 +136,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.setState({showHistoryPanel: false});
   };
 
-  openEditSorageDialog = () => {
+  openEditStorageDialog = () => {
     this.setState({editStorageDialog: true});
   };
 
@@ -81,7 +150,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       id: pipeline.value.id,
       name: name,
       description: pipeline.value.description,
-      parentFolderId: pipeline.value.parentFolderId
+      parentFolderId: pipeline.value.parentFolderId,
+      pipelineType: pipeline.value.pipelineType
     });
     if (this.updateVSRequest.error) {
       hide();
@@ -105,9 +175,15 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     const {
       pipeline,
       pipelineId,
-      readOnly,
-      listingMode
+      readOnly
     } = this.props;
+    const {
+      contents,
+      error,
+      lastPage,
+      page
+    } = this.state;
+    console.log(contents);
     const {
       showHistoryPanel
     } = this.state;
@@ -129,9 +205,35 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           readOnly={readOnly}
           onRenameStorage={this.renameVersionedStorage}
           actions={this.actions}
-          listingMode={listingMode}
           historyPanelOpen={showHistoryPanel}
         />
+        {
+          error && (
+            <Alert
+              message={error}
+              type="error"
+            />
+          )
+        }
+        <div
+          className={styles.paginationRow}
+        >
+          {
+            lastPage >= 0 && (
+              <Pagination
+                current={page + 1}
+                total={(lastPage + 10) * PAGE_SIZE}
+                pageSize={PAGE_SIZE}
+                size="small"
+                onChange={
+                  newPage => newPage === (page + 1)
+                    ? undefined
+                    : this.fetchPage(newPage - 1)
+                }
+              />
+            )
+          }
+        </div>
       </div>
     );
   }
@@ -143,11 +245,11 @@ VersionedStorage.propTypes = {
     PropTypes.string,
     PropTypes.number
   ]),
-  listingMode: PropTypes.bool,
   readOnly: PropTypes.bool,
   onReloadTree: PropTypes.func,
   folders: PropTypes.object,
-  pipelinesLibrary: PropTypes.object
+  pipelinesLibrary: PropTypes.object,
+  path: PropTypes.string
 };
 
 export default VersionedStorage;

@@ -14,14 +14,27 @@
  *  limitations under the License.
  */
 
-.vs-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+import Remote from '../basic/Remote';
 
-.pagination-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+export default class VersionedStorageList extends Remote {
+  constructor (id, options) {
+    super();
+    const {
+      page = 0,
+      pageSize = 20,
+      path,
+      version
+    } = options;
+    this.id = id;
+    let query = [
+      `page=${page}`,
+      `pageSize=${pageSize}`,
+      version && `version=${version}`,
+      path && `path=${encodeURIComponent(path)}`
+    ].filter(Boolean).join('&');
+    if (query) {
+      query = '?'.concat(query);
+    }
+    this.url = `/pipeline/${id}/ls_tree${query}`;
+  }
 }

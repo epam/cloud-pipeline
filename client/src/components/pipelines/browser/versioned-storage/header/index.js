@@ -50,7 +50,6 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
   renderActions = () => {
     const {
       actions,
-      listingMode,
       historyPanelOpen
     } = this.props;
     const onSelectDisplayOption = ({key}) => {
@@ -63,24 +62,22 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
       }
     };
     const displayOptionsMenuItems = [];
-    if (!listingMode) {
-      displayOptionsMenuItems.push(
-        <Menu.Item
-          key="history"
+    displayOptionsMenuItems.push(
+      <Menu.Item
+        key="history"
+      >
+        <Row
+          type="flex"
+          justify="space-between"
+          align="middle"
         >
-          <Row
-            type="flex"
-            justify="space-between"
-            align="middle"
-          >
-            <span>History</span>
-            {historyPanelOpen && (
-              <Icon type="check-circle" />
-            )}
-          </Row>
-        </Menu.Item>
-      );
-    }
+          <span>History</span>
+          {historyPanelOpen && (
+            <Icon type="check-circle" />
+          )}
+        </Row>
+      </Menu.Item>
+    );
     if (displayOptionsMenuItems.length > 0) {
       const displayOptionsMenu = (
         <Menu onClick={onSelectDisplayOption} style={{width: 125}}>
@@ -111,7 +108,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
     const onClick = ({key}) => {
       switch (key) {
         case 'edit':
-          actions && actions.openEditSorageDialog();
+          actions && actions.openEditStorageDialog();
           break;
       }
     };
@@ -221,9 +218,8 @@ VersionedStorageHeader.propTypes = {
   actions: PropTypes.shape({
     openHistoryPanel: PropTypes.func,
     closeHistoryPanel: PropTypes.func,
-    openEditSorageDialog: PropTypes.func
+    openEditStorageDialog: PropTypes.func
   }),
-  listingMode: PropTypes.bool,
   readOnly: PropTypes.bool,
   issuesPanelOpen: PropTypes.bool,
   metadataPanelOpen: PropTypes.bool
