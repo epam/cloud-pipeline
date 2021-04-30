@@ -69,7 +69,10 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   }
 
   componentDidUpdate (prevProps) {
-    if (prevProps.path !== this.props.path) {
+    if (
+      prevProps.path !== this.props.path ||
+      prevProps.pipelineId !== this.props.pipelineId
+    ) {
       this.pathWasChanged();
     }
   }
