@@ -23,6 +23,7 @@ import {
   Pagination
 } from 'antd';
 import VersionedStorageHeader from './header';
+import VersionedStorageTable from './table';
 import localization from '../../../../utils/localization';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
@@ -237,6 +238,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
             )
           }
         </div>
+        <VersionedStorageTable
+          contents={contents}
+        />
       </div>
     );
   }
