@@ -44,13 +44,12 @@ function RenameComputerIfRequired {
     return $restartRequired
 }
 
-function AddUserIfRequired($UserName, $UserPassword) {
+function AddUserIfRequired($UserName, [SecureString] $UserPassword) {
     try {
         Get-LocalUser $UserName -ErrorAction Stop
     } catch {
         Write-Host "Creating user $UserName..."
-        $SecuredUserPassword = ConvertTo-SecureString -String $UserPassword -AsPlainText -Force
-        New-LocalUser -Name $UserName -Password $SecuredUserPassword -AccountNeverExpires
+        New-LocalUser -Name $UserName -Password $UserPassword -AccountNeverExpires
         Add-LocalGroupMember -Group "Administrators" -Member "$UserName"
     }
 }
@@ -64,7 +63,7 @@ function GetOrGenerateDefaultPassword() {
     }
 }
 
-function EnableAutoLoginIfRequired($UserName, $UserPassword) {
+function EnableAutoLoginIfRequired($UserName, [SecureString] $UserPassword) {
     $restartRequired=$false
     $RegPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
     try {
@@ -73,7 +72,7 @@ function EnableAutoLoginIfRequired($UserName, $UserPassword) {
         Write-Host "Enabling auto login for $UserName..."
         Set-ItemProperty $RegPath "AutoAdminLogon" -Value "1" -type String
         Set-ItemProperty $RegPath "DefaultUserName" -Value "$UserName" -type String
-        Set-ItemProperty $RegPath "DefaultPassword" -Value "$UserPassword" -type String
+        Set-ItemProperty $RegPath "DefaultPassword" -Value "$(ConvertFrom-SecureString $UserPassword)" -type String
         $restartRequired=$true
     }
     return $restartRequired
@@ -221,8 +220,6 @@ function ListenForConnection($Port) {
     $listener.Stop()
 }
 
-$ApiUser="@API_USER@"
-$ApiToken="@API_TOKEN@"
 $KubeIp="@KUBE_IP@"
 $KubeHost=$KubeIp.split(":",2)[0]
 $KubeToken="@KUBE_TOKEN@"
@@ -239,7 +236,7 @@ $runsDir="c:\runs"
 $kubeDir="c:\ProgramData\Kubernetes"
 $initLog="$workingDir\log.txt"
 $defaultUserName="ROOT"
-$defaultUserPassword=GetOrGenerateDefaultPassword
+$defaultUserPassword=ConvertTo-SecureString -String $(GetOrGenerateDefaultPassword) -AsPlainText -Force
 
 Write-Host "Creating system directories..."
 NewDirIfRequired -Path $workingDir
