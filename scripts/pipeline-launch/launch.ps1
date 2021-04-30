@@ -69,14 +69,9 @@ Write-Host "Configure owner account"
 Write-Host "-"
 if (-not([string]::IsNullOrEmpty($env:OWNER))) {
     $env:OWNER_PASSWORD = New-Guid
-    ssh -o "StrictHostKeyChecking no" -i $env:HOST_ROOT\.ssh\id_rsa "Administrator@$env:NODE_IP" powershell -Command (@"
-$env:COMMON_REPO_DIR\powershell\AddUser.ps1 -UserName $env:OWNER -UserPassword $env:OWNER_PASSWORD
-$env:COMMON_REPO_DIR\powershell\EnableAutoLogin.ps1 -UserName $env:OWNER -UserPassword $env:OWNER_PASSWORD
-c:\ProgramData\NoMachine\nxserver\nxserver --startup
-"@ -replace "`n","; ")
-
+    ssh -o "StrictHostKeyChecking no" -i $env:HOST_ROOT\.ssh\id_rsa "ROOT@$env:NODE_IP" powershell -Command "$env:COMMON_REPO_DIR\powershell\AddUser.ps1 -UserName $env:OWNER -UserPassword $env:OWNER_PASSWORD"
 } else {
-	Write-Host "OWNER is not set - skipping owner account configuration"
+    Write-Host "OWNER is not set - skipping owner account configuration"
 }
 Write-Host "------"
 
@@ -90,8 +85,10 @@ Request-Api -HttpMethod "POST" -ApiMethod "run/$env:RUN_ID/log" -Body @"
     "taskName": "InitializeEnvironment"
 }
 "@
+
 try {
-    & $Command
+    . "$env:HOST_ROOT\NodeEnv.ps1"
+    & $Command -ErrorAction Stop
     $CP_EXEC_RESULT = 0
 } catch {
     Write-Error "$_"
