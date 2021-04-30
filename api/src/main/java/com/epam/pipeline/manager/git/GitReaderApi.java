@@ -35,13 +35,13 @@ import retrofit2.http.Query;
 
 public interface GitReaderApi {
 
-    String FILE_PATH = "file_path";
     String REF = "ref";
     String PROJECT = "project";
     String PATH = "path";
     String PAGE = "page";
     String PAGE_SIZE = "page_size";
     String INCLUDE_DIFF = "include_diff";
+    String COMMIT = "commit";
 
     /**
      * Get a list of repository files and directories in a project.
@@ -73,7 +73,7 @@ public interface GitReaderApi {
     @GET("git/{project}/logs_tree")
     Call<Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>>> getRepositoryLogsTree(
             @Path(PROJECT) String name,
-            @Query(FILE_PATH) String path,
+            @Query(PATH) String path,
             @Query(REF) String reference,
             @Query(PAGE) Long page,
             @Query(PAGE_SIZE) Integer pageSize);
@@ -123,7 +123,7 @@ public interface GitReaderApi {
      * @param path (optional) - path to filter diff output
      */
     @GET("git/{project}/diff/{commit}")
-    Call<Result<GitReaderDiffEntry>> getCommitDiff(@Path(PROJECT) String name, @Path("commit") String commit,
+    Call<Result<GitReaderDiffEntry>> getCommitDiff(@Path(PROJECT) String name, @Path(COMMIT) String commit,
                                                    @Query(PATH) String path);
 
 
