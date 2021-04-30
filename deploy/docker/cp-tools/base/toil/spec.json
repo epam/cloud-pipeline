@@ -1,0 +1,6 @@
+{
+  "short_description": "Toil is an open-source pure-Python workflow engine that lets people write better pipelines.",
+  "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+  "disk_size": "50",
+  "default_command": "sleep infinity"
+}
