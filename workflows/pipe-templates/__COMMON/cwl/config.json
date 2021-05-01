@@ -20,7 +20,7 @@
           "value": "true"
         },
         "CP_CAP_AUTOSCALE_WORKERS": {
-          "value": "true"
+          "value": "2"
         },
         "CP_CAP_DIND_CONTAINER": {
           "value": "true"
