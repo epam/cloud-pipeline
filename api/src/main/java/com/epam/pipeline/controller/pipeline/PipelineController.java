@@ -39,6 +39,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
@@ -708,7 +709,7 @@ public class PipelineController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<GitReaderEntryListing<GitRepositoryEntry>> lsTreeRepositoryContent(
+    public Result<GitReaderEntryListing<GitReaderObject>> lsTreeRepositoryContent(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = VERSION, required = false) final String version,
             @RequestParam(value = PATH, required = false) final String path,

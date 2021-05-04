@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,17 @@
 
 package com.epam.pipeline.entity.git.gitreader;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 /**
- * Represents git object and its last commit
+ * Represents Gitlab repository browsing request result
  */
 @Data
-public class GitReaderRepositoryLogEntry {
-
-    @JsonProperty("commit")
-    private GitReaderRepositoryCommit commit;
-
-    @JsonProperty("git_object")
-    private GitReaderObject gitObject;
+public class GitReaderObject {
+    private String id;
+    private String name;
+    private String type;
+    private String path;
+    private String mode;
+    private Long size;
 }
