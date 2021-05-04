@@ -2,8 +2,14 @@ param (
     $AppendingPath
 )
 
-$RegPath = "HKLM:\System\CurrentControlSet\Control\Session Manager\Environment"
-$OldPath = Get-ItemProperty $RegPath "Path" | ForEach-Object { $_.Path }
-$NewPath = "$OldPath;$AppendingPath"
-Set-ItemProperty $RegPath "Path" -Value $NewPath -type ExpandString
+$ProfileDir = $(Split-Path -Path $Profile)
+
+if (-not(Test-Path $ProfileDir)) {
+    New-Item -Path $ProfileDir -ItemType "Directory" -Force
+}
+
+@"
+`$env:PATH = "`$env:PATH;$AppendingPath"
+"@ | Out-File -FilePath $Profile -Append -Encoding ascii -Force
+
 $env:Path = "$env:Path;$AppendingPath"
