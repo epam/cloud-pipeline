@@ -852,6 +852,11 @@ def version_storage_diff_conflicts(vs_id):
         type: boolean
         required: false
         default: false
+      - name: fetch_conflicts
+        in: query
+        type: boolean
+        required: false
+        default: false
       - name: lines_count
         in: query
         type: integer
@@ -869,10 +874,13 @@ def version_storage_diff_conflicts(vs_id):
     revision = flask.request.args.get('revision', None)
     show_raw = flask.request.args.get("raw")
     show_raw_flag = False if not show_raw else str_to_bool(show_raw)
+    fetch_conflicts = flask.request.args.get("fetch_conflicts")
+    fetch_conflicts_flag = False if not fetch_conflicts else str_to_bool(fetch_conflicts)
     lines_count = flask.request.args.get("lines_count", 3)
     manager = app.config['git_manager']
     try:
-        result = manager.conflicts_diff(vs_id, path, revision, show_raw_flag, int(lines_count))
+        result = manager.conflicts_diff(vs_id, path, revision, show_raw_flag, fetch_conflicts=fetch_conflicts_flag,
+                                        lines_count=int(lines_count))
         return jsonify(success(result))
     except Exception as e:
         manager.logger.log(traceback.format_exc())

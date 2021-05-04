@@ -82,11 +82,11 @@ class GitClient:
 
     def unstash(self, path):
         repo = self._repository(path)
-        repo.stash_pop()
+        repo.stash_apply()
 
-    def diff(self, repo_path, file_path, show_raw_flag, branch_name=DEFAULT_BRANCH_NAME,
+    def diff(self, repo_path, file_path, show_raw_flag, fetch_conflicts=False, branch_name=DEFAULT_BRANCH_NAME,
              context_lines=DEFAULT_CONTEXT_LINES_COUNT, remote_name=DEFAULT_REMOTE_NAME):
-        diff_patch = self._find_patch(repo_path, file_path, branch_name, context_lines, remote_name)
+        diff_patch = self._find_patch(repo_path, file_path, fetch_conflicts, branch_name, context_lines, remote_name)
         return self._build_diff_object(diff_patch, show_raw_flag)
 
     def diff_between_revisions(self, repo_path, file_path, revision_a, revision_b, show_raw_flag,
@@ -113,7 +113,7 @@ class GitClient:
         else:
             index.add(file_to_add.path)
         index.write()
-        self.logger.log("File '%s' added to index for repo '%s'" % (repo_path, file_to_add.path))
+        self.logger.log("File '%s' added to index for repo '%s'" % (file_to_add.path, repo_path))
 
     def prepare_index(self, repo_path, files_to_add):
         git_files = self.status(repo_path)
@@ -237,7 +237,7 @@ class GitClient:
             repo.create_branch(branch, repo.get(remote_master_id))
         repo.head.set_target(remote_master_id)
 
-    def _find_patch(self, repo_path, file_path, branch_name=DEFAULT_BRANCH_NAME,
+    def _find_patch(self, repo_path, file_path, fetch_conflicts=False, branch_name=DEFAULT_BRANCH_NAME,
                     context_lines=DEFAULT_CONTEXT_LINES_COUNT, remote_name=DEFAULT_REMOTE_NAME):
         repo = self._repository(repo_path)
         file_status = repo.status_file(file_path)
@@ -249,8 +249,15 @@ class GitClient:
             repo_diff = tree.diff_to_index(index, context_lines=context_lines)
             index.clear()
         elif self._is_conflicts(file_status):
-            remote_head_ref = self._get_remote_head(repo, remote_name, branch_name)
-            repo_diff = repo.diff(remote_head_ref, context_lines=context_lines)
+            if fetch_conflicts:
+                stash_ref = repo.lookup_reference('refs/stash').target
+                stash_parents = repo[stash_ref].parent_ids
+                if not stash_parents:
+                    return None
+                repo_diff = repo.diff(stash_parents[0], 'refs/stash', context_lines=context_lines)
+            else:
+                remote_head_ref = self._get_remote_head(repo, remote_name, branch_name)
+                repo_diff = repo.diff(remote_head_ref, context_lines=context_lines)
         elif self._is_index_modified(file_status) or self._is_index_deleted(file_status):
             head_ref = self._get_head(repo, branch_name)
             repo_diff = repo.diff(head_ref, context_lines=context_lines)
