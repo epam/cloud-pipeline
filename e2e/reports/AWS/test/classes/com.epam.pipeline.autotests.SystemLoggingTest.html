@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">11m35.33s</div>
+<div class="counter">12m0.85s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">66%</div>
+<div class="percent">83%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,36 +73,10 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="permissionsManagement - EPMCMBIBPC-3165"></a>
-<h3 class="failures">permissionsManagement - EPMCMBIBPC-3165</h3>
-<span class="code">
-<pre>java.util.NoSuchElementException: Supposed log info '.*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=SystemLogging4597903941543602864, permission: READ,NO_WRITE,EXECUTE \(mask: 25\). Sid: name=USER3 isPrincipal=true message for USER1 with security type. Screenshot: SystemLogsForUSER1_4600794736632885076' is not found.
-	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.lambda$getInfoRow$1(SettingsPageAO.java:1366)
-	at java.util.Optional.orElseThrow(Optional.java:290)
-	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.getInfoRow(SettingsPageAO.java:1363)
-	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.validateRow(SettingsPageAO.java:1405)
-	at com.epam.pipeline.autotests.SystemLoggingTest.permissionsManagement(SystemLoggingTest.java:222)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-<div class="test">
 <a name="userProfileModifications - EPMCMBIBPC-3164"></a>
 <h3 class="failures">userProfileModifications - EPMCMBIBPC-3164</h3>
 <span class="code">
-<pre>java.util.NoSuchElementException: Supposed log info 'Assing role. RoleId=2 UserIds=4 message for USER1 with security type. Screenshot: SystemLogsForUSER1_4602652945767215206' is not found.
+<pre>java.util.NoSuchElementException: Supposed log info 'Assing role. RoleId=2 UserIds=4 message for USER1 with security type. Screenshot: SystemLogsForUSER1_4603707029310167327' is not found.
 	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.lambda$getInfoRow$1(SettingsPageAO.java:1366)
 	at java.util.Optional.orElseThrow(Optional.java:290)
 	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.getInfoRow(SettingsPageAO.java:1363)
@@ -137,32 +111,32 @@
 </thead>
 <tr>
 <td class="success">createAndDeleteUser - EPMCMBIBPC-3167</td>
-<td>29.301s</td>
+<td>29.409s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">interactiveEndpointsAccess - EPMCMBIBPC-3166</td>
-<td>6m20.68s</td>
+<td>6m9.53s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">permissionsManagement - EPMCMBIBPC-3165</td>
-<td>1m13.12s</td>
-<td class="failures">failed</td>
+<td class="success">permissionsManagement - EPMCMBIBPC-3165</td>
+<td>1m14.70s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">userAuthentication - EPMCMBIBPC-3162</td>
-<td>1m36.10s</td>
+<td>1m38.83s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163</td>
-<td>1m10.99s</td>
+<td>1m41.47s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">userProfileModifications - EPMCMBIBPC-3164</td>
-<td>45.144s</td>
+<td>46.915s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -170,11 +144,11 @@
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 68432 from [68432]
-Returns latest run with runId 68432 from [68432]
-Returns latest run with runId 68432 from [68432]
-Returns latest run with runId 68432 from [68432]
-Returns latest run with runId 68432 from [68432]
+<pre>Returns latest run with runId 68597 from [68597]
+Returns latest run with runId 68597 from [68597]
+Returns latest run with runId 68597 from [68597]
+Returns latest run with runId 68597 from [68597]
+Returns latest run with runId 68597 from [68597]
 </pre>
 </span>
 </div>
@@ -186,7 +160,7 @@ Returns latest run with runId 68432 from [68432]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 3, 2021 4:15:16 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 4, 2021 3:07:51 PM</p>
 </div>
 </div>
 </body>
