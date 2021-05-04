@@ -129,6 +129,16 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
     $configfile|Out-File -FilePath .\Kubeclustervxlan.json -Encoding ascii -Force
 }
 
+function InstallKubeUsingSigWindowsToolsIfRequired {
+    $kubeletInstalled = Get-Service -Name kubelet `
+    | Measure-Object `
+    | ForEach-Object { $_.Count -gt 0 }
+    if (-not($kubeletInstalled)) {
+        Write-Host "Installing kubernetes using Sig Windows Tools..."
+        .\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -install
+    }
+}
+
 $workingDir="c:\init"
 $kubeDir="c:\ProgramData\Kubernetes"
 $initLog="$workingDir\log.txt"
@@ -171,8 +181,8 @@ DownloadSigWindowsToolsIfRequired
 Write-Host "Generating Sig Windows Tools dummy config file..."
 InitSigWindowsToolsConfigFile -KubeHost "default" -KubeToken "default" -KubeCertHash "default" -KubeDir "$kubeDir" -Interface "Ethernet 3"
 
-Write-Host "Executing Sig Windows Tools install..."
-.\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -install
+Write-Host "Installing kubernetes using Sig Windows Tools if required..."
+InstallKubeUsingSigWindowsToolsIfRequired
 
 Write-Host "Removing SSH keys..."
 Remove-Item -Recurse -Force "$homeDir\.ssh"
