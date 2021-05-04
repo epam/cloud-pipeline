@@ -44,12 +44,12 @@ function RenameComputerIfRequired {
     return $restartRequired
 }
 
-function AddUserIfRequired($UserName, [SecureString] $UserPassword) {
+function AddUserIfRequired($UserName, $UserPassword) {
     try {
         Get-LocalUser $UserName -ErrorAction Stop
     } catch {
         Write-Host "Creating user $UserName..."
-        New-LocalUser -Name $UserName -Password $UserPassword -AccountNeverExpires
+        New-LocalUser -Name $UserName -Password $(ConvertTo-SecureString -String $UserPassword -AsPlainText -Force) -AccountNeverExpires
         Add-LocalGroupMember -Group "Administrators" -Member "$UserName"
     }
 }
@@ -63,7 +63,7 @@ function GetOrGenerateDefaultPassword() {
     }
 }
 
-function EnableAutoLoginIfRequired($UserName, [SecureString] $UserPassword) {
+function EnableAutoLoginIfRequired($UserName, $UserPassword) {
     $restartRequired=$false
     $RegPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
     try {
@@ -72,7 +72,7 @@ function EnableAutoLoginIfRequired($UserName, [SecureString] $UserPassword) {
         Write-Host "Enabling auto login for $UserName..."
         Set-ItemProperty $RegPath "AutoAdminLogon" -Value "1" -type String
         Set-ItemProperty $RegPath "DefaultUserName" -Value "$UserName" -type String
-        Set-ItemProperty $RegPath "DefaultPassword" -Value "$(ConvertFrom-SecureString $UserPassword)" -type String
+        Set-ItemProperty $RegPath "DefaultPassword" -Value "$UserPassword" -type String
         $restartRequired=$true
     }
     return $restartRequired
@@ -187,6 +187,20 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
     $configfile|Out-File -FilePath .\Kubeclustervxlan.json -Encoding ascii -Force
 }
 
+function InstallKubeUsingSigWindowsToolsIfRequired {
+    $kubeletInstalled = Get-Service -Name kubelet `
+    | Measure-Object `
+    | ForEach-Object { $_.Count -gt 0 }
+    if (-not($kubeletInstalled)) {
+        Write-Host "Installing kubernetes using Sig Windows Tools..."
+        .\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -install
+    }
+}
+
+function JoinKubeClusterUsingSigWindowsTools {
+    .\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -join
+}
+
 function WaitAndConfigureDnsIfRequired($Dns, $Adapter) {
     if (-not([string]::IsNullOrEmpty($Dns))) {
         while ($true) {
@@ -236,7 +250,7 @@ $runsDir="c:\runs"
 $kubeDir="c:\ProgramData\Kubernetes"
 $initLog="$workingDir\log.txt"
 $defaultUserName="ROOT"
-$defaultUserPassword=ConvertTo-SecureString -String $(GetOrGenerateDefaultPassword) -AsPlainText -Force
+$defaultUserPassword=GetOrGenerateDefaultPassword
 
 Write-Host "Creating system directories..."
 NewDirIfRequired -Path $workingDir
@@ -318,14 +332,14 @@ PatchSigWindowsTools
 Write-Host "Generating Sig Windows Tools config file..."
 InitSigWindowsToolsConfigFile -KubeHost $KubeHost -KubeToken $KubeToken -KubeCertHash $KubeCertHash -KubeDir $KubeDir -Interface "Ethernet 3"
 
-Write-Host "Executing Sig Windows Tools install..."
-.\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -install
+Write-Host "Installing kubernetes using Sig Windows Tools if required..."
+InstallKubeUsingSigWindowsToolsIfRequired
 
 Write-Host "Writing kubernetes config..."
 $kubeConfigFile | Out-File -FilePath "$kubeDir\config" -Encoding ascii -Force
 
-Write-Host "Executing Sig Windows Tools join..."
-.\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -join
+Write-Host "Joining kubernetes cluster using Sig Windows Tools..."
+JoinKubeClusterUsingSigWindowsTools
 
 Write-Host "Waiting for dns to be accessible if required..."
 WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Adapter "vEthernet (Ethernet 3)"
