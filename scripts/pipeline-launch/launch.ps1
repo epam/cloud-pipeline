@@ -80,7 +80,7 @@ if ([string]::IsNullOrEmpty($env:CP_PIPE_COMMON_ENABLED) -or $env:CP_PIPE_COMMON
 
 # Init path for powershell scripts from common repository
 if (Test-Path -Path "$env:COMMON_REPO_DIR\powershell") {
-    $env:COMMON_REPO_DIR\powershell\AddToPath.ps1 -AppendingPath $env:COMMON_REPO_DIR\powershell
+    & "$env:COMMON_REPO_DIR\powershell\AddToPath.ps1" -AppendingPath $env:COMMON_REPO_DIR\powershell
 }
 
 # Resolve run's node ip
@@ -104,7 +104,7 @@ if (Test-Path -Path "$env:PIPE_DIR\pipe.exe") {
 }
 
 # Configure pipe cli within node
-ExecuteWithinNode -Command "pipe configure --auth-token '$env:API_TOKEN' --api '$env:API_EXTERNAL' --timezone local --proxy pac"
+ExecuteWithinNode -Command "pipe configure --auth-token '$env:API_TOKEN' --api '$env:API' --timezone local --proxy pac"
 
 Write-Host "------"
 Write-Host ""
