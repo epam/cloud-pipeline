@@ -578,6 +578,14 @@ class VSActions extends React.Component {
           pending = false
         } = status;
         const hasConflicts = !!files.find(f => /^conflicts$/i.test(f.status));
+        const hasModifications = !!files.find(f => !/^conflicts$/i.test(f.status));
+        const diffEnabled = !pending && files.length > 0;
+        const saveEnabled = !storage.detached &&
+          hasModifications &&
+          !hasConflicts &&
+          !mergeInProgress &&
+          !pending;
+        const refreshEnabled = !hasConflicts && !mergeInProgress && !pending;
         const Container = array.length === 1 ? Menu.ItemGroup : Menu.SubMenu;
         menuItems.push((
           <Container
@@ -598,19 +606,19 @@ class VSActions extends React.Component {
           >
             <Menu.Item
               key={`diff-${storage.id}`}
-              disabled={pending}
+              disabled={!diffEnabled}
             >
               <Icon type="exception" /> Diff
             </Menu.Item>
             <Menu.Item
               key={`save-${storage.id}`}
-              disabled={storage.detached || hasConflicts || pending || mergeInProgress}
+              disabled={!saveEnabled}
             >
               <Icon type="save" /> Save
             </Menu.Item>
             <Menu.Item
               key={`refresh-${storage.id}`}
-              disabled={hasConflicts || pending || mergeInProgress}
+              disabled={!refreshEnabled}
             >
               <Icon type="sync" /> Refresh
             </Menu.Item>
