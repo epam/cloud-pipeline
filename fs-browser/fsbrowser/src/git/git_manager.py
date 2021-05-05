@@ -182,6 +182,12 @@ class GitManager:
             raise RuntimeError("Path '%s' did not match any conflicted files" % file_path)
         self.git_client.add(full_repo_path, git_file[0])
 
+    def merge_abort(self, versioned_storage_id):
+        full_repo_path = self._build_path_to_repo(versioned_storage_id)
+        if not self.git_client.merge_in_progress(full_repo_path):
+            raise RuntimeError("There is no merge to abort")
+        self.git_client.merge_abort(full_repo_path)
+
     def _build_path_to_repo(self, versioned_storage_id):
         versioned_storage = self.api_client.get_pipeline(versioned_storage_id)
         folder_name = versioned_storage.get(VERSION_STORAGE_IDENTIFIER)

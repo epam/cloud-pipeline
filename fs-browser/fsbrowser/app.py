@@ -887,6 +887,34 @@ def version_storage_diff_conflicts(vs_id):
         return jsonify(error(e.__str__()))
 
 
+@app.route('/vs/<vs_id>/merge/abort', methods=['POST'])
+@auth.login_required
+def version_storage_merge_abort(vs_id):
+    """
+    Aborts merge process.
+    ---
+    parameters:
+      - name: vs_id
+        in: path
+        type: string
+        required: true
+    definitions:
+      Object:
+        type: object
+    responses:
+      200:
+        schema:
+          $ref: '#/definitions/Object'
+    """
+    manager = app.config['git_manager']
+    try:
+        manager.merge_abort(vs_id)
+        return jsonify(success({}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
 def str_to_bool(input_value):
     return input_value.lower() in ("true", "t")
 

@@ -202,6 +202,11 @@ class GitClient:
         else:
             self._checkout(repo, revision)
 
+    def merge_abort(self, repo_path, branch=DEFAULT_BRANCH_NAME):
+        repo = self._repository(repo_path)
+        self._finish_merge(repo)
+        repo.checkout('refs/heads/%s' % branch, strategy=pygit2.GIT_CHECKOUT_FORCE)
+
     def _build_callback(self):
         user_pass = pygit2.UserPass(self.user_name, self.token)
         callbacks = pygit2.RemoteCallbacks(credentials=user_pass)
