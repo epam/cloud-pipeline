@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM quay.io/coreos/clair:v2.0.6
+FROM quay.io/coreos/clair:v2.1.7
 
 ADD update_config.sh /update_config.sh
 RUN chmod +x /update_config.sh
