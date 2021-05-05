@@ -67,6 +67,7 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
   }
   return {
     path,
+    query: location.search,
     pipelines,
     pipelinesLibrary,
     folders,
@@ -511,6 +512,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       return (
         <PipelinesLibraryContent
           location={this.props.path}
+          query={this.props.query}
           onReloadTree={
             (reloadRoot) => this.reloadTree(reloadRoot === undefined ? true : reloadRoot)
           }
@@ -547,6 +549,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           <div id="pipelines-library-split-pane-right" className={styles.subContainer}>
             <PipelinesLibraryContent
               location={this.props.path}
+              query={this.props.query}
               onReloadTree={(reloadRoot) => this.reloadTree(reloadRoot === undefined ? true : reloadRoot)}
             >
               {this.props.children}

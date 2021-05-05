@@ -20,15 +20,16 @@ import {Card} from 'antd';
 import styles from './PipelinesLibrary.css';
 
 export default class PipelinesLibraryContent extends React.Component {
-
   static propTypes = {
     onReloadTree: PropTypes.func,
     location: PropTypes.string,
+    query: PropTypes.string,
     style: PropTypes.object
   };
 
   shouldComponentUpdate (nextProps) {
-    return nextProps.location !== this.props.location;
+    return nextProps.location !== this.props.location ||
+      nextProps.query !== this.props.query;
   }
 
   render () {
@@ -55,7 +56,8 @@ export default class PipelinesLibraryContent extends React.Component {
             (child) => React.cloneElement(
               child, {
                 onReloadTree: this.props.onReloadTree,
-                browserLocation: this.props.location
+                browserLocation: this.props.location,
+                browserLocationQuery: this.props.query
               }
             )
           )
