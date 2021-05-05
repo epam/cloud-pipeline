@@ -65,6 +65,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     showHistoryPanel: false
   };
 
+  updateVSRequest = new UpdatePipeline();
+
   componentDidMount () {
     this.pathWasChanged();
   }
@@ -76,6 +78,23 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     ) {
       this.pathWasChanged();
     }
+  }
+
+  get actions () {
+    return {
+      openHistoryPanel: this.openHistoryPanel,
+      closeHistoryPanel: this.closeHistoryPanel,
+      openEditStorageDialog: this.openEditStorageDialog
+    };
+  }
+
+  get parentPath () {
+    const {path} = this.props;
+    let parentPath;
+    if (path) {
+      parentPath = path.split('/').filter(Boolean).slice(0, -1).join('/');
+    }
+    return parentPath || '';
   }
 
   pathWasChanged = () => {
@@ -122,16 +141,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     });
   };
 
-  get actions () {
-    return {
-      openHistoryPanel: this.openHistoryPanel,
-      closeHistoryPanel: this.closeHistoryPanel,
-      openEditStorageDialog: this.openEditStorageDialog
-    };
-  }
-
-  updateVSRequest = new UpdatePipeline();
-
   openHistoryPanel = () => {
     this.setState({showHistoryPanel: true});
   };
@@ -175,11 +184,51 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
+  navigate = (path) => {
+    const {router, pipelineId} = this.props;
+    if (!router) {
+      return;
+    }
+    if (path) {
+      router.push({
+        pathname: `/vs/${pipelineId}`,
+        search: `?path=${path}`
+      });
+    } else {
+      router.push(`/vs/${pipelineId}`);
+    }
+  };
+
+  onFolderClick = (document) => {
+    let path = document.path || '';
+    if (!path.endsWith('/')) {
+      path = `${path}/`;
+    }
+    this.navigate(path);
+  };
+
+  onFileClick = (document) => {
+
+  };
+
+  onRowClick = (document = {}) => {
+    if (document.type && document.type.toLowerCase() === 'navback') {
+      return this.navigate(this.parentPath);
+    }
+    if (document.type && document.type.toLowerCase() === 'tree') {
+      return this.onFolderClick(document);
+    }
+    if (document.type && document.type.toLowerCase() === 'blob') {
+      return this.onFileClick(document);
+    }
+  }
+
   render () {
     const {
       pipeline,
       pipelineId,
-      readOnly
+      readOnly,
+      path
     } = this.props;
     const {
       contents,
@@ -187,9 +236,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       lastPage,
       page
     } = this.state;
-    console.log(contents);
     const {
-      showHistoryPanel
+      showHistoryPanel,
+      pending
     } = this.state;
     if (!pipeline.loaded && pipeline.pending) {
       return (
@@ -221,6 +270,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         }
         <VersionedStorageTable
           contents={contents}
+          onRowClick={this.onRowClick}
+          showNavigateBack={path}
+          pending={pending}
         />
         <div
           className={styles.paginationRow}

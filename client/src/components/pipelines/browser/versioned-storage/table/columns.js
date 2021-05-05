@@ -23,7 +23,8 @@ import styles from './table.css';
 
 const FILES = {
   blob: <Icon type="file" />,
-  tree: <Icon type="folder" />
+  tree: <Icon type="folder" />,
+  navback: <Icon type="folder" />
 };
 
 const ACTIONS = {
@@ -80,7 +81,7 @@ const COLUMNS = [{
   title: 'Name',
   dataIndex: 'name',
   key: 'name',
-  render: (name, record) => {
+  render: (name = '', record) => {
     return (
       <span className={styles.cellContent}>
         <span className={styles.fileIcon}>
@@ -100,7 +101,7 @@ const COLUMNS = [{
   title: 'Revision',
   dataIndex: 'commit',
   key: 'commit',
-  render: (name) => {
+  render: (name = '') => {
     return (
       <span className={styles.textEllipsis}>
         {name.substring(0, 7)}
@@ -111,7 +112,7 @@ const COLUMNS = [{
   title: 'Date changed',
   dataIndex: 'committer_date',
   key: 'committer_date',
-  render: (name) => {
+  render: (name = '') => {
     return (
       <span className={styles.textEllipsis}>
         {name.substring(0, 19)}
@@ -122,7 +123,7 @@ const COLUMNS = [{
   title: 'Author',
   dataIndex: 'author',
   key: 'author',
-  render: (name) => {
+  render: (name = '') => {
     return (
       <span className={styles.textEllipsis}>
         {name}
@@ -133,7 +134,7 @@ const COLUMNS = [{
   title: 'Message',
   dataIndex: 'commit_message',
   key: 'commit_message',
-  render: (name) => {
+  render: (name = '') => {
     return (
       <span className={styles.textEllipsis}>
         {name}
@@ -144,7 +145,7 @@ const COLUMNS = [{
   title: '',
   dataIndex: 'type',
   key: 'type',
-  render: (name, record) => ACTIONS[record.type],
+  render: (name = '', record) => ACTIONS[record.type] || null,
   width: 150
 }];
 

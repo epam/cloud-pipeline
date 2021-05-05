@@ -33,15 +33,20 @@ function typeSorter (a, b) {
 
 class VersionedStorageTable extends React.Component {
   get data () {
-    const {contents} = this.props;
+    const {contents, showNavigateBack} = this.props;
     if (!contents) {
       return null;
     }
-    return contents
+    const navigateBack = {
+      name: '..',
+      type: 'navback'
+    };
+    const content = contents
       .map(content => ({
         ...content.commit,
         ...content.git_object
       })).sort(typeSorter);
+    return showNavigateBack ? [navigateBack, ...content] : content;
   }
 
   get actions () {
@@ -52,11 +57,16 @@ class VersionedStorageTable extends React.Component {
     };
   }
 
-  onRowClick = (record, index, event) => {
+  onRowClick = (document, index, event) => {
+    const {onRowClick} = this.props;
+    if (!document) {
+      return;
+    }
     if (event && event.target.dataset.action) {
       const buttonAction = event.target.dataset.action;
-      this.actions[buttonAction] && this.actions[buttonAction](record);
+      return this.actions[buttonAction] && this.actions[buttonAction](document);
     }
+    return onRowClick && onRowClick(document);
   }
 
   onCreateActionSelect = (event) => {
@@ -114,6 +124,7 @@ class VersionedStorageTable extends React.Component {
   }
 
   render () {
+    const {pending} = this.props;
     if (!this.data) {
       return <Spin />;
     }
@@ -128,6 +139,7 @@ class VersionedStorageTable extends React.Component {
           onRowClick={this.onRowClick}
           pagination={false}
           rowClassName={() => styles.tableRow}
+          loading={pending}
         />
       </div>
     );
@@ -135,7 +147,10 @@ class VersionedStorageTable extends React.Component {
 }
 
 VersionedStorageTable.PropTypes = {
-  contents: PropTypes.object
+  contents: PropTypes.object,
+  onRowClick: PropTypes.func,
+  showNavigateBack: PropTypes.boolean,
+  pending: PropTypes.boolean
 };
 
 export default VersionedStorageTable;
