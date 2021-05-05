@@ -20,3 +20,10 @@ def is_wsl():
         if platform_version:
             return 'microsoft' in platform_version.lower()
     return False
+
+
+def is_mac():
+    """
+    Checks if the execution environment is Mac.
+    """
+    return platform.system() == 'Darwin'
