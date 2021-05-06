@@ -181,6 +181,9 @@ public class ReassignHandler {
 
     private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
         return !pipelineRun
+                .filter(run -> "windows".equals(run.getPlatform()))
+                .isPresent()
+               || !pipelineRun
                 .flatMap(run -> run.getPipelineRunParameters().stream()
                         .filter(parameter -> Objects.equals(parameter.getName(), CP_CREATE_NEW_NODE)
                                 && isValueTrue(parameter.getValue()))
