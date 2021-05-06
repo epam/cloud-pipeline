@@ -80,6 +80,7 @@ export default function (callbacks) {
             title: (
               <VSActions
                 run={run}
+                trigger={['click']}
                 getPopupContainer={() => document.getElementById('root')}
                 onDropDownVisibleChange={callbacks && callbacks.vsActionsMenu
                   ? (v) => callbacks.vsActionsMenu(run, v)

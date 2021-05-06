@@ -78,10 +78,11 @@
 
 .resolve-area .panel {
   height: 100%;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   z-index: 1;
   position: relative;
-  display: flex;
+  display: grid;
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
@@ -95,20 +96,60 @@
   background-color: #eef8ff;
 }
 
-.resolve-area .panel .code {
+.resolve-area .panel .sticky-placeholder {
+  flex-shrink: 0;
   display: inline-block;
+  width: 0;
+}
+
+.resolve-area .panel .code {
+  display: inline-grid;
+  margin-bottom: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   flex: 1;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.resolve-area .panel .code::-webkit-scrollbar {
+  display: none;
+}
+
+.resolve-area .scroll-container {
+  position: absolute;
+}
+
+.resolve-area .scroll-container.vertical {
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.resolve-area .scroll-container.horizontal {
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.resolve-area .scroll-container .scrollbar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
 }
 
 .resolve-area .resize {
   cursor: col-resize;
 }
 
-.panel .sticky-panel.left .line-numbers {
+.panel .numbers-panel.left .line-numbers {
   border-right: 1px solid #ccc;
 }
 
-.panel .sticky-panel.right .line-numbers {
+.panel .numbers-panel.right .line-numbers {
   border-left: 1px solid #ccc;
 }
 
@@ -125,7 +166,7 @@
   justify-content: space-between;
 }
 
-.resolve-area .sticky-panel.right .line-numbers .line {
+.resolve-area .numbers-panel .line-numbers .line {
   flex-direction: row;
   cursor: col-resize;
 }

@@ -20,11 +20,11 @@ import {Alert} from 'antd';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import ResolveChanges from './controls/resolve-changes';
+import Scrollbar from './controls/scrollbar';
 import ConflictedFile from './utilities/conflicted-file';
 import Branches, {HeadBranch, RemoteBranch, Merged} from './utilities/conflicted-file/branches';
 import renderModifications from './utilities/modifications-canvas';
 import BranchCode from './utilities/branch-code';
-import StickyDiv from './utilities/sticky-div';
 import {findLineIndexByPosition, findLinePositionByIndex} from './utilities/line-positioning';
 import styles from './conflicts.css';
 
@@ -37,11 +37,14 @@ const getGridColumns = (panels) => {
   const gridColumnSize = size => /fr$/i.test(size) ? size : `${size}px`;
   const gridTemplateColumn = branch => `[${branch}] ${gridColumnSize(panels[branch])}`;
   return [
+    `[SCROLL-${HeadBranch}] 0px`,
     gridTemplateColumn(HeadBranch),
     `[CANVAS-${HeadBranch}] ${CANVAS_WIDTH}px`,
     gridTemplateColumn(Merged),
+    `[SCROLL-${Merged}] 0px`,
     `[CANVAS-${RemoteBranch}] ${CANVAS_WIDTH}px`,
-    gridTemplateColumn(RemoteBranch)
+    gridTemplateColumn(RemoteBranch),
+    `[SCROLL-${RemoteBranch}] 0px`
   ].join(' ');
 };
 
@@ -61,7 +64,9 @@ class Conflict extends React.PureComponent {
   };
 
   scrolls = {};
-  stickyAreas = {};
+  codeAreas = {};
+  verticalScrollBars = {};
+  horizontalScrollBars = {};
   blockScroll;
   canvases = {};
   ideContainer;
@@ -91,6 +96,7 @@ class Conflict extends React.PureComponent {
       this.updateFromProps();
     }
     this.draw();
+    this.updateScrollBars();
   }
 
   updateFromProps = () => {
@@ -196,6 +202,7 @@ class Conflict extends React.PureComponent {
         this.ideContainer.style['grid-template-columns'] = getGridColumns(newPanelSizes);
       }
       this.resizeInfo.gridColumns = newPanelSizes;
+      this.updateScrollBars();
     }
   };
 
@@ -214,6 +221,7 @@ class Conflict extends React.PureComponent {
           [RemoteBranch]: frValue(RemoteBranch)
         }
       });
+      this.updateScrollBars();
     }
   };
 
@@ -237,18 +245,34 @@ class Conflict extends React.PureComponent {
         [Merged]: conflictedFile.getLines(Merged, new Set([])),
         [RemoteBranch]: conflictedFile.getLines(RemoteBranch, new Set([]))
       };
-      const attachScrollArea = (node, name) => {
-        this.scrolls[name] = node;
+      const attachScrollArea = (node, branch) => {
+        this.scrolls[branch] = node;
+        if (this.verticalScrollBars[branch]) {
+          this.verticalScrollBars[branch].attach(this.scrolls[branch]);
+        }
       };
-      const attachStickyArea = (node, branch) => {
-        if (!this.stickyAreas[branch]) {
-          this.stickyAreas[branch] = [];
+      const attachCodeArea = (node, branch) => {
+        this.codeAreas[branch] = node;
+        if (this.horizontalScrollBars[branch]) {
+          this.horizontalScrollBars[branch].attach(this.codeAreas[branch]);
         }
-        if (this.stickyAreas[branch].indexOf(node) === -1 && node) {
-          this.stickyAreas[branch].push(node);
+      };
+      const attachVerticalScrollBar = (node, branch) => {
+        if (this.verticalScrollBars[branch]) {
+          this.verticalScrollBars[branch].detach();
         }
-        if (node) {
-          node.processPosition();
+        this.verticalScrollBars[branch] = node;
+        if (this.verticalScrollBars[branch]) {
+          this.verticalScrollBars[branch].attach(this.scrolls[branch]);
+        }
+      };
+      const attachHorizontalScrollBar = (node, branch) => {
+        if (this.horizontalScrollBars[branch]) {
+          this.horizontalScrollBars[branch].detach();
+        }
+        this.horizontalScrollBars[branch] = node;
+        if (this.horizontalScrollBars[branch]) {
+          this.horizontalScrollBars[branch].attach(this.codeAreas[branch]);
         }
       };
       const correctBranchItemIndex = (index, branch) => {
@@ -262,15 +286,13 @@ class Conflict extends React.PureComponent {
         }
         return index;
       };
-      const onScroll = (e, branch) => {
+      const onVerticalScroll = (e, branch) => {
         const {target} = e;
-        const stickyAreas = this.stickyAreas[branch];
-        if (stickyAreas) {
-          stickyAreas.forEach(area => area.processPosition(target.scrollLeft));
+        if (this.verticalScrollBars[branch]) {
+          this.verticalScrollBars[branch].renderBar();
         }
         if (!this.blockScroll || this.blockScroll === branch) {
           const {
-            scrollLeft,
             scrollTop,
             clientHeight
           } = target;
@@ -304,30 +326,23 @@ class Conflict extends React.PureComponent {
                 const localRatio = localOffset / range;
                 for (let otherBranch of Branches) {
                   const scroll = this.scrolls[otherBranch];
-                  const otherBranchStickyAreas = this.stickyAreas[otherBranch];
-                  if (otherBranch !== branch) {
+                  if (scroll && otherBranch !== branch) {
                     const oIdxStart = branches[otherBranch].indexOf(commonParent);
                     const oIdxEnd = branches[otherBranch].indexOf(commonChild);
                     const oRange = Math.max(1, oIdxEnd - oIdxStart);
                     const oLocalOffset = oRange * localRatio;
                     const oLocalCenter = oIdxStart + oLocalOffset;
-                    if (scroll) {
-                      scroll.scrollTop = Math.round(
-                        Math.max(
-                          0,
-                          findLinePositionByIndex(
-                            branches[otherBranch],
-                            oLocalCenter,
-                            otherBranch,
-                            LINE_HEIGHT
-                          ) - scroll.clientHeight * SCROLL_CENTER_ORIGIN
-                        )
-                      );
-                      scroll.scrollLeft = scrollLeft;
-                      if (otherBranchStickyAreas) {
-                        otherBranchStickyAreas.forEach(area => area.processPosition(scrollLeft));
-                      }
-                    }
+                    scroll.scrollTop = Math.round(
+                      Math.max(
+                        0,
+                        findLinePositionByIndex(
+                          branches[otherBranch],
+                          oLocalCenter,
+                          otherBranch,
+                          LINE_HEIGHT
+                        ) - scroll.clientHeight * SCROLL_CENTER_ORIGIN
+                      )
+                    );
                   }
                 }
               }
@@ -342,6 +357,33 @@ class Conflict extends React.PureComponent {
             }, 100);
           };
           requestAnimationFrame(doSynchronousScroll);
+        }
+      };
+      const onHorizontalScroll = (e, branch) => {
+        const {target} = e;
+        if (!this.blockScroll || this.blockScroll === branch) {
+          e.stopPropagation();
+          e.preventDefault();
+          const {scrollLeft} = target;
+          this.blockScroll = branch;
+          if (this.horizontalScrollBars[branch]) {
+            this.horizontalScrollBars[branch].renderBar();
+          }
+          for (let otherBranch of Branches) {
+            if (otherBranch !== branch) {
+              const scroll = this.codeAreas[otherBranch];
+              if (scroll) {
+                scroll.scrollLeft = scrollLeft;
+              }
+            }
+          }
+          if (this.setBlockScroll) {
+            clearTimeout(this.setBlockScroll);
+            this.setBlockScroll = undefined;
+          }
+          this.setBlockScroll = setTimeout(() => {
+            this.blockScroll = undefined;
+          }, 100);
         }
       };
       const renderBranchCodeLineNumbers = (branch, modificationsBranch, rtl = false) => (
@@ -362,91 +404,143 @@ class Conflict extends React.PureComponent {
           onMouseDown={this.onStartResizing(modificationsBranch || branch)}
         />
       );
+      const getNumbersContainerWidthCss = (branch) => {
+        const numbersLength = Math.floor(Math.log10(rawBranches[branch].length)) + 1;
+        return {
+          em: numbersLength + (branch === Merged),
+          px: branch !== Merged ? 50 : 0
+        };
+      };
+      const multiplyWidthCssByTimes = (widthCss, times) => {
+        const {
+          em = 0,
+          px = 0
+        } = widthCss || {};
+        return {
+          em: em * times,
+          px: px * times
+        };
+      };
+      const addWidthsCss = (...widthCss) => {
+        return widthCss.reduce((res, cur) => ({
+          em: (res.em || 0) + (cur.em || 0),
+          px: (res.px || 0) + (cur.px || 0)
+        }), {});
+      };
+      const getCalcPresentation = (widthCss) => {
+        const {
+          em = 0,
+          px = 0
+        } = widthCss || {};
+        const parts = [
+          em && {value: em, unit: 'em'},
+          px && {value: px, unit: 'px'}
+        ].filter(Boolean);
+        if (parts.length === 0) {
+          return '0px';
+        }
+        const result = parts.reduce((result, current, index) => {
+          if (index > 0 && current.value >= 0) {
+            return result.concat(` + ${current.value}${current.unit}`);
+          } else if (index > 0) {
+            return result.concat(` - ${Math.abs(current.value)}${current.unit}`);
+          }
+          return result.concat(`${current.value}${current.unit}`);
+        }, '');
+        return `calc(${result})`;
+      };
       const renderBranch = (branch) => {
         let left, right;
         switch (branch) {
           case HeadBranch:
             right = (
-              <StickyDiv
+              <div
+                style={{gridColumn: 'RIGHT-NUMBERS'}}
                 className={
                   classNames(
-                    styles.stickyPanel,
+                    styles.numbersPanel,
                     styles.right
                   )
                 }
-                onInitialized={node => attachStickyArea(node, branch)}
-                placement={StickyDiv.Placement.right}
-                to={this.scrolls[branch]}
               >
                 {renderBranchCodeLineNumbers(branch)}
-              </StickyDiv>
+              </div>
             );
             break;
           case RemoteBranch:
             left = (
-              <StickyDiv
+              <div
+                style={{gridColumn: 'LEFT-NUMBERS'}}
                 className={
                   classNames(
-                    styles.stickyPanel,
+                    styles.numbersPanel,
                     styles.left
                   )
                 }
-                onInitialized={node => attachStickyArea(node, branch)}
-                placement={StickyDiv.Placement.left}
-                to={this.scrolls[branch]}
               >
                 {renderBranchCodeLineNumbers(branch, undefined, true)}
-              </StickyDiv>
+              </div>
             );
             break;
           case Merged:
             right = (
-              <StickyDiv
+              <div
+                style={{gridColumn: 'RIGHT-NUMBERS'}}
                 className={
                   classNames(
-                    styles.stickyPanel,
+                    styles.numbersPanel,
                     styles.right
                   )
                 }
-                onInitialized={node => attachStickyArea(node, branch)}
-                placement={StickyDiv.Placement.right}
-                to={this.scrolls[branch]}
               >
                 {renderBranchCodeLineNumbers(branch, RemoteBranch, true)}
-              </StickyDiv>
+              </div>
             );
             left = (
-              <StickyDiv
+              <div
+                style={{gridColumn: 'LEFT-NUMBERS'}}
                 className={
                   classNames(
-                    styles.stickyPanel,
+                    styles.numbersPanel,
                     styles.left
                   )
                 }
-                onInitialized={node => attachStickyArea(node, branch)}
-                placement={StickyDiv.Placement.left}
-                to={this.scrolls[branch]}
               >
                 {renderBranchCodeLineNumbers(branch, HeadBranch)}
-              </StickyDiv>
+              </div>
             );
             break;
         }
+        const numbersWidth = getCalcPresentation(getNumbersContainerWidthCss(branch));
+        const templateColumns = [
+          left && `[LEFT-NUMBERS] ${numbersWidth}`,
+          '[CODE] 1fr',
+          right && `[RIGHT-NUMBERS] ${numbersWidth}`
+        ].filter(Boolean);
         return (
           <div
             className={styles.panel}
             key={branch}
             ref={node => attachScrollArea(node, branch)}
-            onScroll={e => onScroll(e, branch)}
+            onScroll={e => onVerticalScroll(e, branch)}
             style={{
-              gridColumn: branch
+              gridColumn: branch,
+              gridTemplateColumns: templateColumns.join(' ')
             }}
           >
             {left}
             <BranchCode
+              className={styles.code}
+              onInitialized={node => attachCodeArea(node, branch)}
+              onScroll={e => onHorizontalScroll(e, branch)}
               branch={branch}
               lines={rawBranches[branch]}
               lineHeight={LINE_HEIGHT}
+              style={{gridColumn: 'CODE'}}
+              lineStyle={{
+                paddingLeft: Scrollbar.size,
+                paddingRight: Scrollbar.size
+              }}
             />
             {right}
           </div>
@@ -467,12 +561,120 @@ class Conflict extends React.PureComponent {
           onMouseDown={this.onStartResizing(branch)}
         />
       );
+      const renderVerticalScroll = (branch, offsets) => {
+        const {
+          left = 0,
+          right = 0,
+          top = 0,
+          bottom = Scrollbar.size
+        } = offsets || {};
+        return (
+          <div
+            className={
+              classNames(
+                styles.scrollContainer,
+                styles.vertical
+              )
+            }
+            key={`vertical scroll ${branch}`}
+            style={{gridColumn: `SCROLL-${branch}`}}
+          >
+            <Scrollbar
+              onInitialized={node => attachVerticalScrollBar(node, branch)}
+              className={styles.scrollbar}
+              direction="vertical"
+              width={Scrollbar.size}
+              style={{
+                left,
+                right,
+                top,
+                bottom
+              }}
+            />
+          </div>
+        );
+      };
+      const renderHorizontalScroll = (branch, offsets) => {
+        const {
+          left = 0,
+          right = 0,
+          top = -Scrollbar.size,
+          bottom = 0
+        } = offsets || {};
+        return (
+          <div
+            className={
+              classNames(
+                styles.scrollContainer,
+                styles.horizontal
+              )
+            }
+            key={`horizontal scroll ${branch}`}
+            style={{gridColumn: branch}}
+          >
+            <Scrollbar
+              onInitialized={node => attachHorizontalScrollBar(node, branch)}
+              className={styles.scrollbar}
+              direction="horizontal"
+              height={Scrollbar.size}
+              style={{
+                left,
+                right,
+                top,
+                bottom
+              }}
+            />
+          </div>
+        );
+      };
       return [
+        renderVerticalScroll(HeadBranch),
         renderBranch(HeadBranch),
+        renderHorizontalScroll(
+          HeadBranch,
+          {
+            left: Scrollbar.size,
+            right: getCalcPresentation(getNumbersContainerWidthCss(HeadBranch))
+          }
+        ),
         renderCanvas(HeadBranch),
         renderBranch(Merged),
+        renderHorizontalScroll(
+          Merged,
+          {
+            left: getCalcPresentation(getNumbersContainerWidthCss(Merged)),
+            right: getCalcPresentation(
+              addWidthsCss(
+                getNumbersContainerWidthCss(Merged),
+                {px: Scrollbar.size}
+              )
+            )
+          }
+        ),
+        renderVerticalScroll(
+          Merged,
+          {
+            left: getCalcPresentation(
+              addWidthsCss(
+                multiplyWidthCssByTimes(
+                  getNumbersContainerWidthCss(Merged),
+                  -1
+                ),
+                {px: -Scrollbar.size}
+              )
+            )
+          }
+        ),
         renderCanvas(RemoteBranch),
-        renderBranch(RemoteBranch)
+        renderBranch(RemoteBranch),
+        renderHorizontalScroll(
+          RemoteBranch,
+          {
+            left: getCalcPresentation(getNumbersContainerWidthCss(RemoteBranch)),
+            right: Scrollbar.size
+          }
+        ),
+        renderVerticalScroll(RemoteBranch, {left: -Scrollbar.size})
       ];
     }
     return null;
@@ -486,6 +688,11 @@ class Conflict extends React.PureComponent {
     this.canvases[branch] = canvas;
     this.draw();
   }
+
+  updateScrollBars = () => {
+    Object.values(this.verticalScrollBars || {}).forEach(scrollBar => scrollBar.renderBar());
+    Object.values(this.horizontalScrollBars || {}).forEach(scrollBar => scrollBar.renderBar());
+  };
 
   draw = () => {
     const {conflictedFile} = this.state;

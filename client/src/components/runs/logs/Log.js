@@ -1829,6 +1829,7 @@ class Logs extends localization.LocalizedReactComponent {
               <VSActions
                 run={this.props.run.value}
                 showDownIcon
+                trigger={['click']}
               >
                 VERSIONED STORAGE
               </VSActions>

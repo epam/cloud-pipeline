@@ -79,6 +79,11 @@ class BranchCode extends React.PureComponent {
     this.container = null;
   }
 
+  componentDidMount () {
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(this.container);
+  }
+
   attachEventHandlers = () => {
     if (this.container) {
       this.container.addEventListener('copy', this.copy);
@@ -102,12 +107,15 @@ class BranchCode extends React.PureComponent {
     this.detachEventHandlers();
     this.container = container;
     this.attachEventHandlers();
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(this.container);
   };
 
   renderCodeLine = (line) => {
     const {
       branch,
       lineHeight,
+      lineStyle = {},
       modificationsBranch,
       renderContent = BranchCode.defaultContentRenderer,
       renderOptions
@@ -141,7 +149,10 @@ class BranchCode extends React.PureComponent {
         style={
           Object.assign(
             {},
-            {height: 1},
+            {
+              height: 1,
+              ...lineStyle
+            },
             getStyleForModificationType(modificationType, modificationStatus, hidden)
           )
         }
@@ -166,7 +177,10 @@ class BranchCode extends React.PureComponent {
         style={
           Object.assign(
             {},
-            {height: 1},
+            {
+              height: 1,
+              ...lineStyle
+            },
             getStyleForModificationType(modificationType, modificationStatus, hidden)
           )
         }
@@ -206,7 +220,8 @@ class BranchCode extends React.PureComponent {
               {},
               {
                 height: `${lineHeight}px`,
-                lineHeight: `${lineHeight}px`
+                lineHeight: `${lineHeight}px`,
+                ...lineStyle
               },
               getStyleForModificationType(modificationType, modificationStatus, hidden)
             )
@@ -243,6 +258,7 @@ class BranchCode extends React.PureComponent {
       className,
       lines,
       onMouseDown,
+      onScroll,
       style
     } = this.props;
     return (
@@ -252,6 +268,7 @@ class BranchCode extends React.PureComponent {
         ref={this.initializeContainer}
         style={style}
         onMouseDown={onMouseDown}
+        onScroll={onScroll}
       >
         {
           lines
@@ -269,8 +286,11 @@ BranchCode.propTypes = {
   lines: PropTypes.array,
   modificationsBranch: PropTypes.oneOfType([PropTypes.symbol, PropTypes.string]),
   lineHeight: PropTypes.number,
+  lineStyle: PropTypes.object,
   onMouseDown: PropTypes.func,
+  onInitialized: PropTypes.func,
   onRefresh: PropTypes.func,
+  onScroll: PropTypes.func,
   renderContent: PropTypes.func,
   renderOptions: PropTypes.object,
   style: PropTypes.object
@@ -376,6 +396,7 @@ function BranchCodeLineNumbers (
           },
           style || {}
         )}
+      lineStyle={undefined}
     />
   );
 }
