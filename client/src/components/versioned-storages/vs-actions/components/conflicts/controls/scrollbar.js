@@ -20,7 +20,7 @@ import classNames from 'classnames';
 import styles from './scrollbar.css';
 
 class Scrollbar extends React.PureComponent {
-  static size = 10;
+  static size = 8;
   state = {
     moving: undefined
   };
@@ -190,6 +190,7 @@ class Scrollbar extends React.PureComponent {
           width: direction === 'horizontal' ? undefined : width,
           height: direction === 'horizontal' ? height : undefined
         }}
+        onMouseDown={this.onMouseDown}
       >
         <div
           className={
@@ -201,10 +202,9 @@ class Scrollbar extends React.PureComponent {
             )
           }
           ref={this.initializeBar}
-          onMouseDown={this.onMouseDown}
           style={{
-            width: 10,
-            height: 10
+            width: Scrollbar.size,
+            height: Scrollbar.size
           }}
         >
           {'\u00A0'}
