@@ -31,9 +31,12 @@ import LoadingView from '../../../special/LoadingView';
 import UpdatePipeline from '../../../../models/pipelines/UpdatePipeline';
 import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
+import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
+import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDelete';
 import VersionedStorageListWithInfo from '../../../../models/versioned-storages/list-with-info';
 import EditItemForm from '../forms/EditItemForm';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
+import DOCUMENT_TYPES from './document-types';
 import styles from './versioned-storage.css';
 
 const PAGE_SIZE = 20;
@@ -89,14 +92,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   get lastCommitId () {
     const {pipeline} = this.props;
     if (
-      !pipeline ||
-      !pipeline.value ||
-      !pipeline.loaded ||
-      pipeline.pending
+      pipeline &&
+      pipeline.value &&
+      pipeline.loaded &&
+      !pipeline.pending
     ) {
-      return null;
+      return pipeline.value.currentVersion.commitId;
     }
-    return pipeline.value.currentVersion.commitId;
+    return null;
   };
 
   get actions () {
@@ -232,6 +235,43 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
+  onDeleteDocument = async (document, comment) => {
+    if (this.lastCommitId) {
+      const {
+        pipeline,
+        pipelineId,
+        folders,
+        pipelinesLibrary
+      } = this.props;
+      let request;
+      if (document.type.toLowerCase() === DOCUMENT_TYPES.blob) {
+        request = new PipelineFileDelete(pipelineId);
+      }
+      if (document.type.toLowerCase() === DOCUMENT_TYPES.tree) {
+        request = new PipelineFolderDelete(pipelineId);
+      }
+      if (!request) {
+        return;
+      }
+      const parentFolderId = pipeline.value.parentFolderId;
+      const hide = message.loading(`Deleting '${document.name}'...`, 0);
+      await request.send({
+        lastCommitId: this.lastCommitId,
+        path: document.path,
+        comment: comment || `${document.name} deleted`
+      });
+      hide();
+      if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        parentFolderId
+          ? folders.invalidateFolder(parentFolderId)
+          : pipelinesLibrary.invalidateCache();
+      }
+      this.pathWasChanged();
+    }
+  };
+
   createFolder = async ({name, content}) => {
     if (this.lastCommitId && name) {
       const {
@@ -330,10 +370,10 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (document.type && document.type.toLowerCase() === 'navback') {
       return this.navigate(this.parentPath);
     }
-    if (document.type && document.type.toLowerCase() === 'tree') {
+    if (document.type && document.type.toLowerCase() === DOCUMENT_TYPES.tree) {
       return this.onFolderClick(document);
     }
-    if (document.type && document.type.toLowerCase() === 'blob') {
+    if (document.type && document.type.toLowerCase() === DOCUMENT_TYPES.blob) {
       return this.onFileClick(document);
     }
   };
@@ -392,6 +432,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           pending={pending}
           controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
           onTableActionClick={this.onTableActionClick}
+          onDeleteDocument={this.onDeleteDocument}
         />
         <EditItemForm
           pending={false}

@@ -22,17 +22,42 @@ import {
   Dropdown,
   Button,
   Menu,
-  Icon
+  Icon,
+  Input,
+  Modal,
+  Row
 } from 'antd';
 import COLUMNS from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
+import DOCUMENT_TYPES from '../document-types';
 import styles from './table.css';
 
 function typeSorter (a, b) {
   return b.type.localeCompare(a.type);
 };
 
+function getDocumentType (document) {
+  if (!document || !document.type) {
+    return;
+  }
+  let type;
+  switch (document.type.toLowerCase()) {
+    case DOCUMENT_TYPES.tree:
+      type = 'folder';
+      break;
+    case DOCUMENT_TYPES.blob:
+      type = 'file';
+      break;
+  }
+  return type;
+};
+
 class VersionedStorageTable extends React.Component {
+  state = {
+    comment: '',
+    deletingDocument: null
+  }
+
   get data () {
     const {contents, showNavigateBack} = this.props;
     if (!contents) {
@@ -48,36 +73,87 @@ class VersionedStorageTable extends React.Component {
         ...content.git_object
       })).sort(typeSorter);
     return showNavigateBack ? [navigateBack, ...content] : content;
-  }
+  };
 
   get actions () {
     return {
-      delete: (record) => console.log('delete', record),
+      delete: (record) => this.showDeleteDialog(record),
       edit: (record) => console.log('edit', record),
       download: (record) => console.log('download', record)
     };
-  }
+  };
 
-  onRowClick = (document, index, event) => {
+  onCommentChange = (event) => {
+    if (event) {
+      this.setState({comment: event.target.value});
+    }
+  };
+
+  onCommentClear = () => {
+    this.setState({comment: undefined});
+  };
+
+  showDeleteDialog = (record) => {
+    this.setState({deletingDocument: record});
+  };
+
+  hideDeleteDialog = () => {
+    this.setState({comment: '', deletingDocument: null});
+  };
+
+  confirmDelete = (record, callback) => {
+    this.setState({shofDeleteDialog: true});
+    const {comment} = this.state;
+    const type = getDocumentType(record);
+    if (!record || !callback || !type) {
+      return;
+    }
+    const content = (
+      <div>
+        <Row>
+          {`Are you sure you want to delete ${type} '${record.name}'?`}
+        </Row>
+        {type === 'folder' && (
+          <Row>
+            All child folders and files will be removed.
+          </Row>
+        )}
+        <Input
+          type="textarea"
+          placeholder="Please type a comment"
+          rows={4}
+          onChange={this.onCommentChange}
+        />
+      </div>
+    );
+    Modal.confirm({
+      title: `Remove ${type}`,
+      content: content,
+      style: {wordWrap: 'break-word'},
+      onOk: () => callback && callback(record, comment)
+    });
+  };
+
+  onRowClick = (record, index, event) => {
     const {onRowClick} = this.props;
-    if (!document) {
+    if (!record) {
       return;
     }
     if (event && event.target.dataset.action) {
       const buttonAction = event.target.dataset.action;
-      return this.actions[buttonAction] && this.actions[buttonAction](document);
+      return this.actions[buttonAction] && this.actions[buttonAction](record);
     }
-    return onRowClick && onRowClick(document);
-  }
+    return onRowClick && onRowClick(record);
+  };
 
   onCreateActionSelect = (action) => {
     const {onTableActionClick} = this.props;
     onTableActionClick && onTableActionClick(action);
-  }
+  };
 
   onUpload = (event) => {
     event && event.stopPropagation();
-  }
+  };
 
   renderTableControls = () => {
     const {controlsEnabled} = this.props;
@@ -128,7 +204,67 @@ class VersionedStorageTable extends React.Component {
         </Button>
       </div>
     );
-  }
+  };
+
+  renderDeleteDialog = () => {
+    const {deletingDocument, comment} = this.state;
+    const {onDeleteDocument} = this.props;
+    const type = getDocumentType(deletingDocument);
+    if (!deletingDocument || !type) {
+      return;
+    }
+    const footer = (
+      <Row type="flex" justify="space-between">
+        <Button
+          onClick={this.hideDeleteDialog}
+        >
+          CANCEL
+        </Button>
+        <Button
+          type="danger"
+          onClick={() => {
+            onDeleteDocument && onDeleteDocument(deletingDocument, comment);
+            this.hideDeleteDialog();
+          }}
+        >
+          DELETE
+        </Button>
+      </Row>
+    );
+    return (
+      <Modal
+        visible={!!deletingDocument}
+        title={`Remove ${type}`}
+        onCancel={this.hideDeleteDialog}
+        footer={footer}
+        width="500px"
+      >
+        <div>
+          <Row style={{textAlign: 'center'}}>
+            {`Are you sure you want to delete ${type} '${deletingDocument.name}'?`}
+          </Row>
+          {type === 'folder' && (
+            <Row style={{textAlign: 'center'}}>
+              All child folders and files will be removed.
+            </Row>
+          )}
+          <div
+            style={{padding: '15px', display: 'flex', flexWrap: 'nowrap'}}
+          >
+            <span style={{marginRight: '15px'}}>
+              Comment:
+            </span>
+            <Input
+              type="textarea"
+              rows={2}
+              value={comment}
+              onChange={this.onCommentChange}
+            />
+          </div>
+        </div>
+      </Modal>
+    );
+  };
 
   render () {
     const {pending} = this.props;
@@ -148,6 +284,7 @@ class VersionedStorageTable extends React.Component {
           rowClassName={() => styles.tableRow}
           loading={pending}
         />
+        {this.renderDeleteDialog()}
       </div>
     );
   }
@@ -159,7 +296,8 @@ VersionedStorageTable.PropTypes = {
   showNavigateBack: PropTypes.bool,
   pending: PropTypes.bool,
   controlsEnabled: PropTypes.bool,
-  onTableActionClick: PropTypes.func
+  onTableActionClick: PropTypes.func,
+  onDeleteDocument: PropTypes.func
 };
 
 export default VersionedStorageTable;

@@ -19,16 +19,17 @@ import classNames from 'classnames';
 import {
   Icon
 } from 'antd';
+import DOCUMENT_TYPES from '../document-types';
 import styles from './table.css';
 
 const FILES = {
-  blob: <Icon type="file" />,
-  tree: <Icon type="folder" />,
+  [DOCUMENT_TYPES.blob]: <Icon type="file" />,
+  [DOCUMENT_TYPES.tree]: <Icon type="folder" />,
   navback: <Icon type="folder" />
 };
 
 const ACTIONS = {
-  blob: (
+  [DOCUMENT_TYPES.blob]: (
     <span
       className={classNames(
         styles.cellContent,
@@ -54,7 +55,7 @@ const ACTIONS = {
         data-action="delete"
       />
     </span>),
-  tree: (
+  [DOCUMENT_TYPES.tree]: (
     <span
       className={classNames(
         styles.cellContent,
