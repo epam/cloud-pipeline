@@ -30,6 +30,7 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
 import UpdatePipeline from '../../../../models/pipelines/UpdatePipeline';
 import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
+import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import VersionedStorageListWithInfo from '../../../../models/versioned-storages/list-with-info';
 import EditItemForm from '../forms/EditItemForm';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
@@ -111,6 +112,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     let parentPath;
     if (path) {
       parentPath = path.split('/').filter(Boolean).slice(0, -1).join('/');
+    }
+    if (parentPath && parentPath.length > 0 && !parentPath.endsWith('/')) {
+      parentPath = `${parentPath}/`;
     }
     return parentPath || '';
   };
@@ -236,21 +240,21 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         folders,
         pipelinesLibrary
       } = this.props;
-      const updateFolderRequest = new PipelineFolderUpdate(pipelineId);
+      const request = new PipelineFolderUpdate(pipelineId);
       const parentFolderId = pipeline.value.parentFolderId;
       let path = this.props.path || '';
       if (path.length > 0 && !path.endsWith('/')) {
         path = `${path}/`;
       }
       const hide = message.loading(`Creating folder '${name}'...`, 0);
-      await updateFolderRequest.send({
+      await request.send({
         lastCommitId: this.lastCommitId,
         path: `${path}${name.trim()}`,
         comment: content
       });
       hide();
-      if (updateFolderRequest.error) {
-        message.error(updateFolderRequest.error, 5);
+      if (request.error) {
+        message.error(request.error, 5);
       } else {
         parentFolderId
           ? folders.invalidateFolder(parentFolderId)
@@ -262,7 +266,37 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   createFile = async ({name, content}) => {
-
+    if (this.lastCommitId && name) {
+      const {
+        pipeline,
+        pipelineId,
+        folders,
+        pipelinesLibrary
+      } = this.props;
+      const request = new PipelineFileUpdate(pipelineId);
+      const parentFolderId = pipeline.value.parentFolderId;
+      let path = this.props.path || '';
+      if (path.length > 0 && !path.endsWith('/')) {
+        path = `${path}`;
+      }
+      const hide = message.loading(`Creating folder '${name}'...`, 0);
+      await request.send({
+        lastCommitId: this.lastCommitId,
+        path: `${path}${name.trim()}`,
+        comment: content,
+        contents: ''
+      });
+      hide();
+      if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        parentFolderId
+          ? folders.invalidateFolder(parentFolderId)
+          : pipelinesLibrary.invalidateCache();
+        this.closeCreateDocumentDialog();
+      }
+      this.pathWasChanged();
+    }
   };
 
   navigate = (path) => {
