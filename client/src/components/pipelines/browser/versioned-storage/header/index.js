@@ -222,7 +222,8 @@ VersionedStorageHeader.propTypes = {
   }),
   readOnly: PropTypes.bool,
   issuesPanelOpen: PropTypes.bool,
-  metadataPanelOpen: PropTypes.bool
+  metadataPanelOpen: PropTypes.bool,
+  controlsEnabled: PropTypes.bool
 };
 
 export default VersionedStorageHeader;

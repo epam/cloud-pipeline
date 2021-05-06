@@ -25,6 +25,7 @@ import {
   Icon
 } from 'antd';
 import COLUMNS from './columns';
+import TABLE_MENU_KEYS from './table-menu-keys';
 import styles from './table.css';
 
 function typeSorter (a, b) {
@@ -69,8 +70,9 @@ class VersionedStorageTable extends React.Component {
     return onRowClick && onRowClick(document);
   }
 
-  onCreateActionSelect = (event) => {
-    console.log(event);
+  onCreateActionSelect = (action) => {
+    const {onTableActionClick} = this.props;
+    onTableActionClick && onTableActionClick(action);
   }
 
   onUpload = (event) => {
@@ -78,6 +80,7 @@ class VersionedStorageTable extends React.Component {
   }
 
   renderTableControls = () => {
+    const {controlsEnabled} = this.props;
     return (
       <div className={styles.tableControls}>
         <Dropdown
@@ -89,12 +92,14 @@ class VersionedStorageTable extends React.Component {
               onClick={this.onCreateActionSelect}
               style={{width: 200}}>
               <Menu.Item
-                key="folder"
+                key={TABLE_MENU_KEYS.folder}
+                disabled={!controlsEnabled}
               >
                 <Icon type="folder" /> Folder
               </Menu.Item>
               <Menu.Item
-                key="file"
+                key={TABLE_MENU_KEYS.file}
+                disabled={!controlsEnabled}
               >
                 <Icon type="file" /> File
               </Menu.Item>
@@ -106,6 +111,7 @@ class VersionedStorageTable extends React.Component {
             id="create-button"
             size="small"
             className={styles.tableControl}
+            disabled={!controlsEnabled}
           >
             <Icon type="plus" />
             Create
@@ -116,6 +122,7 @@ class VersionedStorageTable extends React.Component {
           className={styles.tableControl}
           onClick={this.onUpload}
           size="small"
+          disabled={!controlsEnabled}
         >
           Upload
         </Button>
@@ -133,7 +140,7 @@ class VersionedStorageTable extends React.Component {
         {this.renderTableControls()}
         <Table
           columns={COLUMNS}
-          rowKey={(record) => record.id}
+          rowKey={(record) => record.name}
           dataSource={this.data}
           size="small"
           onRowClick={this.onRowClick}
@@ -149,8 +156,10 @@ class VersionedStorageTable extends React.Component {
 VersionedStorageTable.PropTypes = {
   contents: PropTypes.object,
   onRowClick: PropTypes.func,
-  showNavigateBack: PropTypes.boolean,
-  pending: PropTypes.boolean
+  showNavigateBack: PropTypes.bool,
+  pending: PropTypes.bool,
+  controlsEnabled: PropTypes.bool,
+  onTableActionClick: PropTypes.func
 };
 
 export default VersionedStorageTable;

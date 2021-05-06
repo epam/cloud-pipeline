@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import {
   Alert,
   message,
@@ -28,7 +29,10 @@ import localization from '../../../../utils/localization';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
 import UpdatePipeline from '../../../../models/pipelines/UpdatePipeline';
+import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
 import VersionedStorageListWithInfo from '../../../../models/versioned-storages/list-with-info';
+import EditItemForm from '../forms/EditItemForm';
+import TABLE_MENU_KEYS from './table/table-menu-keys';
 import styles from './versioned-storage.css';
 
 const PAGE_SIZE = 20;
@@ -69,7 +73,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   componentDidMount () {
     this.pathWasChanged();
-  }
+  };
 
   componentDidUpdate (prevProps) {
     if (
@@ -78,7 +82,21 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     ) {
       this.pathWasChanged();
     }
-  }
+  };
+
+  @computed
+  get lastCommitId () {
+    const {pipeline} = this.props;
+    if (
+      !pipeline ||
+      !pipeline.value ||
+      !pipeline.loaded ||
+      pipeline.pending
+    ) {
+      return null;
+    }
+    return pipeline.value.currentVersion.commitId;
+  };
 
   get actions () {
     return {
@@ -86,7 +104,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       closeHistoryPanel: this.closeHistoryPanel,
       openEditStorageDialog: this.openEditStorageDialog
     };
-  }
+  };
 
   get parentPath () {
     const {path} = this.props;
@@ -95,7 +113,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       parentPath = path.split('/').filter(Boolean).slice(0, -1).join('/');
     }
     return parentPath || '';
-  }
+  };
 
   pathWasChanged = () => {
     this.fetchPage(0);
@@ -153,6 +171,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.setState({editStorageDialog: true});
   };
 
+  openCreateDocumentDialog = (type) => {
+    if (type) {
+      this.setState({createDocument: type});
+    }
+  };
+
+  closeCreateDocumentDialog = () => {
+    this.setState({createDocument: undefined});
+  };
+
   renameVersionedStorage = async (name) => {
     const {pipeline, folders, pipelinesLibrary, onReloadTree} = this.props;
     if (!pipeline || !pipeline.value) {
@@ -182,6 +210,59 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         onReloadTree(!pipeline.value.parentFolderId);
       }
     }
+  };
+
+  onTableActionClick = (action) => {
+    if (action && TABLE_MENU_KEYS[action.key]) {
+      this.openCreateDocumentDialog(action.key);
+    }
+  };
+
+  onCreateDocument = (values) => {
+    const {createDocument} = this.state;
+    if (createDocument && createDocument === TABLE_MENU_KEYS.folder) {
+      return this.createFolder(values);
+    }
+    if (createDocument && createDocument === TABLE_MENU_KEYS.file) {
+      return this.createFile(values);
+    }
+  };
+
+  createFolder = async ({name, content}) => {
+    if (this.lastCommitId && name) {
+      const {
+        pipeline,
+        pipelineId,
+        folders,
+        pipelinesLibrary
+      } = this.props;
+      const updateFolderRequest = new PipelineFolderUpdate(pipelineId);
+      const parentFolderId = pipeline.value.parentFolderId;
+      let path = this.props.path || '';
+      if (path.length > 0 && !path.endsWith('/')) {
+        path = `${path}/`;
+      }
+      const hide = message.loading(`Creating folder '${name}'...`, 0);
+      await updateFolderRequest.send({
+        lastCommitId: this.lastCommitId,
+        path: `${path}${name.trim()}`,
+        comment: content
+      });
+      hide();
+      if (updateFolderRequest.error) {
+        message.error(updateFolderRequest.error, 5);
+      } else {
+        parentFolderId
+          ? folders.invalidateFolder(parentFolderId)
+          : pipelinesLibrary.invalidateCache();
+        this.closeCreateDocumentDialog();
+      }
+      this.pathWasChanged();
+    }
+  };
+
+  createFile = async ({name, content}) => {
+
   };
 
   navigate = (path) => {
@@ -221,7 +302,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (document.type && document.type.toLowerCase() === 'blob') {
       return this.onFileClick(document);
     }
-  }
+  };
 
   render () {
     const {
@@ -234,7 +315,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       contents,
       error,
       lastPage,
-      page
+      page,
+      createDocument
     } = this.state;
     const {
       showHistoryPanel,
@@ -259,6 +341,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           onRenameStorage={this.renameVersionedStorage}
           actions={this.actions}
           historyPanelOpen={showHistoryPanel}
+          controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
         />
         {
           error && (
@@ -273,6 +356,17 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           onRowClick={this.onRowClick}
           showNavigateBack={path}
           pending={pending}
+          controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
+          onTableActionClick={this.onTableActionClick}
+        />
+        <EditItemForm
+          pending={false}
+          includeFileContentField
+          title={`Create ${createDocument}`}
+          contentPlaceholder="Comment"
+          visible={!!createDocument}
+          onCancel={this.closeCreateDocumentDialog}
+          onSubmit={this.onCreateDocument}
         />
         <div
           className={styles.paginationRow}

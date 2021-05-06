@@ -28,7 +28,8 @@ export default class EditItemForm extends React.Component {
     visible: PropTypes.bool,
     name: PropTypes.string,
     title: PropTypes.string,
-    includeFileContentField: PropTypes.bool
+    includeFileContentField: PropTypes.bool,
+    contentPlaceholder: PropTypes.string
   };
 
   formItemLayout = {
@@ -52,6 +53,7 @@ export default class EditItemForm extends React.Component {
   };
 
   render () {
+    const {contentPlaceholder} = this.props;
     const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
@@ -103,7 +105,10 @@ export default class EditItemForm extends React.Component {
             </Form.Item>
             {
               this.props.includeFileContentField &&
-              <Form.Item {...this.formItemLayout} label="Content">
+              <Form.Item
+                {...this.formItemLayout}
+                label={contentPlaceholder || 'Content'}
+              >
                 {getFieldDecorator('content')(
                   <Input
                     disabled={this.props.pending}
