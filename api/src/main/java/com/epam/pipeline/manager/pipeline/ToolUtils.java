@@ -25,4 +25,8 @@ public interface ToolUtils {
     static String getImageWithoutTag(final String imageWithTag) {
         return imageWithTag.split(TAG_DELIMITER)[0];
     }
+
+    static String getImageTag(final String imageWithTag) {
+        return imageWithTag.split(TAG_DELIMITER)[1];
+    }
 }
