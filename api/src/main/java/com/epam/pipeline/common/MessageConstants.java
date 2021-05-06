@@ -570,6 +570,7 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_POSITIVE_INT_REQUIRED = "error.node.pool.positive.int.required";
     public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
     public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
+    public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
