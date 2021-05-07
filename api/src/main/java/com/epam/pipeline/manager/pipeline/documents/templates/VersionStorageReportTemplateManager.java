@@ -44,6 +44,7 @@ import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -65,10 +66,13 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 public class VersionStorageReportTemplateManager {
 
-    public static final String VERSIONED_STORAGE_REPORT = "versioned-storage_report";
+    public static final String HISTORY = "history";
     public static final String DOCX = ".docx";
     public static final String ZIP = ".zip";
-    public static final SimpleDateFormat REPORT_FILE_NAME_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH:mm");
+    public static final SimpleDateFormat REPORT_FILE_NAME_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH_mm");
+    public static final String NAME_SEPARATOR = "_";
+    public static final String REVISION = "revision";
+    public static final String SUMMARY = "summary";
 
     private final PipelineManager pipelineManager;
     private final GitManager gitManager;
@@ -109,11 +113,11 @@ public class VersionStorageReportTemplateManager {
                                        final List<Pair<String, XWPFDocument>> diffReportFiles) throws IOException {
         final String reportFileName;
         if (diffReportFiles.size() == 1) {
-            reportFileName = VERSIONED_STORAGE_REPORT + "_" + loaded.getName() + "_"
+            reportFileName = HISTORY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR
                             + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now()) + DOCX;
             diffReportFiles.get(0).getSecond().write(outputStream);
         } else {
-            reportFileName = VERSIONED_STORAGE_REPORT + "_" + loaded.getName() + "_"
+            reportFileName = HISTORY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR
                             + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now()) + ZIP;
             writeToZipStream(outputStream, diffReportFiles);
         }
@@ -133,11 +137,13 @@ public class VersionStorageReportTemplateManager {
                                                                final GitDiffReportFilter reportFilters)
             throws IOException {
         final List<Pair<String, XWPFDocument>> results = new ArrayList<>();
-        final XWPFDocument report = new XWPFDocument(
-                new FileInputStream(getVersionStorageTemplatePath())
-        );
+        String versionStorageTemplatePath = getVersionStorageTemplatePath();
+        Assert.notNull(versionStorageTemplatePath,
+                "Version Storage Report Template not configured, please specify "
+                        + SystemPreferences.VERSION_STORAGE_REPORT_TEMPLATE.getKey());
+        final XWPFDocument report = new XWPFDocument(new FileInputStream(versionStorageTemplatePath));
         fillTemplate(report, loaded, gitDiff, reportFilters);
-        results.add(Pair.of("vs_report_" + loaded.getName() + "_" +
+        results.add(Pair.of(SUMMARY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR +
                 ReportDataExtractor.DATE_FORMAT.format(DateUtils.now()) + DOCX, report));
         if (reportFilters.isArchive()) {
             results.addAll(
@@ -193,8 +199,8 @@ public class VersionStorageReportTemplateManager {
                         fillTemplate(report, loaded, p.getSecond(), reportFilters);
                         return Pair.of(
                                 (getGroupType(reportFilters) == CommitDiffsGrouping.GroupType.BY_COMMIT
-                                        ? "revision_" : "file_"
-                                ) + p.getFirst().replace("/", "_") + DOCX,
+                                        ? REVISION + NAME_SEPARATOR : ""
+                                ) + p.getFirst().replace("/", NAME_SEPARATOR) + DOCX,
                                 report
                         );
                     } catch (IOException e) {
