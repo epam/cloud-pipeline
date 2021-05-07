@@ -269,7 +269,7 @@ class VersionedStorageTable extends React.Component {
         width="500px"
       >
         <div>
-          <Row style={{textAlign: 'center'}}>
+          <Row style={{paddingLeft: '15px'}}>
             {`Are you sure you want to delete ${type} '${deletingDocument.name}'?`}
           </Row>
           {type === 'folder' && (
@@ -285,7 +285,7 @@ class VersionedStorageTable extends React.Component {
             </span>
             <Input
               type="textarea"
-              rows={2}
+              rows={1}
               value={comment}
               onChange={this.onCommentChange}
             />

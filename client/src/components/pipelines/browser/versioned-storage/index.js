@@ -37,6 +37,7 @@ import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete'
 import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDelete';
 import VersionedStorageListWithInfo from '../../../../models/versioned-storages/list-with-info';
 import EditItemForm from '../forms/EditItemForm';
+import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
 import DOCUMENT_TYPES from './document-types';
 import styles from './versioned-storage.css';
@@ -99,7 +100,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     lastPage: 0,
     page: 0,
     pending: false,
-    showHistoryPanel: false
+    showHistoryPanel: false,
+    selectedFile: null
   };
 
   updateVSRequest = new UpdatePipeline();
@@ -336,7 +338,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       const hide = message.loading(`Renaming '${renameDocument.name}'...`, 0);
       await request.send({
         lastCommitId: this.lastCommitId,
-        path: `${path}${name}`,
+        path: `${path || ''}${name}`,
         previousPath: renameDocument.path,
         comment: content || `${renameDocument.name} rename`
       });
@@ -352,7 +354,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       this.pathWasChanged();
       this.closeRenameDocumentDialog();
     }
-  }
+  };
 
   createFolder = async ({name, content}) => {
     if (this.lastCommitId && name) {
@@ -381,9 +383,10 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         parentFolderId
           ? folders.invalidateFolder(parentFolderId)
           : pipelinesLibrary.invalidateCache();
+        await pipeline.fetch();
         this.closeCreateDocumentDialog();
+        this.pathWasChanged();
       }
-      this.pathWasChanged();
     }
   };
 
@@ -481,8 +484,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.navigate(path);
   };
 
-  onFileClick = (document) => {
-
+  onFileClick = (file) => {
+    this.openEditFileForm(file);
   };
 
   onRowClick = (document = {}) => {
@@ -494,6 +497,38 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
     if (document.type && document.type.toLowerCase() === DOCUMENT_TYPES.blob) {
       return this.onFileClick(document);
+    }
+  };
+
+  closeEditFileForm = () => {
+    this.setState({selectedFile: null});
+  };
+
+  openEditFileForm = (file) => {
+    this.setState({selectedFile: file});
+  };
+
+  saveEditFileForm = async (contents, comment) => {
+    const {pipelineId, pipeline} = this.props;
+    const {selectedFile} = this.state;
+    if (!selectedFile) {
+      return;
+    }
+    const request = new PipelineFileUpdate(pipelineId);
+    const hide = message.loading('Committing file changes...');
+    await request.send({
+      contents: contents,
+      comment,
+      path: selectedFile.path,
+      lastCommitId: this.lastCommitId
+    });
+    hide();
+    if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      this.closeEditFileForm();
+      await pipeline.fetch();
+      this.pathWasChanged();
     }
   };
 
@@ -535,7 +570,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       contents,
       error,
       lastPage,
-      page
+      page,
+      selectedFile
     } = this.state;
     const {
       showHistoryPanel,
@@ -583,6 +619,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           pipelineId={pipelineId}
           path={path}
           afterUpload={this.afterUpload}
+        />
+        <PipelineCodeForm
+          file={selectedFile}
+          pipeline={pipeline}
+          version={this.lastCommitId}
+          cancel={this.closeEditFileForm}
+          save={this.saveEditFileForm}
+          vsStorage
         />
         {this.renderEditItemForm()}
         <div
