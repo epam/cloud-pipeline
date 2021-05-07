@@ -738,7 +738,7 @@ public class GitManager {
 
     public GitProject createRepository(final String pipelineName, final String description) throws GitClientException {
         return getDefaultGitlabClient().createEmptyRepository(
-                        pipelineName,
+                        GitUtils.convertPipeNameToProject(pipelineName),
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         true,
