@@ -76,11 +76,14 @@ class VersionedStorageTable extends React.Component {
   };
 
   get actions () {
-    const {onRenameDocument} = this.props;
+    const {
+      onRenameDocument,
+      onDownloadFile
+    } = this.props;
     return {
       delete: (record) => this.showDeleteDialog(record),
       edit: (record) => onRenameDocument && onRenameDocument(record),
-      download: (record) => console.log('download', record)
+      download: (record) => onDownloadFile && onDownloadFile(record)
     };
   };
 
@@ -299,7 +302,8 @@ VersionedStorageTable.PropTypes = {
   controlsEnabled: PropTypes.bool,
   onTableActionClick: PropTypes.func,
   onDeleteDocument: PropTypes.func,
-  onRenameDocument: PropTypes.func
+  onRenameDocument: PropTypes.func,
+  onDownloadFile: PropTypes.func
 };
 
 export default VersionedStorageTable;

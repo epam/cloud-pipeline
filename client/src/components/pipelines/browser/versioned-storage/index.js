@@ -23,6 +23,7 @@ import {
   message,
   Pagination
 } from 'antd';
+import FileSaver from 'file-saver';
 import VersionedStorageHeader from './header';
 import VersionedStorageTable from './table';
 import localization from '../../../../utils/localization';
@@ -30,6 +31,7 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
 import UpdatePipeline from '../../../../models/pipelines/UpdatePipeline';
 import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
+import PipelineFile from '../../../../models/pipelines/PipelineFile';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDelete';
@@ -55,6 +57,17 @@ function getDocumentType (document) {
       break;
   }
   return type;
+};
+
+function checkForBlobErrors (blob) {
+  return new Promise(resolve => {
+    const fr = new FileReader();
+    fr.onload = function () {
+      const status = JSON.parse(this.result)?.status?.toLowerCase();
+      resolve(status === 'error');
+    };
+    fr.readAsText(blob);
+  });
 };
 
 @localization.localizedComponent
@@ -403,10 +416,31 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           ? folders.invalidateFolder(parentFolderId)
           : pipelinesLibrary.invalidateCache();
         this.closeCreateDocumentDialog();
+        await pipeline.fetch();
+        this.pathWasChanged();
       }
-      this.pathWasChanged();
     }
   };
+
+  downloadSingleFile = async (document) => {
+    const {pipelineId} = this.props;
+    const pipelineFile = new PipelineFile(pipelineId, this.lastCommitId, document.path);
+    let res;
+    await pipelineFile.fetch();
+    res = pipelineFile.response;
+    if (!res) {
+      return;
+    }
+    if (res.type?.includes('application/json') && res instanceof Blob) {
+      checkForBlobErrors(res)
+        .then(error => error
+          ? message.error('Error downloading file', 5)
+          : FileSaver.saveAs(res, document.name)
+        );
+    } else if (res) {
+      FileSaver.saveAs(res, document.name);
+    }
+  }
 
   navigate = (path) => {
     const {router, pipelineId} = this.props;
@@ -529,6 +563,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           onTableActionClick={this.onTableActionClick}
           onDeleteDocument={this.onDeleteDocument}
           onRenameDocument={this.openRenameDocumentDialog}
+          onDownloadFile={this.downloadSingleFile}
         />
         {this.renderEditItemForm()}
         <div
