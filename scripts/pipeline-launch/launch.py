@@ -55,6 +55,20 @@ def _escape_backslashes(string):
     return string.replace('\\', '\\\\')
 
 
+def _extract_boolean_flag(env_var_name):
+    flag_value = os.environ[env_var_name] = os.environ.get(env_var_name, 'false')
+    return flag_value.lower() == 'true'
+
+
+def _parse_host_and_port(url, default_host, default_port):
+    parsed_url = urlparse(url)
+    host_and_port = parsed_url.netloc if parsed_url.netloc else parsed_url.path
+    host_and_port = host_and_port.split(':')
+    host = host_and_port[0] if host_and_port[0] else default_host
+    port = int(host_and_port[1]) if len(host_and_port) > 1 and host_and_port[1] else default_port
+    return host, port
+
+
 if __name__ == '__main__':
     logging_format = os.environ['CP_LOGGING_FORMAT'] = os.getenv('CP_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
     logging_level = os.environ['CP_LOGGING_LEVEL'] = os.getenv('CP_LOGGING_LEVEL', 'INFO')
@@ -77,13 +91,12 @@ if __name__ == '__main__':
     owner_password = os.environ['OWNER_PASSWORD'] = os.getenv('OWNER_PASSWORD', os.getenv('SSH_PASS'))
     task_path = os.environ['CP_TASK_PATH']
     python_dir = os.environ['CP_PYTHON_DIR'] = os.environ.get('CP_PYTHON_DIR', 'c:\\python')
-    requires_cloud_data = os.environ['CP_CAP_WIN_INSTALL_CLOUD_DATA'] = \
-        os.environ.get('CP_CAP_WIN_INSTALL_CLOUD_DATA', 'false')
-    requires_cloud_data = requires_cloud_data.lower() == 'true'
+    requires_cloud_data = _extract_boolean_flag('CP_CAP_WIN_INSTALL_CLOUD_DATA')
     cloud_data_distribution_url = \
         os.environ['CP_CLOUD_DATA_WIN_DISTRIBUTION_URL'] = \
         os.getenv('CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
                   'https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/cloud-data-win-x64.zip')
+    requires_drive_mount = _extract_boolean_flag('CP_CAP_WIN_MOUNT_DRIVE')
 
     logging.basicConfig(level=logging_level, format=logging_format)
 
@@ -173,6 +186,30 @@ if __name__ == '__main__':
     subprocess.check_call(f'powershell -Command "pipe.exe tunnel start --direct -lp 22 -rp 22 --trace '
                           f'-l {_escape_backslashes(os.path.join(run_dir, "ssh_proxy.log"))} '
                           f'{node_ip}"')
+
+    if requires_drive_mount:
+        logging.info('Adding EDGE root certificate to trusted...')
+        edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
+        from urllib.parse import urlparse
+        edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
+        node_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.pki import save_root_cert;'
+                         f' save_root_cert(\'{edge_host}\', {edge_port}, \'{edge_root_cert_path}\')\\"',
+                         user=node_owner)
+        node_ssh.execute(f'ImportCertificate -FilePath "\'{edge_root_cert_path}\'"'
+                         f' -CertStoreLocation Cert:\\\\LocalMachine\\\\Root',
+                         user=node_owner)
+        logging.info('Updating registry variables...')
+        node_ssh.execute(f'InitializeEnvironmentToMountDrive | Out-Null', user=node_owner)
+
+        logging.info('Scheduling WebDAV mapping task...')
+        mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
+        node_ssh.execute(f'RegisterMountingTask -UserName \\"{owner}\\"'
+                         f' -BearerToken \\"{api_token}\\"'
+                         f' -EdgeHost \\"{edge_host}\\"'
+                         f' -EdgePort \\"{edge_port}\\"'
+                         f' -MountingScript \\"{mounting_script_path}\\"'
+                         f' | Out-Null',
+                         user=node_owner)
 
     api_logger.success('Environment initialization finished', task='InitializeEnvironment')
 
