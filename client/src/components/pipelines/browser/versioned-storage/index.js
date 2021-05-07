@@ -41,6 +41,22 @@ import styles from './versioned-storage.css';
 
 const PAGE_SIZE = 20;
 
+function getDocumentType (document) {
+  if (!document || !document.type) {
+    return;
+  }
+  let type;
+  switch (document.type.toLowerCase()) {
+    case DOCUMENT_TYPES.tree:
+      type = 'folder';
+      break;
+    case DOCUMENT_TYPES.blob:
+      type = 'file';
+      break;
+  }
+  return type;
+};
+
 @localization.localizedComponent
 @HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
 @HiddenObjects.injectTreeFilter
@@ -188,6 +204,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.setState({createDocument: undefined});
   };
 
+  openRenameDocumentDialog = (document) => {
+    if (document) {
+      this.setState({renameDocument: document});
+    }
+  };
+
+  closeRenameDocumentDialog = () => {
+    this.setState({renameDocument: undefined});
+  };
+
   renameVersionedStorage = async (name) => {
     const {pipeline, folders, pipelinesLibrary, onReloadTree} = this.props;
     if (!pipeline || !pipeline.value) {
@@ -267,10 +293,53 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         parentFolderId
           ? folders.invalidateFolder(parentFolderId)
           : pipelinesLibrary.invalidateCache();
+        await pipeline.fetch();
       }
       this.pathWasChanged();
     }
   };
+
+  onRenameDocument = async ({name, content}) => {
+    const {renameDocument} = this.state;
+    const {path} = this.props;
+    if (this.lastCommitId) {
+      const {
+        pipeline,
+        pipelineId,
+        folders,
+        pipelinesLibrary
+      } = this.props;
+      let request;
+      if (renameDocument.type.toLowerCase() === DOCUMENT_TYPES.blob) {
+        request = new PipelineFileUpdate(pipelineId);
+      }
+      if (renameDocument.type.toLowerCase() === DOCUMENT_TYPES.tree) {
+        request = new PipelineFolderUpdate(pipelineId);
+      }
+      if (!request) {
+        return;
+      }
+      const parentFolderId = pipeline.value.parentFolderId;
+      const hide = message.loading(`Renaming '${renameDocument.name}'...`, 0);
+      await request.send({
+        lastCommitId: this.lastCommitId,
+        path: `${path}${name}`,
+        previousPath: renameDocument.path,
+        comment: content || `${renameDocument.name} rename`
+      });
+      hide();
+      if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        parentFolderId
+          ? folders.invalidateFolder(parentFolderId)
+          : pipelinesLibrary.invalidateCache();
+        await pipeline.fetch();
+      }
+      this.pathWasChanged();
+      this.closeRenameDocumentDialog();
+    }
+  }
 
   createFolder = async ({name, content}) => {
     if (this.lastCommitId && name) {
@@ -378,6 +447,33 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
+  renderEditItemForm = () => {
+    const {createDocument, renameDocument} = this.state;
+    return (
+      <div>
+        <EditItemForm
+          pending={false}
+          includeFileContentField
+          title={`Create ${createDocument}`}
+          contentPlaceholder="Comment"
+          visible={!!createDocument}
+          onCancel={this.closeCreateDocumentDialog}
+          onSubmit={this.onCreateDocument}
+        />
+        <EditItemForm
+          pending={false}
+          includeFileContentField
+          title={`Rename ${getDocumentType(renameDocument)}`}
+          contentPlaceholder="Comment"
+          visible={!!renameDocument}
+          name={renameDocument && renameDocument.name}
+          onCancel={this.closeRenameDocumentDialog}
+          onSubmit={this.onRenameDocument}
+        />
+      </div>
+    );
+  }
+
   render () {
     const {
       pipeline,
@@ -389,8 +485,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       contents,
       error,
       lastPage,
-      page,
-      createDocument
+      page
     } = this.state;
     const {
       showHistoryPanel,
@@ -433,16 +528,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
           onTableActionClick={this.onTableActionClick}
           onDeleteDocument={this.onDeleteDocument}
+          onRenameDocument={this.openRenameDocumentDialog}
         />
-        <EditItemForm
-          pending={false}
-          includeFileContentField
-          title={`Create ${createDocument}`}
-          contentPlaceholder="Comment"
-          visible={!!createDocument}
-          onCancel={this.closeCreateDocumentDialog}
-          onSubmit={this.onCreateDocument}
-        />
+        {this.renderEditItemForm()}
         <div
           className={styles.paginationRow}
         >
