@@ -269,6 +269,17 @@ public class GitlabClient {
         }
     }
 
+    public GitProject createEmptyRepository(final String description, final boolean indexingEnabled,
+                                            final String hookUrl) throws GitClientException {
+        Assert.notNull(this.projectName, "Project name cannot be empty");
+        try {
+            String repoName = this.projectName;
+            return createEmptyRepository(repoName, description, indexingEnabled, true, hookUrl);
+        } catch (HttpClientErrorException e) {
+            throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
+        }
+    }
+
     public void deleteRepository() throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
         execute(gitLabApi.deleteProject(projectId));
