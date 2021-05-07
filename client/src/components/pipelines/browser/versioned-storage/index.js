@@ -440,7 +440,23 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     } else if (res) {
       FileSaver.saveAs(res, document.name);
     }
-  }
+  };
+
+  afterUpload = async () => {
+    const {
+      pipeline,
+      folders,
+      pipelinesLibrary
+    } = this.props;
+    const parentFolderId = pipeline.value.parentFolderId;
+    const hide = message.loading('Updating folder content', 0);
+    parentFolderId
+      ? folders.invalidateFolder(parentFolderId)
+      : pipelinesLibrary.invalidateCache();
+    await pipeline.fetch();
+    this.pathWasChanged();
+    hide();
+  };
 
   navigate = (path) => {
     const {router, pipelineId} = this.props;
@@ -564,6 +580,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           onDeleteDocument={this.onDeleteDocument}
           onRenameDocument={this.openRenameDocumentDialog}
           onDownloadFile={this.downloadSingleFile}
+          pipelineId={pipelineId}
+          path={path}
+          afterUpload={this.afterUpload}
         />
         {this.renderEditItemForm()}
         <div

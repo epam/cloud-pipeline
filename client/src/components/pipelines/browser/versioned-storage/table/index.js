@@ -25,8 +25,11 @@ import {
   Icon,
   Input,
   Modal,
+  message,
   Row
 } from 'antd';
+import UploadButton from '../../../../special/UploadButton';
+import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
 import COLUMNS from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
@@ -86,6 +89,14 @@ class VersionedStorageTable extends React.Component {
       download: (record) => onDownloadFile && onDownloadFile(record)
     };
   };
+
+  get uploadPath () {
+    const {pipelineId, path} = this.props;
+    let uploadPath = PipelineFileUpdate.uploadUrl(pipelineId, path || '');
+    return uploadPath.endsWith('/')
+      ? uploadPath.slice(0, -1)
+      : uploadPath;
+  }
 
   onCommentChange = (event) => {
     if (event) {
@@ -155,8 +166,22 @@ class VersionedStorageTable extends React.Component {
     onTableActionClick && onTableActionClick(action);
   };
 
-  onUpload = (event) => {
-    event && event.stopPropagation();
+  onUploadFinished = (event) => {
+    const {afterUpload} = this.props;
+    afterUpload && afterUpload();
+  };
+
+  validateUploadFiles = (files) => {
+    const {contents} = this.props;
+    if (files && contents) {
+      const sourceFileNames = contents.map(record => record.git_object.name);
+      const fileNames = files.map(file => file.name);
+      const dublicates = sourceFileNames.filter(sName => fileNames.includes(sName));
+      if (dublicates.length > 0) {
+        dublicates.forEach(dublicate => message.error(`File '${dublicate}' already exists`));
+      }
+      return !dublicates.length;
+    }
   };
 
   renderTableControls = () => {
@@ -198,14 +223,14 @@ class VersionedStorageTable extends React.Component {
             <Icon type="down" />
           </Button>
         </Dropdown>
-        <Button
-          className={styles.tableControl}
-          onClick={this.onUpload}
-          size="small"
-          disabled={!controlsEnabled}
-        >
-          Upload
-        </Button>
+        <UploadButton
+          multiple
+          synchronous
+          onRefresh={this.onUploadFinished}
+          validate={this.validateUploadFiles}
+          title={'Upload'}
+          action={this.uploadPath}
+        />
       </div>
     );
   };
@@ -303,7 +328,13 @@ VersionedStorageTable.PropTypes = {
   onTableActionClick: PropTypes.func,
   onDeleteDocument: PropTypes.func,
   onRenameDocument: PropTypes.func,
-  onDownloadFile: PropTypes.func
+  onDownloadFile: PropTypes.func,
+  pipelineId: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number
+  ]),
+  path: PropTypes.string,
+  afterUpload: PropTypes.func
 };
 
 export default VersionedStorageTable;
