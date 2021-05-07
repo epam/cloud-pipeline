@@ -348,6 +348,7 @@ export default class Change {
       }
       this.items.forEach(item => {
         item.state[Merged] = revertInfo[item.key];
+        item.text[Merged] = item.text[this.branch];
       });
       this.conflictedFile.buildLineNumbers(Merged);
     };

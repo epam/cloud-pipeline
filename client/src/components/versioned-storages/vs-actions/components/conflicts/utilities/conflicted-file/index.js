@@ -31,6 +31,7 @@ export default class ConflictedFile {
   @observable changes = [];
   constructor () {
     this[ConflictedFileStart] = new ConflictedFileLine('', {start: true});
+    this[ConflictedFileStart].file = this;
     this.items = [];
     this[ChangesHistory] = [];
   }
@@ -110,6 +111,7 @@ export default class ConflictedFile {
 
   appendLine (line, meta, ...branches) {
     const item = new ConflictedFileLine(line, meta);
+    item.file = this;
     this.items.push(item);
     branches.forEach(branch => {
       this.move(branch, item);
@@ -121,6 +123,7 @@ export default class ConflictedFile {
       state === LineStates.conflictStart ? '<<<<<<<' : '>>>>>>>',
       meta
     );
+    item.file = this;
     item.state[HeadBranch] = state;
     item.state[RemoteBranch] = state;
     item.state[Merged] = state;
@@ -141,6 +144,7 @@ export default class ConflictedFile {
   insertLineBefore (before, line, meta, ...conflictedBranchDirections) {
     if (before) {
       const item = new ConflictedFileLine(line, meta);
+      item.file = this;
       let inserted = false;
       Branches.forEach(branch => {
         let parent = before.previous[branch];
@@ -175,6 +179,7 @@ export default class ConflictedFile {
   insertLineAfter (after, line, meta, ...conflictedBranchDirections) {
     if (after) {
       const item = new ConflictedFileLine(line, meta);
+      item.file = this;
       let inserted = false;
       Branches.forEach(branch => {
         let child = after[branch];
@@ -202,6 +207,31 @@ export default class ConflictedFile {
         this.items.push(item);
         return item;
       }
+    }
+    return undefined;
+  }
+
+  insertLine (before, text, ...branches) {
+    if (before) {
+      const newLine = new ConflictedFileLine(text, {});
+      this.items.push(newLine);
+      newLine.file = this;
+      [HeadBranch, Merged, RemoteBranch].forEach(branch => {
+        if (branches.indexOf(branch) === -1) {
+          newLine.state[branch] = LineStates.omit;
+        }
+      });
+      [HeadBranch, Merged, RemoteBranch].forEach(branch => {
+        const prev = before.previous[branch];
+        if (prev) {
+          prev[branch] = newLine;
+          newLine.previous[branch] = prev;
+        }
+        newLine[branch] = before;
+        before.previous[branch] = before;
+        this.buildLineNumbers(branch);
+      });
+      return newLine;
     }
     return undefined;
   }
@@ -367,15 +397,15 @@ export default class ConflictedFile {
   }
 
   getHeadText () {
-    return this.getHeadLines().map(o => o.line).join('');
+    return this.getHeadLines().map(o => o.text[HeadBranch]).join('');
   }
 
   getRemoteText () {
-    return this.getRemoteLines().map(o => o.line).join('');
+    return this.getRemoteLines().map(o => o.text[RemoteBranch]).join('');
   }
 
   getMergedText () {
-    return this.getMergedLines().map(o => o.line).join('');
+    return this.getMergedLines().map(o => o.text[Merged]).join('');
   }
 
   getFirstConflictMarker (marker, from = undefined) {
@@ -469,7 +499,7 @@ export default class ConflictedFile {
     ]);
     return (items || [])
       .filter(line => !ignoreStates.has(line.state[branch]))
-      .map(line => line.line)
+      .map(line => line.text[branch])
       .join('');
   }
 

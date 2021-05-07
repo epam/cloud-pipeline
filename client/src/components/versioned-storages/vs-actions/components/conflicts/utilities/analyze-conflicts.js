@@ -241,7 +241,7 @@ function processDiffs (contents, head, remote) {
       .getLines(HeadBranch, skip)
       .slice(1)
       .map(line =>
-        `${str(line.state[HeadBranch], 10)} ${line.line.replace(/\n/g, '↵')}`
+        `${str(line.state[HeadBranch], 10)} ${line.text[HeadBranch].replace(/\n/g, '↵')}`
       )
       .join('\n');
     tempLog(headFinal);
@@ -250,7 +250,7 @@ function processDiffs (contents, head, remote) {
       .getLines(RemoteBranch, skip)
       .slice(1)
       .map(line =>
-        `${str(line.state[RemoteBranch], 10)} ${line.line.replace(/\n/g, '↵')}`
+        `${str(line.state[RemoteBranch], 10)} ${line.text[RemoteBranch].replace(/\n/g, '↵')}`
       )
       .join('\n');
     tempLog(remoteFinal);
@@ -274,7 +274,7 @@ function processDiffs (contents, head, remote) {
     .getLines(HeadBranch, skip)
     .slice(1)
     .map(line =>
-      `${str(line.key, 4)} ${str(line.lineNumber[HeadBranch], 4)} ${str(line.state[HeadBranch], 10)} ${line.line.replace(/\n/g, '↵')}`
+      `${str(line.key, 4)} ${str(line.lineNumber[HeadBranch], 4)} ${str(line.state[HeadBranch], 10)} ${line.text[HeadBranch].replace(/\n/g, '↵')}`
     )
     .join('\n');
   console.log(headFinal);
@@ -283,7 +283,7 @@ function processDiffs (contents, head, remote) {
     .getLines(RemoteBranch, skip)
     .slice(1)
     .map(line =>
-      `${str(line.key, 4)} ${str(line.lineNumber[RemoteBranch], 4)} ${str(line.state[RemoteBranch], 10)} ${line.line.replace(/\n/g, '↵')}`
+      `${str(line.key, 4)} ${str(line.lineNumber[RemoteBranch], 4)} ${str(line.state[RemoteBranch], 10)} ${line.text[RemoteBranch].replace(/\n/g, '↵')}`
     )
     .join('\n');
   console.log(remoteFinal);
@@ -292,7 +292,7 @@ function processDiffs (contents, head, remote) {
     .getLines(Merged, skip)
     .slice(1)
     .map(line =>
-      `${str(line.key, 4)} ${str(line.lineNumber[Merged], 4)} ${str(line.state[Merged], 10)} ${line.line.replace(/\n/g, '↵')}`
+      `${str(line.key, 4)} ${str(line.lineNumber[Merged], 4)} ${str(line.state[Merged], 10)} ${line.text[Merged].replace(/\n/g, '↵')}`
     )
     .join('\n');
   console.log(resultFinal);

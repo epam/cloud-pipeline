@@ -23,8 +23,8 @@ import ResolveChanges from './controls/resolve-changes';
 import Scrollbar from './controls/scrollbar';
 import ConflictedFile from './utilities/conflicted-file';
 import Branches, {HeadBranch, RemoteBranch, Merged} from './utilities/conflicted-file/branches';
-import renderModifications from './utilities/modifications-canvas';
-import BranchCode from './utilities/branch-code';
+import renderChanges from './controls/changes-canvas';
+import BranchCode from './controls/branch-code';
 import {findLineIndexByPosition, findLinePositionByIndex} from './utilities/line-positioning';
 import styles from './conflicts.css';
 
@@ -157,17 +157,19 @@ class Conflict extends React.PureComponent {
   };
 
   onStartResizing = (branch) => (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    const panels = Branches.map(b => ({
-      [b]: (this.scrolls[b] ? this.scrolls[b].clientWidth : 0) || '1fr'
-    })).reduce((r, c) => ({...r, ...c}), {});
-    this.resizeInfo = {
-      branch,
-      start: e.clientX,
-      panels,
-      gridColumns: panels
-    };
+    if (e.nativeEvent.button === 0) {
+      e.stopPropagation();
+      e.preventDefault();
+      const panels = Branches.map(b => ({
+        [b]: (this.scrolls[b] ? this.scrolls[b].clientWidth : 0) || '1fr'
+      })).reduce((r, c) => ({...r, ...c}), {});
+      this.resizeInfo = {
+        branch,
+        start: e.clientX,
+        panels,
+        gridColumns: panels
+      };
+    }
   };
 
   onResizeMove = (e) => {
@@ -386,6 +388,40 @@ class Conflict extends React.PureComponent {
           }, 100);
         }
       };
+      const onCursorPositionChanged = (branch, options = {}) => {
+        const {
+          pxFrom = {},
+          pxTo = {}
+        } = options;
+        const {
+          top: topFrom,
+          left: leftFrom
+        } = pxFrom;
+        const {
+          top: topTo,
+          left: leftTo
+        } = pxTo;
+        const horizontalScroll = this.codeAreas[branch];
+        const verticalScroll = this.scrolls[branch];
+        if (horizontalScroll) {
+          const visibleFrom = horizontalScroll.scrollLeft;
+          const visibleTo = horizontalScroll.scrollLeft + horizontalScroll.clientWidth;
+          if (leftFrom < visibleFrom) {
+            horizontalScroll.scrollLeft = leftFrom;
+          } else if (leftTo > visibleTo) {
+            horizontalScroll.scrollLeft = leftTo - horizontalScroll.clientWidth;
+          }
+        }
+        if (verticalScroll) {
+          const visibleFrom = verticalScroll.scrollTop;
+          const visibleTo = verticalScroll.scrollTop + verticalScroll.clientHeight;
+          if (topFrom < visibleFrom) {
+            verticalScroll.scrollTop = topFrom;
+          } else if (topTo > visibleTo) {
+            verticalScroll.scrollTop = topTo - verticalScroll.clientHeight;
+          }
+        }
+      };
       const renderBranchCodeLineNumbers = (branch, modificationsBranch, rtl = false) => (
         <BranchCode.LineNumbers
           disabled={disabled}
@@ -493,7 +529,7 @@ class Conflict extends React.PureComponent {
                   )
                 }
               >
-                {renderBranchCodeLineNumbers(branch, RemoteBranch, true)}
+                {renderBranchCodeLineNumbers(branch, RemoteBranch)}
               </div>
             );
             left = (
@@ -506,7 +542,7 @@ class Conflict extends React.PureComponent {
                   )
                 }
               >
-                {renderBranchCodeLineNumbers(branch, HeadBranch)}
+                {renderBranchCodeLineNumbers(branch, HeadBranch, true)}
               </div>
             );
             break;
@@ -531,6 +567,7 @@ class Conflict extends React.PureComponent {
             {left}
             <BranchCode
               className={styles.code}
+              editable={branch === Merged}
               onInitialized={node => attachCodeArea(node, branch)}
               onScroll={e => onHorizontalScroll(e, branch)}
               branch={branch}
@@ -541,6 +578,7 @@ class Conflict extends React.PureComponent {
                 paddingLeft: Scrollbar.size,
                 paddingRight: Scrollbar.size
               }}
+              onCursorPositionChange={options => onCursorPositionChanged(branch, options)}
             />
             {right}
           </div>
@@ -696,7 +734,7 @@ class Conflict extends React.PureComponent {
 
   draw = () => {
     const {conflictedFile} = this.state;
-    renderModifications(
+    renderChanges(
       this.canvases[HeadBranch],
       conflictedFile,
       HeadBranch,
@@ -709,7 +747,7 @@ class Conflict extends React.PureComponent {
         lineHeight: LINE_HEIGHT
       }
     );
-    renderModifications(
+    renderChanges(
       this.canvases[RemoteBranch],
       conflictedFile,
       RemoteBranch,

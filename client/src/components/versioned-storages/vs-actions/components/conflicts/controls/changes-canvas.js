@@ -14,21 +14,16 @@
  *  limitations under the License.
  */
 
-import modificationsRenderConfig from './modifications-render-config';
-import ModificationType from './changes/types';
-import ChangeStatuses from './changes/statuses';
-import {Merged} from './conflicted-file/branches';
+import renderingConfig from './changes-display-config';
+import ChangeStatuses from '../utilities/changes/statuses';
+import getStyleForChange from '../controls/branch-code/utilities/style-for-change';
+import {Merged} from '../utilities/conflicted-file/branches';
 
-function getStyleForModificationType (type) {
-  switch (type) {
-    case ModificationType.edition: return modificationsRenderConfig.edition;
-    case ModificationType.conflict: return modificationsRenderConfig.conflict;
-    case ModificationType.deletion: return modificationsRenderConfig.deletion;
-    case ModificationType.insertion: return modificationsRenderConfig.insertion;
-    default:
-      break;
+function correctTransparentColor (color) {
+  if (color === 'transparent') {
+    return renderingConfig.background;
   }
-  return undefined;
+  return color;
 }
 
 function correctPixels (pixels) {
@@ -97,7 +92,7 @@ function getModificationIndexRanges (modification, branch) {
   };
 }
 
-export default function renderModifications (canvas, conflictedFile, branch, options = {}) {
+export default function renderChanges (canvas, conflictedFile, branch, options = {}) {
   if (canvas && canvas.getContext) {
     const {
       width = canvas.width / window.devicePixelRatio,
@@ -110,9 +105,8 @@ export default function renderModifications (canvas, conflictedFile, branch, opt
     const x2 = rtl ? 0 : correctPixels(width);
     const context = canvas.getContext('2d');
     if (context) {
-      context.save();
       context.clearRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = modificationsRenderConfig.background;
+      context.fillStyle = renderingConfig.background;
       context.rect(0, 0, canvas.width, canvas.height);
       context.fill();
       const currentModifications = (conflictedFile?.changes || [])
@@ -132,7 +126,7 @@ export default function renderModifications (canvas, conflictedFile, branch, opt
             mergedModificationsBefore * 2.0 + 0.5 - mergedTop;
           const mergedY2 = merged.end * lineHeight +
             (mergedModificationsBefore + 1) * 2.0 - 0.5 - mergedTop;
-          const config = getStyleForModificationType(modification.type);
+          const config = getStyleForChange(modification);
           const applied = modification.status !== ChangeStatuses.prepared;
           if (config) {
             const start1 = {
@@ -151,16 +145,16 @@ export default function renderModifications (canvas, conflictedFile, branch, opt
               x: x2,
               y: correctPixels(mergedY2)
             };
-            context.fillStyle = applied
-              ? modificationsRenderConfig.background
-              : config.background;
+            context.save();
+            context.fillStyle = correctTransparentColor(config.backgroundColor);
+            context.lineWidth = correctPixels(0);
             context.beginPath();
             drawCurve(context, start1, end1);
             drawCurve(context, start2, end2, {reverse: true, lineToFirstPoint: true});
             context.closePath();
             context.fill();
             context.lineWidth = correctPixels(1);
-            context.strokeStyle = applied ? config.applied : config.color;
+            context.strokeStyle = correctTransparentColor(config.borderColor);
             if (applied) {
               context.setLineDash([5]);
             }
@@ -169,10 +163,10 @@ export default function renderModifications (canvas, conflictedFile, branch, opt
             drawCurve(context, start2, end2);
             context.stroke();
             context.setLineDash([]);
+            context.restore();
           }
         }
       }
-      context.restore();
     }
   }
 }

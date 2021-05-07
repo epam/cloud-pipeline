@@ -14,19 +14,11 @@
  *  limitations under the License.
  */
 
-import Branches, {HeadBranch, Merged, RemoteBranch} from './branches';
+import {HeadBranch, Merged, RemoteBranch} from './branches';
 import States from './line-states';
 
 export default class ConflictedFileLine {
   static keyIncrement = 0;
-
-  static empty (lineNumber) {
-    const empty = new ConflictedFileLine('');
-    Branches.forEach(branch => {
-      empty.lineNumber[branch] = lineNumber;
-    });
-    return empty;
-  }
 
   /**
    * Next HEAD line
@@ -44,10 +36,20 @@ export default class ConflictedFileLine {
    */
   [Merged] = undefined;
 
+  /**
+   * @type ConflictedFile
+   */
+  file;
+
   constructor (line, meta = {}) {
     ConflictedFileLine.keyIncrement += 1;
     this.key = ConflictedFileLine.keyIncrement;
     this.line = line;
+    this.text = {
+      [HeadBranch]: line,
+      [Merged]: line,
+      [RemoteBranch]: line
+    };
     this.meta = meta;
     this.previous = {};
     this.lineNumber = {};
@@ -61,6 +63,7 @@ export default class ConflictedFileLine {
       [RemoteBranch]: States.original,
       [Merged]: States.original
     };
+    this.file = undefined;
   }
 
   getBranchState (branch) {

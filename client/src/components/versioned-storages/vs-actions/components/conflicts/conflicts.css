@@ -103,6 +103,7 @@
 }
 
 .resolve-area .panel .code {
+  position: relative;
   display: inline-grid;
   margin-bottom: auto;
   overflow-x: auto;
@@ -156,6 +157,7 @@
 .resolve-area .line-numbers,
 .resolve-area .panel .code .line {
   font-family: Consolas, Menlo, Courier, monospace;
+  font-size: 10pt;
   white-space: pre;
 }
 
@@ -188,10 +190,12 @@
 
 .line .number {
   padding: 0 5px;
+  color: #999;
 }
 
 .code .line {
   cursor: text;
+  position: relative;
 }
 
 .line.modification {
@@ -215,4 +219,20 @@
 .line.hidden {
   border-color: transparent;
   background-color: transparent;
+}
+
+.code .caret {
+  position: absolute;
+  display: none;
+  z-index: 1;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.code.focused .caret {
+  display: block;
+}
+
+.code,
+.code:focus {
+  outline: none;
 }
