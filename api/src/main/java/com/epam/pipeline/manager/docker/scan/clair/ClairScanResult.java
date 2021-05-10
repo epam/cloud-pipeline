@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.docker.scan.clair;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,6 +27,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 @Getter
 @Setter
@@ -45,7 +47,7 @@ public class ClairScanResult {
     @SuppressWarnings("unchecked") //TODO: try with a JsonRootElement
     public void unpackNestedLayer(Map<String, Object> layer) {
         name = layer.get("Name").toString();
-        namespaceName = layer.get("NamespaceName").toString();
+        namespaceName = Optional.ofNullable(layer.get("NamespaceName")).map(Object::toString).orElse(StringUtils.EMPTY);
         features = OBJECT_MAPPER.convertValue(layer.get("Features"), OBJECT_MAPPER.getTypeFactory()
             .constructParametricType(List.class, ClairFeature.class));
     }
