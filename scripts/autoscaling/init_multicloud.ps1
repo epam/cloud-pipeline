@@ -78,6 +78,13 @@ function EnableAutoLoginIfRequired($UserName, $UserPassword) {
     return $restartRequired
 }
 
+function InstallChromeIfRequired {
+    if (-not (Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
+        Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -Outfile $workingDir\chrome_installer.exe
+        & $workingDir\chrome_installer.exe /silent /install
+    }
+}
+
 function DownloadScrambleScriptIfRequired {
     if (-not(Test-Path .\scramble.exe)) {
         Invoke-WebRequest 'https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/scramble.exe' -Outfile .\scramble.exe
@@ -341,6 +348,8 @@ if ($restartRequired) {
     Exit
 }
 
+Write-Host "Installing chrome if required..."
+InstallChromeIfRequired
 
 Write-Host "Downloading scramble script if required..."
 DownloadScrambleScriptIfRequired
@@ -388,7 +397,7 @@ InitSigWindowsToolsConfigFile -KubeHost $kubeHost -KubeToken $kubeToken -KubeCer
 Write-Host "Installing kubernetes using Sig Windows Tools if required..."
 InstallKubeUsingSigWindowsToolsIfRequired -KubeDir $kubeDir
 
-Write-Host "Writing empty kubernetes config..."
+Write-Host "Writing kubernetes config..."
 WriteKubeConfig -KubeHost $kubeHost -KubePort $kubePort -KubeNodeToken $kubeNodeToken -KubeDir $kubeDir
 
 Write-Host "Joining kubernetes cluster using Sig Windows Tools..."
