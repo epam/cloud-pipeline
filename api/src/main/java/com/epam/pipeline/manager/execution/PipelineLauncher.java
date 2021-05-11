@@ -64,27 +64,6 @@ public class PipelineLauncher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineLauncher.class);
 
-    public static final String LINUX_LAUNCH_TEMPLATE = "set -o pipefail; "
-            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
-            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
-            + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'";
-    public static final String WINDOWS_LAUNCH_TEMPLATE = "" +
-            "Add-Type @\"\n" +
-            "using System.Net;\n" +
-            "using System.Security.Cryptography.X509Certificates;\n" +
-            "public class TrustAllCertsPolicy : ICertificatePolicy {\n" +
-            "    public bool CheckValidationResult(\n" +
-            "        ServicePoint srvPoint, X509Certificate certificate,\n" +
-            "        WebRequest request, int certificateProblem) {\n" +
-            "            return true;\n" +
-            "        }\n" +
-            " }\n" +
-            "\"@\n" +
-            "[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy\n" +
-            "Invoke-WebRequest %s -Outfile .\\launch.ps1\n" +
-            ".\\launch.ps1 -Command {\n" +
-            "%s\n" +
-            "}";
     private static final String EMPTY_PARAMETER = "";
     private static final String DEFAULT_CLUSTER_NAME = "CLOUD_PIPELINE";
     private static final String ENV_DELIMITER = ",";
@@ -160,9 +139,13 @@ public class PipelineLauncher {
             rootPodCommand = pipelineCommand;
         } else {
             if ("windows".equals(run.getPlatform())) {
-                rootPodCommand = String.format(WINDOWS_LAUNCH_TEMPLATE, windowsLaunchScriptUrl, pipelineCommand);
+                rootPodCommand = String.format(
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS), 
+                        windowsLaunchScriptUrl, pipelineCommand);
             } else {
-                rootPodCommand = String.format(LINUX_LAUNCH_TEMPLATE, linuxLaunchScriptUrl, linuxLaunchScriptUrl, gitCloneUrl,
+                rootPodCommand = String.format(
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX), 
+                        linuxLaunchScriptUrl, linuxLaunchScriptUrl, gitCloneUrl,
                         run.getRevisionName(), pipelineCommand);
             }
         }
