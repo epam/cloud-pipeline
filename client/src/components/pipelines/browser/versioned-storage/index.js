@@ -71,6 +71,30 @@ function checkForBlobErrors (blob) {
   });
 };
 
+function filterByRestrictedNames (content = {}) {
+  return !RESTRICTED_FILES.some(restriction => {
+    if (!content.git_object || !content.git_object.name) {
+      return false;
+    };
+    const name = content.git_object.name.toLowerCase();
+    if (restriction.includes('*')) {
+      const value = restriction.replaceAll('*', '');
+      if (restriction.startsWith('*')) {
+        return name.endsWith(value);
+      };
+      if (restriction.endsWith('*')) {
+        return name.startsWith(value);
+      };
+      return false;
+    };
+    return restriction === name;
+  });
+};
+
+const RESTRICTED_FILES = [
+  '*.gitkeep'
+];
+
 @localization.localizedComponent
 @HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
 @HiddenObjects.injectTreeFilter
@@ -131,6 +155,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       return pipeline.value.currentVersion.commitId;
     }
     return null;
+  };
+
+  get filteredContents () {
+    const {contents} = this.state;
+    if (!contents) {
+      return [];
+    };
+    return contents.filter(filterByRestrictedNames);
   };
 
   get actions () {
@@ -567,7 +599,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       path
     } = this.props;
     const {
-      contents,
       error,
       lastPage,
       page,
@@ -607,7 +638,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           )
         }
         <VersionedStorageTable
-          contents={contents}
+          contents={this.filteredContents}
           onRowClick={this.onRowClick}
           showNavigateBack={path}
           pending={pending}
