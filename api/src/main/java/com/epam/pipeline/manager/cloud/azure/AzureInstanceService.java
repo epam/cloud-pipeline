@@ -76,6 +76,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final String kubeMasterIP;
     private final String kubeToken;
     private final String kubeCertHash;
+    private final String kubeNodeToken;
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
                                 final ClusterCommandService commandService,
@@ -89,7 +90,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                 @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
                                 @Value("${kube.master.ip}") final String kubeMasterIP,
                                 @Value("${kube.kubeadm.token}") final String kubeToken,
-                                @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash) {
+                                @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash,
+                                @Value("${kube.node.token}") final String kubeNodeToken) {
         this.instanceService = instanceService;
         this.commandService = commandService;
         this.cloudRegionManager = regionManager;
@@ -103,6 +105,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         this.kubeMasterIP = kubeMasterIP;
         this.kubeToken = kubeToken;
         this.kubeCertHash = kubeCertHash;
+        this.kubeNodeToken = kubeNodeToken;
     }
 
     @Override
@@ -299,6 +302,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
                 .kubeCertHash(kubeCertHash)
+                .kubeNodeToken(kubeNodeToken)
                 .region(region.getRegionCode())
                 .prePulledImages(instance.getPrePulledDockerImages())
                 .additionalLabels(labels);

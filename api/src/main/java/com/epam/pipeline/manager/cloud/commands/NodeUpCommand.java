@@ -42,6 +42,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final String kubeIP;
     private final String kubeToken;
     private final String kubeCertHash;
+    private final String kubeNodeToken;
     private final String region;
     private final String encryptionKey;
     private final boolean isSpot;
@@ -73,6 +74,8 @@ public class NodeUpCommand extends AbstractClusterCommand {
         commands.add(kubeToken);
         commands.add("--kubeadm_cert_hash");
         commands.add(kubeCertHash);
+        commands.add("--kube_node_token");
+        commands.add(kubeNodeToken);
         commands.add(REGION_PARAMETER);
         commands.add(region);
         commands.add(CLOUD_PARAMETER);

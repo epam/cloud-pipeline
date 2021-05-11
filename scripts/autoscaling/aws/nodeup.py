@@ -351,10 +351,11 @@ def run_id_filter(run_id):
 
 
 def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type,
-                 is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_client, pre_pull_images, instance_additional_spec):
+                 is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_client, pre_pull_images,
+                 instance_additional_spec):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
-                                            kubeadm_token, kubeadm_cert_hash, swap_size, pre_pull_images)
+                                            kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec)
@@ -603,7 +604,7 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 
 def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
-                         kubeadm_token, kubeadm_cert_hash, swap_size, pre_pull_images):
+                         kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -619,14 +620,12 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
             pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
                           (fs_type, DEFAULT_FS_TYPE))
             fs_type = DEFAULT_FS_TYPE
-        with open('/root/.kube/config', mode='r') as f:
-            kube_config = f.read()
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                            .replace('@KUBE_IP@', kube_ip) \
-                                           .replace('@KUBE_CONFIG@', kube_config) \
                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
+                                           .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
                                            .replace('@API_URL@', api_url) \
                                            .replace('@API_TOKEN@', api_token) \
                                            .replace('@API_USER@', api_user) \
@@ -1163,6 +1162,7 @@ def main():
     parser.add_argument("--kube_ip", type=str, required=True)
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kubeadm_cert_hash", type=str, required=True)
+    parser.add_argument("--kube_node_token", type=str, required=True)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--label", type=str, default=[], required=False, action='append')
@@ -1184,6 +1184,7 @@ def main():
     kube_ip = args.kube_ip
     kubeadm_token = args.kubeadm_token
     kubeadm_cert_hash = args.kubeadm_cert_hash
+    kube_node_token = args.kube_node_token
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     pre_pull_images = args.image
@@ -1260,7 +1261,7 @@ def main():
             api_token = os.environ["API_TOKEN"]
             api_user = os.environ["API_USER"]
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
-                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, api, pre_pull_images, instance_additional_spec)
+                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api, pre_pull_images, instance_additional_spec)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
