@@ -308,7 +308,7 @@ $hostDir = "c:\host"
 $runsDir = "c:\runs"
 $kubeDir = "c:\ProgramData\Kubernetes"
 $initLog = "$workingDir\log.txt"
-$defaultUserName = "ROOT"
+$defaultUserName = "NODEUSER"
 $defaultUserPassword = GetOrGenerateDefaultPassword
 
 Write-Host "Creating system directories..."
