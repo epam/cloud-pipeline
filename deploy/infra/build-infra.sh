@@ -480,7 +480,7 @@ case $key in
     shift # past argument
     shift # past value
     ;;
-    -bc|--base-win-common-image)
+    -bwc|--base-win-common-image)
     export CP_BASE_WIN_COMMON_IMAGE_ID="$2"
     shift # past argument
     shift # past value

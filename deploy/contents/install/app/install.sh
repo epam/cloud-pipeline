@@ -127,7 +127,7 @@ set -o pipefail
 export CP_KUBE_KUBEADM_TOKEN=$(kubeadm token list | tail -n 1 | cut -f1 -d' ')
 set +o pipefail
 if [ $? -ne 0 ]; then
-    print_err "Errors occured during retrieval of the kubeadm token. Please review any output above, exiting"
+    print_err "Errors occurred during retrieval of the kubeadm token. Please review any output above, exiting"
     exit 1
 else
     print_info "-> kubeadm token retrieved: $CP_KUBE_KUBEADM_TOKEN"
@@ -141,13 +141,35 @@ set -o pipefail
 export CP_KUBE_KUBEADM_CERT_HASH="$(openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1)"
 set +o pipefail
 if [ $? -ne 0 ]; then
-    print_err "Errors occured during retrieval of the kubeadm cert hash. Please review any output above, exiting"
+    print_err "Errors occurred during retrieval of the kubeadm cert hash. Please review any output above, exiting"
     exit 1
 else
     print_info "-> kubeadm cert hash retrieved: $CP_KUBE_KUBEADM_CERT_HASH"
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_KUBE_KUBEADM_CERT_HASH" \
                         "$CP_KUBE_KUBEADM_CERT_HASH"
+fi
+echo
+
+# Get kube account token
+print_ok "[Configuring kube node credentials]"
+
+set -o pipefail
+export CP_KUBE_NODE_TOKEN="$(kubectl --namespace=kube-system describe sa canal \
+  | grep Tokens \
+  | cut -d: -f2 \
+  | xargs kubectl --namespace=kube-system get secret -o json \
+  | jq -r '.data.token' \
+  | base64 --decode)"
+set +o pipefail
+if [ $? -ne 0 ]; then
+    print_err "Errors occurred during retrieval of the kube node token. Please review any output above, exiting"
+    exit 1
+else
+    print_info "-> kube node token retrieved: $CP_KUBE_ACCOUNT_TOKEN"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_KUBE_NODE_TOKEN" \
+                        "$CP_KUBE_NODE_TOKEN"
 fi
 echo
 

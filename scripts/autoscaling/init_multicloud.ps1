@@ -131,9 +131,17 @@ function DownloadSigWindowsToolsIfRequired {
     }
 }
 
-function PatchSigWindowsTools {
+function PatchSigWindowsTools($KubeHost, $KubePort, $Dns) {
     $kubeClusterHelperContent = Get-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
-    $kubeClusterHelperContent[783] = '& cmd /c kubeadm join "$(GetAPIServerEndpoint)" --token "$Global:Token" --discovery-token-ca-cert-hash "$Global:CAHash" --ignore-preflight-errors "all" ''2>&1'''
+    $kubeClusterHelperContent[262] = '    Write-Host "Skipping node joining verification..."'
+    $kubeClusterHelperContent[263] = '    return 1'
+    $kubeClusterHelperContent[782] = '    & cmd /c kubeadm join "$(GetAPIServerEndpoint)" --token "$Global:Token" --discovery-token-ca-cert-hash "$Global:CAHash" --ignore-preflight-errors "all" ''2>&1'''
+    $kubeClusterHelperContent[1212] = '    Write-Host "Returning kubernetes dns ip..."'
+    $kubeClusterHelperContent[1213] = "    return '$Dns'"
+    $kubeClusterHelperContent[1217] = '    Write-Host "Returning kubernetes master address..."'
+    $kubeClusterHelperContent[1218] = "    return '$KubeHost`:$KubePort'"
+    $kubeClusterHelperContent[1223] = '    Write-Host "Skipping nodes listing..."'
+    $kubeClusterHelperContent[1228] = '    Write-Host "Skipping node deletion..."'
     $kubeClusterHelperContent | Set-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
 }
 
@@ -187,21 +195,49 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
     $configfile|Out-File -FilePath .\Kubeclustervxlan.json -Encoding ascii -Force
 }
 
-function InstallKubeUsingSigWindowsToolsIfRequired {
-    $kubeletInstalled = Get-Service -Name kubelet `
-    | Measure-Object `
-    | ForEach-Object { $_.Count -gt 0 }
-    if (-not($kubeletInstalled)) {
+function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
+    $kubernetesInstalled = Get-ChildItem $KubeDir `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not($kubernetesInstalled)) {
         Write-Host "Installing kubernetes using Sig Windows Tools..."
         .\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -install
     }
+}
+
+function WriteKubeConfig($KubeHost, $KubePort, $KubeNodeToken, $KubeDir) {
+    $kubeConfig = @"
+apiVersion: v1
+kind: Config
+preferences: {}
+
+clusters:
+- cluster:
+    insecure-skip-tls-verify: true
+    server: https://$KubeHost`:$KubePort
+  name: kubernetes
+
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-user
+  name: kubernetes-user@kubernetes
+
+users:
+- name: kubernetes-user
+  user:
+    token: $KubeNodeToken
+
+current-context: kubernetes-user@kubernetes
+"@
+    $kubeConfig | Out-File -FilePath "$KubeDir\config" -Encoding ascii -Force
 }
 
 function JoinKubeClusterUsingSigWindowsTools {
     .\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -join
 }
 
-function WaitAndConfigureDnsIfRequired($Dns, $Adapter) {
+function WaitAndConfigureDnsIfRequired($Dns, $Interface) {
     if (-not([string]::IsNullOrEmpty($Dns))) {
         while ($true) {
             try {
@@ -212,9 +248,23 @@ function WaitAndConfigureDnsIfRequired($Dns, $Adapter) {
             }
         }
         Write-Host "Adding dns to network interface..."
-        $interfaceIndex = Get-NetAdapter "$Adapter" | ForEach-Object { $_.ifIndex }
+        $interfaceIndex = Get-NetAdapter "$Interface" | ForEach-Object { $_.ifIndex }
         Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ServerAddresses ("$Dns")
     }
+}
+
+function ConfigureAwsRoutes($Addrs, $Interface) {
+    # See C:\ProgramData\Amazon\EC2-Windows\Launch\Module\Scripts\Add-Routes.ps1
+    $interfaceIndex = Get-NetAdapter $Interface | ForEach-Object { $_.ifIndex }
+    $networkAdapterConfig = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration -Filter "InterfaceIndex='$interfaceIndex'" `
+        | Select-Object IPConnectionMetric, DefaultIPGateway
+    foreach ($addr in $Addrs) {
+        Remove-NetRoute -DestinationPrefix $addr -PolicyStore ActiveStore -Confirm:$false -ErrorAction SilentlyContinue
+        Remove-NetRoute -DestinationPrefix $addr -PolicyStore PersistentStore -Confirm:$false -ErrorAction SilentlyContinue
+        New-NetRoute -DestinationPrefix $addr -InterfaceIndex $interfaceIndex `
+            -NextHop ([string] $networkAdapterConfig.DefaultIPGateway) -RouteMetric $networkAdapterConfig.IPConnectionMetric -ErrorAction Stop
+    }
+    w32tm /resync /rediscover /nowait
 }
 
 function ListenForConnection($Port) {
@@ -234,23 +284,25 @@ function ListenForConnection($Port) {
     $listener.Stop()
 }
 
-$KubeIp="@KUBE_IP@"
-$KubeHost=$KubeIp.split(":",2)[0]
-$KubeToken="@KUBE_TOKEN@"
-$KubeCertHash="@KUBE_CERT_HASH@"
-$kubeConfigFile = @"
-@KUBE_CONFIG@
-"@
-$dnsProxyPost="@dns_proxy_post@"
+$kubeAddress = "@KUBE_IP@"
+$kubeHost, $kubePort = $kubeAddress.split(":",2)
+$kubeToken = "@KUBE_TOKEN@"
+$kubeCertHash = "@KUBE_CERT_HASH@"
+$kubeNodeToken = "@KUBE_NODE_TOKEN@"
+$dnsProxyPost = "@dns_proxy_post@"
 
-$homeDir="$env:USERPROFILE"
-$workingDir="c:\init"
-$hostDir="c:\host"
-$runsDir="c:\runs"
-$kubeDir="c:\ProgramData\Kubernetes"
-$initLog="$workingDir\log.txt"
-$defaultUserName="ROOT"
-$defaultUserPassword=GetOrGenerateDefaultPassword
+$interface = "Ethernet 3"
+$interfacePost = "vEthernet (Ethernet 3)"
+$awsAddrs = @("169.254.169.254/32", "169.254.169.250/32", "169.254.169.251/32", "169.254.169.249/32", "169.254.169.123/32", "169.254.169.253/32")
+
+$homeDir = "$env:USERPROFILE"
+$workingDir = "c:\init"
+$hostDir = "c:\host"
+$runsDir = "c:\runs"
+$kubeDir = "c:\ProgramData\Kubernetes"
+$initLog = "$workingDir\log.txt"
+$defaultUserName = "ROOT"
+$defaultUserPassword = GetOrGenerateDefaultPassword
 
 Write-Host "Creating system directories..."
 NewDirIfRequired -Path $workingDir
@@ -267,18 +319,18 @@ Set-Location -Path "$workingDir"
 Write-Host "Creating default user if required..."
 AddUserIfRequired -UserName $defaultUserName -UserPassword $defaultUserPassword
 
-$restartRequired=$false
+$restartRequired = $false
 
 Write-Host "Installing nomachine if required..."
-$restartRequired=(InstallNoMachineIfRequired | Select-Object -Last 1) -or $restartRequired
+$restartRequired = (InstallNoMachineIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Renaming computer if required..."
-$restartRequired=(RenameComputerIfRequired | Select-Object -Last 1) -or $restartRequired
+$restartRequired = (RenameComputerIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Enabling default user login if required..."
-$restartRequired=(EnableAutoLoginIfRequired -UserName $defaultUserName -UserPassword $defaultUserPassword | Select-Object -Last 1) -or $restartRequired
+$restartRequired = (EnableAutoLoginIfRequired -UserName $defaultUserName -UserPassword $defaultUserPassword | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Restarting computer if required..."
@@ -288,6 +340,7 @@ if ($restartRequired) {
     Restart-Computer -Force
     Exit
 }
+
 
 Write-Host "Downloading scramble script if required..."
 DownloadScrambleScriptIfRequired
@@ -327,22 +380,25 @@ Write-Host "Downloading Sig Windows Tools if required..."
 DownloadSigWindowsToolsIfRequired
 
 Write-Host "Patching KubeClusterHelper.psm1 script to ignore all preflight errors..."
-PatchSigWindowsTools
+PatchSigWindowsTools -KubeHost $kubeHost -KubePort $kubePort -Dns $dnsProxyPost
 
 Write-Host "Generating Sig Windows Tools config file..."
-InitSigWindowsToolsConfigFile -KubeHost $KubeHost -KubeToken $KubeToken -KubeCertHash $KubeCertHash -KubeDir $KubeDir -Interface "Ethernet 3"
+InitSigWindowsToolsConfigFile -KubeHost $kubeHost -KubeToken $kubeToken -KubeCertHash $kubeCertHash -KubeDir $kubeDir -Interface $interface
 
 Write-Host "Installing kubernetes using Sig Windows Tools if required..."
-InstallKubeUsingSigWindowsToolsIfRequired
+InstallKubeUsingSigWindowsToolsIfRequired -KubeDir $kubeDir
 
-Write-Host "Writing kubernetes config..."
-$kubeConfigFile | Out-File -FilePath "$kubeDir\config" -Encoding ascii -Force
+Write-Host "Writing empty kubernetes config..."
+WriteKubeConfig -KubeHost $kubeHost -KubePort $kubePort -KubeNodeToken $kubeNodeToken -KubeDir $kubeDir
 
 Write-Host "Joining kubernetes cluster using Sig Windows Tools..."
 JoinKubeClusterUsingSigWindowsTools
 
 Write-Host "Waiting for dns to be accessible if required..."
-WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Adapter "vEthernet (Ethernet 3)"
+WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
+
+Write-Host "Configuring AWS routes..."
+ConfigureAwsRoutes -Addrs $awsAddrs -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
 ListenForConnection -Port 8888
