@@ -100,7 +100,7 @@ if ([string]::IsNullOrEmpty($env:CP_PIPE_CLI_ENABLED) -or $env:CP_PIPE_CLI_ENABL
 # Init path for pipe cli
 if (Test-Path -Path "$env:PIPE_DIR\pipe.exe") {
     AddToPath.ps1 -AppendingPath $env:PIPE_DIR
-    ExecuteWithinNode -Command "AddToPath.ps1 -AppendingPath $env:PIPE_DIR"
+    ExecuteWithinNode -Command "AddToPath -AppendingPath $env:PIPE_DIR"
 }
 
 # Configure pipe cli within node
@@ -114,10 +114,23 @@ Write-Host ""
 Write-Host "Configure owner account"
 Write-Host "-"
 if (-not([string]::IsNullOrEmpty($env:OWNER))) {
-    $env:OWNER_PASSWORD = New-Guid
-    ExecuteWithinNode -Command "$env:COMMON_REPO_DIR\powershell\AddUser.ps1 -UserName $env:OWNER -UserPassword $env:OWNER_PASSWORD"
+    $env:OWNER_PASSWORD = $env:SSH_PASS
+    ExecuteWithinNode -Command "AddUser -UserName $env:OWNER -UserPassword $env:OWNER_PASSWORD"
 } else {
     Write-Host "OWNER is not set - skipping owner account configuration"
+}
+Write-Host "------"
+Write-Host ""
+######################################################
+
+######################################################
+Write-Host "Setting up SSH server"
+Write-Host "-"
+if (-not([string]::IsNullOrEmpty($env:OWNER))) {
+    ExecuteWithinNode -Command "AddUser -UserName ROOT -UserPassword $env:SSH_PASS"
+    pipe tunnel start --direct -lp 22 -rp 22 -l $env:RUN_DIR\ssh_proxy.log --trace $env:NODE_IP
+} else {
+    Write-Host "OWNER is not set - skipping SSH proxy configuration"
 }
 Write-Host "------"
 Write-Host ""
