@@ -46,6 +46,13 @@ function InstallNoMachineIfRequired {
     return $restartRequired
 }
 
+function InstallChromeIfRequired {
+    if (-not (Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
+        Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -Outfile $workingDir\chrome_installer.exe
+        & $workingDir\chrome_installer.exe /silent /install
+    }
+}
+
 function DownloadScrambleScriptIfRequired {
     if (-not(Test-Path .\scramble.exe)) {
         Invoke-WebRequest 'https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/scramble.exe' -Outfile .\scramble.exe
@@ -162,12 +169,15 @@ Set-Location -Path "$workingDir"
 Write-Host "Installing nomachine if required..."
 InstallNoMachineIfRequired
 
-Write-Host "Opening host ports..."
-OpenPortIfRequired -Port 4000
-OpenPortIfRequired -Port 8888
+Write-Host "Installing chrome if required..."
+InstallChromeIfRequired
 
 Write-Host "Downloading scramble script if required..."
 DownloadScrambleScriptIfRequired
+
+Write-Host "Opening host ports..."
+OpenPortIfRequired -Port 4000
+OpenPortIfRequired -Port 8888
 
 Write-Host "Installing OpenSSH server if required..."
 InstallOpenSshServerIfRequired
