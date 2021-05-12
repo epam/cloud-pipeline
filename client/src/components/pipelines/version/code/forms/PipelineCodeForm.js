@@ -16,29 +16,39 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {observable} from 'mobx';
 import classNames from 'classnames';
-import VersionFile from '../../../../../models/pipelines/VersionFile';
 import PropTypes from 'prop-types';
 import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
 import CodeFileCommitForm from './CodeFileCommitForm';
 import CodeEditor from '../../../../special/CodeEditor';
 import HotTable from 'react-handsontable';
 import Papa from 'papaparse';
+import downloadPipelineFile from '../../utilities/download-pipeline-file';
+import parsePipelineFile from '../../utilities/parse-pipeline-file';
 import styles from './PipelineCodeForm.css';
-import roleModel from '../../../../../utils/roleModel';
 
-@inject(({routing}, params) => ({
+@inject(({routing}) => ({
   routing
 }))
-@inject('cancel', 'version', 'pipeline', 'save')
 @observer
-export default class PipelineCodeForm extends React.Component {
+class PipelineCodeForm extends React.PureComponent {
   static propTypes = {
-    file: PropTypes.object,
+    path: PropTypes.string,
     version: PropTypes.string,
     cancel: PropTypes.func,
-    save: PropTypes.func
+    save: PropTypes.func,
+    pipelineId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    editable: PropTypes.bool,
+    download: PropTypes.bool,
+    showRevision: PropTypes.bool,
+    visible: PropTypes.bool,
+    byteLimit: PropTypes.number
+  };
+  static defaultProps = {
+    editable: false,
+    download: false,
+    showRevision: false
   };
 
   editor;
@@ -46,40 +56,84 @@ export default class PipelineCodeForm extends React.Component {
   _parseOpts = {};
 
   state = {
+    pending: false,
+    error: undefined,
     editMode: false,
     commitMessageForm: false,
     editTabularAsText: false
   };
 
   _modifiedCode = null;
-  @observable
-  _originalCode = null;
-  _fileContents;
+  @observable _originalCode = null;
 
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.file) {
-      this._fileContents = new VersionFile(
-        nextProps.pipeline.value.id,
-        nextProps.file.path,
-        nextProps.version
-      );
-      this._originalCode = '';
-      this._modifiedCode = null;
-    } else {
-      this._fileContents = null;
-      this._originalCode = '';
-      this._modifiedCode = null;
+  componentDidMount () {
+    if (this.props.visible) {
+      this.fetchDocumentContents();
     }
   }
 
-  componentDidUpdate () {
-    if (this._fileContents && !this._fileContents.pending && !this._originalCode) {
-      this._originalCode = atob(this._fileContents.response);
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.path !== this.props.path ||
+      prevProps.pipelineId !== this.props.pipelineId ||
+      prevProps.version !== this.props.version ||
+      (prevProps.visible !== this.props.visible && this.props.visible)
+    ) {
+      this.fetchDocumentContents();
+    }
+  }
+
+  fetchDocumentContents = () => {
+    const {pipelineId, version, path, byteLimit} = this.props;
+    if (pipelineId && version && path) {
+      this.setState({
+        pending: true,
+        error: undefined
+      }, async () => {
+        const state = {
+          pending: false,
+          error: undefined
+        };
+        try {
+          const {
+            content,
+            binary,
+            error
+          } = await parsePipelineFile(pipelineId, version, path, byteLimit);
+          if (binary) {
+            throw new Error('File preview is not available (binary content)');
+          }
+          if (error) {
+            throw new Error(error);
+          }
+          this._originalCode = content;
+        } catch (e) {
+          this._originalCode = null;
+          state.error = e.message;
+        } finally {
+          this._modifiedCode = null;
+          this.setState(state);
+        }
+      });
+    } else {
+      this._originalCode = '';
+      this._modifiedCode = null;
     }
   }
 
   onCodeChange = (newText) => {
     this._modifiedCode = newText;
+  };
+
+  onDownload = () => {
+    const {path, version, pipelineId} = this.props;
+    if (
+      pipelineId &&
+      version &&
+      path
+    ) {
+      return downloadPipelineFile(pipelineId, version, path);
+    }
   };
 
   onClose = () => {
@@ -118,7 +172,7 @@ export default class PipelineCodeForm extends React.Component {
       editTabularAsText: false
     }, () => {
       this.closeCommitForm();
-      this.props.save(this._modifiedCode, options.message);
+      this.props.save && this.props.save(this._modifiedCode, options.message);
     });
   };
 
@@ -148,18 +202,9 @@ export default class PipelineCodeForm extends React.Component {
     this.setState({editTabularAsText});
   };
 
-  @computed
   get isEditable () {
-    if (this.props.pipeline &&
-      roleModel.writeAllowed(this.props.pipeline.value) &&
-      this.props.pipeline.value &&
-      this.props.pipeline.value.currentVersion &&
-      this.props.pipeline.value.currentVersion.name &&
-      this.props.version) {
-      const currentVersionName = this.props.pipeline.value.currentVersion.name;
-      return currentVersionName.toLowerCase() === this.props.version.toLowerCase();
-    }
-    return false;
+    const {editable, pipelineId, version} = this.props;
+    return editable && pipelineId && version;
   }
 
   initializeEditor = (editor) => {
@@ -170,12 +215,19 @@ export default class PipelineCodeForm extends React.Component {
     this.hotEditor = tableEditor;
   };
 
+  get fileName () {
+    const {path} = this.props;
+    if (!path) {
+      return undefined;
+    }
+    return (path || '').split(/[\\/]/).pop();
+  }
+
   get fileType () {
-    const name = this.props.file ? this.props.file.name : null;
-    if (!name) {
+    if (!this.fileName) {
       return null;
     }
-    const extension = name.split('.').pop().toLowerCase();
+    const extension = this.fileName.split('.').pop().toLowerCase();
     switch (extension) {
       case 'dsv': return 'dsv';
       case 'tsv': return 'tsv';
@@ -230,8 +282,17 @@ export default class PipelineCodeForm extends React.Component {
   }
 
   get fileEditor () {
-    if (this._fileContents && this._fileContents.pending) {
+    const {pending, error} = this.state;
+    if (pending) {
       return null;
+    }
+    if (error) {
+      return (
+        <Alert
+          message={error}
+          type="error"
+        />
+      );
     }
     if (this.isTabular && !this.state.editTabularAsText) {
       this._tableData = this.structuredTableData;
@@ -271,7 +332,7 @@ export default class PipelineCodeForm extends React.Component {
         )
         : (
           <Alert
-            message={`Error parsing tabular file ${this.props.file.name}:
+            message={`Error parsing tabular file ${this.fileName || ''}:
               ${this._tableData.message}`}
             type="error" />
         );
@@ -284,7 +345,7 @@ export default class PipelineCodeForm extends React.Component {
           onChange={this.onCodeChange}
           supportsFullScreen
           language={this.state.editTabularAsText ? 'text' : undefined}
-          fileName={this.props.file ? this.props.file.name : undefined}
+          fileName={this.fileName}
           delayedUpdate
         />
       );
@@ -292,10 +353,23 @@ export default class PipelineCodeForm extends React.Component {
   }
 
   render () {
-    const title = this.props.file
+    const {
+      showRevision,
+      download,
+      path,
+      name,
+      visible
+    } = this.props;
+    const {
+      pending
+    } = this.state;
+    const title = path
       ? (
         <Row type="flex" justify="space-between">
-          <Col>{this.props.name}</Col>
+          {name ? (<Col>{name}</Col>) : null}
+          <Col>
+            {showRevision ? `At revision ${this.props.version}:` : ''}
+          </Col>
           <Col>
             {
               this.isEditable && this.isTabular &&
@@ -316,6 +390,17 @@ export default class PipelineCodeForm extends React.Component {
                 Edit
               </Button>
             }
+            {
+              download && !this.state.editMode &&
+              (
+                <Button
+                  className={styles.button}
+                  onClick={this.onDownload}
+                >
+                  Download
+                </Button>
+              )
+            }
             <Button className={styles.button} onClick={this.onClose}>
               Close
             </Button>
@@ -324,7 +409,7 @@ export default class PipelineCodeForm extends React.Component {
       : null;
     return (
       <Modal
-        visible={!!this.props.file}
+        visible={visible && !!path}
         onCancel={this.onClose}
         width="80%"
         title={title}
@@ -334,7 +419,7 @@ export default class PipelineCodeForm extends React.Component {
         style={{top: 20}}
       >
         <div className={styles.spinContainer}>
-          <Spin spinning={this._fileContents && this._fileContents.pending}>
+          <Spin spinning={pending}>
             <div
               className={
                 classNames(
@@ -352,9 +437,12 @@ export default class PipelineCodeForm extends React.Component {
           <CodeFileCommitForm
             visible={this.state.commitMessageForm}
             pending={false} onSubmit={this.doCommit}
-            onCancel={this.closeCommitForm} />
+            onCancel={this.closeCommitForm}
+          />
         </div>
       </Modal>
     );
   }
 }
+
+export default PipelineCodeForm;

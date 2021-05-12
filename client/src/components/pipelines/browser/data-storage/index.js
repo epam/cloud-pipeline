@@ -47,6 +47,8 @@ import UpdateContent from '../../../../models/dataStorage/DataStorageItemUpdateC
 import DataStorageItemDelete from '../../../../models/dataStorage/DataStorageItemDelete';
 import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateDownloadUrl';
 import GenerateDownloadUrlsRequest from '../../../../models/dataStorage/GenerateDownloadUrls';
+import DataStorageConvert from '../../../../models/dataStorage/DataStorageConvert';
+// eslint-disable-next-line max-len
 import LifeCycleEffectiveHierarchy from '../../../../models/dataStorage/lifeCycleRules/LifeCycleEffectiveHierarchy';
 // eslint-disable-next-line max-len
 import LifeCycleRestoreCreate from '../../../../models/dataStorage/lifeCycleRules/LifeCycleRestoreCreate';
@@ -55,6 +57,7 @@ import {DataStorageEditDialog, ServiceTypes} from '../forms/DataStorageEditDialo
 import {LifeCycleRestoreModal} from '../forms/life-cycle-rules/modals';
 import DataStorageNavigation from '../forms/DataStorageNavigation';
 import RestrictedImagesInfo from '../forms/restrict-docker-images/restricted-images-info';
+import ConvertToVersionedStorage from '../forms/convert-to-vs';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -126,6 +129,7 @@ export default class DataStorage extends React.Component {
     editDialogVisible: false,
     restoreDialogVisible: false,
     lifeCycleRestoreMode: undefined,
+    convertToVSDialogVisible: false,
     downloadUrlModalVisible: false,
     selectedItems: [],
     renameItem: null,
@@ -1405,6 +1409,164 @@ export default class DataStorage extends React.Component {
     return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
   };
 
+  openConvertToVersionedStorageDialog = (callback) => {
+    this.setState({
+      convertToVSDialogVisible: true
+    }, callback);
+  };
+
+  closeConvertToVersionedStorageDialog = (callback) => {
+    this.setState({
+      convertToVSDialogVisible: false
+    }, callback);
+  };
+
+  onConvertStorageToVS = () => {
+    if (!this.storage.info) {
+      return;
+    }
+    const {
+      parentFolderId
+    } = this.storage.info;
+    return new Promise((resolve) => {
+      const hide = message.loading('Converting to Versioned Storage...', 0);
+      const request = new DataStorageConvert(this.props.storageId);
+      request.send({})
+        .then(() => {
+          if (request.loaded) {
+            return Promise.resolve(request.value);
+          } else {
+            throw new Error(request.error || 'Error converting to Versioned Storage');
+          }
+        })
+        .catch(e => {
+          message.error(e.message, 5);
+          return Promise.resolve();
+        })
+        .then((vs) => {
+          if (vs) {
+            this.props.pipelines.fetch();
+            if (parentFolderId) {
+              this.props.folders.invalidateFolder(parentFolderId);
+            }
+            this.props.pipelinesLibrary.invalidateCache();
+            if (this.props.onReloadTree) {
+              this.props.onReloadTree(true, parentFolderId);
+            }
+          }
+          hide();
+          if (vs) {
+            let hideInfo;
+            const openLink = () => {
+              const {router} = this.props;
+              router && router.push(`/vs/${vs.id}`);
+              hideInfo && hideInfo();
+            };
+            hideInfo = message.info(
+              (
+                <div style={{display: 'inline'}}>
+                  <a onClick={openLink}><b>{vs.name}</b> versioned storage</a> was created.
+                </div>
+              ),
+              5
+            );
+          }
+          this.closeConvertToVersionedStorageDialog(resolve);
+        });
+    });
+  };
+
+  renderEditAction = () => {
+    const convertToVersionedStorageActionAvailable = this.storage.infoLoaded &&
+      this.storage.isOwner &&
+      this.storage.info &&
+      /^nfs$/i.test(this.storage.info.type) &&
+      (
+        // we've navigated to some path - storage is not empty
+        (this.props.path && !this.storage.pageError) ||
+        // or we have elements on current path - storage is not empty as well
+        (this.storage.pageElements || []).length > 0 ||
+        // or we've navigated to second/third/etc. page,
+        // event if it is empty - the first page exists,
+        // so - storage is not empty as well
+        this.storage.currentPagination.page > 0
+      );
+    if (convertToVersionedStorageActionAvailable) {
+      const {editDropdownVisible} = this.state;
+      const editActionSelect = ({key}) => {
+        this.setState({
+          editDropdownVisible: false
+        }, () => {
+          switch (key) {
+            case 'edit':
+              this.openEditDialog();
+              break;
+            case 'convert':
+              this.openConvertToVersionedStorageDialog();
+              break;
+          }
+        });
+      };
+      return (
+        <Dropdown
+          placement="bottomRight"
+          trigger={['click']}
+          visible={editDropdownVisible}
+          onVisibleChange={visible => this.setState({editDropdownVisible: visible})}
+          overlay={
+            <Menu
+              selectedKeys={[]}
+              onClick={editActionSelect}
+              style={{width: 200, cursor: 'pointer'}}>
+              <MenuItem
+                id="edit-storage-action-button"
+                className="edit-storage-button"
+                key="edit"
+              >
+                <Icon type="edit" /> Edit
+              </MenuItem>
+              <MenuItem
+                id="convert-storage-button"
+                className="convert-storage-action-button"
+                key="convert"
+              >
+                <Icon type="inbox" className="cp-versioned-storage" /> Convert to Versioned Storage
+              </MenuItem>
+            </Menu>
+          }
+          key="edit actions"
+        >
+          <Button
+            id="edit-storage-button"
+            size="small"
+          >
+            <Icon
+              type="setting"
+              style={{
+                lineHeight: 'inherit',
+                verticalAlign: 'middle'
+              }}
+            />
+          </Button>
+        </Dropdown>
+      );
+    }
+    return (
+      <Button
+        id="edit-storage-button"
+        size="small"
+        onClick={() => this.openEditDialog()}>
+        <Icon
+          type="setting"
+          style={{
+            lineHeight: 'inherit',
+            verticalAlign: 'middle'
+          }}
+        />
+      </Button>
+    );
+  };
+
   renderContent = () => {
     if (this.storage.pageError) {
       return (
@@ -1751,15 +1913,7 @@ export default class DataStorage extends React.Component {
               <StorageSharedLinkButton
                 storageId={this.props.storageId}
               />
-              <Button
-                id="edit-storage-button"
-                size="small"
-                onClick={() => this.openEditDialog()}>
-                <Icon
-                  type="setting"
-                  style={{lineHeight: 'inherit', verticalAlign: 'middle'}}
-                />
-              </Button>
+              {this.renderEditAction()}
               <Button
                 id="refresh-storage-button"
                 size="small"
@@ -1885,6 +2039,12 @@ export default class DataStorage extends React.Component {
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />
+        <ConvertToVersionedStorage
+          storageName={name}
+          visible={this.state.convertToVSDialogVisible}
+          onCancel={() => this.closeConvertToVersionedStorageDialog()}
+          onConvert={this.onConvertStorageToVS}
+        />
         <Modal
           title="Download file url"
           width="80%"

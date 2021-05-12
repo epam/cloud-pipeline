@@ -117,6 +117,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     }
     switch (item.type) {
       case ItemTypes.pipeline:
+      case ItemTypes.versionedStorage:
         this.props.pipelines.invalidatePipeline(item.id);
         break;
       case ItemTypes.folder:
@@ -158,6 +159,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       message.error('You can drop folder only into another folder');
     } else if (dragItem.type === ItemTypes.pipeline && dropItem.type !== ItemTypes.folder) {
       message.error(`You can drop ${this.localizedString('pipeline')} only into a folder`);
+    } else if (dragItem.type === ItemTypes.versionedStorage && dropItem.type !== ItemTypes.folder) {
+      message.error(`You can drop ${this.localizedString('versioned storage')} only into a folder`);
     } else if (dragItem.type === ItemTypes.storage && dropItem.type !== ItemTypes.folder) {
       message.error('You can drop storage only into a folder');
     } else if (dragItem.type === ItemTypes.configuration && dropItem.type !== ItemTypes.folder) {
@@ -169,6 +172,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       let body;
       switch (dragItem.type) {
         case ItemTypes.pipeline:
+        case ItemTypes.versionedStorage:
           request = new UpdatePipeline();
           body = {
             id: dragItem.id,
@@ -227,6 +231,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             this.props.folders.load(dragItem.id).fetch();
             break;
           case ItemTypes.pipeline:
+          case ItemTypes.versionedStorage:
             this.props.pipelines.invalidatePipeline(dragItem.id);
             this.props.pipelines.getPipeline(dragItem.id).fetch();
             break;
@@ -313,6 +318,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     let iconClassName;
     switch (item.type) {
       case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.versionedStorage:
+        icon = 'inbox';
+        iconClassName = 'cp-versioned-storage';
+        break;
       case ItemTypes.folder:
         if (item.id === 'pipelines') {
           icon = 'fork';
@@ -424,7 +433,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         className={`${styles.libraryTree} pipeline-library`}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         loadData={this.loadData}
         draggable
         onDragStart={this.onDragStart}
@@ -498,7 +507,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           location={this.props.path}
           query={this.props.query}
           onReloadTree={
-            (reloadRoot) => this.reloadTree(reloadRoot === undefined ? true : reloadRoot)
+            (reloadRoot, folder) => this.reloadTree(
+              reloadRoot === undefined ? true : reloadRoot,
+              folder
+            )
           }
           style={{overflow: 'auto'}}
         >
@@ -534,7 +546,12 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             <PipelinesLibraryContent
               location={this.props.path}
               query={this.props.query}
-              onReloadTree={(reloadRoot) => this.reloadTree(reloadRoot === undefined ? true : reloadRoot)}
+              onReloadTree={
+                (reloadRoot, folder) => this.reloadTree(
+                  reloadRoot === undefined ? true : reloadRoot,
+                  folder
+                )
+              }
             >
               {this.props.children}
             </PipelinesLibraryContent>
@@ -609,6 +626,13 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         );
       }
         break;
+      case ItemTypes.versionedStorage: {
+        const pipelineRequest = this.props.pipelines.getPipeline(item.id);
+        await pipelineRequest.fetchIfNeededOrWait();
+        item.name = pipelineRequest.value.name;
+        item.description = pipelineRequest.value.description;
+      }
+        break;
       case ItemTypes.configuration:
         const configurationRequest = this.props.configurations.getConfiguration(item.id);
         await configurationRequest.fetchIfNeededOrWait();
@@ -665,7 +689,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     }
   }
 
-  async reloadTree (reload) {
+  async reloadTree (reload, folderToReload) {
     const parts = this.props.path.split('/');
     let currentPath, placeholderOrPipelineId, idOrVersionName, metadataClass, selectedKey, history;
     for (let i = 0; i < parts.length; i++) {
@@ -728,6 +752,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       case 'storages':
         selectedKey = `${ItemTypes.folder}_storages`;
         break;
+      case 'vs':
+        selectedKey = `${ItemTypes.versionedStorage}_${idOrVersionName}`;
+        break;
       case 'folder':
       case 'library':
       case '':
@@ -771,6 +798,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       }
     }
     await this.reloadItem(selectedKey, undefined, rootItems, false);
+    if (folderToReload) {
+      await this.reloadItem(`${ItemTypes.folder}_${folderToReload}`, undefined, rootItems, false);
+    }
     if ((placeholderOrPipelineId || '').toLowerCase() === 'folder' && idOrVersionName && history) {
       selectedKey = `${ItemTypes.projectHistory}_${idOrVersionName}`;
     }

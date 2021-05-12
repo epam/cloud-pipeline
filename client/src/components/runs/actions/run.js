@@ -103,7 +103,8 @@ export function run (parent, callback) {
 export function openReRunForm (run, props) {
   const {
     router,
-    routing
+    routing,
+    pipelines
   } = props;
   let push;
   if (router && typeof router.push === 'function') {
@@ -115,26 +116,72 @@ export function openReRunForm (run, props) {
   if (!run || !push) {
     return Promise.resolve();
   }
-  const {
-    pipelineId,
-    version,
-    id,
-    configName
-  } = run;
-  let link;
-  if (pipelineId && version && id) {
-    link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`;
-  } else if (pipelineId && version && configName) {
-    link = `/launch/${pipelineId}/${version}/${configName}`;
-  } else if (pipelineId && version) {
-    link = `/launch/${pipelineId}/${version}/default`;
-  } else if (id) {
-    link = `/launch/${id}`;
-  }
-  if (link) {
-    push(link);
-  }
-  return Promise.resolve(link);
+  const wrapPipelineInfoPromise = (pipelineRequest, callback) => new Promise((resolve, reject) => {
+    pipelineRequest
+      .fetch()
+      .then(() => {
+        if (pipelineRequest.error || !pipelineRequest.loaded) {
+          throw new Error();
+        }
+        resolve(pipelineRequest.value);
+      })
+      .catch(reject)
+      .then(() => callback && callback());
+  });
+  return new Promise((resolve) => {
+    const {
+      pipelineId,
+      version: runVersion,
+      id,
+      configName
+    } = run;
+    Promise.resolve()
+      .then(() => {
+        if (pipelines && pipelineId) {
+          const hide = message.loading('Fetching pipeline info...', 0);
+          return wrapPipelineInfoPromise(
+            pipelines.getPipeline(pipelineId),
+            hide
+          );
+        } else {
+          return Promise.resolve();
+        }
+      })
+      .then((pipelineInfo) => {
+        if (pipelineInfo) {
+          return Promise.resolve({
+            pipelineInfo,
+            versionedStorage: /^versioned_storage$/i.test(pipelineInfo.pipelineType)
+          });
+        }
+        return Promise.resolve();
+      })
+      .catch(() => Promise.resolve())
+      .then((options) => {
+        const {
+          versionedStorage = false,
+          pipelineInfo
+        } = options || {};
+        let link;
+        const version = versionedStorage && pipelineInfo?.currentVersion?.name
+          ? pipelineInfo.currentVersion.name
+          : runVersion;
+        const query = versionedStorage ? `?vs=true` : '';
+        if (pipelineId && version && id) {
+          link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}${query}`;
+        } else if (pipelineId && version && configName) {
+          link = `/launch/${pipelineId}/${version}/${configName}${query}`;
+        } else if (pipelineId && version) {
+          link = `/launch/${pipelineId}/${version}/default${query}`;
+        } else if (id) {
+          link = `/launch/${id}${query}`;
+        }
+        if (link) {
+          push(link);
+        }
+        resolve(link);
+      });
+  });
 }
 
 export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTypesRequest) {

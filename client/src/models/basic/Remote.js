@@ -74,6 +74,10 @@ class Remote {
     return this._response;
   }
 
+  @observable responseStatus = undefined;
+  @observable responseStatusText = undefined;
+  @observable responseError = false;
+
   _loadRequired = !this.constructor.auto;
 
   async _fetchIfNeeded () {
@@ -121,6 +125,12 @@ class Remote {
           fetchOptions.headers = headers;
           const response = await fetch(`${prefix}${this.url}`, fetchOptions);
           maintenanceCheck(response);
+          this.responseError = !response.ok;
+          this.responseStatus = response.status;
+          this.responseStatusText = response.statusText;
+          if (!response.ok) {
+            // throw new Error(response.statusText || `HTTP Error ${response.status}`);
+          }
           const data = await this.getData(response);
           this.update(data);
         } catch (e) {

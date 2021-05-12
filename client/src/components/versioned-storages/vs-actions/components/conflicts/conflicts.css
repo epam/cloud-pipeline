@@ -1,0 +1,261 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.dialog-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.conflicts-ide {
+  display: grid;
+  grid-template-columns: [FILES] 200px [DIVIDER] 10px [IDE] 1fr;
+}
+
+.conflicts-ide .files {
+  grid-column: FILES;
+}
+
+.conflicts-ide .divider {
+  grid-column: DIVIDER;
+  cursor: col-resize;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.conflicts-ide .divider > div {
+  width: 2px;
+  height: 100%;
+}
+
+.conflicts-ide .files-table table {
+  padding: 0;
+}
+
+.conflicts-ide .files-table .file {
+  cursor: pointer;
+}
+
+.conflicts-ide .files-table .file .resolved-cell {
+  text-align: right;
+}
+
+.conflicts-ide .resolve-area-container {
+  grid-column: IDE;
+  min-width: 0;
+}
+
+.conflict-container {
+  height: 100%;
+}
+
+.resolve-changes {
+  width: 100%;
+  padding: 0 4px;
+}
+
+.resolve-area {
+  height: 70vh;
+  overflow: hidden;
+  display: grid;
+  position: relative;
+  grid-template-rows: [HEADER] 24px [CONTENT] 1fr;
+}
+
+.resolve-area .header {
+  grid-row: HEADER;
+  border-bottom: 1px solid transparent;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.resolve-area .header .title {
+  padding: 0 4px;
+}
+
+.resolve-area .canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+
+.resolve-area .panel {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 1;
+  position: relative;
+  display: grid;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  grid-row: CONTENT;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.resolve-area .panel::-webkit-scrollbar {
+  display: none;
+}
+
+.resolve-area .panel .sticky-placeholder {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 0;
+}
+
+.resolve-area .panel .code {
+  position: relative;
+  display: inline-grid;
+  margin-bottom: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.resolve-area .panel .code::-webkit-scrollbar {
+  display: none;
+}
+
+.resolve-area .scroll-container {
+  position: absolute;
+  grid-row: CONTENT;
+}
+
+.resolve-area .scroll-container.vertical {
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.resolve-area .scroll-container.horizontal {
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.resolve-area .scroll-container .scrollbar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+}
+
+.resolve-area .resize {
+  cursor: col-resize;
+}
+
+.panel .numbers-panel.left .line-numbers {
+  border-right: 1px solid transparent;
+}
+
+.panel .numbers-panel.right .line-numbers {
+  border-left: 1px solid transparent;
+}
+
+.resolve-area .line-numbers,
+.resolve-area .panel .code .line {
+  font-family: Consolas, Menlo, Courier, monospace;
+  font-size: 10pt;
+  white-space: pre;
+}
+
+.resolve-area .line-numbers .line {
+  padding: 0 5px;
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+}
+
+.resolve-area .numbers-panel .line-numbers .line {
+  flex-direction: row;
+  cursor: col-resize;
+}
+
+.line .actions > * {
+  margin: 0;
+}
+
+.line .actions .action {
+  cursor: pointer;
+  padding: 3px;
+}
+
+.line .number {
+  padding: 0 5px;
+}
+
+.code .line {
+  cursor: text;
+  position: relative;
+}
+
+.line.modification {
+  border-width: 0;
+  border-style: solid;
+}
+
+.line.modification.first-line {
+  border-top-width: 1px;
+}
+
+.line.modification.last-line {
+  border-bottom-width: 1px;
+}
+
+.line.modification.applied,
+.line.modification.discarded {
+  border-style: dashed;
+}
+
+.line.hidden {
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.code .caret {
+  position: absolute;
+  display: none;
+  z-index: 1;
+}
+
+.code.focused .caret {
+  display: block;
+}
+
+.code,
+.code:focus {
+  outline: none;
+}
+
+.binary-file-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  min-height: 100px;
+}
+
+.binary-file-container .alert > *:not(:first-child) {
+  margin-left: 5px;
+}

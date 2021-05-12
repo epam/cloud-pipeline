@@ -100,7 +100,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         true,
         undefined,
         undefined,
-        undefined,
+        [ItemTypes.pipeline, ItemTypes.storage],
         this.props.hiddenObjectsTreeFilter()
       );
     }
@@ -110,6 +110,8 @@ export default class Folder extends localization.LocalizedReactComponent {
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
+      case ItemTypes.versionedStorage:
+        return <Icon type="inbox" className="cp-versioned-storage" />;
       case ItemTypes.storage:
         const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
         return (

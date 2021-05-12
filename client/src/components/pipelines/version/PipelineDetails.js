@@ -153,12 +153,17 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
 
   redirectIfRequired = () => {
     if (this.props.pipeline.loaded) {
-      const {router: {location}} = this.props;
-      const [,, activeTab] = location.pathname.split('/').filter(o => o.length);
-      const currentTab = this.tabs.find(o => o.key === activeTab);
-      const [first] = this.tabs;
-      if (!currentTab && first) {
-        this.props.router && this.props.router.push(first.link);
+      const {id, pipelineType} = this.props.pipeline.value;
+      if (/^versioned_storage$/i.test(pipelineType)) {
+        this.props.router && this.props.router.push(`/vs/${id}`);
+      } else {
+        const {router: {location}} = this.props;
+        const [,, activeTab] = location.pathname.split('/').filter(o => o.length);
+        const currentTab = this.tabs.find(o => o.key === activeTab);
+        const [first] = this.tabs;
+        if (!currentTab && first) {
+          this.props.router && this.props.router.push(first.link);
+        }
       }
     }
   };
@@ -349,7 +354,12 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       return <Alert type="error" message={this.props.pipeline.error} />;
     }
 
-    const {description} = this.props.pipeline.value;
+    const {description, pipelineType} = this.props.pipeline.value;
+    if (/^versioned_storage$/i.test(pipelineType)) {
+      return (
+        <LoadingView />
+      );
+    }
 
     const {router: {location}} = this.props;
     const [,, activeTab] = location.pathname.split('/').filter(o => o.length);

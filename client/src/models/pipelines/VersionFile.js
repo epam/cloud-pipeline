@@ -17,9 +17,15 @@
 import Remote from '../basic/Remote';
 
 class VersionFile extends Remote {
-  constructor (id, path, version) {
+  constructor (id, path, version, byteLimit = undefined) {
     super();
-    this.url = `/pipeline/${id}/file?version=${version}&path=${encodeURIComponent(path)}`;
+    const url = `/pipeline/${id}/file`;
+    if (byteLimit && !Number.isNaN(Number(byteLimit))) {
+      // eslint-disable-next-line max-len
+      this.url = `${url}/truncate?version=${version}&path=${encodeURIComponent(path)}&byteLimit=${byteLimit}`;
+    } else {
+      this.url = `${url}?version=${version}&path=${encodeURIComponent(path)}`;
+    }
     this.path = path;
     this.version = version;
   }

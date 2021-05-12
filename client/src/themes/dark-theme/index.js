@@ -23,6 +23,7 @@ export default {
   predefined: true,
   configuration: {
     '@application-background-color': 'rgb(14, 17, 22)',
+    '@application-dark-background-color': '@application-background-color',
     '@application-color': 'rgb(180, 188, 196)',
     '@application-color-faded': 'fadeout(@application-color, 20%)',
     '@application-color-disabled': 'fadeout(@application-color, 60%)',
@@ -126,6 +127,15 @@ export default {
     '@search-highlight-text-color': '@application-color',
     '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
     '@search-highlight-text-inactive-background-color': 'fadeout(@navigation-panel-color-impersonated, 50%)',
+    '@vs-color-conflict-background': '@alert-error-background',
+    '@vs-color-conflict-border': '@alert-error-border',
+    '@vs-color-conflict-applied-background': '@vs-color-conflict-background',
+    '@vs-color-insertion-background': '@alert-info-background',
+    '@vs-color-insertion-border': '@alert-info-border',
+    '@vs-color-insertion-applied-background': '@vs-color-insertion-background',
+    '@vs-color-change-background': '@alert-warning-background',
+    '@vs-color-change-border': '@alert-warning-border',
+    '@vs-color-change-applied-background': '@vs-color-change-background',
     '@application-console-background-color': '@card-background-color',
     '@application-console-color': '@application-color',
     '@application-console-color-details': '@application-color-faded'

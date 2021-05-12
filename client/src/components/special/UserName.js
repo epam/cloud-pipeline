@@ -37,7 +37,6 @@ function getAttribute (attributes, ...attribute) {
 @inject('usersInfo')
 @observer
 export default class UserName extends React.Component {
-
   static propTypes = {
     className: PropTypes.string,
     userName: PropTypes.string,
@@ -131,5 +130,4 @@ export default class UserName extends React.Component {
       </span>
     );
   }
-
 }

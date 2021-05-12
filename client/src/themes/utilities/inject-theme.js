@@ -51,7 +51,7 @@ function injectCss (identifier, css) {
     style = document.createElement('style');
     style.setAttribute('id', domIdentifier);
     style.setAttribute('type', 'text/css');
-    document.head.append(style);
+    document.head.appendChild(style);
   }
   style.textContent = css;
 }

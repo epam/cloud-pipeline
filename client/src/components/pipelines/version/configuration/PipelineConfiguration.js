@@ -67,7 +67,7 @@ export default class PipelineConfiguration extends React.Component {
     pending: false
   };
 
-  componentDidMount() {
+  componentDidMount () {
     this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (location.pathname === locationBefore) {
@@ -101,7 +101,6 @@ export default class PipelineConfiguration extends React.Component {
           okText: 'Yes',
           cancelText: 'No'
         });
-
       } else {
         callback();
       }

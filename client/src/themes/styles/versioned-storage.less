@@ -42,3 +42,48 @@
   background-color: @deleted-row-accent;
   cursor: default;
 }
+
+.cp-git-diff-collapse .ant-collapse-item.ant-collapse-item-active .ant-collapse-header {
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-branch-code-line-numbers {
+  background-color: fadeout(@application-background-color, 40%);
+  border-color: @panel-border-color;
+}
+
+.cp-branch-code-resize {
+  background-color: fadeout(@application-background-color, 40%);
+}
+
+.cp-conflicts-resolve-area-container {
+  background-color: @card-background-color;
+}
+
+.cp-conflicts-divider {
+  background-color: fadeout(@card-border-color, 40%);
+}
+
+.cp-conflict-action {
+  color: @application-color;
+}
+
+.cp-conflict-action:hover,
+.cp-conflict-action:focus,
+.cp-conflict-action:active {
+  color: @application-color-accent;
+}
+
+.cp-conflict-scroller {
+  background-color: fade(@application-color, 10%);
+}
+
+.cp-conflict-scroller .bar {
+  background-color: fade(@application-color, 25%);
+}
+
+.cp-conflict-scroller:hover .bar,
+.cp-conflict-scroller .bar:hover,
+.cp-conflict-scroller .bar.hovered {
+  background-color: fade(@application-color, 50%);
+}

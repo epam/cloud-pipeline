@@ -1,0 +1,107 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin: 2px 0;
+  padding: 3px;
+}
+
+.content {
+  height: auto;
+  overflow: auto;
+}
+
+.header .title {
+  font-weight: bold;
+}
+
+.header .filter {
+  line-height: 1;
+}
+
+.pagination {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 5px;
+}
+
+.pagination .pagination-button {
+  margin-left: 5px;
+}
+
+.commit {
+  margin: 2px 0;
+  padding: 5px;
+}
+
+.commit .info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.commit .actions {
+  margin-left: 5px;
+}
+
+.commit .button {
+  line-height: 1;
+}
+
+.commit .commit-controls {
+  float: right;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.commit .line > * {
+  margin-right: 5px;
+}
+
+.commit .line > *:last-child {
+  margin-right: 0;
+}
+
+.commit .author {
+  display: inline-block;
+}
+
+.commit .sha {
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.diff-content .empty-content {
+  font-style: italic;
+  padding: 5px;
+}
