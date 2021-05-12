@@ -36,8 +36,11 @@ import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate'
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDelete';
 import VersionedStorageListWithInfo from '../../../../models/versioned-storages/list-with-info';
-import EditItemForm from '../forms/EditItemForm';
+import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
 import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
+import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken';
+import EditItemForm from '../forms/EditItemForm';
+import EditPipelineForm from '../../version/forms/EditPipelineForm';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
 import DOCUMENT_TYPES from './document-types';
 import styles from './versioned-storage.css';
@@ -174,6 +177,17 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     return parentPath || '';
   };
 
+  folderOperationWrapper = (operation) => (...props) => {
+    this.setState({
+      pending: true
+    }, async () => {
+      await operation(...props);
+      this.setState({
+        pending: false
+      });
+    });
+  };
+
   pathWasChanged = () => {
     this.fetchPage(0);
   };
@@ -230,6 +244,10 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.setState({editStorageDialog: true});
   };
 
+  closeEditStorageDialog = () => {
+    this.setState({editStorageDialog: false});
+  };
+
   openCreateDocumentDialog = (type) => {
     if (type) {
       this.setState({createDocument: type});
@@ -249,6 +267,111 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   closeRenameDocumentDialog = () => {
     this.setState({renameDocument: undefined});
   };
+
+  editVersionedStorage = async ({name, description, token}) => {
+    const {
+      folders,
+      onReloadTree,
+      pipeline,
+      pipelinesLibrary
+    } = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {
+        id,
+        parentFolderId
+      } = pipeline.value;
+      const hide = message.loading(
+        `Updating ${this.localizedString('versioned storage')} ${name}...`,
+        0
+      );
+      const updatePipelineRequest = new UpdatePipeline();
+      await updatePipelineRequest.send({
+        id: id,
+        name: name,
+        description: description,
+        parentFolderId: parentFolderId
+      });
+      if (updatePipelineRequest.error) {
+        hide();
+        message.error(updatePipelineRequest.error, 5);
+      } else {
+        if (token !== undefined) {
+          const updatePipelineTokenRequest = new UpdatePipelineToken();
+          await updatePipelineTokenRequest.send({
+            id: id,
+            repositoryToken: token
+          });
+          hide();
+          if (updatePipelineTokenRequest.error) {
+            message.error(updatePipelineTokenRequest.error, 5);
+          } else {
+            this.closeEditStorageDialog();
+            await pipeline.fetch();
+            if (parentFolderId) {
+              folders.invalidateFolder(parentFolderId);
+            } else {
+              pipelinesLibrary.invalidateCache();
+            }
+            if (onReloadTree) {
+              onReloadTree(!parentFolderId);
+            }
+          }
+        } else {
+          hide();
+          this.closeEditStorageDialog();
+          await pipeline.fetch();
+          if (parentFolderId) {
+            folders.invalidateFolder(parentFolderId);
+          } else {
+            pipelinesLibrary.invalidateCache();
+          }
+          if (onReloadTree) {
+            onReloadTree(!parentFolderId);
+          }
+        }
+      }
+    }
+  }
+
+  deleteVersionedStorage = async (keepRepository) => {
+    const {
+      folders,
+      onReloadTree,
+      pipeline,
+      pipelinesLibrary
+    } = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {
+        id,
+        name,
+        parentFolderId
+      } = pipeline.value;
+      const request = new DeletePipeline(id, keepRepository);
+      const hide = message.loading(
+        `Deleting ${this.localizedString('versioned storage')} ${name}...`,
+        0);
+      await request.fetch();
+      hide();
+      if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        this.closeEditStorageDialog();
+        if (parentFolderId) {
+          folders.invalidateFolder(parentFolderId);
+        } else {
+          pipelinesLibrary.invalidateCache();
+        }
+        if (onReloadTree) {
+          onReloadTree(!parentFolderId);
+        }
+        if (parentFolderId) {
+          this.props.router.push(`/folder/${parentFolderId}`);
+        } else {
+          this.props.router.push('/library');
+        }
+      }
+    }
+  }
 
   renameVersionedStorage = async (name) => {
     const {pipeline, folders, pipelinesLibrary, onReloadTree} = this.props;
@@ -594,6 +717,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       selectedFile
     } = this.state;
     const {
+      editStorageDialog,
       showHistoryPanel,
       pending
     } = this.state;
@@ -647,6 +771,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           cancel={this.closeEditFileForm}
           save={this.saveEditFileForm}
           vsStorage
+        />
+        <EditPipelineForm
+          onSubmit={this.folderOperationWrapper(this.editVersionedStorage)}
+          onCancel={this.closeEditStorageDialog}
+          onDelete={this.folderOperationWrapper(this.deleteVersionedStorage)}
+          visible={editStorageDialog}
+          pending={pending}
+          pipeline={pipeline.value}
         />
         {this.renderEditItemForm()}
         <div
