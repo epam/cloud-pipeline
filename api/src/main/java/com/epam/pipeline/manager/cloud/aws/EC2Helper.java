@@ -25,6 +25,8 @@ import com.amazonaws.services.ec2.model.AvailabilityZone;
 import com.amazonaws.services.ec2.model.CreateVolumeRequest;
 import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesRequest;
+import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesResult;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
 import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
@@ -36,6 +38,7 @@ import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
+import com.amazonaws.services.ec2.model.NetworkInterface;
 import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.SpotPrice;
@@ -101,6 +104,15 @@ public class EC2Helper {
         AmazonEC2ClientBuilder builder = AmazonEC2ClientBuilder.standard();
         builder.setRegion(awsRegion);
         return builder.build();
+    }
+
+    public Optional<NetworkInterface> getNetworkInterface(final String interfaceId, final String region) {
+        final DescribeNetworkInterfacesResult result = getEC2Client(region).describeNetworkInterfaces(
+                new DescribeNetworkInterfacesRequest().withNetworkInterfaceIds(interfaceId));
+        return ListUtils.emptyIfNull(result.getNetworkInterfaces())
+                .stream()
+                .filter(networkInterface -> interfaceId.equals(networkInterface.getNetworkInterfaceId()))
+                .findFirst();
     }
 
     public double getSpotPrice(final String instanceType, final AwsRegion region) {
