@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-export default function ({ie, edge, chrome, firefox, safari, other}) {
+export default function ({ie, edge, chrome, firefox, safari, default: other}) {
   const browser = getBrowser();
   switch (browser.name) {
-    case Browsers.ie.name: return ie;
-    case Browsers.edge.name: return edge;
-    case Browsers.safari.name: return safari;
-    case Browsers.chrome.name: return chrome;
-    case Browsers.firefox.name: return firefox;
+    case Browsers.ie.name: return ie || other;
+    case Browsers.edge.name: return edge || other;
+    case Browsers.safari.name: return safari || other;
+    case Browsers.chrome.name: return chrome || other;
+    case Browsers.firefox.name: return firefox || other;
     default: return other;
   }
 }
