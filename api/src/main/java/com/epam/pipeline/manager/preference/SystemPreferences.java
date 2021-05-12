@@ -433,9 +433,11 @@ public class SystemPreferences {
             "\"@\n" +
             "[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy\n" +
             "Invoke-WebRequest %s -Outfile .\\launch.ps1\n" +
-            ".\\launch.ps1 -Command {\n" +
+            "@\"\n" +
             "%s\n" +
-            "}",
+            "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
+            "$env:CP_TASK_PATH = \"$(pwd)\\task.ps1\n" +
+            ".\\launch.ps1",
             LAUNCH_GROUP, PreferenceValidators.isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
         "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));

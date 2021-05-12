@@ -78,8 +78,19 @@ function EnableAutoLoginIfRequired($UserName, $UserPassword) {
     return $restartRequired
 }
 
+function InstallPythonIfRequired {
+    try {
+         & { python -V } -ErrorAction Stop
+    } catch {
+        Write-Host "Installing python..."
+        Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.8.9/python-3.8.9-amd64.exe" -OutFile "$workingDir\python-3.8.9-amd64.exe"
+        & "$workingDir\python-3.8.9-amd64.exe" /quiet InstallAllUsers=0 PrependPath=1 Include_test=0
+    }
+}
+
 function InstallChromeIfRequired {
     if (-not (Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
+        Write-Host "Installing chrome..."
         Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -Outfile $workingDir\chrome_installer.exe
         & $workingDir\chrome_installer.exe /silent /install
     }
@@ -347,6 +358,9 @@ if ($restartRequired) {
     Restart-Computer -Force
     Exit
 }
+
+Write-Host "Installing python if required..."
+InstallPythonIfRequired
 
 Write-Host "Installing chrome if required..."
 InstallChromeIfRequired
