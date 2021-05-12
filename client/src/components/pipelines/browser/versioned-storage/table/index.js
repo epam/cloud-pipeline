@@ -37,7 +37,7 @@ import styles from './table.css';
 
 function typeSorter (a, b) {
   return b.type.localeCompare(a.type);
-};
+}
 
 function getDocumentType (document) {
   if (!document || !document.type) {
@@ -53,7 +53,7 @@ function getDocumentType (document) {
       break;
   }
   return type;
-};
+}
 
 class VersionedStorageTable extends React.Component {
   state = {
@@ -92,10 +92,11 @@ class VersionedStorageTable extends React.Component {
 
   get uploadPath () {
     const {pipelineId, path} = this.props;
-    let uploadPath = PipelineFileUpdate.uploadUrl(pipelineId, path || '');
-    return uploadPath.endsWith('/')
-      ? uploadPath.slice(0, -1)
-      : uploadPath;
+    return PipelineFileUpdate.uploadUrl(
+      pipelineId,
+      path || '',
+      {trimTrailingSlash: true}
+    );
   }
 
   onCommentChange = (event) => {
@@ -304,6 +305,7 @@ class VersionedStorageTable extends React.Component {
       <div className={styles.tableContainer}>
         {this.renderTableControls()}
         <Table
+          className={styles.table}
           columns={COLUMNS}
           rowKey={(record) => record.name}
           dataSource={this.data}

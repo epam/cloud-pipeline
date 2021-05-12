@@ -20,6 +20,9 @@ import {
   Icon
 } from 'antd';
 import DOCUMENT_TYPES from '../document-types';
+import UserName from '../../../../special/UserName';
+import displaySize from '../../../../../utils/displaySize';
+import displayDate from '../../../../../utils/displayDate';
 import styles from './table.css';
 
 const FILES = {
@@ -31,10 +34,7 @@ const FILES = {
 const ACTIONS = {
   [DOCUMENT_TYPES.blob]: (
     <span
-      className={classNames(
-        styles.cellContent,
-        styles.rowActions
-      )}
+      className={styles.rowActions}
     >
       <Icon
         type="download"
@@ -57,10 +57,7 @@ const ACTIONS = {
     </span>),
   [DOCUMENT_TYPES.tree]: (
     <span
-      className={classNames(
-        styles.cellContent,
-        styles.rowActions
-      )}
+      className={styles.rowActions}
     >
       <Icon
         type="edit"
@@ -82,70 +79,51 @@ const COLUMNS = [{
   title: 'Name',
   dataIndex: 'name',
   key: 'name',
+  className: styles.nameCell,
   render: (name = '', record) => {
     return (
-      <span className={styles.cellContent}>
+      <div className={styles.cellContent}>
         <span className={styles.fileIcon}>
           {FILES[record.type]}
         </span>
-        <span className={styles.textEllipsis}>
-          {name}
-        </span>
-      </span>
+        <span>{name}</span>
+      </div>
     );
   }
 }, {
   title: 'Size',
   dataIndex: 'size',
-  key: 'size'
+  key: 'size',
+  className: classNames(styles.noWrapCell, styles.sizeCell),
+  render: (size, item) => item.type === DOCUMENT_TYPES.tree
+    ? undefined
+    : displaySize(size, false)
 }, {
   title: 'Revision',
   dataIndex: 'commit',
   key: 'commit',
-  render: (name = '') => {
-    return (
-      <span className={styles.textEllipsis}>
-        {name.substring(0, 7)}
-      </span>
-    );
-  }
+  className: classNames(styles.noWrapCell, styles.revisionCell)
 }, {
   title: 'Date changed',
   dataIndex: 'committer_date',
   key: 'committer_date',
-  render: (name = '') => {
-    return (
-      <span className={styles.textEllipsis}>
-        {name.substring(0, 19)}
-      </span>
-    );
-  }
+  className: classNames(styles.noWrapCell, styles.dateCell),
+  render: date => displayDate(date)
 }, {
   title: 'Author',
   dataIndex: 'author',
   key: 'author',
-  render: (name = '') => {
-    return (
-      <span className={styles.textEllipsis}>
-        {name}
-      </span>
-    );
-  }
+  className: classNames(styles.noWrapCell, styles.authorCell),
+  render: author => <UserName userName={author} />
 }, {
   title: 'Message',
   dataIndex: 'commit_message',
   key: 'commit_message',
-  render: (name = '') => {
-    return (
-      <span className={styles.textEllipsis}>
-        {name}
-      </span>
-    );
-  }
+  className: styles.messageCell
 }, {
   title: '',
   dataIndex: 'type',
-  key: 'type',
+  key: 'actions',
   render: (name = '', record) => ACTIONS[record.type] || null,
   width: 150
 }];

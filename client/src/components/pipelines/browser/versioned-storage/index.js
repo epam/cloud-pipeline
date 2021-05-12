@@ -39,7 +39,7 @@ import VersionedStorageListWithInfo from '../../../../models/versioned-storages/
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
 import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
 import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken';
-import EditItemForm from '../forms/EditItemForm';
+import CreateItemForm from './forms/create-item-form';
 import EditPipelineForm from '../../version/forms/EditPipelineForm';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
 import DOCUMENT_TYPES from './document-types';
@@ -443,7 +443,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       await request.send({
         lastCommitId: this.lastCommitId,
         path: document.path,
-        comment: comment || `${document.name} deleted`
+        comment: comment || `Removing ${document.name}`
       });
       hide();
       if (request.error) {
@@ -484,7 +484,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         lastCommitId: this.lastCommitId,
         path: `${path || ''}${name}`,
         previousPath: renameDocument.path,
-        comment: content || `${renameDocument.name} rename`
+        comment: content || `Renaming ${renameDocument.name}`
       });
       hide();
       if (request.error) {
@@ -500,7 +500,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  createFolder = async ({name, content}) => {
+  createFolder = async ({name, comment}) => {
     if (this.lastCommitId && name) {
       const {
         pipeline,
@@ -518,7 +518,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       await request.send({
         lastCommitId: this.lastCommitId,
         path: `${path}${name.trim()}`,
-        comment: content
+        comment: comment || `Creating folder ${path}${name.trim()}`
       });
       hide();
       if (request.error) {
@@ -534,7 +534,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  createFile = async ({name, content}) => {
+  createFile = async ({name, comment}) => {
     if (this.lastCommitId && name) {
       const {
         pipeline,
@@ -552,7 +552,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       await request.send({
         lastCommitId: this.lastCommitId,
         path: `${path}${name.trim()}`,
-        comment: content,
+        comment: comment || `Creating file ${path}${name.trim()}`,
         contents: ''
       });
       hide();
@@ -680,20 +680,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     const {createDocument, renameDocument} = this.state;
     return (
       <div>
-        <EditItemForm
+        <CreateItemForm
           pending={false}
-          includeFileContentField
           title={`Create ${createDocument}`}
-          contentPlaceholder="Comment"
           visible={!!createDocument}
           onCancel={this.closeCreateDocumentDialog}
           onSubmit={this.onCreateDocument}
         />
-        <EditItemForm
+        <CreateItemForm
           pending={false}
-          includeFileContentField
           title={`Rename ${getDocumentType(renameDocument)}`}
-          contentPlaceholder="Comment"
           visible={!!renameDocument}
           name={renameDocument && renameDocument.name}
           onCancel={this.closeRenameDocumentDialog}

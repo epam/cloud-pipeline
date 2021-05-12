@@ -50,14 +50,11 @@
   margin-right: 10px;
 }
 
-.cell-content {
+.row-actions {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
-}
-
-.row-actions {
   justify-content: flex-end;
 }
 
@@ -83,7 +80,7 @@
   align-items: center;
 }
 
-.action:hover:not(.action-delete){
+.action:hover:not(.action-delete) {
   border: 1px solid #1890ff;
 }
 
@@ -95,6 +92,37 @@
 .action.action-delete:hover {
   color: white;
   background: #ff4d4f;
+}
+
+.no-wrap-cell {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.name-cell {
+  min-width: 200px;
+}
+
+.name-cell .cell-content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.size-cell,
+.revision-cell,
+.date-cell {
+  max-width: 200px;
+}
+
+.author-cell {
+  max-width: 200px;
+}
+
+.message-cell {
+  max-width: 300px;
 }
 
 .text-ellipsis {
