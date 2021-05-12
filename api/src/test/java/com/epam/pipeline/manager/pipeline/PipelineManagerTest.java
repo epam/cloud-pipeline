@@ -100,6 +100,8 @@ public class PipelineManagerTest {
         when(gitManager.createRepository(eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
         when(gitManager.createRepository(any(), any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
                 .thenReturn(gitProject);
+        when(gitManager.createEmptyRepository(any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
+                .thenReturn(gitProject);
         when(gitManager.getRepository(eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN))).thenReturn(gitProject);
         when(gitManager.checkProjectExists(eq(REPOSITORY_NAME))).thenReturn(false);
         when(crudManager.save(any())).thenAnswer(invocation -> invocation.getArguments()[0]);
@@ -159,6 +161,20 @@ public class PipelineManagerTest {
         pipelineManager.create(pipelineVO);
 
         verify(gitManager).createRepository(any(), any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN));
+    }
+
+    @Test
+    public void createShouldCreateVSRepositoryInExternalGitlabIfItDoesNotExists() throws GitClientException {
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setName(REPOSITORY_NAME);
+        pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
+        pipelineVO.setRepository(REPOSITORY_HTTPS);
+        pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
+        when(gitManager.getPipelineRevisions(any())).thenThrow(new IllegalArgumentException(REPOSITORY_NAME));
+
+        pipelineManager.create(pipelineVO);
+
+        verify(gitManager).createEmptyRepository(any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN));
     }
 
     @Test
