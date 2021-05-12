@@ -704,6 +704,8 @@ public class SystemPreferences {
     public static final StringPreference LUSTRE_FS_DEPLOYMENT_TYPE = new StringPreference(
             "lustre.fs.deployment.type", LustreDeploymentType.SCRATCH_2.name(), LUSTRE_GROUP,
             isValidEnum(LustreDeploymentType.class));
+    public static final BooleanPreference LUSTRE_FS_MOUNT_IP = new BooleanPreference(
+            "lustre.fs.mount.ip", false, LUSTRE_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
