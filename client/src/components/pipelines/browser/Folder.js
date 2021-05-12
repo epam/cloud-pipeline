@@ -60,6 +60,7 @@ import CreatePipeline from '../../../models/pipelines/CreatePipeline';
 import CheckPipelineRepository from '../../../models/pipelines/CheckPipelineRepository';
 import DeletePipeline from '../../../models/pipelines/DeletePipeline';
 import UpdatePipeline from '../../../models/pipelines/UpdatePipeline';
+import PipelineFolderUpdate from '../../../models/pipelines/PipelineFolderUpdate';
 import UpdatePipelineToken from '../../../models/pipelines/UpdatePipelineToken';
 import ConfigurationUpdate from '../../../models/configuration/ConfigurationUpdate';
 import ConfigurationDelete from '../../../models/configuration/ConfigurationDelete';
@@ -84,6 +85,16 @@ import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
 
 const MAX_INLINE_METADATA_KEYS = 10;
+
+function splitFolderPaths (foldersStructure) {
+  const uniquePaths = [...new Set(foldersStructure
+    .split('\n')
+    .map(path => path.trim()))
+  ];
+  return uniquePaths.filter(filteredPath => !uniquePaths
+    .some(path => filteredPath !== path && path.startsWith(filteredPath))
+  );
+};
 
 @localization.localizedComponent
 @connect({
@@ -897,8 +908,53 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
 
+  createVSFolder = async (path, opts) => {
+    if (path && opts.lastCommitId) {
+      const request = new PipelineFolderUpdate(opts.id);
+      const hide = message.loading(`Creating folders '${path}'...`, 0);
+      await request.send({
+        lastCommitId: opts.lastCommitId,
+        path,
+        comment: `creating folders ${path}`
+      });
+      hide();
+      if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        return request.value;
+      }
+    }
+  };
+
+  bulkCreateVSFolders = async (foldersStructure, pipeline) => {
+    if (!foldersStructure || !foldersStructure.length) {
+      return;
+    }
+    let nextlastCommitId = pipeline.currentVersion.commitId;
+    const id = pipeline.id;
+    const paths = splitFolderPaths(foldersStructure);
+    for (const path of paths) {
+      const vsFolderRequest = await this.createVSFolder(path, {
+        id,
+        lastCommitId: nextlastCommitId
+      });
+      if (vsFolderRequest && vsFolderRequest.id) {
+        nextlastCommitId = vsFolderRequest.id;
+      }
+    };
+  };
+
   createVersionedStorage = async (opts = {}) => {
-    const {name, description} = opts;
+    const {
+      pipelines,
+      folder,
+      onReloadTree
+    } = this.props;
+    const {
+      name,
+      description,
+      foldersStructure
+    } = opts;
     const pipelineType = 'VERSIONED_STORAGE';
     const hide = message.loading(`Creating versioned storage ${name}...`, 0);
     await this.createPipelineRequest.send({
@@ -909,14 +965,19 @@ export default class Folder extends localization.LocalizedReactComponent {
     });
     hide();
     if (this.createPipelineRequest.error) {
-      message.error(this.createPipelineRequest.error, 5);
-    } else {
-      this.closeCreateVersionedStorageDialog();
-      this.props.pipelines.fetch();
-      await this.props.folder.fetch();
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(true);
-      }
+      return message.error(this.createPipelineRequest.error, 5);
+    }
+    console.log('foldersStructure', foldersStructure);
+    if (foldersStructure && foldersStructure.length) {
+      const pipeline = await pipelines.getPipeline(this.createPipelineRequest.value.id);
+      await pipeline.fetchIfNeededOrWait();
+      await this.bulkCreateVSFolders(foldersStructure, pipeline.value);
+    }
+    this.closeCreateVersionedStorageDialog();
+    pipelines.fetch();
+    await folder.fetch();
+    if (onReloadTree) {
+      onReloadTree(true);
     }
   };
 
@@ -1208,8 +1269,8 @@ export default class Folder extends localization.LocalizedReactComponent {
             }
             entity={
               this.state.issuesItem
-              ? this.state.issuesItem
-              : this.props.folder.value
+                ? this.state.issuesItem
+                : this.props.folder.value
             } />
         }
         {
@@ -1288,7 +1349,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         <UploadButton
           key="upload-metadata"
           multiple={false}
-          synchronous={true}
+          synchronous
           onRefresh={async () => {
             await this.props.folder.fetch();
             if (this.props.onReloadTree) {
@@ -1863,7 +1924,9 @@ export default class Folder extends localization.LocalizedReactComponent {
             this.checkRepositoryExistence(opts, this.createVersionedStorage))}
           onCancel={this.closeCreateVersionedStorageDialog}
           visible={this.state.createVersionedStorageDialog}
-          pending={this.state.operationInProgress} />
+          pending={this.state.operationInProgress}
+          folderStructureArea
+        />
         <DataStorageEditDialog
           onSubmit={this.folderOperationWrapper(this.editStorage)}
           onDelete={this.folderOperationWrapper(this.deleteStorage)}

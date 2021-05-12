@@ -22,7 +22,8 @@ import {
   Modal,
   Form,
   Spin,
-  Row
+  Row,
+  Checkbox
 } from 'antd';
 
 const formItemLayout = {
@@ -38,6 +39,10 @@ const formItemLayout = {
 
 @Form.create()
 class VersionedStorageDialog extends React.Component {
+  state = {
+    predefinedFoldersChecked: false
+  }
+
   handleSubmit = (e) => {
     const {form} = this.props;
     e.preventDefault();
@@ -48,8 +53,28 @@ class VersionedStorageDialog extends React.Component {
     });
   };
 
+  validateFolderStructure = (rule, value, callbackFn) => {
+    if (this.props.name && value && value.toLowerCase() === this.props.name.toLowerCase()) {
+      callbackFn('Name should be unique');
+    } else {
+      callbackFn();
+    }
+  };
+
+  togglePredefinedFolders = (e) => {
+    const {predefinedFoldersChecked} = this.state;
+    this.setState({predefinedFoldersChecked: !predefinedFoldersChecked});
+  };
+
   render () {
-    const {visible, onCancel, form, pending} = this.props;
+    const {
+      visible,
+      onCancel,
+      form,
+      pending,
+      folderStructureArea
+    } = this.props;
+    const {predefinedFoldersChecked} = this.state;
     const {getFieldDecorator} = form;
     const modalFooter = (
       <Row>
@@ -86,11 +111,14 @@ class VersionedStorageDialog extends React.Component {
               {...formItemLayout}
             >
               {getFieldDecorator('name', {
-                rules: [{required: true, message: 'Please input repository name'}]
+                rules: [{
+                  required: true,
+                  message: 'Please input repository name'
+                }]
               })(
                 <Input
                   onPressEnter={this.handleSubmit}
-                  disabled={this.props.pending}
+                  disabled={pending}
                 />
               )}
             </Form.Item>
@@ -103,11 +131,45 @@ class VersionedStorageDialog extends React.Component {
                 <Input
                   type="textarea"
                   autosize={{minRows: 2, maxRows: 6}}
-                  disabled={this.props.pending}
+                  disabled={pending}
                   onPressEnter={this.handleSubmit}
                 />
               )}
             </Form.Item>
+            <Checkbox
+              checked={predefinedFoldersChecked}
+              onChange={this.togglePredefinedFolders}
+            >
+              Predefined folder structure
+            </Checkbox>
+            {folderStructureArea && predefinedFoldersChecked && (
+              <Form.Item
+                key="foldersStructure"
+              >
+                {getFieldDecorator('foldersStructure', {
+                  rules: [
+                    {
+                      pattern: /^[\da-zA-Z_\n\-/ ]+$/,
+                      message: 'Path can contain only letters, digits, spaces and "- _ /" symbols'
+                    }
+                  ],
+                  initialValue: ''
+                })(
+                  <Input
+                    type="textarea"
+                    disabled={pending}
+                    autosize={{minRows: 5}}
+                    placeholder={[
+                      'To set folder paths, use "/" as divider,',
+                      'for example:\n',
+                      'folderA/folderB',
+                      'folderA/folderC',
+                      'folderC'
+                    ].join('\n')}
+                  />
+                )}
+              </Form.Item>
+            )}
           </Form>
         </Spin>
       </Modal>
@@ -119,7 +181,8 @@ VersionedStorageDialog.propTypes = {
   onSubmit: PropTypes.func,
   onCancel: PropTypes.func,
   visible: PropTypes.bool,
-  pending: PropTypes.bool
+  pending: PropTypes.bool,
+  folderStructureArea: PropTypes.bool
 };
 
 export default VersionedStorageDialog;
