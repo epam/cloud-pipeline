@@ -22,6 +22,7 @@ import Browser from '../pipelines/browser/Browser';
 import FolderBrowser from '../pipelines/browser/Folder';
 import StorageBrowser from '../pipelines/browser/DataStorage';
 import PipelineBrowser from '../pipelines/browser/Pipeline';
+import VersionedStorageBrowser from '../pipelines/browser/versioned-storage';
 import PipelineLatestVersion from '../pipelines/browser/redirections/PipelineLatestVersion';
 import MetadataClassEntityRedirection from '../pipelines/browser/redirections/MetadataClassEntity';
 import MetadataFolderBrowser from '../pipelines/browser/MetadataFolder';
@@ -161,6 +162,9 @@ export default class AppRouter extends React.Component {
         </Route>
         <Route path="/metadataFolder" component={PipelinesLibrary}>
           <Route path=":id" component={MetadataFolderBrowser} />
+        </Route>
+        <Route path="/vs/:id" component={PipelinesLibrary}>
+          <IndexRoute component={VersionedStorageBrowser} />
         </Route>
         <Route path="/:id" component={PipelinesLibrary}>
           <IndexRoute component={PipelineBrowser} />

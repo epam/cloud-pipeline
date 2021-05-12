@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {observer} from 'mobx-react';
+import classNames from 'classnames';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import {
   PipelineRunCommitCheck,
@@ -33,7 +34,7 @@ import {Alert, message, Modal, Row} from 'antd';
 import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
-import PipelineRunSSH from '../../../../models/pipelines/PipelineRunSSH';
+import pipelineRunSSHCache from '../../../../models/pipelines/PipelineRunSSHCache';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
@@ -41,12 +42,15 @@ import styles from './Panel.css';
 @runPipelineActions
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     panelKey: PropTypes.string,
     activeRuns: PropTypes.object,
     onInitialize: PropTypes.func,
     refresh: PropTypes.func
+  };
+
+  state = {
+    hovered: undefined
   };
 
   get usesActiveRuns () {
@@ -143,6 +147,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
         <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
           <CardsPanel
             key="runs"
+            hovered={this.state.hovered}
             panelKey={this.props.panelKey}
             onClick={this.navigateToRun}
             emptyMessage="There are no active runs"
@@ -166,7 +171,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                   window.open(url, '_blank').focus();
                 },
                 ssh: async run => {
-                  const runSSH = new PipelineRunSSH(run.id);
+                  const runSSH = pipelineRunSSHCache.getPipelineRunSSH(run.id);
                   await runSSH.fetchIfNeededOrWait();
 
                   if (runSSH.loaded) {
@@ -175,15 +180,17 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                   if (runSSH.error) {
                     message.error(runSSH.error);
                   }
+                },
+                vsActionsMenu: (run, visible) => {
+                  this.setState({
+                    hovered: visible ? run : undefined
+                  });
                 }
               })
             }
-            cardClassName={run => {
-              if (run.initialized && run.serviceUrl) {
-                return styles.runServiceCard;
-              }
-              return undefined;
-            }}
+            cardClassName={run => classNames({
+              [styles.runServiceCard]: run.initialized && run.serviceUrl
+            })}
             childRenderer={renderRunCard}>
             {this.getActiveRuns()}
           </CardsPanel>

@@ -1,0 +1,104 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.table-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.table-container div[class~="ant-table-small"] {
+  border-radius: 0 0 4px 4px !important;
+}
+
+.table-row {
+  cursor: pointer;
+  height: 35px;
+}
+
+.table-row:hover td:not(:last-child) {
+  text-decoration: underline;
+}
+
+.table-controls {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #e9e9e9;
+  border-radius: 4px 4px 0 0;
+  border-bottom: none;
+  padding-right: 22px;
+}
+
+.table-control:not(:last-child) {
+  margin-right: 10px;
+}
+
+.cell-content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.row-actions {
+  justify-content: flex-end;
+}
+
+.file-icon {
+  color: #1890ff;
+  font-size: larger;
+  margin-right: 8px;
+}
+
+.action {
+  color: #595959;
+  background-color: white;
+  font-size: 12px;
+  margin-right: 8px;
+  width: 28px;
+  height: 22px;
+  border: 1px solid #bfbfbf;
+  border-radius: 4px;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.action:hover:not(.action-delete){
+  border: 1px solid #1890ff;
+}
+
+.action.action-delete {
+  color: #ff4d4f;
+  background-color: #f7f7f7;
+}
+
+.action.action-delete:hover {
+  color: white;
+  background: #ff4d4f;
+}
+
+.text-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
