@@ -15,76 +15,19 @@
  */
 
 import RemotePost from '../../basic/RemotePost';
-import {computed, observable} from 'mobx';
-import pipelineRunFSBrowserCache from '../../pipelines/PipelineRunFSBrowserCache';
+import wrapStandardRequest from './vs-base-request-wrapper';
 
-class VSRemotePost extends RemotePost {
+class VSRemotePost extends wrapStandardRequest(RemotePost) {
   static fetchOptions = {
     mode: 'cors',
-    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=UTF-8;'
     }
   };
 
-  @observable _endpoint;
-  @observable initialized = false;
-  fetchEndpointPromise;
-  runId;
-
-  @computed
-  get endpoint () {
-    return this._endpoint;
-  }
-
-  set endpoint (value) {
-    if (value) {
-      this._endpoint = value.endsWith('/') ? value : value.concat('/');
-      this.constructor.prefix = this._endpoint;
-    } else {
-      this._endpoint = undefined;
-    }
-  }
-
-  constructor (runId) {
-    super();
-    this.runId = runId;
-  }
-
-  fetchEndpoint () {
-    if (this.endpoint) {
-      return Promise.resolve(this.endpoint);
-    }
-    if (this.fetchEndpointPromise) {
-      return this.fetchEndpointPromise;
-    }
-    const runId = this.runId;
-    this.fetchEndpointPromise = new Promise((resolve) => {
-      const fsBrowserRequest = pipelineRunFSBrowserCache.getPipelineRunFSBrowser(this.runId);
-      fsBrowserRequest
-        .fetchIfNeededOrWait()
-        .then(() => {
-          if (fsBrowserRequest.error || !fsBrowserRequest.value) {
-            // eslint-disable-next-line
-            console.warn(`Error fetching FS Browser endpoint for #${runId} run: ${fsBrowserRequest.error}`);
-          } else {
-            this.endpoint = fsBrowserRequest.value;
-          }
-          this.fetchEndpointPromise = undefined;
-          resolve(this.endpoint);
-        })
-        .catch(e => {
-          console.warn(`Error fetching FS Browser endpoint for #${runId} run: ${e.message}`);
-          this.fetchEndpointPromise = undefined;
-          resolve();
-        });
-    });
-    return this.fetchEndpointPromise;
-  }
-
   async send (body) {
-    return this.fetchEndpoint().then(() => super.send(body));
+    return this.fetchRequestOptions().then(() => super.send(body));
   }
 }
 
