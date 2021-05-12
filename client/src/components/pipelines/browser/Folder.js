@@ -911,37 +911,42 @@ export default class Folder extends localization.LocalizedReactComponent {
   createVSFolder = async (path, opts) => {
     if (path && opts.lastCommitId) {
       const request = new PipelineFolderUpdate(opts.id);
-      const hide = message.loading(`Creating folders '${path}'...`, 0);
       await request.send({
         lastCommitId: opts.lastCommitId,
         path,
         comment: `creating folders ${path}`
       });
-      hide();
       if (request.error) {
         message.error(request.error, 5);
       } else {
         return request.value;
       }
     }
+    return undefined;
   };
 
   bulkCreateVSFolders = async (foldersStructure, pipeline) => {
     if (!foldersStructure || !foldersStructure.length) {
       return;
     }
-    let nextlastCommitId = pipeline.currentVersion.commitId;
+    let lastCommitId = pipeline.currentVersion.commitId;
     const id = pipeline.id;
     const paths = splitFolderPaths(foldersStructure);
-    for (const path of paths) {
-      const vsFolderRequest = await this.createVSFolder(path, {
-        id,
-        lastCommitId: nextlastCommitId
-      });
-      if (vsFolderRequest && vsFolderRequest.id) {
-        nextlastCommitId = vsFolderRequest.id;
+    if (paths.length > 0) {
+      const hide = message.loading('Creating initial folders structure...', 0);
+      for (const path of paths) {
+        const vsFolderRequest = await this.createVSFolder(path, {
+          id,
+          lastCommitId
+        });
+        if (vsFolderRequest && vsFolderRequest.id) {
+          lastCommitId = vsFolderRequest.id;
+        } else {
+          break;
+        }
       }
-    };
+      hide();
+    }
   };
 
   createVersionedStorage = async (opts = {}) => {
@@ -967,9 +972,8 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (this.createPipelineRequest.error) {
       return message.error(this.createPipelineRequest.error, 5);
     }
-    console.log('foldersStructure', foldersStructure);
     if (foldersStructure && foldersStructure.length) {
-      const pipeline = await pipelines.getPipeline(this.createPipelineRequest.value.id);
+      const pipeline = pipelines.getPipeline(this.createPipelineRequest.value.id);
       await pipeline.fetchIfNeededOrWait();
       await this.bulkCreateVSFolders(foldersStructure, pipeline.value);
     }
