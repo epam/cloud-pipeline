@@ -52,6 +52,7 @@ if [ "$_STORAGE_STATUS" != "AVAILABLE" ]; then
   for i in $(seq 1 "$_NUM_REPS") ; do
     _STORAGE_STATUS_JSON=$(curl -k -s --fail -X GET --header "Authorization: Bearer $API_TOKEN" $API/lustre/$REQUEST_FOLDER_FOR_ID)
     _STORAGE_STATUS=$(echo "$_STORAGE_STATUS_JSON" | jq -r '.payload.status')
+    _STORAGE_PATH=$(echo "$_STORAGE_STATUS_JSON" | jq -r '.payload.mountPath')
     if [ "$_STORAGE_STATUS" == "AVAILABLE" ]; then
         pipe_log_info "Lustre $_STORAGE_PATH is ready for mount" "$FS_SETUP_TASK"
         break
