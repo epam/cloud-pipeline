@@ -15,21 +15,12 @@
  */
 
 import ConflictedFile from './conflicted-file';
-import LineStates from './conflicted-file/line-states';
 import {HeadBranch, RemoteBranch, Merged} from './conflicted-file/branches';
 import readBlobContents from './read-blob-contents';
 import extractRemoteSHA from './extract-remote-sha-from-conflict';
 import prepareChanges from './changes/prepare';
 import VSFileContent from '../../../../../../models/versioned-storage/file-content';
 import VSConflictDiff from '../../../../../../models/versioned-storage/conflict-diff';
-
-function tempLog (...o) {
-  // console.log(...o);
-}
-
-function tempWarn (...o) {
-  // console.warn(...o);
-}
 
 function fetchDiff (run, storage, file, revision, mergeInProgress) {
   return new Promise((resolve) => {
@@ -56,58 +47,65 @@ function fetchDiff (run, storage, file, revision, mergeInProgress) {
   });
 }
 
-function parse (contents) {
-  tempLog('CONTENTS:');
-  tempLog(contents.replace(/\n/g, '↵'));
+function parse (contents, mergeInProgress) {
   const linkedList = new ConflictedFile();
   const regExp = /^<<<<<<< [^\n]+\n(.*?)=======\n(.*?)>>>>>>> (.*?)$/gms;
   let result = regExp.exec(contents);
   let previousIndex = 0;
   let conflictId = 0;
+  const isEOF = index => contents.length - 1 <= index;
   while (result && result.length === 4) {
     const conflict = {id: conflictId};
-    linkedList.appendText(contents.slice(previousIndex, result.index), {});
+    linkedList.appendText(contents.slice(previousIndex, result.index), {}, isEOF(result.index));
+    const eof = isEOF(result.index + result[0].length + 1);
     linkedList.appendConflictStart({conflict});
-    linkedList.appendHeadText(result[1], {conflict});
-    linkedList.appendRemoteText(result[2], {conflict});
+    if (mergeInProgress) {
+      linkedList.appendHeadText(result[1], {conflict}, eof);
+      linkedList.appendRemoteText(result[2], {conflict}, eof);
+    } else {
+      linkedList.appendRemoteText(result[1], {conflict}, eof);
+      linkedList.appendHeadText(result[2], {conflict}, eof);
+    }
     linkedList.appendConflictEnd({conflict});
     previousIndex = result.index + result[0].length + 1;
     result = regExp.exec(contents);
     conflictId += 1;
   }
-  linkedList.appendText(contents.slice(previousIndex), {});
+  if (contents.length > previousIndex) {
+    linkedList.appendText(contents.slice(previousIndex), {}, true);
+  }
   return linkedList;
 }
 
 function prepareConflicts (list) {
   const conflicts = list.getConflicts();
   for (let conflict of conflicts) {
-    const original = ConflictedFile.processText(
+    const head = ConflictedFile.processText(
+      conflict[HeadBranch],
+      HeadBranch,
+      true
+    );
+    const remote = ConflictedFile.processText(
       conflict[RemoteBranch],
       RemoteBranch,
       true
     );
+    const original = head || remote;
     const subList = new ConflictedFile();
     subList.appendMergedText(original);
     const first = subList.getLineAtIndex(Merged, 1, new Set([]));
-    first.changeParent(conflict.start, Merged);
-    conflict.end.changeParent(subList.getLast(Merged), Merged);
-    tempLog(conflict);
+    const last = subList.getLast(Merged);
+    if (first && last) {
+      first.changeParent(conflict.start, Merged);
+      conflict.end.changeParent(subList.getLast(Merged), Merged);
+    }
   }
 }
 
-function processDiffs (contents, head, remote) {
-  const list = parse(contents);
-  tempLog(list);
-  tempLog(head, remote);
+function processDiffs (contents, head, remote, mergeInProgress) {
+  const list = parse(contents, mergeInProgress);
   const headRest = (head || []).slice();
   const remoteRest = (remote || []).slice();
-  const printLineNo = no => no > 0 ? no : '.';
-  const printModification = modification => [
-    `${printLineNo(modification.old_lineno)} -> ${printLineNo(modification.new_lineno)}`,
-    modification.origin === '+' ? 'INS' : 'DEL',
-    `"${modification.content.replace(/\n/g, '↵')}"`
-  ].join(' ');
   const modificationsAreTheSame = (a, b) => {
     return !!a && !!b && a.origin === b.origin && a.content === b.content;
   };
@@ -117,21 +115,13 @@ function processDiffs (contents, head, remote) {
   const performDeletion = (line, content, ...branches) => {
     const inserted = list.insertLineBefore(line, content, {}, ...branches);
     if (inserted) {
-      tempLog('INSERTED REMOVED LINE', branches, inserted);
       list.markLineAsRemoved(inserted, ...branches);
-    } else {
-      tempWarn('SKIPPED (possible conflict');
     }
   };
   const performModification = (line, modification, ...branches) => {
     if (modification.origin === '+') {
-      tempLog('PERFORMING INSERTION', printModification(modification));
-      if (modification.content !== line.line) {
-        tempWarn('SOMETHING WENT WRONG: not equal lines');
-      }
       performInsertion(line, ...branches);
     } else {
-      tempLog('PERFORMING DELETION', printModification(modification));
       performDeletion(line, modification.content, ...branches);
     }
   };
@@ -140,10 +130,6 @@ function processDiffs (contents, head, remote) {
     const remoteModification = remoteRest[0];
     let headLine, remoteLine;
     if (headModification) {
-      tempLog(
-        'HEAD:  ',
-        printModification(headModification)
-      );
       if (headModification.origin === '+') {
         headLine = list.getLineAtIndex(HeadBranch, headModification.new_lineno);
       } else if (headModification.origin === '-') {
@@ -152,14 +138,8 @@ function processDiffs (contents, head, remote) {
           headModification.old_lineno
         );
       }
-    } else {
-      tempLog('HEAD:   missing');
     }
     if (remoteModification) {
-      tempLog(
-        'REMOTE:',
-        printModification(remoteModification)
-      );
       if (remoteModification.origin === '+') {
         remoteLine = list.getLineAtIndex(RemoteBranch, remoteModification.new_lineno);
       } else if (remoteModification.origin === '-') {
@@ -168,11 +148,7 @@ function processDiffs (contents, head, remote) {
           remoteModification.old_lineno
         );
       }
-    } else {
-      tempLog('REMOTE: missing');
     }
-    tempLog('HEAD LINE:', headLine);
-    tempLog('REMOTE LINE:', remoteLine);
     let sameModifications = false;
     let performHead = false;
     let performRemote = false;
@@ -195,7 +171,6 @@ function processDiffs (contents, head, remote) {
       performRemote = !!remoteLine;
     }
     if (sameModifications) {
-      tempLog('BOTH will be performed (the same)');
       performModification(
         remoteLine,
         remoteModification,
@@ -206,7 +181,6 @@ function processDiffs (contents, head, remote) {
       remoteRest.splice(0, 1);
     } else {
       if (performHead) {
-        tempLog('HEAD will be performed');
         performModification(
           headLine,
           headModification,
@@ -215,87 +189,20 @@ function processDiffs (contents, head, remote) {
         headRest.splice(0, 1);
       }
       if (performRemote) {
-        tempLog('REMOTE will be performed');
         performModification(remoteLine, remoteModification, RemoteBranch);
         remoteRest.splice(0, 1);
       }
       if (!performHead && !performRemote) {
-        tempWarn('NOTHING will be performed. Something wrong');
         headRest.splice(0, 1);
         remoteRest.splice(0, 1);
       }
     }
-    tempLog('RESULT:');
-    tempLog('HEAD:');
-    tempLog(list.getHeadText());
-    tempLog('REMOTE:');
-    tempLog(list.getRemoteText());
-    const skip = new Set([LineStates.omit]);
-    const str = (o, length) => (new Array(Math.max(length, o.length)))
-      .fill(' ')
-      .join('')
-      .slice(0, Math.max(length, o.length) - o.length)
-      .concat(o);
-    tempLog('HEAD:');
-    const headFinal = list
-      .getLines(HeadBranch, skip)
-      .slice(1)
-      .map(line =>
-        `${str(line.state[HeadBranch], 10)} ${line.text[HeadBranch].replace(/\n/g, '↵')}`
-      )
-      .join('\n');
-    tempLog(headFinal);
-    tempLog('REMOTE:');
-    const remoteFinal = list
-      .getLines(RemoteBranch, skip)
-      .slice(1)
-      .map(line =>
-        `${str(line.state[RemoteBranch], 10)} ${line.text[RemoteBranch].replace(/\n/g, '↵')}`
-      )
-      .join('\n');
-    tempLog(remoteFinal);
-    tempLog('=================================');
-    tempLog('');
   }
   prepareConflicts(list);
-  list.buildLineNumbers(HeadBranch);
-  list.buildLineNumbers(RemoteBranch);
-  list.buildLineNumbers(Merged);
+  list.preProcessLines(HeadBranch);
+  list.preProcessLines(RemoteBranch);
+  list.preProcessLines(Merged);
   prepareChanges(list);
-  console.log('FINAL:');
-  const skip = new Set([LineStates.omit]);
-  const str = (o, length) => (new Array(Math.max(length, o.toString().length)))
-    .fill(' ')
-    .join('')
-    .slice(0, Math.max(length, o.toString().length) - o.toString().length)
-    .concat(o.toString());
-  console.log('HEAD:');
-  const headFinal = list
-    .getLines(HeadBranch, skip)
-    .slice(1)
-    .map(line =>
-      `${str(line.key, 4)} ${str(line.lineNumber[HeadBranch], 4)} ${str(line.state[HeadBranch], 10)} ${line.text[HeadBranch].replace(/\n/g, '↵')}`
-    )
-    .join('\n');
-  console.log(headFinal);
-  console.log('REMOTE:');
-  const remoteFinal = list
-    .getLines(RemoteBranch, skip)
-    .slice(1)
-    .map(line =>
-      `${str(line.key, 4)} ${str(line.lineNumber[RemoteBranch], 4)} ${str(line.state[RemoteBranch], 10)} ${line.text[RemoteBranch].replace(/\n/g, '↵')}`
-    )
-    .join('\n');
-  console.log(remoteFinal);
-  console.log('RESULTED:');
-  const resultFinal = list
-    .getLines(Merged, skip)
-    .slice(1)
-    .map(line =>
-      `${str(line.key, 4)} ${str(line.lineNumber[Merged], 4)} ${str(line.state[Merged], 10)} ${line.text[Merged].replace(/\n/g, '↵')}`
-    )
-    .join('\n');
-  console.log(resultFinal);
   return list;
 }
 
@@ -304,7 +211,6 @@ export default function analyzeConflicts (run, storage, mergeInProgress, file) {
     return Promise.resolve({});
   }
   return new Promise((resolve, reject) => {
-    tempLog('analyze conflicts', run, storage, file);
     const request = new VSFileContent(run, storage.id, file);
     request
       .fetch()
@@ -348,7 +254,7 @@ export default function analyzeConflicts (run, storage, mergeInProgress, file) {
                   if (remote) {
                     remote.key = remoteSHA;
                   }
-                  resolve(processDiffs(contents, head, remote));
+                  resolve(processDiffs(contents, head, remote, mergeInProgress));
                 });
             });
         }

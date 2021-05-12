@@ -227,6 +227,40 @@ class Conflict extends React.PureComponent {
     }
   };
 
+  attachScrollArea = (node, branch) => {
+    this.scrolls[branch] = node;
+    if (this.verticalScrollBars[branch]) {
+      this.verticalScrollBars[branch].attach(this.scrolls[branch]);
+    }
+  };
+
+  attachCodeArea = (node, branch) => {
+    this.codeAreas[branch] = node;
+    if (this.horizontalScrollBars[branch]) {
+      this.horizontalScrollBars[branch].attach(this.codeAreas[branch]);
+    }
+  };
+
+  attachVerticalScrollBar = (node, branch) => {
+    if (this.verticalScrollBars[branch]) {
+      this.verticalScrollBars[branch].detach();
+    }
+    this.verticalScrollBars[branch] = node;
+    if (this.verticalScrollBars[branch]) {
+      this.verticalScrollBars[branch].attach(this.scrolls[branch]);
+    }
+  };
+
+  attachHorizontalScrollBar = (node, branch) => {
+    if (this.horizontalScrollBars[branch]) {
+      this.horizontalScrollBars[branch].detach();
+    }
+    this.horizontalScrollBars[branch] = node;
+    if (this.horizontalScrollBars[branch]) {
+      this.horizontalScrollBars[branch].attach(this.codeAreas[branch]);
+    }
+  };
+
   renderIDE = () => {
     const {
       conflictedFile,
@@ -241,41 +275,6 @@ class Conflict extends React.PureComponent {
         [HeadBranch]: conflictedFile.getLines(HeadBranch),
         [Merged]: conflictedFile.getLines(Merged),
         [RemoteBranch]: conflictedFile.getLines(RemoteBranch)
-      };
-      const rawBranches = {
-        [HeadBranch]: conflictedFile.getLines(HeadBranch, new Set([])),
-        [Merged]: conflictedFile.getLines(Merged, new Set([])),
-        [RemoteBranch]: conflictedFile.getLines(RemoteBranch, new Set([]))
-      };
-      const attachScrollArea = (node, branch) => {
-        this.scrolls[branch] = node;
-        if (this.verticalScrollBars[branch]) {
-          this.verticalScrollBars[branch].attach(this.scrolls[branch]);
-        }
-      };
-      const attachCodeArea = (node, branch) => {
-        this.codeAreas[branch] = node;
-        if (this.horizontalScrollBars[branch]) {
-          this.horizontalScrollBars[branch].attach(this.codeAreas[branch]);
-        }
-      };
-      const attachVerticalScrollBar = (node, branch) => {
-        if (this.verticalScrollBars[branch]) {
-          this.verticalScrollBars[branch].detach();
-        }
-        this.verticalScrollBars[branch] = node;
-        if (this.verticalScrollBars[branch]) {
-          this.verticalScrollBars[branch].attach(this.scrolls[branch]);
-        }
-      };
-      const attachHorizontalScrollBar = (node, branch) => {
-        if (this.horizontalScrollBars[branch]) {
-          this.horizontalScrollBars[branch].detach();
-        }
-        this.horizontalScrollBars[branch] = node;
-        if (this.horizontalScrollBars[branch]) {
-          this.horizontalScrollBars[branch].attach(this.codeAreas[branch]);
-        }
       };
       const correctBranchItemIndex = (index, branch) => {
         if (branch && Array.isArray(branches[branch])) {
@@ -427,8 +426,8 @@ class Conflict extends React.PureComponent {
           disabled={disabled}
           key={`${branch}-code-line-numbers`}
           branch={branch}
+          file={conflictedFile}
           hideModificationActions={branch === Merged}
-          lines={rawBranches[branch]}
           modificationsBranch={modificationsBranch || branch}
           lineHeight={LINE_HEIGHT}
           onRefresh={this.refresh}
@@ -440,6 +439,11 @@ class Conflict extends React.PureComponent {
           onMouseDown={this.onStartResizing(modificationsBranch || branch)}
         />
       );
+      const rawBranches = {
+        [HeadBranch]: conflictedFile.getLines(HeadBranch, new Set([])),
+        [Merged]: conflictedFile.getLines(Merged, new Set([])),
+        [RemoteBranch]: conflictedFile.getLines(RemoteBranch, new Set([]))
+      };
       const getNumbersContainerWidthCss = (branch) => {
         const numbersLength = Math.floor(Math.log10(rawBranches[branch].length)) + 1;
         return {
@@ -557,7 +561,7 @@ class Conflict extends React.PureComponent {
           <div
             className={styles.panel}
             key={branch}
-            ref={node => attachScrollArea(node, branch)}
+            ref={node => this.attachScrollArea(node, branch)}
             onScroll={e => onVerticalScroll(e, branch)}
             style={{
               gridColumn: branch,
@@ -568,10 +572,10 @@ class Conflict extends React.PureComponent {
             <BranchCode
               className={styles.code}
               editable={branch === Merged}
-              onInitialized={node => attachCodeArea(node, branch)}
+              file={conflictedFile}
+              onInitialized={node => this.attachCodeArea(node, branch)}
               onScroll={e => onHorizontalScroll(e, branch)}
               branch={branch}
-              lines={rawBranches[branch]}
               lineHeight={LINE_HEIGHT}
               style={{gridColumn: 'CODE'}}
               lineStyle={{
@@ -579,6 +583,7 @@ class Conflict extends React.PureComponent {
                 paddingRight: Scrollbar.size
               }}
               onCursorPositionChange={options => onCursorPositionChanged(branch, options)}
+              verticalScroll={() => this.scrolls[branch]}
             />
             {right}
           </div>
@@ -618,7 +623,7 @@ class Conflict extends React.PureComponent {
             style={{gridColumn: `SCROLL-${branch}`}}
           >
             <Scrollbar
-              onInitialized={node => attachVerticalScrollBar(node, branch)}
+              onInitialized={node => this.attachVerticalScrollBar(node, branch)}
               className={styles.scrollbar}
               direction="vertical"
               width={Scrollbar.size}
@@ -651,7 +656,7 @@ class Conflict extends React.PureComponent {
             style={{gridColumn: branch}}
           >
             <Scrollbar
-              onInitialized={node => attachHorizontalScrollBar(node, branch)}
+              onInitialized={node => this.attachHorizontalScrollBar(node, branch)}
               className={styles.scrollbar}
               direction="horizontal"
               height={Scrollbar.size}

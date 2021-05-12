@@ -176,60 +176,26 @@ export default class ConflictedFile {
     return undefined;
   }
 
-  insertLineAfter (after, line, meta, ...conflictedBranchDirections) {
+  insertLine (after, text, ...branches) {
     if (after) {
-      const item = new ConflictedFileLine(line, meta);
-      item.file = this;
-      let inserted = false;
-      Branches.forEach(branch => {
-        let child = after[branch];
-        let parent = after;
-        if (
-          child &&
-          child[branch] === LineStates.conflictStart
-        ) {
-          if (conflictedBranchDirections.indexOf(branch) >= 0) {
-            parent = child;
-            child = child[branch];
-          } else {
-            return;
-          }
-        }
-        inserted = true;
-        if (child) {
-          child.previous[branch] = item;
-          item[branch] = child;
-        }
-        parent[branch] = item;
-        item.previous[branch] = parent;
-      });
-      if (inserted) {
-        this.items.push(item);
-        return item;
-      }
-    }
-    return undefined;
-  }
-
-  insertLine (before, text, ...branches) {
-    if (before) {
-      const newLine = new ConflictedFileLine(text, {});
+      const newLine = after.copy();
       this.items.push(newLine);
       newLine.file = this;
-      [HeadBranch, Merged, RemoteBranch].forEach(branch => {
+      Branches.forEach(branch => {
+        newLine.text[branch] = text;
         if (branches.indexOf(branch) === -1) {
           newLine.state[branch] = LineStates.omit;
         }
       });
-      [HeadBranch, Merged, RemoteBranch].forEach(branch => {
-        const prev = before.previous[branch];
-        if (prev) {
-          prev[branch] = newLine;
-          newLine.previous[branch] = prev;
+      Branches.forEach(branch => {
+        const next = after[branch];
+        if (next) {
+          next.previous[branch] = newLine;
+          newLine[branch] = next;
         }
-        newLine[branch] = before;
-        before.previous[branch] = before;
-        this.buildLineNumbers(branch);
+        newLine.previous[branch] = after;
+        after[branch] = newLine;
+        this.preProcessLines(branch);
       });
       return newLine;
     }
@@ -260,7 +226,7 @@ export default class ConflictedFile {
     }
   }
 
-  static splitText (text) {
+  static splitText (text, eof) {
     const parts = (text || '')
       .split('\n')
       .map((line, idx, arr) =>
@@ -268,26 +234,26 @@ export default class ConflictedFile {
           ? line
           : line.concat('\n')
       );
-    if (parts[parts.length - 1] === '') {
+    if (parts[parts.length - 1] === '' && !eof) {
       parts.pop();
     }
     return parts;
   }
 
-  appendText (text, meta) {
-    this.appendLines(ConflictedFile.splitText(text), meta);
+  appendText (text, meta, eof = false) {
+    this.appendLines(ConflictedFile.splitText(text, eof), meta);
   }
 
-  appendHeadText (text, meta) {
-    this.appendHeadLines(ConflictedFile.splitText(text), meta);
+  appendHeadText (text, meta, eof = false) {
+    this.appendHeadLines(ConflictedFile.splitText(text, eof), meta);
   }
 
-  appendRemoteText (text, meta) {
-    this.appendRemoteLines(ConflictedFile.splitText(text), meta);
+  appendRemoteText (text, meta, eof = false) {
+    this.appendRemoteLines(ConflictedFile.splitText(text, eof), meta);
   }
 
-  appendMergedText (text, meta) {
-    this.appendMergedLines(ConflictedFile.splitText(text), meta);
+  appendMergedText (text, meta, eof = false) {
+    this.appendMergedLines(ConflictedFile.splitText(text, eof), meta);
   }
 
   static getLineAtIndexIgnoreStates = new Set([
@@ -369,7 +335,8 @@ export default class ConflictedFile {
   getLines (
     branch,
     ignoreStates = ConflictedFile.defaultIgnoreStates,
-    from = undefined
+    from = undefined,
+    to = undefined
   ) {
     if (!from) {
       return this.getLines(branch, ignoreStates, this.start);
@@ -378,21 +345,24 @@ export default class ConflictedFile {
     if (!ignoreStates.has(from.state[branch])) {
       current.push(from);
     }
-    if (!from[branch]) {
+    if (!from[branch] || from === to) {
       return current;
     }
-    return [...current, ...this.getLines(branch, ignoreStates, from[branch])];
+    return [...current, ...this.getLines(branch, ignoreStates, from[branch], to)];
   }
 
   getHeadLines () {
+    this.correctLineBreaks(HeadBranch);
     return this.getLines(HeadBranch).slice(1);
   }
 
   getRemoteLines () {
+    this.correctLineBreaks(RemoteBranch);
     return this.getLines(RemoteBranch).slice(1);
   }
 
   getMergedLines () {
+    this.correctLineBreaks(Merged);
     return this.getLines(Merged).slice(1);
   }
 
@@ -464,6 +434,25 @@ export default class ConflictedFile {
       return [conflict, ...this.getConflicts(end)];
     }
     return [];
+  }
+
+  preProcessLines (branch) {
+    this.buildLineNumbers(branch);
+    this.correctLineBreaks(branch);
+  }
+
+  correctLineBreaks (branch) {
+    const lines = this.getLines(branch);
+    for (let i = 0; i < lines.length - 1; i++) {
+      const line = lines[i];
+      if (
+        !line.text[branch] ||
+        !line.text[branch].endsWith('\n')
+      ) {
+        // we need to insert a line break
+        line.text[branch] = `${line.text[branch] || ''}\n`;
+      }
+    }
   }
 
   buildLineNumbers (branch, from = undefined, last = 0) {

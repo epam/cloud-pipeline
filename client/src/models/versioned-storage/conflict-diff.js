@@ -26,7 +26,6 @@ export default class VSConflictDiff extends VSRemote {
     } = options;
     this.runId = runId;
     this.storageId = storageId;
-    console.log('vs-conflict-diff', file, mergeInProgress);
     let query = [
       `path=${encodeURIComponent(file)}`,
       revision && `revision=${revision}`,

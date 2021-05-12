@@ -549,7 +549,7 @@ class VSActions extends React.Component {
     } else if (this.vsList.error) {
       menuItems.push((
         <Menu.Item disabled key="error">
-          <i>{this.vsList.error}</i>
+          <i>VCS not configured</i>
         </Menu.Item>
       ));
     } else if (!this.vsList.loaded) {

@@ -14,15 +14,14 @@
  *  limitations under the License.
  */
 
-function getAllTextNodes (node) {
+function getAllNodes (node) {
   const result = [];
   if (node && node.hasChildNodes()) {
     for (let c = 0; c < node.childNodes.length; c++) {
       const child = node.childNodes[c];
-      if (child.nodeType === Node.TEXT_NODE) {
-        result.push(child);
-      } else if (child.nodeType === Node.ELEMENT_NODE) {
-        result.push(...getAllTextNodes(child));
+      result.push(child);
+      if (child.hasChildNodes()) {
+        result.push(...getAllNodes(child));
       }
     }
   }
@@ -47,7 +46,7 @@ function isLastSelectionLine (vsLineNode, range) {
     endContainer
   } = range;
   return vsLineNode === endContainer ||
-    getAllTextNodes(vsLineNode).indexOf(endContainer) >= 0;
+    getAllNodes(vsLineNode).indexOf(endContainer) >= 0;
 }
 
 function getVSLineSelectionText (vsLineNode, range) {
@@ -58,32 +57,127 @@ function getVSLineSelectionText (vsLineNode, range) {
     endContainer
   } = range;
   const result = [];
-  const children = getAllTextNodes(vsLineNode);
-  let include = vsLineNode !== startContainer && children.indexOf(startContainer) === -1;
-  for (let c = 0; c < children.length; c++) {
-    const child = children[c];
-    let from = 0;
-    let to = Infinity;
-    if (child === startContainer || vsLineNode === startContainer) {
-      include = true;
-      from = startOffset;
+  const allChildren = [vsLineNode, ...getAllNodes(vsLineNode)];
+  let include = allChildren.indexOf(startContainer) === -1;
+  let parentContainer;
+  let from = 0;
+  let to = Infinity;
+  const isChild = (child, parent) => {
+    if (child && parent) {
+      if (child === parent || child.parentNode === parent) {
+        return true;
+      }
+      return isChild(child.parentNode, parent);
     }
-    if (child === endContainer || vsLineNode === endContainer) {
+    return false;
+  };
+  for (let c = 0; c < allChildren.length; c++) {
+    const child = allChildren[c];
+    if (child === startContainer) {
+      include = true;
+      from = child.nodeType === Node.TEXT_NODE ? startOffset : 0;
+      parentContainer = child;
+    }
+    if (child === endContainer) {
       to = endOffset;
     }
-    if (include) {
+    if (include && child.nodeType === Node.TEXT_NODE) {
       result.push((child.textContent || '').slice(from, to));
+      from = 0;
+      to = Infinity;
+    } else if (include && !isChild(child, parentContainer)) {
+      from = 0;
+      to = Infinity;
+      parentContainer = undefined;
     }
-    if (child === endContainer || vsLineNode === endContainer) {
+    if (child === endContainer) {
       break;
     }
   }
   return result.join(' ');
 }
 
-export default function getBranchCodeFromSelection (selection) {
+function getVSLineSelectionRangeInfo (vsLineNode, range) {
+  const {
+    startOffset = 0,
+    startContainer,
+    endOffset = 0,
+    endContainer
+  } = range;
+  const result = {};
+  const children = [vsLineNode, ...getAllNodes(vsLineNode)];
+  for (let c = 0; c < children.length; c++) {
+    const child = children[c];
+    if (child === startContainer) {
+      result.start = {
+        lineKey: +(vsLineNode.dataset.vsLine),
+        offset: startOffset
+      };
+    }
+    if (child === endContainer) {
+      result.end = {
+        lineKey: +(vsLineNode.dataset.vsLine),
+        offset: endOffset
+      };
+    }
+  }
+  return result;
+}
+
+export function getBranchCodeRangeFromSelection (selection) {
+  if (!selection || selection.rangeCount === 0) {
+    return undefined;
+  }
+  const range = selection.getRangeAt(0);
+  const {
+    startContainer,
+    startOffset,
+    endContainer,
+    endOffset,
+    commonAncestorContainer
+  } = range;
+  const vsBranch = commonAncestorContainer && commonAncestorContainer.dataset
+    ? commonAncestorContainer.dataset.vsBranch
+    : undefined;
+  if (!vsBranch || selection.isCollapsed || startContainer === endContainer) {
+    const lineContainer = findVSLine(startContainer);
+    if (lineContainer) {
+      return {
+        start: {
+          lineKey: +(lineContainer.dataset.vsLine),
+          offset: startOffset
+        },
+        end: {
+          lineKey: +(lineContainer.dataset.vsLine),
+          offset: endOffset
+        }
+      };
+    }
+    return undefined;
+  }
+  let lineContainer = findVSLine(startContainer);
+  if (lineContainer) {
+    let result = {};
+    while (lineContainer) {
+      if (
+        lineContainer.dataset &&
+        lineContainer.dataset.hasOwnProperty('vsLine')
+      ) {
+        result = Object.assign({}, result, getVSLineSelectionRangeInfo(lineContainer, range));
+      }
+      if (isLastSelectionLine(lineContainer, range)) {
+        break;
+      }
+      lineContainer = lineContainer.nextSibling;
+    }
+    return result;
+  }
+  return undefined;
+}
+
+export function getBranchCodeFromSelection (selection) {
   if (!selection) {
-    return [];
+    return '';
   }
   const range = selection.getRangeAt(0);
   const {
@@ -119,4 +213,33 @@ export default function getBranchCodeFromSelection (selection) {
     return result.join('\n');
   }
   return selection.toString();
+}
+
+function compareSelectionsInfoPart (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  const {
+    lineKey: aLineKey,
+    offset: aOffset
+  } = a;
+  const {
+    lineKey: bLineKey,
+    offset: bOffset
+  } = b;
+  return aLineKey !== bLineKey && aOffset !== bOffset;
+}
+
+export function compareSelectionsInfo (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return compareSelectionsInfoPart(a.start, b.start) &&
+    compareSelectionsInfoPart(a.end, b.end);
 }

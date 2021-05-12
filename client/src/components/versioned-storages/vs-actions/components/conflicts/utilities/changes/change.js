@@ -45,10 +45,15 @@ export default class Change {
    */
   conflictedFile;
   /**
-   * Affected lines
-   * @type {ConflictedFileLine[]}
+   * Change start line
+   * @type {ConflictedFileLine}
    */
-  items = [];
+  start;
+  /**
+   * Change end line
+   * @type {ConflictedFileLine}
+   */
+  end;
   /**
    * Branch identifier
    * @type {string}
@@ -106,6 +111,22 @@ export default class Change {
     }
   }
 
+  /**
+   * Affected lines
+   * @type {ConflictedFileLine[]}
+   */
+  get items () {
+    if (!this.conflictedFile || !this.start || !this.end) {
+      return [];
+    }
+    return this.conflictedFile.getLines(
+      this.branch,
+      new Set([LineStates.omit]),
+      this.start,
+      this.end
+    );
+  }
+
   @computed
   get resolved () {
     return this.status === ChangeStatuses.applied || this.status === ChangeStatuses.discarded;
@@ -113,7 +134,8 @@ export default class Change {
 
   constructor (conflictedFile, line, branch) {
     this.conflictedFile = conflictedFile;
-    this.items = [line];
+    this.start = line;
+    this.end = line;
     this.branch = branch;
     this.state = line.state[branch];
     this.conflict = this.state === LineStates.conflictStart;
@@ -149,7 +171,7 @@ export default class Change {
             i.state[branch] !== LineStates.conflictStart
           );
       default:
-        return this.items[0];
+        return this.start;
     }
   }
 
@@ -159,7 +181,7 @@ export default class Change {
    * @returns {number}
    */
   lineIndex (branch) {
-    const lineIndex = this.items[0].lineNumber[branch];
+    const lineIndex = this.start.lineNumber[branch];
     const lastLineIndex = this.conflictedFile.getLast(branch).lineNumber[branch];
     switch (this.type) {
       case ModificationType.edition:
@@ -173,13 +195,10 @@ export default class Change {
 
   /**
    * Returns unique identifier
-   * @returns {string|undefined}
+   * @returns {string}
    */
   key () {
-    if (!this.items.length) {
-      return undefined;
-    }
-    return `${this.items[0].key}-${this.items[this.items.length - 1].key}`;
+    return `${this.start.key}-${this.end.key}`;
   }
 
   /**
@@ -189,23 +208,21 @@ export default class Change {
    */
   appendLine (line) {
     const state = line.state[this.branch];
-    const currentState = this.items.length > 0
-      ? this.items[this.items.length - 1].state[this.branch]
-      : undefined;
+    const currentState = this.end.state[this.branch];
     if (this.conflict && state === LineStates.conflictEnd) {
       // current change is CONFLICT and appending line indicates
       // CONFLICT END, so we're appending a line and marking change as "prepared"
       // (i.e. end of change/conflict)
-      this.items.push(line);
+      this.end = line;
       this.status = ChangeStatuses.prepared;
     } else if (this.conflict) {
       // current change is CONFLICT and appending line doesn't indicate
       // CONFLICT END, so we're appending a line
-      this.items.push(line);
+      this.end = line;
     } else if (currentState === state) {
       // current change is NOT the conflict and appending line is of the
       // same state as already appended are, so we're appending this line
-      this.items.push(line);
+      this.end = line;
     } else if (
       currentState === LineStates.removed &&
       state === LineStates.inserted
@@ -221,7 +238,7 @@ export default class Change {
       // such changes we're treating as "EDITION", so we're appending such line.
       // If the following line will also have "INSERTED" state, then it will be appended
       // on the previous <if> clause (because now we have `currentState` == "INSERTED")
-      this.items.push(line);
+      this.end = line;
       this.type = ModificationType.edition;
     } else {
       // current change is NOT the conflict and appending line has different state
@@ -237,6 +254,7 @@ export default class Change {
    * @return {function(): void} function that reverts changes
    */
   apply (callback) {
+    const rollbackActions = [];
     // we're checking:
     // if (this.conflict) - we need to prepare conflict for resolving;
     // if (this.branch !== Merged) - to be sure we're not applying fake "MERGED" conflict;
@@ -246,11 +264,12 @@ export default class Change {
     // end marker;
     // if (this.status === ChangeStatuses.prepared) - safe check that current change
     // wasn't applied or discarded
+    const items = this.items;
     if (
       this.conflict &&
       this.branch !== Merged &&
       this._childChange &&
-      this.items.length > 1 &&
+      items.length > 1 &&
       this.status === ChangeStatuses.prepared
     ) {
       // We need to determine, it it is the first procession (applying, not discarding)
@@ -260,97 +279,57 @@ export default class Change {
           .find(c => c.status === ChangeStatuses.applied)
       );
       // If it is so (other branch is discarded or not applied yet),
-      // we need to "copy" current branch to "merged"
-      if (firstProcessionOfConflict) {
-        // we must remove fake "MERGED" part
-        for (let i = 1; i < this.items.length; i++) {
-          const prev = this.items[i - 1];
-          const curr = this.items[i];
-          prev[Merged] = curr;
-          curr.previous[Merged] = prev;
+      // we need to "copy" current branch to "merged";
+      // Otherwise, fake "MERGED" part was replaced by the first parent
+      // change (HEAD or REMOTE). So, we need to add current
+      // branch's code to the resulted branch (MERGED)
+      const newMergedBranchStart = firstProcessionOfConflict
+        ? this.start
+        : this.end.previous[Merged];
+      const newMergedBranchEnd = this.end;
+      const mergedAfterStart = newMergedBranchStart[Merged];
+      const mergedBeforeEnd = newMergedBranchEnd.previous[Merged];
+      rollbackActions.push(() => {
+        newMergedBranchStart[Merged] = mergedAfterStart;
+        mergedAfterStart.previous[Merged] = newMergedBranchStart;
+        mergedBeforeEnd[Merged] = newMergedBranchEnd;
+        newMergedBranchEnd.previous[Merged] = mergedBeforeEnd;
+        for (let i = 1; i < items.length - 1; i++) {
+          items[i].previous[Merged] = undefined;
+          items[i][Merged] = undefined;
         }
-      } else {
-        // Otherwise, fake "MERGED" part was replaced by the first parent
-        // change (HEAD or REMOTE). So, we need to add current
-        // branch's code to the resulted branch (MERGED)
-        const conflictEnd = this.items[this.items.length - 1];
-        const mergedEnd = conflictEnd.previous[Merged];
-        if (!mergedEnd) {
-          // Something wrong! That shouldn't happen
-          return () => {};
-        }
-        const secondLine = this.items[1];
-        mergedEnd[Merged] = secondLine;
-        secondLine.previous[Merged] = mergedEnd;
-
-        for (let i = 2; i < this.items.length; i++) {
-          const prev = this.items[i - 1];
-          const next = this.items[i];
-          prev[Merged] = next;
-          next.previous[Merged] = prev;
-        }
+      });
+      const secondLine = items[1];
+      newMergedBranchStart[Merged] = secondLine;
+      secondLine.previous[Merged] = newMergedBranchStart;
+      // we must take current branch as a new "MERGED" part
+      for (let i = 2; i < items.length; i++) {
+        const prev = items[i - 1];
+        const curr = items[i];
+        prev[Merged] = curr;
+        curr.previous[Merged] = prev;
       }
     }
-    const revertInfo = {};
-    this.items.forEach(item => {
-      revertInfo[item.key] = item.state[Merged];
+    items.forEach(item => {
+      const previousState = item.state[Merged];
+      const previousText = item.text[Merged];
       item.state[Merged] = item.state[this.branch];
+      rollbackActions.push(() => {
+        item.state[Merged] = previousState;
+        item.text[Merged] = previousText;
+      });
     });
-    this.conflictedFile.buildLineNumbers(Merged);
+    this.conflictedFile.preProcessLines(Merged);
     this.status = ChangeStatuses.applied;
+    rollbackActions.push(() => {
+      this.status = ChangeStatuses.prepared;
+      this.conflictedFile.preProcessLines(Merged);
+      this.conflictedFile.notify();
+    });
     callback && callback();
     // Returning function that reverts changes
     return () => {
-      const status = this.status;
-      this.status = ChangeStatuses.prepared;
-      // Again, we check if that is conflict and it was applied, at first:
-      if (
-        this.conflict &&
-        this.branch !== Merged &&
-        this._childChange &&
-        this.items.length > 1 &&
-        status === ChangeStatuses.applied
-      ) {
-        // We need to determine, it it is the last not-reverted change
-        // of the conflict.
-        const lastNotRevertedChange = !(
-          this._childChange._parentChanges
-            .find(c => c.status === ChangeStatuses.applied)
-        );
-        if (lastNotRevertedChange) {
-          // if so, we need to re-build fake "MERGED" branch
-          const fake = this._childChange;
-          for (let i = 1; i < (fake.items || []).length; i++) {
-            const prev = fake.items[i - 1]; // for i = 1 (i.e. items[0]) - this is start marker
-            const curr = fake.items[i]; // for i = fake.items.length - 1 - this is end marker
-            prev[Merged] = curr;
-            curr.previous[Merged] = prev;
-          }
-        } else {
-          // other branch is still applied - so we need to detach
-          // current branch's items from "MERGED" branch.
-          // Some points here:
-          // - though current branch lines are in "MERGED" branch, they are all still
-          // in the `this.items` array;
-          // - this.items[0] is still points to the conflict start marker;
-          // - this.items[last] is still points to the conflict end marker;
-          // - this.items[1] is attached to the end of the "other" branch.
-          //
-          // So, we need to re-attach start marker with second line (items[1]) and
-          // rebuild the rest lines structure
-          const conflictEnd = this.items[this.items.length - 1];
-          const secondLine = this.items[1];
-          const lastOtherBranchLine = secondLine.previous[Merged];
-
-          lastOtherBranchLine[Merged] = conflictEnd;
-          conflictEnd.previous[Merged] = lastOtherBranchLine;
-        }
-      }
-      this.items.forEach(item => {
-        item.state[Merged] = revertInfo[item.key];
-        item.text[Merged] = item.text[this.branch];
-      });
-      this.conflictedFile.buildLineNumbers(Merged);
+      rollbackActions.forEach(action => action());
     };
   }
 

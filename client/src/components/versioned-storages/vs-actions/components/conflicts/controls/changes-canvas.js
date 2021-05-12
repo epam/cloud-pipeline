@@ -83,12 +83,12 @@ function drawCurve (context, start, end, options = {}) {
 }
 
 function getModificationIndexRanges (modification, branch) {
-  const start = modification.items[0];
+  const start = modification.start;
   const previous = start.previous[branch] || start;
-  const end = modification.items[modification.items.length - 1];
+  const end = modification.end;
   return {
-    start: previous.lineNumber[branch],
-    end: end.lineNumber[branch]
+    start: previous ? previous.lineNumber[branch] : 0,
+    end: end ? end.lineNumber[branch] : 0
   };
 }
 
@@ -113,58 +113,56 @@ export default function renderChanges (canvas, conflictedFile, branch, options =
         .filter(m => m.branch === branch);
       for (let i = 0; i < currentModifications.length; i++) {
         const modification = currentModifications[i];
-        if (modification.items.length > 0) {
-          const current = getModificationIndexRanges(modification, branch);
-          const merged = getModificationIndexRanges(modification, Merged);
-          const currentModificationsBefore = modification.changesBefore[branch] || 0;
-          const mergedModificationsBefore = modification.changesBefore[Merged] || 0;
-          const currentY1 = current.start * lineHeight +
-            currentModificationsBefore * 2.0 + 0.5 - top;
-          const currentY2 = current.end * lineHeight +
-            (currentModificationsBefore + 1) * 2.0 - 0.5 - top;
-          const mergedY1 = merged.start * lineHeight +
-            mergedModificationsBefore * 2.0 + 0.5 - mergedTop;
-          const mergedY2 = merged.end * lineHeight +
-            (mergedModificationsBefore + 1) * 2.0 - 0.5 - mergedTop;
-          const config = getStyleForChange(modification);
-          const applied = modification.status !== ChangeStatuses.prepared;
-          if (config) {
-            const start1 = {
-              x: x1,
-              y: correctPixels(currentY1)
-            };
-            const start2 = {
-              x: x1,
-              y: correctPixels(currentY2)
-            };
-            const end1 = {
-              x: x2,
-              y: correctPixels(mergedY1)
-            };
-            const end2 = {
-              x: x2,
-              y: correctPixels(mergedY2)
-            };
-            context.save();
-            context.fillStyle = correctTransparentColor(config.backgroundColor);
-            context.lineWidth = correctPixels(0);
-            context.beginPath();
-            drawCurve(context, start1, end1);
-            drawCurve(context, start2, end2, {reverse: true, lineToFirstPoint: true});
-            context.closePath();
-            context.fill();
-            context.lineWidth = correctPixels(1);
-            context.strokeStyle = correctTransparentColor(config.borderColor);
-            if (applied) {
-              context.setLineDash([5]);
-            }
-            context.beginPath();
-            drawCurve(context, start1, end1);
-            drawCurve(context, start2, end2);
-            context.stroke();
-            context.setLineDash([]);
-            context.restore();
+        const current = getModificationIndexRanges(modification, branch);
+        const merged = getModificationIndexRanges(modification, Merged);
+        const currentModificationsBefore = modification.changesBefore[branch] || 0;
+        const mergedModificationsBefore = modification.changesBefore[Merged] || 0;
+        const currentY1 = current.start * lineHeight +
+          currentModificationsBefore * 2.0 + 0.5 - top;
+        const currentY2 = current.end * lineHeight +
+          (currentModificationsBefore + 1) * 2.0 - 0.5 - top;
+        const mergedY1 = merged.start * lineHeight +
+          mergedModificationsBefore * 2.0 + 0.5 - mergedTop;
+        const mergedY2 = merged.end * lineHeight +
+          (mergedModificationsBefore + 1) * 2.0 - 0.5 - mergedTop;
+        const config = getStyleForChange(modification);
+        const applied = modification.status !== ChangeStatuses.prepared;
+        if (config) {
+          const start1 = {
+            x: x1,
+            y: correctPixels(currentY1)
+          };
+          const start2 = {
+            x: x1,
+            y: correctPixels(currentY2)
+          };
+          const end1 = {
+            x: x2,
+            y: correctPixels(mergedY1)
+          };
+          const end2 = {
+            x: x2,
+            y: correctPixels(mergedY2)
+          };
+          context.save();
+          context.fillStyle = correctTransparentColor(config.backgroundColor);
+          context.lineWidth = correctPixels(0);
+          context.beginPath();
+          drawCurve(context, start1, end1);
+          drawCurve(context, start2, end2, {reverse: true, lineToFirstPoint: true});
+          context.closePath();
+          context.fill();
+          context.lineWidth = correctPixels(1);
+          context.strokeStyle = correctTransparentColor(config.borderColor);
+          if (applied) {
+            context.setLineDash([5]);
           }
+          context.beginPath();
+          drawCurve(context, start1, end1);
+          drawCurve(context, start2, end2);
+          context.stroke();
+          context.setLineDash([]);
+          context.restore();
         }
       }
     }

@@ -48,6 +48,8 @@ class Conflicts extends React.Component {
     }
     if (this.session.resolved !== this.state.resolved) {
       this.updateResolvedState();
+    } else if (this.session.resolved) {
+      this.reportSessionState();
     }
   }
 
@@ -70,12 +72,14 @@ class Conflicts extends React.Component {
   };
 
   updateResolvedState = () => {
-    const {onResolvedStatusChanged} = this.props;
     this.setState({
       resolved: this.session.resolved
-    }, () => {
-      onResolvedStatusChanged && onResolvedStatusChanged(this.session);
-    });
+    }, this.reportSessionState);
+  };
+
+  reportSessionState = () => {
+    const {onSessionStateChanged} = this.props;
+    onSessionStateChanged && onSessionStateChanged(this.session);
   };
 
   renderFiles = () => {
@@ -167,7 +171,7 @@ class Conflicts extends React.Component {
 Conflicts.propTypes = {
   conflicts: PropTypes.arrayOf(PropTypes.string),
   disabled: PropTypes.bool,
-  onResolvedStatusChanged: PropTypes.func,
+  onSessionStateChanged: PropTypes.func,
   mergeInProgress: PropTypes.bool,
   run: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   storage: PropTypes.object

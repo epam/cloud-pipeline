@@ -73,7 +73,6 @@ class ConflictsSessionFile {
       this
         .getInfo()
         .then(conflictedFile => {
-          console.log(conflictedFile);
           resolve(conflictedFile.getMergedText());
         })
         .catch(() => {

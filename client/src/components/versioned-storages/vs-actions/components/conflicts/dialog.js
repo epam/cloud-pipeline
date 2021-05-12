@@ -29,7 +29,7 @@ class ConflictsDialog extends React.Component {
     files: {}
   };
 
-  onResolvedStatusChanged = (session) => {
+  onSessionStateChanged = (session) => {
     if (session.resolved) {
       session.getAllFilesContents()
         .then(files => {
@@ -121,7 +121,7 @@ class ConflictsDialog extends React.Component {
           run={run}
           storage={storage}
           mergeInProgress={mergeInProgress}
-          onResolvedStatusChanged={this.onResolvedStatusChanged}
+          onSessionStateChanged={this.onSessionStateChanged}
         />
       </Modal>
     );

@@ -23,15 +23,15 @@
  */
 function getLinePositionInfo (line, branch, lineHeight) {
   const isChange = !!line.change[branch];
-  const isFirstLineOfChange = line.isFirstLineOfChange[branch];
-  const isLastLineOfChange = line.isLastLineOfChange[branch];
+  const isFirst = isChange && line.change[branch].start === line;
+  const isLast = isChange && line.change[branch].end === line;
   const y1 = (line.lineNumber[branch] - 1) * lineHeight +
     line.changesBefore[branch] * 2 +
-    (isChange && !isFirstLineOfChange ? 1 : 0);
+    (isChange && !isFirst ? 1 : 0);
   const y2 = y1 +
     lineHeight +
     (isChange ? 1 : 0) +
-    (isChange && isLastLineOfChange ? 1 : 0);
+    (isChange && isLast ? 1 : 0);
   return {y1, y2};
 }
 

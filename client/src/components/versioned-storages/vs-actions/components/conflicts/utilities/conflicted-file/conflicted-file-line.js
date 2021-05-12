@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {HeadBranch, Merged, RemoteBranch} from './branches';
+import Branches, {HeadBranch, Merged, RemoteBranch} from './branches';
 import States from './line-states';
 
 export default class ConflictedFileLine {
@@ -55,8 +55,6 @@ export default class ConflictedFileLine {
     this.lineNumber = {};
     this.changesBefore = {};
     this.change = {};
-    this.isFirstLineOfChange = {};
-    this.isLastLineOfChange = {};
     this.isChangeMarker = {};
     this.state = {
       [HeadBranch]: States.original,
@@ -64,6 +62,31 @@ export default class ConflictedFileLine {
       [Merged]: States.original
     };
     this.file = undefined;
+  }
+
+  copy () {
+    const copy = new ConflictedFileLine(this.line, this.meta);
+    copy.previous = {
+      ...this.previous
+    };
+    copy.changesBefore = {
+      ...this.changesBefore
+    };
+    copy.lineNumber = {
+      ...this.lineNumber
+    };
+    copy.text = {
+      ...this.text
+    };
+    copy.state = {
+      ...this.state
+    };
+    copy.change = this.change;
+    copy.file = this.file;
+    Branches.forEach(branch => {
+      copy[branch] = this[branch];
+    });
+    return copy;
   }
 
   getBranchState (branch) {

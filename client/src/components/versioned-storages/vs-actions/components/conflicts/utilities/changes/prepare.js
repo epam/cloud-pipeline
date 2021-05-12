@@ -19,15 +19,29 @@ import Branches, {HeadBranch, RemoteBranch, Merged} from '../conflicted-file/bra
 import Change from './change';
 import ChangeStatuses from './statuses';
 import ModificationType from './types';
-import {findModification, findModificationMarker} from './find';
+import findModification from './find';
 
 function processEdition (branch, edition) {
-  edition.removed = edition.items.filter(line =>
-    line.state[branch] === LineStates.removed
-  );
-  edition.inserted = edition.items.filter(line =>
-    line.state[branch] === LineStates.inserted
-  );
+  Object.defineProperty(edition, 'removed', {
+    get: function () {
+      return this.items.filter(line =>
+        line.state[branch] === LineStates.removed
+      );
+    },
+    enumerable: true,
+    configurable: false,
+    writable: false
+  });
+  Object.defineProperty(edition, 'inserted', {
+    get: function () {
+      return this.items.filter(line =>
+        line.state[branch] === LineStates.inserted
+      );
+    },
+    enumerable: true,
+    configurable: false,
+    writable: false
+  });
 }
 
 function processConflict (branch, conflict) {
@@ -49,7 +63,7 @@ function processModification (conflictedFile, branch, modification) {
 
 function getModificationsCountBefore (branch, line, modifications) {
   const lineNumber = line.lineNumber[branch];
-  const before = modifications.filter(m => m.lineIndex(branch) < lineNumber);
+  const before = modifications.filter(m => m.start.lineNumber[branch] < lineNumber);
   return (new Set(before.map(m => m.key()))).size;
 }
 
@@ -104,17 +118,7 @@ function markLines (list, branch, modifications = []) {
   );
   list.getLines(branch, new Set([]))
     .forEach(line => {
-      const modification = findModification(line, currentModifications, branch);
-      line.isChangeMarker[branch] = findModificationMarker(
-        line,
-        currentModifications,
-        branch
-      );
-      line.change[branch] = modification;
-      line.isFirstLineOfChange[branch] = modification &&
-        modification.items[0] === line;
-      line.isLastLineOfChange[branch] = modification &&
-        modification.items[modification.items.length - 1] === line;
+      line.change[branch] = findModification(line, currentModifications, branch);
     });
 }
 
@@ -129,14 +133,10 @@ export default function prepare (conflictedFile) {
     markLines(conflictedFile, branch, result);
   });
   for (let modification of result) {
-    const start = modification.items[0];
+    const start = modification.start;
     modification.changesBefore = {
-      [modification.branch]: start
-        ? start.changesBefore[modification.branch]
-        : 0,
-      [Merged]: start
-        ? start.changesBefore[Merged]
-        : 0
+      [modification.branch]: start.changesBefore[modification.branch] || 0,
+      [Merged]: start.changesBefore[Merged] || 0
     };
     for (let oModification of result) {
       if (oModification !== modification) {

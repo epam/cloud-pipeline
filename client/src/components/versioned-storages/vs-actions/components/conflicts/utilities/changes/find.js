@@ -21,32 +21,13 @@
  * @param preferBranch
  * @returns {*}
  */
-export function findModification (line, changes, preferBranch) {
-  const filtered = changes.filter(change =>
-    change.items && change.items.indexOf(line) >= 0
-  );
+export default function findModification (line, changes, preferBranch) {
+  const filtered = changes.filter(change => change.items.indexOf(line) >= 0);
   if (preferBranch) {
     const prefer = filtered.find(b => b.branch === preferBranch);
     if (prefer) {
       return prefer;
     }
   }
-  return filtered[0];
-}
-
-/**
- * Find change that has passed line as a first visible (for specified branch) after change starts.
- * Examples:
- *  For insertion, edition, conflict area: the first line of insertion/edition/conflict area
- *  For deletion: the first line after deletion
- * @param line
- * @param changes
- * @param branch
- * @returns {*}
- */
-export function findModificationMarker (line, changes, branch) {
-  const filtered = changes.filter(modification =>
-    modification.lineIndex(branch) === line.lineNumber[branch]
-  );
   return filtered[0];
 }
