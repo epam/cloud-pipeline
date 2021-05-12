@@ -360,6 +360,7 @@ export default class EditToolForm extends React.Component {
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
           instance_size: values.instanceType,
+          instance_image: values.instanceImage,
           is_spot: `${values.is_spot}` === 'true'
         };
         this.setState({pending: true}, async () => {
@@ -384,6 +385,7 @@ export default class EditToolForm extends React.Component {
     switch (field) {
       case 'is_spot': return this.getPriceTypeInitialValue();
       case 'instance_size': return this.getInstanceTypeInitialValue();
+      case 'instance_image': return this.getInstanceImageInitialValue;
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
@@ -425,6 +427,12 @@ export default class EditToolForm extends React.Component {
   getDiskInitialValue = () => {
     return (this.props.configuration && this.props.configuration.instance_disk) ||
       (this.props.tool && this.props.tool.disk) ||
+      undefined;
+  };
+
+  getInstanceImageInitialValue = () => {
+    return (this.props.configuration && this.props.configuration.instance_image) ||
+      (this.props.tool && this.props.tool.instanceImage) ||
       undefined;
   };
 
@@ -835,6 +843,7 @@ export default class EditToolForm extends React.Component {
 
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
+      configurationFormFieldChanged('instance_image', 'instanceImage') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
       configurationFormFieldChanged('allowSensitive') ||
       commandChanged() ||
@@ -1179,6 +1188,20 @@ export default class EditToolForm extends React.Component {
                         })
                     }
                   </Select>
+                )}
+              </Form.Item>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Instance image"
+                style={{marginBottom: 10}}
+              >
+                {getFieldDecorator('instanceImage',
+                  {
+                    initialValue: this.getInstanceImageInitialValue()
+                  })(
+                    <Input
+                      disabled={this.state.pending || this.props.readOnly}
+                    />
                 )}
               </Form.Item>
               <Form.Item {...this.formItemLayout} label="Price type" style={{marginTop: 10, marginBottom: 10}}>
