@@ -58,7 +58,7 @@ function getDocumentType (document) {
       break;
   }
   return type;
-};
+}
 
 function checkForBlobErrors (blob) {
   return new Promise(resolve => {
@@ -69,31 +69,20 @@ function checkForBlobErrors (blob) {
     };
     fr.readAsText(blob);
   });
-};
+}
+
+const RESTRICTED_FILES = [
+  /.gitkeep$/i
+];
 
 function filterByRestrictedNames (content = {}) {
   return !RESTRICTED_FILES.some(restriction => {
     if (!content.git_object || !content.git_object.name) {
       return false;
-    };
-    const name = content.git_object.name.toLowerCase();
-    if (restriction.includes('*')) {
-      const value = restriction.replaceAll('*', '');
-      if (restriction.startsWith('*')) {
-        return name.endsWith(value);
-      };
-      if (restriction.endsWith('*')) {
-        return name.startsWith(value);
-      };
-      return false;
-    };
-    return restriction === name;
+    }
+    return restriction.test(content.git_object.name);
   });
-};
-
-const RESTRICTED_FILES = [
-  '*.gitkeep'
-];
+}
 
 @localization.localizedComponent
 @HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
