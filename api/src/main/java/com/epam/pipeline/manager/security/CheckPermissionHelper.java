@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,11 @@ package com.epam.pipeline.manager.security;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.security.UserContext;
+import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.PermissionEvaluator;
@@ -42,6 +47,12 @@ public class CheckPermissionHelper {
     private final PermissionEvaluator permissionEvaluator;
     private final AuthManager authManager;
     private final SidRetrievalStrategy sidRetrievalStrategy;
+    private final UserManager userManager;
+    private final UserRunnersManager userRunnersManager;
+
+    public void setContext(final String userName) {
+        authManager.setAuthentication(getAuthentication(userName));
+    }
 
     public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity) {
         if (isOwnerOrAdmin(entity.getOwner())) {
@@ -49,6 +60,14 @@ public class CheckPermissionHelper {
         }
         return permissionEvaluator
                 .hasPermission(authManager.getAuthentication(), entity, permissionName);
+    }
+
+    public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity,
+                             final String pipelineUserName) {
+        if (isOwnerOrAdmin(entity.getOwner(), pipelineUserName)) {
+            return true;
+        }
+        return permissionEvaluator.hasPermission(getAuthentication(pipelineUserName), entity, permissionName);
     }
 
     public boolean isOwnerOrAdmin(String owner) {
@@ -59,19 +78,26 @@ public class CheckPermissionHelper {
         return user.equalsIgnoreCase(owner) || isAdmin();
     }
 
+    private boolean isOwnerOrAdmin(final String owner, final String userName) {
+        return isOwner(owner, userName) || isAdmin(userName);
+    }
+
     public boolean isOwner(final AbstractSecuredEntity entity) {
         return isOwner(entity.getOwner());
     }
 
     public boolean isOwner(final String owner) {
+        return isOwner(owner, authManager.getAuthorizedUser());
+    }
+
+    private boolean isOwner(final String owner, final String userName) {
         if (StringUtils.isBlank(owner)) {
             return false;
         }
-        final String currentUser = authManager.getAuthorizedUser();
-        if (currentUser == null || currentUser.equals(AuthManager.UNAUTHORIZED_USER)) {
+        if (userName == null || userName.equals(AuthManager.UNAUTHORIZED_USER)) {
             return false;
         }
-        return owner.equalsIgnoreCase(currentUser);
+        return owner.equalsIgnoreCase(userName);
     }
 
     public boolean isAdmin() {
@@ -79,8 +105,31 @@ public class CheckPermissionHelper {
         return getSids().stream().anyMatch(sid -> sid.equals(admin));
     }
 
+    public boolean isAdmin(final String userName) {
+        final GrantedAuthoritySid admin = new GrantedAuthoritySid(DefaultRoles.ROLE_ADMIN.getName());
+        return getSids(userName).stream().anyMatch(sid -> sid.equals(admin));
+    }
+
     private List<Sid> getSids() {
         final Authentication authentication = authManager.getAuthentication();
         return sidRetrievalStrategy.getSids(authentication);
+    }
+
+    public List<Sid> getSids(final String userName) {
+        return sidRetrievalStrategy.getSids(getAuthentication(userName));
+    }
+
+    public boolean hasCurrentUserAsRunner(final String runAsUser) {
+        if (StringUtils.isBlank(runAsUser)) {
+            return true;
+        }
+
+        final PipelineUser currentUser = userManager.loadUserByName(authManager.getAuthorizedUser());
+        return userRunnersManager.hasUserAsRunner(currentUser, runAsUser);
+    }
+
+    private Authentication getAuthentication(final String userName) {
+        final UserContext userContext = userManager.loadUserContext(userName);
+        return new JwtAuthenticationToken(userContext, userContext.getAuthorities());
     }
 }

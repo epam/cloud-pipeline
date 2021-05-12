@@ -14,14 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.repository.user;
+package com.epam.pipeline.entity.user;
 
-import com.epam.pipeline.entity.user.PipelineUser;
-import org.springframework.data.repository.CrudRepository;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.Optional;
+import javax.persistence.Embeddable;
 
-public interface PipelineUserRepository extends CrudRepository<PipelineUser, Long> {
+@Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor
+public class RunnerSid {
 
-    Optional<PipelineUser> findByUserName(String userName);
+    private String name;
+    private boolean principal;
 }

@@ -70,6 +70,7 @@ import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
@@ -357,4 +358,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected RunStatusDao mockRunStatusDao;
+
+    @MockBean
+    protected UserRunnersManager mockUserRunnersManager;
 }
