@@ -31,6 +31,7 @@ import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -82,6 +83,13 @@ public class ReassignHandler {
                 .collect(HashMap::new,
                     (map, id) -> map.put(id, autoscalerService.getPreviousRunInstance(id, client)),
                     HashMap::putAll);
+
+        freeInstances.values().removeIf(entry -> "windows".equals(entry.getInstance().getNodePlatform()));
+        if (MapUtils.isEmpty(freeInstances)) {
+            log.debug("Available nodes are not suitable for the reassign.");
+            return false;
+        }
+
         // Try to find match with pre-pulled image
         final boolean reassignedWithMatchingImage = attemptReassign(freeInstances,
                 autoscalerService::requirementsMatchWithImages, requiredInstance, runId, longId,
