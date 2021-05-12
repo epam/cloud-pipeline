@@ -127,8 +127,7 @@ export default class PipelineCode extends Component {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
-      this.props.pipeline.value.currentVersion &&
-      this.props.version === this.props.pipeline.value.currentVersion.name;
+      this.props.version === this.props.pipeline.value.currentVersion?.name;
   };
 
   @computed
@@ -240,7 +239,10 @@ export default class PipelineCode extends Component {
   };
 
   openEditFileForm = (item) => {
-    this.setState({editFile: item});
+    if (item) {
+      const {path} = item;
+      this.setState({editFile: path});
+    }
   };
 
   closeEditFileForm = () => {
@@ -366,7 +368,7 @@ export default class PipelineCode extends Component {
     await request.send({
       contents: contents,
       comment,
-      path: this.state.editFile.path,
+      path: this.state.editFile,
       lastCommitId: this.props.pipeline.value.currentVersion.commitId
     });
     hide();
@@ -679,8 +681,11 @@ export default class PipelineCode extends Component {
           title={() => header}
           size="small" />
         <PipelineCodeForm
-          file={this.state.editFile}
-          pipeline={this.props.pipeline}
+          path={this.state.editFile}
+          visible={!!(this.state.editFile)}
+          pipelineId={this.props.pipelineId}
+          download={false}
+          editable={this.canModifySources}
           version={this.props.version}
           cancel={this.closeEditFileForm}
           save={this.saveEditableFile}

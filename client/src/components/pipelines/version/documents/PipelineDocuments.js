@@ -29,7 +29,6 @@ import {
   Modal
 } from 'antd';
 import FileSaver from 'file-saver';
-import PipelineFile from '../../../../models/pipelines/PipelineFile';
 import VersionFile from '../../../../models/pipelines/VersionFile';
 import PipelineGenerateFile from '../../../../models/pipelines/PipelineGenerateFile';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
@@ -41,6 +40,7 @@ import LoadingView from '../../../special/LoadingView';
 import Markdown from '../../../special/markdown';
 import PipelineCodeSourceNameDialog from '../code/forms/PipelineCodeSourceNameDialog';
 import roleModel from '../../../../utils/roleModel';
+import download from '../utilities/download-pipeline-file';
 import * as styles from './PipelineDocuments.css';
 
 function correctFolderPath (folder) {
@@ -417,29 +417,13 @@ export default class PipelineDocuments extends Component {
     };
   };
 
-  downloadPipelineFile = async (file, event) => {
+  downloadPipelineFile = (file, event) => {
     const {
       pipelineId,
       version
     } = this.props;
     event && event.stopPropagation();
-    try {
-      const pipelineFile = new PipelineFile(pipelineId, version, file.path);
-      let res;
-      await pipelineFile.fetch();
-      res = pipelineFile.response;
-      if (res.type?.includes('application/json') && res instanceof Blob) {
-        this.checkForBlobErrors(res)
-          .then(error => error
-            ? message.error('Error downloading file', 5)
-            : FileSaver.saveAs(res, file.name)
-          );
-      } else if (res) {
-        FileSaver.saveAs(res, file.name);
-      }
-    } catch (e) {
-      message.error('Failed to download file', 5);
-    }
+    return download(pipelineId, version, file.path);
   };
 
   checkForBlobErrors = (blob) => {

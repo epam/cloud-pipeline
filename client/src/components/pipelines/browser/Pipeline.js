@@ -715,6 +715,18 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   };
 
   render () {
+    if (!this.props.pipeline.loaded && this.props.pipeline.pending) {
+      return (<LoadingView />);
+    }
+    if (this.props.pipeline.error) {
+      return <Alert message={this.props.pipeline.error} type="error" />;
+    }
+    const {pipelineType} = this.props.pipeline.value;
+    if (/^versioned_storage$/i.test(pipelineType) && !this.props.listingMode) {
+      return (
+        <LoadingView />
+      );
+    }
     let versionsContent;
     if (this.props.versions.loaded) {
       this._versions = generateTreeData(
@@ -746,11 +758,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         <Alert key={CONTENT_PANEL_KEY} type="error" message={this.props.versions.error} />
       );
     }
-    if (!this._versions || (!this.props.versions.loaded && !this.props.pipeline.pending && this.props.versions.pending)) {
+    if (!this._versions || (!this.props.versions.loaded && this.props.versions.pending)) {
       return <LoadingView />;
-    }
-    if (this.props.pipeline.error) {
-      return <Alert message={this.props.pipeline.error} type="error" />;
     }
 
     const pipelineTitleClassName = this.props.pipeline.value.locked ? styles.readonly : undefined;
@@ -796,12 +805,13 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                 this.renderConfigAction()
               }
               {
-                !this.props.listingMode
+                !this.props.listingMode && this.props.pipeline.value
                   ? (
                     <GitRepositoryControl
                       overlayClassName={styles.gitRepositoryPopover}
                       https={this.props.pipeline.value.repository}
-                      ssh={this.props.pipeline.value.repositorySsh} />
+                      ssh={this.props.pipeline.value.repositorySsh}
+                    />
                   ) : undefined
               }
             </Col>
@@ -875,6 +885,15 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     this.setState({configurations});
   };
 
+  redirectToVersionedStorage = () => {
+    if (this.props.pipeline.loaded && !this.props.listingMode) {
+      const {id, pipelineType} = this.props.pipeline.value;
+      if (/^versioned_storage$/i.test(pipelineType)) {
+        this.props.router && this.props.router.push(`/vs/${id}`);
+      }
+    }
+  };
+
   componentDidUpdate (prevProps) {
     if (prevProps.pipelineId !== this.props.pipelineId) {
       // eslint-disable-next-line
@@ -889,6 +908,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         this.loadConfigurations();
       }
     }
+    this.redirectToVersionedStorage();
   }
 
   componentDidMount () {
@@ -901,5 +921,6 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         this.loadConfigurations();
       }
     }
+    this.redirectToVersionedStorage();
   }
 }

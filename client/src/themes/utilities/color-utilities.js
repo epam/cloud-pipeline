@@ -26,6 +26,7 @@ export function parseColor (color) {
   }
   const minifiedHexExec = /^#([0-9a-f]{3})$/i.exec(color);
   const hexExec = /^#([0-9a-f]{6})$/i.exec(color);
+  const hexWithAlphaExec = /^#([0-9a-f]{8})$/i.exec(color);
   const rgbExec = /^rgb\(\s*([\d]+)\s*,\s*([\d]+)\s*,\s*([\d]+)\s*\)$/i.exec(color);
   const rgbaExec = /^rgba\(\s*([\d]+)\s*,\s*([\d]+)\s*,\s*([\d]+)\s*,\s*(.+)\s*\)$/i.exec(color);
   let r = 255;
@@ -43,6 +44,11 @@ export function parseColor (color) {
     r = parseInt(hexExec[1].slice(0, 2), 16);
     g = parseInt(hexExec[1].slice(2, 4), 16);
     b = parseInt(hexExec[1].slice(4), 16);
+  } else if (hexWithAlphaExec) {
+    r = parseInt(hexExec[1].slice(0, 2), 16);
+    g = parseInt(hexExec[1].slice(2, 4), 16);
+    b = parseInt(hexExec[1].slice(4, 6), 16);
+    a = parseInt(hexExec[1].slice(6), 16) / 255.0;
   } else if (rgbExec && rgbExec.length > 3) {
     r = Number(rgbExec[1]);
     g = Number(rgbExec[2]);
@@ -174,6 +180,20 @@ export function buildColor (channels) {
   return `rgba(${rgb}, ${alphaChannelValue(a)})`;
 }
 
+export function buildHexColor (channels, ignoreAlpha = false) {
+  if (!channels) {
+    return undefined;
+  }
+  const {
+    r, g, b, a = 1.0
+  } = channels;
+  const hex = (o) => (Number(o) < 16 ? '0' : '').concat(Number(o).toString(16));
+  if (ignoreAlpha) {
+    return `#${hex(r)}${hex(g)}${hex(b)}`;
+  }
+  return `#${hex(r)}${hex(g)}${hex(b)}${hex(Math.round(255 * a))}`;
+}
+
 export function parseAmount (amount) {
   let value = Number(amount);
   if (/^[\d]+%$/.test(amount)) {
@@ -235,6 +255,21 @@ export function fadeout (color, amount) {
     }
   );
   return fadeColor || 'inherit';
+}
+
+export function fadeoutHex (color, amount) {
+  const parsedColor = parseColor(color);
+  if (!parsedColor) {
+    return 'inherit';
+  }
+  const parsedAmount = parseAmount(amount);
+  const fadeColor = buildHexColor(
+    {
+      ...parsedColor,
+      a: Math.max(0, parsedColor.a - parsedAmount)
+    }
+  );
+  return fadeColor || '#FFFFFFFF';
 }
 
 export function fadein (color, amount) {

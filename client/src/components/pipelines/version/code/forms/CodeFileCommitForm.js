@@ -152,13 +152,15 @@ export default class CodeFileCommitForm extends localization.LocalizedReactCompo
       resetFields();
     };
     return (
-      <Modal maskClosable={!this.props.pending}
-             afterClose={() => onClose()}
-             closable={!this.props.pending}
-             visible={this.props.visible}
-             title="Commit"
-             onCancel={this.props.onCancel}
-             footer={modalFooter}>
+      <Modal
+        maskClosable={!this.props.pending}
+        afterClose={() => onClose()}
+        closable={!this.props.pending}
+        visible={this.props.visible}
+        title="Commit"
+        onCancel={this.props.onCancel}
+        footer={modalFooter}
+      >
         <Spin spinning={this.props.pending}>
           <Form>
             <Form.Item {...this.formItemLayout} label="Commit message">

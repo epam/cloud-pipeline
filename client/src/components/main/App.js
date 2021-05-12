@@ -162,5 +162,4 @@ export default class App extends Component {
   componentDidMount () {
     document.title = this.props.preferences.deploymentName || 'Loading...';
   }
-
 }

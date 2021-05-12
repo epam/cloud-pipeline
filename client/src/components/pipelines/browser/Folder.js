@@ -47,6 +47,7 @@ import Dropdown from 'rc-dropdown';
 import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
+import VersionedStorageDialog from './forms/VersionedStorageDialog';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import CloneForm from './forms/CloneForm';
 import EditDetachedConfigurationForm from '../configuration/forms/EditDetachedConfigurationForm';
@@ -60,6 +61,7 @@ import CreatePipeline from '../../../models/pipelines/CreatePipeline';
 import CheckPipelineRepository from '../../../models/pipelines/CheckPipelineRepository';
 import DeletePipeline from '../../../models/pipelines/DeletePipeline';
 import UpdatePipeline from '../../../models/pipelines/UpdatePipeline';
+import PipelineFolderUpdate from '../../../models/pipelines/PipelineFolderUpdate';
 import UpdatePipelineToken from '../../../models/pipelines/UpdatePipelineToken';
 import ConfigurationUpdate from '../../../models/configuration/ConfigurationUpdate';
 import ConfigurationDelete from '../../../models/configuration/ConfigurationDelete';
@@ -87,6 +89,16 @@ import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
 
 const MAX_INLINE_METADATA_KEYS = 10;
+
+function splitFolderPaths (foldersStructure) {
+  const uniquePaths = [...new Set(foldersStructure
+    .split('\n')
+    .map(path => path.trim()))
+  ];
+  return uniquePaths.filter(filteredPath => !uniquePaths
+    .some(path => filteredPath !== path && path.startsWith(filteredPath))
+  );
+}
 
 @localization.localizedComponent
 @connect({
@@ -146,6 +158,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     pipelineTemplate: null,
     editableStorage: null,
     createStorageDialog: false,
+    createVersionedStorageDialog: false,
     createNewStorageFlag: false,
     createNFSFlag: false,
     editableConfiguration: null,
@@ -180,6 +193,7 @@ export default class Folder extends localization.LocalizedReactComponent {
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
+      case ItemTypes.versionedStorage: return <Icon type="inbox" className="cp-versioned-storage" />;
       case ItemTypes.folder:
         let icon = 'folder';
         if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
@@ -481,6 +495,22 @@ export default class Folder extends localization.LocalizedReactComponent {
           );
         }
         break;
+      case ItemTypes.versionedStorage:
+        actions.push(
+          issuesButton
+        );
+        if (roleModel.writeAllowed(item)) {
+          actions.push(
+            <Button
+              key="edit"
+              id={`folder-item-${item.key}-edit-button`}
+              size="small"
+              onClick={(event) => this.openEditPipelineDialog(item, event)}>
+              <Icon type="edit" />
+            </Button>
+          );
+        }
+        break;
       case ItemTypes.storage:
         if (roleModel.writeAllowed(item)) {
           actions.push(
@@ -530,6 +560,21 @@ export default class Folder extends localization.LocalizedReactComponent {
       this.setState({createNewStorageFlag: false, createNFSFlag: false});
     });
   };
+
+  openCreateVersionedStorageDialog = () => {
+    this.setState({
+      createVersionedStorageDialog: true
+    });
+  }
+
+  closeCreateVersionedStorageDialog = () => {
+    const {createVersionedStorageDialog} = this.state;
+    if (createVersionedStorageDialog) {
+      this.setState({
+        createVersionedStorageDialog: false
+      });
+    }
+  }
 
   deleteStorage = async (cloud) => {
     const request = new DataStorageDelete(this.state.editableStorage.id, cloud);
@@ -944,13 +989,87 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
 
+  createVSFolder = async (path, opts) => {
+    if (path && opts.lastCommitId) {
+      const request = new PipelineFolderUpdate(opts.id);
+      await request.send({
+        lastCommitId: opts.lastCommitId,
+        path,
+        comment: `Creating folder ${path}`
+      });
+      if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        return request.value;
+      }
+    }
+    return undefined;
+  };
+
+  bulkCreateVSFolders = async (foldersStructure, pipeline) => {
+    if (!foldersStructure || !foldersStructure.length) {
+      return;
+    }
+    let lastCommitId = pipeline.currentVersion.commitId;
+    const id = pipeline.id;
+    const paths = splitFolderPaths(foldersStructure);
+    if (paths.length > 0) {
+      const hide = message.loading('Creating initial folders structure...', 0);
+      for (const path of paths) {
+        const vsFolderRequest = await this.createVSFolder(path, {
+          id,
+          lastCommitId
+        });
+        if (vsFolderRequest && vsFolderRequest.id) {
+          lastCommitId = vsFolderRequest.id;
+        } else {
+          break;
+        }
+      }
+      hide();
+    }
+  };
+
+  createVersionedStorage = async (opts = {}) => {
+    const {
+      pipelines,
+      folder,
+      onReloadTree
+    } = this.props;
+    const {
+      name,
+      description,
+      foldersStructure
+    } = opts;
+    const pipelineType = 'VERSIONED_STORAGE';
+    const hide = message.loading(`Creating versioned storage ${name}...`, 0);
+    await this.createPipelineRequest.send({
+      name: name,
+      description: description,
+      parentFolderId: this._currentFolder.folder.id,
+      pipelineType
+    });
+    hide();
+    if (this.createPipelineRequest.error) {
+      return message.error(this.createPipelineRequest.error, 5);
+    }
+    if (foldersStructure && foldersStructure.length) {
+      const pipeline = pipelines.getPipeline(this.createPipelineRequest.value.id);
+      await pipeline.fetchIfNeededOrWait();
+      await this.bulkCreateVSFolders(foldersStructure, pipeline.value);
+    }
+    this.closeCreateVersionedStorageDialog();
+    pipelines.fetch();
+    await folder.fetch();
+    if (onReloadTree) {
+      onReloadTree(true);
+    }
+  };
+
   checkRequest = new CheckPipelineRepository();
 
-  onCreatePipeline = async (opts = {}) => {
-    const {
-      repository,
-      token
-    } = opts;
+  checkRepositoryExistence = async (pipelineOpts, callback) => {
+    const {repository, token} = pipelineOpts;
     if ((token && token.length) || (repository && repository.length)) {
       const hide = message.loading('Checking repository existence...', -1);
       await this.checkRequest.send({
@@ -959,10 +1078,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       });
       hide();
       if (this.checkRequest.error) {
-        message.error(this.checkRequest.error);
-        return;
-      } else if (!this.checkRequest.value.repositoryExists) {
-        Modal.confirm({
+        return message.error(this.checkRequest.error);
+      }
+      if (!this.checkRequest.value.repositoryExists) {
+        return Modal.confirm({
           title: 'Repository does not exist. Create?',
           style: {
             wordWrap: 'break-word'
@@ -971,14 +1090,13 @@ export default class Folder extends localization.LocalizedReactComponent {
           okText: 'OK',
           cancelText: 'Cancel',
           onOk: async () => {
-            await this.createPipeline(opts);
+            await callback(pipelineOpts);
           }
         });
-        return;
       }
     }
-    await this.createPipeline(opts);
-  };
+    return callback(pipelineOpts);
+  }
 
   openCloneFolderDialog = () => {
     this.setState({
@@ -1029,7 +1147,11 @@ export default class Folder extends localization.LocalizedReactComponent {
       codePath,
       docsPath
     } = values || {};
-    const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
+    const {pipelineType} = this.state.editablePipeline;
+    const objectName = /^versioned_storage$/i.test(pipelineType)
+      ? 'versioned storage'
+      : 'pipeline';
+    const hide = message.loading(`Updating ${this.localizedString(objectName)} ${name}...`, 0);
     const pipelineId = this.state.editablePipeline.id;
     await this.updatePipelineRequest.send({
       id: pipelineId,
@@ -1078,8 +1200,12 @@ export default class Folder extends localization.LocalizedReactComponent {
   };
 
   deletePipeline = async (keepRepository) => {
+    const {pipelineType} = this.state.editablePipeline;
+    const objectName = /^versioned_storage$/i.test(pipelineType)
+      ? 'versioned storage'
+      : 'pipeline';
     const request = new DeletePipeline(this.state.editablePipeline.id, keepRepository);
-    const hide = message.loading(`Deleting ${this.localizedString('pipeline')} ${this.state.editablePipeline.name}...`, 0);
+    const hide = message.loading(`Deleting ${this.localizedString(objectName)} ${this.state.editablePipeline.name}...`, 0);
     await request.fetch();
     hide();
     if (request.error) {
@@ -1272,6 +1398,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     const createActions = [];
     const pipelineKey = 'pipeline';
     const storageKey = 'storage';
+    const versionedStorageKey = 'versioned';
     const nfsStorageKey = 'nfs';
     const configurationKey = 'configuration';
     const folderKey = 'folder';
@@ -1299,6 +1426,9 @@ export default class Folder extends localization.LocalizedReactComponent {
             const createNFS = identifier ? identifier === nfsStorageKey : false;
             const createNew = createNFS ? true : (identifier ? identifier === 'new' : true);
             this.openCreateStorageDialog(createNew, createNFS);
+            break;
+          case versionedStorageKey:
+            this.openCreateVersionedStorageDialog();
             break;
           case folderKey:
             this.openAddFolderDialog();
@@ -1499,6 +1629,25 @@ export default class Folder extends localization.LocalizedReactComponent {
           createActions.push(divider);
           createActions.push(...folderTemplatesMenu);
         }
+      }
+      if (roleModel.isManager.pipeline(this)) {
+        if (!folderTemplatesMenu) {
+          createActions.push(<Divider key="divider versioned storages" />);
+        }
+        createActions.push(
+          <MenuItem
+            id="create-versioned-storage-button"
+            className="create-versioned-storage-button"
+            key={versionedStorageKey}
+          >
+            <Row style={{textTransform: 'uppercase'}}>
+              versioned storage
+            </Row>
+            <Row style={{fontSize: 'smaller'}}>
+              storage with revision control
+            </Row>
+          </MenuItem>
+        );
       }
     }
     if (createActions.filter(action => !!action).length > 0) {
@@ -1960,7 +2109,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           onSubmit={this.folderOperationWrapper(this.renameFolder)}
           onCancel={this.closeRenameFolderDialog} />
         <EditPipelineForm
-          onSubmit={this.folderOperationWrapper(this.onCreatePipeline)}
+          onSubmit={this.folderOperationWrapper(opts =>
+            this.checkRepositoryExistence(opts, this.createPipeline))}
           onCancel={this.closeCreatePipelineDialog}
           visible={this.state.createPipelineDialog}
           pipelineTemplate={this.state.pipelineTemplate}
@@ -1979,7 +2129,16 @@ export default class Folder extends localization.LocalizedReactComponent {
           isNfsMount={this.state.createNFSFlag}
           policySupported={!this.state.createNFSFlag}
           addExistingStorageFlag={!this.state.createNewStorageFlag}
-          pending={this.state.operationInProgress} />
+          pending={this.state.operationInProgress}
+        />
+        <VersionedStorageDialog
+          onSubmit={this.folderOperationWrapper(opts =>
+            this.checkRepositoryExistence(opts, this.createVersionedStorage))}
+          onCancel={this.closeCreateVersionedStorageDialog}
+          visible={this.state.createVersionedStorageDialog}
+          pending={this.state.operationInProgress}
+          folderStructureArea
+        />
         <DataStorageEditDialog
           onSubmit={this.folderOperationWrapper(this.editStorage)}
           onDelete={this.folderOperationWrapper(this.deleteStorage)}

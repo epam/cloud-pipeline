@@ -169,6 +169,15 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get versionStorageIgnoredFiles () {
+    const value = this.getPreferenceValue('storage.version.storage.ignored.files');
+    if (!value) {
+      return ['.gitkeep'];
+    }
+    return (value || '').split(',').map(o => o.trim());
+  }
+
+  @computed
   get metadataMandatoryKeys () {
     const value = this.getPreferenceValue('misc.metadata.mandatory.keys');
     if (value) {

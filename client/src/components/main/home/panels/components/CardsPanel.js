@@ -54,7 +54,8 @@ export default class CardsPanel extends React.Component {
     displayOnlyFavourites: PropTypes.bool,
     itemId: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
     getFavourites: PropTypes.func,
-    setFavourites: PropTypes.func
+    setFavourites: PropTypes.func,
+    hovered: PropTypes.object
   };
 
   static defaultProps = {
@@ -160,7 +161,8 @@ export default class CardsPanel extends React.Component {
         }
         return action.icon;
       };
-      const hovered = this.state.popovers.indexOf(index) >= 0;
+      const hovered = this.state.popovers.indexOf(index) >= 0 ||
+        this.props.hovered === child;
       return (
         <div
           className={
@@ -191,6 +193,7 @@ export default class CardsPanel extends React.Component {
                 style,
                 className,
                 overlay,
+                target,
                 multiZoneUrl,
                 runSSH,
                 runId
@@ -242,6 +245,7 @@ export default class CardsPanel extends React.Component {
                     }
                     visibilityChanged={onVisibleChange}
                     style={containerStyle}
+                    target={target}
                     configuration={multiZoneUrl}
                   >
                     <div

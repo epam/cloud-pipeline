@@ -39,17 +39,20 @@ import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
 import pipelineRunSSHCache from '../../../models/pipelines/PipelineRunSSHCache';
 import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKubeServicesLoad';
-import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
+import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
 import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
+  canCommitRun,
   canPauseRun,
   canStopRun,
   runPipelineActions,
-  terminateRun
+  terminateRun,
+  openReRunForm,
+  runIsCommittable
 } from '../actions';
 import connect from '../../../utils/connect';
 import displayDate from '../../../utils/displayDate';
@@ -83,6 +86,7 @@ import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command'
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import RunName from '../run-name';
+import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
@@ -92,8 +96,8 @@ import RunTimelineInfo from './misc/run-timeline-info';
 import evaluateRunPrice from '../../../utils/evaluate-run-price';
 import DataStorageLink from '../../special/data-storage-link';
 import fetchRunInfo from './misc/fetch-run-info';
-import NestedRunsModal from './forms/NestedRunsModal';
 import RestartedRunsInfo from './misc/restarted-runs-info';
+import NestedRunsModal from './forms/NestedRunsModal';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -106,7 +110,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries')
+@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries', 'preferences')
+@VSActions.check
 @inject(({routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   let task = null;
@@ -122,7 +127,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     runId: params.runId,
     taskName: params.taskName,
     runSSH: pipelineRunSSHCache.getPipelineRunSSH(params.runId),
-    runFSBrowser: new PipelineRunFSBrowser(params.runId),
+    runFSBrowser: pipelineRunFSBrowserCache.getPipelineRunFSBrowser(params.runId),
     runKubeServices: new PipelineRunKubeServicesLoad(params.runId),
     task,
     pipelines,
@@ -402,16 +407,7 @@ class Logs extends localization.LocalizedReactComponent {
   reRunPipeline = () => {
     const {run} = this.state;
     if (run) {
-      const {pipelineId, version, id, configName} = run;
-      if (pipelineId && version && id) {
-        this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-      } else if (pipelineId && version && configName) {
-        this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-      } else if (pipelineId && version) {
-        this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-      } else if (id) {
-        this.props.router.push(`/launch/${id}`);
-      }
+      return openReRunForm(run, this.props);
     }
   };
 
@@ -1545,7 +1541,6 @@ class Logs extends localization.LocalizedReactComponent {
       initialized,
       nodeCount,
       parentRunId,
-      podIP,
       lastChangeCommitTime,
       stateReasonMessage,
       platform,
@@ -1583,9 +1578,10 @@ class Logs extends localization.LocalizedReactComponent {
             <td>
               <ul>
                 {
-                  regionedUrls.map(({name, url}, index) =>
+                  regionedUrls.map(({name, url, sameTab}, index) =>
                     <li key={index}>
                       <MultizoneUrl
+                        target={sameTab ? '_top' : '_blank'}
                         configuration={url}
                         style={{display: 'inline-flex'}}
                         dropDownIconStyle={{marginTop: 5}}
@@ -2061,17 +2057,8 @@ class Logs extends localization.LocalizedReactComponent {
         );
       }
 
-      if (
-        this.state.commitAllowed &&
-        !(nodeCount > 0) &&
-        !(parentRunId && parentRunId > 0) &&
-        podIP
-      ) {
-        if (
-          status.toLowerCase() === 'running' &&
-          (commitStatus || '').toLowerCase() !== 'committing' &&
-          roleModel.executeAllowed(run)
-        ) {
+      if (this.state.commitAllowed && runIsCommittable(run)) {
+        if (canCommitRun(run) && roleModel.executeAllowed(run)) {
           let previousStatus;
           const commitDate = displayDate(lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
@@ -2231,6 +2218,21 @@ class Logs extends localization.LocalizedReactComponent {
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {CommitStatusButton}
             </Row>
+            <br />
+            {
+              !sensitive &&
+              this.props.vsActions.available && (
+                <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
+                  <VSActions
+                    run={run}
+                    showDownIcon
+                    trigger={['click']}
+                  >
+                    VERSIONED STORAGE
+                  </VSActions>
+                </Row>
+              )
+            }
           </Col>
         </Row>
         <Row>

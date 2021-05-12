@@ -91,9 +91,12 @@ function renderPipeline (run) {
             <div>
               <ul>
                 {
-                  regionedUrls.map(({name, url}, index) =>
+                  regionedUrls.map(({name, url, sameTab}, index) =>
                     <li key={index} style={{margin: 4}}>
-                      <MultizoneUrl configuration={url}>
+                      <MultizoneUrl
+                        target={sameTab ? '_top' : '_blank'}
+                        configuration={url}
+                      >
                         {name}
                       </MultizoneUrl>
                     </li>

@@ -27,13 +27,16 @@ import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
 import renderRunCard from './components/renderRunCard';
 import getRunActions from './components/getRunActions';
+import VSActions from '../../../versioned-storages/vs-actions';
+import {openReRunForm} from '../../../runs/actions';
 import roleModel from '../../../../utils/roleModel';
 import moment from 'moment-timezone';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('preferences', 'multiZoneManager')
+@inject('pipelines', 'multiZoneManager', 'preferences')
+@VSActions.check
 @observer
 export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -105,7 +108,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
   };
 
   reRun = (run) => {
-    this.props.router.push(`/launch/${run.id}`);
+    return openReRunForm(run, this.props);
   };
 
   renderContent = () => {

@@ -16,13 +16,14 @@
 
 import React from 'react';
 import {canPauseRun} from '../../../../runs/actions';
+import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
 import DataStorageLink from '../../../../special/data-storage-link';
 
 export default function (
-  {multiZoneManager, preferences},
+  {multiZoneManager, vsActions, preferences},
   callbacks,
   disabled = false
 ) {
@@ -52,9 +53,10 @@ export default function (
             actions.push({
               title: 'OPEN',
               icon: 'export',
+              target: regionedUrl.sameTab ? '_top' : '_blank',
               multiZoneUrl: regionedUrl.url,
               action: url && callbacks && callbacks.openUrl
-                ? () => callbacks.openUrl(url)
+                ? () => callbacks.openUrl(url, regionedUrl.sameTab ? '_top' : '_blank')
                 : undefined
             });
           } else {
@@ -66,9 +68,10 @@ export default function (
               <div>
                 <ul>
                   {
-                    regionedUrls.map(({name, url}, index) =>
+                    regionedUrls.map(({name, url, sameTab}, index) =>
                       <li key={index} style={{margin: 4}}>
                         <MultizoneUrl
+                          target={sameTab ? '_top' : '_blank'}
                           configuration={url}
                         >
                           {name}
@@ -99,6 +102,28 @@ export default function (
             runSSH: true,
             runId: run.id
           });
+          if (
+            !run.sensitive &&
+            vsActions &&
+            vsActions.available
+          ) {
+            actions.push({
+              title: (
+                <VSActions
+                  run={run}
+                  trigger={['click']}
+                  getPopupContainer={() => document.getElementById('root')}
+                  onDropDownVisibleChange={callbacks && callbacks.vsActionsMenu
+                    ? (v) => callbacks.vsActionsMenu(run, v)
+                    : undefined
+                  }
+                >
+                  VSC
+                </VSActions>
+              ),
+              icon: 'fork'
+            });
+          }
         }
         if (canPauseRun(run, preferences)) {
           actions.push({

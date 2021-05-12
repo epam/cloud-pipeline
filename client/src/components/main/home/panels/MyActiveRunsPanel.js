@@ -27,17 +27,19 @@ import renderRunCard from './components/renderRunCard';
 import getRunActions from './components/getRunActions';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
-import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
+import {openReRunForm, runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
 import pipelineRunSSHCache from '../../../../models/pipelines/PipelineRunSSHCache';
+import VSActions from '../../../versioned-storages/vs-actions';
 import confirmPause from '../../../runs/actions/pause-confirmation';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
-@inject('multiZoneManager', 'preferences')
+@inject('pipelines', 'multiZoneManager', 'preferences')
+@VSActions.check
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -45,6 +47,10 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
     activeRuns: PropTypes.object,
     onInitialize: PropTypes.func,
     refresh: PropTypes.func
+  };
+
+  state = {
+    hovered: undefined
   };
 
   get usesActiveRuns () {
@@ -110,7 +116,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   };
 
   reRun = (run) => {
-    this.props.router.push(`/launch/${run.id}`);
+    return openReRunForm(run, this.props);
   };
 
   renderContent = () => {
@@ -124,6 +130,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
         <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
           <CardsPanel
             key="runs"
+            hovered={this.state.hovered}
             panelKey={this.props.panelKey}
             onClick={this.navigateToRun}
             emptyMessage="There are no active runs"
@@ -158,6 +165,11 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                     if (runSSH.error) {
                       message.error(runSSH.error);
                     }
+                  },
+                  vsActionsMenu: (run, visible) => {
+                    this.setState({
+                      hovered: visible ? run : undefined
+                    });
                   }
                 })
             }

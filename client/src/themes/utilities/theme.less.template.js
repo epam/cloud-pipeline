@@ -210,6 +210,9 @@ export default `
 @THEME .cp-primary {
   color: @primary-color;
 }
+@THEME .cp-primary.border {
+  border-color: @primary-color;
+}
 @THEME .cp-disabled {
   color: @application-color-disabled;
 }
@@ -219,8 +222,14 @@ export default `
 @THEME .cp-warning {
   color: @color-yellow;
 }
+@THEME .cp-warning.border {
+  border-color: @color-yellow;
+}
 @THEME .cp-success {
   color: @color-green;
+}
+@THEME .cp-success.border {
+  border-color: @color-green;
 }
 @THEME .cp-error,
 @THEME .cp-danger {
@@ -2526,6 +2535,42 @@ export default `
   background-color: @deleted-row-accent;
   cursor: default;
 }
+@THEME .cp-git-diff-collapse .ant-collapse-item.ant-collapse-item-active .ant-collapse-header {
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-branch-code-line-numbers {
+  background-color: fadeout(@application-background-color, 40%);
+  border-color: @panel-border-color;
+}
+@THEME .cp-branch-code-resize {
+  background-color: fadeout(@application-background-color, 40%);
+}
+@THEME .cp-conflicts-resolve-area-container {
+  background-color: @card-background-color;
+}
+@THEME .cp-conflicts-divider {
+  background-color: fadeout(@card-border-color, 40%);
+}
+@THEME .cp-conflict-action {
+  color: @application-color;
+}
+@THEME .cp-conflict-action:hover,
+@THEME .cp-conflict-action:focus,
+@THEME .cp-conflict-action:active {
+  color: @application-color-accent;
+}
+@THEME .cp-conflict-scroller {
+  background-color: fade(@application-color, 10%);
+}
+@THEME .cp-conflict-scroller .bar {
+  background-color: fade(@application-color, 25%);
+}
+@THEME .cp-conflict-scroller:hover .bar,
+@THEME .cp-conflict-scroller .bar:hover,
+@THEME .cp-conflict-scroller .bar.hovered {
+  background-color: fade(@application-color, 50%);
+}
+
 @THEME .cp-library-metadata-item-key {
   background-color: @tag-key-background-color;
   border-bottom: 1px solid @tag-key-value-divider-color;
@@ -3124,6 +3169,38 @@ export default `
 @THEME .cp-issue-markdown-link:hover {
   color: @primary-text-color;
   background-color: @primary-color;
+}
+@THEME .d2h-file-wrapper,
+@THEME .d2h-file-header,
+@THEME .d2h-diff-table,
+@THEME .d2h-code-linenumber,
+@THEME .d2h-code-line.d2h-info,
+@THEME .d2h-code-linenumber.d2h-info {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+}
+@THEME .d2h-tag {
+  background-color: @card-background-color;
+}
+@THEME .d2h-info {
+  background-color: @panel-background-color;
+}
+@THEME .d2h-file-diff .d2h-ins.d2h-change,
+@THEME .d2h-ins {
+  background-color: @color-green-semi-transparent;
+}
+@THEME .d2h-file-diff .d2h-del.d2h-change,
+@THEME .d2h-del {
+  background-color: @color-red-semi-transparent;
+}
+@THEME .d2h-code-line.d2h-del.d2h-change del {
+  color: @card-background-color;
+  background-color: @color-red;
+}
+@THEME .d2h-code-line.d2h-ins.d2h-change ins {
+  color: @card-background-color;
+  background-color: @color-green;
 }
 
 `;

@@ -148,6 +148,10 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     const style = {};
     switch (item.type) {
       case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.versionedStorage:
+        style.color = '#2796dd';
+        icon = 'inbox';
+        break;
       case ItemTypes.folder: icon = 'folder'; break;
       case ItemTypes.version: icon = 'tag'; break;
       case ItemTypes.storage:

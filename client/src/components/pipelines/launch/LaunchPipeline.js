@@ -36,6 +36,8 @@ import LoadingView from '../../special/LoadingView';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import queryParameters from '../../../utils/queryParameters';
 import LaunchPipelineForm from './form/LaunchPipelineForm';
+import getToolLaunchingOptions from './utilities/get-tool-launching-options';
+import versionedStorageLaunchInfoEqual from './utilities/versioned-storage-launch-info-equal';
 import roleModel from '../../../utils/roleModel';
 
 const DTS_ENVIRONMENT = 'DTS';
@@ -44,9 +46,20 @@ const DTS_ENVIRONMENT = 'DTS';
 @submitsRun
 @runPipelineActions
 @roleModel.authenticationInfo
-@inject('pipelines', 'preferences', 'dockerRegistries')
+@inject('awsRegions', 'pipelines', 'preferences', 'dockerRegistries')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
+  const isVersionedStorage = components.vs;
+  let versionedStorageLaunchInfo;
+  if (isVersionedStorage) {
+    versionedStorageLaunchInfo = {
+      toolId: components.tool,
+      tool: components.tool ? new LoadTool(components.tool) : undefined,
+      version: components.tool && components.version
+        ? components.version
+        : undefined
+    };
+  }
   return {
     allowedInstanceTypes: allowedInstanceTypes,
     preferences,
@@ -60,8 +73,11 @@ const DTS_ENVIRONMENT = 'DTS';
     tool: params.image ? new LoadTool(params.image) : undefined,
     toolVersion: params.image ? components.version : undefined,
     toolSettings: params.image ? new LoadToolVersionSettings(params.image) : undefined,
-    configurations: params.id && params.version
-      ? new PipelineConfigurations(params.id, params.version) : undefined
+    configurations: params.id && params.version && !isVersionedStorage
+      ? new PipelineConfigurations(params.id, params.version)
+      : undefined,
+    isVersionedStorage,
+    versionedStorageLaunchInfo
   };
 })
 @observer
@@ -76,6 +92,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   @observable allowedInstanceTypes;
+  @observable versionedStoragesLaunchPayload;
 
   get pipelinePending () {
     return !!this.props.pipeline && this.props.pipeline.pending;
@@ -95,6 +112,17 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   get toolSettingsPending () {
     return !!this.props.toolSettings && this.props.toolSettings.pending;
+  }
+
+  get versionedStoragesLaunchPayloadPending () {
+    return this.props.isVersionedStorage &&
+      (
+        !this.versionedStoragesLaunchPayload ||
+        (
+          this.versionedStoragesLaunchPayload.pending &&
+          !this.versionedStoragesLaunchPayload.loaded
+        )
+      );
   }
 
   get currentMetadataEntity () {
@@ -262,6 +290,27 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       return parameters;
     } else if (this.getConfigurationParameters()) {
       return this.getConfigurationParameters();
+    } else if (
+      this.props.isVersionedStorage &&
+      this.versionedStoragesLaunchPayload &&
+      this.versionedStoragesLaunchPayload.loaded &&
+      this.versionedStoragesLaunchPayload.value
+    ) {
+      const payload = this.versionedStoragesLaunchPayload.value;
+      return {
+        cmd_template: payload.cmdTemplate,
+        docker_image: payload.dockerImage,
+        is_spot: payload.isSpot,
+        instance_size: payload.instanceType,
+        instance_disk: payload.hddSize,
+        node_count: payload.nodeCount,
+        timeout: payload.timeout,
+        parameters: {...(payload.params || {})},
+        cloudRegionId: payload.cloudRegionId,
+        allowedInstanceTypes: this.props.allowedInstanceTypes,
+        pipelineId: this.props.pipelineId ? +(this.props.pipelineId) : undefined,
+        pipelineVersion: this.props.version
+      };
     }
     return {
       allowedInstanceTypes: this.props.allowedInstanceTypes,
@@ -455,7 +504,11 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     this.setState({configName: name});
   };
 
-  componentDidUpdate () {
+  componentDidMount () {
+    this.loadVersionedStorageLaunchPayload();
+  }
+
+  componentDidUpdate (prevProps) {
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = this.props.image
@@ -469,7 +522,62 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         toolId: this.props.image
       });
     }
+    if (
+      (!this.versionedStoragesLaunchPayload && this.props.versionedStorageLaunchInfo) ||
+      !versionedStorageLaunchInfoEqual(
+        prevProps.versionedStorageLaunchInfo,
+        this.props.versionedStorageLaunchInfo
+      )
+    ) {
+      this.loadVersionedStorageLaunchPayload();
+    }
   }
+
+  loadVersionedStorageLaunchPayload = () => {
+    const {
+      versionedStorageLaunchInfo,
+      isVersionedStorage
+    } = this.props;
+    if (!isVersionedStorage) {
+      this.versionedStoragesLaunchPayload = undefined;
+    } else if (versionedStorageLaunchInfo && versionedStorageLaunchInfo.tool) {
+      this.versionedStoragesLaunchPayload = {
+        loaded: false,
+        pending: true
+      };
+      versionedStorageLaunchInfo.tool
+        .fetchIfNeededOrWait()
+        .then(() => {
+          if (versionedStorageLaunchInfo.tool.loaded) {
+            return getToolLaunchingOptions(
+              this.props,
+              versionedStorageLaunchInfo.tool.value,
+              versionedStorageLaunchInfo.version
+            );
+          } else {
+            throw new Error(versionedStorageLaunchInfo.tool.error || '');
+          }
+        })
+        .then(launchPayload => {
+          this.versionedStoragesLaunchPayload = {
+            loaded: true,
+            pending: false,
+            value: launchPayload
+          };
+        })
+        .catch((e) => {
+          this.versionedStoragesLaunchPayload = {
+            pending: false,
+            loaded: false,
+            error: e.message
+          };
+        });
+    } else {
+      this.versionedStoragesLaunchPayload = {
+        loaded: true
+      };
+    }
+  };
 
   render () {
     if (this.pipelinePending ||
@@ -477,6 +585,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       this.runPending ||
       this.toolPending ||
       this.toolSettingsPending ||
+      this.versionedStoragesLaunchPayloadPending ||
       (!this.props.preferences.loaded && this.props.preferences.pending) ||
       !this.allowedInstanceTypes) {
       return <LoadingView />;
@@ -484,18 +593,47 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     if (this.props.pipeline && this.props.pipeline.error) {
       return <Alert type="warning" message={this.props.pipeline.error} />;
     }
-    const errors = [];
+    const pipelineType = this.props.pipeline?.value?.pipelineType || '';
+    const isVersioned = pipelineType.toLowerCase() === 'versioned_storage';
+    const alerts = [];
     if (this.props.configurations && this.props.configurations.error) {
-      errors.push(this.props.configurations.error);
+      alerts.push({
+        message: this.props.configurations.error,
+        type: 'warning'
+      });
     }
     if (this.props.run && this.props.run.error) {
-      errors.push(this.props.run.error);
+      alerts.push({
+        message: this.props.run.error,
+        type: 'warning'
+      });
     }
     if (this.props.tool && this.props.tool.error) {
-      errors.push(this.props.tool.error);
+      alerts.push({
+        message: this.props.tool.error,
+        type: 'warning'
+      });
     }
     if (this.props.toolSettings && this.props.toolSettings.error) {
-      errors.push(this.props.toolSettings.error);
+      alerts.push({
+        message: this.props.toolSettings.error,
+        type: 'warning'
+      });
+    }
+    if (this.versionedStoragesLaunchPayload && this.versionedStoragesLaunchPayload.error) {
+      alerts.push({
+        message: this.versionedStoragesLaunchPayload.error,
+        type: 'warning'
+      });
+    }
+    if (isVersioned) {
+      alerts.push({
+        message: [
+          'You are going to launch a versioned storage.',
+          'The latest revision of the VS will be cloned.'
+        ].join(' '),
+        type: 'info'
+      });
     }
     const parameters = this.getParameters();
     return (
@@ -523,7 +661,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           version={this.props.version}
           parameters={parameters}
           configurations={this.getConfigurations()}
-          errors={errors}
+          alerts={alerts}
           onConfigurationChanged={this.onConfigurationChanged}
           onLaunch={this.launch}
           runConfiguration={this.prepareRunPayload}

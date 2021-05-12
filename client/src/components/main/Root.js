@@ -57,12 +57,13 @@ import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
+import multiZoneManager from '../../utils/multizone';
+import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
 import CurrentUserAttributes, {
   CURRENT_USER_ATTRIBUTES_STORE
 } from '../../utils/current-user-attributes';
 import CloudPipelineThemes from '../../themes';
-import multiZoneManager from '../../utils/multizone';
 import ApplicationInfo from '../../models/utils/application-info';
 import SystemJobs from '../../utils/system-jobs';
 
@@ -89,6 +90,8 @@ const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 const allConfigurations = new AllConfigurations();
+
+const vsActions = new VsActionsAvailable(pipelines);
 
 const currentUserAttributes = new CurrentUserAttributes(
   authenticatedUserInfo,
@@ -160,6 +163,7 @@ const Root = () =>
       cloudCredentialProfiles,
       [HiddenObjects.injectionName]: hiddenObjects,
       multiZoneManager,
+      vsActions,
       themes,
       applicationInfo,
       systemJobs

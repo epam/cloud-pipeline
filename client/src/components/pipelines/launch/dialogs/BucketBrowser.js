@@ -62,7 +62,6 @@ const GS_BUCKET_TYPE = 'GS';
 @HiddenObjects.injectTreeFilter
 @observer
 export default class BucketBrowser extends React.Component {
-
   static propTypes = {
     path: PropTypes.string,
     visible: PropTypes.bool,
@@ -219,12 +218,12 @@ export default class BucketBrowser extends React.Component {
 
   getItemFullPath = (item) => {
     if (this.state.bucket && (
-        this.state.bucket.type === ItemTypes.storage ||
+      this.state.bucket.type === ItemTypes.storage ||
         this.state.bucket.type === S3_BUCKET_TYPE ||
         this.state.bucket.type === AZ_BUCKET_TYPE ||
         this.state.bucket.type === GS_BUCKET_TYPE ||
         this.state.bucket.type === NFS_BUCKET_TYPE
-      )) {
+    )) {
       const type = this.state.bucket.storageType || this.state.bucket.type;
       const buildPath = (root) => item && item.path ? `${root}/${item.path}` : root;
       if (type === 'NFS') {
@@ -248,7 +247,7 @@ export default class BucketBrowser extends React.Component {
       if (this.props.multiple) {
         const filteredSelectedItems =
           this.state.selectedItems.filter(selectedItem =>
-              selectedItem.name.trim().toLowerCase() === this.getItemFullPath(item).toLowerCase()
+            selectedItem.name.trim().toLowerCase() === this.getItemFullPath(item).toLowerCase()
           );
         let isSelected = false;
 
@@ -412,7 +411,9 @@ export default class BucketBrowser extends React.Component {
     return {
       columns,
       data:
-        this.props.showOnlyFolder ? this.tableData.filter(r => r.type.toLowerCase() === 'folder') : this.tableData
+        this.props.showOnlyFolder
+          ? this.tableData.filter(r => r.type.toLowerCase() === 'folder')
+          : this.tableData
     };
   };
 
@@ -477,6 +478,7 @@ export default class BucketBrowser extends React.Component {
       case DTS_ITEM_TYPE: icon = 'desktop'; break;
       case DTS_ROOT_ITEM_TYPE: icon = 'inbox'; break;
       case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.versionedStorage: icon = 'fork'; break;
       case ItemTypes.folder: icon = 'folder'; break;
       case ItemTypes.version: icon = 'tag'; break;
       case ItemTypes.storage:

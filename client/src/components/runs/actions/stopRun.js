@@ -34,12 +34,16 @@ export function canStopRun (run) {
   return status.toLowerCase() === 'running' && (commitStatus || '').toLowerCase() !== 'committing';
 }
 
-export function canCommitRun (run) {
+export function runIsCommittable (run) {
   // Checks only run state, not user permissions
   const {podIP} = run;
-  return canStopRun(run) &&
-    podIP && !(run.nodeCount > 0) &&
+  return podIP && !(run.nodeCount > 0) &&
     !(run.parentRunId && run.parentRunId > 0);
+}
+
+export function canCommitRun (run) {
+  // Checks only run state, not user permissions
+  return canStopRun(run) && runIsCommittable(run);
 }
 
 export function checkCommitAllowedForTool (dockerImage, dockerRegistries) {
