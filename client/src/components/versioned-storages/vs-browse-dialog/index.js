@@ -275,6 +275,7 @@ class VSBrowseDialog extends React.Component {
       filter
     } = this.state;
     const data = Array.from(pipelines.value || [])
+      .filter(storage => /^VERSIONED_STORAGE$/i.test(storage.pipelineType))
       .filter(storage => !filter || storage.name.toLowerCase().includes(filter.toLowerCase()));
     const storageDisabled = storage => (repositories || []).find(r => +(r.id) === +(storage.id));
     return (
