@@ -12,22 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup, find_packages
-from fsbrowser.version import __version__
+class GitRepositoryStatus:
 
-setup(
-    name='fsbrowser',
-    version=__version__,
-    py_modules=['fsbrowser'],
-    packages=find_packages(),
-    include_package_data=True,
-    install_requires=[
-        'flask==1.1.1',
-        'Flask-HTTPAuth==3.3.0',
-        'pygit2==1.5.0'
-    ],
-    entry_points='''
-        [console_scripts]
-        fsbrowser=fsbrowser.app:main
-    '''
-)
+    def __init__(self):
+        self.files = None
+        self.merge_in_progress = False
+        self.unsaved = False
+
+    def to_json(self):
+        return {
+            'files': self.files,
+            'merge_in_progress': self.merge_in_progress,
+            'unsaved': self.unsaved
+        }
