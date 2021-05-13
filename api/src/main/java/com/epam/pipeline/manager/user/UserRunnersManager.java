@@ -20,16 +20,17 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @Service
@@ -62,7 +63,7 @@ public class UserRunnersManager {
                 .filter(runnerSid -> isRunnerAllowedForUser(runnerSid, userName))
                 .findAny()
                 .orElse(ListUtils.emptyIfNull(allowedRunners).stream()
-                        .filter(runnerSid -> isRunnerAllowedForRoles(runnerSid, user.getRoles()))
+                        .filter(runnerSid -> isRunnerAllowedForRoles(runnerSid, user.getAuthorities()))
                         .findAny()
                         .orElse(null));
     }
@@ -80,17 +81,17 @@ public class UserRunnersManager {
 
     private boolean isRunnerAllowed(final RunnerSid runnersAclSid, final PipelineUser user) {
         return isRunnerAllowedForUser(runnersAclSid, user.getUserName())
-                || isRunnerAllowedForRoles(runnersAclSid, user.getRoles());
+                || isRunnerAllowedForRoles(runnersAclSid, user.getAuthorities());
     }
 
     private boolean isRunnerAllowedForUser(final RunnerSid runnerSid, final String userName) {
-        return runnerSid.isPrincipal() && runnerSid.getName().equalsIgnoreCase(userName);
+        return runnerSid.isPrincipal() && StringUtils.equalsIgnoreCase(runnerSid.getName(), userName);
     }
 
-    private boolean isRunnerAllowedForRoles(final RunnerSid runnersAclSid, final List<Role> roles) {
+    private boolean isRunnerAllowedForRoles(final RunnerSid runnersAclSid, final Set<String> authorities) {
         return !runnersAclSid.isPrincipal()
-                && ListUtils.emptyIfNull(roles).stream()
-                .anyMatch(role -> role.getName().equalsIgnoreCase(runnersAclSid.getName()));
+                && SetUtils.emptyIfNull(authorities).stream()
+                .anyMatch(authority -> StringUtils.equalsIgnoreCase(authority, runnersAclSid.getName()));
     }
 
     private void validateRunner(final RunnerSid runnerSid) {
