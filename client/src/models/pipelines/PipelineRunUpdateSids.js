@@ -23,7 +23,7 @@ const AccessTypes = {
 
 export {AccessTypes};
 
-export default class PipelineRunSSH extends RemotePost {
+export default class PipelineRunUpdateSids extends RemotePost {
   constructor (id) {
     super();
     this.url = `/run/${id}/updateSids`;

@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.git;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.ResultStatus;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -27,6 +26,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogRequestFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
@@ -100,9 +100,9 @@ public class GitReaderClient {
         ).getPayload();
     }
 
-    public GitReaderEntryListing<GitRepositoryEntry> getRepositoryTree(final GitRepositoryUrl repo, final String path,
-                                                                       final String ref, final Long page,
-                                                                       final Integer pageSize)
+    public GitReaderEntryListing<GitReaderObject> getRepositoryTree(final GitRepositoryUrl repo, final String path,
+                                                                    final String ref, final Long page,
+                                                                    final Integer pageSize)
             throws GitClientException {
         return callAndCheckResult(
                 gitReaderApi.getRepositoryTree(getRepositoryPath(repo), path, ref, page, pageSize)

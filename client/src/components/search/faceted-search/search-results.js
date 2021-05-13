@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Alert} from 'antd';
+import {Alert, Icon} from 'antd';
 import Preview from '../preview';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
@@ -31,21 +31,6 @@ const TABLE_ROW_HEIGHT = 32;
 const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
-const HOVER_DELAY = 0;
-const PREVIEW_POSITION = {
-  left: {
-    top: '84px',
-    left: '75px',
-    maxHeight: 'calc(100vh - 135px)',
-    zIndex: 2
-  },
-  right: {
-    top: '84px',
-    right: '10px',
-    maxHeight: 'calc(100vh - 135px)',
-    zIndex: 2
-  }
-};
 
 function compareDocumentTypes (prev, next) {
   const a = (prev || []).sort();
@@ -71,12 +56,10 @@ function cellStringWithDivider (column) {
 class SearchResults extends React.Component {
   state = {
     resultsAreaHeight: undefined,
-    hoverInfo: undefined,
     preview: undefined,
     resizingColumn: undefined,
     columnWidths: {},
     columns: DocumentColumns.map(column => column.key),
-    previewPosition: PREVIEW_POSITION.right,
     extraColumnsConfiguration: []
   };
 
@@ -86,18 +69,12 @@ class SearchResults extends React.Component {
   tableWidth = undefined;
   animationFrame;
   infiniteScroll;
-  hoverTimeout;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.offset !== this.props.offset) {
-      this.unHoverItem(this.state.hoverInfo, true)();
-    }
     if (!compareDocumentTypes(prevProps.documentTypes, this.props.documentTypes)) {
       this.updateDocumentTypes();
     }
     if (
-      prevState.hoverInfo !== this.state.hoverInfo ||
-      prevState.preview !== this.state.preview ||
       prevState.columnWidths !== this.state.columnWidths ||
       prevState.resizingColumn !== this.state.resizingColumn ||
       prevState.columns !== this.state.columns
@@ -111,6 +88,7 @@ class SearchResults extends React.Component {
   componentDidMount () {
     window.addEventListener('mousemove', this.onResize);
     window.addEventListener('mouseup', this.stopResizing);
+    window.addEventListener('keydown', this.onKeyDown);
     this.updateDocumentTypes();
     parseExtraColumns(this.props.preferences)
       .then(extra => {
@@ -126,6 +104,7 @@ class SearchResults extends React.Component {
     }
     window.removeEventListener('mousemove', this.onResize);
     window.removeEventListener('mouseup', this.stopResizing);
+    window.removeEventListener('keydown', this.onKeyDown);
   }
 
   get columnsConfiguration () {
@@ -170,26 +149,29 @@ class SearchResults extends React.Component {
 
   renderSearchResultItem = (resultItem) => {
     const {disabled} = this.props;
-    const {hoverInfo, preview} = this.state;
     return (
       <a
         href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
         key={resultItem.elasticId}
         className={styles.resultItemContainer}
-        onMouseOver={(e) => this.hoverItem(resultItem, e)}
-        onMouseEnter={(e) => this.hoverItem(resultItem, e)}
-        onMouseLeave={this.unHoverItem(resultItem)}
         onClick={this.navigate(resultItem)}
       >
+        <Icon
+          type="info-circle-o"
+          className={styles.previewBtn}
+          style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.setPreview(resultItem);
+          }}
+        />
         <div
           id={`search-result-item-${resultItem.elasticId}`}
           className={
             classNames(
               styles.resultItem,
-              {
-                [styles.disabled]: disabled,
-                [styles.hovered]: !disabled && (hoverInfo === resultItem || preview === resultItem)
-              }
+              {[styles.disabled]: disabled}
             )
           }
           style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
@@ -203,50 +185,14 @@ class SearchResults extends React.Component {
     );
   };
 
-  unHoverItem = (info, forceUnhover) => () => {
-    const {hoverInfo} = this.state;
-    if (forceUnhover) {
-      return this.setState(
-        {hoverInfo: undefined}, () => this.setPreview(undefined, false)
-      );
-    }
-    if (hoverInfo === info) {
-      return this.setState(
-        {hoverInfo: undefined}, () => this.setPreview(undefined)
-      );
+  onKeyDown = (event) => {
+    const {preview} = this.state;
+    if (preview && event.key && event.key.toLowerCase() === 'escape') {
+      this.closePreview();
     }
   }
 
-  getPreviewPosition = (cursorX) => {
-    if (this.resultsContainerRef && cursorX) {
-      const container = this.resultsContainerRef.getBoundingClientRect();
-      const containerCenterX = (container.width / 2) + container.left;
-      return cursorX > containerCenterX
-        ? PREVIEW_POSITION.left
-        : PREVIEW_POSITION.right;
-    }
-    return PREVIEW_POSITION.right;
-  }
-
-  hoverItem = (info, event) => {
-    const {hoverInfo, preview} = this.state;
-    if (hoverInfo !== info) {
-      const previewPosition = this.getPreviewPosition(event.pageX);
-      if (this.hoverTimeout) {
-        clearTimeout(this.hoverTimeout);
-      }
-      this.hoverTimeout = setTimeout(() => {
-        this.setState({
-          hoverInfo: info,
-          previewPosition
-        }, () => {
-          this.setPreview(info, !preview);
-        });
-      }, HOVER_DELAY);
-    }
-  };
-
-  setPreview = (info, delayed = true) => {
+  setPreview = (info, delayed) => {
     if (this.previewTimeout) {
       clearTimeout(this.previewTimeout);
     }
@@ -263,16 +209,15 @@ class SearchResults extends React.Component {
     }
   };
 
-  doNotHidePreview = (info) => {
-    if (this.previewTimeout) {
-      clearTimeout(this.previewTimeout);
+  closePreview = () => {
+    this.setState({preview: undefined});
+  }
+
+  onPreviewWrapperClick = (event) => {
+    if (event && event.target === event.currentTarget) {
+      this.closePreview();
     }
-    this.previewTimeout = null;
-    if (this.hoverTimeout) {
-      clearTimeout(this.hoverTimeout);
-    }
-    this.setState({preview: info, hoverInfo: info});
-  };
+  }
 
   navigate = (item) => (e) => {
     if (this.props.disabled) {
@@ -292,18 +237,23 @@ class SearchResults extends React.Component {
   }
 
   renderPreview = () => {
-    const {preview, previewPosition} = this.state;
+    const {preview} = this.state;
+    if (!preview) {
+      return null;
+    }
     return (
       <div
-        className={styles.preview}
-        style={previewPosition}
-        onMouseOver={() => this.doNotHidePreview(preview)}
-        onMouseLeave={this.unHoverItem(preview)}
+        className={styles.previewWrapper}
+        onClick={(e) => this.onPreviewWrapperClick(e)}
       >
-        <Preview
-          item={preview}
-          lightMode
-        />
+        <div
+          className={styles.preview}
+        >
+          <Preview
+            item={preview}
+            lightMode
+          />
+        </div>
       </div>
     );
   }
@@ -428,9 +378,6 @@ class SearchResults extends React.Component {
         className={styles.tableRow}
         style={{gridTemplate: this.getGridTemplate()}}
         key={rowIndex}
-        onMouseOver={(e) => this.hoverItem(resultItem, e)}
-        onMouseEnter={(e) => this.hoverItem(resultItem, e)}
-        onMouseLeave={this.unHoverItem(resultItem)}
         onClick={this.navigate(resultItem)}
       >
         {this.columns.map(({key, renderFn}, index) => (
@@ -441,7 +388,7 @@ class SearchResults extends React.Component {
               style={{width: columnWidths[key], minWidth: '0px'}}
             >
               {renderFn
-                ? renderFn(resultItem[key], resultItem)
+                ? renderFn(resultItem[key], resultItem, this.setPreview)
                 : <span className={styles.cellValue}>{resultItem[key]}</span>
               }
             </div>,

@@ -106,7 +106,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       return false;
     }
     if (this.state.metadata === undefined && this.props.pipeline.loaded) {
-      return this.props.pipeline.value.hasMetadata && roleModel.readAllowed(this.props.pipeline.value);
+      return this.props.pipeline.value.hasMetadata &&
+        roleModel.readAllowed(this.props.pipeline.value);
     }
     return !!this.state.metadata;
   }
@@ -157,6 +158,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     }
   ];
 
+  renderTreeItemText = (text, item) => {
+    const style = {};
+    if (item.draft) {
+      style.color = '#999';
+    }
+    return <span style={style}>{text}</span>;
+  };
+
   listingColumns = [
     {
       key: 'selection',
@@ -192,9 +201,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       render: (text, item) => {
         return this.renderTreeItemText(
           <span>
-            Last updated: {
-            item.author && 'by '
-          }{item.author && <UserName userName={item.author} />} {displayDate(text)}
+            Last updated: {item.author && 'by '}
+            {item.author && <UserName userName={item.author} />} {displayDate(text)}
           </span>,
           item
         );
@@ -232,14 +240,6 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     }
   };
 
-  renderTreeItemText = (text, item) => {
-    const style = {};
-    if (item.draft) {
-      style.color = '#999';
-    }
-    return <span style={style}>{text}</span>;
-  };
-
   rowClassName = (baseClassName, item) => {
     if (item.draft) {
       return `${baseClassName}-draft`;
@@ -254,7 +254,10 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   };
 
   renderTreeItemSelection = (item) => {
-    if ((this.props.listingMode || this.props.readOnly) && item.name === this.props.selectedVersion) {
+    if (
+      (this.props.listingMode || this.props.readOnly) &&
+      item.name === this.props.selectedVersion
+    ) {
       return (
         <Row type="flex" justify="end">
           <Icon type="check-circle" />
@@ -348,7 +351,11 @@ export default class Pipeline extends localization.LocalizedReactComponent {
 
   navigate = (item) => {
     if (this.props.onSelectItem) {
-      if (this.props.configurationSelectionMode && this.state.configurations && this.state.configurations[item.id]) {
+      if (
+        this.props.configurationSelectionMode &&
+        this.state.configurations &&
+        this.state.configurations[item.id]
+      ) {
         this.props.onSelectItem(item, this.state.configurations[item.id].selected);
       } else {
         this.props.onSelectItem(item);
@@ -457,7 +464,10 @@ export default class Pipeline extends localization.LocalizedReactComponent {
 
   deletePipeline = async (keepRepository) => {
     const request = new DeletePipeline(this.props.pipeline.value.id, keepRepository);
-    const hide = message.loading(`Deleting ${this.localizedString('pipeline')} ${this.props.pipeline.value.name}...`, 0);
+    const hide = message.loading(
+      `Deleting ${this.localizedString('pipeline')} ${this.props.pipeline.value.name}...`,
+      0
+    );
     await request.fetch();
     hide();
     if (request.error) {
@@ -583,7 +593,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           key="issues">
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
-            <Icon type="check-circle" style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
+            <Icon
+              type="check-circle"
+              style={{
+                display: this.state.showIssuesPanel
+                  ? 'inherit'
+                  : 'none'
+              }}
+            />
           </Row>
         </Menu.Item>
       );
@@ -658,6 +675,18 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   };
 
   render () {
+    if (!this.props.pipeline.loaded && this.props.pipeline.pending) {
+      return (<LoadingView />);
+    }
+    if (this.props.pipeline.error) {
+      return <Alert message={this.props.pipeline.error} type="error" />;
+    }
+    const {pipelineType} = this.props.pipeline.value;
+    if (/^versioned_storage$/i.test(pipelineType) && !this.props.listingMode) {
+      return (
+        <LoadingView />
+      );
+    }
     let versionsContent;
     if (this.props.versions.loaded) {
       this._versions = generateTreeData(
@@ -689,11 +718,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         <Alert key={CONTENT_PANEL_KEY} type="error" message={this.props.versions.error} />
       );
     }
-    if (!this._versions || (!this.props.versions.loaded && !this.props.pipeline.pending && this.props.versions.pending)) {
+    if (!this._versions || (!this.props.versions.loaded && this.props.versions.pending)) {
       return <LoadingView />;
-    }
-    if (this.props.pipeline.error) {
-      return <Alert message={this.props.pipeline.error} type="error" />;
     }
 
     const pipelineTitleClassName = this.props.pipeline.value.locked ? styles.readonly : undefined;
@@ -717,7 +743,10 @@ export default class Pipeline extends localization.LocalizedReactComponent {
               <Breadcrumbs
                 id={parseInt(this.props.pipelineId)}
                 type={ItemTypes.pipeline}
-                readOnlyEditableField={!roleModel.writeAllowed(this.props.pipeline.value) || this.props.readOnly}
+                readOnlyEditableField={
+                  !roleModel.writeAllowed(this.props.pipeline.value) ||
+                  this.props.readOnly
+                }
                 textEditableField={this.props.pipeline.value.name}
                 onSaveEditableField={this.renamePipeline}
                 editStyleEditableField={{flex: 1}}
@@ -815,22 +844,42 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     this.setState({configurations});
   };
 
+  redirectToVersionedStorage = () => {
+    if (this.props.pipeline.loaded && !this.props.listingMode) {
+      const {id, pipelineType} = this.props.pipeline.value;
+      if (/^versioned_storage$/i.test(pipelineType)) {
+        this.props.router && this.props.router.push(`/vs/${id}`);
+      }
+    }
+  };
+
   componentDidUpdate (prevProps) {
     if (prevProps.pipelineId !== this.props.pipelineId) {
+      // eslint-disable-next-line
       this.setState({metadata: undefined, configurations: undefined, showIssuesPanel: false});
     }
-    if (!this.props.versions.pending && !this.props.versions.error && this.props.configurationSelectionMode) {
+    if (
+      !this.props.versions.pending &&
+      !this.props.versions.error &&
+      this.props.configurationSelectionMode
+    ) {
       if (!this.state.configurations) {
         this.loadConfigurations();
       }
     }
+    this.redirectToVersionedStorage();
   }
 
   componentDidMount () {
-    if (!this.props.versions.pending && !this.props.versions.error && this.props.configurationSelectionMode) {
+    if (
+      !this.props.versions.pending &&
+      !this.props.versions.error &&
+      this.props.configurationSelectionMode
+    ) {
       if (!this.state.configurations) {
         this.loadConfigurations();
       }
     }
+    this.redirectToVersionedStorage();
   }
 }

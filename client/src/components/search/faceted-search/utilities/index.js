@@ -20,3 +20,4 @@ export {facetedQueryString};
 export {default as facetsSearch} from './facets-search';
 export {default as getFacetFilterToken} from './facet-filter-token';
 export {default as fetchFacets} from './fetch-facets';
+export {default as FacetModeStorage} from './facet-mode-storage';

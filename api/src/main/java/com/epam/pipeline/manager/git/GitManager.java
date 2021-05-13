@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -738,7 +739,7 @@ public class GitManager {
 
     public GitProject createRepository(final String pipelineName, final String description) throws GitClientException {
         return getDefaultGitlabClient().createEmptyRepository(
-                        pipelineName,
+                        GitUtils.convertPipeNameToProject(pipelineName),
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         true,
@@ -774,6 +775,14 @@ public class GitManager {
         return getGitlabClientForRepository(repository, token, true)
                 .createTemplateRepository(template,
                         description,
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
+    }
+
+    public GitProject createEmptyRepository(final String description, final String repository,
+                                            final String token) throws GitClientException {
+        return getGitlabClientForRepository(repository, token, true)
+                .createEmptyRepository(description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
@@ -898,9 +907,9 @@ public class GitManager {
         return forkedProject;
     }
 
-    public GitReaderEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
-                                                                             final String path, final Long page,
-                                                                             final Integer pageSize) {
+    public GitReaderEntryListing<GitReaderObject> lsTreeRepositoryContent(final Long id, final String version,
+                                                                          final String path, final Long page,
+                                                                          final Integer pageSize) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
                 GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize

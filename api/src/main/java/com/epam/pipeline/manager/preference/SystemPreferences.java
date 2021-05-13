@@ -222,6 +222,8 @@ public class SystemPreferences {
             GIT_GROUP, isGreaterThan(0));
     public static final IntPreference GIT_FORK_RETRY_COUNT = new IntPreference("git.fork.retry.count", 5,
             GIT_GROUP, isGreaterThan(0));
+    public static final StringPreference GIT_FSBROWSER_WD =
+            new StringPreference("git.fsbrowser.workdir", "/git-workdir", GIT_GROUP, pass);
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -734,6 +736,8 @@ public class SystemPreferences {
     public static final StringPreference LUSTRE_FS_DEPLOYMENT_TYPE = new StringPreference(
             "lustre.fs.deployment.type", LustreDeploymentType.SCRATCH_2.name(), LUSTRE_GROUP,
             isValidEnum(LustreDeploymentType.class));
+    public static final BooleanPreference LUSTRE_FS_MOUNT_IP = new BooleanPreference(
+            "lustre.fs.mount.ip", false, LUSTRE_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
