@@ -78,21 +78,32 @@ function EnableAutoLoginIfRequired($UserName, $UserPassword) {
     return $restartRequired
 }
 
-function InstallPythonIfRequired {
-    try {
-         & { python -V } -ErrorAction Stop
-    } catch {
+function WaitForProcess($ProcessName) {
+    while ($True) {
+        $Process = Get-Process | Where-Object {$_.Name -contains $ProcessName}
+        If ($Process) {
+            Start-Sleep -Seconds 1
+        } else {
+            break
+        }
+    }
+}
+
+function InstallPythonIfRequired($PythonDir) {
+    if (-not(Test-Path "$PythonDir")) {
         Write-Host "Installing python..."
         Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.8.9/python-3.8.9-amd64.exe" -OutFile "$workingDir\python-3.8.9-amd64.exe"
-        & "$workingDir\python-3.8.9-amd64.exe" /quiet InstallAllUsers=0 PrependPath=1 Include_test=0
+        & "$workingDir\python-3.8.9-amd64.exe" /quiet TargetDir=$PythonDir InstallAllUsers=1 PrependPath=1
+        WaitForProcess -ProcessName "python-3.8.9-amd64"
     }
 }
 
 function InstallChromeIfRequired {
-    if (-not (Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
+    if (-not(Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
         Write-Host "Installing chrome..."
         Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -Outfile $workingDir\chrome_installer.exe
         & $workingDir\chrome_installer.exe /silent /install
+        WaitForProcess -ProcessName "chrome_installer"
     }
 }
 
@@ -318,6 +329,7 @@ $workingDir = "c:\init"
 $hostDir = "c:\host"
 $runsDir = "c:\runs"
 $kubeDir = "c:\ProgramData\Kubernetes"
+$pythonDir = "c:\python"
 $initLog = "$workingDir\log.txt"
 $defaultUserName = "NODEUSER"
 $defaultUserPassword = GetOrGenerateDefaultPassword
@@ -360,7 +372,7 @@ if ($restartRequired) {
 }
 
 Write-Host "Installing python if required..."
-InstallPythonIfRequired
+InstallPythonIfRequired -PythonDir $pythonDir
 
 Write-Host "Installing chrome if required..."
 InstallChromeIfRequired
