@@ -4,14 +4,12 @@ import logging
 import os
 import pathlib
 import subprocess
+import traceback
 import zipfile
 
-import paramiko
 import sys
 import tarfile
 import time
-
-import requests
 
 
 class LaunchError(RuntimeError):
@@ -108,8 +106,8 @@ def _mkdir(path):
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def _install_python_package(package):
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+def _install_python_package(*packages):
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q'] + list(packages))
 
 
 def _download_file(source_url, target_path):
@@ -129,6 +127,10 @@ def _extract_archive(source_path, target_path):
         raise LaunchError(f'Unsupported archive type: {source_path}')
 
 
+def _escape_backslashes(string):
+    return string.replace('\\', '\\\\')
+
+
 class RemoteHostSSH:
 
     def __init__(self, host, user, private_key_path):
@@ -138,13 +140,16 @@ class RemoteHostSSH:
 
     def execute(self, command):
         client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.WarningPolicy())
+        client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
         client.connect(self._host, username=self._user, key_filename=self._private_key_path)
         _, stdout, stderr = client.exec_command(command)
+        exit_code = stdout.channel.recv_exit_status()
         for line in stdout:
-            logging.info('STDOUT: ' + line.strip('\n'))
+            logging.info(line.strip('\n'))
         for line in stderr:
-            logging.info('STDERR: ' + line.strip('\n'))
+            logging.warning(line.strip('\n'))
+        if exit_code != 0:
+            raise LaunchError(f'SSH command has finished with {exit_code} exit code on the remote host.')
         client.close()
 
 
@@ -170,70 +175,92 @@ if __name__ == '__main__':
     owner = os.environ['OWNER'] = os.getenv('OWNER')
     owner_password = os.environ['OWNER_PASSWORD'] = os.getenv('OWNER_PASSWORD', os.getenv('SSH_PASS'))
     task_path = os.environ['CP_TASK_PATH']
+    python_dir = os.environ['CP_PYTHON_DIR'] = os.environ.get('CP_PYTHON_DIR', 'c:\\python')
 
     api = CloudPipelineAPI(api_url=api_url, api_token=api_token)
     api_logger = CloudPipelineLogger(api=api)
 
     logging.basicConfig(level=logging_level, format=logging_format)
 
-    logging.info('Init default variables if they are not set explicitly')
+    logging.info('Creating system directories...')
     _mkdir(run_id)
     _mkdir(common_repo_dir)
     _mkdir(log_dir)
     _mkdir(pipe_dir)
     _mkdir(analysis_dir)
 
-    logging.info('Installing python packages')
-    _install_python_package('requests==2.25.1')
-    _install_python_package('paramiko==2.7.2')
+    logging.info('Installing python packages...')
+    _install_python_package('requests==2.25.1', 'paramiko==2.7.2')
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    import requests
+    import paramiko
+    logging.getLogger('paramiko').setLevel(logging.WARNING)
 
-    logging.info('Installing pipe common...')
+    logging.info('Downloading pipe common...')
     _download_file(distribution_url + 'pipe-common.tar.gz', os.path.join(common_repo_dir, 'pipe-common.tar.gz'))
+
+    logging.info('Unpacking pipe common...')
     _extract_archive(os.path.join(common_repo_dir, 'pipe-common.tar.gz'), common_repo_dir)
 
+    logging.info('Installing pipe common...')
     _install_python_package(common_repo_dir)
     from scripts import add_to_path
 
-    logging.info('Installing pipe...')
+    logging.info('Downloading pipe...')
     _download_file(distribution_url + 'pipe.zip', os.path.join(pipe_dir, 'pipe.zip'))
-    _extract_archive(os.path.join(pipe_dir, 'pipe.zip'), pipe_dir)
 
-    logging.info('Updating PATH...')
+    logging.info('Unpacking pipe...')
+    _extract_archive(os.path.join(pipe_dir, 'pipe.zip'), os.path.dirname(pipe_dir))
+
+    logging.info('Configuring PATH...')
     add_to_path(os.path.join(common_repo_dir, 'powershell'))
     add_to_path(pipe_dir)
 
+    logging.info('Preparing for SSH connections to the node...')
     run = api.load_run(run_id)
-    node_ip = run.get('instance', {}).get('nodeIP', '')
+    node_ip = os.environ['NODE_IP'] = run.get('instance', {}).get('nodeIP', '')
     node_ssh = RemoteHostSSH(host=node_ip, user=node_owner, private_key_path=node_private_key_path)
-    escaped_powershell_dir = os.path.join(common_repo_dir, 'powershell').replace('\\', '\\\\')
-    escaped_pipe_dir = pipe_dir.replace('\\', '\\\\')
-    node_ssh.execute(f'python -m pip install {common_repo_dir};'
-                     f'python -c "from scripts import add_to_path;'
-                     f'add_to_path(\\"{escaped_powershell_dir}\\");'
-                     f'add_to_path(\\"{escaped_pipe_dir}\\")";'
-                     f'powershell -Command "pipe configure --api \'{api}\' --auth-token \'{api_token}\' --timezone local --proxy pac"')
 
-    logging.info('Configure owner account')
+    logging.info('Installing pipe common on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -m pip install -q {common_repo_dir}')
+
+    logging.info('Configuring PATH on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c "from scripts import add_to_path; '
+                     f'add_to_path(\\"{_escape_backslashes(python_dir)}\\"); '
+                     f'add_to_path(\\"{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\\"); '
+                     f'add_to_path(\\"{_escape_backslashes(pipe_dir)}\\")"')
+
+    logging.info('Configuring pipe on the node')
+    node_ssh.execute(f'powershell -Command "pipe configure --api \'{api}\' --auth-token \'{api_token}\' --timezone local --proxy pac"')
+
+    logging.info('Configuring owner account on the node...')
     if owner:
         node_ssh.execute(f'powershell -Command "AddUser -UserName {owner} -UserPassword {owner_password}"')
     else:
         logging.info('OWNER is not set - skipping owner account configuration')
 
-    logging.info('Setting up SSH server')
+    logging.info('Configuring node SSH server proxy...')
     if owner:
+        logging.info('Configuring SSH account on the node...')
         node_ssh.execute(f'powershell -Command "AddUser -UserName {ssh_user} -UserPassword {ssh_pass}"')
-        escaped_ssh_proxy_log_path = os.path.join(run_dir, "ssh_proxy.log").replace('\\', '\\\\')
-        subprocess.check_call(f'powershell -Command "pipe tunnel start --direct -lp 22 -rp 22 -l {escaped_ssh_proxy_log_path} --trace {node_ip}"')
+        logging.info('Launching SSH proxy...')
+        subprocess.check_call(f'powershell -Command "pipe.exe tunnel start --direct -lp 22 -rp 22 --trace '
+                              f'-l {_escape_backslashes(os.path.join(run_dir, "ssh_proxy.log"))} '
+                              f'{node_ip}"')
     else:
         logging.info('OWNER is not set - skipping SSH proxy configuration')
 
-    logging.info('Executing task')
     api_logger.success('Environment initialization finished', task='InitializeEnvironment')
 
-    exit_code = subprocess.call(f'powershell -Command ". \'{host_root}\\NodeEnv.ps1\'; & {task_path} -ErrorAction Stop"',
-                                shell=True, cwd=analysis_dir, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
-
-    logging.info('Finalizing execution')
-    logging.info(f'Exiting with {exit_code}')
-
-    exit(exit_code)
+    logging.info('Executing task...')
+    task_wrapping_command = f'powershell -Command ". {host_root}\\NodeEnv.ps1; & {task_path} -ErrorAction Stop"'
+    logging.info(f'Task command: {task_wrapping_command}')
+    try:
+        exit_code = subprocess.call(task_wrapping_command, cwd=analysis_dir)
+    except:
+        traceback.print_exc()
+        exit_code = 1
+    logging.info('Finalizing task execution...')
+    logging.info(f'Exiting with {exit_code}...')
+    sys.exit(exit_code)
