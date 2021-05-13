@@ -123,6 +123,7 @@
 
 .message-cell {
   max-width: 300px;
+  min-width: 150px;
 }
 
 .text-ellipsis {
