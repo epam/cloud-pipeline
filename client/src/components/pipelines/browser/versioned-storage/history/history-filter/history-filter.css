@@ -14,14 +14,23 @@
  *  limitations under the License.
  */
 
-.vs-container {
-  display: flex;
-  flex-direction: column;
+.modal {
+  padding: 20px;
 }
 
-.pagination-row {
-  display: flex;
+.row {
+  margin-bottom: 10px;
   align-items: center;
-  justify-content: flex-end;
-  margin-right: 10px;
+}
+
+.date-row {
+  width: 70%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+}
+
+.apply-btn {
+  background: #49a9ee;
+  color: white;
 }

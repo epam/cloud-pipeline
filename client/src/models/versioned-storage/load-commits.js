@@ -14,14 +14,18 @@
  *  limitations under the License.
  */
 
-.vs-container {
-  display: flex;
-  flex-direction: column;
-}
+import RemotePost from '../basic/RemotePost';
 
-.pagination-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-right: 10px;
+export default class LoadVSCommits extends RemotePost {
+  constructor (id, page, pageSize) {
+    super();
+    const queryParameters = [
+      page >= 0 ? `page=${page || 0}` : undefined,
+      pageSize >= 0 ? `page_size=${pageSize || 0}` : undefined
+    ]
+      .filter(Boolean)
+      .join('&');
+    const query = queryParameters ? `?${queryParameters}` : '';
+    this.url = `/pipeline/${id}/commits${query}`;
+  }
 }

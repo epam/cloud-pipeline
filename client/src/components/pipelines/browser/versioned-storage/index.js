@@ -26,6 +26,7 @@ import {
 import FileSaver from 'file-saver';
 import VersionedStorageHeader from './header';
 import VersionedStorageTable from './table';
+import {SplitPanel} from '../../../special/splitPanel';
 import localization from '../../../../utils/localization';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
@@ -35,8 +36,10 @@ import PipelineFile from '../../../../models/pipelines/PipelineFile';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDelete';
-import VersionedStorageListWithInfo from '../../../../models/versioned-storages/list-with-info';
+import VersionedStorageListWithInfo
+  from '../../../../models/versioned-storage/vs-contents-with-info';
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
+import InfoPanel from './info-panel';
 import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
 import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken';
 import CreateItemForm from './forms/create-item-form';
@@ -117,7 +120,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     page: 0,
     pending: false,
     showHistoryPanel: false,
-    selectedFile: null
+    selectedFile: null,
+    editSelectedFile: false
   };
 
   updateVSRequest = new UpdatePipeline();
@@ -141,8 +145,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (
       pipeline &&
       pipeline.value &&
-      pipeline.loaded &&
-      !pipeline.pending
+      pipeline.loaded
     ) {
       return pipeline.value.currentVersion.commitId;
     }
@@ -151,9 +154,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   get filteredContents () {
     const {contents} = this.state;
-    if (!contents) {
+    if (!contents || !contents.length) {
       return [];
-    };
+    }
     return contents.filter(filterByRestrictedNames);
   };
 
@@ -237,7 +240,18 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   closeHistoryPanel = () => {
-    this.setState({showHistoryPanel: false});
+    this.setState({showHistoryPanel: false, selectedFile: undefined});
+  };
+
+  openFileInfoPanel = (file) => {
+    this.setState({
+      selectedFile: file,
+      showHistoryPanel: true
+    });
+  };
+
+  closeFileInfoPanel = () => {
+    this.setState({selectedFile: null});
   };
 
   openEditStorageDialog = () => {
@@ -629,14 +643,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   onFileClick = (file) => {
-    this.openEditFileForm(file);
+    this.openFileInfoPanel(file);
   };
 
   onRowClick = (document = {}) => {
     if (document.type && document.type.toLowerCase() === 'navback') {
+      this.closeFileInfoPanel();
       return this.navigate(this.parentPath);
     }
     if (document.type && document.type.toLowerCase() === DOCUMENT_TYPES.tree) {
+      this.closeFileInfoPanel();
       return this.onFolderClick(document);
     }
     if (document.type && document.type.toLowerCase() === DOCUMENT_TYPES.blob) {
@@ -644,12 +660,15 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  closeEditFileForm = () => {
-    this.setState({selectedFile: null});
+  openEditFileForm = () => {
+    const {selectedFile} = this.state;
+    if (selectedFile) {
+      this.setState({editSelectedFile: true});
+    }
   };
 
-  openEditFileForm = (file) => {
-    this.setState({selectedFile: file});
+  closeEditFileForm = () => {
+    this.setState({editSelectedFile: false});
   };
 
   saveEditFileForm = async (contents, comment) => {
@@ -697,7 +716,22 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         />
       </div>
     );
-  }
+  };
+
+  renderEditFileContent = () => {
+    const {editSelectedFile, selectedFile} = this.state;
+    const {pipeline} = this.props;
+    return (
+      <PipelineCodeForm
+        file={editSelectedFile ? selectedFile : undefined}
+        pipeline={pipeline}
+        version={this.lastCommitId}
+        cancel={this.closeEditFileForm}
+        save={this.saveEditFileForm}
+        vsStorage
+      />
+    );
+  };
 
   render () {
     const {
@@ -727,8 +761,36 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         <Alert type="error" message={pipeline.error} />
       );
     }
+    const contentInfo = [{
+      key: 'vstable',
+      containerStyle: {
+        height: '100%'
+      },
+      size: {
+        priority: 0,
+        percentMinimum: 33,
+        percentDefault: 75
+      }
+    },
+    {
+      key: 'vsinfo',
+      containerStyle: {
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'auto'
+      },
+      title: 'Information',
+      closable: true,
+      size: {
+        keepPreviousSize: true,
+        priority: 0,
+        percentDefault: 25,
+        pxMinimum: 200
+      }
+    }];
     return (
-      <div className={styles.vsContainer}>
+      <div className={styles.vsContainer} style={{height: 'calc(100vh - 30px)'}}>
         <VersionedStorageHeader
           pipeline={pipeline}
           pipelineId={pipelineId}
@@ -746,28 +808,73 @@ class VersionedStorage extends localization.LocalizedReactComponent {
             />
           )
         }
-        <VersionedStorageTable
-          contents={this.filteredContents}
-          onRowClick={this.onRowClick}
-          showNavigateBack={path}
-          pending={pending}
-          controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
-          onTableActionClick={this.onTableActionClick}
-          onDeleteDocument={this.onDeleteDocument}
-          onRenameDocument={this.openRenameDocumentDialog}
-          onDownloadFile={this.downloadSingleFile}
-          pipelineId={pipelineId}
-          path={path}
-          afterUpload={this.afterUpload}
-        />
-        <PipelineCodeForm
-          file={selectedFile}
-          pipeline={pipeline}
-          version={this.lastCommitId}
-          cancel={this.closeEditFileForm}
-          save={this.saveEditFileForm}
-          vsStorage
-        />
+        <SplitPanel
+          style={{flex: 1, overflow: 'auto', width: 'inherited', height: 'auto'}}
+          onPanelClose={this.closeFileInfoPanel}
+          contentInfo={contentInfo}
+        >
+          <div
+            style={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column'}}
+            key="vstable"
+          >
+            <VersionedStorageTable
+              style={{height: 'auto'}}
+              contents={this.filteredContents}
+              onRowClick={this.onRowClick}
+              showNavigateBack={path}
+              pending={pending}
+              controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
+              onTableActionClick={this.onTableActionClick}
+              onDeleteDocument={this.onDeleteDocument}
+              onRenameDocument={this.openRenameDocumentDialog}
+              onDownloadFile={this.downloadSingleFile}
+              pipelineId={pipelineId}
+              path={path}
+              afterUpload={this.afterUpload}
+            />
+            <div
+              className={styles.paginationRow}
+            >
+              {lastPage >= 0 && (
+                <Pagination
+                  current={page + 1}
+                  total={(lastPage + 1) * PAGE_SIZE}
+                  pageSize={PAGE_SIZE}
+                  size="small"
+                  onChange={
+                    newPage => newPage === (page + 1)
+                      ? undefined
+                      : this.fetchPage(newPage - 1)
+                  }
+                />
+              )}
+            </div>
+          </div>
+          {
+            showHistoryPanel && (
+              <div
+                key="vsinfo"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'auto',
+                  flex: 1
+                }}
+              >
+                <InfoPanel
+                  file={selectedFile}
+                  path={path}
+                  pipelineId={pipelineId}
+                  lastCommitId={this.lastCommitId}
+                  pending={pending}
+                  onFileEdit={this.openEditFileForm}
+                  onFileDownload={this.downloadSingleFile}
+                />
+              </div>
+            )
+          }
+        </SplitPanel>
+        {this.renderEditFileContent()}
         <EditPipelineForm
           onSubmit={this.folderOperationWrapper(this.editVersionedStorage)}
           onCancel={this.closeEditStorageDialog}
@@ -777,23 +884,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           pipeline={pipeline.value}
         />
         {this.renderEditItemForm()}
-        <div
-          className={styles.paginationRow}
-        >
-          {lastPage >= 0 && (
-            <Pagination
-              current={page + 1}
-              total={(lastPage + 1) * PAGE_SIZE}
-              pageSize={PAGE_SIZE}
-              size="small"
-              onChange={
-                newPage => newPage === (page + 1)
-                  ? undefined
-                  : this.fetchPage(newPage - 1)
-              }
-            />
-          )}
-        </div>
       </div>
     );
   }

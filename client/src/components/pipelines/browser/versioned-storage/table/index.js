@@ -28,12 +28,14 @@ import {
   message,
   Row
 } from 'antd';
+import classNames from 'classnames';
 import UploadButton from '../../../../special/UploadButton';
 import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
 import COLUMNS from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
 import styles from './table.css';
+import '../../../../../staticStyles/vs-storage.css';
 
 function typeSorter (a, b) {
   return b.type.localeCompare(a.type);
@@ -297,15 +299,32 @@ class VersionedStorageTable extends React.Component {
   };
 
   render () {
-    const {pending} = this.props;
+    const {
+      className,
+      pending,
+      style
+    } = this.props;
     if (!this.data) {
       return <Spin />;
     }
     return (
-      <div className={styles.tableContainer}>
+      <div
+        className={
+          classNames(
+            styles.tableContainer,
+            className
+          )
+        }
+        style={style}
+      >
         {this.renderTableControls()}
         <Table
-          className={styles.table}
+          className={
+            classNames(
+              styles.table,
+              'versioned-storage-contents'
+            )
+          }
           columns={COLUMNS}
           rowKey={(record) => record.name}
           dataSource={this.data}
@@ -322,6 +341,7 @@ class VersionedStorageTable extends React.Component {
 }
 
 VersionedStorageTable.PropTypes = {
+  className: PropTypes.string,
   contents: PropTypes.object,
   onRowClick: PropTypes.func,
   showNavigateBack: PropTypes.bool,
@@ -336,7 +356,8 @@ VersionedStorageTable.PropTypes = {
     PropTypes.number
   ]),
   path: PropTypes.string,
-  afterUpload: PropTypes.func
+  afterUpload: PropTypes.func,
+  style: PropTypes.object
 };
 
 export default VersionedStorageTable;

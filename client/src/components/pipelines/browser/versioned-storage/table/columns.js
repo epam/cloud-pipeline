@@ -79,7 +79,8 @@ const COLUMNS = [{
   title: 'Name',
   dataIndex: 'name',
   key: 'name',
-  className: styles.nameCell,
+  className: classNames(styles.cell, styles.nameCell),
+  width: 200,
   render: (name = '', record) => {
     return (
       <div className={styles.cellContent}>
@@ -94,7 +95,7 @@ const COLUMNS = [{
   title: 'Size',
   dataIndex: 'size',
   key: 'size',
-  className: classNames(styles.noWrapCell, styles.sizeCell),
+  className: classNames(styles.cell, styles.noWrapCell, styles.sizeCell),
   render: (size, item) => item.type === DOCUMENT_TYPES.tree
     ? undefined
     : displaySize(size, false)
@@ -102,28 +103,30 @@ const COLUMNS = [{
   title: 'Revision',
   dataIndex: 'commit',
   key: 'commit',
-  className: classNames(styles.noWrapCell, styles.revisionCell)
+  className: classNames(styles.cell, styles.noWrapCell, styles.revisionCell),
+  render: sha => (sha || '').slice(0, 7)
 }, {
   title: 'Date changed',
   dataIndex: 'committer_date',
   key: 'committer_date',
-  className: classNames(styles.noWrapCell, styles.dateCell),
+  className: classNames(styles.cell, styles.noWrapCell, styles.dateCell),
   render: date => displayDate(date)
 }, {
   title: 'Author',
   dataIndex: 'author',
   key: 'author',
-  className: classNames(styles.noWrapCell, styles.authorCell),
+  className: classNames(styles.cell, styles.noWrapCell, styles.authorCell),
   render: author => <UserName userName={author} />
 }, {
   title: 'Message',
   dataIndex: 'commit_message',
   key: 'commit_message',
-  className: styles.messageCell
+  className: classNames(styles.cell, styles.messageCell)
 }, {
   title: '',
   dataIndex: 'type',
   key: 'actions',
+  className: styles.cell,
   render: (name = '', record) => ACTIONS[record.type] || null,
   width: 150
 }];

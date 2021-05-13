@@ -14,14 +14,6 @@
  *  limitations under the License.
  */
 
-.vs-container {
-  display: flex;
-  flex-direction: column;
-}
-
-.pagination-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-right: 10px;
+.versioned-storage-contents .ant-table-body {
+  overflow: auto;
 }

@@ -18,15 +18,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Row, Tooltip} from 'antd';
+import {Icon, Row, Tooltip} from 'antd';
 
 @inject('users')
 @observer
 export default class UserName extends React.Component {
-
   static propTypes = {
+    className: PropTypes.string,
     userName: PropTypes.string,
-    style: PropTypes.object
+    style: PropTypes.object,
+    showIcon: PropTypes.bool
   };
 
   @computed
@@ -71,17 +72,31 @@ export default class UserName extends React.Component {
   };
 
   render () {
-    const {style = {}} = this.props;
+    const {
+      className,
+      showIcon,
+      style = {}
+    } = this.props;
     if (this.user) {
       return (
         <Tooltip overlay={this.renderUserAttributes(this.user)}>
-          <span style={Object.assign({cursor: 'default'}, style)}>
+          <span
+            className={className}
+            style={Object.assign({cursor: 'default'}, style)}
+          >
+            {showIcon && <Icon type="user" />}
             {this.renderUserName(this.user)}
           </span>
         </Tooltip>
       );
     }
-    return <span>{(this.props.userName || '').toLowerCase()}</span>;
+    return (
+      <span
+        className={className}
+        style={Object.assign({cursor: 'default'}, style)}
+      >
+        {(this.props.userName || '').toLowerCase()}
+      </span>
+    );
   }
-
 }
