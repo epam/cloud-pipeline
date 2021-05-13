@@ -8,7 +8,7 @@ import retrofit2.Response;
 
 import java.io.IOException;
 
-final public class RestApiUtils {
+public final class RestApiUtils {
 
     private RestApiUtils() {
     }
