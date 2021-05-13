@@ -291,15 +291,7 @@ public class PipelineRunManager {
      */
     @ToolSecurityPolicyCheck
     public PipelineRun runPipeline(final PipelineStart runVO) {
-        final String runAsUser = runVO.getRunAs();
-        if (!StringUtils.isEmpty(runAsUser)) {
-            final String currentUser = authManager.getAuthorizedUser();
-            final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
-            Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_ALLOWED_SID_NOT_FOUND, runAsUser));
-            runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser, allowedRunnerSid.getAccessType()));
-            permissionHelper.setContext(runAsUser);
-        }
+        configureRunnerUser(runVO);
 
         final Long pipelineId = runVO.getPipelineId();
         LOGGER.debug("Pipeline '{}' will be launched as '{}'", pipelineId, authManager.getAuthorizedUser());
@@ -312,6 +304,8 @@ public class PipelineRunManager {
 
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
+        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithRoles(),
+                configuration.getSharedWithRoles()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         //check that tool execution is allowed
@@ -1481,6 +1475,22 @@ public class PipelineRunManager {
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
     }
 
+    private void configureRunnerUser(final PipelineStart runVO) {
+        if (StringUtils.isEmpty(runVO.getRunAs())) {
+            return;
+        }
+        final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
+        final String runAsUser = StringUtils.isEmpty(currentUserConfiguration.getRunAs())
+                ? runVO.getRunAs()
+                : currentUserConfiguration.getRunAs();
+        final String currentUser = authManager.getAuthorizedUser();
+        final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
+        Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
+                MessageConstants.ERROR_RUN_ALLOWED_SID_NOT_FOUND, runAsUser));
+        runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser, allowedRunnerSid.getAccessType()));
+        permissionHelper.setContext(runAsUser);
+    }
+
     private List<RunSid> buildRunSids(final List<RunSid> runSidsFromVO, final String currentUser,
                                       final RunAccessType allowedAccessType) {
         final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
@@ -1492,5 +1502,20 @@ public class PipelineRunManager {
         runSids.add(runSid);
 
         return new ArrayList<>(runSids);
+    }
+
+    private List<RunSid> mergeRunSids(final List<RunSid> runSidsFromVO,
+                                      final List<RunSid> userSidsFromConfiguration,
+                                      final List<RunSid> roleSidsFromConfiguration) {
+        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(userSidsFromConfiguration), true));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(roleSidsFromConfiguration), false));
+        return new ArrayList<>(runSids);
+    }
+
+    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
+        return runsSids.stream()
+                .peek(runSid -> runSid.setIsPrincipal(principal))
+                .collect(Collectors.toList());
     }
 }
