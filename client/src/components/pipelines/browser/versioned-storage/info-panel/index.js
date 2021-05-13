@@ -28,6 +28,7 @@ import {
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import localization from '../../../../../utils/localization';
 import {SplitPanel} from '../../../../special/splitPanel/SplitPanel';
+import HistoryFilter, {FILTERS} from './history-filter';
 import styles from './info-panel.css';
 
 const MAX_SIZE_TO_PREVIEW = 1000000;
@@ -85,8 +86,15 @@ class InfoPanel extends localization.LocalizedReactComponent {
     fileContent: null,
     editFile: false,
     fileEditable: true,
-    fileSizeExceeded: false
-  }
+    fileSizeExceeded: false,
+    historyFilterVisible: false,
+    filters: {
+      users: ['user1', 'user2', 'user3'],
+      extensions: ['.docx', '.txt', '.csv'],
+      dateFrom: '',
+      dateTo: ''
+    }
+  };
 
   componentDidMount () {
     const {file} = this.props;
@@ -167,6 +175,26 @@ class InfoPanel extends localization.LocalizedReactComponent {
         fileContent: ''
       });
     }
+  };
+
+  openHistoryFilter = () => {
+    this.setState({historyFilterVisible: true});
+  };
+
+  closeHistoryFilter = () => {
+    this.setState({historyFilterVisible: false});
+  };
+
+  onFilterChange = (type, value) => {
+    if (!FILTERS[type]) {
+      return null;
+    }
+    this.setState(prevState => ({
+      filters: {
+        ...prevState.filters,
+        [FILTERS[type]]: value
+      }
+    }));
   };
 
   renderDownloadLink = () => {
@@ -259,7 +287,11 @@ class InfoPanel extends localization.LocalizedReactComponent {
 
   render () {
     const {pending} = this.props;
-    const {inProgress} = this.state;
+    const {
+      inProgress,
+      historyFilterVisible,
+      filters
+    } = this.state;
     if (pending || inProgress) {
       return (
         <Row type="flex" justify="center">
@@ -286,9 +318,23 @@ class InfoPanel extends localization.LocalizedReactComponent {
           </div>
           <div
             key="history"
+            className={styles.historyContainer}
           >
-            History
+            <Button
+              size="small"
+              onClick={this.openHistoryFilter}
+              className={styles.filterBtn}
+            >
+              <Icon type="filter" />
+            </Button>
           </div>
+          <HistoryFilter
+            visible={historyFilterVisible}
+            filters={filters}
+            onCancel={this.closeHistoryFilter}
+            onOk={this.closeHistoryFilter}
+            onChange={this.onFilterChange}
+          />
         </SplitPanel>
       </div>
     );
