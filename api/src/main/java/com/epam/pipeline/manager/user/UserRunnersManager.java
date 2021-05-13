@@ -24,12 +24,12 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.List;
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -68,8 +68,9 @@ public class UserRunnersManager {
     }
 
     private PipelineUser getUserOrThrow(final Long id) {
-        return Optional.of(pipelineUserRepository.findOne(id)).orElseThrow(() -> new IllegalArgumentException(
-                messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id)));
+        final PipelineUser user = pipelineUserRepository.findOne(id);
+        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
+        return user;
     }
 
     private PipelineUser getUserByNameOrThrow(final String userName) {
@@ -93,7 +94,7 @@ public class UserRunnersManager {
     }
 
     private void validateRunner(final RunnerSid runnerSid) {
-        Assert.notNull(runnerSid.getName(), messageHelper.getMessage(
+        Assert.state(StringUtils.isNotBlank(runnerSid.getName()), messageHelper.getMessage(
                 MessageConstants.ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND));
     }
 }

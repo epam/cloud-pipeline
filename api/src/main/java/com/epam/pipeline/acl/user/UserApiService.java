@@ -216,7 +216,7 @@ public class UserApiService {
      * @return the list of the runners
      */
     @PreAuthorize(ADMIN_ONLY)
-    public List<RunnerSid> addRunners(final Long id, final List<RunnerSid> runners) {
+    public List<RunnerSid> updateRunners(final Long id, final List<RunnerSid> runners) {
         return userRunnersManager.saveRunners(id, runners);
     }
 

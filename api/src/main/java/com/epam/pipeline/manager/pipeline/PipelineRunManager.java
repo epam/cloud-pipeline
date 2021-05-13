@@ -101,6 +101,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1480,27 +1481,16 @@ public class PipelineRunManager {
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
     }
 
-    private List<RunSid> buildRunSids(final List<RunSid> runSids, final String currentUser,
+    private List<RunSid> buildRunSids(final List<RunSid> runSidsFromVO, final String currentUser,
                                       final RunAccessType allowedAccessType) {
-        final boolean runSharedWithCurrentUser = ListUtils.emptyIfNull(runSids).stream()
-                .anyMatch(runSid -> Objects.nonNull(runSid.getIsPrincipal())
-                        && runSid.getIsPrincipal()
-                        && currentUser.equalsIgnoreCase(runSid.getName())
-                        && Objects.equals(runSid.getAccessType(), allowedAccessType));
-
-        if (runSharedWithCurrentUser) {
-            return runSids;
-        }
+        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
 
         final RunSid runSid = new RunSid();
         runSid.setName(currentUser.toUpperCase());
         runSid.setIsPrincipal(true);
         runSid.setAccessType(allowedAccessType);
-
-        if (CollectionUtils.isEmpty(runSids)) {
-            return Collections.singletonList(runSid);
-        }
         runSids.add(runSid);
-        return runSids;
+
+        return new ArrayList<>(runSids);
     }
 }

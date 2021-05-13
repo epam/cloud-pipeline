@@ -409,12 +409,13 @@ public class UserController extends AbstractRestController {
     @PostMapping("/users/{id}/runners")
     @ResponseBody
     @ApiOperation(
-            value = "Adds runners to user",
-            notes = "Adds runners to user",
+            value = "Updates runners to user",
+            notes = "Updates runners to user",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<RunnerSid>> addRunners(@PathVariable final Long id, @RequestBody final List<RunnerSid> runners) {
-        return Result.success(userApiService.addRunners(id, runners));
+    public Result<List<RunnerSid>> updateRunners(@PathVariable final Long id,
+                                                 @RequestBody final List<RunnerSid> runners) {
+        return Result.success(userApiService.updateRunners(id, runners));
     }
 
     @GetMapping("/users/{id}/runners")
