@@ -367,7 +367,7 @@ public class GitManager {
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         if (commitMessage == null) {
-            commitMessage = String.format("Creating update %s", folder);
+            commitMessage = String.format("Creating folder '%s'", folder);
         }
         List<String> filesToCreate = new ArrayList<>();
         Path folderToCreate = Paths.get(folder);
@@ -395,7 +395,7 @@ public class GitManager {
                                        String lastCommitId,
                                        String commitMessage) throws GitClientException {
         if (commitMessage == null) {
-            commitMessage = String.format("Renaming update %s to %s", folder, newFolderName);
+            commitMessage = String.format("Renaming folder '%s' to '%s'", folder, newFolderName);
         }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
@@ -425,7 +425,7 @@ public class GitManager {
                                        String lastCommitId,
                                        String commitMessage) throws GitClientException {
         if (commitMessage == null) {
-            commitMessage = String.format("Removing update %s", folder);
+            commitMessage = String.format("Removing folder '%s'", folder);
         }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
@@ -523,7 +523,7 @@ public class GitManager {
         GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         if (StringUtils.isNullOrEmpty(sourceItemVOList.getComment())) {
-            gitPushCommitEntry.setCommitMessage(String.format("Updating files %s", StringUtils.join(", ",
+            gitPushCommitEntry.setCommitMessage(String.format("Updating files '%s'", StringUtils.join(", ",
                     String.valueOf(sourceItemVOList.getItems().stream().map(PipelineSourceItemVO::getPath)))));
         } else {
             gitPushCommitEntry.setCommitMessage(sourceItemVOList.getComment());
@@ -610,7 +610,7 @@ public class GitManager {
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
 
         for (UploadFileMetadata file : files) {
-            String filePath = folder + PATH_DELIMITER + file.getFileName();
+            final String filePath = getFilePath(folder, file);
             Arrays.stream(filePath.split(PATH_DELIMITER)).forEach(pathPart ->
                     Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                             messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, filePath)));
@@ -632,6 +632,13 @@ public class GitManager {
 
         gitPushCommitEntry.setCommitMessage(commitMessage);
         return gitlabClient.commit(gitPushCommitEntry);
+    }
+
+    private String getFilePath(final String folder, final UploadFileMetadata file) {
+        if (StringUtils.isNullOrEmpty(folder) || folder.equals(PATH_DELIMITER)) {
+            return file.getFileName();
+        }
+        return folder + PATH_DELIMITER + file.getFileName();
     }
 
     private String getCommitMessage(String commitMessage, String filePath, boolean fileExists,
