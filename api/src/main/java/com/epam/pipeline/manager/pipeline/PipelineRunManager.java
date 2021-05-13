@@ -77,6 +77,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
@@ -209,6 +210,9 @@ public class PipelineRunManager {
 
     @Autowired
     private UserRunnersManager userRunnersManager;
+
+    @Autowired
+    private UserManager userManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -1482,7 +1486,7 @@ public class PipelineRunManager {
         final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
         final String runAsUser = StringUtils.isEmpty(currentUserConfiguration.getRunAs())
                 ? runVO.getRunAs()
-                : currentUserConfiguration.getRunAs();
+                : userManager.loadUserByNameOrId(currentUserConfiguration.getRunAs()).getUserName();
         final String currentUser = authManager.getAuthorizedUser();
         final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
         Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
