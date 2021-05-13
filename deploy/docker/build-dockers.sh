@@ -409,6 +409,9 @@ build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_N
 build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-py37-${DOCKERS_VERSION}" "library/spyder-nomachine:3.7" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
 build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-${DOCKERS_VERSION}" "library/spyder-nomachine:latest" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
 
+# QuPath with nomachine
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/qupath "$CP_DIST_REPO_NAME:tools-research-qupath-nomachine-${DOCKERS_VERSION}" "library/qupath-nomachine:latest" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
+
 
 ########################
 # MD tools dockers
