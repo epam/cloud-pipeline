@@ -51,7 +51,7 @@ public class CheckPermissionHelper {
     private final UserRunnersManager userRunnersManager;
 
     public void setContext(final String userName) {
-        authManager.setAuthentication(getAuthentication(userName));
+        authManager.setAuthentication(getAuthentication(userName.toUpperCase()));
     }
 
     public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity) {

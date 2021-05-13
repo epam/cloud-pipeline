@@ -40,16 +40,18 @@ import static org.mockito.Mockito.when;
 public class UserRunnersManagerTest {
     private static final String USER_NAME = "user";
     private static final String ROLE_NAME = "role";
+    private static final String SERVICE_ACCOUNT = "service";
 
     private final PipelineUserRepository pipelineUserRepository = mock(PipelineUserRepository.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final UserRunnersManager manager = new UserRunnersManager(pipelineUserRepository, messageHelper);
 
     private final RunnerSid userRunnerSid = RunnerSid.builder().name(USER_NAME).principal(true).build();
+    private final RunnerSid roleRunnerSid = RunnerSid.builder().name(ROLE_NAME).principal(false).build();
 
     @Test
     public void shouldGetRunners() {
-        when(pipelineUserRepository.findOne(ID)).thenReturn(pipelineUser());
+        when(pipelineUserRepository.findOne(ID)).thenReturn(serviceAccountWithAllowedUser());
 
         final List<RunnerSid> runners = manager.getRunners(ID);
 
@@ -68,10 +70,11 @@ public class UserRunnersManagerTest {
 
     @Test
     public void shouldReturnTrueIfUserRunnerPresents() {
-        when(pipelineUserRepository.findByUserName(TEST_STRING)).thenReturn(Optional.of(pipelineUser()));
+        when(pipelineUserRepository.findByUserName(SERVICE_ACCOUNT))
+                .thenReturn(Optional.of(serviceAccountWithAllowedUser()));
         final PipelineUser currentUser = UserCreatorUtils.getPipelineUser(USER_NAME);
 
-        assertThat(manager.hasUserAsRunner(currentUser, TEST_STRING)).isTrue();
+        assertThat(manager.hasUserAsRunner(currentUser, SERVICE_ACCOUNT)).isTrue();
     }
 
     @Test
@@ -85,20 +88,47 @@ public class UserRunnersManagerTest {
 
     @Test
     public void shouldReturnTrueIfRunnerPresentsInRoles() {
-        final PipelineUser runAsUser = UserCreatorUtils.getPipelineUser();
-        runAsUser.setAllowedRunners(Collections.singletonList(
-                RunnerSid.builder().name(ROLE_NAME).principal(false).build()));
-        when(pipelineUserRepository.findByUserName(TEST_STRING))
-                .thenReturn(Optional.of(runAsUser));
+        final PipelineUser serviceAccount = serviceAccountWithAllowedRole();
+        when(pipelineUserRepository.findByUserName(SERVICE_ACCOUNT)).thenReturn(Optional.of(serviceAccount));
+
         final PipelineUser currentUser = UserCreatorUtils.getPipelineUser(USER_NAME);
         currentUser.setRoles(Collections.singletonList(new Role(ROLE_NAME)));
 
-        assertThat(manager.hasUserAsRunner(currentUser, TEST_STRING)).isTrue();
+        assertThat(manager.hasUserAsRunner(currentUser, SERVICE_ACCOUNT)).isTrue();
     }
 
-    private PipelineUser pipelineUser() {
-        final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser();
+    @Test
+    public void shouldFindRunnerSidByUser() {
+        final PipelineUser serviceAccount = serviceAccountWithAllowedUser();
+        when(pipelineUserRepository.findByUserName(SERVICE_ACCOUNT)).thenReturn(Optional.of(serviceAccount));
+
+        final PipelineUser currentUser = UserCreatorUtils.getPipelineUser(USER_NAME);
+        when(pipelineUserRepository.findByUserName(USER_NAME)).thenReturn(Optional.of(currentUser));
+
+        assertThat(manager.findRunnerSid(USER_NAME, SERVICE_ACCOUNT)).isEqualTo(userRunnerSid);
+    }
+
+    @Test
+    public void shouldFindRunnerSidByRole() {
+        final PipelineUser serviceAccount = serviceAccountWithAllowedRole();
+        when(pipelineUserRepository.findByUserName(SERVICE_ACCOUNT)).thenReturn(Optional.of(serviceAccount));
+
+        final PipelineUser currentUser = UserCreatorUtils.getPipelineUser(USER_NAME);
+        currentUser.setRoles(Collections.singletonList(new Role(ROLE_NAME)));
+        when(pipelineUserRepository.findByUserName(USER_NAME)).thenReturn(Optional.of(currentUser));
+
+        assertThat(manager.findRunnerSid(USER_NAME, SERVICE_ACCOUNT)).isEqualTo(roleRunnerSid);
+    }
+
+    private PipelineUser serviceAccountWithAllowedUser() {
+        final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser(SERVICE_ACCOUNT);
         pipelineUser.setAllowedRunners(Collections.singletonList(userRunnerSid));
+        return pipelineUser;
+    }
+
+    private PipelineUser serviceAccountWithAllowedRole() {
+        final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser(SERVICE_ACCOUNT);
+        pipelineUser.setAllowedRunners(Collections.singletonList(roleRunnerSid));
         return pipelineUser;
     }
 }

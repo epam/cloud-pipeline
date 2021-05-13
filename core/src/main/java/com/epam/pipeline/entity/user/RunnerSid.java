@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.user;
 
+import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +24,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.Embeddable;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 
 @Embeddable
 @Getter
@@ -33,5 +36,8 @@ import javax.persistence.Embeddable;
 public class RunnerSid {
 
     private String name;
-    private boolean principal;
+    private boolean principal = true;
+
+    @Enumerated(EnumType.STRING)
+    private RunAccessType accessType = RunAccessType.ENDPOINT;
 }

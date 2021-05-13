@@ -58,6 +58,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -76,6 +77,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -204,6 +206,9 @@ public class PipelineRunManager {
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
 
+    @Autowired
+    private UserRunnersManager userRunnersManager;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -288,7 +293,10 @@ public class PipelineRunManager {
         final String runAsUser = runVO.getRunAs();
         if (!StringUtils.isEmpty(runAsUser)) {
             final String currentUser = authManager.getAuthorizedUser();
-            runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser));
+            final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
+            Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_ALLOWED_SID_NOT_FOUND, runAsUser));
+            runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser, allowedRunnerSid.getAccessType()));
             permissionHelper.setContext(runAsUser);
         }
 
@@ -1472,10 +1480,13 @@ public class PipelineRunManager {
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
     }
 
-    private List<RunSid> buildRunSids(final List<RunSid> runSids, final String currentUser) {
+    private List<RunSid> buildRunSids(final List<RunSid> runSids, final String currentUser,
+                                      final RunAccessType allowedAccessType) {
         final boolean runSharedWithCurrentUser = ListUtils.emptyIfNull(runSids).stream()
                 .anyMatch(runSid -> Objects.nonNull(runSid.getIsPrincipal())
-                        && runSid.getIsPrincipal() && currentUser.equalsIgnoreCase(runSid.getName()));
+                        && runSid.getIsPrincipal()
+                        && currentUser.equalsIgnoreCase(runSid.getName())
+                        && Objects.equals(runSid.getAccessType(), allowedAccessType));
 
         if (runSharedWithCurrentUser) {
             return runSids;
@@ -1484,7 +1495,7 @@ public class PipelineRunManager {
         final RunSid runSid = new RunSid();
         runSid.setName(currentUser.toUpperCase());
         runSid.setIsPrincipal(true);
-        runSid.setAccessType(RunAccessType.ENDPOINT);
+        runSid.setAccessType(allowedAccessType);
 
         if (CollectionUtils.isEmpty(runSids)) {
             return Collections.singletonList(runSid);

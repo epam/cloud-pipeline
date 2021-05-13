@@ -17,6 +17,7 @@
 package com.epam.pipeline.repository.user;
 
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
@@ -79,12 +80,14 @@ public class PipelineUserRepositoryTest extends AbstractJpaTest {
     private void assertUserSid(final RunnerSid loaded) {
         assertThat(loaded, notNullValue());
         assertThat(loaded.getName(), is(USER_NAME));
+        assertThat(loaded.getAccessType(), is(RunAccessType.SSH));
         assertTrue(loaded.isPrincipal());
     }
 
     private void assertRoleSid(final RunnerSid loaded) {
         assertThat(loaded, notNullValue());
         assertThat(loaded.getName(), is(ROLE_NAME));
+        assertThat(loaded.getAccessType(), is(RunAccessType.SSH));
         assertFalse(loaded.isPrincipal());
     }
 
@@ -92,6 +95,7 @@ public class PipelineUserRepositoryTest extends AbstractJpaTest {
         final RunnerSid aclSidEntity = new RunnerSid();
         aclSidEntity.setName(sidName);
         aclSidEntity.setPrincipal(principal);
+        aclSidEntity.setAccessType(RunAccessType.SSH);
         return aclSidEntity;
     }
 }

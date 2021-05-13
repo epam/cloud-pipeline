@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Optional;
@@ -48,9 +49,22 @@ public class UserRunnersManager {
     @Transactional
     public List<RunnerSid> saveRunners(final Long id, final List<RunnerSid> runners) {
         final PipelineUser user = getUserOrThrow(id);
+        ListUtils.emptyIfNull(runners).forEach(this::validateRunner);
         user.setAllowedRunners(ListUtils.emptyIfNull(runners));
         pipelineUserRepository.save(user);
         return runners;
+    }
+
+    public RunnerSid findRunnerSid(final String userName, final String runAsUser) {
+        final PipelineUser user = getUserByNameOrThrow(userName);
+        final List<RunnerSid> allowedRunners = getUserByNameOrThrow(runAsUser).getAllowedRunners();
+        return ListUtils.emptyIfNull(allowedRunners).stream()
+                .filter(runnerSid -> isRunnerAllowedForUser(runnerSid, userName))
+                .findAny()
+                .orElse(ListUtils.emptyIfNull(allowedRunners).stream()
+                        .filter(runnerSid -> isRunnerAllowedForRoles(runnerSid, user.getRoles()))
+                        .findAny()
+                        .orElse(null));
     }
 
     private PipelineUser getUserOrThrow(final Long id) {
@@ -76,5 +90,10 @@ public class UserRunnersManager {
         return !runnersAclSid.isPrincipal()
                 && ListUtils.emptyIfNull(roles).stream()
                 .anyMatch(role -> role.getName().equalsIgnoreCase(runnersAclSid.getName()));
+    }
+
+    private void validateRunner(final RunnerSid runnerSid) {
+        Assert.notNull(runnerSid.getName(), messageHelper.getMessage(
+                MessageConstants.ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND));
     }
 }
