@@ -135,6 +135,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       prevProps.path !== this.props.path ||
       prevProps.pipelineId !== this.props.pipelineId
     ) {
+      this.clearSelectedFile();
       this.pathWasChanged();
     }
   };
@@ -271,7 +272,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   closeEditStorageDialog = () => {
-    this.setState({editStorageDialog: false});
+    const {pipeline} = this.props;
+    this.setState({editStorageDialog: false}, () => pipeline.fetch());
   };
 
   openCreateDocumentDialog = (type) => {

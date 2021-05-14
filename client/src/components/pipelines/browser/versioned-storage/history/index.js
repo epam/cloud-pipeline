@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Alert,
+  Badge,
   Button,
   Icon
 } from 'antd';
@@ -28,6 +29,19 @@ import LoadVSCommits from '../../../../../models/versioned-storage/load-commits'
 import styles from './history.css';
 
 const PAGE_SIZE = 20;
+
+const Badged = ({enabled = false, children}) => {
+  if (enabled) {
+    return (
+      <Badge
+        dot
+      >
+        {children}
+      </Badge>
+    );
+  }
+  return children;
+};
 
 class VSHistory extends React.Component {
   state = {
@@ -49,6 +63,16 @@ class VSHistory extends React.Component {
   get canNavigateToNextPage () {
     const {hasMorePages} = this.state;
     return hasMorePages;
+  }
+
+  get filtersEnabled () {
+    const {filters} = this.state;
+    return !!filters && (
+      (filters.authors || []).length > 0 ||
+      (filters.extensions || []).length > 0 ||
+      !!filters.dateFrom ||
+      !!filters.dateTo
+    );
   }
 
   componentDidMount () {
@@ -201,18 +225,25 @@ class VSHistory extends React.Component {
       >
         <div
           className={styles.header}
+          style={{
+            paddingRight: 5
+          }}
         >
           <div className={styles.title}>
             Revision history
           </div>
-          <Button
-            className={styles.filter}
-            size="small"
-            disabled={pending}
-            onClick={this.openFilters}
+          <Badged
+            enabled={this.filtersEnabled}
           >
-            <Icon type="filter" />
-          </Button>
+            <Button
+              className={styles.filter}
+              size="small"
+              disabled={pending}
+              onClick={this.openFilters}
+            >
+              <Icon type="filter" />
+            </Button>
+          </Badged>
           <HistoryFilter
             visible={filtersVisible}
             filters={filters}

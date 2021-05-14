@@ -33,6 +33,18 @@ import styles from './history-filter.css';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
+function toLocalMomentDate (string) {
+  if (!string) {
+    return string;
+  }
+  const time = moment.utc(string);
+  if (time.isValid()) {
+    const localTime = moment.utc(string).toDate();
+    return moment(localTime);
+  }
+  return undefined;
+}
+
 @inject('usersInfo')
 @localization.localizedComponent
 @observer
@@ -59,8 +71,8 @@ class HistoryFilter extends localization.LocalizedReactComponent {
     const {filters} = this.props;
     const stateFilters = {
       extensions: (filters?.extensions || []).join(', '),
-      dateFrom: filters?.dateFrom ? moment.utc(filters?.dateFrom) : undefined,
-      dateTo: filters?.dateTo ? moment.utc(filters?.dateTo) : undefined,
+      dateFrom: toLocalMomentDate(filters?.dateFrom),
+      dateTo: toLocalMomentDate(filters?.dateTo),
       authors: (filters?.authors || []).slice()
     };
     this.setState(stateFilters);
@@ -167,6 +179,9 @@ class HistoryFilter extends localization.LocalizedReactComponent {
           onChange={this.onUsersChange}
           style={{width: '70%'}}
           value={authors || []}
+          filterOption={
+            (input, option) => option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          }
         >
           {
             list.map(user => (

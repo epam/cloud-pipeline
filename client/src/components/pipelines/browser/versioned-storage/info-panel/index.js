@@ -203,8 +203,9 @@ class InfoPanel extends localization.LocalizedReactComponent {
       return null;
     }
     const {fileEditable} = this.state;
+    let content;
     if (!fileEditable) {
-      return (
+      content = (
         <Row
           type="flex"
           style={{color: '#777', marginTop: 5, marginBottom: 5}}
@@ -213,6 +214,25 @@ class InfoPanel extends localization.LocalizedReactComponent {
             File preview is not available.
           </span>
           {this.renderDownloadLink()}
+        </Row>
+      );
+    } else {
+      content = (
+        <Row
+          type="flex"
+          justify="space-between"
+          align="middle"
+          className={styles.previewHeaderRow}
+        >
+          <b>File preview</b>
+          <Button
+            size="small"
+            onClick={this.handleFileEdit}
+            disabled={!fileEditable}
+            className={styles.previewHeaderBtn}
+          >
+            <Icon type="arrows-alt" />
+          </Button>
         </Row>
       );
     }
@@ -242,22 +262,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
             <Icon type="eye" />
           </Button>
         </Row>
-        <Row
-          type="flex"
-          justify="space-between"
-          align="middle"
-          className={styles.previewHeaderRow}
-        >
-          <b>File preview</b>
-          <Button
-            size="small"
-            onClick={this.handleFileEdit}
-            disabled={!fileEditable}
-            className={styles.previewHeaderBtn}
-          >
-            <Icon type="arrows-alt" />
-          </Button>
-        </Row>
+        {content}
       </div>
     );
   };
