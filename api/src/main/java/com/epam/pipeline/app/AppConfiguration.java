@@ -61,6 +61,9 @@ public class AppConfiguration implements SchedulingConfigurer {
     @Value("${pause.pool.size:10}")
     private int pausePoolSize;
 
+    @Value("${run.as.pool.size:5}")
+    private int runAsPoolSize;
+
     @Bean
     public MessageHelper messageHelper() {
         return new MessageHelper(messageSource());
@@ -111,7 +114,7 @@ public class AppConfiguration implements SchedulingConfigurer {
 
     @Bean
     public Executor pauseRunExecutor() {
-        return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("PauseRun"));
+        return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("PauseRun", pausePoolSize));
     }
 
     @Bean
@@ -124,10 +127,15 @@ public class AppConfiguration implements SchedulingConfigurer {
         return new JdbcTemplateLockProvider(dataSource);
     }
 
-    private Executor getThreadPoolTaskExecutor(String name) {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(pausePoolSize);
-        executor.setMaxPoolSize(pausePoolSize);
+    @Bean
+    public Executor runAsExecutor() {
+        return getThreadPoolTaskExecutor("runAsExecutor", runAsPoolSize);
+    }
+
+    private Executor getThreadPoolTaskExecutor(final String name, final int poolSize) {
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(poolSize);
+        executor.setMaxPoolSize(poolSize);
         executor.setThreadNamePrefix(name);
         executor.initialize();
         return executor;

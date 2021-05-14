@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.configuration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -27,6 +28,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -57,6 +59,9 @@ public class PipelineConfiguration {
     private static final String WORKER_CMD = "worker_cmd";
     private static final String IS_SPOT = "is_spot";
     private static final String NON_PAUSE = "non_pause";
+    private static final String RUN_AS = "run_as";
+    private static final String SHARED_WITH_USERS = "share_with_users";
+    private static final String SHARED_WITH_ROLES = "share_with_roles";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -136,6 +141,15 @@ public class PipelineConfiguration {
 
     @JsonIgnore
     private Integer effectiveDiskSize;
+
+    @JsonProperty(value = RUN_AS)
+    private String runAs;
+
+    @JsonProperty(value = SHARED_WITH_USERS)
+    private List<RunSid> sharedWithUsers;
+
+    @JsonProperty(value = SHARED_WITH_ROLES)
+    private List<RunSid> sharedWithRoles;
 
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {

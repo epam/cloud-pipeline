@@ -30,6 +30,7 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -50,8 +51,8 @@ public class CheckPermissionHelper {
     private final UserManager userManager;
     private final UserRunnersManager userRunnersManager;
 
-    public void setContext(final String userName) {
-        authManager.setAuthentication(getAuthentication(userName.toUpperCase()));
+    public SecurityContext createContext(final String userName) {
+        return authManager.createContext(getAuthentication(userName.toUpperCase()));
     }
 
     public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity) {

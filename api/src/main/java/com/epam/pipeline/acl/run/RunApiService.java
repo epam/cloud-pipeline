@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
@@ -87,6 +88,7 @@ public class RunApiService {
     private final ConfigurationRunner configurationLauncher;
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
     private final PipelineRunKubernetesManager pipelineRunKubernetesManager;
+    private final PipelineRunAsManager pipelineRunAsManager;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
@@ -102,7 +104,9 @@ public class RunApiService {
             + " AND @grantPermissionManager.hasPipelinePermissionToRunAs(#runVO, 'EXECUTE')")
     @AclMask
     public PipelineRun runPipeline(final PipelineStart runVO) {
-        return runManager.runPipeline(runVO);
+        return pipelineRunAsManager.runAsAnotherUser(runVO)
+                ? pipelineRunAsManager.runPipeline(runVO)
+                : runManager.runPipeline(runVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "
