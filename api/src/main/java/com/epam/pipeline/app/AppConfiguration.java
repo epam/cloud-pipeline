@@ -124,6 +124,11 @@ public class AppConfiguration implements SchedulingConfigurer {
         return new JdbcTemplateLockProvider(dataSource);
     }
 
+    @Bean
+    public Executor runAsExecutor() {
+        return getSingleThreadExecutor("runAsExecutor");
+    }
+
     private Executor getThreadPoolTaskExecutor(String name) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(pausePoolSize);

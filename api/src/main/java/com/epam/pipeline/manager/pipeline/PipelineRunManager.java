@@ -108,6 +108,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -208,12 +210,6 @@ public class PipelineRunManager {
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
 
-    @Autowired
-    private UserRunnersManager userRunnersManager;
-
-    @Autowired
-    private UserManager userManager;
-
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -295,8 +291,6 @@ public class PipelineRunManager {
      */
     @ToolSecurityPolicyCheck
     public PipelineRun runPipeline(final PipelineStart runVO) {
-        configureRunnerUser(runVO);
-
         final Long pipelineId = runVO.getPipelineId();
         LOGGER.debug("Pipeline '{}' will be launched as '{}'", pipelineId, authManager.getAuthorizedUser());
         final String version = runVO.getVersion();
@@ -1477,35 +1471,6 @@ public class PipelineRunManager {
         return Objects.isNull(parsedImage)
                 ? null
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
-    }
-
-    private void configureRunnerUser(final PipelineStart runVO) {
-        if (StringUtils.isEmpty(runVO.getRunAs())) {
-            return;
-        }
-        final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
-        final String runAsUser = StringUtils.isEmpty(currentUserConfiguration.getRunAs())
-                ? runVO.getRunAs()
-                : userManager.loadUserByNameOrId(currentUserConfiguration.getRunAs()).getUserName();
-        final String currentUser = authManager.getAuthorizedUser();
-        final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
-        Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
-                MessageConstants.ERROR_RUN_ALLOWED_SID_NOT_FOUND, runAsUser));
-        runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser, allowedRunnerSid.getAccessType()));
-        permissionHelper.setContext(runAsUser);
-    }
-
-    private List<RunSid> buildRunSids(final List<RunSid> runSidsFromVO, final String currentUser,
-                                      final RunAccessType allowedAccessType) {
-        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
-
-        final RunSid runSid = new RunSid();
-        runSid.setName(currentUser.toUpperCase());
-        runSid.setIsPrincipal(true);
-        runSid.setAccessType(allowedAccessType);
-        runSids.add(runSid);
-
-        return new ArrayList<>(runSids);
     }
 
     private List<RunSid> mergeRunSids(final List<RunSid> runSidsFromVO,
