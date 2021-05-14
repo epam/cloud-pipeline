@@ -27,7 +27,6 @@ import UserName from '../../../special/UserName';
 
 @observer
 export default class ShareWithForm extends React.Component {
-
   static propTypes = {
     endpointsAvailable: PropTypes.bool,
     sids: PropTypes.array,
@@ -155,12 +154,22 @@ export default class ShareWithForm extends React.Component {
 
   findGroupDataSource = () => {
     const roles = this.state.groupSearchString
-      ? (this.props.roles
-          .filter(r => r.name.toLowerCase().indexOf(this.state.groupSearchString.toLowerCase()) >= 0)
-          .map(r => r.predefined ? r.name : this.splitRoleName(r.name)))
+      ? (
+        this.props.roles
+          .filter(r => r.name.toLowerCase()
+            .indexOf(this.state.groupSearchString.toLowerCase()) >= 0
+          )
+          .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
+      )
       : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
-      return [...roles, ...(this.groupFind.value || []).map(g => g)];
+      return [
+        ...new Set(
+          [
+            ...roles,
+            ...(this.groupFind.value || []).map(g => g)]
+        )
+      ];
     }
     return [...roles];
   };
