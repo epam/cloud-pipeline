@@ -51,12 +51,10 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
-import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -75,7 +73,6 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
-import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -202,9 +199,6 @@ public class PipelineRunManager {
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
 
-    @Autowired
-    private UserRunnersManager userRunnersManager;
-
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -286,16 +280,6 @@ public class PipelineRunManager {
      */
     @ToolSecurityPolicyCheck
     public PipelineRun runPipeline(final PipelineStart runVO) {
-        final String runAsUser = runVO.getRunAs();
-        if (!StringUtils.isEmpty(runAsUser)) {
-            final String currentUser = authManager.getAuthorizedUser();
-            final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
-            Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_ALLOWED_SID_NOT_FOUND, runAsUser));
-            runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser, allowedRunnerSid.getAccessType()));
-            permissionHelper.setContext(runAsUser);
-        }
-
         final Long pipelineId = runVO.getPipelineId();
         LOGGER.debug("Pipeline '{}' will be launched as '{}'", pipelineId, authManager.getAuthorizedUser());
         final String version = runVO.getVersion();
@@ -307,6 +291,8 @@ public class PipelineRunManager {
 
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
+        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithRoles(),
+                configuration.getSharedWithRoles()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         //check that tool execution is allowed
@@ -1466,16 +1452,18 @@ public class PipelineRunManager {
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
     }
 
-    private List<RunSid> buildRunSids(final List<RunSid> runSidsFromVO, final String currentUser,
-                                      final RunAccessType allowedAccessType) {
+    private List<RunSid> mergeRunSids(final List<RunSid> runSidsFromVO,
+                                      final List<RunSid> userSidsFromConfiguration,
+                                      final List<RunSid> roleSidsFromConfiguration) {
         final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
-
-        final RunSid runSid = new RunSid();
-        runSid.setName(currentUser.toUpperCase());
-        runSid.setIsPrincipal(true);
-        runSid.setAccessType(allowedAccessType);
-        runSids.add(runSid);
-
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(userSidsFromConfiguration), true));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(roleSidsFromConfiguration), false));
         return new ArrayList<>(runSids);
+    }
+
+    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
+        return runsSids.stream()
+                .peek(runSid -> runSid.setIsPrincipal(principal))
+                .collect(Collectors.toList());
     }
 }
