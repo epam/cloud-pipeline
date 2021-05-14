@@ -20,7 +20,8 @@ import {
   Alert,
   Badge,
   Button,
-  Icon
+  Icon,
+  Spin
 } from 'antd';
 import classNames from 'classnames';
 import CommitCard from './commit-card';
@@ -258,6 +259,20 @@ class VSHistory extends React.Component {
               type="error"
               message={error}
             />
+          )
+        }
+        {
+          pending && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Spin />
+            </div>
           )
         }
         <div className={styles.content}>

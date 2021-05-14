@@ -18,11 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {
+  Alert,
   Row,
   Button,
   Icon,
   Spin,
-  message,
   Input
 } from 'antd';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
@@ -31,7 +31,7 @@ import {SplitPanel} from '../../../../special/splitPanel';
 import VSHistory from '../history';
 import styles from './info-panel.css';
 
-const MAX_SIZE_TO_PREVIEW = 1000000;
+const MAX_SIZE_TO_PREVIEW = 1024 * 75; // 25kb
 const CONTENT_INFO = [{
   key: 'preview',
   containerStyle: {
@@ -40,8 +40,8 @@ const CONTENT_INFO = [{
   },
   size: {
     priority: 0,
-    percentDefault: 50,
-    pxMinimum: 200
+    percentDefault: 33,
+    pxMinimum: 100
   }
 }, {
   key: 'history',
@@ -50,36 +50,20 @@ const CONTENT_INFO = [{
     flexDirection: 'column'
   },
   size: {
-    keepPreviousSize: true,
     priority: 2,
-    percentDefault: 50,
+    percentDefault: 66,
     pxMinimum: 200
   }
 }];
-const PREVIEW_TYPES = [
-  '.txt',
-  '.csv'
-];
-
-function checkFileSize (file) {
-  if (!file || file.size === undefined) {
-    return false;
-  }
-  return file.size > MAX_SIZE_TO_PREVIEW;
-}
-
-function checkFileValidity (file) {
-  if (!file || file.size === undefined) {
-    return false;
-  }
-  return PREVIEW_TYPES.some(type => file.name.endsWith(type));
-}
 
 @localization.localizedComponent
 @observer
 class InfoPanel extends localization.LocalizedReactComponent {
   state = {
     inProgress: false,
+    fileIsFetching: false,
+    fileFetchingError: undefined,
+    binaryFile: false,
     fileContent: null,
     editFile: false,
     fileEditable: true,
@@ -87,15 +71,12 @@ class InfoPanel extends localization.LocalizedReactComponent {
   };
 
   componentDidMount () {
-    const {file} = this.props;
-    if (file) {
-      this.checkFileAndLoad(file);
-    }
+    this.getFileContent();
   };
 
   componentDidUpdate (prevProps) {
     if (prevProps.file !== this.props.file) {
-      this.checkFileAndLoad(this.props.file);
+      this.getFileContent();
     }
   }
 
@@ -108,22 +89,6 @@ class InfoPanel extends localization.LocalizedReactComponent {
     return false;
   };
 
-  checkFileAndLoad = (file) => {
-    if (!file) {
-      this.setState({
-        fileEditable: false,
-        fileSizeExceeded: false
-      });
-    } else {
-      this.setState({
-        fileEditable: checkFileValidity(file),
-        fileSizeExceeded: checkFileSize(file)
-      }, () => {
-        this.getFileContent(file);
-      });
-    }
-  };
-
   handleFileEdit = () => {
     const {onFileEdit} = this.props;
     onFileEdit && onFileEdit();
@@ -134,52 +99,72 @@ class InfoPanel extends localization.LocalizedReactComponent {
     onGoBack && onGoBack();
   };
 
-  getFileContent = (file) => {
+  getFileContent = () => {
     const {
       pipelineId,
-      lastCommitId
+      lastCommitId,
+      file
     } = this.props;
-    if (!pipelineId || !file || !file.path || !lastCommitId) {
+    if (
+      !pipelineId ||
+      !file ||
+      !file.path ||
+      file.size > MAX_SIZE_TO_PREVIEW ||
+      !lastCommitId
+    ) {
+      this.setState({
+        fileIsFetching: false,
+        fileFetchingError: undefined,
+        fileContent: undefined,
+        binaryFile: false
+      });
       return null;
     }
-    if (this.previewAvailable) {
-      const request = new VersionFile(
-        pipelineId,
-        file.path,
-        lastCommitId
-      );
-      this.setState({
-        inProgress: true
-      }, () => {
-        const reject = error => {
-          this.setState({inProgress: false});
-          message.error(error, 5);
-        };
-        const resolve = result => {
+    const request = new VersionFile(
+      pipelineId,
+      file.path,
+      lastCommitId
+    );
+    this.setState({
+      fileIsFetching: true
+    }, () => {
+      const reject = error => {
+        this.setState({
+          fileIsFetching: false,
+          fileFetchingError: error.message,
+          fileContent: undefined,
+          binaryFile: false
+        });
+      };
+      const resolve = result => {
+        try {
+          const content = atob(result);
+          // eslint-disable-next-line
+          const binary = /[\x00-\x09\x0E-\x1F]/.test(content);
           this.setState({
-            fileContent: atob(result),
-            inProgress: false
+            fileContent: binary ? undefined : content,
+            binaryFile: binary,
+            fileIsFetching: false,
+            fileFetchingError: undefined
           });
-        };
-        request
-          .fetch()
-          .then(() => {
-            if (request.error) {
-              reject(request.error || `Error fetching ${file.path} content`);
-            } else {
-              resolve(request.response);
-            }
-          })
-          .catch(e => reject(e.message));
-      });
-    } else {
-      this.setState({
-        fileContent: ''
-      });
-    }
+        } catch (e) {
+          reject(new Error(`Error parsing file: ${e.message}`));
+        }
+      };
+      request
+        .fetch()
+        .then(() => {
+          if (request.error) {
+            reject(new Error(request.error || `Error fetching ${file.path} content`));
+          } else {
+            resolve(request.response);
+          }
+        })
+        .catch(reject);
+    });
   };
 
-  renderDownloadLink = () => {
+  renderDownloadLink = (description) => {
     const {file, onFileDownload} = this.props;
     if (!file) {
       return null;
@@ -192,7 +177,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
         >
           Download file
         </span>
-        to view full contents
+        {description}
       </span>
     );
   };
@@ -202,18 +187,48 @@ class InfoPanel extends localization.LocalizedReactComponent {
     if (!file) {
       return null;
     }
+    const {
+      fileFetchingError,
+      fileIsFetching,
+      binaryFile
+    } = this.state;
     const {fileEditable} = this.state;
     let content;
-    if (!fileEditable) {
+    if (fileIsFetching) {
+      content = (
+        <Row type="flex" justify="center">
+          <Spin />
+        </Row>
+      );
+    } else if (fileFetchingError) {
       content = (
         <Row
           type="flex"
           style={{color: '#777', marginTop: 5, marginBottom: 5}}
         >
-          <span style={{marginRight: '5px'}}>
+          <Alert
+            type="error"
+            message={(
+              <Row>
+                <span style={{marginRight: 5}}>
+                  {fileFetchingError}
+                </span>
+                {this.renderDownloadLink()}
+              </Row>
+            )}
+          />
+        </Row>
+      );
+    } else if (file.size > MAX_SIZE_TO_PREVIEW || binaryFile) {
+      content = (
+        <Row
+          type="flex"
+          style={{color: '#777', marginTop: 5, marginBottom: 5}}
+        >
+          <span style={{marginRight: 5}}>
             File preview is not available.
           </span>
-          {this.renderDownloadLink()}
+          {this.renderDownloadLink('to view full contents')}
         </Row>
       );
     } else {
@@ -244,7 +259,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
           align="middle"
           className={styles.previewHeaderRow}
         >
-          <div>
+          <div style={{flex: 1}}>
             <Button
               size="small"
               className={styles.goBackHeaderBtn}
@@ -269,20 +284,35 @@ class InfoPanel extends localization.LocalizedReactComponent {
 
   renderFilePreview = () => {
     const {file} = this.props;
-    const {fileContent} = this.state;
-    if (!file || typeof fileContent !== 'string' || !this.previewAvailable) {
+    const {
+      binaryFile,
+      fileContent,
+      fileFetchingError,
+      fileIsFetching
+    } = this.state;
+    if (
+      !file ||
+      binaryFile ||
+      fileFetchingError ||
+      file.size > MAX_SIZE_TO_PREVIEW
+    ) {
       return null;
     }
     return (
-      <Input
+      <Input.TextArea
+        disabled={fileIsFetching}
         spellCheck="false"
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        style={{height: '100%'}}
-        type="textarea"
+        autosize={false}
         className={styles.filePreviewInput}
-        value={fileContent}
+        value={fileContent || (fileIsFetching && '') || 'empty'}
+        style={
+          fileContent
+            ? {height: '100%'}
+            : {color: '#aaa', height: '100%', fontStyle: 'italic'}
+        }
         readOnly
       />
     );
@@ -290,20 +320,11 @@ class InfoPanel extends localization.LocalizedReactComponent {
 
   render () {
     const {
-      pending,
       lastCommitId,
       pipelineId,
       path,
       file
     } = this.props;
-    const {inProgress} = this.state;
-    if (pending || inProgress) {
-      return (
-        <Row type="flex" justify="center">
-          <Spin />
-        </Row>
-      );
-    }
     return (
       <SplitPanel
         style={{overflow: 'auto'}}
