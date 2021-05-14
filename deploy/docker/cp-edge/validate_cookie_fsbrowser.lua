@@ -67,6 +67,10 @@ end
 
 -- Check if request alread contains a cookie "bearer"
 local token = ngx.var.cookie_bearer
+-- If no "bearer" cookie - check in headers
+if token == nil then
+    token = ngx.req.get_headers()['bearer']
+end
 if token then
     -- If cookie present - validate it
     local cert_path = os.getenv("JWT_PUB_KEY")

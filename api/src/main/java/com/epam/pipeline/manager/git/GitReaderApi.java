@@ -17,12 +17,12 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogRequestFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
@@ -54,11 +54,11 @@ public interface GitReaderApi {
      * @param pageSize (optional) - The size of the page to return
      */
     @GET("git/{project}/ls_tree")
-    Call<Result<GitReaderEntryListing<GitRepositoryEntry>>> getRepositoryTree(@Path(PROJECT) String name,
-                                                                              @Query(PATH) String path,
-                                                                              @Query(REF) String reference,
-                                                                              @Query(PAGE) Long page,
-                                                                              @Query(PAGE_SIZE) Integer pageSize);
+    Call<Result<GitReaderEntryListing<GitReaderObject>>> getRepositoryTree(@Path(PROJECT) String name,
+                                                                           @Query(PATH) String path,
+                                                                           @Query(REF) String reference,
+                                                                           @Query(PAGE) Long page,
+                                                                           @Query(PAGE_SIZE) Integer pageSize);
 
 
     /**

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,60 +17,25 @@ import traceback
 import tarfile
 import subprocess
 
-from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
 from fsbrowser.src.logger import BrowserLogger
 from fsbrowser.src.pattern_utils import PatternMatcher
+from fsbrowser.src.model.task import TaskStatus, Task
 
 TAR_GZ_EXTENSION = '.tar.gz'
 DELIMITER = '/'
-TAR_GZ_PERMISSIONS = 0774  # -rwxrwxr--
+TAR_GZ_PERMISSIONS = 0o774  # -rwxrwxr--
 
 
-class TaskStatus(object):
-    PENDING = 'pending'
-    SUCCESS = 'success'
-    RUNNING = 'running'
-    FAILURE = 'failure'
-    CANCELED = 'canceled'
-
-    @staticmethod
-    def is_terminal(status):
-        return status == TaskStatus.SUCCESS or status == TaskStatus.FAILURE or status == TaskStatus.CANCELED
-
-
-class TransferTask(object):
+class TransferTask(Task):
 
     def __init__(self, task_id, storage_name, storage_path='', logger=BrowserLogger()):
-        self.task_id = task_id
+        super().__init__(task_id, logger)
         self.storage_name = storage_name
-        self.status = TaskStatus.PENDING
         self.process = None
-        self.message = None
-        self.result = None
         self.upload_path = None
-        self.logger = logger
         self.storage_path = storage_path
         self.tmp_tar_ball = None
-
-    def success(self, result=None):
-        self.status = TaskStatus.SUCCESS
-        if result:
-            self.result = result
-
-    def failure(self, e):
-        self.status = TaskStatus.FAILURE
-        self.message = e.__str__()
-
-    def running(self):
-        self.status = TaskStatus.RUNNING
-
-    def to_json(self):
-        result = {'status': self.status}
-        if self.message:
-            result.update({'message': self.message})
-        if self.result:
-            result.update({'result': self.result})
-        return result
 
     def cancel(self, working_directory):
         self.status = TaskStatus.CANCELED
@@ -119,7 +84,7 @@ class TransferTask(object):
                 self.logger.log('Cancel initiated by user')
                 return
             self.pipe_storage_cp(full_source_path, 'cp://%s' % full_destination_path)
-            pipeline_api = CloudPipelineApiProvider(self.logger.log_dir)
+            pipeline_api = CloudPipelineApiProvider()
             storage_id = pipeline_api.load_storage_id_by_name(self.storage_name)
             url = pipeline_api.get_download_url(storage_id, os.path.join(self.storage_path, self.task_id,
                                                                          source_file_name))
@@ -154,7 +119,7 @@ class TransferTask(object):
                 self.failure(e)
 
     def pipe_storage_cp(self, source, destination, force=False):
-        self.logger.log("Strarting to transfer data from %s to %s" % (source, destination))
+        self.logger.log("Starting to transfer data from %s to %s" % (source, destination))
         command = ['pipe', 'storage', 'cp', source, destination]
         if force:
             command.append('--force')

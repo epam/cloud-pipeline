@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'flask==1.1.1',
-        'Flask-HTTPAuth==3.3.0'
+        'Flask-HTTPAuth==3.3.0',
+        'pygit2==1.5.0'
     ],
     entry_points='''
         [console_scripts]

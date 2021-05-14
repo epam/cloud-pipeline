@@ -19,7 +19,20 @@ import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link} from 'react-router';
 import FileSaver from 'file-saver';
-import {Alert, Card, Col, Collapse, Icon, Menu, message, Modal, Popover, Row, Spin} from 'antd';
+import {
+  Alert,
+  Card,
+  Col,
+  Collapse,
+  Dropdown,
+  Icon,
+  Menu,
+  message,
+  Modal,
+  Popover,
+  Row,
+  Spin
+} from 'antd';
 import SplitPane from 'react-split-pane';
 import {
   PipelineRunCommitCheck,
@@ -30,9 +43,9 @@ import PausePipeline from '../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
-import PipelineRunSSH from '../../../models/pipelines/PipelineRunSSH';
+import pipelineRunSSHCache from '../../../models/pipelines/PipelineRunSSHCache';
 import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKubeServicesLoad';
-import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
+import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
@@ -77,6 +90,7 @@ import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import VSActions from '../../versioned-storages/vs-actions';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -107,8 +121,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     taskName: params.taskName,
     run: pipelineRun.run(params.runId, {refresh: true}),
     nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
-    runSSH: new PipelineRunSSH(params.runId),
-    runFSBrowser: new PipelineRunFSBrowser(params.runId),
+    runSSH: pipelineRunSSHCache.getPipelineRunSSH(params.runId),
+    runFSBrowser: pipelineRunFSBrowserCache.getPipelineRunFSBrowser(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     runSchedule: new RunSchedules(params.runId),
     runKubeServices: new PipelineRunKubeServicesLoad(params.runId),
@@ -1796,7 +1810,11 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {PauseResumeButton}{ActionButton}{SSHButton}{FSBrowserButton}{ExportLogsButton}
+              {PauseResumeButton}
+              {ActionButton}
+              {SSHButton}
+              {FSBrowserButton}
+              {ExportLogsButton}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
@@ -1805,6 +1823,16 @@ class Logs extends localization.LocalizedReactComponent {
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {CommitStatusButton}
+            </Row>
+            <br />
+            <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
+              <VSActions
+                run={this.props.run.value}
+                showDownIcon
+                trigger={['click']}
+              >
+                VERSIONED STORAGE
+              </VSActions>
             </Row>
           </Col>
         </Row>

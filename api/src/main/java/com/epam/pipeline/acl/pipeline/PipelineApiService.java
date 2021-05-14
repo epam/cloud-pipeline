@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
@@ -317,9 +318,9 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public GitReaderEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
-                                                                             final String path, final Long page,
-                                                                             final Integer pageSize) {
+    public GitReaderEntryListing<GitReaderObject> lsTreeRepositoryContent(final Long id, final String version,
+                                                                          final String path, final Long page,
+                                                                          final Integer pageSize) {
         return gitManager.lsTreeRepositoryContent(id, version, path, page, pageSize);
     }
 

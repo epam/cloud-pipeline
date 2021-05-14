@@ -111,19 +111,20 @@ class GitManager(object):
     def list_tree(self, repo, path, ref, page, page_size):
         result = []
         offset = int(page * page_size)
-        git_ls_tree_result = repo.git.ls_tree("--full-tree", ref, "--", path)
+        git_ls_tree_result = repo.git.ls_tree("--full-tree", ref, "-l", "--", path)
         if git_ls_tree_result == "" or not git_ls_tree_result:
             return 0, result
         git_ls_tree_result = git_ls_tree_result.split("\n")
         for line in git_ls_tree_result[offset:offset + page_size]:
             git_ls_tree_line = line.split()
-            name = os.path.basename(git_ls_tree_line[3])
+            name = os.path.basename(git_ls_tree_line[4])
             result.append(GitObject(
-                            git_id=git_ls_tree_line[3],
+                            git_id=git_ls_tree_line[4],
                             name=name,
                             git_type=git_ls_tree_line[1],
-                            path=git_ls_tree_line[3],
-                            mode=git_ls_tree_line[0]
+                            path=git_ls_tree_line[4],
+                            mode=git_ls_tree_line[0],
+                            size=git_ls_tree_line[3],
                          )
             )
         return int(len(git_ls_tree_result) / page_size), result

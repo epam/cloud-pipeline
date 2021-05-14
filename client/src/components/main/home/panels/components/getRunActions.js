@@ -19,6 +19,7 @@ import {Link} from 'react-router';
 import {Row} from 'antd';
 import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import {canPauseRun} from '../../../../runs/actions';
+import VSActions from '../../../../versioned-storages/vs-actions';
 
 export default function (callbacks) {
   return function (run) {
@@ -74,6 +75,22 @@ export default function (callbacks) {
             title: 'SSH',
             icon: 'code-o',
             action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
+          });
+          actions.push({
+            title: (
+              <VSActions
+                run={run}
+                trigger={['click']}
+                getPopupContainer={() => document.getElementById('root')}
+                onDropDownVisibleChange={callbacks && callbacks.vsActionsMenu
+                  ? (v) => callbacks.vsActionsMenu(run, v)
+                  : undefined
+                }
+              >
+                VSC
+              </VSActions>
+            ),
+            icon: 'fork'
           });
         }
         if (canPauseRun(run)) {

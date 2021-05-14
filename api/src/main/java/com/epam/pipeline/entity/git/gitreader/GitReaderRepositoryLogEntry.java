@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.git.gitreader;
 
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -30,5 +29,5 @@ public class GitReaderRepositoryLogEntry {
     private GitReaderRepositoryCommit commit;
 
     @JsonProperty("git_object")
-    private GitRepositoryEntry gitObject;
+    private GitReaderObject gitObject;
 }

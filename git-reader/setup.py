@@ -26,7 +26,10 @@ setup(
         'Flask-HTTPAuth==3.3.0',
         'GitPython==3.1.14',
         'flasgger==0.9.5',
-        'datetime==4.3'
+        'datetime==4.3',
+        'pyjwt==2.0.1',
+        'Flask-JWT-Extended==4.2.1',
+        'jwcrypto==0.8'
     ],
     entry_points='''
         [console_scripts]

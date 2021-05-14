@@ -16,15 +16,35 @@
 
 import RemotePost from '../basic/RemotePost';
 
-class PipelineFileUpdate extends RemotePost {
+function trimTrailingSlash (o) {
+  if (!o || !o.endsWith('/')) {
+    return o;
+  }
+  return o.slice(0, -1);
+}
 
+class PipelineFileUpdate extends RemotePost {
   constructor (id) {
     super();
     this.url = `/pipeline/${id}/file`;
   }
 
-  static uploadUrl (id, folder) {
-    return `${this.prefix}/pipeline/${id}/file/upload?path=${folder}`;
+  static uploadUrl (id, folder, options = {}) {
+    const {
+      trimTrailingSlash: trimTrailingSlashOption = false
+    } = options;
+    const folderCorrected = trimTrailingSlashOption
+      ? trimTrailingSlash(folder)
+      : folder;
+    const queryParameters = [
+      folderCorrected && folderCorrected.length > 0
+        ? `path=${folderCorrected}`
+        : undefined
+    ]
+      .filter(Boolean)
+      .join('&');
+    const query = queryParameters.length > 0 ? `?${queryParameters}` : '';
+    return `${this.prefix}/pipeline/${id}/file/upload${query}`;
   }
 }
 

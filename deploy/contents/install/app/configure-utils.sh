@@ -958,6 +958,10 @@ function api_setup_base_preferences {
 
 }
 
+function api_register_git_reader {
+      api_set_preference "git.reader.service.host" "${CP_GITLAB_READER_INTERNAL_HOST:-http://cp-gitlab-reader.default.svc.cluster.local}:${CP_GITLAB_READER_INTERNAL_PORT:-35800}" "false"
+}
+
 function api_register_search {
 
     api_set_preference "search.elastic.scheme" "http" "false"
