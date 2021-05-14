@@ -53,10 +53,12 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -75,6 +77,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -98,6 +101,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -156,9 +160,6 @@ public class PipelineRunManager {
     private InstanceOfferManager instanceOfferManager;
 
     @Autowired
-    private AuthManager securityManager;
-
-    @Autowired
     private ToolManager toolManager;
 
     @Autowired
@@ -205,6 +206,9 @@ public class PipelineRunManager {
 
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
+
+    @Autowired
+    private UserRunnersManager userRunnersManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -286,22 +290,33 @@ public class PipelineRunManager {
      * @return
      */
     @ToolSecurityPolicyCheck
-    public PipelineRun runPipeline(PipelineStart runVO) {
-        Long pipelineId = runVO.getPipelineId();
-        String version = runVO.getVersion();
-        int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
+    public PipelineRun runPipeline(final PipelineStart runVO) {
+        final String runAsUser = runVO.getRunAs();
+        if (!StringUtils.isEmpty(runAsUser)) {
+            final String currentUser = authManager.getAuthorizedUser();
+            final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
+            Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_ALLOWED_SID_NOT_FOUND, runAsUser));
+            runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser, allowedRunnerSid.getAccessType()));
+            permissionHelper.setContext(runAsUser);
+        }
+
+        final Long pipelineId = runVO.getPipelineId();
+        LOGGER.debug("Pipeline '{}' will be launched as '{}'", pipelineId, authManager.getAuthorizedUser());
+        final String version = runVO.getVersion();
+        final int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
-        Pipeline pipeline = pipelineManager.load(pipelineId);
-        PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
-        boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
+        final Pipeline pipeline = pipelineManager.load(pipelineId);
+        final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
+        final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         //check that tool execution is allowed
         toolApiService.loadToolForExecution(configuration.getDockerImage());
-        PipelineRun run = launchPipeline(configuration, pipeline, version,
+        final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
                 runVO.getParentRunId(), null, null, runVO.getRunSids());
         run.setParent(pipeline);
@@ -358,7 +373,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null), 
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null),
                 entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
@@ -799,7 +814,7 @@ public class PipelineRunManager {
         run.setNodeCount(configuration.getNodeCount());
         setRunPrice(instance, run);
         run.setSshPassword(PasswordGenerator.generatePassword());
-        run.setOwner(securityManager.getAuthorizedUser());
+        run.setOwner(authManager.getAuthorizedUser());
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
@@ -1464,5 +1479,18 @@ public class PipelineRunManager {
         return Objects.isNull(parsedImage)
                 ? null
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
+    }
+
+    private List<RunSid> buildRunSids(final List<RunSid> runSidsFromVO, final String currentUser,
+                                      final RunAccessType allowedAccessType) {
+        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
+
+        final RunSid runSid = new RunSid();
+        runSid.setName(currentUser.toUpperCase());
+        runSid.setIsPrincipal(true);
+        runSid.setAccessType(allowedAccessType);
+        runSids.add(runSid);
+
+        return new ArrayList<>(runSids);
     }
 }

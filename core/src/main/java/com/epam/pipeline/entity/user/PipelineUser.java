@@ -31,6 +31,7 @@ import org.springframework.util.StringUtils;
 import javax.persistence.AttributeConverter;
 import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -109,6 +110,9 @@ public class PipelineUser implements StorageContainer {
     private List<CloudProfileCredentialsEntity> cloudProfiles;
 
     private Long defaultProfileId;
+
+    @ElementCollection
+    private List<RunnerSid> allowedRunners;
 
     public PipelineUser() {
         this.admin = false;

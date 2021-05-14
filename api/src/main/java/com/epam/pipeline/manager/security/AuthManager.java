@@ -57,6 +57,11 @@ public class AuthManager {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 
+    public void setAuthentication(final Authentication authentication) {
+        SecurityContextHolder.setContext(SecurityContextHolder.createEmptyContext());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
     /**
      * @return user name of currently logged in user
      */
