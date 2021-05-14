@@ -141,16 +141,23 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
 
   renderForm = () => {
     const pipelineType = this.props.pipeline ? this.props.pipeline.pipelineType : undefined;
-    const objectName = /^versioned_storage$/i.test(pipelineType)
-      ? 'Versioned storage'
-      : 'Pipeline';
+    const isVersionedStorage = /^versioned_storage$/i.test(pipelineType);
+    const objectName = isVersionedStorage ? 'Versioned storage' : 'Pipeline';
     const {getFieldDecorator} = this.props.form;
+    const descriptionLabel = isVersionedStorage
+      ? `Description:`
+      : `${this.localizedString(objectName)} description`;
+    const nameLabel = isVersionedStorage
+      ? `Name:`
+      : `${this.localizedString(objectName)} name`;
     const formItems = [];
     formItems.push((
       <Form.Item
+        {...this.formItemLayout}
         key="pipeline name"
         className="edit-pipeline-form-name-container"
-        {...this.formItemLayout} label={`${this.localizedString(objectName)} name`}>
+        label={nameLabel}
+      >
         {getFieldDecorator('name',
           {
             rules: [{required: true, message: `${this.localizedString(objectName)} name is required`}],
@@ -165,9 +172,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     ));
     formItems.push((
       <Form.Item
+        {...this.formItemLayout}
         key="pipeline description"
         className="edit-pipeline-form-description-container"
-        {...this.formItemLayout} label={`${this.localizedString(objectName)} description`}>
+        label={descriptionLabel}
+      >
         {getFieldDecorator('description',
           {
             initialValue: `${this.props.pipeline && this.props.pipeline.description
@@ -362,8 +371,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           isNewPipeline
             ? (
               this.props.pipelineTemplate
-              ? `Create ${this.localizedString(objectName)} (${this.props.pipelineTemplate.id})`
-              : `Create ${this.localizedString(objectName)}`
+                ? `Create ${this.localizedString(objectName)} (${this.props.pipelineTemplate.id})`
+                : `Create ${this.localizedString(objectName)}`
             )
             : `Edit ${this.localizedString(objectName)} info`
         }

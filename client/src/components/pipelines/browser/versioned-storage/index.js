@@ -239,6 +239,18 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.setState({selectedFile: undefined});
   };
 
+  refreshSelectedFile = () => {
+    const {selectedFile} = this.state;
+    if (selectedFile) {
+      const updatedFile = this.filteredContents
+        .find(contentFile => contentFile.git_object.id === selectedFile.id);
+      updatedFile && this.setState({selectedFile: {
+        ...updatedFile.commit,
+        ...updatedFile.git_object
+      }});
+    }
+  };
+
   openHistoryPanel = () => {
     this.setState({showHistoryPanel: true});
   };
@@ -692,6 +704,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       this.closeEditFileForm();
       await pipeline.fetch();
       this.pathWasChanged();
+      this.refreshSelectedFile();
     }
   };
 
