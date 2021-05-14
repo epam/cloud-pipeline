@@ -104,7 +104,8 @@ class Pipeline(API):
                         instance_disk=None, instance_type=None,
                         docker_image=None, cmd_template=None,
                         timeout=None, config_name=None, instance_count=None,
-                        price_type=None, region_id=None, parent_node=None, non_pause=None, friendly_url=None):
+                        price_type=None, region_id=None, parent_node=None, non_pause=None, friendly_url=None,
+                        run_as_user=None):
         api = cls.instance()
         params = {}
         for parameter in parameters:
@@ -136,6 +137,8 @@ class Pipeline(API):
             payload['nonPause'] = non_pause
         if friendly_url:
             payload['prettyUrl'] = friendly_url
+        if run_as_user:
+            payload['runAs'] = run_as_user
         data = json.dumps(payload)
         response_data = api.call('run', data)
         return PipelineRunModel.load(response_data['payload'])

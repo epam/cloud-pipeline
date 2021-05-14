@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,10 +97,11 @@ public class RunApiService {
         return runVO.getUseRunId() == null ? runManager.runCmd(runVO) : runManager.runPod(runVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE')")
+    @PreAuthorize("(hasRole('ADMIN') OR "
+            + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE'))"
+            + " AND @grantPermissionManager.hasPipelinePermissionToRunAs(#runVO, 'EXECUTE')")
     @AclMask
-    public PipelineRun runPipeline(PipelineStart runVO) {
+    public PipelineRun runPipeline(final PipelineStart runVO) {
         return runManager.runPipeline(runVO);
     }
 
