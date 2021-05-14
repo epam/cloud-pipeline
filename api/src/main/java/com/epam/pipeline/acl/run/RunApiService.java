@@ -59,7 +59,6 @@ import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.manager.security.acl.AclMaskPage;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -105,9 +104,9 @@ public class RunApiService {
             + " AND @grantPermissionManager.hasPipelinePermissionToRunAs(#runVO, 'EXECUTE')")
     @AclMask
     public PipelineRun runPipeline(final PipelineStart runVO) {
-        return StringUtils.isEmpty(runVO.getRunAs())
-                ? runManager.runPipeline(runVO)
-                : pipelineRunAsManager.runPipeline(runVO);
+        return pipelineRunAsManager.runAsAnotherUser(runVO)
+                ? pipelineRunAsManager.runPipeline(runVO)
+                : runManager.runPipeline(runVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "

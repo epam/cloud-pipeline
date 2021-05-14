@@ -46,6 +46,7 @@ import java.util.concurrent.Executor;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class PipelineRunAsManager {
     private final PipelineRunManager pipelineRunManager;
     private final UserRunnersManager userRunnersManager;
@@ -56,8 +57,12 @@ public class PipelineRunAsManager {
     private final CheckPermissionHelper permissionHelper;
     private final Executor runAsExecutor;
 
+    public boolean runAsAnotherUser(final PipelineStart runVO) {
+        return !StringUtils.isEmpty(getRunAsUserName(runVO));
+    }
+
     public PipelineRun runPipeline(final PipelineStart runVO) {
-        configureRunnerUser(runVO);
+        configureRunnerSids(runVO);
         try {
             return CompletableFuture.supplyAsync(() -> run(runVO), runAsExecutor).get();
         } catch (Exception e) {
@@ -76,14 +81,15 @@ public class PipelineRunAsManager {
         }
     }
 
-    private void configureRunnerUser(final PipelineStart runVO) {
-        if (StringUtils.isEmpty(runVO.getRunAs())) {
-            return;
-        }
+    private String getRunAsUserName(final PipelineStart runVO) {
         final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
-        final String runAsUser = StringUtils.isEmpty(currentUserConfiguration.getRunAs())
+        return StringUtils.isEmpty(currentUserConfiguration.getRunAs())
                 ? runVO.getRunAs()
                 : userManager.loadUserByNameOrId(currentUserConfiguration.getRunAs()).getUserName();
+    }
+
+    private void configureRunnerSids(final PipelineStart runVO) {
+        final String runAsUser = getRunAsUserName(runVO);
         final String currentUser = authManager.getAuthorizedUser();
         final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
         Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
