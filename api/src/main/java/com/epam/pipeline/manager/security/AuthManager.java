@@ -57,9 +57,10 @@ public class AuthManager {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 
-    public void setAuthentication(final Authentication authentication) {
-        SecurityContextHolder.setContext(SecurityContextHolder.createEmptyContext());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+    public SecurityContext createContext(final Authentication authentication) {
+        final SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        return context;
     }
 
     /**
