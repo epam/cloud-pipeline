@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
+import com.epam.pipeline.entity.user.RunnerSid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,9 @@ public class UserApiService {
 
     @Autowired
     private UsersFileImportManager usersFileImportManager;
+
+    @Autowired
+    private UserRunnersManager userRunnersManager;
 
     /**
      * Registers a new user
@@ -93,12 +97,12 @@ public class UserApiService {
         return userManager.deleteGroupBlockingStatus(groupName);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public List<GroupStatus> loadAllGroupsBlockingStatuses() {
         return userManager.loadAllGroupsBlockingStatuses();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public PipelineUser loadUser(Long id) {
         return userManager.loadUserById(id);
     }
@@ -199,5 +203,27 @@ public class UserApiService {
                                                       final List<String> systemDictionariesToCreate,
                                                       final MultipartFile file) {
         return usersFileImportManager.importUsersFromFile(createUser, createGroup, systemDictionariesToCreate, file);
+    }
+
+    /**
+     * Adds runners to user (service account).
+     * @param id the user ID
+     * @param runners the list of the {@link RunnerSid} objects which correspond to users/roles that may
+     *                launch pipelines as specified user
+     * @return the list of the runners
+     */
+    @PreAuthorize(ADMIN_ONLY)
+    public List<RunnerSid> updateRunners(final Long id, final List<RunnerSid> runners) {
+        return userRunnersManager.saveRunners(id, runners);
+    }
+
+    /**
+     * Returns runners for specified user
+     * @param id the user ID
+     * @return the list of the runners
+     */
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    public List<RunnerSid> getRunners(final Long id) {
+        return userRunnersManager.getRunners(id);
     }
 }

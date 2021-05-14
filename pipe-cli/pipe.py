@@ -637,7 +637,9 @@ def view_cluster_for_node(node_name):
 
 
 @cli.command(name='run', context_settings=dict(ignore_unknown_options=True))
-@click.option('-n', '--pipeline', required=False, help='Pipeline name or ID. Pipeline name could be specified as <pipeline_name>@<version_name> or just <pipeline_name> for the latest pipeline version')
+@click.option('-n', '--pipeline', required=False, is_eager=True,
+              help='Pipeline name or ID. Pipeline name could be specified as <pipeline_name>@<version_name> '
+                   'or just <pipeline_name> for the latest pipeline version')
 @click.option('-c', '--config', required=False, type=str, help='Pipeline configuration name')
 @click.argument('run-params', nargs=-1, type=click.UNPROCESSED)
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
@@ -653,16 +655,19 @@ def view_cluster_for_node(node_name):
 @click.option('-nc', '--cores', help='Number of cores that a cluster shall contain. This option will be ignored '
                                      'if -ic (--instance-count) option was specified',
               type=click.IntRange(2, MAX_CORES_COUNT, clamp=True), required=False)
-@click.option('-s', '--sync', is_flag=True, help='Allow a pipeline to be run in a sync mode. When set - terminal will be blocked until the finish status of the launched pipeline won\'t be returned')
+@click.option('-s', '--sync', is_flag=True, help='Allow a pipeline to be run in a sync mode. When set - '
+                                                 'terminal will be blocked until the finish status of the '
+                                                 'launched pipeline won\'t be returned')
 @click.option('-pt', '--price-type', help='Instance price type [on-demand/spot]',
               type=click.Choice([PriceType.SPOT, PriceType.ON_DEMAND]), required=False)
 @click.option('-r', '--region-id', help='Instance cloud region', type=int, required=False)
-@click.option('-pn', '--parent-node', help='Parent instance Run ID. That allows to run a pipeline as a child job on the existing running instance', type=int, required=False)
+@click.option('-pn', '--parent-node', help='Parent instance Run ID. That allows to run a pipeline as a child job on '
+                                           'the existing running instance', type=int, required=False)
 @click.option('-np', '--non-pause', help='Allow to switch off auto-pause option. Supported for on-demand runs only',
               is_flag=True)
 @click.option('-fu', '--friendly-url', help='A friendly URL. The URL should have the following formats: '
                                             '<domain>/<path> or <path>', type=str, required=False)
-@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('-u', '--user', required=False, type=str, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
         config,
@@ -682,12 +687,16 @@ def run(pipeline,
         region_id,
         parent_node,
         non_pause,
-        friendly_url):
+        friendly_url,
+        user):
     """Schedules a pipeline execution
     """
+    if user and not pipeline:
+        UserTokenOperations().set_user_token(user)
+        user = None
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
-                              region_id, parent_node, non_pause, friendly_url)
+                              region_id, parent_node, non_pause, friendly_url, user)
 
 
 @cli.command(name='stop')

@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
+import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserApiService;
 import io.swagger.annotations.Api;
@@ -403,5 +404,28 @@ public class UserController extends AbstractRestController {
             final HttpServletRequest request) throws FileUploadException {
         final MultipartFile file = consumeMultipartFile(request);
         return Result.success(userApiService.importUsersFromCsv(createUser, createGroup, createMetadata, file));
+    }
+
+    @PostMapping("/users/{id}/runners")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates runners to user",
+            notes = "Updates runners to user",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<RunnerSid>> updateRunners(@PathVariable final Long id,
+                                                 @RequestBody final List<RunnerSid> runners) {
+        return Result.success(userApiService.updateRunners(id, runners));
+    }
+
+    @GetMapping("/users/{id}/runners")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads runners for user",
+            notes = "Loads runners for user",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<RunnerSid>> getRunners(@PathVariable final Long id) {
+        return Result.success(userApiService.getRunners(id));
     }
 }

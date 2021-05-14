@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.StringUtils;
@@ -29,10 +30,14 @@ import org.springframework.util.StringUtils;
 import javax.persistence.AttributeConverter;
 import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.io.IOException;
@@ -52,6 +57,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Entity
 @Table(name = "user", schema = "pipeline")
+@EqualsAndHashCode
 public class PipelineUser implements StorageContainer {
 
     public static final String EMAIL_ATTRIBUTE = "email";
@@ -63,7 +69,13 @@ public class PipelineUser implements StorageContainer {
     @Column(name = "name")
     private String userName;
 
-    @Transient
+    @ManyToMany
+    @JoinTable(
+            name = "user_roles",
+            schema = "pipeline",
+            inverseJoinColumns = { @JoinColumn(name = "role_id") },
+            joinColumns = { @JoinColumn(name = "user_id") }
+    )
     private List<Role> roles;
 
     @Transient
@@ -84,7 +96,11 @@ public class PipelineUser implements StorageContainer {
     private Long defaultStorageId;
 
     @Convert(converter = AttributesConverterJson.class)
+    @Column(updatable = false)
     private Map<String, String> attributes;
+
+    @ElementCollection
+    private List<RunnerSid> allowedRunners;
 
     public PipelineUser() {
         this.admin = false;
