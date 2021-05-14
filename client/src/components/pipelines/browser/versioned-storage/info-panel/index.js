@@ -129,6 +129,11 @@ class InfoPanel extends localization.LocalizedReactComponent {
     onFileEdit && onFileEdit();
   };
 
+  handleGoBackClick = () => {
+    const {onGoBack} = this.props;
+    onGoBack && onGoBack();
+  };
+
   getFileContent = (file) => {
     const {
       pipelineId,
@@ -219,7 +224,16 @@ class InfoPanel extends localization.LocalizedReactComponent {
           align="middle"
           className={styles.previewHeaderRow}
         >
-          <b>{file.name}</b>
+          <div>
+            <Button
+              size="small"
+              className={styles.goBackHeaderBtn}
+              onClick={this.handleGoBackClick}
+            >
+              <Icon type="left" />
+            </Button>
+            <b>{file.name}</b>
+          </div>
           <Button
             size="small"
             className={styles.previewHeaderBtn}
@@ -327,7 +341,8 @@ InfoPanel.propTypes = {
   lastCommitId: PropTypes.string,
   pending: PropTypes.bool,
   onFileEdit: PropTypes.func,
-  onFileDownload: PropTypes.func
+  onFileDownload: PropTypes.func,
+  onGoBack: PropTypes.func
 };
 
 export default InfoPanel;

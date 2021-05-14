@@ -50,6 +50,10 @@
   padding: 3px;
 }
 
+.go-back-header-btn {
+  margin-right: 5px;
+}
+
 .preview-header-btn {
   border: none;
   transition: all 0.3s ease;

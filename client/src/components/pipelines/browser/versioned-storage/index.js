@@ -235,6 +235,10 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     });
   };
 
+  clearSelectedFile = () => {
+    this.setState({selectedFile: undefined});
+  };
+
   openHistoryPanel = () => {
     this.setState({showHistoryPanel: true});
   };
@@ -243,15 +247,11 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.setState({showHistoryPanel: false, selectedFile: undefined});
   };
 
-  openFileInfoPanel = (file) => {
+  openHistoryPanelWithFileInfo = (file) => {
     this.setState({
       selectedFile: file,
       showHistoryPanel: true
     });
-  };
-
-  closeFileInfoPanel = () => {
-    this.setState({selectedFile: null});
   };
 
   openEditStorageDialog = () => {
@@ -643,16 +643,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   onFileClick = (file) => {
-    this.openFileInfoPanel(file);
+    this.openHistoryPanelWithFileInfo(file);
   };
 
   onRowClick = (document = {}) => {
     if (document.type && document.type.toLowerCase() === 'navback') {
-      this.closeFileInfoPanel();
+      this.clearSelectedFile();
       return this.navigate(this.parentPath);
     }
     if (document.type && document.type.toLowerCase() === DOCUMENT_TYPES.tree) {
-      this.closeFileInfoPanel();
+      this.clearSelectedFile();
       return this.onFolderClick(document);
     }
     if (document.type && document.type.toLowerCase() === DOCUMENT_TYPES.blob) {
@@ -810,7 +810,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         }
         <SplitPanel
           style={{flex: 1, overflow: 'auto', width: 'inherited', height: 'auto'}}
-          onPanelClose={this.closeFileInfoPanel}
+          onPanelClose={this.closeHistoryPanel}
           contentInfo={contentInfo}
         >
           <div
@@ -869,6 +869,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
                   pending={pending}
                   onFileEdit={this.openEditFileForm}
                   onFileDownload={this.downloadSingleFile}
+                  onGoBack={this.clearSelectedFile}
                 />
               </div>
             )
