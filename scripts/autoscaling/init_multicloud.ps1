@@ -32,6 +32,19 @@ function InstallNoMachineIfRequired {
     return $restartRequired
 }
 
+function InstallWebDAVIfRequired {
+    $restartRequired=$false
+    $webDAVInstalled = Get-WindowsFeature `
+        | Where-Object { $_.Name -match "WebDAV-Redirector" } `
+        | ForEach-Object { $_.InstallState -eq "Installed" }
+    if (-not($webDAVInstalled)) {
+        Write-Host "Installing WebDAV..."
+        Install-WindowsFeature WebDAV-Redirector
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
 function RenameComputerIfRequired {
     $restartRequired=$false
     $computerName=$(hostname)
@@ -78,6 +91,13 @@ function EnableAutoLoginIfRequired($UserName, $UserPassword) {
     return $restartRequired
 }
 
+function StartWebDAVServices {
+    Set-Service WebClient -StartupType Automatic
+    Set-Service MRxDAV -StartupType Automatic
+    Start-Service WebClient
+    Start-Service MRxDAV
+}
+
 function WaitForProcess($ProcessName) {
     while ($True) {
         $Process = Get-Process | Where-Object {$_.Name -contains $ProcessName}
@@ -120,8 +140,8 @@ function InstallOpenSshServerIfRequired {
     if (-not($openSshServerInstalled)) {
         Write-Host "Installing OpenSSH server..."
         Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+        Set-Service -Name sshd -StartupType Automatic
         Start-Service sshd
-        Set-Service -Name sshd -StartupType 'Automatic'
     }
 }
 
@@ -355,6 +375,10 @@ Write-Host "Installing nomachine if required..."
 $restartRequired = (InstallNoMachineIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
+Write-Host "Installing WebDAV if required..."
+$restartRequired = (InstallWebDAVIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
 Write-Host "Renaming computer if required..."
 $restartRequired = (RenameComputerIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
@@ -370,6 +394,9 @@ if ($restartRequired) {
     Restart-Computer -Force
     Exit
 }
+
+Write-Host "Starting WebDAV services..."
+StartWebDAVServices
 
 Write-Host "Installing python if required..."
 InstallPythonIfRequired -PythonDir $pythonDir

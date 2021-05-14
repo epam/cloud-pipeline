@@ -46,6 +46,19 @@ function InstallNoMachineIfRequired {
     return $restartRequired
 }
 
+function InstallWebDAVIfRequired {
+    $restartRequired=$false
+    $webDAVInstalled = Get-WindowsFeature `
+        | Where-Object { $_.Name -match "WebDAV-Redirector" } `
+        | ForEach-Object { $_.InstallState -eq "Installed" }
+    if (-not($webDAVInstalled)) {
+        Write-Host "Installing WebDAV..."
+        Install-WindowsFeature WebDAV-Redirector
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
 function WaitForProcess($ProcessName) {
     while ($True) {
         $Process = Get-Process | Where-Object {$_.Name -contains $ProcessName}
@@ -191,6 +204,9 @@ Set-Location -Path "$workingDir"
 
 Write-Host "Installing nomachine if required..."
 InstallNoMachineIfRequired
+
+Write-Host "Installing WebDAV if required..."
+InstallWebDAVIfRequired
 
 Write-Host "Installing python if required..."
 InstallPythonIfRequired -PythonDir $pythonDir
