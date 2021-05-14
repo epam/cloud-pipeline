@@ -28,7 +28,7 @@ import {
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import localization from '../../../../../utils/localization';
 import {SplitPanel} from '../../../../special/splitPanel/SplitPanel';
-import HistoryFilter, {FILTERS} from './history-filter';
+import HistoryFilter from './history-filter';
 import styles from './info-panel.css';
 
 const MAX_SIZE_TO_PREVIEW = 1000000;
@@ -64,6 +64,18 @@ const PREVIEW_TYPES = [
   '.csv'
 ];
 
+const USERNAMES_MOCK = [
+  'User1',
+  'User2',
+  'User3',
+  'User4',
+  'User5',
+  'User6',
+  'User7',
+  'User8',
+  'User9'
+];
+
 function checkFileSize (file) {
   if (!file || file.size === undefined) {
     return false;
@@ -89,8 +101,8 @@ class InfoPanel extends localization.LocalizedReactComponent {
     fileSizeExceeded: false,
     historyFilterVisible: false,
     filters: {
-      users: ['user1', 'user2', 'user3'],
-      extensions: ['.docx', '.txt', '.csv'],
+      users: [],
+      extensions: [],
       dateFrom: '',
       dateTo: ''
     }
@@ -185,16 +197,18 @@ class InfoPanel extends localization.LocalizedReactComponent {
     this.setState({historyFilterVisible: false});
   };
 
-  onFilterChange = (type, value) => {
-    if (!FILTERS[type]) {
-      return null;
+  onFilterChange = (updatedFilters) => {
+    if (updatedFilters) {
+      this.setState({filters: JSON.parse(JSON.stringify(updatedFilters))});
+    } else {
+      this.setState({filters: {
+        users: [],
+        extensions: [],
+        dateFrom: '',
+        dateTo: ''
+      }});
     }
-    this.setState(prevState => ({
-      filters: {
-        ...prevState.filters,
-        [FILTERS[type]]: value
-      }
-    }));
+    this.closeHistoryFilter();
   };
 
   renderDownloadLink = () => {
@@ -334,6 +348,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
             onCancel={this.closeHistoryFilter}
             onOk={this.closeHistoryFilter}
             onChange={this.onFilterChange}
+            userNames={USERNAMES_MOCK}
           />
         </SplitPanel>
       </div>

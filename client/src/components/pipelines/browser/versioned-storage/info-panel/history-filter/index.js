@@ -45,50 +45,96 @@ const stringToMoment = d => d
 @localization.localizedComponent
 @observer
 class HistoryFilter extends localization.LocalizedReactComponent {
-  get extensionsString () {
+  state = {
+    temporaryFilters: undefined
+  };
+
+  componentDidMount () {
+    this.reinitTemporaryFilters();
+  };
+
+  componentDidUpdate (prevProps) {
     const {filters} = this.props;
-    if (!filters || !filters.extensions || !filters.extensions.length) {
-      return '';
+    const {temporaryFilters} = this.state;
+    if (prevProps.filters !== filters || !temporaryFilters) {
+      this.reinitTemporaryFilters();
     }
-    return filters[FILTERS.extensions].join(',');
+  };
+
+  get extensionsString () {
+    const {temporaryFilters} = this.state;
+    if (temporaryFilters?.extensions?.length) {
+      return temporaryFilters.extensions.join(',');
+    }
+    return undefined;
+  };
+
+  get filtersIsEmpty () {
+    const {temporaryFilters} = this.state;
+    return !temporaryFilters || Object.values(temporaryFilters)
+      .every(filter => !filter || !filter.length);
+  };
+
+  reinitTemporaryFilters = () => {
+    const {filters} = this.props;
+    this.setState({temporaryFilters: JSON.parse(JSON.stringify(filters || {}))});
+  };
+
+  resetTemporaryFilters = () => {
+    this.setState({temporaryFilters: undefined});
   };
 
   handleOk = () => {
-    const {onOk} = this.props;
-    onOk && onOk();
+    const {temporaryFilters} = this.state;
+    const {onChange} = this.props;
+    onChange && onChange(temporaryFilters);
   };
 
   handleCancel = () => {
     const {onCancel} = this.props;
-    onCancel && onCancel();
+    this.setState({temporaryFilters: null}, () => {
+      onCancel && onCancel();
+    });
   };
 
-  onUsersChange = (fieldType) => ([value]) => {
-    const {onChange, filters} = this.props;
-    if (filters && filters.users && filters.users.length) {
-      const userList = filters.users.filter(user => user !== value);
-      onChange && onChange(fieldType, userList);
+  handleReset = () => {
+    const {onChange} = this.props;
+    onChange && onChange(null);
+  };
+
+  setTemporaryFilters = (fieldType, value) => {
+    if (FILTERS[fieldType] && value) {
+      this.setState(prevState => ({
+        temporaryFilters: {
+          ...prevState.temporaryFilters,
+          [FILTERS[fieldType]]: value
+        }
+      }));
     }
   };
 
+  onUsersChange = (fieldType) => (value) => {
+    this.setTemporaryFilters(fieldType, value);
+  };
+
   onDateChange = (fieldType) => (momentObject, timeString) => {
-    const {onChange} = this.props;
-    onChange && onChange(fieldType, timeString);
+    this.setTemporaryFilters(fieldType, timeString);
   };
 
   onExtensionsChange = (fieldType) => (event) => {
-    const {onChange} = this.props;
     if (event && event.target.value) {
       const {value} = event.target;
-      const extensionsList = value.length
-        ? value.split(',')
-        : [];
-      onChange && onChange(fieldType, extensionsList);
+      const extensionsList = value.length ? value.split(',') : [];
+      this.setTemporaryFilters(fieldType, extensionsList);
     }
   };
 
   renderUserRow = () => {
-    const {filters} = this.props;
+    const {userNames} = this.props;
+    const {temporaryFilters} = this.state;
+    if (!temporaryFilters) {
+      return null;
+    }
     return (
       <Row
         className={styles.row}
@@ -102,9 +148,10 @@ class HistoryFilter extends localization.LocalizedReactComponent {
           mode="multiple"
           placeholder="All"
           onChange={this.onUsersChange(FILTERS.users)}
-          style={{width: '60%'}}
+          style={{width: '70%'}}
+          value={temporaryFilters.users}
         >
-          {filters[FILTERS.users].map(user => (
+          {userNames.map(user => (
             <Select.Option
               key={user}
             >
@@ -117,7 +164,10 @@ class HistoryFilter extends localization.LocalizedReactComponent {
   };
 
   renderDateRow = () => {
-    const {filters} = this.props;
+    const {temporaryFilters} = this.state;
+    if (!temporaryFilters) {
+      return null;
+    }
     return (
       <Row
         className={styles.row}
@@ -131,14 +181,14 @@ class HistoryFilter extends localization.LocalizedReactComponent {
           <DatePicker
             format={DATE_FORMAT}
             placeholder="From"
-            value={stringToMoment(filters[FILTERS.dateFrom])}
+            value={stringToMoment(temporaryFilters.dateFrom)}
             onChange={this.onDateChange(FILTERS.dateFrom)}
             style={{width: '50%'}}
           />
           <DatePicker
             format={DATE_FORMAT}
             placeholder="To"
-            value={stringToMoment(filters[FILTERS.dateTo])}
+            value={stringToMoment(temporaryFilters.dateTo)}
             onChange={this.onDateChange(FILTERS.dateTo)}
             style={{width: '50%'}}
           />
@@ -148,6 +198,10 @@ class HistoryFilter extends localization.LocalizedReactComponent {
   };
 
   renderExtensionsRow = () => {
+    const {temporaryFilters} = this.state;
+    if (!temporaryFilters) {
+      return null;
+    }
     return (
       <Row
         className={styles.row}
@@ -158,9 +212,9 @@ class HistoryFilter extends localization.LocalizedReactComponent {
           Changed file types:
         </span>
         <Input
-          style={{width: '60%'}}
+          style={{width: '70%'}}
           type="text"
-          placeholder="Enter file types to filter"
+          placeholder="Comma-separated file extensions"
           onChange={this.onExtensionsChange(FILTERS.extensions)}
           value={this.extensionsString}
         />
@@ -173,12 +227,20 @@ class HistoryFilter extends localization.LocalizedReactComponent {
     const footer = (
       <Row
         type="flex"
-        justify="end"
+        justify="space-between"
       >
+        <Button
+          size="small"
+          onClick={this.handleReset}
+          disabled={this.filtersIsEmpty}
+        >
+          Reset filters
+        </Button>
         <Button
           size="small"
           onClick={this.handleOk}
           className={styles.applyBtn}
+          disabled={this.filtersIsEmpty}
         >
           Apply filter
         </Button>
@@ -208,8 +270,8 @@ HistoryFilter.PropTypes = {
   }),
   onChange: PropTypes.func,
   onOk: PropTypes.func,
-  onCancel: PropTypes.func
+  onCancel: PropTypes.func,
+  userNames: PropTypes.array
 };
 
 export default HistoryFilter;
-export {FILTERS};
