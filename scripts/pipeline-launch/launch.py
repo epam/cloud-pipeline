@@ -232,7 +232,7 @@ if __name__ == '__main__':
                      f'add_to_path(\\"{_escape_backslashes(pipe_dir)}\\")"')
 
     logging.info('Configuring pipe on the node')
-    node_ssh.execute(f'powershell -Command "pipe configure --api \'{api}\' --auth-token \'{api_token}\' --timezone local --proxy pac"')
+    node_ssh.execute(f'powershell -Command "pipe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac"')
 
     logging.info('Configuring owner account on the node...')
     if owner:
