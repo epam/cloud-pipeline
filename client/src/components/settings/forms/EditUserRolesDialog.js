@@ -708,7 +708,7 @@ export default class EditUserRolesDialog extends React.Component {
           return (
             <span
               key={s.name}
-              style={{marginRight: 5}}
+              style={{marginRight: 5, whiteSpace: 'nowrap'}}
             >
               {
                 s.principal
@@ -722,7 +722,7 @@ export default class EditUserRolesDialog extends React.Component {
           );
         });
     }
-    return 'Configure';
+    return 'configure';
   };
 
   render () {
@@ -956,16 +956,6 @@ export default class EditUserRolesDialog extends React.Component {
             <div
               key="INSTANCE_MANAGEMENT"
             >
-              <InstanceTypesManagementForm
-                className={styles.instanceTypesManagementForm}
-                key="instance types management form"
-                disabled={this.state.operationInProgress || readOnly}
-                resourceId={this.props.userId}
-                level="USER"
-                onInitialized={this.onInstanceTypesFormInitialized}
-                onModified={this.onInstanceTypesModified}
-                showApplyButton={false}
-              />
               <div style={{marginTop: 5, padding: 2}}>
                 <span
                   style={{fontWeight: 'bold', float: 'left'}}
@@ -997,6 +987,16 @@ export default class EditUserRolesDialog extends React.Component {
                   onClose={this.closeShareDialog}
                 />
               </div>
+              <InstanceTypesManagementForm
+                className={styles.instanceTypesManagementForm}
+                key="instance types management form"
+                disabled={this.state.operationInProgress || readOnly}
+                resourceId={this.props.userId}
+                level="USER"
+                onInitialized={this.onInstanceTypesFormInitialized}
+                onModified={this.onInstanceTypesModified}
+                showApplyButton={false}
+              />
               <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
                 Cloud Credentials Profiles
               </div>
