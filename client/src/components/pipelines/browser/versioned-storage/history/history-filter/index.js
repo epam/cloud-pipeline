@@ -215,7 +215,7 @@ class HistoryFilter extends localization.LocalizedReactComponent {
             placeholder="From"
             value={dateFrom}
             onChange={this.onDateChange('dateFrom', true)}
-            style={{width: '50%'}}
+            style={{width: '50%', marginRight: '10px'}}
           />
           <DatePicker
             format="YYYY-MM-DD"

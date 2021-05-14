@@ -36,16 +36,21 @@ import styles from './header.css';
 class VersionedStorageHeader extends localization.LocalizedReactComponent {
   onRunClick = (event) => {
     event && event.stopPropagation();
-  }
+  };
 
   onGenerateReportClick = (event) => {
     event && event.stopPropagation();
-  }
+  };
 
   onRenameStorage = (name) => {
     const {onRenameStorage} = this.props;
     onRenameStorage && onRenameStorage(name);
-  }
+  };
+
+  onSettingsClick = () => {
+    const {actions} = this.props;
+    actions && actions.openEditStorageDialog();
+  };
 
   renderActions = () => {
     const {
@@ -102,49 +107,6 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
     return null;
   };
 
-  renderConfigAction = () => {
-    const {readOnly, actions} = this.props;
-    const menuItems = [];
-    const onClick = ({key}) => {
-      switch (key) {
-        case 'edit':
-          actions && actions.openEditStorageDialog();
-          break;
-      }
-    };
-    if (!readOnly) {
-      menuItems.push(
-        <Menu.Item key="edit">
-          <Icon type="edit" /> Edit
-        </Menu.Item>
-      );
-    }
-    const overlay = (
-      <Menu
-        selectedKeys={[]}
-        onClick={onClick}
-        style={{width: 100}}>
-        {menuItems}
-      </Menu>
-    );
-    return (
-      <Dropdown
-        placement="bottomRight"
-        key="edit"
-        overlay={overlay}
-      >
-        <Button
-          key="edit"
-          id="edit-pipeline-menu-button"
-          style={{lineHeight: 1}}
-          size="small"
-        >
-          <Icon type="setting" />
-        </Button>
-      </Dropdown>
-    );
-  };
-
   render () {
     const {
       pipeline,
@@ -196,7 +158,14 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
                 Generate report
               </Button>
               {this.renderActions()}
-              {this.renderConfigAction()}
+              <Button
+                style={{lineHeight: 1}}
+                size="small"
+                onClick={this.onSettingsClick}
+                disabled={readOnly}
+              >
+                <Icon type="setting" />
+              </Button>
             </Row>
           </Col>
         </Row>
