@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">38m1.44s</div>
+<div class="counter">24m46.66s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,30 +73,28 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="allowToLaunchRunsWithoutMounts - 1590"></a>
-<h3 class="failures">allowToLaunchRunsWithoutMounts - 1590</h3>
+<a name="rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683"></a>
+<h3 class="failures">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</h3>
 <span class="code">
-<pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1621005272473.103.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1621005272473.103.html
-Timeout: 1200 s.
-Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: exact text 'SSH'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+<pre>java.lang.IndexOutOfBoundsException: Index: 22, Size: 22
+	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
+	at java.util.ArrayList.get(ArrayList.java:435)
+	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:82)
-	at com.epam.pipeline.autotests.LaunchLimitMountsTest.allowToLaunchRunsWithoutMounts(LaunchLimitMountsTest.java:381)
+	at com.sun.proxy.$Proxy15.getSize(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.lambda$logMessages$0(LogAO.java:119)
+	at java.util.stream.ReferencePipeline$4$1.accept(ReferencePipeline.java:210)
+	at java.util.Iterator.forEachRemaining(Iterator.java:116)
+	at java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1801)
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
+	at java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:708)
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.util.stream.IntPipeline.reduce(IntPipeline.java:479)
+	at java.util.stream.IntPipeline.sum(IntPipeline.java:437)
+	at com.epam.pipeline.autotests.ao.LogAO.logMessages(LogAO.java:119)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.rerunPipelineWithoutLimitMounts(LaunchLimitMountsTest.java:206)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -110,13 +108,6 @@ Timeout: 0 ms.
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
-Expected: exact text 'SSH'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
 </pre>
 </span>
 </div>
@@ -132,43 +123,43 @@ Timeout: 0 ms.
 </tr>
 </thead>
 <tr>
-<td class="failures">allowToLaunchRunsWithoutMounts - 1590</td>
-<td>20m41.51s</td>
-<td class="failures">failed</td>
+<td class="success">allowToLaunchRunsWithoutMounts - 1590</td>
+<td>6m0.68s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
-<td>2m34.43s</td>
+<td>2m32.52s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
-<td>37.211s</td>
+<td>35.838s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareLimitMounts - EPMCMBIBPC-2681</td>
-<td>19.971s</td>
+<td>19.514s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
-<td>31.427s</td>
+<td>30.953s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
-<td>1m32.17s</td>
-<td class="success">passed</td>
+<td class="failures">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
+<td>2m39.87s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
-<td>5m48.19s</td>
+<td>6m2.70s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</td>
-<td>5m56.53s</td>
+<td>6m4.58s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -176,12 +167,11 @@ Timeout: 0 ms.
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 69880 from [69880]
-Returns latest run with runId 69881 from [69880, 69881]
-Returns latest run with runId 69881 from [69880, 69881]
-Returns latest run with runId 69882 from [69880, 69881, 69882]
-Returns latest run with runId 69883 from [69880, 69881, 69882, 69883]
-Returns latest run with runId 69884 from [69880, 69881, 69882, 69883, 69884]
+<pre>Returns latest run with runId 70038 from [70038]
+Returns latest run with runId 70039 from [70038, 70039]
+Returns latest run with runId 70040 from [70038, 70039, 70040]
+Returns latest run with runId 70041 from [70038, 70039, 70040, 70041]
+Returns latest run with runId 70042 from [70038, 70039, 70040, 70041, 70042]
 </pre>
 </span>
 </div>
@@ -193,7 +183,7 @@ Returns latest run with runId 69884 from [69880, 69881, 69882, 69883, 69884]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 14, 2021 4:46:40 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 15, 2021 4:27:32 PM</p>
 </div>
 </div>
 </body>
