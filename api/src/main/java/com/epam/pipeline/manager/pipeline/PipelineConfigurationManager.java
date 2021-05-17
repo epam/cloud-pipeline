@@ -205,6 +205,9 @@ public class PipelineConfigurationManager {
                 runVO.getWorkerCmd() == null ? defaultConfig.getWorkerCmd() : runVO.getWorkerCmd());
         configuration.setDockerImage(chooseDockerImage(runVO, defaultConfig));
         configuration.buildEnvVariables();
+        configuration.setRunAs(defaultConfig.getRunAs());
+        configuration.setSharedWithUsers(configuration.getSharedWithUsers());
+        configuration.setSharedWithRoles(configuration.getSharedWithRoles());
         return configuration;
     }
 
