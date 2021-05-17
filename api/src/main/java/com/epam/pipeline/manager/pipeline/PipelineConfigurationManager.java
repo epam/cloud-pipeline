@@ -205,6 +205,9 @@ public class PipelineConfigurationManager {
                 runVO.getWorkerCmd() == null ? defaultConfig.getWorkerCmd() : runVO.getWorkerCmd());
         configuration.setDockerImage(chooseDockerImage(runVO, defaultConfig));
         configuration.buildEnvVariables();
+        configuration.setRunAs(mergeRunAs(runVO, defaultConfig));
+        configuration.setSharedWithUsers(configuration.getSharedWithUsers());
+        configuration.setSharedWithRoles(configuration.getSharedWithRoles());
         return configuration;
     }
 
@@ -406,5 +409,9 @@ public class PipelineConfigurationManager {
         return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
                 .map(ConfigurationEntry::getConfiguration)
                 .orElseGet(PipelineConfiguration::new);
+    }
+
+    private String mergeRunAs(final PipelineStart runVO, final PipelineConfiguration configuration) {
+        return StringUtils.isEmpty(configuration.getRunAs()) ? runVO.getRunAs() : configuration.getRunAs();
     }
 }

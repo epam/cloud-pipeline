@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
@@ -62,34 +63,39 @@ public class PipelineRunAsManager {
     }
 
     public PipelineRun runPipeline(final PipelineStart runVO) {
-        configureRunnerSids(runVO);
+        final String runAsUser = getRunAsUserName(runVO);
+        configureRunnerSids(runVO, runAsUser);
         try {
-            return CompletableFuture.supplyAsync(() -> run(runVO), runAsExecutor).get();
+            return CompletableFuture.supplyAsync(() -> run(runVO, runAsUser), runAsExecutor).get();
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new IllegalStateException(e);
         }
     }
 
-    private PipelineRun run(final PipelineStart runVO) {
-        try {
-            return new DelegatingSecurityContextCallable<>(() -> pipelineRunManager.runPipeline(runVO),
-                    permissionHelper.createContext(runVO.getRunAs())).call();
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new IllegalStateException(e);
-        }
+    public boolean hasCurrentUserAsRunner(final String runAsUserName) {
+        final PipelineUser currentUser = userManager.loadUserByName(authManager.getAuthorizedUser());
+        return userRunnersManager.hasUserAsRunner(currentUser, runAsUserName);
     }
 
-    private String getRunAsUserName(final PipelineStart runVO) {
+    public String getRunAsUserName(final PipelineStart runVO) {
         final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
         return StringUtils.isEmpty(currentUserConfiguration.getRunAs())
                 ? runVO.getRunAs()
                 : userManager.loadUserByNameOrId(currentUserConfiguration.getRunAs()).getUserName();
     }
 
-    private void configureRunnerSids(final PipelineStart runVO) {
-        final String runAsUser = getRunAsUserName(runVO);
+    private PipelineRun run(final PipelineStart runVO, final String runAsUserName) {
+        try {
+            return new DelegatingSecurityContextCallable<>(() -> pipelineRunManager.runPipeline(runVO),
+                    permissionHelper.createContext(runAsUserName)).call();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private void configureRunnerSids(final PipelineStart runVO, final String runAsUser) {
         final String currentUser = authManager.getAuthorizedUser();
         final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
         Assert.notNull(allowedRunnerSid, messageHelper.getMessage(

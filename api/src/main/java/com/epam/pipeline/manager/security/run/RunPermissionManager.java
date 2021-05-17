@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.security.run;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
@@ -24,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -31,6 +33,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
@@ -42,6 +45,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -69,6 +73,7 @@ public class RunPermissionManager {
     private final ToolGroupManager toolGroupManager;
     private final ToolManager toolManager;
     private final ContextualPreferenceManager preferenceManager;
+    private final PipelineRunAsManager runAsManager;
 
     /**
      * Run permissions: owner and admin have full access to PipelineRun
@@ -157,6 +162,16 @@ public class RunPermissionManager {
                             .collect(toList());
             filter.setAllowedPipelines(allowedPipelinesList);
         }
+    }
+
+    public boolean hasPipelinePermissionToRunAs(final PipelineStart runVO, final AbstractSecuredEntity pipeline,
+                                                final String permissionName) {
+        final String runAsUserName = runAsManager.getRunAsUserName(runVO);
+        if (StringUtils.isEmpty(runAsUserName)) {
+            return true;
+        }
+        return permissionsHelper.isAllowed(permissionName, pipeline, runAsUserName)
+                && runAsManager.hasCurrentUserAsRunner(runAsUserName);
     }
 
     private boolean isSharedWithPrincipal(final List<RunSid> sshSharedSids, final PipelineUser currentUser) {
