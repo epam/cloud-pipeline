@@ -822,14 +822,9 @@ public class GrantPermissionManager {
     }
 
     public boolean hasPipelinePermissionToRunAs(final PipelineStart startVO, final String permissionName) {
-        final String userName = startVO.getRunAs();
-        if (StringUtils.isBlank(userName)) {
-            return true;
-        }
         final AbstractSecuredEntity pipeline = entityManager.load(AclClass.PIPELINE, startVO.getPipelineId());
         Assert.notNull(pipeline, "Pipeline must be provided");
-        return permissionsHelper.isAllowed(permissionName, pipeline, userName)
-                && permissionsHelper.hasCurrentUserAsRunner(userName);
+        return runPermissionManager.hasPipelinePermissionToRunAs(startVO, pipeline, permissionName);
     }
 
     /**
