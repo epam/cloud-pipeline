@@ -18,9 +18,7 @@ package com.epam.pipeline.manager.security;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +47,6 @@ public class CheckPermissionHelper {
     private final AuthManager authManager;
     private final SidRetrievalStrategy sidRetrievalStrategy;
     private final UserManager userManager;
-    private final UserRunnersManager userRunnersManager;
 
     public SecurityContext createContext(final String userName) {
         return authManager.createContext(getAuthentication(userName.toUpperCase()));
@@ -118,15 +115,6 @@ public class CheckPermissionHelper {
 
     public List<Sid> getSids(final String userName) {
         return sidRetrievalStrategy.getSids(getAuthentication(userName));
-    }
-
-    public boolean hasCurrentUserAsRunner(final String runAsUser) {
-        if (StringUtils.isBlank(runAsUser)) {
-            return true;
-        }
-
-        final PipelineUser currentUser = userManager.loadUserByName(authManager.getAuthorizedUser());
-        return userRunnersManager.hasUserAsRunner(currentUser, runAsUser);
     }
 
     private Authentication getAuthentication(final String userName) {
