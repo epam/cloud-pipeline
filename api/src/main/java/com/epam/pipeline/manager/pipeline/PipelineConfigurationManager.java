@@ -206,8 +206,8 @@ public class PipelineConfigurationManager {
         configuration.setDockerImage(chooseDockerImage(runVO, defaultConfig));
         configuration.buildEnvVariables();
         configuration.setRunAs(mergeRunAs(runVO, defaultConfig));
-        configuration.setSharedWithUsers(configuration.getSharedWithUsers());
-        configuration.setSharedWithRoles(configuration.getSharedWithRoles());
+        configuration.setSharedWithUsers(defaultConfig.getSharedWithUsers());
+        configuration.setSharedWithRoles(defaultConfig.getSharedWithRoles());
         return configuration;
     }
 
