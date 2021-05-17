@@ -31,7 +31,8 @@ function get_pipe_details(pipeline_id, auth_key) {
             'ip': payload.podIP,
             'pass': payload.sshPassword,
             'owner': payload.owner,
-            'pod_id': payload.podId
+            'pod_id': payload.podId,
+            'platform': payload.platform
         };
     } else {
         return payload;
@@ -78,6 +79,11 @@ function conn_quota_available(pipeline_id) {
 
     console.log('Already running "' + running_pids_count + '" PIDs for #' + pipeline_id);
     return running_pids_count < CONN_QUOTA_PER_PIPELINE_ID;;
+}
+
+function get_owner_user_name(owner) {
+    // split owner by @ in case it represented by email address
+    return owner.split("@")[0];
 }
 
 var opts = require('optimist')
@@ -170,12 +176,14 @@ io.on('connection', function(socket) {
 
         if(match[1] == "pipeline") {
             sshhost = pipe_details.ip;
-            if (ssh_default_root_user_enabled) {
+            owner_user_name = get_owner_user_name(pipe_details.owner);
+            if (pipe_details.platform == "windows") {
+                sshpass = pipe_details.pass;
+                sshuser = owner_user_name;
+            } else if (ssh_default_root_user_enabled) {
                 sshpass = pipe_details.pass;
                 sshuser = 'root';
             } else {
-                // split owner by @ in case it represented by email address
-                var owner_user_name = pipe_details.owner.split("@")[0];
                 sshpass = owner_user_name;
                 sshuser = owner_user_name;
             }

@@ -168,10 +168,8 @@ if __name__ == '__main__':
     distribution_url = os.environ['DISTRIBUTION_URL'] = os.getenv('DISTRIBUTION_URL')
     api_url = os.environ['API'] = os.getenv('API')
     api_token = os.environ['API_TOKEN'] = os.getenv('API_TOKEN')
-    node_owner = os.environ['CP_NODE_OWNER'] = os.getenv('CP_NODE_OWNER', 'nodeuser')
+    node_owner = os.environ['CP_NODE_OWNER'] = os.getenv('CP_NODE_OWNER', 'ROOT')
     node_private_key_path = os.environ['CP_NODE_PRIVATE_KEY'] = os.getenv('CP_NODE_PRIVATE_KEY', os.path.join(host_root, '.ssh', 'id_rsa'))
-    ssh_user = os.environ['SSH_USER'] = os.getenv('SSH_USER', 'root')
-    ssh_pass = os.environ['SSH_PASS'] = os.getenv('SSH_PASS')
     owner = os.environ['OWNER'] = os.getenv('OWNER')
     owner_password = os.environ['OWNER_PASSWORD'] = os.getenv('OWNER_PASSWORD', os.getenv('SSH_PASS'))
     task_path = os.environ['CP_TASK_PATH']
@@ -207,15 +205,18 @@ if __name__ == '__main__':
     _install_python_package(common_repo_dir)
     from scripts import add_to_path
 
+    logging.info('Configuring PATH...')
+    add_to_path(os.path.join(common_repo_dir, 'powershell'))
+    add_to_path(pipe_dir)
+
     logging.info('Downloading pipe...')
     _download_file(distribution_url + 'pipe.zip', os.path.join(pipe_dir, 'pipe.zip'))
 
     logging.info('Unpacking pipe...')
     _extract_archive(os.path.join(pipe_dir, 'pipe.zip'), os.path.dirname(pipe_dir))
 
-    logging.info('Configuring PATH...')
-    add_to_path(os.path.join(common_repo_dir, 'powershell'))
-    add_to_path(pipe_dir)
+    logging.info('Configuring pipe...')
+    subprocess.check_call(f'powershell -Command "pipe.exe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac"')
 
     logging.info('Preparing for SSH connections to the node...')
     run = api.load_run(run_id)
@@ -226,25 +227,22 @@ if __name__ == '__main__':
     node_ssh.execute(f'{python_dir}\\python.exe -m pip install -q {common_repo_dir}')
 
     logging.info('Configuring PATH on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c "from scripts import add_to_path; '
-                     f'add_to_path(\\"{_escape_backslashes(python_dir)}\\"); '
-                     f'add_to_path(\\"{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\\"); '
-                     f'add_to_path(\\"{_escape_backslashes(pipe_dir)}\\")"')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts import add_to_path; '
+                     f'add_to_path(\'{_escape_backslashes(python_dir)}\'); '
+                     f'add_to_path(\'{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\'); '
+                     f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"')
 
-    logging.info('Configuring pipe on the node')
-    node_ssh.execute(f'powershell -Command "pipe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac"')
+    logging.info('Configuring pipe on the node...')
+    node_ssh.execute(f'pipe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac')
 
     logging.info('Configuring owner account on the node...')
     if owner:
-        node_ssh.execute(f'powershell -Command "AddUser -UserName {owner} -UserPassword {owner_password}"')
+        node_ssh.execute(f'AddUser -UserName {owner} -UserPassword {owner_password}')
     else:
         logging.info('OWNER is not set - skipping owner account configuration')
 
     logging.info('Configuring node SSH server proxy...')
     if owner:
-        logging.info('Configuring SSH account on the node...')
-        node_ssh.execute(f'powershell -Command "AddUser -UserName {ssh_user} -UserPassword {ssh_pass}"')
-        logging.info('Launching SSH proxy...')
         subprocess.check_call(f'powershell -Command "pipe.exe tunnel start --direct -lp 22 -rp 22 --trace '
                               f'-l {_escape_backslashes(os.path.join(run_dir, "ssh_proxy.log"))} '
                               f'{node_ip}"')
