@@ -142,6 +142,7 @@ function InstallOpenSshServerIfRequired {
         Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
         Set-Service -Name sshd -StartupType Automatic
         Start-Service sshd
+        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
     }
 }
 
@@ -351,7 +352,7 @@ $runsDir = "c:\runs"
 $kubeDir = "c:\ProgramData\Kubernetes"
 $pythonDir = "c:\python"
 $initLog = "$workingDir\log.txt"
-$defaultUserName = "NODEUSER"
+$defaultUserName = "ROOT"
 $defaultUserPassword = GetOrGenerateDefaultPassword
 
 Write-Host "Creating system directories..."
