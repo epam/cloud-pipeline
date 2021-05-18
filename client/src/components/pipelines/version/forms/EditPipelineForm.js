@@ -66,7 +66,12 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     onDelete: PropTypes.func,
     pending: PropTypes.bool,
     visible: PropTypes.bool,
-    pipelineTemplate: PropTypes.object
+    pipelineTemplate: PropTypes.object,
+    showRepositorySettings: PropTypes.bool
+  };
+
+  static defaultProps = {
+    showRepositorySettings: true
   };
 
   formItemLayout = {
@@ -189,42 +194,44 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         )}
       </Form.Item>
     ));
-    if (this.state.editRepositorySettings) {
-      formItems.push((
-        <Form.Item
-          key="repository"
-          className="edit-pipeline-form-repository-container"
-          {...this.formItemLayout} label="Repository">
-          {getFieldDecorator('repository',
-            {
-              initialValue: `${this.props.pipeline && this.props.pipeline.repository ? this.props.pipeline.repository : ''}`
+    if (this.props.showRepositorySettings) {
+      if (this.state.editRepositorySettings) {
+        formItems.push((
+          <Form.Item
+            key="repository"
+            className="edit-pipeline-form-repository-container"
+            {...this.formItemLayout} label="Repository">
+            {getFieldDecorator('repository',
+              {
+                initialValue: `${this.props.pipeline && this.props.pipeline.repository ? this.props.pipeline.repository : ''}`
+              })(
+              <Input
+                onPressEnter={this.handleSubmit}
+                disabled={!!this.props.pipeline || this.props.pending}/>
+            )}
+          </Form.Item>
+        ));
+        formItems.push((
+          <Form.Item
+            key="token"
+            className="edit-pipeline-form-repository-container"
+            {...this.formItemLayout} label="Token">
+            {getFieldDecorator('token', {
+              initialValue: `${this.props.pipeline && this.props.pipeline.repositoryToken ? this.props.pipeline.repositoryToken : ''}`
             })(
-            <Input
-              onPressEnter={this.handleSubmit}
-              disabled={!!this.props.pipeline || this.props.pending} />
-          )}
-        </Form.Item>
-      ));
-      formItems.push((
-        <Form.Item
-          key="token"
-          className="edit-pipeline-form-repository-container"
-          {...this.formItemLayout} label="Token">
-          {getFieldDecorator('token', {
-            initialValue: `${this.props.pipeline && this.props.pipeline.repositoryToken ? this.props.pipeline.repositoryToken : ''}`
-          })(
-            <Input
-              onPressEnter={this.handleSubmit}
-              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
-          )}
-        </Form.Item>
-      ));
-    } else {
-      formItems.push((
-        <Row key="edit repository settings" style={{textAlign: 'right'}}>
-          <a onClick={this.displayRepositorySettings}>Edit repository settings</a>
-        </Row>
-      ));
+              <Input
+                onPressEnter={this.handleSubmit}
+                disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))}/>
+            )}
+          </Form.Item>
+        ));
+      } else {
+        formItems.push((
+          <Row key="edit repository settings" style={{textAlign: 'right'}}>
+            <a onClick={this.displayRepositorySettings}>Edit repository settings</a>
+          </Row>
+        ));
+      }
     }
     return formItems;
   };
