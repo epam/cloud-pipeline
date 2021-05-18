@@ -408,15 +408,22 @@ def is_tunnel_ready_on_lin_and_win(tunnel_pid, local_port):
             return True
     return False
 
+def clean_tunnel_pid(pid):
+    return pid.strip() if pid and pid.strip().isdigit() else ''
 
 def is_tunnel_ready_on_mac(tunnel_pid, local_port):
     # psutil.net_connections() is not allowed to a regular user on mac
-    listening_pid = perform_command(['lsof', '-t', '-i', 'TCP:' + str(local_port), '-s', 'TCP:LISTEN'],
-                                    fail_on_error=False)
-    return listening_pid \
-           and listening_pid.strip() \
-           and listening_pid.strip().isdigit() \
-           and int(listening_pid.strip()) == tunnel_pid
+    listening_pid = clean_tunnel_pid(perform_command(['lsof', '-t', '-i', 'TCP:' + str(local_port), '-s', 'TCP:LISTEN'],
+                                                     fail_on_error=False))
+    # In MacOS the "listening_pid" will be a child of "tunnel_pid" (which is a pyinstaller bootloader)
+    # So we need to check that listening_pid's parent is a tunnel_pid
+    listening_parent_pid = clean_tunnel_pid(perform_command(['ps', '-o', 'ppid=', '-p', listening_pid],
+                                                            fail_on_error=False))
+    logging.debug('Waiting for tunnel PID {}, got PID {} listening on port {} with parent PID {}'
+                  .format(tunnel_pid, listening_pid, local_port, listening_parent_pid))
+    return listening_pid and \
+           listening_parent_pid and \
+           (int(listening_pid) == tunnel_pid or int(listening_parent_pid) == tunnel_pid)
 
 
 def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
