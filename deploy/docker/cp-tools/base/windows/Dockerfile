@@ -26,8 +26,7 @@ COPY requirements.txt $NOMACHINE_HOME/requirements.txt
 RUN pip install -r ${env:NOMACHINE_HOME}/requirements.txt
 
 COPY init.ps1 c:/init.ps1
-COPY proxy.py \
-     serve_nxs.py \
+COPY serve_nxs.py \
      template.nxs \
      $NOMACHINE_HOME/
 

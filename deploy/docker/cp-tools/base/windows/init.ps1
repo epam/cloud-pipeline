@@ -22,7 +22,7 @@ Start-Job {
 }
 
 Start-Job {
-    python ${env:NOMACHINE_HOME}\proxy.py *>> ${env:NOMACHINE_HOME}\proxy.log
+    & ${env:PIPE_DIR}\pipe tunnel start --direct -lp 4000 -rp 4000 --trace -l ${env:NOMACHINE_HOME}\proxy.log $env:NODE_IP
 }
 
 while (1) {
