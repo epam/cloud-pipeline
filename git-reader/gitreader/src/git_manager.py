@@ -89,8 +89,6 @@ class GitManager(object):
             args.append(filters.ref)
 
         if len(filters.path_masks) > 0:
-            if len(filters.path_masks) == 1:
-                args.append("--follow")
             args.append('--')
             args.append(filters.path_masks)
 
