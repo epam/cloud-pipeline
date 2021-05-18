@@ -72,12 +72,14 @@ if __name__ == '__main__':
     api_token = os.environ['API_TOKEN'] = os.getenv('API_TOKEN')
     node_owner = os.environ['CP_NODE_OWNER'] = os.getenv('CP_NODE_OWNER', 'ROOT')
     edge_url = os.environ['EDGE'] = os.getenv('EDGE', 'https://cp-edge.default.svc.cluster.local:31081')
-    node_owner = os.environ['CP_NODE_OWNER'] = os.getenv('CP_NODE_OWNER', 'nodeuser')
     node_private_key_path = os.environ['CP_NODE_PRIVATE_KEY'] = os.getenv('CP_NODE_PRIVATE_KEY', os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = os.environ['OWNER'] = os.getenv('OWNER')
     owner_password = os.environ['OWNER_PASSWORD'] = os.getenv('OWNER_PASSWORD', os.getenv('SSH_PASS'))
     task_path = os.environ['CP_TASK_PATH']
     python_dir = os.environ['CP_PYTHON_DIR'] = os.environ.get('CP_PYTHON_DIR', 'c:\\python')
+    requires_cloud_data = os.environ['CP_CAP_WIN_INSTALL_CLOUD_DATA'] = \
+        os.environ.get('CP_CAP_WIN_INSTALL_CLOUD_DATA', 'false')
+    requires_cloud_data = requires_cloud_data.lower() == 'true'
     cloud_data_distribution_url = \
         os.environ['CP_CLOUD_DATA_WIN_DISTRIBUTION_URL'] = \
         os.getenv('CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
@@ -145,16 +147,17 @@ if __name__ == '__main__':
                      f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"',
                      user=node_owner)
 
-    logging.info('Downloading Cloud-Data App...')
-    _download_file(cloud_data_distribution_url, os.path.join(host_root, 'cloud-data.zip'))
+    if requires_cloud_data:
+        logging.info('Downloading Cloud-Data App...')
+        _download_file(cloud_data_distribution_url, os.path.join(run_dir, 'cloud-data.zip'))
 
-    logging.info('Unpacking Cloud-Data App...')
-    _extract_archive(os.path.join(host_root, 'cloud-data.zip'), os.path.dirname(run_dir))
+        logging.info('Unpacking Cloud-Data App...')
+        _extract_archive(os.path.join(run_dir, 'cloud-data.zip'), run_dir)
 
-    logging.info('Configuring Cloud-Data App on the node')
-    node_ssh.execute(f'{python_dir}\\python.exe -c "from scripts import configure_cloud_data_win; '
-                     f'configure_cloud_data_win(\\"{run_dir}\\", \\"{edge_url}\\", \\"{owner}\\", \\"{api_token}\\")"',
-                     user=node_owner)
+        logging.info('Configuring Cloud-Data App on the node...')
+        node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_cloud_data_win import configure_cloud_data_win; '
+                         f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\', \'{node_owner}\', \'{owner}\', \'{api_token}\')\\"',
+                         user=node_owner)
 
     logging.info('Configuring owner account on the node...')
     node_ssh.execute(f'AddUser -UserName {owner} -UserPassword {owner_password}',
