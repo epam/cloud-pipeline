@@ -99,7 +99,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         true,
         undefined,
         undefined,
-        undefined,
+        [ItemTypes.pipeline, ItemTypes.storage],
         this.props.hiddenObjectsTreeFilter()
       );
     }

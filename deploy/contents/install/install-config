@@ -193,10 +193,11 @@ CP_SP_INTERNAL_HOST=cp-sensitive-proxy.default.svc.cluster.local
 CP_REDIS_INTERNAL_HOST=cp-redis.default.svc.cluster.local
 CP_REDIS_INTERNAL_PORT=30097
 
-# Other params, specified on command line
-#
-
 # cp-gitlab-reader
 CP_GITLAB_READER_WORKER_COUNT=2
 CP_GITLAB_READER_INTERNAL_PORT=35800
+CP_GITLAB_READER_INTERNAL_HOST=cp-gitlab-reader.default.svc.cluster.local
 CP_GITLAB_READER_LOG_DIR=/var/log/cp-git-reader/
+
+# Other params, specified on command line
+#

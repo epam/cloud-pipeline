@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -366,7 +367,7 @@ public class GitManager {
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         if (commitMessage == null) {
-            commitMessage = String.format("Creating update %s", folder);
+            commitMessage = String.format("Creating folder '%s'", folder);
         }
         List<String> filesToCreate = new ArrayList<>();
         Path folderToCreate = Paths.get(folder);
@@ -394,7 +395,7 @@ public class GitManager {
                                        String lastCommitId,
                                        String commitMessage) throws GitClientException {
         if (commitMessage == null) {
-            commitMessage = String.format("Renaming update %s to %s", folder, newFolderName);
+            commitMessage = String.format("Renaming folder '%s' to '%s'", folder, newFolderName);
         }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
@@ -424,7 +425,7 @@ public class GitManager {
                                        String lastCommitId,
                                        String commitMessage) throws GitClientException {
         if (commitMessage == null) {
-            commitMessage = String.format("Removing update %s", folder);
+            commitMessage = String.format("Removing folder '%s'", folder);
         }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
@@ -522,7 +523,7 @@ public class GitManager {
         GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         if (StringUtils.isNullOrEmpty(sourceItemVOList.getComment())) {
-            gitPushCommitEntry.setCommitMessage(String.format("Updating files %s", StringUtils.join(", ",
+            gitPushCommitEntry.setCommitMessage(String.format("Updating files '%s'", StringUtils.join(", ",
                     String.valueOf(sourceItemVOList.getItems().stream().map(PipelineSourceItemVO::getPath)))));
         } else {
             gitPushCommitEntry.setCommitMessage(sourceItemVOList.getComment());
@@ -609,7 +610,7 @@ public class GitManager {
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
 
         for (UploadFileMetadata file : files) {
-            String filePath = folder + PATH_DELIMITER + file.getFileName();
+            final String filePath = getFilePath(folder, file);
             Arrays.stream(filePath.split(PATH_DELIMITER)).forEach(pathPart ->
                     Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                             messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, filePath)));
@@ -631,6 +632,13 @@ public class GitManager {
 
         gitPushCommitEntry.setCommitMessage(commitMessage);
         return gitlabClient.commit(gitPushCommitEntry);
+    }
+
+    private String getFilePath(final String folder, final UploadFileMetadata file) {
+        if (StringUtils.isNullOrEmpty(folder) || folder.equals(PATH_DELIMITER)) {
+            return file.getFileName();
+        }
+        return folder + PATH_DELIMITER + file.getFileName();
     }
 
     private String getCommitMessage(String commitMessage, String filePath, boolean fileExists,
@@ -738,7 +746,7 @@ public class GitManager {
 
     public GitProject createRepository(final String pipelineName, final String description) throws GitClientException {
         return getDefaultGitlabClient().createEmptyRepository(
-                        pipelineName,
+                        GitUtils.convertPipeNameToProject(pipelineName),
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         true,
@@ -774,6 +782,14 @@ public class GitManager {
         return getGitlabClientForRepository(repository, token, true)
                 .createTemplateRepository(template,
                         description,
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
+    }
+
+    public GitProject createEmptyRepository(final String description, final String repository,
+                                            final String token) throws GitClientException {
+        return getGitlabClientForRepository(repository, token, true)
+                .createEmptyRepository(description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
@@ -898,13 +914,13 @@ public class GitManager {
         return forkedProject;
     }
 
-    public GitReaderEntryListing<GitRepositoryEntry> lsTreeRepositoryContent(final Long id, final String version,
-                                                                             final String path, final Long page,
-                                                                             final Integer pageSize) {
-            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
-                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
-            ));
+    public GitReaderEntryListing<GitReaderObject> lsTreeRepositoryContent(final Long id, final String version,
+                                                                          final String path, final Long page,
+                                                                          final Integer pageSize) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
+                GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+        ));
     }
 
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
@@ -912,57 +928,63 @@ public class GitManager {
                                                                                         final String path,
                                                                                         final Long page,
                                                                                         final Integer pageSize) {
-            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
-                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
-            ));
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
+                GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
+        ));
     }
 
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(
-            final Long id,
-            final String version,
-            final GitReaderLogsPathFilter paths) {
-            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        final Long id,
+        final String version,
+        final GitReaderLogsPathFilter paths) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
                 GitRepositoryUrl.from(pipeline.getRepository()), version, paths
         ));
     }
 
     public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> logRepositoryCommits(
-            final Long id,
-            final Long page,
-            final Integer pageSize,
-            final GitCommitsFilter filter) {
-            final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
-            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommits(
-                    GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, filter
-            ));
+        final Long id,
+        final Long page,
+        final Integer pageSize,
+        final GitCommitsFilter filter) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommits(
+                GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, filter
+        ));
     }
 
     public GitReaderDiff logRepositoryCommitDiffs(final Long id, final Boolean includeDiff,
                                                   final GitCommitsFilter filter) {
-            final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
-            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiffs(
-                    GitRepositoryUrl.from(pipeline.getRepository()),
-                    includeDiff, filter
-            ));
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiffs(
+                GitRepositoryUrl.from(pipeline.getRepository()),
+                includeDiff, filter
+        ));
     }
 
     public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit,
                                                       final String path) {
-            final Pipeline pipeline = pipelineManager.load(id);
-            return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiff(
-                    GitRepositoryUrl.from(pipeline.getRepository()),
-                    commit, path
-            ));
+        final Pipeline pipeline = pipelineManager.load(id);
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiff(
+                GitRepositoryUrl.from(pipeline.getRepository()),
+                commit, path
+        ));
     }
 
     private <T> T callGitReaderApi(final GitClientMethodCall<GitReaderClient, T> method) {
         try {
-            return method.apply(new GitReaderClient(getGitReaderHostPreference()));
+            return method.apply(
+                    new GitReaderClient(
+                            getGitReaderHostPreference(),
+                            authManager.issueAdminToken(null)
+                    )
+            );
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage());
-            throw new IllegalArgumentException("Something went wrong when trying to request data from Git Reader service", e);
+            throw new IllegalArgumentException(
+                    "Something went wrong when trying to request data from Git Reader service", e);
         }
     }
 

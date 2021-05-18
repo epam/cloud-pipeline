@@ -18,6 +18,7 @@ import traceback
 
 import flask
 from flask import Flask, jsonify, request
+from flask_httpauth import HTTPTokenAuth
 
 from gitreader.src.git_manager import GitManager
 from gitreader.src.model.git_search_filter import GitSearchFilter
@@ -25,7 +26,10 @@ from gitreader.src.model.git_search_filter import GitSearchFilter
 from flasgger import Swagger
 from flasgger import swag_from
 
+from gitreader.src.utils import auth_utils
+
 app = Flask(__name__)
+auth = HTTPTokenAuth(scheme='Bearer')
 swagger = Swagger(app)
 app.config['gitmanager'] = GitManager(os.getenv("CP_GITLAB_REPO_ROOT", "/var/opt/gitlab/git-data/repositories"))
 # Force FLASK to accept both "http://url and http://url/"
@@ -46,7 +50,19 @@ def error(message):
     }
 
 
+@auth.verify_token
+def verify_token(token):
+    return auth_utils.verify_auth_token(token)
+
+
+@app.route('/health')
+@swag_from('flasgger-doc/health.yml')
+def health():
+    return jsonify(success({"healthy": True}))
+
+
 @app.route('/git/<path:repo>/ls_tree')
+@auth.login_required
 @swag_from('flasgger-doc/list-tree.yml')
 def git_list_tree(repo):
     manager = app.config['gitmanager']
@@ -60,6 +76,7 @@ def git_list_tree(repo):
 
 
 @app.route('/git/<path:repo>/logs_tree',  methods=["GET"])
+@auth.login_required
 @swag_from('flasgger-doc/logs-tree.yml')
 def git_logs_tree(repo):
     manager = app.config['gitmanager']
@@ -71,12 +88,14 @@ def git_logs_tree(repo):
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))
 
+
 @app.route('/git/<path:repo>/logs_tree',  methods=["POST"])
+@auth.login_required
 @swag_from('flasgger-doc/logs-tree-by-path.yml')
 def git_logs_tree_by_paths(repo):
     manager = app.config['gitmanager']
-    _, _, _, ref = parse_url_params()
     try:
+        _, _, _, ref = parse_url_params()
         data = load_data_from_request(request)
         if "paths" in data:
             logs_tree = manager.logs_paths(repo, ref, data['paths'])
@@ -89,6 +108,7 @@ def git_logs_tree_by_paths(repo):
 
 
 @app.route('/git/<path:repo>/commits', methods=["POST"])
+@auth.login_required
 @swag_from('flasgger-doc/list-commits.yml')
 def git_list_commits(repo):
     manager = app.config['gitmanager']
@@ -103,6 +123,7 @@ def git_list_commits(repo):
 
 
 @app.route('/git/<path:repo>/diff', methods=["POST"])
+@auth.login_required
 @swag_from('flasgger-doc/diff-report.yml')
 def git_diff_report(repo):
     manager = app.config['gitmanager']
@@ -122,6 +143,7 @@ def git_diff_report(repo):
 
 
 @app.route('/git/<path:repo>/diff/<commit>', methods=["GET"])
+@auth.login_required
 @swag_from('flasgger-doc/diff-by-commit.yml')
 def git_diff_by_commit(repo, commit):
     manager = app.config['gitmanager']

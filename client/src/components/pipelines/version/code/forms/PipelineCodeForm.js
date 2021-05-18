@@ -33,12 +33,12 @@ import roleModel from '../../../../../utils/roleModel';
 @inject('cancel', 'version', 'pipeline', 'save')
 @observer
 export default class PipelineCodeForm extends React.Component {
-
   static propTypes = {
     file: PropTypes.object,
     version: PropTypes.string,
     cancel: PropTypes.func,
-    save: PropTypes.func
+    save: PropTypes.func,
+    vsStorage: PropTypes.bool
   };
 
   editor;
@@ -126,7 +126,7 @@ export default class PipelineCodeForm extends React.Component {
     this.setState({commitMessageForm: false});
   };
 
-  toggleEditMode = async() => {
+  toggleEditMode = async () => {
     if (this.hotEditor && this.state.editMode) {
       this._modifiedCode = this.stringTableData;
     }
@@ -150,13 +150,21 @@ export default class PipelineCodeForm extends React.Component {
 
   @computed
   get isEditable () {
-    if (this.props.pipeline &&
-      roleModel.writeAllowed(this.props.pipeline.value) &&
-      this.props.pipeline.value &&
-      this.props.pipeline.value.currentVersion &&
-      this.props.pipeline.value.currentVersion.name &&
-      this.props.version) {
-      const currentVersionName = this.props.pipeline.value.currentVersion.name;
+    const {vsStorage, pipeline, version} = this.props;
+    if (
+      pipeline &&
+      roleModel.writeAllowed(pipeline.value) &&
+      pipeline.value &&
+      pipeline.value.currentVersion &&
+      version &&
+      (vsStorage
+        ? pipeline.value.currentVersion.commitId
+        : pipeline.value.currentVersion.name
+      )
+    ) {
+      const currentVersionName = vsStorage
+        ? this.props.pipeline.value.currentVersion.commitId
+        : this.props.pipeline.value.currentVersion.name;
       return currentVersionName.toLowerCase() === this.props.version.toLowerCase();
     }
     return false;
@@ -242,12 +250,12 @@ export default class PipelineCodeForm extends React.Component {
             root="hot"
             ref={this.initializeTableEditor}
             data={this._tableData.data}
-            colHeaders={true}
-            rowHeaders={true}
+            colHeaders
+            rowHeaders
             readOnly={!this.state.editMode}
             readOnlyCellClassName={'readonly-cell'}
-            manualColumnResize={true}
-            manualRowResize={true}
+            manualColumnResize
+            manualRowResize
             contextMenu={this.state.editMode
               ? [
                 'row_above',
@@ -273,7 +281,7 @@ export default class PipelineCodeForm extends React.Component {
           <Alert
             message={`Error parsing tabular file ${this.props.file.name}:
               ${this._tableData.message}`}
-            type="error"/>
+            type="error" />
         );
     } else {
       return (
@@ -282,10 +290,10 @@ export default class PipelineCodeForm extends React.Component {
           readOnly={!this.state.editMode}
           code={this._modifiedCode !== null ? this._modifiedCode : (this._originalCode || '')}
           onChange={this.onCodeChange}
-          supportsFullScreen={true}
+          supportsFullScreen
           language={this.state.editTabularAsText ? 'text' : undefined}
           fileName={this.props.file ? this.props.file.name : undefined}
-          delayedUpdate={true}
+          delayedUpdate
         />
       );
     }

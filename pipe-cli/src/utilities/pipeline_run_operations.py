@@ -56,7 +56,7 @@ class PipelineRunOperations(object):
     @classmethod
     def run(cls, pipeline, config, parameters, yes, run_params, instance_disk, instance_type, docker_image,
             cmd_template, timeout, quiet, instance_count, cores, sync, price_type=None, region_id=None,
-            parent_node=None, non_pause=None, friendly_url=None):
+            parent_node=None, non_pause=None, friendly_url=None, run_as_user=None):
         # All pipeline run parameters can be specified as options, e.g. --read1 /path/to/reads.fastq
         # In this case - runs_params_dict will contain keys-values for each option, e.g. {'--read1': '/path/to/reads.fastq'}
         # So they can be addressed with run_params_dict['--read1']
@@ -188,7 +188,8 @@ class PipelineRunOperations(object):
                                                                       region_id=region_id,
                                                                       parent_node=parent_node,
                                                                       non_pause=non_pause,
-                                                                      friendly_url=friendly_url)
+                                                                      friendly_url=friendly_url,
+                                                                      run_as_user=run_as_user)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
                             click.echo('"{}" pipeline run scheduled with RunId: {}'.format(

@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.git;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.ResultStatus;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -27,9 +26,11 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryListing;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogRequestFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
+import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
+import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.exception.git.GitClientException;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -50,11 +51,14 @@ import static com.epam.pipeline.manager.git.RestApiUtils.execute;
 @NoArgsConstructor
 public class GitReaderClient {
 
+    private static final String AUTHORIZATION = "Authorization";
     private static final String DATA_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
 
     private GitReaderApi gitReaderApi;
+    private JwtRawToken userJwtToken;
 
-    GitReaderClient(final String gitReaderUrlRoot) {
+    GitReaderClient(final String gitReaderUrlRoot, JwtRawToken userJwtToken) {
+        this.userJwtToken = userJwtToken;
         if (StringUtils.isBlank(gitReaderUrlRoot)) {
             throw new IllegalArgumentException("Cannot get GitReader Service URL.");
         }
@@ -65,12 +69,12 @@ public class GitReaderClient {
                                                                                          final Long page,
                                                                                          final Integer pageSize,
                                                                                          final GitCommitsFilter filter)
-            throws GitClientException {
-                return callAndCheckResult(
-                        gitReaderApi.listCommits(
-                                getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter)
-                        )
-                ).getPayload();
+        throws GitClientException {
+        return callAndCheckResult(
+                gitReaderApi.listCommits(
+                        getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter)
+                )
+        ).getPayload();
     }
 
     public GitReaderDiff getRepositoryCommitDiffs(final GitRepositoryUrl repo,
@@ -96,9 +100,9 @@ public class GitReaderClient {
         ).getPayload();
     }
 
-    public GitReaderEntryListing<GitRepositoryEntry> getRepositoryTree(final GitRepositoryUrl repo, final String path,
-                                                                       final String ref, final Long page,
-                                                                       final Integer pageSize)
+    public GitReaderEntryListing<GitReaderObject> getRepositoryTree(final GitRepositoryUrl repo, final String path,
+                                                                    final String ref, final Long page,
+                                                                    final Integer pageSize)
             throws GitClientException {
         return callAndCheckResult(
                 gitReaderApi.getRepositoryTree(getRepositoryPath(repo), path, ref, page, pageSize)
@@ -151,7 +155,8 @@ public class GitReaderClient {
     }
 
     private GitReaderApi buildGitLabApi(final String gitReaderUrlRoot) {
-        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, null, DATA_FORMAT).build();
+        return new ApiBuilder<>(GitReaderApi.class, gitReaderUrlRoot, AUTHORIZATION,
+                userJwtToken.toHeader(), DATA_FORMAT).build();
     }
 
     private List<String> getPathMasks(final GitCommitsFilter filter) {

@@ -26,6 +26,8 @@ import RoleAssign from '../../../models/user/RoleAssign';
 import RoleRemove from '../../../models/user/RoleRemoveFromUser';
 import UserUpdate from '../../../models/user/UserUpdate';
 import UserBlock from '../../../models/user/UserBlock';
+import Runners from '../../../models/user/Runners';
+import RunnersUpdate from '../../../models/user/RunnersUpdate';
 import {
   AssignCredentialProfiles,
   LoadEntityCredentialProfiles
@@ -40,6 +42,8 @@ import {
 import Metadata, {ApplyChanges} from '../../special/metadata/Metadata';
 import InstanceTypesManagementForm from './InstanceTypesManagementForm';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import UserName from '../../special/UserName';
+import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
 
 @roleModel.authenticationInfo
 @inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles')
@@ -49,7 +53,8 @@ import AWSRegionTag from '../../special/AWSRegionTag';
   roles: new Roles(),
   credentialProfiles: params.user
     ? new LoadEntityCredentialProfiles(params.user.id, true)
-    : null
+    : null,
+  runners: params.user ? new Runners(params.user.id) : null
 }))
 @observer
 export default class EditUserRolesDialog extends React.Component {
@@ -83,7 +88,11 @@ export default class EditUserRolesDialog extends React.Component {
     profilesInitialized: false,
     defaultProfileId: undefined,
     defaultProfileIdInitial: undefined,
-    defaultProfileIdInitialized: false
+    defaultProfileIdInitialized: false,
+    runners: [],
+    runnersInitial: [],
+    runnersInitialized: false,
+    shareDialogOpened: false
   };
 
   instanceTypesForm;
@@ -109,7 +118,8 @@ export default class EditUserRolesDialog extends React.Component {
       defaultStorageInitialized,
       defaultProfileIdInitialized,
       rolesInitialized,
-      profilesInitialized
+      profilesInitialized,
+      runnersInitialized
     } = this.state;
     const state = {};
     if (!defaultStorageInitialized && this.props.userInfo && this.props.userInfo.loaded) {
@@ -135,6 +145,15 @@ export default class EditUserRolesDialog extends React.Component {
       state.profiles = (this.props.credentialProfiles.value || []).map(o => o.id);
       state.profilesInitial = (this.props.credentialProfiles.value || []).map(o => o.id);
       state.profilesInitialized = true;
+    }
+    if (
+      !runnersInitialized &&
+      this.props.runners &&
+      this.props.runners.loaded
+    ) {
+      state.runners = (this.props.runners.value || []).slice();
+      state.runnersInitial = (this.props.runners.value || []).slice();
+      state.runnersInitialized = true;
     }
     if (Object.keys(state).length > 0) {
       this.setState(state);
@@ -253,7 +272,10 @@ export default class EditUserRolesDialog extends React.Component {
       profilesInitialized: false,
       defaultProfileId: undefined,
       defaultProfileIdInitial: undefined,
-      defaultProfileIdInitialized: false
+      defaultProfileIdInitialized: false,
+      runners: [],
+      runnersInitial: [],
+      runnersInitialized: false
     }, this.props.onClose);
   };
 
@@ -286,6 +308,28 @@ export default class EditUserRolesDialog extends React.Component {
     if (initial.length === current.length) {
       for (let i = 0; i < initial.length; i++) {
         if (current.indexOf(initial[i]) === -1) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return true;
+  }
+
+  get runnersModified () {
+    const {
+      runners = [],
+      runnersInitial = []
+    } = this.state;
+    if (runnersInitial.length === runners.length) {
+      for (let i = 0; i < runnersInitial.length; i++) {
+        const runner = runnersInitial[i];
+        if (
+          !runners.find(r => r.name === runner.name &&
+            r.accessType === runner.accessType &&
+            r.principal === runner.principal
+          )
+        ) {
           return true;
         }
       }
@@ -354,6 +398,7 @@ export default class EditUserRolesDialog extends React.Component {
       this.addedRoles.length > 0 ||
       this.removedRoles.length > 0 ||
       this.profilesModified ||
+      this.runnersModified ||
       instanceTypesChanged;
   }
 
@@ -394,8 +439,9 @@ export default class EditUserRolesDialog extends React.Component {
         hide();
       }
     };
+    const {userName} = this.props.user;
     Modal.confirm({
-      title: `Are you sure you want to ${block ? 'block' : 'unblock'} user ${this.props.user.userName}?`,
+      title: `Are you sure you want to ${block ? 'block' : 'unblock'} user ${userName}?`,
       style: {
         wordWrap: 'break-word'
       },
@@ -418,6 +464,28 @@ export default class EditUserRolesDialog extends React.Component {
     };
   };
 
+  openShareDialog = () => {
+    this.setState({
+      shareDialogOpened: true
+    });
+  };
+
+  closeShareDialog = () => {
+    this.setState({
+      shareDialogOpened: false
+    });
+  };
+
+  saveShareSids = async (sids = []) => {
+    this.setState({
+      runners: sids.map(sid => ({
+        name: sid.name,
+        principal: sid.isPrincipal,
+        accessType: sid.accessType
+      }))
+    }, this.closeShareDialog);
+  };
+
   saveChanges = async () => {
     if (this.modified) {
       const mainHide = message.loading('Updating user info...', 0);
@@ -427,7 +495,8 @@ export default class EditUserRolesDialog extends React.Component {
         metadata,
         instanceTypesChanged,
         defaultProfileId,
-        defaultProfileIdInitial
+        defaultProfileIdInitial,
+        runners
       } = this.state;
       if (defaultStorageId !== defaultStorageIdInitial) {
         const hide = message.loading('Updating default data storage...', -1);
@@ -486,6 +555,25 @@ export default class EditUserRolesDialog extends React.Component {
           defaultProfileId
         );
         await request.send();
+        hide();
+        if (request.error) {
+          message.error(request.error, 5);
+          mainHide();
+          return;
+        }
+      }
+      if (this.runnersModified) {
+        const hide = message.loading(
+          (
+            <span>
+              Processing <i>Run As</i> permissions...
+            </span>
+          ), 0
+        );
+        const request = new RunnersUpdate(
+          this.props.userInfo.value.id
+        );
+        await request.send(runners);
         hide();
         if (request.error) {
           message.error(request.error, 5);
@@ -563,14 +651,16 @@ export default class EditUserRolesDialog extends React.Component {
       defaultStorageIdInitial,
       defaultProfileIdInitial,
       rolesInitial,
-      profilesInitial
+      profilesInitial,
+      runnersInitial
     } = this.state;
     this.setState({
       defaultStorageId: defaultStorageIdInitial,
       defaultProfileId: defaultProfileIdInitial,
       roles: rolesInitial.map(r => r),
       metadata: undefined,
-      profiles: profilesInitial.slice()
+      profiles: profilesInitial.slice(),
+      runners: runnersInitial.slice()
     }, callback);
   };
 
@@ -585,8 +675,54 @@ export default class EditUserRolesDialog extends React.Component {
       profiles: [],
       profilesInitial: [],
       profilesInitialized: false,
-      defaultProfileIdInitialized: false
+      defaultProfileIdInitialized: false,
+      runners: [],
+      runnersInitial: [],
+      runnersInitialized: false
     }, () => this.revertChanges(this.updateValues));
+  };
+
+  renderRunners = () => {
+    const {runners} = this.state;
+    const {
+      runners: runnersRequest,
+      roles: rolesRequest
+    } = this.props;
+    if (runnersRequest && runnersRequest.pending && !runnersRequest.loaded) {
+      return (
+        <Icon type="loading" />
+      );
+    }
+    const renderRole = (roleName) => {
+      if (rolesRequest && rolesRequest.loaded) {
+        const role = (rolesRequest.value || []).find(r => r.name === roleName);
+        if (role && !role.predefined) {
+          return this.splitRoleName(roleName);
+        }
+      }
+      return roleName;
+    };
+    if (runners && runners.length > 0) {
+      return runners
+        .map((s, index, array) => {
+          return (
+            <span
+              key={s.name}
+              style={{marginRight: 5, whiteSpace: 'nowrap'}}
+            >
+              {
+                s.principal
+                  ? (<UserName userName={s.name} />)
+                  : renderRole(s.name)
+              }
+              {
+                index < array.length - 1 ? ',' : undefined
+              }
+            </span>
+          );
+        });
+    }
+    return 'configure';
   };
 
   render () {
@@ -599,7 +735,12 @@ export default class EditUserRolesDialog extends React.Component {
       blocked = this.props.userInfo.value.blocked;
     }
     const {metadata} = this.state;
-    const pending = this.props.credentialProfiles ? this.props.credentialProfiles.pending : false;
+    const credentialProfilesPending = this.props.credentialProfiles
+      ? this.props.credentialProfiles.pending
+      : false;
+    const runnersPending = this.props.runners
+      ? this.props.runners.pending
+      : false;
     return (
       <Modal
         width="80%"
@@ -738,7 +879,8 @@ export default class EditUserRolesDialog extends React.Component {
                   optionFilterProp="children"
                   onChange={this.addRoleInputChanged}
                   filterOption={
-                    (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    (input, option) =>
+                      option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }>
                   {
                     this.availableRoles.map(t =>
@@ -814,6 +956,37 @@ export default class EditUserRolesDialog extends React.Component {
             <div
               key="INSTANCE_MANAGEMENT"
             >
+              <div style={{marginTop: 5, padding: 2}}>
+                <span
+                  style={{fontWeight: 'bold', float: 'left'}}
+                >
+                  Can run as this user:
+                </span>
+                <a
+                  onClick={this.openShareDialog}
+                  style={{marginLeft: 5, wordBreak: 'break-word'}}
+                >
+                  {this.renderRunners()}
+                </a>
+                <ShareWithForm
+                  endpointsAvailable
+                  visible={this.state.shareDialogOpened}
+                  roles={
+                    this.props.roles.loaded
+                      ? (this.props.roles.value || []).slice()
+                      : []
+                  }
+                  sids={
+                    this.state.runners.map(runner => ({
+                      ...runner,
+                      isPrincipal: runner.principal
+                    }))
+                  }
+                  pending={runnersPending}
+                  onSave={this.saveShareSids}
+                  onClose={this.closeShareDialog}
+                />
+              </div>
               <InstanceTypesManagementForm
                 className={styles.instanceTypesManagementForm}
                 key="instance types management form"
@@ -837,7 +1010,7 @@ export default class EditUserRolesDialog extends React.Component {
                   disabled={
                     this.state.operationInProgress ||
                     readOnly ||
-                    pending
+                    credentialProfilesPending
                   }
                   value={this.state.profiles.map(o => `${o}`)}
                   style={{width: '100%'}}
@@ -878,7 +1051,7 @@ export default class EditUserRolesDialog extends React.Component {
                     this.state.operationInProgress ||
                     readOnly ||
                     this.state.profiles.length === 0 ||
-                    pending
+                    credentialProfilesPending
                   }
                   value={this.defaultProfileId}
                   style={{width: '100%'}}

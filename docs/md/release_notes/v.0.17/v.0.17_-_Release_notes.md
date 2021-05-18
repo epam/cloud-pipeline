@@ -16,6 +16,10 @@
 - [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
 - [Updates of Metadata object](#updates-of-metadata-object)
+- [Custom node images](#custom-node-images)
+- [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
+- [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
+- [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -591,6 +595,124 @@ See after the creation:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
 
 > **_Note_**: IDs still should be unique
+
+## Custom node images
+
+Previously, Cloud Pipeline allowed to run instances only using some default predefined node images.  
+For example, some node image was used for all CPU instance types, another - for GPU ones.  
+Nevertheless there are cases than some of the tools or pipelines require special node images. For example, some tool may require specific `nvidia` driver version which default GPU node image doesn't have.
+
+In the current version, the ability to use a custom node image was implemented.  
+If a custom node image is specified for a pipeline, tool or just a single launch then cloud instance with the required node image will be used for their runs.
+
+In a pipeline config, a custom node is specified in format: `"instance_image": "<custom_node_image>"`.  
+For runs launched via `API`, a custom node is specified in format: `"instanceImage": "<custom_node_image>"`.  
+In both cases, `<custom_node_image>` is the name of the custom image.
+
+For example, to use a custom node for a pipeline:
+
+- open pipeline's **CODE** tab
+- open `config.json` file
+- in the configuration, specify a custom node image:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CustomNode_01.png)
+- save changes
+- when launching such pipeline, you can observe that specified image is used for a node:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CustomNode_02.png)
+
+See an example for a pipeline in details [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#example-configure-a-custom-node-image).
+
+## Launch a tool with "hosted" applications
+
+"Long-running" Cloud Pipeline applications may occasionally failed.  
+And one of the main task caused this situation - saving the internal access to the services (e.g. if a database was hosted) as the IP and name (which match the pod) are being changed during the default run restarts.
+
+To resolve that, a special option to assign an internal DNS name to the run was implemented.
+
+Name of the service and a list of ports can be supplied by the user in the GUI, at the **Launch** form before the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_01.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_02.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_03.png)
+
+Configured DNS service is shown at the **Launch** form:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_04.png)
+
+And [**FQDN**](https://en.wikipedia.org/wiki/Fully_qualified_domain_name) of all configured services are shown during the run - at the **Run logs** page:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_05.png)
+
+Checking that the run is launched with a "hosted" application:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_HostedApp_06.png)
+
+For more details see [here](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-hosted-applications).
+
+## Advanced global search with faceted filters
+
+In **`v0.14`**, the **Global search** over the platform was [introduced](../v.0.14/v.0.14_-_Release_notes.md#global-search).  
+Now, in **`v0.17`**, the new version of the search was implemented - **Advanced search**.  
+**Advanced search** repeats the functionality of the **Simple search** but has some advanced capabilities.
+
+To open the **Advanced search** click the **Search** icon in the main menu:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_01.png)
+
+> Please note, the previous form of the global search is still available - by pressing "Ctrl+F". Currently, **Advanced search** is available for admins only
+
+To start searching, a query string shall be entered (search can be triggered by pressing the "Enter" button or by the correspoding **Search** button near the search bar), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_02.png)
+
+As in the previous form, you can:
+
+- restrict search results selecting desired object types from all results scope (the corresponding panel with the object types selector is placed under the search bar):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_03.png)
+- open the "Preview" pane for the certain result hovering mouse point over it and click the **Info** icon:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_04.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_13.png)
+- scroll search results to view more or use the paging control
+
+New features:
+
+- "**Faceted filters**" panel at the left side of the search form.  
+    It allows to search objects by their attributes (tags). Operating principle is similar to the E-Commerce sites.  
+    Tags' keys and values displayed in this panel are loaded from separate **System Dictionaries** marked as filter sources.  
+    User can restrict (filter) search results - by checking/unchecking desired filters.  
+    In the search results, only objects were associated with the checked filter value (dictionary entry) will remain, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_05.png)
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_06.png)  
+    I.e. only objects **tagged** by this dictionary entry remained in the search results.  
+    You can select several filters values from different facets. Each time, other filters will be updated, and also displayed search results will be changed according to the selected filters.  
+    You can hover over any displayed search result and click the **Info** icon to check that the object is really tagged by selected filters (attributes), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_07.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_14.png)  
+    More details - how to add dictionaries to the "Faceted filters" panel, how to configure filters and use them for the search - see [here](../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md).
+- Changeable view of the search results output:  
+    Results output in the **Simple search** has the view as simple list of the object names only.  
+    In the **Advanced search**, that output contains the additional info - according to the entity type of the certain result - it can be `OWNER`, `DESCRIPTION`, `DATE_CHANGED`, `PATH`, etc.  
+    Also user can switch between output view formats - `list` and `table` - by special control ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_08.png):  
+    - `list` view (_default_) - each result is presented by the "row" in the list, _additional_ info is placed in line, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_09.png)
+    - `table` view - all results are presented by the single table, _additional_ info is placed in columns, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_10.png)  
+    Also the `table` view can be customized by the admin user.  
+    To the existing columns, user can add ones for the object attributes (tags) values, where the attribute `key` becomes the column header. If the object in results has the `value` for that attribute - it will be displayed in the corresponding column.  
+    Customizing of additional attribute columns is being performed by the new system preference - **`search.elastic.index.metadata.fields`**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_11.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AdvancedSearch_12.png)  
+    For more details about the view of the results output see [here](../../manual/19_Search/19._Global_search.md#results-output-view).
+
+For more details about **Advanced search** see [here](../../manual/19_Search/19._Global_search.md).
+
+## Explicitly "immutable" pipeline parameters
+
+Previously, if the pipeline parameter had a default value - it could not be changed in the detached configuration that used this pipeline.  
+In different cases, it might be convenient to provide the ability to specify the own parameter value before the configuration launch or vice versa - the ability to launch the configuration with only defaults parameter values.  
+
+In the current version, the special option was implemented that allows/denies the parameter value overriding for described cases - `no_override` (_boolean_). This option can be specified for the pipeline parameter via `config.json` file:
+
+- if a pipeline parameter has a default value and `no_override` is `true` - the parameter field will be read-only in the detached configuration that uses this pipeline:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_01.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_02.png)
+- if a pipeline parameter has a default value and `no_override` is `false` or not set - the parameter field will be writable in the detached configuration that uses this pipeline:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_03.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_04.png)
+- if a pipeline parameter has no default value - `no_override` is ignored and the parameter field will be writable in the detached configuration that uses this pipeline
 
 ## AWS: seamless authentication
 

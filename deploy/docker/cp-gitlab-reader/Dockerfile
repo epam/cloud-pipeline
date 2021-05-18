@@ -24,6 +24,8 @@ RUN apt update && \
                 python3 python3-venv python3-pip python3-dev \
                 build-essential libssl-dev libffi-dev python3-setuptools
 
+RUN python3 -m pip install --upgrade pip && pip3 install setuptools_rust
+
 # API distribution
 ARG CP_API_DIST_URL=""
 ENV CP_GITLAB_READER_HOME="/opt/gitlab-reader"

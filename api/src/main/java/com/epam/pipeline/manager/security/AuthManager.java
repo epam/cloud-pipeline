@@ -57,6 +57,12 @@ public class AuthManager {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 
+    public SecurityContext createContext(final Authentication authentication) {
+        final SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        return context;
+    }
+
     /**
      * @return user name of currently logged in user
      */
@@ -147,18 +153,27 @@ public class AuthManager {
         return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration));
     }
 
+    public JwtRawToken issueAdminToken(@Nullable Long expiration) {
+        return new JwtRawToken(jwtTokenGenerator.encodeToken(getAdminContext().toClaims(), expiration));
+    }
+
     /**
      * @return A default UserContext for scheduled operations
      */
     public SecurityContext createSchedulerSecurityContext() {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
 
-        UserContext userContext = new UserContext(defaultAdminId, defaultAdmin);
-        userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ADMIN.getRole()));
+        UserContext userContext = getAdminContext();
         Collection<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList("ROLE_ADMIN");
         context.setAuthentication(new JwtAuthenticationToken(userContext, authorities));
 
         return context;
+    }
+
+    private UserContext getAdminContext() {
+        UserContext userContext = new UserContext(defaultAdminId, defaultAdmin);
+        userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ADMIN.getRole()));
+        return userContext;
     }
 
     private Object getPrincipal() {

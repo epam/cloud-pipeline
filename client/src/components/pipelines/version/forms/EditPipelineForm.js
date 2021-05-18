@@ -58,14 +58,20 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       mask: PropTypes.number,
       locked: PropTypes.bool,
       repository: PropTypes.string,
-      repositoryToken: PropTypes.string
+      repositoryToken: PropTypes.string,
+      pipelineType: PropTypes.string
     }),
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
     onDelete: PropTypes.func,
     pending: PropTypes.bool,
     visible: PropTypes.bool,
-    pipelineTemplate: PropTypes.object
+    pipelineTemplate: PropTypes.object,
+    showRepositorySettings: PropTypes.bool
+  };
+
+  static defaultProps = {
+    showRepositorySettings: true
   };
 
   formItemLayout = {
@@ -139,16 +145,27 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   };
 
   renderForm = () => {
+    const pipelineType = this.props.pipeline ? this.props.pipeline.pipelineType : undefined;
+    const isVersionedStorage = /^versioned_storage$/i.test(pipelineType);
+    const objectName = isVersionedStorage ? 'Versioned storage' : 'Pipeline';
     const {getFieldDecorator} = this.props.form;
+    const descriptionLabel = isVersionedStorage
+      ? `Description:`
+      : `${this.localizedString(objectName)} description`;
+    const nameLabel = isVersionedStorage
+      ? `Name:`
+      : `${this.localizedString(objectName)} name`;
     const formItems = [];
     formItems.push((
       <Form.Item
+        {...this.formItemLayout}
         key="pipeline name"
         className="edit-pipeline-form-name-container"
-        {...this.formItemLayout} label={`${this.localizedString('Pipeline')} name`}>
+        label={nameLabel}
+      >
         {getFieldDecorator('name',
           {
-            rules: [{required: true, message: `${this.localizedString('Pipeline')} name is required`}],
+            rules: [{required: true, message: `${this.localizedString(objectName)} name is required`}],
             initialValue: `${this.props.pipeline ? this.props.pipeline.name : ''}`
           })(
             <Input
@@ -160,9 +177,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     ));
     formItems.push((
       <Form.Item
+        {...this.formItemLayout}
         key="pipeline description"
         className="edit-pipeline-form-description-container"
-        {...this.formItemLayout} label={`${this.localizedString('Pipeline')} description`}>
+        label={descriptionLabel}
+      >
         {getFieldDecorator('description',
           {
             initialValue: `${this.props.pipeline && this.props.pipeline.description
@@ -175,42 +194,44 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         )}
       </Form.Item>
     ));
-    if (this.state.editRepositorySettings) {
-      formItems.push((
-        <Form.Item
-          key="repository"
-          className="edit-pipeline-form-repository-container"
-          {...this.formItemLayout} label="Repository">
-          {getFieldDecorator('repository',
-            {
-              initialValue: `${this.props.pipeline && this.props.pipeline.repository ? this.props.pipeline.repository : ''}`
+    if (this.props.showRepositorySettings) {
+      if (this.state.editRepositorySettings) {
+        formItems.push((
+          <Form.Item
+            key="repository"
+            className="edit-pipeline-form-repository-container"
+            {...this.formItemLayout} label="Repository">
+            {getFieldDecorator('repository',
+              {
+                initialValue: `${this.props.pipeline && this.props.pipeline.repository ? this.props.pipeline.repository : ''}`
+              })(
+              <Input
+                onPressEnter={this.handleSubmit}
+                disabled={!!this.props.pipeline || this.props.pending}/>
+            )}
+          </Form.Item>
+        ));
+        formItems.push((
+          <Form.Item
+            key="token"
+            className="edit-pipeline-form-repository-container"
+            {...this.formItemLayout} label="Token">
+            {getFieldDecorator('token', {
+              initialValue: `${this.props.pipeline && this.props.pipeline.repositoryToken ? this.props.pipeline.repositoryToken : ''}`
             })(
-            <Input
-              onPressEnter={this.handleSubmit}
-              disabled={!!this.props.pipeline || this.props.pending} />
-          )}
-        </Form.Item>
-      ));
-      formItems.push((
-        <Form.Item
-          key="token"
-          className="edit-pipeline-form-repository-container"
-          {...this.formItemLayout} label="Token">
-          {getFieldDecorator('token', {
-            initialValue: `${this.props.pipeline && this.props.pipeline.repositoryToken ? this.props.pipeline.repositoryToken : ''}`
-          })(
-            <Input
-              onPressEnter={this.handleSubmit}
-              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
-          )}
-        </Form.Item>
-      ));
-    } else {
-      formItems.push((
-        <Row key="edit repository settings" style={{textAlign: 'right'}}>
-          <a onClick={this.displayRepositorySettings}>Edit repository settings</a>
-        </Row>
-      ));
+              <Input
+                onPressEnter={this.handleSubmit}
+                disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))}/>
+            )}
+          </Form.Item>
+        ));
+      } else {
+        formItems.push((
+          <Row key="edit repository settings" style={{textAlign: 'right'}}>
+            <a onClick={this.displayRepositorySettings}>Edit repository settings</a>
+          </Row>
+        ));
+      }
     }
     return formItems;
   };
@@ -337,8 +358,19 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   render () {
     const isNewPipeline = !this.props.pipeline;
     const isReadOnly = this.props.pipeline ? this.props.pipeline.locked : false;
+    const pipelineType = this.props.pipeline ? this.props.pipeline.pipelineType : undefined;
+    const objectName = /^versioned_storage$/i.test(pipelineType)
+      ? 'versioned storage'
+      : 'pipeline';
     const {resetFields} = this.props.form;
     const modalFooter = this.getModalFooter(isNewPipeline);
+    const deleteConfirmTitle = (
+      <span
+        style={{paddingRight: '25px', display: 'flex'}}
+      >
+        {`Do you want to delete a ${this.localizedString(objectName)} with repository or only unregister it?`}
+      </span>
+    );
     const onClose = () => {
       resetFields();
       this.setState({activeTab: 'info', editRepositorySettings: false});
@@ -353,10 +385,10 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           isNewPipeline
             ? (
               this.props.pipelineTemplate
-              ? `Create ${this.localizedString('pipeline')} (${this.props.pipelineTemplate.id})`
-              : `Create ${this.localizedString('pipeline')}`
+                ? `Create ${this.localizedString(objectName)} (${this.props.pipelineTemplate.id})`
+                : `Create ${this.localizedString(objectName)}`
             )
-            : `Edit ${this.localizedString('pipeline')} info`
+            : `Edit ${this.localizedString(objectName)} info`
         }
         onCancel={this.props.onCancel}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>
@@ -389,7 +421,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
                     subObjectsPermissionsErrorTitle={(
                       <span>
                         Users shall have Read and Execute permissions for the docker images,
-                        used in a current {this.localizedString('pipeline')}.
+                        used in a current {this.localizedString(objectName)}.
                         Please review and fix permissions issues below:
                       </span>
                     )}
@@ -402,7 +434,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         <Modal
           onCancel={this.closeDeleteDialog}
           visible={this.state.deleteDialogVisible}
-          title={`Do you want to delete a ${this.localizedString('pipeline')} with repository or only unregister it?`}
+          title={deleteConfirmTitle}
           footer={this.getDeleteModalFooter()}>
           <p>This operation cannot be undone.</p>
         </Modal>

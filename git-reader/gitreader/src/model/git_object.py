@@ -14,12 +14,16 @@
 
 class GitObject:
 
-    def __init__(self, git_id, name, git_type, path, mode):
+    def __init__(self, git_id, name, git_type, path, mode, size):
         self.git_id = git_id
         self.name = name
         self.git_type = git_type
         self.path = path
         self.mode = mode
+        if size != "-":
+            self.size = int(size)
+        else:
+            self.size = 0
 
     def to_json(self):
         return {
@@ -27,5 +31,6 @@ class GitObject:
             "name": self.name,
             "type": self.git_type,
             "path": self.path,
-            "mode": self.mode
+            "mode": self.mode,
+            "size": self.size
         }

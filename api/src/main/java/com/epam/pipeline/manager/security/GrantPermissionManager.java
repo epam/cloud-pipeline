@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -831,6 +831,12 @@ public class GrantPermissionManager {
         }
         Assert.notNull(securedEntity, "Pipeline ID or docker image must be provided");
         return permissionsHelper.isAllowed(permissionName, securedEntity);
+    }
+
+    public boolean hasPipelinePermissionToRunAs(final PipelineStart startVO, final String permissionName) {
+        final AbstractSecuredEntity pipeline = entityManager.load(AclClass.PIPELINE, startVO.getPipelineId());
+        Assert.notNull(pipeline, "Pipeline must be provided");
+        return runPermissionManager.hasPipelinePermissionToRunAs(startVO, pipeline, permissionName);
     }
 
     /**

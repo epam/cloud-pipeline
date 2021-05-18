@@ -18,6 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Card, Icon, Input, Popover, Row} from 'antd';
+import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
 import {favouriteStorage} from '../../utils/favourites';
@@ -53,7 +54,8 @@ export default class CardsPanel extends React.Component {
     displayOnlyFavourites: PropTypes.bool,
     itemId: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
     getFavourites: PropTypes.func,
-    setFavourites: PropTypes.func
+    setFavourites: PropTypes.func,
+    hovered: PropTypes.object
   };
 
   static defaultProps = {
@@ -162,8 +164,15 @@ export default class CardsPanel extends React.Component {
       return (
         <div
           className={
-            `${styles.actionsContainer} ${this.state.popovers.indexOf(index) >= 0 ? styles.hovered : ''}`
-          }>
+            classNames(
+              styles.actionsContainer,
+              {
+                [styles.hovered]: this.state.popovers.indexOf(index) >= 0 ||
+                this.props.hovered === child
+              }
+            )
+          }
+        >
           <div
             type="actions-container-background"
             className={styles.actionsContainerBackground} />

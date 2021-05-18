@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,12 +45,13 @@ import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.acl.docker.ToolApiService;
+import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
-import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.security.acl.AclFilter;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -87,6 +88,7 @@ public class RunApiService {
     private final ConfigurationRunner configurationLauncher;
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
     private final PipelineRunKubernetesManager pipelineRunKubernetesManager;
+    private final PipelineRunAsManager pipelineRunAsManager;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
@@ -97,11 +99,14 @@ public class RunApiService {
         return runVO.getUseRunId() == null ? runManager.runCmd(runVO) : runManager.runPod(runVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE')")
+    @PreAuthorize("(hasRole('ADMIN') OR "
+            + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE'))"
+            + " AND @grantPermissionManager.hasPipelinePermissionToRunAs(#runVO, 'EXECUTE')")
     @AclMask
-    public PipelineRun runPipeline(PipelineStart runVO) {
-        return runManager.runPipeline(runVO);
+    public PipelineRun runPipeline(final PipelineStart runVO) {
+        return pipelineRunAsManager.runAsAnotherUser(runVO)
+                ? pipelineRunAsManager.runPipeline(runVO)
+                : runManager.runPipeline(runVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "

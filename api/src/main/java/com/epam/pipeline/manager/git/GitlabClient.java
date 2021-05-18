@@ -81,6 +81,7 @@ public class GitlabClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitlabClient.class);
 
+    private static final String PRIVATE_TOKEN = "PRIVATE-TOKEN";
     private static final String DATA_FORMAT = "yyyy-MM-dd";
     private static final String TEMPLATE_DESCRIPTION = "description.txt";
     private static final String README_DEFAULT_CONTENTS = "# Job definition\n\n"
@@ -264,6 +265,17 @@ public class GitlabClient {
         try {
             String repoName = this.projectName;
             return createGitProject(template, description, repoName, indexingEnabled, hookUrl);
+        } catch (HttpClientErrorException e) {
+            throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
+        }
+    }
+
+    public GitProject createEmptyRepository(final String description, final boolean indexingEnabled,
+                                            final String hookUrl) throws GitClientException {
+        Assert.notNull(this.projectName, "Project name cannot be empty");
+        try {
+            String repoName = this.projectName;
+            return createEmptyRepository(repoName, description, indexingEnabled, true, hookUrl);
         } catch (HttpClientErrorException e) {
             throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
         }
@@ -541,7 +553,7 @@ public class GitlabClient {
     }
 
     private GitLabApi buildGitLabApi(final String gitHost, final String adminToken) {
-        return new ApiBuilder<>(GitLabApi.class, gitHost, adminToken, DATA_FORMAT).build();
+        return new ApiBuilder<>(GitLabApi.class, gitHost, PRIVATE_TOKEN, adminToken, DATA_FORMAT).build();
     }
 
     private void uploadFolder(Template template, String repoName, GitProject project) throws GitClientException {

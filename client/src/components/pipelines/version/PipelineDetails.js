@@ -59,10 +59,32 @@ import HiddenObjects from '../../../utils/hidden-objects';
 }))
 @observer
 export default class PipelineDetails extends localization.LocalizedReactComponent {
-
   state = {isModalVisible: false, updating: false, deleting: false};
 
   @observable _graphIsSupported = null;
+
+  componentDidMount () {
+    this.redirectToVersionedStorage();
+  }
+
+  componentDidUpdate () {
+    if (!this.props.language.pending) {
+      const graphIsSupported = graphIsSupportedForLanguage(this.props.language.value);
+      if (graphIsSupported !== this._graphIsSupported) {
+        this._graphIsSupported = graphIsSupported;
+      }
+    }
+    this.redirectToVersionedStorage();
+  }
+
+  redirectToVersionedStorage = () => {
+    if (this.props.pipeline.loaded) {
+      const {id, pipelineType} = this.props.pipeline.value;
+      if (/^versioned_storage$/i.test(pipelineType)) {
+        this.props.router && this.props.router.push(`/vs/${id}`);
+      }
+    }
+  };
 
   toggleModal = () => {
     this.setState({isModalVisible: !this.state.isModalVisible}, () => {
@@ -84,6 +106,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         }
       );
       if (updatePipeline.error) {
+        // eslint-disable-next-line
         message.error(`Error updating ${this.localizedString('pipeline')}: ${updatePipeline.error}`);
         this.setState({updating: false});
       } else {
@@ -126,6 +149,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       const deletePipeline = new DeletePipeline(this.props.pipelineId, keepRepository);
       await deletePipeline.fetch();
       if (deletePipeline.error) {
+        // eslint-disable-next-line
         message.error(`Error deleting ${this.localizedString('pipeline')}: ${deletePipeline.error}`);
         this.setState({deleting: false});
       } else {
@@ -163,19 +187,13 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   }
 
   runPipeline = () => {
-    if (this.props.currentConfiguration) {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/${this.props.currentConfiguration}`);
-    } else {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/default`);
-    }
+    const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
+    this.props.router.push(`${baseUrl}/${this.props.currentConfiguration || 'default'}`);
   };
 
   runPipelineConfiguration = (configuration) => {
-    if (configuration) {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/${configuration}`);
-    } else {
-      this.props.router.push(`/launch/${this.props.pipelineId}/${this.props.version}/default`);
-    }
+    const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
+    this.props.router.push(`${baseUrl}/${configuration || 'default'}`);
   };
 
   renderRunButton = () => {
@@ -207,7 +225,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           </Button>
           <Dropdown overlay={configurationsMenu} placement="bottomRight">
             <Button size="small" id="run-dropdown-button" type="primary">
-              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}}/>
+              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Dropdown>
         </Button.Group>
@@ -234,7 +252,12 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       return <Alert type="error" message={this.props.pipeline.error} />;
     }
 
-    const {id, description} = this.props.pipeline.value;
+    const {id, description, pipelineType} = this.props.pipeline.value;
+    if (/^versioned_storage$/i.test(pipelineType)) {
+      return (
+        <LoadingView />
+      );
+    }
     const {version} = this.props.params;
 
     const {router: {location}} = this.props;
@@ -288,7 +311,12 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         <Row>
           {description}
         </Row>
-        <Row gutter={16} type="flex" justify="center" className={`${styles.rowMenu} ${styles[activeTab] || ''}`}>
+        <Row
+          gutter={16}
+          type="flex"
+          justify="center"
+          className={`${styles.rowMenu} ${styles[activeTab] || ''}`}
+        >
           <Menu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu}>
             <Menu.Item key="documents">
               <AdaptedLink
@@ -355,14 +383,5 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           pipeline={this.props.pipeline.value} />
       </div>
     );
-  }
-
-  componentDidUpdate () {
-    if (!this.props.language.pending) {
-      const graphIsSupported = graphIsSupportedForLanguage(this.props.language.value);
-      if (graphIsSupported !== this._graphIsSupported) {
-        this._graphIsSupported = graphIsSupported;
-      }
-    }
   }
 }

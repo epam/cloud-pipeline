@@ -19,5 +19,9 @@ package com.epam.pipeline.repository.user;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.Optional;
+
 public interface PipelineUserRepository extends CrudRepository<PipelineUser, Long> {
+
+    Optional<PipelineUser> findByUserName(String userName);
 }

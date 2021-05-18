@@ -470,6 +470,7 @@ export default class BucketBrowser extends React.Component {
       case DTS_ITEM_TYPE: icon = 'desktop'; break;
       case DTS_ROOT_ITEM_TYPE: icon = 'inbox'; break;
       case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.versionedStorage: icon = 'share-alt'; break;
       case ItemTypes.folder: icon = 'folder'; break;
       case ItemTypes.version: icon = 'tag'; break;
       case ItemTypes.storage:

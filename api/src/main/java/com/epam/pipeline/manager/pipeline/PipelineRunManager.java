@@ -98,6 +98,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -154,9 +155,6 @@ public class PipelineRunManager {
 
     @Autowired
     private InstanceOfferManager instanceOfferManager;
-
-    @Autowired
-    private AuthManager securityManager;
 
     @Autowired
     private ToolManager toolManager;
@@ -286,22 +284,25 @@ public class PipelineRunManager {
      * @return
      */
     @ToolSecurityPolicyCheck
-    public PipelineRun runPipeline(PipelineStart runVO) {
-        Long pipelineId = runVO.getPipelineId();
-        String version = runVO.getVersion();
-        int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
+    public PipelineRun runPipeline(final PipelineStart runVO) {
+        final Long pipelineId = runVO.getPipelineId();
+        LOGGER.debug("Pipeline '{}' will be launched as '{}'", pipelineId, authManager.getAuthorizedUser());
+        final String version = runVO.getVersion();
+        final int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
-        Pipeline pipeline = pipelineManager.load(pipelineId);
-        PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
-        boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
+        final Pipeline pipeline = pipelineManager.load(pipelineId);
+        final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
+        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
+                configuration.getSharedWithRoles()));
+        final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         //check that tool execution is allowed
         toolApiService.loadToolForExecution(configuration.getDockerImage());
-        PipelineRun run = launchPipeline(configuration, pipeline, version,
+        final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
                 runVO.getParentRunId(), null, null, runVO.getRunSids());
         run.setParent(pipeline);
@@ -358,7 +359,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null), 
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null),
                 entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
@@ -799,7 +800,7 @@ public class PipelineRunManager {
         run.setNodeCount(configuration.getNodeCount());
         setRunPrice(instance, run);
         run.setSshPassword(PasswordGenerator.generatePassword());
-        run.setOwner(securityManager.getAuthorizedUser());
+        run.setOwner(authManager.getAuthorizedUser());
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
@@ -1464,5 +1465,20 @@ public class PipelineRunManager {
         return Objects.isNull(parsedImage)
                 ? null
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
+    }
+
+    private List<RunSid> mergeRunSids(final List<RunSid> runSidsFromVO,
+                                      final List<RunSid> userSidsFromConfiguration,
+                                      final List<RunSid> roleSidsFromConfiguration) {
+        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(userSidsFromConfiguration), true));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(roleSidsFromConfiguration), false));
+        return new ArrayList<>(runSids);
+    }
+
+    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
+        return runsSids.stream()
+                .peek(runSid -> runSid.setIsPrincipal(principal))
+                .collect(Collectors.toList());
     }
 }

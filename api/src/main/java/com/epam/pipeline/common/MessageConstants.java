@@ -162,6 +162,8 @@ public final class MessageConstants {
     public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
     public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
+    public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
+    public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -549,6 +551,7 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_REGION_NOT_SUPPORTED = "error.lustre.region.not.supported";
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
     public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
+    public static final String ERROR_LUSTRE_MISSING_NETWORK = "error.lustre.missing.network";
 
     //Node Schedule
     public static final String ERROR_NODE_SCHEDULE_MISSING_ENTRIES = "error.node.schedule.missing.entries";

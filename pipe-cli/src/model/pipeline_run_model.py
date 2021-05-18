@@ -101,7 +101,8 @@ class PipelineRunModel(object):
 
         if 'runSids' in json and json['runSids'] is not None and len(json['runSids']) > 0:
             for item in json['runSids']:
-                instance.run_sids.append(RunSid(item['name'], item['isPrincipal'], item['accessType']))
+                instance.run_sids.append(RunSid(item.get('name', None), item.get('isPrincipal', None),
+                                                item.get('accessType', 'ENDPOINT')))
 
         if 'sensitive' in json:
             instance.sensitive = json['sensitive']
