@@ -457,11 +457,11 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         pipelinesLibrary
       } = this.props;
       let request;
-      if (document.type.toLowerCase() === DOCUMENT_TYPES.blob) {
-        request = new PipelineFileDelete(pipelineId);
-      }
-      if (document.type.toLowerCase() === DOCUMENT_TYPES.tree) {
+      const isFolder = document.type.toLowerCase() === DOCUMENT_TYPES.tree;
+      if (isFolder) {
         request = new PipelineFolderDelete(pipelineId);
+      } else {
+        request = new PipelineFileDelete(pipelineId);
       }
       if (!request) {
         return;
@@ -471,7 +471,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       await request.send({
         lastCommitId: this.lastCommitId,
         path: document.path,
-        comment: comment || `Removing ${document.name}`
+        comment: comment || `Removing ${isFolder ? 'folder' : 'file'} ${document.path}`
       });
       hide();
       if (request.error) {
@@ -576,7 +576,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       if (path.length > 0 && !path.endsWith('/')) {
         path = `${path}`;
       }
-      const hide = message.loading(`Creating folder '${name}'...`, 0);
+      const hide = message.loading(`Creating file '${name}'...`, 0);
       await request.send({
         lastCommitId: this.lastCommitId,
         path: `${path}${name.trim()}`,
