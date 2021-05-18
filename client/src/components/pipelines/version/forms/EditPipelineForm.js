@@ -364,6 +364,13 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       : 'pipeline';
     const {resetFields} = this.props.form;
     const modalFooter = this.getModalFooter(isNewPipeline);
+    const deleteConfirmTitle = (
+      <span
+        style={{paddingRight: '25px', display: 'flex'}}
+      >
+        {`Do you want to delete a ${this.localizedString(objectName)} with repository or only unregister it?`}
+      </span>
+    );
     const onClose = () => {
       resetFields();
       this.setState({activeTab: 'info', editRepositorySettings: false});
@@ -427,7 +434,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         <Modal
           onCancel={this.closeDeleteDialog}
           visible={this.state.deleteDialogVisible}
-          title={`Do you want to delete a ${this.localizedString(objectName)} with repository or only unregister it?`}
+          title={deleteConfirmTitle}
           footer={this.getDeleteModalFooter()}>
           <p>This operation cannot be undone.</p>
         </Modal>

@@ -42,6 +42,15 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
     event && event.stopPropagation();
   };
 
+  onHistoryBtnClick = () => {
+    const {historyPanelOpen, actions = {}} = this.props;
+    const {openHistoryPanel, closeHistoryPanel} = actions;
+    if (historyPanelOpen) {
+      return closeHistoryPanel && closeHistoryPanel();
+    }
+    return openHistoryPanel && openHistoryPanel();
+  };
+
   onRenameStorage = (name) => {
     const {onRenameStorage} = this.props;
     onRenameStorage && onRenameStorage(name);
@@ -53,58 +62,18 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
   };
 
   renderActions = () => {
-    const {
-      actions,
-      historyPanelOpen
-    } = this.props;
-    const onSelectDisplayOption = ({key}) => {
-      switch (key) {
-        case 'history':
-          historyPanelOpen
-            ? actions.closeHistoryPanel()
-            : actions.openHistoryPanel();
-          break;
-      }
-    };
-    const displayOptionsMenuItems = [];
-    displayOptionsMenuItems.push(
-      <Menu.Item
-        key="history"
+    const {historyPanelOpen} = this.props;
+    return (
+      <Button
+        id="display-attributes"
+        style={{lineHeight: 1, marginRight: '5px'}}
+        size="small"
+        onClick={this.onHistoryBtnClick}
       >
-        <Row
-          type="flex"
-          justify="space-between"
-          align="middle"
-        >
-          <span>History</span>
-          {historyPanelOpen && (
-            <Icon type="check-circle" />
-          )}
-        </Row>
-      </Menu.Item>
+        <Icon type="appstore" />
+        {historyPanelOpen ? 'Hide history' : 'Show history'}
+      </Button>
     );
-    if (displayOptionsMenuItems.length > 0) {
-      const displayOptionsMenu = (
-        <Menu onClick={onSelectDisplayOption} style={{width: 125}}>
-          {displayOptionsMenuItems}
-        </Menu>
-      );
-      return (
-        <Dropdown
-          key="display attributes"
-          overlay={displayOptionsMenu}
-        >
-          <Button
-            id="display-attributes"
-            style={{lineHeight: 1, marginRight: '5px'}}
-            size="small"
-          >
-            <Icon type="appstore" />
-          </Button>
-        </Dropdown>
-      );
-    }
-    return null;
   };
 
   render () {

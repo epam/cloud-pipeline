@@ -19,7 +19,7 @@ import {Button, Modal, Form, Input, Row, Spin} from 'antd';
 import PropTypes from 'prop-types';
 
 // eslint-disable-next-line
-const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.';
+const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, "_", "-", and "."';
 
 @Form.create()
 export default class CreateItemForm extends React.Component {
@@ -92,7 +92,7 @@ export default class CreateItemForm extends React.Component {
                     message: 'Name is required'
                   },
                   {
-                    pattern: /^[\da-zA-Z._\-@ ]+$/,
+                    pattern: /^[\da-zA-Z.\-_]+$/,
                     message: NAME_VALIDATION_TEXT
                   },
                   {validator: nameShouldNotBeTheSameValidator}
