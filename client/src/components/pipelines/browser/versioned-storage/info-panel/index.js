@@ -344,7 +344,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
         }
         <VSHistory
           key="history"
-          path={path}
+          path={file ? file.path : path}
           versionedStorageId={pipelineId}
           revision={lastCommitId}
           isFolder={!file}
