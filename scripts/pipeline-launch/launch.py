@@ -133,15 +133,14 @@ def _escape_backslashes(string):
 
 class RemoteHostSSH:
 
-    def __init__(self, host, user, private_key_path):
+    def __init__(self, host, private_key_path):
         self._host = host
-        self._user = user
         self._private_key_path = private_key_path
 
-    def execute(self, command):
+    def execute(self, command, user):
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
-        client.connect(self._host, username=self._user, key_filename=self._private_key_path)
+        client.connect(self._host, username=user, key_filename=self._private_key_path)
         _, stdout, stderr = client.exec_command(command)
         exit_code = stdout.channel.recv_exit_status()
         for line in stdout:
@@ -221,33 +220,33 @@ if __name__ == '__main__':
     logging.info('Preparing for SSH connections to the node...')
     run = api.load_run(run_id)
     node_ip = os.environ['NODE_IP'] = run.get('instance', {}).get('nodeIP', '')
-    node_ssh = RemoteHostSSH(host=node_ip, user=node_owner, private_key_path=node_private_key_path)
+    node_ssh = RemoteHostSSH(host=node_ip, private_key_path=node_private_key_path)
 
     logging.info('Installing pipe common on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -m pip install -q {common_repo_dir}')
+    node_ssh.execute(f'{python_dir}\\python.exe -m pip install -q {common_repo_dir}',
+                     user=node_owner)
 
     logging.info('Configuring PATH on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts import add_to_path; '
                      f'add_to_path(\'{_escape_backslashes(python_dir)}\'); '
                      f'add_to_path(\'{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\'); '
-                     f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"')
-
-    logging.info('Configuring pipe on the node...')
-    node_ssh.execute(f'pipe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac')
+                     f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"',
+                     user=node_owner)
 
     logging.info('Configuring owner account on the node...')
-    if owner:
-        node_ssh.execute(f'AddUser -UserName {owner} -UserPassword {owner_password}')
-    else:
-        logging.info('OWNER is not set - skipping owner account configuration')
+    node_ssh.execute(f'AddUser -UserName {owner} -UserPassword {owner_password}',
+                     user=node_owner)
+
+    logging.info('Configuring pipe on the node...')
+    node_ssh.execute(f'pipe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac',
+                     user=node_owner)
+    node_ssh.execute(f'pipe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac',
+                     user=owner)
 
     logging.info('Configuring node SSH server proxy...')
-    if owner:
-        subprocess.check_call(f'powershell -Command "pipe.exe tunnel start --direct -lp 22 -rp 22 --trace '
-                              f'-l {_escape_backslashes(os.path.join(run_dir, "ssh_proxy.log"))} '
-                              f'{node_ip}"')
-    else:
-        logging.info('OWNER is not set - skipping SSH proxy configuration')
+    subprocess.check_call(f'powershell -Command "pipe.exe tunnel start --direct -lp 22 -rp 22 --trace '
+                          f'-l {_escape_backslashes(os.path.join(run_dir, "ssh_proxy.log"))} '
+                          f'{node_ip}"')
 
     api_logger.success('Environment initialization finished', task='InitializeEnvironment')
 
