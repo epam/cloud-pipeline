@@ -21,6 +21,7 @@ import {
 } from 'antd';
 import DOCUMENT_TYPES from '../document-types';
 import UserName from '../../../../special/UserName';
+import roleModel from '../../../../../utils/roleModel';
 import displaySize from '../../../../../utils/displaySize';
 import displayDate from '../../../../../utils/displayDate';
 import styles from './table.css';
@@ -31,48 +32,72 @@ const FILES = {
   navback: <Icon type="folder" />
 };
 
-const ACTIONS = {
-  [DOCUMENT_TYPES.blob]: (
-    <span
-      className={styles.rowActions}
-    >
+const renderActions = (item) => {
+  if (!item) {
+    return null;
+  }
+  const actions = [];
+  if (item.type === DOCUMENT_TYPES.blob) {
+    actions.push((
       <Icon
+        key="download"
         type="download"
         className={styles.action}
         data-action="download"
       />
-      <Icon
-        type="edit"
-        className={styles.action}
-        data-action="edit"
-      />
-      <Icon
-        type="delete"
-        className={classNames(
-          styles.action,
-          styles.actionDelete
-        )}
-        data-action="delete"
-      />
-    </span>),
-  [DOCUMENT_TYPES.tree]: (
+    ));
+    if (roleModel.writeAllowed(item)) {
+      actions.push((
+        <Icon
+          key="edit"
+          type="edit"
+          className={styles.action}
+          data-action="edit"
+        />
+      ));
+      actions.push((
+        <Icon
+          key="delete"
+          type="delete"
+          className={classNames(
+            styles.action,
+            styles.actionDelete
+          )}
+          data-action="delete"
+        />
+      ));
+    }
+  }
+  if (item.type === DOCUMENT_TYPES.tree) {
+    if (roleModel.writeAllowed(item)) {
+      actions.push((
+        <Icon
+          key="edit"
+          type="edit"
+          className={styles.action}
+          data-action="edit"
+        />
+      ));
+      actions.push((
+        <Icon
+          key="delete"
+          type="delete"
+          className={classNames(
+            styles.action,
+            styles.actionDelete
+          )}
+          data-action="delete"
+        />
+      ));
+    }
+  }
+  return (
     <span
       className={styles.rowActions}
     >
-      <Icon
-        type="edit"
-        className={styles.action}
-        data-action="edit"
-      />
-      <Icon
-        type="delete"
-        className={classNames(
-          styles.action,
-          styles.actionDelete
-        )}
-        data-action="delete"
-      />
-    </span>)
+      {actions}
+    </span>
+  );
 };
 
 const COLUMNS = [{
@@ -124,10 +149,9 @@ const COLUMNS = [{
   className: classNames(styles.cell, styles.messageCell)
 }, {
   title: '',
-  dataIndex: 'type',
   key: 'actions',
   className: styles.cell,
-  render: (name = '', record) => ACTIONS[record.type] || null,
+  render: (record) => renderActions(record),
   width: 150
 }];
 

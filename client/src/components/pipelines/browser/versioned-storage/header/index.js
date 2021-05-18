@@ -21,8 +21,6 @@ import {
   Row,
   Col,
   Button,
-  Menu,
-  Dropdown,
   Icon
 } from 'antd';
 import localization from '../../../../../utils/localization';
@@ -109,14 +107,18 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
           </Col>
           <Col className={styles.headerActions}>
             <Row type="flex" justify="end">
-              <Button
-                size="small"
-                onClick={(event) => this.onRunClick(event)}
-                className={styles.controlBtn}
-                disabled
-              >
-                RUN
-              </Button>
+              {
+                roleModel.executeAllowed(pipeline.value) && (
+                  <Button
+                    size="small"
+                    onClick={(event) => this.onRunClick(event)}
+                    className={styles.controlBtn}
+                    disabled
+                  >
+                    RUN
+                  </Button>
+                )
+              }
               <Button
                 size="small"
                 type="primary"
@@ -127,14 +129,18 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
                 Generate report
               </Button>
               {this.renderActions()}
-              <Button
-                style={{lineHeight: 1}}
-                size="small"
-                onClick={this.onSettingsClick}
-                disabled={readOnly}
-              >
-                <Icon type="setting" />
-              </Button>
+              {
+                roleModel.isOwner(pipeline.value) && (
+                  <Button
+                    style={{lineHeight: 1}}
+                    size="small"
+                    onClick={this.onSettingsClick}
+                    disabled={readOnly}
+                  >
+                    <Icon type="setting" />
+                  </Button>
+                )
+              }
             </Row>
           </Col>
         </Row>

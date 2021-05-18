@@ -846,6 +846,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
               pipelineId={pipelineId}
               path={path}
               afterUpload={this.afterUpload}
+              versionedStorage={pipeline?.value}
             />
             <div
               className={styles.paginationRow}

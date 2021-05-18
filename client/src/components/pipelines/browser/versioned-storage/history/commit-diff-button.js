@@ -82,19 +82,27 @@ class CommitDiffButton extends React.Component {
                 const {
                   diff = undefined
                 } = request.value;
-                const diffJson = diff2html.parse(diff);
-                const diffHtml = diff2html.html(
-                  diffJson,
-                  {
-                    drawFileList: false,
-                    outputFormat: 'line-by-line',
-                    highlight: true
+                if (!diff) {
+                  this.setState({
+                    diff: undefined,
+                    diffError: undefined,
+                    diffPending: false
                   });
-                this.setState({
-                  diff: diffHtml,
-                  diffError: undefined,
-                  diffPending: false
-                });
+                } else {
+                  const diffJson = diff2html.parse(diff);
+                  const diffHtml = diff2html.html(
+                    diffJson,
+                    {
+                      drawFileList: false,
+                      outputFormat: 'line-by-line',
+                      highlight: true
+                    });
+                  this.setState({
+                    diff: diffHtml,
+                    diffError: undefined,
+                    diffPending: false
+                  });
+                }
               }
             })
             .catch(e => {

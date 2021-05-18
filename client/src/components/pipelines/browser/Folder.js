@@ -1515,9 +1515,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           createActions.push(divider);
           createActions.push(...folderTemplatesMenu);
         }
-        if (!divider) {
-          divider = <Menu.Divider key="divider one" />;
-          createActions.push(divider);
+      }
+      if (roleModel.isManager.pipeline(this)) {
+        if (!folderTemplatesMenu) {
+          createActions.push(<Menu.Divider key="divider versioned storages" />);
         }
         createActions.push(
           <Menu.Item
