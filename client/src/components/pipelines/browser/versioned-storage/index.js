@@ -39,6 +39,7 @@ import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDel
 import VersionedStorageListWithInfo
   from '../../../../models/versioned-storage/vs-contents-with-info';
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
+import PipelineGenerateReport from '../../../../models/pipelines/PipelineGenerateReport';
 import InfoPanel from './info-panel';
 import LaunchVSForm from './forms/launch-vs-form';
 import getToolLaunchingOptions from '../../launch/utilities/get-tool-launching-options';
@@ -48,11 +49,13 @@ import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import PipelineFileInfo from '../../../../models/pipelines/PipelineFileInfo';
 import CreateItemForm from './forms/create-item-form';
 import EditPipelineForm from '../../version/forms/EditPipelineForm';
+import GenerateReportDialog from './dialogs/generate-report';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
 import DOCUMENT_TYPES from './document-types';
 import styles from './versioned-storage.css';
 
 const PAGE_SIZE = 20;
+const ID_PREFIX = 'vs';
 
 function getDocumentType (document) {
   if (!document || !document.type) {
@@ -119,6 +122,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   state = {
     contents: [],
     editStorageDialog: false,
+    generateReportDialog: false,
     error: undefined,
     lastPage: 0,
     page: 0,
@@ -171,7 +175,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       openHistoryPanel: this.openHistoryPanel,
       closeHistoryPanel: this.closeHistoryPanel,
       openEditStorageDialog: this.openEditStorageDialog,
-      runVersionedStorage: this.runVersionedStorage
+      runVersionedStorage: this.runVersionedStorage,
+      openGenerateReportDialog: this.openGenerateReportDialog
     };
   };
 
@@ -385,6 +390,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   closeEditStorageDialog = () => {
     const {pipeline} = this.props;
     this.setState({editStorageDialog: false}, () => pipeline.fetch());
+  };
+
+  openGenerateReportDialog = () => {
+    this.setState({generateReportDialog: true});
+  };
+
+  closeGenerateReportDialog = () => {
+    this.setState({generateReportDialog: false});
   };
 
   openCreateDocumentDialog = (type) => {
@@ -766,6 +779,52 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     hide();
   };
 
+  generateReport = async (settings = {}) => {
+    const {pipeline} = this.props;
+    const {
+      authors,
+      extensions,
+      dateFrom,
+      dateTo,
+      includeDiff,
+      groupDiffsBy,
+      downloadAsArchive
+    } = settings;
+    const {pipelineId} = this.props;
+    const hide = message.loading(`Generating report...`, 0);
+    const request = new PipelineGenerateReport(pipelineId);
+    await request.send({
+      commitsFilter: {
+        authors,
+        extensions,
+        dateFrom,
+        dateTo
+      },
+      includeDiff,
+      groupType: groupDiffsBy,
+      archive: downloadAsArchive
+    });
+    hide();
+    if (request.error) {
+      message.error('Error downloading file', 5);
+    } else if (request.value instanceof Blob) {
+      const fileName = `${pipeline.value.name}-report`;
+      const extension = downloadAsArchive ? 'zip' : 'docx';
+      if (request.value.type?.includes('application/json')) {
+        checkForBlobErrors(request.value)
+          .then(error => error
+            ? message.error('Error downloading file', 5)
+            : FileSaver.saveAs(request.value, `${fileName}.${extension}`)
+          );
+      } else {
+        FileSaver.saveAs(request.value, `${fileName}.${extension}`);
+      }
+    } else {
+      message.error('Error downloading file', 5);
+    }
+    this.closeGenerateReportDialog();
+  };
+
   navigate = (path) => {
     const {router, pipelineId} = this.props;
     if (!router) {
@@ -907,6 +966,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       lastPage,
       page,
       selectedFile,
+      generateReportDialog,
       launchVSFormVisible
     } = this.state;
     const {
@@ -1048,6 +1108,18 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           visible={editStorageDialog}
           pending={pending}
           pipeline={pipeline.value}
+        />
+        <GenerateReportDialog
+          visible={generateReportDialog}
+          onCancel={this.closeGenerateReportDialog}
+          onOk={this.generateReport}
+          idPrefix={ID_PREFIX}
+        />
+        <GenerateReportDialog
+          visible={generateReportDialog}
+          onCancel={this.closeGenerateReportDialog}
+          onOk={this.generateReport}
+          idPrefix={ID_PREFIX}
         />
         {this.renderEditItemForm()}
         <LaunchVSForm
