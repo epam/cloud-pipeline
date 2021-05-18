@@ -12,115 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
-import json
 import logging
 import os
 import pathlib
 import subprocess
 import traceback
 import zipfile
-
 import sys
 import tarfile
-import time
 
 
 class LaunchError(RuntimeError):
     pass
 
 
-class ServerError(RuntimeError):
-    pass
-
-
-class HTTPError(ServerError):
-    pass
-
-
-class APIError(ServerError):
-    pass
-
-
-class CloudPipelineAPI:
-
-    def __init__(self, api_url, api_token, attempts=3, timeout=5, connection_timeout=10):
-        self._api_url = (api_url or '').strip('/')
-        self._api_token = api_token
-        self._attempts = attempts
-        self._timeout = timeout
-        self._connection_timeout = connection_timeout
-        self._headers = {'Content-Type': 'application/json',
-                         'Authorization': 'Bearer ' + self._api_token}
-
-    def load_run(self, run_id):
-        return self._request('GET', f'run/{run_id}') or {}
-
-    def log(self, run_id, message, task, status, date):
-        self._request('POST', f'run/{run_id}/log', data={
-            'runId': run_id,
-            'logText': message,
-            'taskName': task,
-            'status': status,
-            'date': date
-        })
-
-    def _request(self, http_method, endpoint, data=None):
-        url = '{}/{}'.format(self._api_url, endpoint)
-        count = 0
-        exceptions = []
-        while count < self._attempts:
-            count += 1
-            try:
-                response = requests.request(method=http_method, url=url, data=json.dumps(data),
-                                            headers=self._headers, verify=False,
-                                            timeout=self._connection_timeout)
-                if response.status_code != 200:
-                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
-                response_data = response.json()
-                status = response_data.get('status') or 'ERROR'
-                message = response_data.get('message') or 'No message'
-                if status != 'OK':
-                    raise APIError('%s: %s' % (status, message))
-                return response_data.get('payload')
-            except APIError as e:
-                raise e
-            except Exception as e:
-                exceptions.append(e)
-            time.sleep(self._timeout)
-        raise exceptions[-1]
-
-
-class CloudPipelineLogger:
-
-    _DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
-
-    def __init__(self, api):
-        self._api = api
-        self._run_id = run_id
-
-    def info(self, message, task):
-        self._log(message=message, task=task, status='RUNNING')
-
-    def warn(self, message, task):
-        self._log(message=message, task=task, status='RUNNING')
-
-    def success(self, message, task):
-        self._log(message=message, task=task, status='SUCCESS')
-
-    def error(self, message, task):
-        self._log(message=message, task=task, status='FAILURE')
-
-    def _log(self, message, task, status):
-        self._api.log(run_id=self._run_id, message=message, task=task, status=status,
-                      date=datetime.datetime.utcnow().strftime(self._DATE_FORMAT))
-
-
 def _mkdir(path):
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def _install_python_package(*packages):
+def _install_python_packages(*packages):
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q'] + list(packages))
 
 
@@ -145,27 +55,6 @@ def _escape_backslashes(string):
     return string.replace('\\', '\\\\')
 
 
-class RemoteHostSSH:
-
-    def __init__(self, host, private_key_path):
-        self._host = host
-        self._private_key_path = private_key_path
-
-    def execute(self, command, user):
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
-        client.connect(self._host, username=user, key_filename=self._private_key_path)
-        _, stdout, stderr = client.exec_command(command)
-        exit_code = stdout.channel.recv_exit_status()
-        for line in stdout:
-            logging.info(line.strip('\n'))
-        for line in stderr:
-            logging.warning(line.strip('\n'))
-        if exit_code != 0:
-            raise LaunchError(f'SSH command has finished with {exit_code} exit code on the remote host.')
-        client.close()
-
-
 if __name__ == '__main__':
     logging_format = os.environ['CP_LOGGING_FORMAT'] = os.getenv('CP_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
     logging_level = os.environ['CP_LOGGING_LEVEL'] = os.getenv('CP_LOGGING_LEVEL', 'INFO')
@@ -188,9 +77,6 @@ if __name__ == '__main__':
     task_path = os.environ['CP_TASK_PATH']
     python_dir = os.environ['CP_PYTHON_DIR'] = os.environ.get('CP_PYTHON_DIR', 'c:\\python')
 
-    api = CloudPipelineAPI(api_url=api_url, api_token=api_token)
-    api_logger = CloudPipelineLogger(api=api)
-
     logging.basicConfig(level=logging_level, format=logging_format)
 
     logging.info('Creating system directories...')
@@ -201,12 +87,10 @@ if __name__ == '__main__':
     _mkdir(analysis_dir)
 
     logging.info('Installing python packages...')
-    _install_python_package('requests==2.25.1', 'paramiko==2.7.2')
+    _install_python_packages('urllib3==1.25.9', 'requests==2.22.0')
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     import requests
-    import paramiko
-    logging.getLogger('paramiko').setLevel(logging.WARNING)
 
     logging.info('Downloading pipe common...')
     _download_file(distribution_url + 'pipe-common.tar.gz', os.path.join(common_repo_dir, 'pipe-common.tar.gz'))
@@ -215,8 +99,16 @@ if __name__ == '__main__':
     _extract_archive(os.path.join(common_repo_dir, 'pipe-common.tar.gz'), common_repo_dir)
 
     logging.info('Installing pipe common...')
-    _install_python_package(common_repo_dir)
-    from scripts import add_to_path
+    _install_python_packages(common_repo_dir)
+    from pipeline.api import PipelineAPI
+    from pipeline.log.logger import CloudPipelineLogger
+    from pipeline.utils.ssh import HostSSH
+    from pipeline.utils.path import add_to_path
+
+    logging.getLogger('paramiko').setLevel(logging.WARNING)
+
+    api = PipelineAPI(api_url=api_url, log_dir=log_dir)
+    api_logger = CloudPipelineLogger(api=api, run_id=run_id)
 
     logging.info('Configuring PATH...')
     add_to_path(os.path.join(common_repo_dir, 'powershell'))
@@ -232,16 +124,16 @@ if __name__ == '__main__':
     subprocess.check_call(f'powershell -Command "pipe.exe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac"')
 
     logging.info('Preparing for SSH connections to the node...')
-    run = api.load_run(run_id)
+    run = api.load_run_efficiently(run_id)
     node_ip = os.environ['NODE_IP'] = run.get('instance', {}).get('nodeIP', '')
-    node_ssh = RemoteHostSSH(host=node_ip, private_key_path=node_private_key_path)
+    node_ssh = HostSSH(host=node_ip, private_key_path=node_private_key_path)
 
     logging.info('Installing pipe common on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -m pip install -q {common_repo_dir}',
                      user=node_owner)
 
     logging.info('Configuring PATH on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts import add_to_path; '
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.path import add_to_path; '
                      f'add_to_path(\'{_escape_backslashes(python_dir)}\'); '
                      f'add_to_path(\'{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\'); '
                      f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"',
