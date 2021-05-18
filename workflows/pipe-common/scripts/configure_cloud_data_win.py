@@ -49,11 +49,11 @@ def _create_cloud_data_config(node_user_home, edge_url, username, token):
         json.dump(webdav_config, outfile)
 
 
-def configure_cloud_data_win(cloud_data_parent_dir, edge_url, username, token):
+def configure_cloud_data_win(cloud_data_parent_dir, edge_url, node_user, dav_user, token):
     current_platform = platform.system()
     if current_platform == 'Windows':
-        user_home_dir = os.getenv('USERPROFILE')
-        _create_cloud_data_config(user_home_dir, edge_url, username, token)
+        user_home_dir = '{}\\{}\\{}'.format(os.getenv('SystemDrive', 'c:'), 'Users', node_user)
+        _create_cloud_data_config(user_home_dir, edge_url, dav_user, token)
         _create_cloud_data_shortcut(user_home_dir, cloud_data_parent_dir)
     else:
         raise RuntimeError('Cloud-Data installation is not supported on {platform} platform.'
