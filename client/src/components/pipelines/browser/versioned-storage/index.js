@@ -497,11 +497,11 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         pipelinesLibrary
       } = this.props;
       let request;
-      if (renameDocument.type.toLowerCase() === DOCUMENT_TYPES.blob) {
-        request = new PipelineFileUpdate(pipelineId);
-      }
-      if (renameDocument.type.toLowerCase() === DOCUMENT_TYPES.tree) {
+      const isFolder = renameDocument.type.toLowerCase() === DOCUMENT_TYPES.tree;
+      if (isFolder) {
         request = new PipelineFolderUpdate(pipelineId);
+      } else {
+        request = new PipelineFileUpdate(pipelineId);
       }
       if (!request) {
         return;
@@ -512,7 +512,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         lastCommitId: this.lastCommitId,
         path: `${path || ''}${name}`,
         previousPath: renameDocument.path,
-        comment: content || `Renaming ${renameDocument.name}`
+        comment: content ||
+          `Renaming ${isFolder ? 'folder' : 'file'} ${renameDocument.path} to ${path || ''}${name}`
       });
       hide();
       if (request.error) {
