@@ -43,7 +43,13 @@ public class CommitDiffExtractor implements ReportDataExtractor {
                                     ? diff.getEntries().stream()
                                         .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
                                     : diff.getEntries().stream()
-                                        .collect(Collectors.groupingBy(e -> e.getDiff().getToFileName()))
+                                        .collect(
+                                                Collectors.groupingBy(
+                                                        e -> e.getDiff().getFromFileName().contains("/dev/null")
+                                                                ? e.getDiff().getToFileName()
+                                                                : e.getDiff().getFromFileName()
+                                                )
+                                    )
                     );
         }
         return diffsGroupingBuilder.build();

@@ -62,9 +62,9 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
 
         diff.getEntries().stream()
                 .map(gitDiffEntry -> {
-                    final String file = gitDiffEntry.getDiff().getToFileName().equals("/dev/null")
-                            ? gitDiffEntry.getDiff().getFromFileName()
-                            : gitDiffEntry.getDiff().getToFileName();
+                    final String file = gitDiffEntry.getDiff().getFromFileName().equals("/dev/null")
+                            ? gitDiffEntry.getDiff().getToFileName()
+                            : gitDiffEntry.getDiff().getFromFileName();
                     return new Pair<>(file, gitDiffEntry.getCommit());
                 }).forEachOrdered(fileAndCommit -> {
                     TableRow row = result.addRow(fileAndCommit.getKey() + fileAndCommit.getValue().getCommit());

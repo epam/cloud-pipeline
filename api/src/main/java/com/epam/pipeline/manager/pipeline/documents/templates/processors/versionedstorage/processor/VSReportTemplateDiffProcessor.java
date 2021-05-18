@@ -29,9 +29,11 @@ import org.apache.xmlbeans.XmlCursor;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
 
 import java.math.BigInteger;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProcessor {
 
@@ -88,7 +90,9 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
             lastP.setPageBreak(true);
             for (Map.Entry<String, List<GitDiffEntry>> entry : diffsGrouping.getDiffGrouping().entrySet()) {
                 final String diffGroupKey = entry.getKey();
-                final List<GitDiffEntry> diffEntries = entry.getValue();
+                final List<GitDiffEntry> diffEntries = entry.getValue().stream()
+                        .sorted(Comparator.comparing(d -> d.getCommit().getAuthorDate()))
+                        .collect(Collectors.toList());
 
                 addHeader(lastP, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
                 for (GitDiffEntry diffEntry : diffEntries) {
@@ -134,7 +138,10 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
                                          final CommitDiffsGrouping.GroupType type, final GitDiffEntry diffEntry) {
         if (type.equals(CommitDiffsGrouping.GroupType.BY_COMMIT)) {
-            insertTextData(paragraph, diffEntry.getDiff().getToFileName(), true, fontFamily, fontSize, false);
+            final String file = diffEntry.getDiff().getFromFileName().contains("/dev/null")
+                    ? diffEntry.getDiff().getToFileName()
+                    : diffEntry.getDiff().getFromFileName();
+            insertTextData(paragraph, file, true, fontFamily, fontSize, false);
             insertTextData(paragraph, " file changes:", false, fontFamily, fontSize, true);
         } else {
             insertTextData(paragraph, "Changes in revision: ", false, fontFamily, fontSize, false);
@@ -142,7 +149,14 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
                     paragraph,
                     diffEntry.getCommit().getCommit().substring(0, 9),
                     true, fontFamily, fontSize,
-                    true);
+                    false);
+
+            insertTextData(paragraph, " at ", false, fontFamily, fontSize, false);
+
+            insertTextData(paragraph,
+                    ReportDataExtractor.DATE_FORMAT.format(diffEntry.getCommit().getAuthorDate()),
+                    true, fontFamily, fontSize, true
+            );
         }
         for (String headerLine : diffEntry.getDiff().getHeaderLines()) {
             if (StringUtils.isNotBlank(headerLine)) {
