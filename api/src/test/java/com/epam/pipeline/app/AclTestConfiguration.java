@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
@@ -197,6 +198,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected UserRunnersManager userRunnersManager;
+
+    @MockBean
+    protected PipelineRunAsManager pipelineRunAsManager;
 
     @Bean
     public PermissionFactory permissionFactory() {
