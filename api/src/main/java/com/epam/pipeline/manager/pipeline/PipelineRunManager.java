@@ -291,7 +291,7 @@ public class PipelineRunManager {
 
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithRoles(),
+        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
                 configuration.getSharedWithRoles()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
