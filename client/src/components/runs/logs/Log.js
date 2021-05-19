@@ -1143,7 +1143,16 @@ class Logs extends localization.LocalizedReactComponent {
       this.initializeEnvironmentFinished &&
       !this.isDtsEnvironment
     ) {
-      const {status, podIP} = this.props.run.value;
+      const {
+        status,
+        podIP,
+        pipelineRunParameters = []
+      } = this.props.run.value;
+      const cpFSBrowserEnabled = pipelineRunParameters
+        .find(p => /^CP_FSBROWSER_ENABLED$/i.test(p.name));
+      if (cpFSBrowserEnabled && `${cpFSBrowserEnabled.value}` === 'false') {
+        return false;
+      }
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(this.props.run.value) &&
         podIP;
@@ -1658,7 +1667,13 @@ class Logs extends localization.LocalizedReactComponent {
           case 'running':
           case 'pausing':
           case 'resuming':
-            if (roleModel.isOwner(this.props.run.value) && canStopRun(this.props.run.value)) {
+            if (
+              (
+                roleModel.isOwner(this.props.run.value) ||
+                this.props.run.value.sshPassword
+              ) &&
+              canStopRun(this.props.run.value)
+            ) {
               ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
             }
             break;
