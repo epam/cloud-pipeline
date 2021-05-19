@@ -66,7 +66,8 @@ import {
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
   CP_CAP_SINGULARITY,
-  CP_CAP_DESKTOP_NM
+  CP_CAP_DESKTOP_NM,
+  CP_DISABLE_HYPER_THREADING
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
@@ -75,6 +76,7 @@ import RunCapabilities, {
   singularityEnabled,
   systemDEnabled,
   moduleEnabled,
+  disableHyperThreadingEnabled,
   RUN_CAPABILITIES
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
@@ -157,7 +159,8 @@ export default class EditToolForm extends React.Component {
     singularity: false,
     systemD: false,
     noMachine: false,
-    module: false
+    module: false,
+    disableHyperThreading: false
   };
 
   @observable defaultLimitMounts;
@@ -322,6 +325,13 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
+          if (this.state.disableHyperThreading) {
+            params.push({
+              name: CP_DISABLE_HYPER_THREADING,
+              type: 'boolean',
+              value: true
+            });
+          }
 
           for (let i = 0; i < params.length; i++) {
             parameters[params[i].name] = {
@@ -474,6 +484,7 @@ export default class EditToolForm extends React.Component {
         state.systemD = systemDEnabled(props.configuration.parameters);
         state.noMachine = noMachineEnabled(props.configuration.parameters);
         state.module = moduleEnabled(props.configuration.parameters);
+        state.disableHyperThreading = disableHyperThreadingEnabled(props.configuration.parameters);
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
           : this.defaultCommand;
@@ -710,14 +721,22 @@ export default class EditToolForm extends React.Component {
 
   @computed
   get selectedRunCapabilities () {
-    const {dinD, singularity, systemD, noMachine, module} = this.state;
+    const {
+      dinD,
+      singularity,
+      systemD,
+      noMachine,
+      module,
+      disableHyperThreading
+    } = this.state;
 
     return [
       dinD ? RUN_CAPABILITIES.dinD : false,
       singularity ? RUN_CAPABILITIES.singularity : false,
       systemD ? RUN_CAPABILITIES.systemD : false,
       noMachine ? RUN_CAPABILITIES.noMachine : false,
-      module ? RUN_CAPABILITIES.module : false
+      module ? RUN_CAPABILITIES.module : false,
+      disableHyperThreading ? RUN_CAPABILITIES.disableHyperThreading : false
     ].filter(Boolean);
   };
 
@@ -801,13 +820,17 @@ export default class EditToolForm extends React.Component {
       const dinD = dinDEnabled(this.props.configuration.parameters);
       const singularity = singularityEnabled(this.props.configuration.parameters);
       const systemD = systemDEnabled(this.props.configuration.parameters);
-      const noMachine = noMachineEnabled(this.props.configuration.parameters)
+      const noMachine = noMachineEnabled(this.props.configuration.parameters);
       const module = moduleEnabled(this.props.configuration.parameters);
+      const disableHyperThreading = disableHyperThreadingEnabled(
+        this.props.configuration.parameters
+      );
       return dinD !== this.state.dinD ||
         singularity !== this.state.singularity ||
         systemD !== this.state.systemD ||
         noMachine !== this.state.noMachine ||
-        module !== this.state.module;
+        module !== this.state.module ||
+        disableHyperThreading !== this.state.disableHyperThreading;
     };
 
     return configurationFormFieldChanged('is_spot') ||
@@ -1076,7 +1099,8 @@ export default class EditToolForm extends React.Component {
       singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
       systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
       noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine),
-      module: capabilities.includes(RUN_CAPABILITIES.module)
+      module: capabilities.includes(RUN_CAPABILITIES.module),
+      disableHyperThreading: capabilities.includes(RUN_CAPABILITIES.disableHyperThreading)
     });
   };
 
