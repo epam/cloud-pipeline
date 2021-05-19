@@ -38,7 +38,6 @@ export class Search extends RemotePost {
       this.pageSize = pageSize;
       return super.send({
         query,
-        offset: scrollingParameters ? undefined : 0,
         scrollingParameters,
         pageSize,
         highlight: true,

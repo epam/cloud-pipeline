@@ -27,7 +27,6 @@ function doSearch (
     query: query || '*',
     filters: {...filters},
     facets,
-    offset: scrollingParameters ? undefined : 0,
     pageSize,
     highlight: false,
     scrollingParameters

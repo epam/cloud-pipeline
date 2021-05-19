@@ -23,7 +23,6 @@ function fetchFacetsGroup (facetNames, filters, query) {
       query: query || '*',
       facets: facetNames,
       filters: {...filters},
-      offset: 0,
       pageSize: 1,
       highlight: false
     };
