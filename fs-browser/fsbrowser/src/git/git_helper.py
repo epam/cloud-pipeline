@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup, find_packages
-from fsbrowser.version import __version__
 
-setup(
-    name='fsbrowser',
-    version=__version__,
-    py_modules=['fsbrowser'],
-    packages=find_packages(),
-    include_package_data=True,
-    install_requires=[
-        'flask==1.1.1',
-        'Flask-HTTPAuth==3.3.0',
-        'pygit2==1.5.0'
-    ],
-    entry_points='''
-        [console_scripts]
-        fsbrowser=fsbrowser.fsbrowser-cli:main
-    '''
-)
+class GitHelper:
+    DEFAULT_REMOTE_NAME = 'origin'
+    DEFAULT_BRANCH_NAME = 'master'
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def get_remote_head(repo, remote_name=DEFAULT_REMOTE_NAME, branch=DEFAULT_BRANCH_NAME):
+        return repo.lookup_reference('refs/remotes/%s/%s' % (remote_name, branch))
+
+    @staticmethod
+    def get_head(repo, branch=DEFAULT_BRANCH_NAME):
+        return repo.lookup_reference('refs/heads/%s' % branch)

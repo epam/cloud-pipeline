@@ -15,8 +15,6 @@ pip install -r requirements.txt
 python <path to project>/app.py \
     --working_directory=/root/ \
     --vs_working_directory=/git-workdir/ \
-    --git_user=username \
-    --git_token=password \
     --host=0.0.0.0 \
     --port=8080 \
     --log_dir=/root/logs \ 
@@ -37,8 +35,6 @@ and then run:
 /path/to/dist/app/app \
     --working_directory=/root/ \
     --vs_working_directory=/git-workdir/ \
-    --git_user=username \
-    --git_token=password \
     --host=0.0.0.0 \
     --port=8080 \
     --log_dir=/root/logs \ 
@@ -48,8 +44,6 @@ and then run:
 ## Command line options
 - --working_directory (Required) - the directory on compute node 
 - --vs_working_directory (Required) - the directory where versioned storages shall be stored
-- --git_user (Required) - the git user name
-- --git_token (Required) - th git user password
 - --transfer_storage (Required) - the cloud path for transferring data: <storage name>/<path to cloud directory>. If the <path to cloud directory> is not specified a bucket root will be used
 - --host - the host where this service will be launched. Default: 127.0.0.1
 - --port - the port where this service will be launched. Default: 5000
@@ -386,6 +380,11 @@ returns `git diff` for specified `path` when merge is in progress. Returns diff 
 commit between local and remote trees. If `revision` not specified the `HEAD` will be used.
 The response is similar to `GET /vs/<id>/diff/files` request.
 
+- `GET /vs/<id>/diff/fetch/conflicts?path=<relative_path_to_file>[&raw=<true/false>&lines_count=1&remote=<true/false>]` -
+returns `git diff` for specified `path` for conflicts after `fetch` operation. If `remote` parameter is true returns 
+diff between newly loaded changes and commit before stash. If `remote` is false (default) returns diff from stash.
+The response is similar to `GET /vs/<id>/diff/files` request.
+
 - `POST /vs/<id>/commit?message=<message>[&files=file1,file2]` - saves local changes to remote: fetches repo, adds 
 changed files, commits changes and pushes to remote. This operation returns task ID since may take a long time.
  Use `status/<task_id>` method to check result.
@@ -442,3 +441,11 @@ Request example:
 ```
 curl -X POST http://127.0.0.1:8080/vs/1/remove
 ```
+
+- `POST /vs/<id>/merge/abort` - aborts merge process. If not merge process found an error will be occurred.
+
+Request example:
+```
+curl -X POST http://127.0.0.1:8080/vs/1/merge/abort
+```
+

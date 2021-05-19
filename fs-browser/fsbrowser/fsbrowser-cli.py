@@ -852,11 +852,6 @@ def version_storage_diff_conflicts(vs_id):
         type: boolean
         required: false
         default: false
-      - name: fetch_conflicts
-        in: query
-        type: boolean
-        required: false
-        default: false
       - name: lines_count
         in: query
         type: integer
@@ -874,13 +869,66 @@ def version_storage_diff_conflicts(vs_id):
     revision = flask.request.args.get('revision', None)
     show_raw = flask.request.args.get("raw")
     show_raw_flag = False if not show_raw else str_to_bool(show_raw)
-    fetch_conflicts = flask.request.args.get("fetch_conflicts")
-    fetch_conflicts_flag = False if not fetch_conflicts else str_to_bool(fetch_conflicts)
     lines_count = flask.request.args.get("lines_count", 3)
     manager = app.config['git_manager']
     try:
-        result = manager.conflicts_diff(vs_id, path, revision, show_raw_flag, fetch_conflicts=fetch_conflicts_flag,
-                                        lines_count=int(lines_count))
+        result = manager.merge_conflicts_diff(vs_id, path, revision, show_raw_flag, lines_count=int(lines_count))
+        return jsonify(success(result))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/<vs_id>/diff/fetch/conflicts', methods=['GET'])
+@auth.login_required
+def version_storage_diff_fetch_conflicts(vs_id):
+    """
+    Returns `git diff` for specified `path` for conflicts after `fetch` operation. If `remote` parameter is true
+    returns diff between newly loaded changes and commit before stash. If `remote` is false (default) returns
+    diff from stash.
+    ---
+    parameters:
+      - name: vs_id
+        in: path
+        type: string
+        required: true
+      - name: path
+        in: query
+        type: string
+        required: true
+      - name: raw
+        in: query
+        type: boolean
+        required: false
+        default: false
+      - name: lines_count
+        in: query
+        type: integer
+        required: false
+        default: 3
+      - name: remote
+        in: query
+        type: boolean
+        required: false
+        default: false
+    definitions:
+      Object:
+        type: object
+    responses:
+      200:
+        schema:
+          $ref: '#/definitions/Object'
+    """
+    path = flask.request.args.get('path')
+    show_raw = flask.request.args.get("raw")
+    show_raw_flag = False if not show_raw else str_to_bool(show_raw)
+    lines_count = flask.request.args.get("lines_count", 3)
+    remote = flask.request.args.get("remote")
+    remote_flag = False if not remote else str_to_bool(remote)
+    manager = app.config['git_manager']
+    try:
+        result = manager.fetch_conflicts_diff(vs_id, path, show_raw_flag, lines_count=int(lines_count),
+                                              remote_flag=remote_flag)
         return jsonify(success(result))
     except Exception as e:
         manager.logger.log(traceback.format_exc())
@@ -926,8 +974,6 @@ def main():
     parser.add_argument("--working_directory", required=True)
     parser.add_argument("--vs_working_directory", required=True)
     parser.add_argument("--transfer_storage", required=True)
-    parser.add_argument("--git_token", required=True)
-    parser.add_argument("--git_user", required=True)
     parser.add_argument("--process_count", default=2)
     parser.add_argument("--run_id", required=False)
     parser.add_argument("--log_dir", required=False)
@@ -943,8 +989,7 @@ def main():
 
     app.config['fsbrowser'] = FsBrowserManager(args.working_directory, pool, logger, args.transfer_storage,
                                                args.follow_symlinks, args.tmp_directory, args.exclude, tasks)
-    app.config['git_manager'] = GitManager(pool, tasks, logger, args.vs_working_directory, args.git_token,
-                                           args.git_user)
+    app.config['git_manager'] = GitManager(pool, tasks, logger, args.vs_working_directory)
 
     app.run(host=args.host, port=args.port)
 

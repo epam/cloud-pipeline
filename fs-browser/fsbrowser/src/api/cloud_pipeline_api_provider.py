@@ -84,7 +84,10 @@ class CloudPipelineAPI:
         result = self._post(url, data)
         return result or {}
 
-    def get_git_credentials(self):
+    def get_git_credentials(self, duration):
+        url = '/pipeline/git/credentials'
+        if duration:
+            url += '?duration=%d' % duration
         result = self._get('/pipeline/git/credentials')
         return result or {}
 
@@ -157,3 +160,13 @@ class CloudPipelineApiProvider(object):
 
     def log_event(self, run_id, data):
         self.api.log_event(run_id, data)
+
+    def get_git_credentials(self, duration):
+        result = self.api.get_git_credentials(duration)
+        if not result:
+            raise RuntimeError("Failed to load git credentials for user")
+        if 'userName' not in result:
+            raise RuntimeError("Failed to load git credentials for user: 'userName' must be specified")
+        if 'token' not in result:
+            raise RuntimeError("Failed to load git credentials for user: 'token' must be specified")
+        return result

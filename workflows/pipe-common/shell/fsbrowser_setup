@@ -73,8 +73,6 @@ env SSL_CERT_DIR="$_SSL_CERT_DIR" nohup fsbrowser --host 0.0.0.0 \
                 --port "${CP_FSBROWSER_PORT}" \
                 --working_directory "${CP_FSBROWSER_WD}" \
                 --vs_working_directory "${CP_FSBROWSER_VS_WD}" \
-                --git_token "${GIT_TOKEN}" \
-                --git_user "${GIT_USER}" \
                 --tmp_directory "${CP_FSBROWSER_TMP}" \
                 --exclude "${CP_FSBROWSER_BLACK_LIST}" \
                 --transfer_storage "${CP_FSBROWSER_STORAGE}" > /var/log/fsbrowser.log 2>&1 &
