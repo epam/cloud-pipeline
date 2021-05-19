@@ -691,7 +691,7 @@ export default class Metadata extends React.Component {
           sortable={false}
           minRows={0}
           columns={this.tableColumns}
-          data={this._currentMetadata}
+          data={!this.state.selectedItemsAreShowing ? this._currentMetadata : this.state.selectedItems}
           getTableProps={() => ({style: {overflowY: 'hidden'}})}
           getTdProps={(state, rowInfo, column, instance) => ({
             onClick: (e) => {
@@ -967,7 +967,7 @@ export default class Metadata extends React.Component {
               {
                 this.state.selectedItems &&
                 this.state.selectedItems.length > 0 &&
-                <span> Selected {this.state.selectedItems ? this.state.selectedItems.length : 0} items </span>
+                this.linkToSelectedItems()
               }
             </Col>
             <Col>
@@ -1112,6 +1112,20 @@ export default class Metadata extends React.Component {
         columns: allColumns
       }];
     }
+  };
+
+  linkToSelectedItems () {
+    const linkContent = this.state.selectedItemsAreShowing
+      ? 'Revert the previous view'
+      : `Show selected
+        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
+        item${this.state.selectedItems.length > 1 ? 's' : ''}`;
+    return (
+      <a onClick={() => this.setState({
+        selectedItemsAreShowing: !this.state.selectedItemsAreShowing
+      })}
+      >{linkContent}</a>
+    );
   };
 
   render () {
