@@ -28,6 +28,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        fsbrowser=fsbrowser.app:main
+        fsbrowser=fsbrowser.fsbrowser-cli:main
     '''
 )

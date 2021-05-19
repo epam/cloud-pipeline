@@ -1217,7 +1217,7 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       tar -xf "$CP_FSBROWSER_NAME" -C ${CP_USR_BIN}/
       rm -f "$CP_FSBROWSER_NAME"
 
-      CP_FSBROWSER_BIN=${CP_USR_BIN}/app/app
+      CP_FSBROWSER_BIN=${CP_USR_BIN}/fsbrowser-cli/fsbrowser-cli
       if [ -f "$CP_FSBROWSER_BIN" ]; then
             ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
             ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
