@@ -4667,6 +4667,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {
                 !this.props.detached && !this.props.editConfigurationMode && (
                   <Button
+                    id="launch-command-button"
                     disabled={!this.launchCommandPayload}
                     style={{verticalAlign: 'middle', marginRight: 5}}
                     onClick={this.showLaunchCommands}
