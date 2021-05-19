@@ -334,5 +334,12 @@
         "description": "Allows to specify pod image pull policy. Valid values are 'Always', 'Never', 'IfNotPresent'",
         "defaultValue": "Always",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_DISABLE_HYPER_THREADING",
+        "type": "boolean",
+        "description": "Disables hyper-threading for a run and its workers",
+        "defaultValue": "false",
+        "passToWorkers": true
     }
 ]
