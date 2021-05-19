@@ -165,7 +165,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     return {
       openHistoryPanel: this.openHistoryPanel,
       closeHistoryPanel: this.closeHistoryPanel,
-      openEditStorageDialog: this.openEditStorageDialog
+      openEditStorageDialog: this.openEditStorageDialog,
+      runVersionedStorage: this.runVersionedStorage
     };
   };
 
@@ -258,6 +259,17 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   closeHistoryPanel = () => {
     this.setState({showHistoryPanel: false, selectedFile: undefined});
+  };
+
+  runVersionedStorage = () => {
+    const {
+      router,
+      pipelineId,
+      pipeline
+    } = this.props;
+    if (router && pipelineId && pipeline.loaded && pipeline.value.currentVersion) {
+      router.push(`/launch/${pipelineId}/${pipeline.value.currentVersion.name}/default`);
+    }
   };
 
   openHistoryPanelWithFileInfo = (file) => {
