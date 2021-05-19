@@ -112,6 +112,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final int LONG_STATUS_THRESHOLD = 100;
     private static final Duration LONG_RUNNING_DURATION = Duration.standardMinutes(6);
     private static final Long LONG_PAUSED_SECONDS = 10L;
+    private static final String TEST_PLATFORM = "linux";
 
     @Autowired
     private NotificationManager notificationManager;
@@ -716,6 +717,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         run.setLastChangeCommitTime(new Date());
         run.setPodId("pod");
         run.setOwner(testOwner.getUserName());
+        run.setPlatform(TEST_PLATFORM);
 
         Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
         PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();
@@ -734,6 +736,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         final RunInstance runInstance = new RunInstance();
         runInstance.setCloudProvider(CloudProvider.AWS);
         runInstance.setCloudRegionId(1L);
+        runInstance.setNodePlatform(TEST_PLATFORM);
         return runInstance;
     }
 

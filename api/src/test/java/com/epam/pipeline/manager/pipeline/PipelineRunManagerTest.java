@@ -151,6 +151,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
         when(toolManager.resolveSymlinks(TEST_IMAGE)).thenReturn(notScannedTool);
+        when(toolManager.findToolVersion(notScannedTool)).thenReturn(Optional.empty());
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(true))).thenReturn(true);
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(true))).thenReturn(true);

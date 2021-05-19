@@ -798,12 +798,8 @@ public class PipelineRunManager {
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
         run.setActualDockerImage(Optional.ofNullable(tool).map(Tool::getImage).orElse(configuration.getDockerImage()));
-        Optional.ofNullable(toolVersion)
-                .map(ToolVersion::getPlatform)
-                .ifPresent(platform -> {
-                    run.setPlatform(platform);
-                    instance.setNodePlatform(platform);
-                });
+        run.setPlatform(Optional.ofNullable(toolVersion).map(ToolVersion::getPlatform).orElse("linux"));
+        instance.setNodePlatform(run.getPlatform());
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
         run.setNodeCount(configuration.getNodeCount());
         setRunPrice(instance, run);
@@ -1405,6 +1401,7 @@ public class PipelineRunManager {
         restartedRun.setTimeout(run.getTimeout());
         restartedRun.setDockerImage(run.getDockerImage());
         restartedRun.setActualDockerImage(run.getActualDockerImage());
+        restartedRun.setPlatform(run.getPlatform());
         restartedRun.setCmdTemplate(run.getCmdTemplate());
         restartedRun.setNodeCount(run.getNodeCount());
         RunInstance instance = copyInstance(run.getInstance());
@@ -1437,6 +1434,7 @@ public class PipelineRunManager {
             runInstance.setNodeType(i.getNodeType());
             runInstance.setSpot(i.getSpot());
             runInstance.setCloudProvider(i.getCloudProvider());
+            runInstance.setNodePlatform(i.getNodePlatform());
             return runInstance;
         }).orElse(new RunInstance());
     }

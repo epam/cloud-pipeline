@@ -56,6 +56,7 @@ public final class TestUtils {
     public static final long DOCKER_SIZE = 123456L;
     public static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
     public static final String TEMPLATE_REPLACE_MARK = "@@";
+    public static final String TEST_PLATFORM = "linux";
 
     private TestUtils() {
         // no op
@@ -148,12 +149,14 @@ public final class TestUtils {
         run.setOwner(owner);
         run.setParentRunId(parentRunId);
         run.setRunSids(runSids);
+        run.setPlatform(TEST_PLATFORM);
 
         RunInstance instance = new RunInstance();
         instance.setCloudRegionId(regionId);
         instance.setCloudProvider(CloudProvider.AWS);
         instance.setSpot(isSpot);
         instance.setNodeId("1");
+        instance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(instance);
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);

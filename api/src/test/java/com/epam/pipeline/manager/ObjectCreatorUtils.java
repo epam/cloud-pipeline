@@ -60,6 +60,7 @@ public final class ObjectCreatorUtils {
     private static final String TEST_POD_ID = "pod1";
     private static final String TEST_SERVICE_URL = "service_url";
     public static final int TEST_DISK_SIZE = 100;
+    private static final String TEST_PLATFORM = "linux";
 
     private ObjectCreatorUtils() {
     }
@@ -280,12 +281,14 @@ public final class ObjectCreatorUtils {
         run.setOwner(TEST_NAME);
         run.setParentRunId(parentRunId);
         run.setServiceUrl(TEST_SERVICE_URL);
+        run.setPlatform(TEST_PLATFORM);
 
         RunInstance instance = new RunInstance();
         instance.setSpot(true);
         instance.setNodeId("1");
         instance.setCloudRegionId(regionId);
         instance.setCloudProvider(CloudProvider.AWS);
+        instance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(instance);
         return run;
     }
