@@ -65,6 +65,7 @@ public class MonitoringNotificationDaoTest extends AbstractJdbcTest {
     private static final String TEMPLATE_PARAMETER_VALUE = "template_parameter_value";
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
+    private static final String TEST_PLATFORM = "linux";
 
     @Autowired
     private MonitoringNotificationDao monitoringNotificationDao;
@@ -161,12 +162,14 @@ public class MonitoringNotificationDaoTest extends AbstractJdbcTest {
         run.setParentRunId(null);
         run.setRunSids(null);
         run.setChildRuns(null);
+        run.setPlatform(TEST_PLATFORM);
 
         RunInstance instance = new RunInstance();
         instance.setSpot(true);
         instance.setNodeId("1");
         instance.setCloudProvider(CloudProvider.AWS);
         instance.setCloudRegionId(region.getId());
+        instance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(instance);
         run.setEntitiesIds(null);
         run.setConfigurationId(null);

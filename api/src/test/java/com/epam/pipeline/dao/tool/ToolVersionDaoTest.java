@@ -64,6 +64,7 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
     private static final String TEST_CMD_TEMPLATE_1 = "cmd";
     private static final String TEST_CMD_TEMPLATE_2 = "cmd2";
     private static final Integer TEST_NODE_COUNT = 3;
+    private static final String TEST_PLATFORM = "linux";
 
     @Autowired
     private ToolVersionDao toolVersionDao;
@@ -130,6 +131,7 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
                 .size(TEST_SIZE)
                 .version(TEST_VERSION)
                 .modificationDate(TEST_LAST_MODIFIED_DATE)
+                .platform(TEST_PLATFORM)
                 .toolId(tool.getId())
                 .settings(Collections.singletonList(configurationEntry))
                 .build();
@@ -139,6 +141,7 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
                 .size(TEST_SIZE)
                 .version(TEST_VERSION_2)
                 .modificationDate(TEST_LAST_MODIFIED_DATE)
+                .platform(TEST_PLATFORM)
                 .toolId(tool.getId())
                 .settings(Collections.singletonList(configurationEntry))
                 .build();
@@ -159,6 +162,7 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
                 .size(TEST_SIZE)
                 .version(TEST_VERSION)
                 .modificationDate(TEST_LAST_MODIFIED_DATE)
+                .platform(TEST_PLATFORM)
                 .toolId(tool.getId())
                 .id(toolVersion1.getId())
                 .build();
