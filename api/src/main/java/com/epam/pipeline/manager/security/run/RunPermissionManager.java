@@ -98,7 +98,7 @@ public class RunPermissionManager {
     public boolean runStatusPermission(Long runId, TaskStatus taskStatus, String permissionName) {
         final PipelineRun pipelineRun = runCRUDService.loadRunById(runId);
         if (taskStatus.isFinal()) {
-            return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner());
+            return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner()) || isRunSshAllowed(pipelineRun);
         }
         return runPermission(pipelineRun, permissionName);
     }
