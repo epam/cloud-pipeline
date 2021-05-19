@@ -21,4 +21,8 @@ public class EntityNotFoundException extends Exception {
         super(cause);
     }
 
+    public EntityNotFoundException(final String message) {
+        super(message);
+    }
+
 }
