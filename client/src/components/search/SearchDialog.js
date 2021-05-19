@@ -58,12 +58,11 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     searching: false,
     searchResults: [],
     searchResultsFor: null,
-    page: 0,
+    hasMore: false,
     hoveredIndex: null,
     previewAvailable: false,
     selectedGroupTypes: [],
-    aggregates: null,
-    totalPages: 0
+    aggregates: null
   };
 
   inputControl;
@@ -174,8 +173,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         previewAvailable: false,
         aggregates: null,
         selectedGroupTypes: [],
-        totalPages: 0,
-        page: 0
+        hasMore: false
       });
       return;
     }
@@ -185,13 +183,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     }, async () => {
       await this.props.searchEngine.send(
         searchCriteria,
-        this.state.page,
+        undefined,
         PAGE_SIZE,
         this.generateSearchTypes()
       );
       if (this.state.searchString === searchCriteria) {
         if (this.props.searchEngine.loaded) {
-          const totalPages = Math.ceil(this.props.searchEngine.value.totalHits / PAGE_SIZE);
           const results = (this.props.searchEngine.value.documents || []).map(d => d);
           const aggregates = this.processAggregates();
           this.setState({
@@ -201,12 +198,13 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             hoveredIndex: null,
             previewAvailable: false,
             aggregates,
-            totalPages
+            hasMore: results.length >= PAGE_SIZE
           });
         } else if (this.props.searchEngine.error) {
           message.error(this.props.searchEngine.error, 5);
           this.setState({
-            searching: false
+            searching: false,
+            hasMore: false
           });
         }
       } else {
@@ -227,13 +225,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     }, async () => {
       await this.props.searchEngine.send(
         searchCriteria,
-        this.state.page,
+        undefined,
         PAGE_SIZE,
         this.generateSearchTypes()
       );
       if (this.state.searchString === searchCriteria) {
         if (this.props.searchEngine.loaded) {
-          const totalPages = Math.ceil(this.props.searchEngine.value.totalHits / PAGE_SIZE);
           const results = (this.props.searchEngine.value.documents || []).map(d => d);
           const aggregates = this.processAggregates();
           this.setState({
@@ -243,12 +240,13 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             searchResults: results,
             hoveredIndex: null,
             previewAvailable: false,
-            totalPages
+            hasMore: results.length >= PAGE_SIZE
           });
         } else if (this.props.searchEngine.error) {
           message.error(this.props.searchEngine.error, 5);
           this.setState({
-            searching: false
+            searching: false,
+            hasMore: false
           });
         }
       } else {
@@ -430,7 +428,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
       this.inputControl.focus();
     }
     this.setState({
-      page: 0,
+      hasMore: false,
       selectedGroupTypes: types
     }, this.specifySearchGroups);
   };
@@ -439,47 +437,52 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
 
   loadMore = (e) => {
     const obj = e.target;
-    if (obj && obj.scrollTop === (obj.scrollHeight - obj.offsetHeight) &&
-      this.state.page < this.state.totalPages &&
-      !this.state.searching) {
+    if (
+      obj &&
+      obj.scrollTop === (obj.scrollHeight - obj.offsetHeight) &&
+      this.state.hasMore &&
+      !this.state.searching
+    ) {
+      if (!this.state.searchString) {
+        return;
+      }
+      const searchCriteria = this.state.searchString;
       this.setState({
-        page: this.state.page + 1
+        searching: true
       }, async () => {
-        if (!this.state.searchString) {
-          return;
-        }
-        const searchCriteria = this.state.searchString;
-        this.setState({
-          searching: true
-        }, async () => {
-          await SearchDialog.wait(1);
-          await this.props.searchEngine.send(
-            searchCriteria,
-            this.state.page,
-            PAGE_SIZE,
-            this.generateSearchTypes()
-          );
-          if (this.state.searchString === searchCriteria) {
-            if (this.props.searchEngine.loaded) {
-              const totalPages = Math.ceil(this.props.searchEngine.value.totalHits / PAGE_SIZE);
-              const results = (this.props.searchEngine.value.documents || []).map(d => d);
-              this.setState({
-                searching: false,
-                searchResults: [...this.state.searchResults, ...results],
-                totalPages
-              });
-            } else if (this.props.searchEngine.error) {
-              message.error(this.props.searchEngine.error, 5);
-              this.setState({
-                searching: false
-              });
-            }
-          } else {
+        await SearchDialog.wait(1);
+        const {searchResults = []} = this.state;
+        const lastResult = searchResults.length > 0
+          ? searchResults[searchResults.length - 1]
+          : undefined;
+        await this.props.searchEngine.send(
+          searchCriteria,
+          lastResult
+            ? {docId: lastResult.elasticId, docScore: lastResult.score, scrollingBackward: false}
+            : undefined,
+          PAGE_SIZE,
+          this.generateSearchTypes()
+        );
+        if (this.state.searchString === searchCriteria) {
+          if (this.props.searchEngine.loaded) {
+            const results = (this.props.searchEngine.value.documents || []).map(d => d);
             this.setState({
-              searching: false
+              searching: false,
+              searchResults: [...this.state.searchResults, ...results],
+              hasMore: results.length >= PAGE_SIZE
+            });
+          } else if (this.props.searchEngine.error) {
+            message.error(this.props.searchEngine.error, 5);
+            this.setState({
+              searching: false,
+              hasMore: false
             });
           }
-        });
+        } else {
+          this.setState({
+            searching: false
+          });
+        }
       });
     }
   };

@@ -42,13 +42,6 @@
   flex-wrap: wrap;
 }
 
-.pagination {
-  height: 32px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
 .document-type-filter .filter {
   background-color: #fafafa;
   border: 1px solid #ddd;

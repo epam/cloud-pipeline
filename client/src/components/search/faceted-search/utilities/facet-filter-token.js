@@ -14,13 +14,20 @@
  *  limitations under the License.
  */
 
-function getFacetFilterToken (query, filters, offset, pageSize) {
+function getFacetFilterToken (query, filters, pageSize, scrollingParameters) {
   const filtersKeys = Object.keys(filters || {}).sort();
   const filtersParts = filtersKeys.map(key => `${key}:${(filters[key] || []).sort().join(',')}`);
+  const {
+    docId,
+    docScore,
+    scrollingBackward = false
+  } = scrollingParameters || {};
+  const scrollingParametersPresentation =
+    `[${docId || ''}|${docScore || ''}|${scrollingBackward}]`;
   return [
     query || '*',
     ...filtersParts,
-    `${offset}`,
+    scrollingParametersPresentation,
     `${pageSize}`
   ].join('|');
 }

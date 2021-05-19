@@ -23,7 +23,7 @@ export {SearchItemTypes};
 
 export class Search extends RemotePost {
   query;
-  page;
+  scrollingParameters;
   pageSize;
 
   constructor () {
@@ -31,14 +31,14 @@ export class Search extends RemotePost {
     this.url = '/search';
   }
 
-  async send (query, page, pageSize, types = []) {
+  async send (query, scrollingParameters, pageSize, types = []) {
     if (query) {
       this.query = query;
-      this.page = page;
+      this.scrollingParameters = scrollingParameters;
       this.pageSize = pageSize;
       return super.send({
         query,
-        offset: page * pageSize,
+        scrollingParameters,
         pageSize,
         highlight: true,
         aggregate: true,
