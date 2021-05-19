@@ -1207,6 +1207,13 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             exit 1
       fi
 
+      rm -f /bin/fsbrowser
+      rm -f /usr/bin/fsbrowser
+      rm -f /usr/local/bin/fsbrowser
+      rm -f /sbin/fsbrowser
+      rm -f /usr/sbin/fsbrowser
+      rm -f /usr/local/sbin/fsbrowser
+
       tar -xf "$CP_FSBROWSER_NAME" -C ${CP_USR_BIN}/
       rm -f "$CP_FSBROWSER_NAME"
 
