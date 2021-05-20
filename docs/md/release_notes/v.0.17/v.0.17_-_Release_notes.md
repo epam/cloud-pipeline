@@ -20,6 +20,7 @@
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
+- [Disable Hyper-Threading](#disable-hyper-threading)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -713,6 +714,30 @@ In the current version, the special option was implemented that allows/denies th
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_03.png)  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_04.png)
 - if a pipeline parameter has no default value - `no_override` is ignored and the parameter field will be writable in the detached configuration that uses this pipeline
+
+## Disable Hyper-Threading
+
+**Hyper-Threading technology** makes a single physical processor appear as multiple logical processors. To do this, there is one copy of the architecture state for each logical processor, and the logical processors share a single set of physical execution resources.
+
+Hyper-Threading technology is enabled by default for all nodes in **Cloud Pipeline**.
+
+But not in all cases this technology is useful. In cases when threads are operating primarily on very close or relatively close instructions or data, the overall throughput occasionally decreases compared to non-interleaved, serial execution of the lines.  
+For example, at a high performance computing that relies heavily on floating point calculations, the two threads in each core share a single floating point unit (FPU) and are often blocked by one another. In such case Hyper-Threading technology only slows computations.
+
+In the current version, the ability to disable Hyper-Threading for a specific job was implemented.  
+So, this technology can be turned on or off, as is best for a particular application at the user's discretion.
+
+In Cloud Provider environment, each vCPU is a thread of a physical processor core. All cores of the instance has two threads. Disabling of Hyper-Threading disables the set of vCPUs that are relied to the second thread, set of first thread vCPUs stays enabled (see details for `AWS` [here](https://aws.amazon.com/blogs/compute/disabling-intel-hyper-threading-technology-on-amazon-linux/)).
+
+To disable Hyper-Threading technology for a job:
+
+- set the corresponding option in "**Run capabilities**" before the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DisableHT_1.png)
+- check that Hyper-Threading was disabled via the following command after the run is launched:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DisableHT_2.png)  
+    Here you can check that only 1 thread per core is set, virtual CPUs 4-7 are offline. Only one thread is enabled (set of CPUs 0-3).
+
+For more details see [here](../../manual/10_Manage_Tools/10.9._Run_capabilities.md#disable-hyper-threading).
 
 ## AWS: seamless authentication
 
