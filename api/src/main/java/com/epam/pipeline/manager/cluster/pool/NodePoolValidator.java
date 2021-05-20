@@ -19,8 +19,11 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
 import lombok.RequiredArgsConstructor;
@@ -77,11 +80,22 @@ public class NodePoolValidator {
                 .ifPresent(scheduleManager::load);
 
         Optional.ofNullable(vo.getDockerImages())
-                .ifPresent(images -> images.forEach(toolManager::loadByNameOrId));
+                .ifPresent(images -> images.forEach(this::validatePoolImage));
 
         if (vo.isAutoscaled()) {
             validateAutoscalingParams(vo);
         }
+    }
+
+    private void validatePoolImage(final String image) {
+        final boolean poolContainsWindowsImages = Optional.of(toolManager.loadByNameOrId(image))
+            .map(tool -> toolManager.loadToolVersionAttributes(tool.getId(), ToolUtils.getImageTag(tool.getImage())))
+            .map(ToolVersionAttributes::getAttributes)
+            .map(ToolVersion::getPlatform)
+            .filter("windows"::equalsIgnoreCase)
+            .isPresent();
+        Assert.isTrue(!poolContainsWindowsImages,
+                      messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED));
     }
 
     private void validateAutoscalingParams(final NodePoolVO vo) {

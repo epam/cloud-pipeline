@@ -78,7 +78,8 @@ public class ReassignHandlerTest {
         final String nodeId = "1";
         final List<String> nodes = Collections.singletonList(nodeId);
 
-        doReturn(getRunningWindowsInstance()).when(autoscalerService).getPreviousRunInstance(Mockito.anyString(), Mockito.any());
+        doReturn(getRunningWindowsInstance())
+            .when(autoscalerService).getPreviousRunInstance(Mockito.anyString(), Mockito.any());
         final boolean result = reassignHandler.tryReassignNode(null, null, null,
                 String.valueOf(ID), ID, null, nodes);
         assertThat(result).isFalse();
