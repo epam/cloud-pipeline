@@ -58,6 +58,7 @@ import Breadcrumbs from '../../special/Breadcrumbs';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 
+const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
@@ -140,6 +141,7 @@ export default class Metadata extends React.Component {
     metadata: false,
     selectedItem: null,
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
+    selectedItemsAreShowing: false,
     selectedColumns: [],
     filterModel: {
       filters: [],
@@ -537,6 +539,8 @@ export default class Metadata extends React.Component {
   };
   onClearSelectionItems = () => {
     this.setState({selectedItems: []});
+    this.state.selectedItemsAreShowing = false;
+    this.paginationOnChange(FIRST_PAGE);
   };
   onCopySelectionItems = () => {
     this.setState({
@@ -691,7 +695,7 @@ export default class Metadata extends React.Component {
           sortable={false}
           minRows={0}
           columns={this.tableColumns}
-          data={!this.state.selectedItemsAreShowing ? this._currentMetadata : this.state.selectedItems}
+          data={this._currentMetadata}
           getTableProps={() => ({style: {overflowY: 'hidden'}})}
           getTdProps={(state, rowInfo, column, instance) => ({
             onClick: (e) => {
@@ -717,14 +721,8 @@ export default class Metadata extends React.Component {
             size="small"
             pageSize={PAGE_SIZE}
             current={this.state.filterModel.page}
-            total={this._totalCount}
-            onChange={
-              async (page) => {
-                this.state.filterModel.page = page;
-                await this.loadData(this.state.filterModel);
-                this.setState({filterModel: this.state.filterModel});
-              }
-            } />
+            total={!this.state.selectedItemsAreShowing ? this._totalCount : this.state.selectedItems.length}
+            onChange={async (page) => this.paginationOnChange(page)} />
         </Row>
       ];
     };
@@ -907,16 +905,18 @@ export default class Metadata extends React.Component {
 
   get tableColumns () {
     const onHeaderClicked = (key, e) => {
-      if (e) {
-        e.stopPropagation();
-      }
-      const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
-      if (!orderBy) {
-        this.onOrderByChanged(key, DESCEND);
-      } else if (orderBy.desc) {
-        this.onOrderByChanged(key, ASCEND);
-      } else {
-        this.onOrderByChanged(key);
+      if (!this.state.selectedItemsAreShowing) {
+        if (e) {
+          e.stopPropagation();
+        }
+        const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
+        if (!orderBy) {
+          this.onOrderByChanged(key, DESCEND);
+        } else if (orderBy.desc) {
+          this.onOrderByChanged(key, ASCEND);
+        } else {
+          this.onOrderByChanged(key);
+        }
       }
     };
     const renderTitle = (key) => {
@@ -967,7 +967,13 @@ export default class Metadata extends React.Component {
               {
                 this.state.selectedItems &&
                 this.state.selectedItems.length > 0 &&
-                this.linkToSelectedItems()
+                <a onClick={this.handleClickShowSelectedItems}>{
+                  this.state.selectedItemsAreShowing
+                    ? 'Revert the previous view'
+                    : `Show selected
+                      ${this.state.selectedItems ? this.state.selectedItems.length : 0}
+                      item${this.state.selectedItems.length > 1 ? 's' : ''}`
+                }</a>
               }
             </Col>
             <Col>
@@ -1115,18 +1121,50 @@ export default class Metadata extends React.Component {
   };
 
   linkToSelectedItems () {
-    const linkContent = this.state.selectedItemsAreShowing
-      ? 'Revert the previous view'
-      : `Show selected
-        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
-        item${this.state.selectedItems.length > 1 ? 's' : ''}`;
     return (
-      <a onClick={() => this.setState({
-        selectedItemsAreShowing: !this.state.selectedItemsAreShowing
-      })}
-      >{linkContent}</a>
+      <a onClick={this.handleClickShowSelectedItems}>{
+        this.state.selectedItemsAreShowing
+          ? 'Revert the previous view'
+          : `Show selected
+            ${this.state.selectedItems ? this.state.selectedItems.length : 0}
+            item${this.state.selectedItems.length > 1 ? 's' : ''}`
+      }</a>
     );
   };
+
+  handleClickShowSelectedItems = () => {
+    const showSelectedItems = () => {
+      this.state.filterModel.orderBy = [];
+      this.state.selectedItemsAreShowing = !this.state.selectedItemsAreShowing;
+      this.paginationOnChange(FIRST_PAGE);
+    };
+
+    if (this.state.filterModel.orderBy && this.state.filterModel.orderBy.length) {
+      Modal.confirm({
+        title: 'All filters will be reset. Continue?',
+        onOk: showSelectedItems,
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+    } else {
+      showSelectedItems();
+    }
+  }
+
+  async paginationOnChange (page) {
+    this.state.filterModel.page = page;
+    if (!this.state.selectedItemsAreShowing) {
+      await this.loadData(this.state.filterModel);
+    } else {
+      const firstRow = Math.max((page - 1) * this.state.filterModel.pageSize, 0);
+      const lastRow = Math.min(
+        page * this.state.filterModel.pageSize,
+        this.state.selectedItems.length
+      );
+      this._currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
+    }
+    this.setState({filterModel: this.state.filterModel});
+  }
 
   render () {
     return (
