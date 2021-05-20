@@ -585,7 +585,8 @@ class BranchCode extends React.PureComponent {
     }
     const modificationAction = file.changes.find(
       change => change.branch === changeBranch &&
-        change.lineIndex(changeBranch) === line.lineNumber[changeBranch]
+        change.lineIndex(changeBranch) === line.lineNumber[changeBranch] &&
+        change.status === ChangeStatuses.prepared
     );
     const isFirstLineOfModification = modification && modification.start === line;
     const isFirstActualLineOfModification = modification && modification.first(branch) === line;

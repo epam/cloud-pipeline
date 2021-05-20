@@ -14,25 +14,13 @@
  *  limitations under the License.
  */
 
-.container {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
+import VSRemotePost from './base/remote-post';
 
-.container > * {
-  margin-right: 5px;
-}
-
-.container > *:last-child {
-  margin-right: 0;
-}
-
-.total {
-  margin-left: auto;
-}
-
-.button {
-  line-height: 1;
+export default class VSAbortMerge extends VSRemotePost {
+  constructor (runId, storageId) {
+    super(runId);
+    this.runId = runId;
+    this.storageId = storageId;
+    this.url = `vs/${storageId}/merge/abort`;
+  }
 }

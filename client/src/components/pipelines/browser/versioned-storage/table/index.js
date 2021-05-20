@@ -104,8 +104,8 @@ class VersionedStorageTable extends React.Component {
     const {pipelineId, path} = this.props;
     return PipelineFileUpdate.uploadUrl(
       pipelineId,
-      path || '',
-      {trimTrailingSlash: true}
+      path || '/',
+      {trimTrailingSlash: !!path}
     );
   }
 

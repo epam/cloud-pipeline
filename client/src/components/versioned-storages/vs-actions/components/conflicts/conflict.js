@@ -32,6 +32,7 @@ const LINE_HEIGHT = 22.0;
 const SCROLL_CENTER_ORIGIN = 0.5;
 const CANVAS_WIDTH = 20;
 const MINIMUM_PANEL_SIZE_PIXELS = 200;
+const IDE_PANELS_HEADER_HEIGHT = 20;
 
 const getGridColumns = (panels) => {
   const gridColumnSize = size => /fr$/i.test(size) ? size : `${size}px`;
@@ -46,6 +47,58 @@ const getGridColumns = (panels) => {
     gridTemplateColumn(RemoteBranch),
     `[SCROLL-${RemoteBranch}] 0px`
   ].join(' ');
+};
+
+const getCalcPresentation = (widthCss) => {
+  const {
+    em = 0,
+    px = 0
+  } = widthCss || {};
+  const parts = [
+    em && {value: em, unit: 'em'},
+    px && {value: px, unit: 'px'}
+  ].filter(Boolean);
+  if (parts.length === 0) {
+    return '0px';
+  }
+  const result = parts.reduce((result, current, index) => {
+    if (index > 0 && current.value >= 0) {
+      return result.concat(` + ${current.value}${current.unit}`);
+    } else if (index > 0) {
+      return result.concat(` - ${Math.abs(current.value)}${current.unit}`);
+    }
+    return result.concat(`${current.value}${current.unit}`);
+  }, '');
+  return `calc(${result})`;
+};
+
+const multiplyWidthCssByTimes = (widthCss, times) => {
+  const {
+    em = 0,
+    px = 0
+  } = widthCss || {};
+  return {
+    em: em * times,
+    px: px * times
+  };
+};
+const addWidthsCss = (...widthCss) => {
+  return widthCss.reduce((res, cur) => ({
+    em: (res.em || 0) + (cur.em || 0),
+    px: (res.px || 0) + (cur.px || 0)
+  }), {});
+};
+
+const getNumbersContainerWidthCss = (conflictedFile, branch) => {
+  if (!conflictedFile || !branch) {
+    return {em: 0};
+  }
+  const lines = conflictedFile.getLines(branch, new Set([])).length;
+  const numbersLength = Math.floor(Math.log10(lines)) + 1;
+  return {
+    em: numbersLength + (branch === Merged),
+    px: branch !== Merged ? 50 : 0
+  };
 };
 
 class Conflict extends React.PureComponent {
@@ -79,6 +132,8 @@ class Conflict extends React.PureComponent {
     window.addEventListener('mouseup', this.onFinishResizing);
     this.updateFromProps();
     this.ideContainerSizeTimer = setInterval(this.updateIDEContainerSize, 100);
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(this);
   }
 
   componentWillUnmount () {
@@ -89,6 +144,8 @@ class Conflict extends React.PureComponent {
       clearInterval(this.ideContainerSizeTimer);
       this.ideContainerSizeTimer = undefined;
     }
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(undefined);
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -433,61 +490,16 @@ class Conflict extends React.PureComponent {
           onRefresh={this.refresh}
           rtl={rtl}
           style={{
-            minHeight: ide.height || 0,
+            minHeight: Math.max(0, (ide.height || 0) - IDE_PANELS_HEADER_HEIGHT),
             cursor: 'col-resize'
           }}
           onMouseDown={this.onStartResizing(modificationsBranch || branch)}
         />
       );
-      const rawBranches = {
-        [HeadBranch]: conflictedFile.getLines(HeadBranch, new Set([])),
-        [Merged]: conflictedFile.getLines(Merged, new Set([])),
-        [RemoteBranch]: conflictedFile.getLines(RemoteBranch, new Set([]))
-      };
-      const getNumbersContainerWidthCss = (branch) => {
-        const numbersLength = Math.floor(Math.log10(rawBranches[branch].length)) + 1;
-        return {
-          em: numbersLength + (branch === Merged),
-          px: branch !== Merged ? 50 : 0
-        };
-      };
-      const multiplyWidthCssByTimes = (widthCss, times) => {
-        const {
-          em = 0,
-          px = 0
-        } = widthCss || {};
-        return {
-          em: em * times,
-          px: px * times
-        };
-      };
-      const addWidthsCss = (...widthCss) => {
-        return widthCss.reduce((res, cur) => ({
-          em: (res.em || 0) + (cur.em || 0),
-          px: (res.px || 0) + (cur.px || 0)
-        }), {});
-      };
-      const getCalcPresentation = (widthCss) => {
-        const {
-          em = 0,
-          px = 0
-        } = widthCss || {};
-        const parts = [
-          em && {value: em, unit: 'em'},
-          px && {value: px, unit: 'px'}
-        ].filter(Boolean);
-        if (parts.length === 0) {
-          return '0px';
-        }
-        const result = parts.reduce((result, current, index) => {
-          if (index > 0 && current.value >= 0) {
-            return result.concat(` + ${current.value}${current.unit}`);
-          } else if (index > 0) {
-            return result.concat(` - ${Math.abs(current.value)}${current.unit}`);
-          }
-          return result.concat(`${current.value}${current.unit}`);
-        }, '');
-        return `calc(${result})`;
+      const numbersWidths = {
+        [HeadBranch]: getNumbersContainerWidthCss(conflictedFile, HeadBranch),
+        [Merged]: getNumbersContainerWidthCss(conflictedFile, Merged),
+        [RemoteBranch]: getNumbersContainerWidthCss(conflictedFile, RemoteBranch)
       };
       const renderBranch = (branch) => {
         let left, right;
@@ -551,7 +563,7 @@ class Conflict extends React.PureComponent {
             );
             break;
         }
-        const numbersWidth = getCalcPresentation(getNumbersContainerWidthCss(branch));
+        const numbersWidth = getCalcPresentation(numbersWidths[branch]);
         const templateColumns = [
           left && `[LEFT-NUMBERS] ${numbersWidth}`,
           '[CODE] 1fr',
@@ -593,13 +605,16 @@ class Conflict extends React.PureComponent {
         <canvas
           className={styles.resize}
           width={CANVAS_WIDTH * window.devicePixelRatio}
-          height={(ide.height || 0) * window.devicePixelRatio}
+          height={
+            Math.max(0, (ide.height || 0) - IDE_PANELS_HEADER_HEIGHT) * window.devicePixelRatio
+          }
           key={`${branch}-canvas`}
           ref={canvas => this.initializeCanvas(branch, canvas)}
           style={{
             width: CANVAS_WIDTH,
-            height: ide.height || 0,
-            gridColumn: `CANVAS-${branch}`
+            height: Math.max(0, (ide.height || 0) - IDE_PANELS_HEADER_HEIGHT),
+            gridColumn: `CANVAS-${branch}`,
+            gridRow: 'CONTENT'
           }}
           onMouseDown={this.onStartResizing(branch)}
         />
@@ -677,7 +692,7 @@ class Conflict extends React.PureComponent {
           HeadBranch,
           {
             left: Scrollbar.size,
-            right: getCalcPresentation(getNumbersContainerWidthCss(HeadBranch))
+            right: getCalcPresentation(numbersWidths[HeadBranch])
           }
         ),
         renderCanvas(HeadBranch),
@@ -685,10 +700,10 @@ class Conflict extends React.PureComponent {
         renderHorizontalScroll(
           Merged,
           {
-            left: getCalcPresentation(getNumbersContainerWidthCss(Merged)),
+            left: getCalcPresentation(numbersWidths[Merged]),
             right: getCalcPresentation(
               addWidthsCss(
-                getNumbersContainerWidthCss(Merged),
+                numbersWidths[Merged],
                 {px: Scrollbar.size}
               )
             )
@@ -700,7 +715,7 @@ class Conflict extends React.PureComponent {
             left: getCalcPresentation(
               addWidthsCss(
                 multiplyWidthCssByTimes(
-                  getNumbersContainerWidthCss(Merged),
+                  numbersWidths[Merged],
                   -1
                 ),
                 {px: -Scrollbar.size}
@@ -713,7 +728,7 @@ class Conflict extends React.PureComponent {
         renderHorizontalScroll(
           RemoteBranch,
           {
-            left: getCalcPresentation(getNumbersContainerWidthCss(RemoteBranch)),
+            left: getCalcPresentation(numbersWidths[RemoteBranch]),
             right: Scrollbar.size
           }
         ),
@@ -794,6 +809,11 @@ class Conflict extends React.PureComponent {
       error,
       panels
     } = this.state;
+    const numbersWidths = {
+      [HeadBranch]: getNumbersContainerWidthCss(conflictedFile, HeadBranch),
+      [Merged]: getNumbersContainerWidthCss(conflictedFile, Merged),
+      [RemoteBranch]: getNumbersContainerWidthCss(conflictedFile, RemoteBranch)
+    };
     return (
       <div className={styles.conflictContainer}>
         {
@@ -810,9 +830,58 @@ class Conflict extends React.PureComponent {
           className={styles.resolveArea}
           ref={this.initializeIDEContainer}
           style={{
-            gridTemplateColumns: getGridColumns(panels)
+            gridTemplateColumns: getGridColumns(panels),
+            gridTemplateRows: `[HEADER] ${IDE_PANELS_HEADER_HEIGHT}px [CONTENT] 1fr`
           }}
         >
+          <div
+            className={styles.header}
+            style={{
+              gridColumn: `SCROLL-HEAD / MERGED`,
+              paddingRight: getCalcPresentation(
+                addWidthsCss(
+                  numbersWidths[HeadBranch],
+                  {px: CANVAS_WIDTH}
+                )
+              )
+            }}
+          >
+            <div className={styles.title}>
+              Your changes
+            </div>
+          </div>
+          <div
+            className={styles.header}
+            style={{
+              gridColumn: `MERGED / CANVAS-REMOTE`,
+              paddingLeft: getCalcPresentation(
+                numbersWidths[Merged]
+              ),
+              paddingRight: getCalcPresentation(
+                numbersWidths[Merged]
+              )
+            }}
+          >
+            <div className={styles.title}>
+              Result
+            </div>
+          </div>
+          <div
+            className={styles.header}
+            style={{
+              gridColumn: `CANVAS-REMOTE / SCROLL-REMOTE`,
+              paddingLeft: getCalcPresentation(
+                addWidthsCss(
+                  numbersWidths[RemoteBranch],
+                  {px: CANVAS_WIDTH}
+                )
+              )
+            }}
+          >
+            <div className={styles.title}>
+              Changes from remote
+            </div>
+          </div>
           {this.renderIDE()}
         </div>
       </div>
@@ -822,7 +891,8 @@ class Conflict extends React.PureComponent {
 
 Conflict.propTypes = {
   disabled: PropTypes.bool,
-  file: PropTypes.string
+  file: PropTypes.string,
+  onInitialized: PropTypes.func
 };
 
 export default inject('conflictsSession')(observer(Conflict));

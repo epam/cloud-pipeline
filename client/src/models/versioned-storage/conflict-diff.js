@@ -17,25 +17,39 @@
 import VSRemote from './base/remote';
 
 export default class VSConflictDiff extends VSRemote {
-  constructor (runId, storageId, file, revision, options = {}) {
+  constructor (runId, storageId, file, options = {}) {
     super(runId);
     const {
       raw = false,
       linesCount = undefined,
-      mergeInProgress = false
+      mergeInProgress = false,
+      remote = false,
+      revision
     } = options;
     this.runId = runId;
     this.storageId = storageId;
-    let query = [
+    const query = [
       `path=${encodeURIComponent(file)}`,
-      revision && `revision=${revision}`,
       raw && `raw=${raw}`,
       linesCount !== undefined && linesCount !== null && `lines_count=${linesCount}`,
-      `fetch_conflicts=${!mergeInProgress}`
-    ].filter(Boolean).join('&');
-    if (query.length) {
-      query = `?${query}`;
+    ];
+    if (mergeInProgress) {
+      query.push(
+        revision && `revision=${revision}`
+      );
+    } else {
+      query.push(
+        `remote=${!!remote}`
+      );
     }
-    this.url = `vs/${storageId}/diff/conflicts${query}`;
+    let filteredQuery = query.filter(Boolean).join('&');
+    if (filteredQuery.length) {
+      filteredQuery = `?${filteredQuery}`;
+    }
+    if (mergeInProgress) {
+      this.url = `vs/${storageId}/diff/conflicts${filteredQuery}`;
+    } else {
+      this.url = `vs/${storageId}/diff/fetch/conflicts${filteredQuery}`;
+    }
   }
 }

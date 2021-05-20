@@ -29,8 +29,7 @@ function processEdition (branch, edition) {
       );
     },
     enumerable: true,
-    configurable: false,
-    writable: false
+    configurable: false
   });
   Object.defineProperty(edition, 'inserted', {
     get: function () {
@@ -39,8 +38,7 @@ function processEdition (branch, edition) {
       );
     },
     enumerable: true,
-    configurable: false,
-    writable: false
+    configurable: false
   });
 }
 
@@ -128,15 +126,37 @@ export default function prepare (conflictedFile) {
     ...processBranch(conflictedFile, RemoteBranch),
     ...processBranch(conflictedFile, Merged)
   ];
+  result.sort((a, b) => a.start.lineNumber[a.branch] - b.start.lineNumber[b.branch]);
   Branches.forEach(branch => {
     buildChangesBefore(conflictedFile, branch, result);
     markLines(conflictedFile, branch, result);
   });
-  for (let modification of result) {
-    const start = modification.start;
+  for (let m = 0; m < result.length; m++) {
+    const modification = result[m];
+    const filtered = result
+      .slice(0, m)
+      .filter(oModification => oModification.key() !== modification.key());
+    const getBeforeCount = (branch) => {
+      const allowedBranches = [branch];
+      if (branch === Merged) {
+        allowedBranches.push(HeadBranch);
+        allowedBranches.push(RemoteBranch);
+      } else {
+        allowedBranches.push(Merged);
+      }
+      const branches = new Set(allowedBranches);
+      const lineNumber = modification.start.lineNumber[branch];
+      const before = filtered
+        .filter(oModification => branches.has(oModification.branch))
+        .filter(oModification =>
+          oModification.start.lineNumber[branch] <= lineNumber
+        )
+        .map(oModification => oModification.key());
+      return (new Set(before)).size;
+    };
     modification.changesBefore = {
-      [modification.branch]: start.changesBefore[modification.branch] || 0,
-      [Merged]: start.changesBefore[Merged] || 0
+      [modification.branch]: getBeforeCount(modification.branch),
+      [Merged]: getBeforeCount(Merged)
     };
     for (let oModification of result) {
       if (oModification !== modification) {

@@ -29,7 +29,7 @@ import VSBrowseDialog from '../vs-browse-dialog';
 import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';
 import styles from './vs-actions.css';
-import '../../../staticStyles/vs-actions-dropdown.css';
+import VSAbortMerge from '../../../models/versioned-storage/abort-merge';
 import VSClone from '../../../models/versioned-storage/clone';
 import VSCommit from '../../../models/versioned-storage/commit';
 import VSCurrentState from '../../../models/versioned-storage/current-state';
@@ -38,6 +38,7 @@ import VSTaskStatus from '../../../models/versioned-storage/status';
 import VSConflictError from '../../../models/versioned-storage/conflict-error';
 import resolveFileConflict from '../../../models/versioned-storage/resolve-file-conflict';
 import {GitCommitDialog, ConflictsDialog} from './components';
+import '../../../staticStyles/vs-actions-dropdown.css';
 
 const SUBMENU_POSITION = {
   right: 'right',
@@ -315,6 +316,12 @@ class VSActions extends React.Component {
     if (!versionedStorage) {
       return Promise.resolve();
     }
+    const {
+      storagesStatuses
+    } = this.state;
+    const unsaved = storagesStatuses &&
+      storagesStatuses[versionedStorage.id] &&
+      storagesStatuses[versionedStorage.id].unsaved;
     const hide = message.loading((
       <span>
         Fetching <b>{versionedStorage.name}</b> diff...
@@ -324,8 +331,12 @@ class VSActions extends React.Component {
       this.getVSDiff(versionedStorage)
         .then(diff => {
           hide();
-          if (!diff || !diff.length) {
-            message.info('Nothing to save', 5);
+          if (!diff || diff.length === 0) {
+            if (unsaved) {
+              return this.doCommit(versionedStorage);
+            } else {
+              message.info('Nothing to save', 5);
+            }
           } else {
             this.showCommitDialog(versionedStorage, diff);
           }
@@ -385,10 +396,35 @@ class VSActions extends React.Component {
     const {
       conflicts = {}
     } = this.state;
-    this.setState({conflicts: {...conflicts, pending: true}}, () => {
-      // todo: abort merge
+    const {
+      run
+    } = this.props;
+    const {
+      storage,
+      mergeInProgress
+    } = conflicts;
+    if (!mergeInProgress) {
       this.onCloseConflictsDialog();
-    });
+    } else {
+      this.setState({conflicts: {...conflicts, pending: true}}, () => {
+        const hide = message.loading('Aborting...', 0);
+        const request = new VSAbortMerge(run?.id, storage?.id);
+        request.send()
+          .then(() => {
+            if (request.error) {
+              throw new Error(request.message);
+            } else {
+              hide();
+              message.success('Refresh operation aborted', 5);
+              this.onCloseConflictsDialog();
+            }
+          })
+          .catch((e) => {
+            hide();
+            message.error(e.message, 5);
+          });
+      });
+    }
   };
 
   onResolveConflicts = (files) => {
@@ -575,16 +611,19 @@ class VSActions extends React.Component {
         const {
           files = [],
           merge_in_progress: mergeInProgress = false,
-          pending = false
+          pending = false,
+          unsaved = false
         } = status;
         const hasConflicts = !!files.find(f => /^conflicts$/i.test(f.status));
         const hasModifications = !!files.find(f => !/^conflicts$/i.test(f.status));
         const diffEnabled = !pending && files.length > 0;
         const saveEnabled = !storage.detached &&
-          hasModifications &&
-          !hasConflicts &&
+          !pending &&
           !mergeInProgress &&
-          !pending;
+          (
+            (hasModifications && !hasConflicts) ||
+            unsaved
+          );
         const refreshEnabled = !hasConflicts && !mergeInProgress && !pending;
         const Container = array.length === 1 ? Menu.ItemGroup : Menu.SubMenu;
         menuItems.push((

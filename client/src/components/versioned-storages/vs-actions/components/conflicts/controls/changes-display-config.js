@@ -17,23 +17,23 @@
 export default {
   background: '#f0f0f0',
   insertion: {
-    applied: 'rgb(195, 224, 195)',
-    background: 'rgb(195, 224, 195)',
-    color: '#399839'
+    applied: '#ddffdd',
+    background: '#ddffdd',
+    color: '#b4e2b4'
   },
   deletion: {
     applied: '#d9d9d9',
     background: '#d9d9d9',
-    color: '#666666'
+    color: '#cccccc'
   },
   edition: {
-    applied: 'rgb(201, 228, 255)',
-    background: 'rgb(201, 228, 255)',
-    color: '#3572b0'
+    applied: '#fdf2d0',
+    background: '#fdf2d0',
+    color: '#f5e3aa'
   },
   conflict: {
-    applied: 'rgb(249, 203, 203)',
-    background: 'rgb(249, 203, 203)',
-    color: '#cc3333'
+    applied: '#fee8e9',
+    background: '#fee8e9',
+    color: '#e9aeae'
   }
 };

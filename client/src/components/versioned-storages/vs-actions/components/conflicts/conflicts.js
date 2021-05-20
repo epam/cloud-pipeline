@@ -24,17 +24,32 @@ import ConflictsSession from './session';
 import Conflict from './conflict';
 import styles from './conflicts.css';
 
+function getGridTemplateColumns (filesWidth = 200) {
+  return `[FILES] ${filesWidth}px [DIVIDER] 10px [IDE] 1fr`;
+}
+
 class Conflicts extends React.Component {
   state = {
     current: undefined,
-    resolved: false
+    resolved: false,
+    filesWidth: 200
   };
 
   @observable session = new ConflictsSession();
+  ideContainer;
+  ide;
+  resizeInfo;
 
   componentDidMount () {
     this.updateFromProps();
     this.updateResolvedState();
+    window.addEventListener('mousemove', this.resize);
+    window.addEventListener('mouseup', this.finishResize);
+  }
+
+  componentWillUnmount () {
+    window.removeEventListener('mousemove', this.resize);
+    window.removeEventListener('mouseup', this.finishResize);
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -69,6 +84,70 @@ class Conflicts extends React.Component {
     this.setState({
       current: (conflicts || [])[0]
     });
+  };
+
+  initializeIDEContainer = ideContainer => {
+    this.ideContainer = ideContainer;
+  };
+
+  initializeIDE = ide => {
+    this.ide = ide;
+  };
+
+  startResize = (e) => {
+    if (e.nativeEvent.button === 0) {
+      const {filesWidth} = this.state;
+      e.stopPropagation();
+      e.preventDefault();
+      this.resizeInfo = {
+        x: e.clientX,
+        width: filesWidth
+      };
+    }
+  };
+
+  resize = (e) => {
+    if (this.resizeInfo && this.ideContainer) {
+      e.stopPropagation();
+      e.preventDefault();
+      const {
+        x,
+        width
+      } = this.resizeInfo;
+      const delta = e.clientX - x;
+      const min = 200;
+      const max = this.ideContainer.clientWidth / 2.0;
+      const correctSize = size => Math.min(
+        max,
+        Math.max(
+          min,
+          size
+        )
+      );
+      const newFilesPanelWidth = correctSize(width + delta);
+      if (this.ideContainer) {
+        this.ideContainer.style['grid-template-columns'] =
+          getGridTemplateColumns(newFilesPanelWidth);
+      }
+      this.resizeInfo.newWidth = newFilesPanelWidth;
+      if (this.ide) {
+        this.ide.updateScrollBars();
+      }
+    }
+  };
+
+  finishResize = (e) => {
+    if (this.resizeInfo) {
+      this.resize(e);
+      const {newWidth} = this.resizeInfo;
+      this.resizeInfo = null;
+      this.setState({
+        filesWidth: newWidth || 200
+      });
+      if (this.ide) {
+        this.ide.updateScrollBars();
+      }
+    }
   };
 
   updateResolvedState = () => {
@@ -132,7 +211,8 @@ class Conflicts extends React.Component {
 
   render () {
     const {
-      current
+      current,
+      filesWidth
     } = this.state;
     const {
       disabled,
@@ -143,9 +223,17 @@ class Conflicts extends React.Component {
       <div
         className={styles.conflictsIde}
         data-session-hash={this.session.hash}
+        ref={this.initializeIDEContainer}
+        style={{gridTemplateColumns: getGridTemplateColumns(filesWidth)}}
       >
         <div className={styles.files}>
           {this.renderFiles()}
+        </div>
+        <div
+          className={styles.divider}
+          onMouseDown={this.startResize}
+        >
+          <div>{'\u00A0'}</div>
         </div>
         <Provider conflictsSession={this.session}>
           <div
@@ -158,6 +246,7 @@ class Conflicts extends React.Component {
                   file={current}
                   run={run}
                   storage={storage}
+                  onInitialized={this.initializeIDE}
                 />
               )
             }
