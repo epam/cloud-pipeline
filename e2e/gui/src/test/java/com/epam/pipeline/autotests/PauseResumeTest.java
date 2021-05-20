@@ -67,9 +67,10 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     private final String instanceType = C.DEFAULT_INSTANCE;
     private final String priceType = ON_DEMAND;
     private final String pauseTask = "PausePipelineRun";
+    private final String filesystemAutoscalingTask = "FilesystemAutoscaling";
 
     private String endpoint;
-    private String defaultClusterHddExtraMulti;
+    private String defaultClusterDockerHddExtraMulti;
 
     @BeforeClass
     @AfterClass(alwaysRun = true)
@@ -82,12 +83,12 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     public void getDefaultPreferences() {
         loginAsAdminAndPerform(() -> {
             // EPMCMBIBPC-2627 && EPMCMBIBPC-2636
-            defaultClusterHddExtraMulti =
+            defaultClusterDockerHddExtraMulti =
                     navigationMenu()
                             .settings()
                             .switchToPreferences()
                             .switchToCluster()
-                            .getClusterHddExtraMulti();
+                            .getClusterDockerHddExtraMulti();
         });
     }
 
@@ -99,7 +100,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .settings()
                         .switchToPreferences()
                         .switchToCluster()
-                        .setClusterHddExtraMulti(defaultClusterHddExtraMulti)
+                        .setDockerHddExtraMulti(defaultClusterDockerHddExtraMulti)
                         .saveIfNeeded());
     }
 
@@ -160,7 +161,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .settings()
                         .switchToPreferences()
                         .switchToCluster()
-                        .setClusterHddExtraMulti("1")
+                        .setDockerHddExtraMulti("1")
                         .saveIfNeeded());
 
         tools()
@@ -233,7 +234,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .settings()
                         .switchToPreferences()
                         .switchToCluster()
-                        .setClusterHddExtraMulti("10")
+                        .setDockerHddExtraMulti("10")
                         .saveIfNeeded());
 
         tools()
@@ -247,10 +248,10 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
                                                 .waitUntilTextAppears(getLastRunId())
-                                                .execute("fallocate -l 15G test.big")
-                                                .sleep(10, SECONDS))
+                                                .execute("head -c 10GB /dev/urandom > test.big")
+                                                .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
+                                                .sleep(5, SECONDS))
                                 )
-                                .sleep(30, SECONDS)
                                 .waitForPauseButton()
                                 .pause(getToolName())
                                 .assertPausingFinishedSuccessfully()
@@ -260,6 +261,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .ensure(log(), matchText("Temporary container was successfully committed"))
                                 .ensure(log(), matchText("Docker container logs were successfully retrieved."))
                                 .ensure(log(), matchText("Docker service was successfully stopped"))
+                                .ensure(taskWithName(filesystemAutoscalingTask), visible)
+                                .click(tabWithName(filesystemAutoscalingTask))
+                                .waitForLog("Filesystem .* was autoscaled .*")
                                 .resume(getToolName())
                                 .assertResumingFinishedSuccessfully()
                                 .inAnotherTab(logTab -> logTab

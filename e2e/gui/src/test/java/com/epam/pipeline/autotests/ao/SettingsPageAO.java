@@ -1100,29 +1100,29 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 super(parentAO);
             }
 
-            private By clusterHddExtraMulti() {
+            private By dockerHddExtraMulti() {
                 return new By() {
                     @Override
                     public List<WebElement> findElements(final SearchContext context) {
                         return $$(byClassName("preference-group__preference-row"))
                                 .stream()
-                                .filter(element -> text("cluster.instance.hdd_extra_multi").apply(element))
+                                .filter(element -> text("cluster.docker.extra_multi").apply(element))
                                 .map(e -> e.find(".ant-input-sm"))
                                 .collect(toList());
                     }
                 };
             }
 
-            public PreferencesAO setClusterHddExtraMulti(final String value) {
-                final By clusterHddExtraMultiValue = clusterHddExtraMulti();
-                click(clusterHddExtraMultiValue);
-                clear(clusterHddExtraMultiValue);
-                setValue(clusterHddExtraMultiValue, value);
+            public PreferencesAO setDockerHddExtraMulti(final String value) {
+                final By dockerHddExtraMultiValue = dockerHddExtraMulti();
+                click(dockerHddExtraMultiValue);
+                clear(dockerHddExtraMultiValue);
+                setValue(dockerHddExtraMultiValue, value);
                 return this;
             }
 
-            public String getClusterHddExtraMulti() {
-                return $(clusterHddExtraMulti()).getValue();
+            public String getClusterDockerHddExtraMulti() {
+                return $(dockerHddExtraMulti()).getValue();
             }
 
             public PreferencesAO setClusterAllowedStringPreference(String mask, String value) {
