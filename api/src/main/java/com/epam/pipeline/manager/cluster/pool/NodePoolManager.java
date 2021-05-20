@@ -20,18 +20,12 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.pipeline.ToolManager;
-import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.SetUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,7 +40,6 @@ public class NodePoolManager {
     private final NodePoolMapper poolMapper;
     private final NodePoolValidator validator;
     private final MessageHelper messageHelper;
-    private final ToolManager toolManager;
 
     public List<NodePool> getActivePools() {
         final LocalDateTime timestamp = DateUtils.nowUTC();
@@ -58,7 +51,6 @@ public class NodePoolManager {
 
     @Transactional
     public NodePool createOrUpdate(final NodePoolVO vo) {
-        verifyVo(vo);
         return vo.getId() == null ? create(vo) : update(vo);
     }
 
@@ -96,16 +88,5 @@ public class NodePoolManager {
         nodePool.setCreated(DateUtils.nowUTC());
         final NodePool created = poolDao.create(nodePool);
         return load(created.getId());
-    }
-
-    private void verifyVo(final NodePoolVO vo) {
-        final boolean poolContainsNoWindowsImages = SetUtils.emptyIfNull(vo.getDockerImages()).stream()
-            .map(toolManager::loadByNameOrId)
-            .map(tool -> toolManager.loadToolVersionAttributes(tool.getId(), ToolUtils.getImageTag(tool.getImage())))
-            .map(ToolVersionAttributes::getAttributes)
-            .map(ToolVersion::getPlatform)
-            .noneMatch("windows"::equalsIgnoreCase);
-        Assert.isTrue(poolContainsNoWindowsImages,
-                      messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED));
     }
 }
