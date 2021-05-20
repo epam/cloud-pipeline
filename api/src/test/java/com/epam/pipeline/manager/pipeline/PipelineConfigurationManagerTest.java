@@ -16,23 +16,17 @@
 
 package com.epam.pipeline.manager.pipeline;
 
-import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.manager.security.PermissionsService;
-import com.epam.pipeline.security.acl.AclPermission;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,16 +34,12 @@ import java.util.Map;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.NFS_MASK;
-import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.S3_MASK;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getNfsDataStorage;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class PipelineConfigurationManagerTest {
@@ -75,12 +65,6 @@ public class PipelineConfigurationManagerTest {
     @Mock
     private PipelineVersionManager pipelineVersionManager;
 
-    @Mock
-    private DataStorageApiService dataStorageApiService;
-
-    @Spy
-    private PermissionsService permissionsService;
-
     @InjectMocks
     private final PipelineConfigurationManager pipelineConfigurationManager = new PipelineConfigurationManager();
 
@@ -98,27 +82,9 @@ public class PipelineConfigurationManagerTest {
     @Test
     public void shouldGetUnregisteredPipelineConfiguration() {
         doReturn(TEST_DOCKER_IMAGE).when(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
-        doReturn(dataStorages).when(dataStorageApiService).getWritableStorages();
 
         final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
         final PipelineConfiguration config = pipelineConfigurationManager.getPipelineConfiguration(runVO);
-        assertFalse(config.getBuckets().isEmpty());
-        assertFalse(config.getNfsMountOptions().isEmpty());
-
-        final String[] buckets = config.getBuckets().split(";");
-        assertThat(buckets)
-                .hasSize(4)
-                .contains(NFS_MASK + TEST_PATH_1, S3_MASK + TEST_PATH_2, NFS_MASK + TEST_PATH_3, S3_MASK + TEST_PATH_4);
-
-        final String[] nfsOptions = deleteEmptyElements(config.getNfsMountOptions().split(";"));
-        assertThat(nfsOptions)
-                .hasSize(2)
-                .contains(TEST_OPTIONS_1, TEST_OPTIONS_2);
-
-        final String[] mountPoints = config.getMountPoints().split(";");
-        assertThat(mountPoints)
-                .hasSize(1)
-                .contains(TEST_MOUNT_POINT);
 
         assertThat(config.isNonPause()).isFalse();
         assertThat(config.getInstanceImage()).isEqualTo(TEST_STRING);
@@ -134,15 +100,5 @@ public class PipelineConfigurationManagerTest {
         assertThat(config.getTimeout()).isEqualTo(TEST_LONG);
 
         verify(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
-        verify(dataStorageApiService).getWritableStorages();
-        verify(permissionsService, times(2)).isMaskBitSet(
-                eq(AbstractDataStorage.ALL_PERMISSIONS_MASK),
-                eq(((AclPermission) AclPermission.WRITE).getSimpleMask()));
-    }
-
-    private String[] deleteEmptyElements(final String[] array) {
-        return Arrays.stream(array)
-                .filter(StringUtils::isNotBlank)
-                .toArray(String[]::new);
     }
 }

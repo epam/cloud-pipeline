@@ -22,7 +22,6 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -30,13 +29,10 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.security.PermissionsService;
-import com.epam.pipeline.security.acl.AclPermission;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -73,12 +69,6 @@ public class PipelineConfigurationManager {
     private GitManager gitManager;
 
     @Autowired
-    private DataStorageApiService dataStorageApiService;
-
-    @Autowired
-    private PermissionsService permissionsService;
-
-    @Autowired
     private ToolVersionManager toolVersionManager;
 
     @Autowired
@@ -89,18 +79,6 @@ public class PipelineConfigurationManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
-
-    private Function<AbstractDataStorage, String> mountOptionsSupplier = (ds) -> {
-        if (ds instanceof NFSDataStorage) {
-            String mountOptions = ds.getMountOptions();
-            if (!permissionsService.isMaskBitSet(ds.getMask(), ((AclPermission)AclPermission.WRITE).getSimpleMask())) {
-                mountOptions += ",ro";
-            }
-            return mountOptions;
-        } else {
-            return "";
-        }
-    };
 
     public PipelineConfiguration getPipelineConfiguration(final PipelineStart runVO) {
         return getPipelineConfiguration(runVO, null);
@@ -125,10 +103,6 @@ public class PipelineConfigurationManager {
             mergeParametersFromTool(configuration, tool);
         }
 
-        List<AbstractDataStorage> dataStorages = dataStorageApiService.getWritableStorages();
-        configuration.setBuckets(zipToString(dataStorages, AbstractDataStorage::getPathMask));
-        configuration.setNfsMountOptions(zipToString(dataStorages, mountOptionsSupplier));
-        configuration.setMountPoints(zipToString(dataStorages, AbstractDataStorage::getMountPoint));
         //client always sends actual node count value
         configuration.setNodeCount(Optional.ofNullable(runVO.getNodeCount()).orElse(0));
         configuration.setCloudRegionId(runVO.getCloudRegionId());

@@ -18,6 +18,8 @@ package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
@@ -48,6 +50,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.eq;
@@ -91,6 +95,9 @@ public abstract class AbstractAclTest {
 
     @Autowired
     protected AuthManager mockAuthManager;
+
+    @Autowired
+    protected UserManager mockUserManager;
 
     protected void initAclEntity(AbstractSecuredEntity entity, Permission permission) {
         initAclEntity(entity,
@@ -194,4 +201,7 @@ public abstract class AbstractAclTest {
         doReturn(username).when(mockAuthManager).getAuthorizedUser();
     }
 
+    protected void mockUserContext(final UserContext userContext) {
+        doReturn(userContext).when(mockUserManager).loadUserContext(any());
+    }
 }
