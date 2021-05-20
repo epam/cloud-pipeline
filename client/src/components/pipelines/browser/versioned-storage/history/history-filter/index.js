@@ -31,6 +31,7 @@ import UserName from '../../../../../special/UserName';
 import localization from '../../../../../../utils/localization';
 import styles from './history-filter.css';
 
+const ID_COMPONENT = 'history-filter';
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
 function toLocalMomentDate (string) {
@@ -109,6 +110,14 @@ class HistoryFilter extends localization.LocalizedReactComponent {
       filters.extensions.length === 0;
   };
 
+  getHtmlId = (id) => {
+    const {idPrefix} = this.props;
+    if (id && idPrefix) {
+      return `${idPrefix}_${ID_COMPONENT}_${id}`;
+    }
+    return null;
+  };
+
   handleOk = () => {
     const {onChange} = this.props;
     onChange && onChange(this.filters);
@@ -168,6 +177,7 @@ class HistoryFilter extends localization.LocalizedReactComponent {
         className={styles.row}
         type="flex"
         justify="space-between"
+        id={this.getHtmlId('author-container')}
       >
         <span className={styles.label}>
           Author:
@@ -205,12 +215,14 @@ class HistoryFilter extends localization.LocalizedReactComponent {
         className={styles.row}
         type="flex"
         justify="space-between"
+        id={this.getHtmlId('date-container')}
       >
         <span className={styles.label}>
           Date:
         </span>
         <div className={styles.dateRow}>
           <DatePicker
+            className={this.getHtmlId('date-from')}
             format="YYYY-MM-DD"
             placeholder="From"
             value={dateFrom}
@@ -218,6 +230,7 @@ class HistoryFilter extends localization.LocalizedReactComponent {
             style={{width: '50%', marginRight: '10px'}}
           />
           <DatePicker
+            className={this.getHtmlId('date-to')}
             format="YYYY-MM-DD"
             placeholder="To"
             value={dateTo}
@@ -246,6 +259,7 @@ class HistoryFilter extends localization.LocalizedReactComponent {
           placeholder="Comma-separated file extensions"
           onChange={this.onExtensionsChange}
           value={extensions}
+          id={this.getHtmlId('extensions')}
         />
       </Row>
     );
@@ -261,12 +275,14 @@ class HistoryFilter extends localization.LocalizedReactComponent {
         <Button
           onClick={this.handleReset}
           disabled={this.filtersIsEmpty}
+          id={this.getHtmlId('reset-btn')}
         >
           RESET
         </Button>
         <Button
           type="primary"
           onClick={this.handleOk}
+          id={this.getHtmlId('apply-btn')}
         >
           APPLY
         </Button>
@@ -296,7 +312,8 @@ HistoryFilter.PropTypes = {
   }),
   onChange: PropTypes.func,
   onCancel: PropTypes.func,
-  userNames: PropTypes.array
+  userNames: PropTypes.array,
+  idPrefix: PropTypes.string
 };
 
 export default HistoryFilter;

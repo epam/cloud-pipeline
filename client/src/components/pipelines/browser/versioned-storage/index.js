@@ -49,6 +49,7 @@ import DOCUMENT_TYPES from './document-types';
 import styles from './versioned-storage.css';
 
 const PAGE_SIZE = 20;
+const ID_PREFIX = 'vs';
 
 function getDocumentType (document) {
   if (!document || !document.type) {
@@ -827,6 +828,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           actions={this.actions}
           historyPanelOpen={showHistoryPanel}
           controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
+          idPrefix={ID_PREFIX}
         />
         {
           error && (
@@ -860,6 +862,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
               path={path}
               afterUpload={this.afterUpload}
               versionedStorage={pipeline?.value}
+              idPrefix={ID_PREFIX}
             />
             <div
               className={styles.paginationRow}
@@ -899,6 +902,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
                   onFileEdit={this.openEditFileForm}
                   onFileDownload={this.downloadSingleFile}
                   onGoBack={this.clearSelectedFile}
+                  idPrefix={ID_PREFIX}
                 />
               </div>
             )

@@ -23,6 +23,8 @@ import UserName from '../../../../special/UserName';
 import displayDate from '../../../../../utils/displayDate';
 import styles from './history.css';
 
+const ID_COMPONENT = 'commit-card';
+
 function CommitCard (
   {
     className,
@@ -30,12 +32,21 @@ function CommitCard (
     disabled = false,
     path,
     style,
-    versionedStorageId
+    versionedStorageId,
+    idPrefix
   }
 ) {
   if (!commit) {
     return null;
   }
+
+  const getHtmlId = (id) => {
+    if (id && idPrefix) {
+      return `${idPrefix}_${ID_COMPONENT}_${id}`;
+    }
+    return null;
+  };
+
   return (
     <div
       className={
@@ -48,6 +59,7 @@ function CommitCard (
         )
       }
       style={style}
+      id={getHtmlId('diff-btn-container')}
     >
       <CommitDiffButton
         disabled={disabled}
@@ -114,7 +126,8 @@ CommitCard.propTypes = {
   disabled: PropTypes.bool,
   path: PropTypes.string,
   style: PropTypes.object,
-  versionedStorageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  versionedStorageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  idPrefix: PropTypes.string
 };
 
 export default CommitCard;

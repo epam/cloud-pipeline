@@ -29,9 +29,19 @@ import roleModel from '../../../../../utils/roleModel';
 import {ItemTypes} from '../../../model/treeStructureFunctions';
 import styles from './header.css';
 
+const ID_COMPONENT = 'header';
+
 @localization.localizedComponent
 @observer
 class VersionedStorageHeader extends localization.LocalizedReactComponent {
+  getHtmlId = (id) => {
+    const {idPrefix} = this.props;
+    if (id && idPrefix) {
+      return `${idPrefix}_${ID_COMPONENT}_${id}`;
+    }
+    return null;
+  };
+
   onRunClick = () => {
     const {actions = {}} = this.props;
     const {runVersionedStorage} = actions;
@@ -65,7 +75,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
     const {historyPanelOpen} = this.props;
     return (
       <Button
-        id="display-attributes"
+        id={this.getHtmlId('toggle-history-btn')}
         style={{lineHeight: 1, marginRight: '5px'}}
         size="small"
         onClick={this.onHistoryBtnClick}
@@ -93,7 +103,10 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
           align="middle"
           style={{minHeight: 41}}
         >
-          <Col className={styles.breadcrumbs}>
+          <Col
+            className={styles.breadcrumbs}
+            id={this.getHtmlId('breadcrumbs-container')}
+          >
             <Breadcrumbs
               id={parseInt(pipelineId)}
               type={ItemTypes.versionedStorage}
@@ -117,6 +130,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
                     onClick={this.onRunClick}
                     className={styles.controlBtn}
                     disabled={readOnly}
+                    id={this.getHtmlId('run-btn')}
                   >
                     RUN
                   </Button>
@@ -128,6 +142,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
                 onClick={(event) => this.onGenerateReportClick(event)}
                 className={styles.controlBtn}
                 disabled
+                id={this.getHtmlId('generate-report-btn')}
               >
                 Generate report
               </Button>
@@ -139,6 +154,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
                     size="small"
                     onClick={this.onSettingsClick}
                     disabled={readOnly}
+                    id={this.getHtmlId('edit-storage-btn')}
                   >
                     <Icon type="setting" />
                   </Button>
@@ -172,7 +188,8 @@ VersionedStorageHeader.propTypes = {
   issuesPanelOpen: PropTypes.bool,
   metadataPanelOpen: PropTypes.bool,
   controlsEnabled: PropTypes.bool,
-  historyPanelOpen: PropTypes.bool
+  historyPanelOpen: PropTypes.bool,
+  idPrefix: PropTypes.string
 };
 
 export default VersionedStorageHeader;

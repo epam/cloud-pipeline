@@ -38,6 +38,8 @@ import DOCUMENT_TYPES from '../document-types';
 import styles from './table.css';
 import '../../../../../staticStyles/vs-storage.css';
 
+const ID_COMPONENT = 'table';
+
 function typeSorter (a, b) {
   return b.type.localeCompare(a.type);
 }
@@ -107,7 +109,15 @@ class VersionedStorageTable extends React.Component {
       path || '',
       {trimTrailingSlash: true}
     );
-  }
+  };
+
+  getHtmlId = (id) => {
+    const {idPrefix} = this.props;
+    if (id && idPrefix) {
+      return `${idPrefix}_${ID_COMPONENT}_${id}`;
+    }
+    return null;
+  };
 
   onCommentChange = (event) => {
     if (event) {
@@ -135,7 +145,9 @@ class VersionedStorageTable extends React.Component {
       return;
     }
     const content = (
-      <div>
+      <div
+        id={this.getHtmlId('delete-comment-container')}
+      >
         <Row>
           {`Are you sure you want to delete ${type} '${record.name}'?`}
         </Row>
@@ -228,7 +240,7 @@ class VersionedStorageTable extends React.Component {
             key="create actions">
             <Button
               type="primary"
-              id="create-button"
+              id={this.getHtmlId('create-button')}
               size="small"
               className={styles.tableControl}
               disabled={!controlsEnabled}
@@ -262,11 +274,13 @@ class VersionedStorageTable extends React.Component {
     const footer = (
       <Row type="flex" justify="space-between">
         <Button
+          id={this.getHtmlId('delete-dialog-cancel-btn')}
           onClick={this.hideDeleteDialog}
         >
           CANCEL
         </Button>
         <Button
+          id={this.getHtmlId('delete-dialog-ok-btn')}
           type="danger"
           onClick={() => {
             onDeleteDocument && onDeleteDocument(deletingDocument, comment);
@@ -296,6 +310,7 @@ class VersionedStorageTable extends React.Component {
           )}
           <div
             style={{padding: '15px', display: 'flex', flexWrap: 'nowrap'}}
+            id={this.getHtmlId('delete-dialog-comment-container')}
           >
             <span style={{marginRight: '15px'}}>
               Comment:
@@ -330,6 +345,7 @@ class VersionedStorageTable extends React.Component {
           )
         }
         style={style}
+        id={this.getHtmlId('table-container')}
       >
         {this.renderTableControls()}
         <Table
@@ -372,7 +388,8 @@ VersionedStorageTable.PropTypes = {
   path: PropTypes.string,
   afterUpload: PropTypes.func,
   style: PropTypes.object,
-  versionedStorage: PropTypes.object
+  versionedStorage: PropTypes.object,
+  idPrefix: PropTypes.string
 };
 
 export default VersionedStorageTable;

@@ -30,6 +30,7 @@ import LoadVSCommits from '../../../../../models/versioned-storage/load-commits'
 import styles from './history.css';
 
 const PAGE_SIZE = 20;
+const ID_COMPONENT = 'version-history';
 
 const Badged = ({enabled = false, children}) => {
   if (enabled) {
@@ -104,6 +105,14 @@ class VSHistory extends React.Component {
       this.clearFiltersAndFetchCommits();
     }
   }
+
+  getHtmlId = (id) => {
+    const {idPrefix} = this.props;
+    if (id && idPrefix) {
+      return `${idPrefix}_${ID_COMPONENT}_${id}`;
+    }
+    return null;
+  };
 
   clearFiltersAndFetchCommits = () => {
     this.setState({
@@ -208,7 +217,8 @@ class VSHistory extends React.Component {
     const {
       className,
       style,
-      versionedStorageId
+      versionedStorageId,
+      idPrefix
     } = this.props;
     if (!versionedStorageId) {
       return null;
@@ -247,6 +257,7 @@ class VSHistory extends React.Component {
               size="small"
               disabled={pending}
               onClick={this.openFilters}
+              id={this.getHtmlId('filters-btn')}
             >
               <Icon type="filter" />
             </Button>
@@ -257,6 +268,7 @@ class VSHistory extends React.Component {
             onCancel={this.closeFilters}
             onChange={this.onFiltersChanged}
             userNames={[]}
+            idPrefix={idPrefix}
           />
         </div>
         {
@@ -290,6 +302,7 @@ class VSHistory extends React.Component {
                 disabled={pending}
                 versionedStorageId={versionedStorageId}
                 path={this.path}
+                idPrefix={idPrefix}
               />
             ))
           }
@@ -302,6 +315,7 @@ class VSHistory extends React.Component {
             disabled={pending || !this.canNavigateToPreviousPage}
             size="small"
             onClick={this.navigateToPreviousPage}
+            id={this.getHtmlId('navigate-prev-btn')}
           >
             <Icon type="caret-left" />
           </Button>
@@ -310,6 +324,7 @@ class VSHistory extends React.Component {
             disabled={pending || !this.canNavigateToNextPage}
             size="small"
             onClick={this.navigateToNextPage}
+            id={this.getHtmlId('navigate-next-btn')}
           >
             <Icon type="caret-right" />
           </Button>

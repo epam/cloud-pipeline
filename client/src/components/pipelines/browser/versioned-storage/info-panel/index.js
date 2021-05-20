@@ -31,6 +31,7 @@ import {SplitPanel} from '../../../../special/splitPanel';
 import VSHistory from '../history';
 import styles from './info-panel.css';
 
+const ID_COMPONENT = 'info-panel';
 const MAX_SIZE_TO_PREVIEW = 1024 * 75; // 25kb
 const CONTENT_INFO = [{
   key: 'preview',
@@ -87,6 +88,14 @@ class InfoPanel extends localization.LocalizedReactComponent {
       return !fileSizeExceeded && fileEditable;
     }
     return false;
+  };
+
+  getHtmlId = (id) => {
+    const {idPrefix} = this.props;
+    if (id && idPrefix) {
+      return `${idPrefix}_${ID_COMPONENT}_${id}`;
+    }
+    return null;
   };
 
   handleFileEdit = () => {
@@ -174,6 +183,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
         <span
           className={styles.downloadBtn}
           onClick={() => onFileDownload(file)}
+          id={this.getHtmlId('download-link')}
         >
           Download file
         </span>
@@ -245,6 +255,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
             onClick={this.handleFileEdit}
             disabled={!fileEditable}
             className={styles.previewHeaderBtn}
+            id={this.getHtmlId('edit-file-btn')}
           >
             <Icon type="arrows-alt" />
           </Button>
@@ -264,6 +275,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
               size="small"
               className={styles.goBackHeaderBtn}
               onClick={this.handleGoBackClick}
+              id={this.getHtmlId('go-back-btn')}
             >
               <Icon type="left" />
             </Button>
@@ -273,6 +285,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
             size="small"
             className={styles.previewHeaderBtn}
             disabled
+            id={this.getHtmlId('toggle-blind-btn')}
           >
             <Icon type="eye" />
           </Button>
@@ -323,7 +336,8 @@ class InfoPanel extends localization.LocalizedReactComponent {
       lastCommitId,
       pipelineId,
       path,
-      file
+      file,
+      idPrefix
     } = this.props;
     return (
       <SplitPanel
@@ -351,6 +365,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
           style={{
             flex: 1
           }}
+          idPrefix={idPrefix}
         />
       </SplitPanel>
     );
@@ -368,7 +383,8 @@ InfoPanel.propTypes = {
   pending: PropTypes.bool,
   onFileEdit: PropTypes.func,
   onFileDownload: PropTypes.func,
-  onGoBack: PropTypes.func
+  onGoBack: PropTypes.func,
+  idPrefix: PropTypes.string
 };
 
 export default InfoPanel;

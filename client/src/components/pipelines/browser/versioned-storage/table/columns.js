@@ -26,13 +26,21 @@ import displaySize from '../../../../../utils/displaySize';
 import displayDate from '../../../../../utils/displayDate';
 import styles from './table.css';
 
+const ID_PREFIX = 'vs_table-cell';
 const FILES = {
   [DOCUMENT_TYPES.blob]: <Icon type="file" />,
   [DOCUMENT_TYPES.tree]: <Icon type="folder" />,
   navback: <Icon type="folder" />
 };
 
-const renderActions = (item) => {
+const getHtmlId = (id) => {
+  if (id) {
+    return `${ID_PREFIX}_${id}`;
+  }
+  return null;
+};
+
+const renderActions = (item, index) => {
   if (!item) {
     return null;
   }
@@ -44,6 +52,7 @@ const renderActions = (item) => {
         type="download"
         className={styles.action}
         data-action="download"
+        id={getHtmlId(`download-btn${index}`)}
       />
     ));
     if (roleModel.writeAllowed(item)) {
@@ -53,6 +62,7 @@ const renderActions = (item) => {
           type="edit"
           className={styles.action}
           data-action="edit"
+          id={getHtmlId(`edit-btn${index}`)}
         />
       ));
       actions.push((
@@ -64,6 +74,7 @@ const renderActions = (item) => {
             styles.actionDelete
           )}
           data-action="delete"
+          id={getHtmlId(`delete-btn${index}`)}
         />
       ));
     }
@@ -76,6 +87,7 @@ const renderActions = (item) => {
           type="edit"
           className={styles.action}
           data-action="edit"
+          id={getHtmlId(`edit-btn${index}`)}
         />
       ));
       actions.push((
@@ -87,6 +99,7 @@ const renderActions = (item) => {
             styles.actionDelete
           )}
           data-action="delete"
+          id={getHtmlId(`delete-btn${index}`)}
         />
       ));
     }
@@ -94,6 +107,7 @@ const renderActions = (item) => {
   return (
     <span
       className={styles.rowActions}
+      id={getHtmlId(`actions-container${index}`)}
     >
       {actions}
     </span>
@@ -106,9 +120,12 @@ const COLUMNS = [{
   key: 'name',
   className: classNames(styles.cell, styles.nameCell),
   width: 200,
-  render: (name = '', record) => {
+  render: (name = '', record, index) => {
     return (
-      <div className={styles.cellContent}>
+      <div
+        className={styles.cellContent}
+        id={getHtmlId(`name${index}`)}
+      >
         <span className={styles.fileIcon}>
           {FILES[record.type]}
         </span>
@@ -121,27 +138,45 @@ const COLUMNS = [{
   dataIndex: 'size',
   key: 'size',
   className: classNames(styles.cell, styles.noWrapCell, styles.sizeCell),
-  render: (size, item) => item.type === DOCUMENT_TYPES.tree
-    ? undefined
-    : displaySize(size, false)
+  render: (size, item, index) => (
+    <span
+      id={getHtmlId(`size${index}`)}
+    >
+      {item.type === DOCUMENT_TYPES.tree ? '' : displaySize(size, false)}
+    </span>
+  )
 }, {
   title: 'Revision',
   dataIndex: 'commit',
   key: 'commit',
   className: classNames(styles.cell, styles.noWrapCell, styles.revisionCell),
-  render: sha => (sha || '').slice(0, 7)
+  render: (sha, record, index) => (
+    <span
+      id={getHtmlId(`commit${index}`)}
+    >
+      {(sha || '').slice(0, 7)}
+    </span>)
 }, {
   title: 'Date changed',
   dataIndex: 'committer_date',
   key: 'committer_date',
   className: classNames(styles.cell, styles.noWrapCell, styles.dateCell),
-  render: date => displayDate(date)
+  render: (date, record, index) => (
+    <span
+      id={getHtmlId(`committer-date${index}`)}
+    >
+      {displayDate(date)}
+    </span>)
 }, {
   title: 'Author',
   dataIndex: 'author',
   key: 'author',
   className: classNames(styles.cell, styles.noWrapCell, styles.authorCell),
-  render: author => <UserName userName={author} />
+  render: (author, record, index) => (
+    <span id={getHtmlId(`author${index}`)}>
+      <UserName userName={author} />
+    </span>
+  )
 }, {
   title: 'Message',
   dataIndex: 'commit_message',
@@ -151,7 +186,7 @@ const COLUMNS = [{
   title: '',
   key: 'actions',
   className: styles.cell,
-  render: (record) => renderActions(record),
+  render: (record, _, index) => renderActions(record, index),
   width: 150
 }];
 
