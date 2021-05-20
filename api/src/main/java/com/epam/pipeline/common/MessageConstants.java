@@ -127,6 +127,7 @@ public final class MessageConstants {
     public static final String ERROR_INSTANCE_DISK_NOT_ENOUGH = "error.run.instance.disk.not.enough";
     public static final String ERROR_PIPELINE_RUN_NOT_RUNNING = "error.pipeline.run.not.running";
     public static final String ERROR_RUN_IS_FINAL_STATUS = "error.run.is.final.status";
+    public static final String ERROR_INSTANCE_IMAGE_NOT_FOUND = "error.run.instance.image.not.found";
 
     //PipelineRun messages
     public static final String ERROR_WRONG_RUN_STATUS_UPDATE = "error.wrong.run.status.update";
@@ -578,6 +579,8 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
     public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
     public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
+    public static final String ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED =
+        "error.node.pool.win.instance.not.allowed";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
