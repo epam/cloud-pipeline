@@ -451,8 +451,7 @@ export default class Metadata extends React.Component {
 
       if (this.defaultColumns && this.defaultColumns.length < newColumns.length) {
         const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
-        this.state.selectedColumns.push(...addedColumns);
-        this.setState({selectedColumns: this.state.selectedColumns});
+        this.setState({selectedColumns: [...this.state.selectedColumns, ...addedColumns]});
       }
       this.defaultColumns = this.columns = newColumns;
     }
@@ -1168,9 +1167,10 @@ export default class Metadata extends React.Component {
   }
 
   paginationOnChange = async (page) => {
-    this.state.filterModel.page = page;
-    await this.loadData(this.state.filterModel);
-    this.setState({filterModel: this.state.filterModel});
+    const {filterModel} = this.state;
+    filterModel.page = page;
+    await this.loadData(filterModel);
+    this.setState({filterModel});
   }
 
   render () {
@@ -1200,8 +1200,9 @@ export default class Metadata extends React.Component {
                 value={this.state.filterModel.searchQueries[0]}
                 onPressEnter={this.onSearchQueriesChanged}
                 onChange={(e) => {
-                  this.state.filterModel.searchQueries = [e.target.value.trim()];
-                  this.setState({filterModel: this.state.filterModel});
+                  const {filterModel} = this.state;
+                  filterModel.searchQueries = [e.target.value.trim()];
+                  this.setState({filterModel});
                 }}
               />
               <DropdownWithMultiselect
@@ -1242,7 +1243,7 @@ export default class Metadata extends React.Component {
   componentDidMount () {
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
-      this.state.selectedColumns = [...this.columns];
+      this.setState({selectedColumns: [...this.columns]});
       await this.loadData(this.state.filterModel);
       await this.loadCurrentProject();
     })();
@@ -1250,29 +1251,31 @@ export default class Metadata extends React.Component {
 
   async componentWillReceiveProps (nextProps) {
     if (nextProps.initialSelection) {
-      this.state.selectedItems = nextProps.initialSelection;
+      this.setState({selectedItems: nextProps.initialSelection});
     }
     if (nextProps.folderId !== this.props.folderId ||
       nextProps.metadataClass !== this.props.metadataClass) {
       const reset = async () => {
-        this.state.selectedItem = null;
-        this.state.selectedItems = [];
-        this.state.filterModel = {
-          filters: [],
-          folderId: parseInt(nextProps.folderId),
-          metadataClass: nextProps.metadataClass,
-          orderBy: [],
-          page: 1,
-          pageSize: PAGE_SIZE,
-          searchQueries: []
-        };
+        this.setState({
+          selectedItem: null,
+          selectedItems: [],
+          filterModel: {
+            filters: [],
+            folderId: parseInt(nextProps.folderId),
+            metadataClass: nextProps.metadataClass,
+            orderBy: [],
+            page: 1,
+            pageSize: PAGE_SIZE,
+            searchQueries: []
+          }
+        });
         if (nextProps.onSelectItems) {
           nextProps.onSelectItems(this.state.selectedItems);
         }
         this._totalCount = 0;
         await this.props.entityFields.fetch();
         await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
-        this.state.selectedColumns = [...this.columns];
+        this.setState({selectedColumns: [...this.columns]});
         await this.loadData(this.state.filterModel);
       }
       if (this.state.selectedItems && this.state.selectedItems.length) {
