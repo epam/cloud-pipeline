@@ -188,9 +188,9 @@ public class RunPermissionManager {
         }
     }
 
-    public void checkToolRunPermission(final String image, final String runAsUserName) {
+    public void checkToolRunPermissionToRunAs(final String image, final String runAsUserName) {
         final AbstractSecuredEntity tool = toolManager.loadByNameOrId(image);
-        if (!permissionsHelper.isAllowed(AclPermission.EXECUTE_NAME, tool, runAsUserName)) {
+        if (!hasEntityPermissionToRunAs(tool, runAsUserName, AclPermission.EXECUTE_NAME)) {
             throw new AccessDeniedException("Access is denied");
         }
     }

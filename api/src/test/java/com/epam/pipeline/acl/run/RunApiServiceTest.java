@@ -443,6 +443,7 @@ public class RunApiServiceTest extends AbstractAclTest {
 
     private void mockRunToolOnBehalfOfAnotherUser(final PipelineStart pipelineStart) {
         doReturn(ANOTHER_SIMPLE_USER).when(mockPipelineRunAsManager).getRunAsUserName(pipelineStart);
+        doReturn(true).when(mockPipelineRunAsManager).hasCurrentUserAsRunner(ANOTHER_SIMPLE_USER);
         doReturn(getPipelineRun()).when(mockPipelineRunAsManager).runTool(pipelineStart);
         mockUserContext(anotherUserContext);
     }

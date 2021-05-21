@@ -107,7 +107,7 @@ public class RunApiService {
             return runManager.runCmd(runVO);
         }
 
-        runPermissionManager.checkToolRunPermission(runVO.getDockerImage(), runAsUserName);
+        runPermissionManager.checkToolRunPermissionToRunAs(runVO.getDockerImage(), runAsUserName);
         return pipelineRunAsManager.runTool(runVO);
     }
 
