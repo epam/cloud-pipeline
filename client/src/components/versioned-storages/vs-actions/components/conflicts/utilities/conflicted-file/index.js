@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-import {action, observable} from 'mobx';
+import {action, computed, observable} from 'mobx';
 import Branches, {
   HeadBranch,
   RemoteBranch,
@@ -24,7 +24,6 @@ import ConflictedFileLine from './conflicted-file-line';
 import ChangeStatuses from '../changes/statuses';
 
 const ConflictedFileStart = Symbol('conflicted file');
-const ChangesHistory = Symbol('changes history');
 
 export default class ConflictedFile {
   @observable changesHash = 0;
@@ -33,12 +32,67 @@ export default class ConflictedFile {
     this[ConflictedFileStart] = new ConflictedFileLine('', {start: true});
     this[ConflictedFileStart].file = this;
     this.items = [];
-    this[ChangesHistory] = [];
+    this.operations = [];
+    this.operationIndex = -1;
+    this.undoOperations = [];
+    this.redoOperations = [];
+    this.listeners = {};
+  }
+
+  addEventListener (event, listener, ...branches) {
+    if (!this.listeners.hasOwnProperty(event)) {
+      this.listeners[event] = {
+        [HeadBranch]: [],
+        [Merged]: [],
+        [RemoteBranch]: []
+      };
+    }
+    branches.forEach(branch => {
+      if (!this.listeners[event][branch].includes(listener)) {
+        this.listeners[event][branch].push(listener);
+      }
+    });
+  }
+
+  removeEventListener (event, listener, ...branches) {
+    branches.forEach(branch => {
+      if (this.listeners[event] && this.listeners[event][branch].includes(listener)) {
+        const index = this.listeners[event][branch].indexOf(listener);
+        if (index >= 0) {
+          this.listeners[event][branch].splice(index, 1);
+        }
+      }
+    });
+  }
+
+  fireEvent (event, args, ...branches) {
+    if (this.listeners.hasOwnProperty(event)) {
+      branches.forEach(branch => {
+        this.listeners[event][branch].forEach(callback => callback(args));
+      });
+    }
   }
 
   @action
   notify () {
     this.changesHash += 1;
+  }
+
+  get canUnDoOperation () {
+    return this.operationIndex >= 0 && this.operations.length > this.operationIndex;
+  }
+
+  get canReDoOperation () {
+    return this.operationIndex + 1 < this.operations.length && this.operations.length > 0;
+  }
+
+  get start () {
+    return this[ConflictedFileStart];
+  }
+
+  @computed
+  get resolved () {
+    return !(this.changes || []).find(change => !change.resolved);
   }
 
   applyNonConflictingChanges (...branches) {
@@ -48,35 +102,141 @@ export default class ConflictedFile {
         branches.indexOf(change.branch) >= 0 &&
         change.status === ChangeStatuses.prepared
       );
-    const revert = changes
-      .map(change => change.apply(this.notify.bind(this)))
-      .reduce((globalRevert, currentRevert) => () => {
-        if (globalRevert) {
-          globalRevert();
-        }
-        if (currentRevert) {
-          currentRevert();
-        }
-      }, () => {});
-    this.registerUndoOperation(revert);
+    const apply = () => {
+      return changes
+        .map(change => change.apply(this.notify.bind(this)))
+        .reduce((globalRevert, currentRevert) => () => {
+          if (globalRevert) {
+            globalRevert();
+          }
+          if (currentRevert) {
+            currentRevert();
+          }
+        }, () => {});
+    };
+    const revert = apply();
+    this.registerOperation({apply, revert});
   }
 
-  registerUndoOperation (revert) {
-    this[ChangesHistory].push(revert);
+  registerOperation (operation) {
+    const {
+      isFinite = true,
+      type
+    } = operation;
+    let insertNewOperation = true;
+    if (
+      !isFinite &&
+      type &&
+      this.operations.length > 0 &&
+      this.operationIndex < this.operations.length &&
+      this.operationIndex >= 0
+    ) {
+      const current = this.operations[this.operationIndex];
+      if (current.type === type && !current.isFinite) {
+        insertNewOperation = false;
+        this.operations.splice(
+          this.operationIndex,
+          1,
+          {
+            ...current,
+            apply: (finalOperation = true) => {
+              current.apply && current.apply(false);
+              operation.apply && operation.apply(finalOperation);
+            },
+            revert: (finalRevertOperation = true) => {
+              operation.revert && operation.revert(false);
+              current.revert && current.revert(finalRevertOperation);
+            }
+          }
+        );
+      } else {
+        current.isFinite = true;
+      }
+    }
+    if (insertNewOperation) {
+      this.operations = this.operations.slice(0, this.operationIndex + 1);
+      this.operations.push(operation);
+      this.operationIndex = this.operations.length - 1;
+    }
     this.notify();
   }
 
-  undo (callback) {
-    const revert = this[ChangesHistory].pop();
-    if (revert && typeof revert === 'function') {
-      revert();
-      callback && callback();
+  finishCurrentInputOperation () {
+    if (this.operationIndex >= 0 && this.operationIndex < this.operations.length) {
+      const operation = this.operations[this.operationIndex];
+      operation.isFinite = true;
+    }
+  }
+
+  undoOperation (callback) {
+    if (this.canUnDoOperation) {
+      this.finishCurrentInputOperation();
+      const operation = this.operations[this.operationIndex];
+      const {
+        revert
+      } = operation || {};
+      if (typeof revert === 'function') {
+        revert();
+        callback && callback();
+      }
+      this.operationIndex -= 1;
       this.notify();
     }
   }
 
-  get start () {
-    return this[ConflictedFileStart];
+  redoOperation (callback) {
+    if (this.canReDoOperation) {
+      this.finishCurrentInputOperation();
+      this.operationIndex += 1;
+      const operation = this.operations[this.operationIndex];
+      const {
+        apply
+      } = operation || {};
+      if (typeof apply === 'function') {
+        apply();
+        callback && callback();
+      }
+      this.notify();
+    }
+  }
+
+  acceptBranch (branch) {
+    const lines = this.getLines(branch, new Set([]));
+    const apply = () => {
+      const undos = [];
+      undos.push(() => this.buildLineNumbers(Merged));
+      for (let c = 0; c < this.changes.length; c++) {
+        const change = this.changes[c];
+        undos.push(change.discard());
+      }
+      for (let l = 0; l < lines.length; l++) {
+        const line = lines[l];
+        const backupMerged = line[Merged];
+        const backupPreviousMerged = line[branch] ? line[branch].previous[Merged] : undefined;
+        const stateBackup = line.state[Merged];
+        undos.push(() => {
+          line[Merged] = backupMerged;
+          if (line[branch]) {
+            line[branch].previous[Merged] = backupPreviousMerged;
+          }
+          line.state[Merged] = stateBackup;
+        });
+        line[Merged] = line[branch];
+        line.state[Merged] = line.state[branch];
+        if (line[branch]) {
+          line[branch].previous[Merged] = line;
+        }
+      }
+      this.buildLineNumbers(Merged);
+      return undos.reduce((undo, currentUndo) => {
+        return () => {
+          currentUndo();
+          undo();
+        };
+      }, () => {});
+    };
+    const revert = apply();
+    this.registerOperation({apply, revert});
   }
 
   getLast (branch, from = undefined) {

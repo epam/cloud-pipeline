@@ -54,6 +54,14 @@ function hasNonConflictingChanges (changes, ...branch) {
     );
 }
 
+function Divider () {
+  return (
+    <div className={styles.divider}>
+      {'\u00A0'}
+    </div>
+  );
+}
+
 function ResolveChanges (
   {
     className,
@@ -96,11 +104,31 @@ function ResolveChanges (
         )
       }
     >
+      <Button
+        id="conflict-changes-undo-operation"
+        size="small"
+        disabled={!conflictedFile.canUnDoOperation}
+        className={styles.button}
+        onClick={() => conflictedFile.undoOperation()}
+      >
+        <Icon type="rollback" />
+      </Button>
+      <Button
+        size="small"
+        id="conflict-changes-redo-operation"
+        disabled={!conflictedFile.canReDoOperation}
+        className={styles.button}
+        onClick={() => conflictedFile.redoOperation()}
+      >
+        <Icon type="rollback" style={{transform: 'scaleX(-1)'}} />
+      </Button>
+      <Divider />
       <span>
         Apply non-conflicting changes:
       </span>
       <Button
         size="small"
+        id="conflict-changes-apply-non-conflicting-yours"
         className={styles.button}
         disabled={!canApplyYours}
         onClick={() => applyNonConflictingChanges(HeadBranch)}
@@ -109,6 +137,7 @@ function ResolveChanges (
       </Button>
       <Button
         size="small"
+        id="conflict-changes-apply-non-conflicting-all"
         className={styles.button}
         disabled={!canApplyAll}
         onClick={() => applyNonConflictingChanges(HeadBranch, RemoteBranch)}
@@ -119,13 +148,36 @@ function ResolveChanges (
       </Button>
       <Button
         size="small"
+        id="conflict-changes-apply-non-conflicting-theirs"
         className={styles.button}
         disabled={!canApplyTheirs}
         onClick={() => applyNonConflictingChanges(RemoteBranch)}
       >
         <Icon type="arrow-left" />Theirs
       </Button>
+      <Divider />
+      <Button
+        id="conflict-changes-accept-yours"
+        className={styles.button}
+        disabled={conflictedFile.resolved}
+        onClick={() => conflictedFile.acceptBranch(HeadBranch)}
+        type="primary"
+        size="small"
+      >
+        Accept Yours
+      </Button>
+      <Button
+        id="conflict-changes-accept-theirs"
+        className={styles.button}
+        disabled={conflictedFile.resolved}
+        onClick={() => conflictedFile.acceptBranch(RemoteBranch)}
+        type="primary"
+        size="small"
+      >
+        Accept Theirs
+      </Button>
       <span
+        id="conflict-changes-summary"
         className={styles.total}
       >
         {

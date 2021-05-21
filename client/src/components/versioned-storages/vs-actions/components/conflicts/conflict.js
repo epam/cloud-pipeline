@@ -189,7 +189,12 @@ class Conflict extends React.PureComponent {
 
   keyDown = (e) => {
     if (e && e.keyCode === 90) {
-      this.undoLastChange(e);
+      const ctrl = (e.ctrlKey || e.metaKey);
+      if (ctrl && !e.shiftKey) {
+        this.undoLastChange(e);
+      } else if (ctrl && e.shiftKey) {
+        this.redoLastChange(e);
+      }
     }
   };
 
@@ -203,8 +208,23 @@ class Conflict extends React.PureComponent {
       e.stopPropagation();
     }
     const {conflictedFile} = this.state;
-    if (conflictedFile && typeof conflictedFile.undo === 'function') {
-      conflictedFile.undo(this.refresh);
+    if (conflictedFile) {
+      conflictedFile.undoOperation(this.refresh);
+    }
+  };
+
+  redoLastChange = (e) => {
+    const {disabled} = this.props;
+    if (disabled) {
+      return;
+    }
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const {conflictedFile} = this.state;
+    if (conflictedFile) {
+      conflictedFile.redoOperation(this.refresh);
     }
   };
 

@@ -15,7 +15,7 @@
  */
 
 .container {
-  height: 32px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -35,4 +35,9 @@
 
 .button {
   line-height: 1;
+}
+
+.divider {
+  width: 1px;
+  background-color: #ccc;
 }
