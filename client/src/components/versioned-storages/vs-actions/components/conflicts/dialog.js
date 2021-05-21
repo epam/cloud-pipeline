@@ -52,7 +52,7 @@ class ConflictsDialog extends React.Component {
       onAbortCallback && onAbortCallback();
     };
     Modal.confirm({
-      title: 'Are you sure you want to abort refresh operation?',
+      title: 'Are you sure you want to abort?',
       content: (
         <div>
           Your changes will be saved locally and ready to be pushed to the Versioned Storage.<br />
@@ -63,7 +63,7 @@ class ConflictsDialog extends React.Component {
       },
       width: 600,
       onOk: () => onAbort(),
-      okText: 'Cancel refresh',
+      okText: 'Abort',
       cancelText: 'Continue resolve conflicts'
     });
   };
@@ -111,7 +111,7 @@ class ConflictsDialog extends React.Component {
                   disabled={disabled}
                   onClick={this.onAbortClicked}
                 >
-                  CANCEL REFRESH
+                  CANCEL
                 </Button>
               )
             }

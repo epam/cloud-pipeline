@@ -415,7 +415,7 @@ class VSActions extends React.Component {
               throw new Error(request.message);
             } else {
               hide();
-              message.success('Refresh operation aborted', 5);
+              message.success('Save operation aborted', 5);
               this.onCloseConflictsDialog();
             }
           })
