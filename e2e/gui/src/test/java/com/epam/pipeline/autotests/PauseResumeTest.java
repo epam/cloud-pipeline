@@ -51,6 +51,7 @@ import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.tabWithName;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -68,6 +69,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     private final String priceType = ON_DEMAND;
     private final String pauseTask = "PausePipelineRun";
     private final String filesystemAutoscalingTask = "FilesystemAutoscaling";
+    private final String toolNameTag = C.TESTING_TOOL_NAME_TAG;
 
     private String endpoint;
     private String defaultClusterDockerHddExtraMulti;
@@ -104,7 +106,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .saveIfNeeded());
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2309"})
     public void pauseAndResumeValidation() {
         tools()
@@ -204,7 +206,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2632"})
     public void pauseAndResumeRunsPageValidation() {
         tools()
@@ -238,11 +240,22 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .saveIfNeeded());
 
         tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setLaunchOptions("15", instanceType, null)
-                .setPriceType(priceType)
-                .click(START_IDLE)
-                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .perform(registry, group, tool, tool -> tool
+                        .versions()
+                        .viewUnscannedVersions()
+                        .selectVersion(toolNameTag)
+                        .versionSettings()
+                        .setDisk("15")
+                        .setInstanceType(instanceType)
+                        .setPriceType(priceType)
+                        .setDefaultCommand("sleep infinity")
+                        .save());
+        tools()
+                .perform(registry, group, tool, defaultTool ->
+                        defaultTool.versions()
+                                .viewUnscannedVersions()
+                                .runVersionWithDefaultSettings(this, nameWithoutGroup(tool), toolNameTag)
+                )
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
@@ -276,7 +289,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(priority = 100)
+    @Test(priority = 100, enabled = false)
     @TestCase({"EPMCMBIBPC-2626"})
     public void pauseAndResumeEndpointValidation() {
         endpoint = tools()
