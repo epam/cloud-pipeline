@@ -57,6 +57,7 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
+import RangeDatePicker from './metadata-controls/RangeDatePicker';
 
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
@@ -85,6 +86,20 @@ function getColumnTitle (key) {
     return 'Created Date';
   }
   return key;
+}
+function getMinDate (dataArray) {
+  if (dataArray.length) {
+    const dates = dataArray.map(obj => (new Date(obj.createdDate.value)));
+    const [minDate] = dates.sort((a, b) => a - b);
+    return minDate.toString();
+  }
+}
+function getMaxDate (dataArray) {
+  if (dataArray.length) {
+    const dates = dataArray.map(obj => (new Date(obj.createdDate.value)));
+    const [maxDate] = dates.sort((a, b) => b - a);
+    return maxDate.toString();
+  }
 }
 
 @connect({
@@ -296,12 +311,14 @@ export default class Metadata extends React.Component {
   loadData = async (filterModel) => {
     this.setState({loading: true});
     this.metadataRequest = new MetadataEntityFilter();
-    let orderBy;
+    let orderBy, filters;
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
+      filters = (filterModel.filters || [])
+        .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
-    await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}));
+    await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy, filters}));
     if (this.metadataRequest.error) {
       message.error(this.metadataRequest.error, 5);
       this._currentMetadata = [];
@@ -758,7 +775,6 @@ export default class Metadata extends React.Component {
         />
       );
     };
-
     const onPanelClose = (key) => {
       switch (key) {
         case METADATA_PANEL_KEY:
@@ -919,6 +935,19 @@ export default class Metadata extends React.Component {
         this.onOrderByChanged(key);
       }
     };
+    const onDateRangeChanged = (range) => {
+      let filterModel = {...this.state.filterModel};
+      if (range && range.from.trim() && range.to.trim()) {
+        const {from, to} = range;
+        // here should be another format for filter value (according to api)
+        filterModel.filters.push({key: 'createdDate', value: `from:${from},to:${to}`});
+      } else {
+        // reset filter settings
+        filterModel.filters = filterModel.filters.filter(filter => filter.key !== 'createdDate');
+      }
+      this.setState({filterModel});
+      this.loadData(this.state.filterModel);
+    };
     const renderTitle = (key) => {
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       let icon;
@@ -934,6 +963,13 @@ export default class Metadata extends React.Component {
           onClick={(e) => onHeaderClicked(key)}
           className={styles.metadataColumnHeader}>
           {icon}{getColumnTitle(key)}
+          {(key === 'createdDate') ? (
+            <RangeDatePicker
+              from={getMinDate(this._currentMetadata) || ''}
+              to={getMaxDate(this._currentMetadata) || ''}
+              onChange={onDateRangeChanged}
+            />) : null
+          }
         </span>
       );
     };
@@ -1098,8 +1134,7 @@ export default class Metadata extends React.Component {
                 );
               }
             }
-          })
-        };
+          })};
       })];
 
     if (this.props.readOnly) {
