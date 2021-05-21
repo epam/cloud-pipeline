@@ -303,36 +303,60 @@ export default class Metadata extends React.Component {
       orderBy = (filterModel.orderBy || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
-    await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}));
-    if (this.metadataRequest.error) {
-      message.error(this.metadataRequest.error, 5);
-      this._currentMetadata = [];
-    } else {
-      if (this.metadataRequest.value) {
-        this._totalCount = this.metadataRequest.value.totalCount;
-        if (!this.state.filterModel.searchQueries.length) {
-          const parentFolderId = this.props.folderId;
-          if (this._totalCount <= 0) {
-            this.props.router.push(`/folder/${parentFolderId}`);
-            return;
+    if (!this.state.selectedItemsAreShowing) {
+      await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}));
+      if (this.metadataRequest.error) {
+        message.error(this.metadataRequest.error, 5);
+        this._currentMetadata = [];
+      } else {
+        if (this.metadataRequest.value) {
+          this._totalCount = this.metadataRequest.value.totalCount;
+          if (!this.state.filterModel.searchQueries.length) {
+            const parentFolderId = this.props.folderId;
+            if (this._totalCount <= 0) {
+              this.props.router.push(`/folder/${parentFolderId}`);
+              return;
+            }
           }
+          this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
+            v.data = v.data || {};
+            v.data.rowKey = {
+              value: v.id,
+              type: 'string'
+            };
+            v.data.ID = {
+              value: v.externalId,
+              type: 'string'
+            };
+            v.data.createdDate = {
+              value: v.createdDate,
+              type: 'date'
+            };
+            return v.data;
+          });
         }
-        this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
-          v.data = v.data || {};
-          v.data.rowKey = {
-            value: v.id,
-            type: 'string'
-          };
-          v.data.ID = {
-            value: v.externalId,
-            type: 'string'
-          };
-          v.data.createdDate = {
-            value: v.createdDate,
-            type: 'date'
-          };
-          return v.data;
+      }
+    } else {
+      const {page, pageSize} = this.state.filterModel;
+      const selectedItems = [...this.state.selectedItems];
+      this._totalCount = selectedItems.length;
+
+      const firstRow = Math.max((page - 1) * pageSize, 0);
+      const lastRow = Math.min(page * pageSize, selectedItems.length);
+
+      if (orderBy && orderBy.length) {
+        const field = orderBy[0].field === 'externalId' ? 'ID' : orderBy[0].field;
+        const desc = orderBy[0].desc;
+        selectedItems.sort((a, b) => {
+          if (!desc) {
+            return a[field].value >= b[field].value ? 1 : -1;
+          } else {
+            return a[field].value < b[field].value ? 1 : -1;
+          }
         });
+        this._currentMetadata = selectedItems.slice(firstRow, lastRow);
+      } else {
+        this._currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
     this.setState({loading: false});
@@ -538,9 +562,10 @@ export default class Metadata extends React.Component {
     }
   };
   onClearSelectionItems = () => {
-    this.setState({selectedItems: []});
-    this.state.selectedItemsAreShowing = false;
-    this.paginationOnChange(FIRST_PAGE);
+    this.setState({
+      selectedItems: [],
+      selectedItemsAreShowing: false
+    }, () => this.paginationOnChange(FIRST_PAGE));
   };
   onCopySelectionItems = () => {
     this.setState({
@@ -721,7 +746,7 @@ export default class Metadata extends React.Component {
             size="small"
             pageSize={PAGE_SIZE}
             current={this.state.filterModel.page}
-            total={!this.state.selectedItemsAreShowing ? this._totalCount : this.state.selectedItems.length}
+            total={this._totalCount}
             onChange={async (page) => this.paginationOnChange(page)} />
         </Row>
       ];
@@ -905,18 +930,16 @@ export default class Metadata extends React.Component {
 
   get tableColumns () {
     const onHeaderClicked = (key, e) => {
-      if (!this.state.selectedItemsAreShowing) {
-        if (e) {
-          e.stopPropagation();
-        }
-        const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
-        if (!orderBy) {
-          this.onOrderByChanged(key, DESCEND);
-        } else if (orderBy.desc) {
-          this.onOrderByChanged(key, ASCEND);
-        } else {
-          this.onOrderByChanged(key);
-        }
+      if (e) {
+        e.stopPropagation();
+      }
+      const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
+      if (!orderBy) {
+        this.onOrderByChanged(key, DESCEND);
+      } else if (orderBy.desc) {
+        this.onOrderByChanged(key, ASCEND);
+      } else {
+        this.onOrderByChanged(key);
       }
     };
     const renderTitle = (key) => {
@@ -967,7 +990,7 @@ export default class Metadata extends React.Component {
               {
                 this.state.selectedItems &&
                 this.state.selectedItems.length > 0 &&
-                <a onClick={this.handleClickShowSelectedItems}>{
+                <a onClick={() => this.handleClickShowSelectedItems()}>{
                   this.state.selectedItemsAreShowing
                     ? 'Revert the previous view'
                     : `Show selected
@@ -1120,26 +1143,19 @@ export default class Metadata extends React.Component {
     }
   };
 
-  linkToSelectedItems () {
-    return (
-      <a onClick={this.handleClickShowSelectedItems}>{
-        this.state.selectedItemsAreShowing
-          ? 'Revert the previous view'
-          : `Show selected
-            ${this.state.selectedItems ? this.state.selectedItems.length : 0}
-            item${this.state.selectedItems.length > 1 ? 's' : ''}`
-      }</a>
-    );
-  };
-
   handleClickShowSelectedItems = () => {
     const showSelectedItems = () => {
-      this.state.filterModel.orderBy = [];
-      this.state.selectedItemsAreShowing = !this.state.selectedItemsAreShowing;
-      this.paginationOnChange(FIRST_PAGE);
+      this.setState({
+        selectedItem: null,
+        metadata: false,
+        selectedItemsAreShowing: !this.state.selectedItemsAreShowing
+      }, () => this.paginationOnChange(FIRST_PAGE));
     };
 
-    if (this.state.filterModel.orderBy && this.state.filterModel.orderBy.length) {
+    if (!this.state.selectedItemsAreShowing &&
+      this.state.filterModel.filters &&
+      this.state.filterModel.filters.length
+    ) {
       Modal.confirm({
         title: 'All filters will be reset. Continue?',
         onOk: showSelectedItems,
@@ -1151,18 +1167,9 @@ export default class Metadata extends React.Component {
     }
   }
 
-  async paginationOnChange (page) {
+  paginationOnChange = async (page) => {
     this.state.filterModel.page = page;
-    if (!this.state.selectedItemsAreShowing) {
-      await this.loadData(this.state.filterModel);
-    } else {
-      const firstRow = Math.max((page - 1) * this.state.filterModel.pageSize, 0);
-      const lastRow = Math.min(
-        page * this.state.filterModel.pageSize,
-        this.state.selectedItems.length
-      );
-      this._currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
-    }
+    await this.loadData(this.state.filterModel);
     this.setState({filterModel: this.state.filterModel});
   }
 
@@ -1247,25 +1254,37 @@ export default class Metadata extends React.Component {
     }
     if (nextProps.folderId !== this.props.folderId ||
       nextProps.metadataClass !== this.props.metadataClass) {
-      this.state.selectedItem = null;
-      this.state.selectedItems = [];
-      this.state.filterModel = {
-        filters: [],
-        folderId: parseInt(nextProps.folderId),
-        metadataClass: nextProps.metadataClass,
-        orderBy: [],
-        page: 1,
-        pageSize: PAGE_SIZE,
-        searchQueries: []
-      };
-      if (nextProps.onSelectItems) {
-        nextProps.onSelectItems(this.state.selectedItems);
+      const reset = async () => {
+        this.state.selectedItem = null;
+        this.state.selectedItems = [];
+        this.state.filterModel = {
+          filters: [],
+          folderId: parseInt(nextProps.folderId),
+          metadataClass: nextProps.metadataClass,
+          orderBy: [],
+          page: 1,
+          pageSize: PAGE_SIZE,
+          searchQueries: []
+        };
+        if (nextProps.onSelectItems) {
+          nextProps.onSelectItems(this.state.selectedItems);
+        }
+        this._totalCount = 0;
+        await this.props.entityFields.fetch();
+        await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
+        this.state.selectedColumns = [...this.columns];
+        await this.loadData(this.state.filterModel);
       }
-      this._totalCount = 0;
-      await this.props.entityFields.fetch();
-      await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
-      this.state.selectedColumns = [...this.columns];
-      await this.loadData(this.state.filterModel);
+      if (this.state.selectedItems && this.state.selectedItems.length) {
+        Modal.confirm({
+          title: 'All selected items will be reset. Continue?',
+          onOk: reset,
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+      } else {
+        reset();
+      }
     }
     if (nextProps.folderId !== this.props.folderId) {
       await this.loadCurrentProject();
