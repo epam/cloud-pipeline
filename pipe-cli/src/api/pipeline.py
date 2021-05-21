@@ -147,7 +147,7 @@ class Pipeline(API):
     def launch_command(cls, instance_disk, instance_type,
                        docker_image, cmd_template, parameters,
                        timeout=None, instance_count=None, price_type=None,
-                       region_id=None, parent_node=None, non_pause=None, friendly_url=None):
+                       region_id=None, parent_node=None, non_pause=None, friendly_url=None, run_as_user=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
@@ -172,6 +172,8 @@ class Pipeline(API):
             payload['nonPause'] = non_pause
         if friendly_url:
             payload['prettyUrl'] = friendly_url
+        if run_as_user:
+            payload['runAs'] = run_as_user
         if parameters is not None:
             params = {}
             for key in parameters.keys():

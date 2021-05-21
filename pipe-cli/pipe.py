@@ -691,7 +691,7 @@ def run(pipeline,
         user):
     """Schedules a pipeline execution
     """
-    if user and not pipeline:
+    if user and not pipeline and not docker_image:
         UserTokenOperations().set_user_token(user)
         user = None
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,

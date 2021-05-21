@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -47,8 +46,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -298,13 +295,6 @@ public class PipelineConfigurationManager {
         }
         configuration.buildEnvVariables();
         return configuration;
-    }
-
-    private String zipToString(List<AbstractDataStorage> dataStorages,
-                               Function<AbstractDataStorage, String> fieldValueSupplier) {
-        return dataStorages.stream()
-            .map(fieldValueSupplier)
-            .collect(Collectors.joining(";"));
     }
 
     private String chooseDockerImage(PipelineStart runVO, PipelineConfiguration defaultConfig) {
