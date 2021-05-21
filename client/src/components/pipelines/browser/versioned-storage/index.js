@@ -209,7 +209,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         this.setState({
           page,
           pending: false,
+          error: undefined,
           ...result
+        });
+      };
+      const reject = error => {
+        this.setState({
+          page,
+          pending: false,
+          error: error || 'Error fetching versioned storage contents',
+          contents: []
         });
       };
       const request = new VersionedStorageListWithInfo(
@@ -224,7 +233,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         .fetch()
         .then(() => {
           if (request.error || !request.loaded) {
-            resolve({error: request.error || 'Error fetching versioned storage contents'});
+            reject(request.error);
           } else {
             const {
               listing = [],
@@ -233,7 +242,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
             resolve({contents: listing.slice(), lastPage});
           }
         })
-        .catch(e => resolve({error: e.message}));
+        .catch(e => reject(e.message));
     });
   };
 

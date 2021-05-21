@@ -25,6 +25,7 @@ import {
   Spin,
   Input
 } from 'antd';
+import Papa from 'papaparse';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import localization from '../../../../../utils/localization';
 import {SplitPanel} from '../../../../special/splitPanel';
@@ -56,6 +57,14 @@ const CONTENT_INFO = [{
   }
 }];
 
+function fillEmptyCells (count, cb) {
+  const result = [];
+  for (let i = 0; i < count; i++) {
+    result.push(cb(i));
+  }
+  return result;
+}
+
 @localization.localizedComponent
 @observer
 class InfoPanel extends localization.LocalizedReactComponent {
@@ -64,6 +73,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
     fileIsFetching: false,
     fileFetchingError: undefined,
     binaryFile: false,
+    tabularFile: false,
     fileContent: null,
     editFile: false,
     fileEditable: true,
@@ -116,7 +126,8 @@ class InfoPanel extends localization.LocalizedReactComponent {
         fileIsFetching: false,
         fileFetchingError: undefined,
         fileContent: undefined,
-        binaryFile: false
+        binaryFile: false,
+        tabularFile: false
       });
       return null;
     }
@@ -133,7 +144,8 @@ class InfoPanel extends localization.LocalizedReactComponent {
           fileIsFetching: false,
           fileFetchingError: error.message,
           fileContent: undefined,
-          binaryFile: false
+          binaryFile: false,
+          tabularFile: false
         });
       };
       const resolve = result => {
@@ -141,9 +153,14 @@ class InfoPanel extends localization.LocalizedReactComponent {
           const content = atob(result);
           // eslint-disable-next-line
           const binary = /[\x00-\x09\x0E-\x1F]/.test(content);
+          const parseAsTabular = Papa.parse(content);
+          const isTabular = parseAsTabular.errors.length === 0;
           this.setState({
             fileContent: binary ? undefined : content,
-            binaryFile: binary,
+            binaryFile: !isTabular && binary,
+            tabularFile: isTabular
+              ? parseAsTabular.data
+              : false,
             fileIsFetching: false,
             fileFetchingError: undefined
           });
@@ -287,6 +304,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
     const {file} = this.props;
     const {
       binaryFile,
+      tabularFile,
       fileContent,
       fileFetchingError,
       fileIsFetching
@@ -299,24 +317,83 @@ class InfoPanel extends localization.LocalizedReactComponent {
     ) {
       return null;
     }
-    return (
-      <Input.TextArea
-        disabled={fileIsFetching}
-        spellCheck="false"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        autosize={false}
-        className={styles.filePreviewInput}
-        value={fileContent || (fileIsFetching && '') || 'empty'}
-        style={
-          fileContent
-            ? {height: '100%'}
-            : {color: '#aaa', height: '100%', fontStyle: 'italic'}
-        }
-        readOnly
-      />
-    );
+    if (tabularFile && tabularFile.length > 0) {
+      const columnsLength = tabularFile
+        .reduce((length, row) => Math.max(length, row.length), 0);
+      return (
+        <div className={styles.tabularFileContainer}>
+          <table className={styles.tabular}>
+            <thead>
+              <tr>
+                <th>
+                  {'\u00A0'}
+                </th>
+                {tabularFile[0].map((cell, index) => (
+                  <th key={`column-${index}`}>
+                    {cell}
+                  </th>
+                ))}
+                {
+                  fillEmptyCells(
+                    columnsLength - tabularFile[0].length,
+                    index => (
+                      <th key={`column-${index + tabularFile[0].length}`}>
+                        {'\u00A0'}
+                      </th>
+                    )
+                  )
+                }
+              </tr>
+            </thead>
+            <tbody>
+              {
+                tabularFile.slice(1).map((columns, row) => (
+                  <tr key={`row-${row}`}>
+                    <th key={`row-${row}`}>
+                      {row + 1}
+                    </th>
+                    {columns.map((cell, column) => (
+                      <td key={`cell-${row}-${column}`}>
+                        {cell}
+                      </td>
+                    ))}
+                    {
+                      fillEmptyCells(
+                        columnsLength - columns.length,
+                        index => (
+                          <td key={`cell-${row}-${index + columns.length}`}>
+                            {'\u00A0'}
+                          </td>
+                        )
+                      )
+                    }
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      );
+    } else {
+      return (
+        <Input.TextArea
+          disabled={fileIsFetching}
+          spellCheck="false"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          autosize={false}
+          className={styles.filePreviewInput}
+          value={fileContent || (fileIsFetching && '') || 'empty'}
+          style={
+            fileContent
+              ? {height: '100%'}
+              : {color: '#aaa', height: '100%', fontStyle: 'italic'}
+          }
+          readOnly
+        />
+      );
+    }
   };
 
   render () {
