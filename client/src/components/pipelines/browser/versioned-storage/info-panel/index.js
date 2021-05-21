@@ -269,13 +269,14 @@ class InfoPanel extends localization.LocalizedReactComponent {
             </Button>
             <b>{file.name}</b>
           </div>
-          <Button
+          {/* button removed until blind/unblind api will be ready */}
+          {/* <Button
             size="small"
             className={styles.previewHeaderBtn}
             disabled
           >
             <Icon type="eye" />
-          </Button>
+          </Button> */}
         </Row>
         {content}
       </div>
