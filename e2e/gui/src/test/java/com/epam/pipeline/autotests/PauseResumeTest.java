@@ -43,15 +43,14 @@ import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.NodePage.labelWithType;
 import static com.epam.pipeline.autotests.ao.NodePage.mainInfo;
+import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.ENDPOINT;
-import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
 import static com.epam.pipeline.autotests.ao.Primitive.SSH_LINK;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.tabWithName;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
-import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -68,11 +67,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     private final String instanceType = C.DEFAULT_INSTANCE;
     private final String priceType = ON_DEMAND;
     private final String pauseTask = "PausePipelineRun";
-    private final String filesystemAutoscalingTask = "FilesystemAutoscaling";
-    private final String toolNameTag = C.TESTING_TOOL_NAME_TAG;
 
     private String endpoint;
-    private String defaultClusterDockerHddExtraMulti;
+    private String defaultClusterDockerExtraMulti;
 
     @BeforeClass
     @AfterClass(alwaysRun = true)
@@ -85,12 +82,12 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     public void getDefaultPreferences() {
         loginAsAdminAndPerform(() -> {
             // EPMCMBIBPC-2627 && EPMCMBIBPC-2636
-            defaultClusterDockerHddExtraMulti =
+            defaultClusterDockerExtraMulti =
                     navigationMenu()
                             .settings()
                             .switchToPreferences()
                             .switchToCluster()
-                            .getClusterDockerHddExtraMulti();
+                            .getDockerExtraMulti();
         });
     }
 
@@ -102,11 +99,11 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .settings()
                         .switchToPreferences()
                         .switchToCluster()
-                        .setDockerHddExtraMulti(defaultClusterDockerHddExtraMulti)
+                        .setDockerExtraMulti(defaultClusterDockerExtraMulti)
                         .saveIfNeeded());
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2309"})
     public void pauseAndResumeValidation() {
         tools()
@@ -157,56 +154,42 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
 
     @Test
     @TestCase({"EPMCMBIBPC-2627"})
-    public void forbiddenPauseValidation() {
-        loginAsAdminAndPerform(() ->
-                navigationMenu()
-                        .settings()
-                        .switchToPreferences()
-                        .switchToCluster()
-                        .setDockerHddExtraMulti("1")
-                        .saveIfNeeded());
-
-        tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setLaunchOptions("15", instanceType, null)
-                .setPriceType(priceType)
-                .click(START_IDLE)
-                .launchTool(this, Utils.nameWithoutGroup(tool))
-                .log(getLastRunId(), log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .execute("fallocate -l 25G test.big")
-                                                .sleep(30, SECONDS))
-                                )
-                                .waitForPauseButton()
-                                .clickOnPauseButton()
-                                .validateException("This operation may fail due to 'Out of disk' error")
-                                .click(button(PAUSE.name()))
-                                .assertPausingStatus()
-                                .ensure(taskWithName(pauseTask), visible)
-                                .click(taskWithName(pauseTask))
-                                .ensure(log(), matchText("\\[WARN] Free disk space 0Kb is not enough for committing.*"))
-                                .waitForPauseButton()
-                                .shouldHaveStatus(LogAO.Status.WORKING)
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .execute("rm test.big && fallocate -l 10G test2.big")
-                                                .sleep(30, SECONDS))
-                                )
-                                .waitForPauseButton()
-                                .clickOnPauseButton()
-                                .click(button(PAUSE.name()))
-                                .assertPausingStatus()
-                                .ensure(taskWithName(pauseTask), visible)
-                                .click(taskWithName(pauseTask))
-                                .ensure(log(), matchText("\\[WARN] Free disk space [0-9\\.]+Kb is not enough for committing.*"))
-                                .waitForPauseButton()
-                                .shouldHaveStatus(LogAO.Status.WORKING)
-                );
+    public void dockerExtraMultiValidation() {
+        try {
+            tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .setLaunchOptions("15", instanceType, null)
+                    .setPriceType(priceType)
+                    .click(START_IDLE)
+                    .launchTool(this, Utils.nameWithoutGroup(tool));
+            loginAsAdminAndPerform(() ->
+                    navigationMenu()
+                            .settings()
+                            .switchToPreferences()
+                            .switchToCluster()
+                            .setDockerExtraMulti("1000")
+                            .saveIfNeeded());
+            runsMenu()
+                    .log(getLastRunId(), log ->
+                            log
+                                    .waitForPauseButton()
+                                    .clickOnPauseButton()
+                                    .validateException("This operation may fail due to 'Out of disk' error")
+                                    .click(button(CANCEL.name()))
+                                    .shouldHaveStatus(LogAO.Status.WORKING)
+                    );
+        } finally {
+            loginAsAdminAndPerform(() ->
+                    navigationMenu()
+                            .settings()
+                            .switchToPreferences()
+                            .switchToCluster()
+                            .setDockerExtraMulti(defaultClusterDockerExtraMulti)
+                            .saveIfNeeded());
+        }
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2632"})
     public void pauseAndResumeRunsPageValidation() {
         tools()
@@ -228,7 +211,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .ensure(SSH_LINK, visible);
     }
 
-    @Test(priority = 99)
+    @Test(priority = 99, enabled = false)
     @TestCase({"EPMCMBIBPC-2636"})
     public void hddExtraMultiValidation() {
         loginAsAdminAndPerform(() ->
@@ -236,35 +219,24 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .settings()
                         .switchToPreferences()
                         .switchToCluster()
-                        .setDockerHddExtraMulti("20")
+                        .setInstanceHddExtraMulti("10")
                         .saveIfNeeded());
 
         tools()
-                .perform(registry, group, tool, tool -> tool
-                        .versions()
-                        .viewUnscannedVersions()
-                        .selectVersion(toolNameTag)
-                        .versionSettings()
-                        .setDisk("15")
-                        .setInstanceType(instanceType)
-                        .setPriceType(priceType)
-                        .setDefaultCommand("sleep infinity")
-                        .save());
-        tools()
-                .perform(registry, group, tool, defaultTool ->
-                        defaultTool.versions()
-                                .viewUnscannedVersions()
-                                .runVersionWithDefaultSettings(this, nameWithoutGroup(tool), toolNameTag)
-                )
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setLaunchOptions("15", instanceType, null)
+                .setPriceType(priceType)
+                .click(START_IDLE)
+                .launchTool(this, Utils.nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
                                                 .waitUntilTextAppears(getLastRunId())
-                                                .execute("head -c 10GB /dev/urandom > test.big")
-                                                .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
-                                                .sleep(5, SECONDS))
+                                                .execute("fallocate -l 15G test.big")
+                                                .sleep(10, SECONDS))
                                 )
+                                .sleep(30, SECONDS)
                                 .waitForPauseButton()
                                 .pause(getToolName())
                                 .assertPausingFinishedSuccessfully()
@@ -274,9 +246,6 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .ensure(log(), matchText("Temporary container was successfully committed"))
                                 .ensure(log(), matchText("Docker container logs were successfully retrieved."))
                                 .ensure(log(), matchText("Docker service was successfully stopped"))
-                                .ensure(taskWithName(filesystemAutoscalingTask), visible)
-                                .click(tabWithName(filesystemAutoscalingTask))
-                                .waitForLog("Filesystem .* was autoscaled .*")
                                 .resume(getToolName())
                                 .assertResumingFinishedSuccessfully()
                                 .inAnotherTab(logTab -> logTab
@@ -289,7 +258,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(priority = 100, enabled = false)
+    @Test(priority = 100)
     @TestCase({"EPMCMBIBPC-2626"})
     public void pauseAndResumeEndpointValidation() {
         endpoint = tools()

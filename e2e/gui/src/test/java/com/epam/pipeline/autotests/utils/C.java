@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,6 @@ public class C {
         DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
         TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
         ANOTHER_CLOUD_REGION = conf.getProperty("e2e.ui.another.cloud.region");
-        TESTING_TOOL_NAME_TAG = conf.getProperty("e2e.ui.testing.tool.tag");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -121,7 +120,6 @@ public class C {
     public static final String TESTING_TOOL_NAME;
     public static final String TOOL_WITHOUT_DEFAULT_SETTINGS;
     public static final String ANOTHER_TESTING_TOOL_NAME;
-    public static final String TESTING_TOOL_NAME_TAG;
 
     public static final String REGISTRY_PATH_FOR_TOOL;
     public static final String INVALID_REGISTRY_PATH_FOR_TOOL;
