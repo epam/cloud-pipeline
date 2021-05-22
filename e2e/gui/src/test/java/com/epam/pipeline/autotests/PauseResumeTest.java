@@ -155,7 +155,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2627"})
     public void forbiddenPauseValidation() {
         loginAsAdminAndPerform(() ->
@@ -236,7 +236,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .settings()
                         .switchToPreferences()
                         .switchToCluster()
-                        .setDockerHddExtraMulti("10")
+                        .setDockerHddExtraMulti("20")
                         .saveIfNeeded());
 
         tools()
