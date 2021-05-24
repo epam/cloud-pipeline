@@ -318,6 +318,12 @@ export default class Metadata extends React.Component {
               return;
             }
           }
+          if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
+            this._classEntity = {
+              id: this.metadataRequest.value.elements[0].classEntity.id,
+              name: this.metadataRequest.value.elements[0].classEntity.name
+            };
+          }
           this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
             v.data = v.data || {};
             v.data.rowKey = {
@@ -521,6 +527,12 @@ export default class Metadata extends React.Component {
     if (selectedItem) {
       const index = selectedItems.indexOf(selectedItem);
       selectedItems.splice(index, 1);
+      if (selectedItems.length === 0) {
+        this.setState(
+          {selectedItemsAreShowing: false},
+          () => this.paginationOnChange(FIRST_PAGE)
+        );
+      }
     } else {
       selectedItems.push(item);
     }
@@ -793,9 +805,30 @@ export default class Metadata extends React.Component {
       ...((this.metadataRequest.value && this.metadataRequest.value.elements) || []),
       this.externalMetadataEntity
     ];
-    const [currentItem] = this.state.selectedItem && this.state.selectedItem.rowKey
+    let [currentItem] = this.state.selectedItem && this.state.selectedItem.rowKey
       ? allMetadata.filter(metadata => metadata.id === this.state.selectedItem.rowKey.value)
       : [];
+    if (
+      this.state.selectedItemsAreShowing &&
+      this.state.selectedItem &&
+      this.state.selectedItem.rowKey
+    ) {
+      [currentItem] = this.state.selectedItems
+        .filter(item => item.rowKey.value === this.state.selectedItem.rowKey.value)
+        .map(item => {
+          item = {
+            data: {...item},
+            classEntity: {...this._classEntity},
+            createdDate: item.createdDate.value,
+            externalId: item.ID.value,
+            id: item.rowKey.value,
+            parent: {
+              id: this.state.filterModel.folderId
+            }
+          };
+          return item;
+        });
+    }
 
     return (
       <ContentMetadataPanel
@@ -828,6 +861,14 @@ export default class Metadata extends React.Component {
               const [selectedItem] =
                 this._currentMetadata
                   .filter(metadata => metadata.rowKey.value === currentItem.id);
+              if (this.state.selectedItems && this.state.selectedItems.length) {
+                const selectedItems = [...this.state.selectedItems];
+                selectedItems.map(item => {
+                  item = item.rowKey.value === currentItem.id ? currentItem.data : item;
+                  return item;
+                });
+                this.setState({selectedItems: [...selectedItems]});
+              }
               this.setState({selectedItem: selectedItem});
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
