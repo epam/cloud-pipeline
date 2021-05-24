@@ -459,6 +459,10 @@ export default class Metadata extends React.Component {
         const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
         this.setState({selectedColumns: [...this.state.selectedColumns, ...addedColumns]});
       }
+      if (this.defaultColumns && this.defaultColumns.length === newColumns.length) {
+        this.setState({selectedColumns: [...newColumns]});
+      }
+
       this.defaultColumns = this.columns = newColumns;
     }
   };
@@ -862,10 +866,8 @@ export default class Metadata extends React.Component {
                 this._currentMetadata
                   .filter(metadata => metadata.rowKey.value === currentItem.id);
               if (this.state.selectedItems && this.state.selectedItems.length) {
-                const selectedItems = [...this.state.selectedItems];
-                selectedItems.map(item => {
-                  item = item.rowKey.value === currentItem.id ? currentItem.data : item;
-                  return item;
+                const selectedItems = this.state.selectedItems.map(item => {
+                  return item.rowKey.value === currentItem.id ? selectedItem : item;
                 });
                 this.setState({selectedItems: [...selectedItems]});
               }
@@ -1300,6 +1302,7 @@ export default class Metadata extends React.Component {
         this.setState({
           selectedItem: null,
           selectedItems: [],
+          selectedItemsAreShowing: false,
           filterModel: {
             filters: [],
             folderId: parseInt(nextProps.folderId),
