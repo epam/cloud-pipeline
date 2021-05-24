@@ -345,13 +345,13 @@ public class GitManager {
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_FOLDER_NAME, folderName));
         Pipeline pipeline = pipelineManager.load(id, true);
         if (folderVO.getPreviousPath() == null) {
-            // Previous path is missing: creating update
+            // Previous path is missing: creating folder
             return createFolder(pipeline,
                     folderVO.getPath(),
                     folderVO.getLastCommitId(),
                     folderVO.getComment());
         } else {
-            // else: renaming update
+            // else: renaming folder
             return renameFolder(pipeline,
                     folderVO.getPreviousPath(),
                     folderVO.getPath(),
@@ -366,6 +366,8 @@ public class GitManager {
                                        String commitMessage) throws GitClientException {
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
+        Assert.isTrue(!folderExists(pipeline, folder),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, folder));
         if (commitMessage == null) {
             commitMessage = String.format("Creating folder %s", folder);
         }
@@ -575,6 +577,16 @@ public class GitManager {
         if (StringUtils.isNullOrEmpty(commitMessage)) {
             commitMessage = String.format("Renaming %s to %s", filePreviousPath, filePath);
         }
+
+        boolean fileExists = false;
+        try {
+            fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
+        } catch (UnexpectedResponseStatusException exception) {
+            LOGGER.debug(exception.getMessage(), exception);
+        }
+
+        Assert.isTrue(!fileExists,
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, filePath));
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(commitMessage);

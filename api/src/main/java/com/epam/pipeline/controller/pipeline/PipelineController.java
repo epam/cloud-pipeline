@@ -377,8 +377,8 @@ public class PipelineController extends AbstractRestController {
     @RequestMapping(value = "/pipeline/{id}/folder", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Creates or renames pipeline update.",
-            notes = "Creates or renames pipeline update.",
+            value = "Creates or renames pipeline folder.",
+            notes = "Creates or renames pipeline folder.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)

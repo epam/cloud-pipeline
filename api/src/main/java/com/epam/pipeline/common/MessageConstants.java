@@ -266,6 +266,7 @@ public final class MessageConstants {
     public static final String ERROR_REPOSITORY_FOLDER_NOT_FOUND = "error.repository.folder.not.found";
     public static final String ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS =
             "error.repository.folder.already.exists";
+    public static final String ERROR_REPOSITORY_FILE_ALREADY_EXISTS = "error.repository.file.already.exists";
     public static final String ERROR_REPOSITORY_ROOT_FOLDER_CANNOT_BE_REMOVED =
             "error.repository.root.folder.cannot.be.removed";
     public static final String ERROR_REPOSITORY_FOLDER_CANNOT_BE_REMOVED =
