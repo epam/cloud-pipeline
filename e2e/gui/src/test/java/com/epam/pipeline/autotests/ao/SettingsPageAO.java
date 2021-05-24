@@ -1096,33 +1096,29 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class ClusterTabAO extends PreferencesAO {
 
+            private final By dockerExtraMulti = getByClusterField("cluster.docker.extra_multi");
+            private final By instanceHddExtraMulti = getByClusterField("cluster.instance.extra_multi");
+
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
             }
 
-            private By clusterHddExtraMulti() {
-                return new By() {
-                    @Override
-                    public List<WebElement> findElements(final SearchContext context) {
-                        return $$(byClassName("preference-group__preference-row"))
-                                .stream()
-                                .filter(element -> text("cluster.instance.hdd_extra_multi").apply(element))
-                                .map(e -> e.find(".ant-input-sm"))
-                                .collect(toList());
-                    }
-                };
-            }
-
-            public PreferencesAO setClusterHddExtraMulti(final String value) {
-                final By clusterHddExtraMultiValue = clusterHddExtraMulti();
-                click(clusterHddExtraMultiValue);
-                clear(clusterHddExtraMultiValue);
-                setValue(clusterHddExtraMultiValue, value);
+            public PreferencesAO setDockerExtraMulti(final String value) {
+                setByVariable(value, dockerExtraMulti);
                 return this;
             }
 
-            public String getClusterHddExtraMulti() {
-                return $(clusterHddExtraMulti()).getValue();
+            public PreferencesAO setInstanceHddExtraMulti(final String value) {
+                setByVariable(value, instanceHddExtraMulti);
+                return this;
+            }
+
+            public String getDockerExtraMulti() {
+                return getClusterValue(dockerExtraMulti);
+            }
+
+            public String getInstanceHddExtraMulti() {
+                return getClusterValue(instanceHddExtraMulti);
             }
 
             public PreferencesAO setClusterAllowedStringPreference(String mask, String value) {
@@ -1144,10 +1140,18 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             private ClusterTabAO setClusterValue(final String clusterPref, final String value) {
                 By clusterVariable = getByClusterField(clusterPref);
+                setByVariable(value, clusterVariable);
+                return this;
+            }
+
+            private void setByVariable(final String value, final By clusterVariable) {
                 click(clusterVariable);
                 clear(clusterVariable);
                 setValue(clusterVariable, value);
-                return this;
+            }
+
+            private String getClusterValue(final By clusterVariable) {
+                return $(clusterVariable).getValue();
             }
 
             @Override

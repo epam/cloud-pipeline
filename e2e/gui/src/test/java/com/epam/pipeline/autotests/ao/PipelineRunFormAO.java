@@ -72,7 +72,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
             entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
-            entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
+            entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
+            entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -83,6 +84,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     @Deprecated
     public PipelineRunFormAO(final String pipelineName) {
         this.pipelineName = pipelineName;
+        ensure(LAUNCH_COMMANDS, appears, enabled);
         expandTab(EXEC_ENVIRONMENT);
         expandTab(ADVANCED_PANEL);
         expandTab(PARAMETERS_PANEL);
