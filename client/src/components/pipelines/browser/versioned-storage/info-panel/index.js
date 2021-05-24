@@ -152,9 +152,12 @@ class InfoPanel extends localization.LocalizedReactComponent {
         try {
           const content = atob(result);
           // eslint-disable-next-line
-          const binary = /[\x00-\x09\x0E-\x1F]/.test(content);
+          const isBinary = o => /[\x00-\x08\x0B-\x0C\x0E-\x1F]/.test(o);
+          const binary = isBinary(content);
           const parseAsTabular = Papa.parse(content);
-          const isTabular = parseAsTabular.errors.length === 0;
+          const isTabular = !binary &&
+            parseAsTabular.errors.length === 0 &&
+            !parseAsTabular.data.find(item => item.find(isBinary));
           this.setState({
             fileContent: binary ? undefined : content,
             binaryFile: !isTabular && binary,
