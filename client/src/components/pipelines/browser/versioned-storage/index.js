@@ -865,6 +865,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
               onDeleteDocument={this.onDeleteDocument}
               onRenameDocument={this.openRenameDocumentDialog}
               onDownloadFile={this.downloadSingleFile}
+              onNavigate={this.navigate}
               pipelineId={pipelineId}
               path={path}
               afterUpload={this.afterUpload}
