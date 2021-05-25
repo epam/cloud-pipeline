@@ -147,7 +147,7 @@ if __name__ == '__main__':
     logging.info('Preparing for SSH connections to the node...')
     run = api.load_run_efficiently(run_id)
     node_ip = os.environ['NODE_IP'] = run.get('instance', {}).get('nodeIP', '')
-    node_ssh = HostSSH(host=node_ip, private_key_path=node_private_key_path)
+    node_ssh = HostSSH(host=node_ip, private_key_path=node_private_key_path, logger=api_logger)
 
     logging.info('Installing pipe common on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -m pip install -q {common_repo_dir}',
@@ -161,16 +161,19 @@ if __name__ == '__main__':
                      user=node_owner)
 
     if requires_cloud_data:
-        logging.info('Downloading Cloud-Data App...')
+        install_cloud_data_task = 'InstallCloudData'
+        api_logger.info('Installing Cloud-Data application...', task=install_cloud_data_task)
+        api_logger.info('Downloading Cloud-Data App...', task=install_cloud_data_task)
         _download_file(cloud_data_distribution_url, os.path.join(run_dir, 'cloud-data.zip'))
 
-        logging.info('Unpacking Cloud-Data App...')
+        api_logger.info('Unpacking Cloud-Data App...', task=install_cloud_data_task)
         _extract_archive(os.path.join(run_dir, 'cloud-data.zip'), run_dir)
 
-        logging.info('Configuring Cloud-Data App on the node...')
+        api_logger.info('Configuring Cloud-Data App on the node...', task=install_cloud_data_task)
         node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_cloud_data_win import configure_cloud_data_win; '
                          f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\', \'{node_owner}\', \'{owner}\', \'{api_token}\')\\"',
-                         user=node_owner)
+                         output_task=install_cloud_data_task, user=node_owner)
+        api_logger.success('Cloud-Data installed and configured successfully!', task=install_cloud_data_task)
 
     logging.info('Configuring owner account on the node...')
     node_ssh.execute(f'AddUser -UserName {owner} -UserPassword {owner_password}',
@@ -188,20 +191,22 @@ if __name__ == '__main__':
                           f'{node_ip}"')
 
     if requires_drive_mount:
-        logging.info('Adding EDGE root certificate to trusted...')
+        drive_mapping_task = 'NetworkStorageMapping'
+        api_logger.info('Adding EDGE root certificate to trusted...', task=drive_mapping_task)
         edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
         from urllib.parse import urlparse
         edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
         node_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.pki import save_root_cert;'
                          f' save_root_cert(\'{edge_host}\', {edge_port}, \'{edge_root_cert_path}\')\\"',
-                         user=node_owner)
+                         output_task=drive_mapping_task, user=node_owner)
         node_ssh.execute(f'ImportCertificate -FilePath "\'{edge_root_cert_path}\'"'
                          f' -CertStoreLocation Cert:\\\\LocalMachine\\\\Root',
-                         user=node_owner)
-        logging.info('Updating registry variables...')
-        node_ssh.execute(f'InitializeEnvironmentToMountDrive | Out-Null', user=node_owner)
+                         output_task=drive_mapping_task, user=node_owner)
+        api_logger.info('Preparing environment for storage mapping...', task=drive_mapping_task)
+        node_ssh.execute(f'InitializeEnvironmentToMountDrive | Out-Null',
+                         output_task=drive_mapping_task, user=node_owner)
 
-        logging.info('Scheduling WebDAV mapping task...')
+        api_logger.info('Mapping network storage...', task=drive_mapping_task)
         mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
         node_ssh.execute(f'RegisterMountingTask -UserName \\"{owner}\\"'
                          f' -BearerToken \\"{api_token}\\"'
@@ -209,7 +214,8 @@ if __name__ == '__main__':
                          f' -EdgePort \\"{edge_port}\\"'
                          f' -MountingScript \\"{mounting_script_path}\\"'
                          f' | Out-Null',
-                         user=node_owner)
+                         output_task=drive_mapping_task, user=node_owner)
+        api_logger.success('Drive mapping performed successfully!', task=drive_mapping_task)
 
     api_logger.success('Environment initialization finished', task='InitializeEnvironment')
 
