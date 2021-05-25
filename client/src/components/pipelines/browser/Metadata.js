@@ -1032,13 +1032,22 @@ export default class Metadata extends React.Component {
               {
                 this.state.selectedItems &&
                 this.state.selectedItems.length > 0 &&
-                <a onClick={() => this.handleClickShowSelectedItems()}>{
-                  this.state.selectedItemsAreShowing
-                    ? 'Revert the previous view'
-                    : `Show 
-                      ${this.state.selectedItems ? this.state.selectedItems.length : 0}
-                      selected item${this.state.selectedItems.length > 1 ? 's' : ''}`
-                }</a>
+                <div>
+                  {
+                    this.state.selectedItemsAreShowing
+                      ? `Currently viewing only
+                        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
+                        selected item${this.state.selectedItems.length > 1 ? 's' : ''}. `
+                      : null
+                  }
+                  <a onClick={() => this.handleClickShowSelectedItems()}>{
+                    this.state.selectedItemsAreShowing
+                      ? 'Revert the previous view'
+                      : `Show
+                        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
+                        selected item${this.state.selectedItems.length > 1 ? 's' : ''}`}
+                  </a>
+                </div>
               }
             </Col>
             <Col>
