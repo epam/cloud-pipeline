@@ -22,20 +22,29 @@ class SSHError(RuntimeError):
 
 class HostSSH:
 
-    def __init__(self, host, private_key_path):
+    def __init__(self, host, private_key_path, logger=None):
         self._host = host
         self._private_key_path = private_key_path
+        self._logger = logger
 
-    def execute(self, command, user):
+    def execute(self, command, user, output_task=None):
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
         client.connect(self._host, username=user, key_filename=self._private_key_path)
         _, stdout, stderr = client.exec_command(command)
         exit_code = stdout.channel.recv_exit_status()
         for line in stdout:
-            logging.info(line.strip('\n'))
+            stripped_line = line.strip('\n')
+            if output_task and self._logger:
+                self._logger.info(stripped_line, output_task)
+            else:
+                logging.info(stripped_line)
         for line in stderr:
-            logging.warning(line.strip('\n'))
+            stripped_line = line.strip('\n')
+            if output_task and self._logger:
+                self._logger.warn(stripped_line, output_task)
+            else:
+                logging.warning(stripped_line)
         if exit_code != 0:
             raise SSHError('Command has exited with ' + exit_code)
         client.close()
