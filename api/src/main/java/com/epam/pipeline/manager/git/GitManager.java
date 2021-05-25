@@ -935,6 +935,20 @@ public class GitManager {
         ));
     }
 
+    public GitReaderObject lsTreeRepositoryObject(Long id, String version, String path) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        final GitReaderEntryListing<GitReaderObject> listing =
+                callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
+                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, 0L, 1
+                ));
+        if (CollectionUtils.isNotEmpty(listing.getListing())) {
+            return listing.getListing().get(0);
+        }
+        throw new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_PATH_DOESNT_EXIST, path)
+        );
+    }
+
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
                                                                                         final String version,
                                                                                         final String path,
