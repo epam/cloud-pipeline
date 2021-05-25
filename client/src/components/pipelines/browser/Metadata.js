@@ -759,7 +759,8 @@ export default class Metadata extends React.Component {
                 <span>{'\u00A0'}</span>
               </div>
           }
-          showPagination={false} />,
+          showPagination={false}
+          NoDataComponent={() => <div className={`${styles.noData}`}>No rows found</div>} />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10}}>
           <Pagination
             size="small"
