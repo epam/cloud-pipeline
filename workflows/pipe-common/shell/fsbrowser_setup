@@ -76,3 +76,15 @@ env SSL_CERT_DIR="$_SSL_CERT_DIR" nohup fsbrowser --host 0.0.0.0 \
                 --tmp_directory "${CP_FSBROWSER_TMP}" \
                 --exclude "${CP_FSBROWSER_BLACK_LIST}" \
                 --transfer_storage "${CP_FSBROWSER_STORAGE}" > /var/log/fsbrowser.log 2>&1 &
+_fsbfowser_launch_exit_code=$?
+if [ $_fsbfowser_launch_exit_code -eq 0 ] && [ -n "$PIPELINE_ID" ]; then
+    _pipeline_type="$(curl -k \
+                               -s \
+                               -X GET \
+                               -H "Authorization: Bearer ${API_TOKEN}" \
+                               "${API}pipeline/$PIPELINE_ID/load" | \
+                                  jq -r '.payload.pipelineType//""')"
+    if [ "$_pipeline_type" = 'VERSIONED_STORAGE' ]; then
+      clone_git_repo "$CP_FSBROWSER_VS_WD/$PIPELINE_ID"
+    fi
+fi
