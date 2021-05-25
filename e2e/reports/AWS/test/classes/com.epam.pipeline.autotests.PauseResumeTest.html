@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h13m25.93s</div>
+<div class="counter">52m48.24s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">75%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,73 +61,16 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
+<a href="#tab1">Standard output</a>
 </li>
 <li>
-<a href="#tab2">Standard output</a>
-</li>
-<li>
-<a href="#tab3">Standard error</a>
+<a href="#tab2">Standard error</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="hddExtraMultiValidation - EPMCMBIBPC-2636"></a>
-<h3 class="failures">hddExtraMultiValidation - EPMCMBIBPC-2636</h3>
-<span class="code">
-<pre>Element not found {By.tagName: a.findBy(exact text 'RESUME')}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1621847121288.57.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1621847121288.57.html
-Timeout: 1200 s.
-Caused by: Element not found {By.tagName: a.findBy(exact text 'RESUME')}
-Expected: exact text 'RESUME'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.waitForResumeButton(LogAO.java:193)
-	at com.epam.pipeline.autotests.ao.LogAO.assertPausingFinishedSuccessfully(LogAO.java:185)
-	at com.epam.pipeline.autotests.PauseResumeTest.lambda$hddExtraMultiValidation$24(PauseResumeTest.java:256)
-	at com.epam.pipeline.autotests.ao.RunsMenuAO.log(RunsMenuAO.java:145)
-	at com.epam.pipeline.autotests.PauseResumeTest.hddExtraMultiValidation(PauseResumeTest.java:245)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {By.tagName: a.findBy(exact text 'RESUME')}
-Expected: exact text 'RESUME'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 25 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -138,68 +81,67 @@ Timeout: 0 ms.
 </tr>
 </thead>
 <tr>
-<td class="failures">hddExtraMultiValidation - EPMCMBIBPC-2636</td>
-<td>25m40.07s</td>
-<td class="failures">failed</td>
+<td class="success">dockerExtraMultiValidation - EPMCMBIBPC-2627</td>
+<td>4m27.64s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pauseAndResumeEndpointValidation - EPMCMBIBPC-2626</td>
-<td>28m0.24s</td>
+<td>29m1.79s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pauseAndResumeRunsPageValidation - EPMCMBIBPC-2632</td>
-<td>9m33.80s</td>
+<td>8m38.37s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pauseAndResumeValidation - EPMCMBIBPC-2309</td>
-<td>10m11.82s</td>
+<td>10m40.43s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 71051 from [71051]
-Returns latest run with runId 71051 from [71051]
-Returns latest run with runId 71051 from [71051]
-Returns latest run with runId 71051 from [71051]
-Returns latest run with runId 71051 from [71051]
-Returns latest run with runId 71051 from [71051]
-Returns latest run with runId 71051 from [71051]
-Returns latest run with runId 71052 from [71051, 71052]
-Returns latest run with runId 71052 from [71051, 71052]
-Returns latest run with runId 71053 from [71051, 71052, 71053]
-Returns latest run with runId 71053 from [71051, 71052, 71053]
-Returns latest run with runId 71054 from [71051, 71052, 71053, 71054]
-Returns latest run with runId 71054 from [71051, 71052, 71053, 71054]
-Returns latest run with runId 71054 from [71051, 71052, 71053, 71054]
+<pre>Returns latest run with runId 71219 from [71219]
+Returns latest run with runId 71220 from [71219, 71220]
+Returns latest run with runId 71220 from [71219, 71220]
+Returns latest run with runId 71220 from [71219, 71220]
+Returns latest run with runId 71220 from [71219, 71220]
+Returns latest run with runId 71220 from [71219, 71220]
+Returns latest run with runId 71220 from [71219, 71220]
+Returns latest run with runId 71220 from [71219, 71220]
+Returns latest run with runId 71221 from [71219, 71220, 71221]
+Returns latest run with runId 71221 from [71219, 71220, 71221]
+Returns latest run with runId 71222 from [71219, 71220, 71221, 71222]
+Returns latest run with runId 71222 from [71219, 71220, 71221, 71222]
+Returns latest run with runId 71222 from [71219, 71220, 71221, 71222]
 </pre>
 </span>
 </div>
-<div id="tab3" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>May 24, 2021 9:12:23 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 605 -&gt; ChromeDriver: chrome on LINUX (0b1d41ebae1119b8fb1ac77b040bf5ac)
-May 24, 2021 9:12:23 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>May 25, 2021 8:35:49 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 604 -&gt; ChromeDriver: chrome on LINUX (7e9bff3900505b6ac73f685cf1010561)
+May 25, 2021 8:35:49 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-May 24, 2021 9:12:23 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 90 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 28372
+May 25, 2021 8:35:49 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 89 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 8064
 Only local connections are allowed.
-May 24, 2021 9:12:24 AM org.openqa.selenium.remote.ProtocolHandshake createSession
+May 25, 2021 8:35:50 AM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-May 24, 2021 9:12:24 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+May 25, 2021 8:35:50 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-May 24, 2021 9:12:24 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+May 25, 2021 8:35:50 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-May 24, 2021 9:12:24 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+May 25, 2021 8:35:50 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-May 24, 2021 9:12:24 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 605: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (981f724b6bbb3c106f89257a067adc02)
+May 25, 2021 8:35:50 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 604: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (9847fa842ecaa2eafacdb2b4c9afa7e9)
 </pre>
 </span>
 </div>
@@ -211,7 +153,7 @@ INFO: Create webdriver in current thread 605: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 24, 2021 3:34:23 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 25, 2021 2:28:30 PM</p>
 </div>
 </div>
 </body>
