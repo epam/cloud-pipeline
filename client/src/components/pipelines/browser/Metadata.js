@@ -502,6 +502,10 @@ export default class Metadata extends React.Component {
   };
 
   onSearchQueriesChanged = async () => {
+    this.setState(
+      {selectedItemsAreShowing: false},
+      () => this.paginationOnChange(FIRST_PAGE)
+    );
     await this.loadData(this.state.filterModel);
   };
 
@@ -1035,7 +1039,7 @@ export default class Metadata extends React.Component {
                 <div>
                   {
                     this.state.selectedItemsAreShowing
-                      ? `Currently viewing only
+                      ? `Currently viewing
                         ${this.state.selectedItems ? this.state.selectedItems.length : 0}
                         selected item${this.state.selectedItems.length > 1 ? 's' : ''}. `
                       : null
