@@ -87,19 +87,11 @@ function getColumnTitle (key) {
   }
   return key;
 }
-function getMinDate (dataArray) {
-  if (dataArray.length) {
-    const dates = dataArray.map(obj => (new Date(obj.createdDate.value)));
-    const [minDate] = dates.sort((a, b) => a - b);
-    return minDate.toString();
-  }
+function getFromDate (key) {
+  return '';
 }
-function getMaxDate (dataArray) {
-  if (dataArray.length) {
-    const dates = dataArray.map(obj => (new Date(obj.createdDate.value)));
-    const [maxDate] = dates.sort((a, b) => b - a);
-    return maxDate.toString();
-  }
+function getToDate (key) {
+  return '';
 }
 
 @connect({
@@ -143,6 +135,7 @@ export default class Metadata extends React.Component {
   columns = [];
   defaultColumns = [];
   @observable keys;
+  dateKeys = [];
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -325,13 +318,13 @@ export default class Metadata extends React.Component {
     } else {
       if (this.metadataRequest.value) {
         this._totalCount = this.metadataRequest.value.totalCount;
-        if (!this.state.filterModel.searchQueries.length) {
-          const parentFolderId = this.props.folderId;
-          if (this._totalCount <= 0) {
-            this.props.router.push(`/folder/${parentFolderId}`);
-            return;
-          }
-        }
+        // if (!this.state.filterModel.searchQueries.length) {
+        //   const parentFolderId = this.props.folderId;
+        //   if (this._totalCount <= 0) {
+        //     this.props.router.push(`/folder/${parentFolderId}`);
+        //     return;
+        //   }
+        // }
         this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
           v.data = v.data || {};
           v.data.rowKey = {
@@ -922,7 +915,7 @@ export default class Metadata extends React.Component {
   };
 
   get tableColumns () {
-    const onHeaderClicked = (key, e) => {
+    const onHeaderClicked = (e, key) => {
       if (e) {
         e.stopPropagation();
       }
@@ -935,20 +928,31 @@ export default class Metadata extends React.Component {
         this.onOrderByChanged(key);
       }
     };
-    const onDateRangeChanged = (range) => {
+    const onDateRangeChanged = async (range, key) => {
       let filterModel = {...this.state.filterModel};
       if (range && range.from.trim() && range.to.trim()) {
         const {from, to} = range;
         // here should be another format for filter value (according to api)
-        filterModel.filters.push({key: 'createdDate', value: `from:${from},to:${to}`});
+        filterModel.filters.push({key, value: `${from}:${to}`});
       } else {
         // reset filter settings
-        filterModel.filters = filterModel.filters.filter(filter => filter.key !== 'createdDate');
+        filterModel.filters = filterModel.filters.filter(filter => filter.key !== key);
       }
-      this.setState({filterModel});
+      await this.setState({filterModel});
       this.loadData(this.state.filterModel);
+      this.forceUpdate();
     };
     const renderTitle = (key) => {
+      this._currentMetadata
+        .forEach((obj) => {
+          if (obj[key] && obj[key].type === 'date' && !this.dateKeys.includes(key)) {
+            this.dateKeys.push(key);
+          }
+        });
+      const dateFiltersApplied = () => {
+        return this.state.filterModel.filters
+          .filter(filterObj => this.dateKeys.includes(filterObj.key));
+      };
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       let icon;
       if (orderBy) {
@@ -960,15 +964,28 @@ export default class Metadata extends React.Component {
       }
       return (
         <span
-          onClick={(e) => onHeaderClicked(key)}
+          onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
           {icon}{getColumnTitle(key)}
-          {(key === 'createdDate') ? (
-            <RangeDatePicker
-              from={getMinDate(this._currentMetadata) || ''}
-              to={getMaxDate(this._currentMetadata) || ''}
-              onChange={onDateRangeChanged}
-            />) : null
+          {(this.dateKeys.includes(key)) ? (
+            <Button
+              shape="circle"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                marginLeft: 5,
+                border: 'none',
+                color: (
+                  dateFiltersApplied()
+                    .filter(obj => obj.key === key)).length
+                  ? '#108ee9' : 'grey'
+              }}
+            >
+              <RangeDatePicker
+                from={getFromDate(key)}
+                to={getToDate(key)}
+                onChange={(e) => onDateRangeChanged(e, key)}
+              />
+            </Button>) : null
           }
         </span>
       );
@@ -1032,7 +1049,8 @@ export default class Metadata extends React.Component {
                   COPY
                 </Button>
                 {
-                  this.transferJobId && this.transferJobVersion && this.currentClassEntityPathFields.length > 0 &&
+                  this.transferJobId && this.transferJobVersion &&
+                  this.currentClassEntityPathFields.length > 0 &&
                   <Button
                     key="download_selection"
                     size="small"

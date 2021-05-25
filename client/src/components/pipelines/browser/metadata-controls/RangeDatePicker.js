@@ -6,6 +6,7 @@ import moment from 'moment';
 
 const FULL_DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+const currentDate = toLocalMomentDate(moment().toDate());
 
 function toLocalMomentDate (string) {
   if (!string) {
@@ -27,7 +28,7 @@ class RangeDatePicker extends React.Component {
         dateFrom: toLocalMomentDate(this.props.from),
         dateTo: toLocalMomentDate(this.props.to)
       });
-    }, 500);
+    }, 500); 
   }
     static propTypes = {
       from: PropTypes.string,
@@ -40,8 +41,7 @@ class RangeDatePicker extends React.Component {
       visible: false,
       fromPickerVisible: false,
       toPickerVisible: false,
-      rangeFilterVisible: false,
-      highlightFilter: false
+      rangeFilterVisible: false
     }
 
     disabledStartDate = (startValue) => {
@@ -50,8 +50,7 @@ class RangeDatePicker extends React.Component {
         return false;
       }
       return (
-        startValue > endValue ||
-        startValue < toLocalMomentDate(this.props.from)
+        startValue > endValue
       );
     }
     disabledEndDate = (endValue) => {
@@ -60,8 +59,7 @@ class RangeDatePicker extends React.Component {
         return false;
       }
       return (
-        endValue < startValue ||
-        endValue > toLocalMomentDate(this.props.to)
+        endValue < startValue
       );
     }
     onChange = (field, value) => {
@@ -109,20 +107,18 @@ class RangeDatePicker extends React.Component {
           : undefined
       });
       this.handleRangeFilterVisibility(false);
-      this.setState({
-        highlightFilter: true
-      });
     };
-    resetRange = () => {
+    resetRange = async () => {
       const {onChange} = this.props;
+      await this.setState({
+        dateFrom: null,
+        dateTo: null
+      });
       onChange(null);
       this.handleRangeFilterVisibility(false);
-      this.setState({
-        highlightFilter: false
-      });
     }
     render () {
-      if (this.props.from && this.props.to) {
+      if (this.props.from !== undefined && this.props.to !== undefined) {
         const content = (
           <div style={{display: 'flex', flexDirection: 'column'}}>
             <div style={{display: 'flex', flexDirection: 'column', marginTop: 5}}>
@@ -132,20 +128,27 @@ class RangeDatePicker extends React.Component {
                 disabledDate={this.disabledStartDate}
                 format={DATE_FORMAT}
                 showTime
-                defaultValue={this.state.dateFrom}
+                value={this.state.dateFrom || null}
                 placeholder="from"
                 onChange={this.onStartChange}
                 onOpenChange={this.handleStartOpenChange}
               />
             </div>
-            <div style={{display: 'flex', flexDirection: 'column', marginTop: 5}}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              marginTop: 5,
+              cursor: 'pointer'
+            }}>
               <label htmlFor="to" style={{marginRight: 5, fontWeight: 800}}>To</label>
               <DatePicker
                 id="to"
+                allowClear
                 disabledDate={this.disabledEndDate}
                 showTime
+                defaultValue={currentDate}
                 format={DATE_FORMAT}
-                defaultValue={this.state.dateTo}
+                value={this.state.dateTo || null}
                 placeholder="to"
                 onChange={this.onEndChange}
                 onOpenChange={this.handleEndOpenChange}
@@ -153,7 +156,7 @@ class RangeDatePicker extends React.Component {
             </div>
             <div
               style={{
-                marginTop: 5,
+                marginTop: 10,
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center'
@@ -196,15 +199,12 @@ class RangeDatePicker extends React.Component {
             <Icon
               style={{
                 fontSize: 14,
-                marginLeft: 5,
-                color: this.state.highlightFilter ? 'blue' : 'grey'
+                pointerEvents: 'auto'
               }}
               type="filter"
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={() => {
                 this.setState({
-                  rangeFilterVisible: true,
-                  highlightFilter: true
+                  rangeFilterVisible: true
                 });
               }}
             />
