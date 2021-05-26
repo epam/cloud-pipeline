@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
@@ -34,9 +35,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -261,9 +265,9 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         data.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
 
         MetadataEntity entity1 = ObjectCreatorUtils.createMetadataEntity(folder, metadataClass, TEST_ENTITY_NAME_1,
-                EXTERNAL_ID_1, data);
+                EXTERNAL_ID_1, data, DateUtils.now());
         MetadataEntity entity2 = ObjectCreatorUtils.createMetadataEntity(folder, metadataClass, TEST_ENTITY_NAME_1,
-                EXTERNAL_ID_2, data);
+                EXTERNAL_ID_2, data, DateUtils.now());
         Collection<MetadataEntity> result =
                 metadataEntityDao.batchInsert(Arrays.asList(entity1, entity2));
         Assert.assertTrue(result.stream().allMatch(e -> e.getId() != null));
@@ -406,9 +410,35 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataFilter searchByExternalId = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(), Collections.emptyList(),
                 Collections.singletonList(new MetadataFilter.OrderBy("id", false)),
-                false, Collections.singletonList(EXTERNAL_ID_1));
+                false, Collections.singletonList(EXTERNAL_ID_1), null, null);
         checkFilterRequest(searchByExternalId, Collections.singletonList(folder1Sample1));
+    }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testDateFilter() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+        LocalDate date1 = LocalDate.now();
+        LocalDate date2 = LocalDate.now().minusDays(1);
+        MetadataEntity folder1Sample1 = ObjectCreatorUtils.createMetadataEntity(folder1, metadataClass1,
+                TEST_ENTITY_NAME_1, EXTERNAL_ID_1, new HashMap<>(),
+                Date.from(date1.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        metadataEntityDao.createMetadataEntity(folder1Sample1);
+        MetadataEntity folder1Sample2 = ObjectCreatorUtils.createMetadataEntity(folder1, metadataClass1,
+                TEST_ENTITY_NAME_1, EXTERNAL_ID_2, new HashMap<>(),
+                Date.from(date2.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        metadataEntityDao.createMetadataEntity(folder1Sample2);
+
+        MetadataFilter filterByDate = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false,
+                Collections.emptyList(), date1, date1.plusDays(1));
+        MetadataFilter filterByDate2 = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false,
+                Collections.emptyList(), date2, date1);
+
+        checkFilterRequest(filterByDate, Collections.singletonList(folder1Sample1));
+        checkFilterRequest(filterByDate2, Arrays.asList(folder1Sample1, folder1Sample2));
     }
 
     @Test
@@ -557,12 +587,14 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
     private MetadataFilter createFilter(Long folderId, String className,
             List<String> searchQueries, List<MetadataFilter.FilterQuery> filters,
             List<MetadataFilter.OrderBy> sorting, boolean recursive) {
-        return createFilter(folderId, className, searchQueries, filters, sorting, recursive, null);
+        return createFilter(folderId, className, searchQueries, filters, sorting, recursive, null, null, null);
     }
 
     private MetadataFilter createFilter(Long folderId, String className,
-            List<String> searchQueries, List<MetadataFilter.FilterQuery> filters,
-            List<MetadataFilter.OrderBy> sorting, boolean recursive, List<String> externalIds) {
+                                        List<String> searchQueries, List<MetadataFilter.FilterQuery> filters,
+                                        List<MetadataFilter.OrderBy> sorting, boolean recursive,
+                                        List<String> externalIds, LocalDate startDateFrom,
+                                        LocalDate endDateTo) {
         MetadataFilter filter = new MetadataFilter();
         filter.setFolderId(folderId);
         filter.setMetadataClass(className);
@@ -573,6 +605,8 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         filter.setOrderBy(sorting);
         filter.setSearchQueries(searchQueries);
         filter.setExternalIdQueries(externalIds);
+        filter.setStartDateFrom(startDateFrom);
+        filter.setEndDateTo(endDateTo);
         return filter;
     }
 
@@ -593,7 +627,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
             String externalId, Map<String, PipeConfValue> data) {
 
         MetadataEntity metadataEntity = ObjectCreatorUtils.createMetadataEntity(folder, metadataClass,
-                TEST_ENTITY_NAME_1, externalId, data);
+                TEST_ENTITY_NAME_1, externalId, data, DateUtils.now());
         metadataEntityDao.createMetadataEntity(metadataEntity);
         return metadataEntity;
     }

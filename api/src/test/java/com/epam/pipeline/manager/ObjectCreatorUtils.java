@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,13 +213,15 @@ public final class ObjectCreatorUtils {
     }
 
     public static MetadataEntity createMetadataEntity(Folder folder, MetadataClass metadataClass, String name,
-                                                      String externalId, Map<String, PipeConfValue> data) {
+                                                      String externalId, Map<String, PipeConfValue> data,
+                                                      Date createdDate) {
         MetadataEntity metadataEntity = new MetadataEntity();
         metadataEntity.setName(name);
         metadataEntity.setClassEntity(metadataClass);
         metadataEntity.setExternalId(externalId);
         metadataEntity.setParent(folder);
         metadataEntity.setData(data);
+        metadataEntity.setCreatedDate(createdDate);
         return metadataEntity;
     }
 

@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.metadata;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -57,9 +57,9 @@ public class MetadataFilter {
     @ApiModelProperty(notes = "list string to perform substring insensitive search in external ids")
     private List<String> externalIdQueries;
     @ApiModelProperty(notes = "Start created date to filter for metadata")
-    private Date startDateFrom;
+    private LocalDate startDateFrom;
     @ApiModelProperty(notes = "End created date to filter for metadata")
-    private Date endDateTo;
+    private LocalDate endDateTo;
 
     @Getter
     @Setter
