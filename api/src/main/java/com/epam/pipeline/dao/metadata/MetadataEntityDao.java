@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -331,6 +331,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         addFilterConditions(clause, filter.getFilters());
         addSearchConditions(clause, filter.getSearchQueries());
         addExternalIdsConditions(clause, filter.getExternalIdQueries());
+        addDateConditions(clause, filter);
         return clause.toString();
     }
 
@@ -370,6 +371,25 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                         filter.getValue()));
             }
         });
+    }
+
+    private void addDateConditions(StringBuilder clause, MetadataFilter metadataFilter) {
+        if (metadataFilter.getStartDateFrom() == null && metadataFilter.getEndDateTo() == null) {
+            return;
+        }
+        MetadataField field = MetadataEntityParameters.getFieldNames().get("CREATEDDATE");
+        if (field == null) {
+            return;
+        }
+        if (metadataFilter.getStartDateFrom() != null) {
+
+            clause.append(AND);
+            clause.append(String.format("%s >= '%s'", field.getDbName(), metadataFilter.getStartDateFrom().toString()));
+        }
+        if (metadataFilter.getEndDateTo() != null) {
+            clause.append(AND);
+            clause.append(String.format("%s <= '%s'", field.getDbName(), metadataFilter.getEndDateTo().toString()));
+        }
     }
 
     private String getFieldName(String field) {
