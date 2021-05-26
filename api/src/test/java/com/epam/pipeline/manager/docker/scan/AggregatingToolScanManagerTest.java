@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.preference.Preference;
@@ -262,6 +263,8 @@ public class AggregatingToolScanManagerTest {
         when(compScanService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(
                 new DockerComponentScanResult("test", Arrays.asList(layerScanResult, layerScanResult))));
         when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(new ClairScanResult()));
+        when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
+            .thenReturn(new ToolVersionAttributes());
 
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
 
@@ -272,6 +275,8 @@ public class AggregatingToolScanManagerTest {
 
     @Test
     public void testScanTool() throws ToolScanExternalServiceException {
+        when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
+            .thenReturn(new ToolVersionAttributes());
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
 
         Assert.assertFalse(result.getVulnerabilities().isEmpty());
