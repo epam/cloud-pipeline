@@ -40,8 +40,10 @@ import VersionedStorageListWithInfo
   from '../../../../models/versioned-storage/vs-contents-with-info';
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
 import InfoPanel from './info-panel';
+import LaunchVSForm, {getLaunchingOptions} from './forms/launch-vs-form';
 import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
 import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken';
+import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import CreateItemForm from './forms/create-item-form';
 import EditPipelineForm from '../../version/forms/EditPipelineForm';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
@@ -93,7 +95,7 @@ function filterByRestrictedNames (content = {}) {
 @localization.localizedComponent
 @HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
 @HiddenObjects.injectTreeFilter
-@inject('pipelines', 'folders', 'pipelinesLibrary')
+@inject('pipelines', 'folders', 'pipelinesLibrary', 'preferences', 'awsRegions')
 @inject(({pipelines}, params) => {
   const {location} = params;
   let path;
@@ -121,7 +123,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     pending: false,
     showHistoryPanel: false,
     selectedFile: null,
-    editSelectedFile: false
+    editSelectedFile: false,
+    launchVSFormVisible: false
   };
 
   updateVSRequest = new UpdatePipeline();
@@ -271,6 +274,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   runVersionedStorage = () => {
+    this.openLaunchVSForm();
+  };
+
+  openLaunchVSForm = () => {
+    this.setState({
+      launchVSFormVisible: true
+    });
+  };
+
+  openLaunchVSAdvancedForm = () => {
     const {
       router,
       pipelineId,
@@ -279,6 +292,52 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (router && pipelineId && pipeline.loaded && pipeline.value.currentVersion) {
       router.push(`/launch/${pipelineId}/${pipeline.value.currentVersion.name}/default`);
     }
+  };
+
+  closeLaunchVSForm = () => {
+    this.setState({
+      launchVSFormVisible: false
+    });
+  };
+
+  launchVS = (tool, tag) => {
+    const {
+      awsRegions,
+      preferences,
+      pipeline,
+      pipelineId,
+      router
+    } = this.props;
+    this.closeLaunchVSForm();
+    const hide = message.loading('Launching Versioned Storage...', 0);
+    const {
+      currentVersion = {}
+    } = pipeline.value || {};
+    const request = new PipelineRunner();
+    getLaunchingOptions({awsRegions, preferences}, tool, tag)
+      .then((launchPayload) => {
+        const payload = {
+          ...launchPayload,
+          pipelineId: +pipelineId,
+          version: currentVersion.name
+        };
+        return request.send({...payload, force: true});
+      })
+      .then(() => {
+        if (request.error) {
+          throw new Error(request.error);
+        } else if (request.loaded) {
+          const {id} = request.value;
+          return Promise.resolve(id);
+        }
+      })
+      .catch(e => message.error(e.message, 5))
+      .then((runId) => {
+        hide();
+        if (runId) {
+          router.push(`/run/${runId}`);
+        }
+      });
   };
 
   openHistoryPanelWithFileInfo = (file) => {
@@ -781,7 +840,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       error,
       lastPage,
       page,
-      selectedFile
+      selectedFile,
+      launchVSFormVisible
     } = this.state;
     const {
       editStorageDialog,
@@ -924,6 +984,12 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           showRepositorySettings={false}
         />
         {this.renderEditItemForm()}
+        <LaunchVSForm
+          visible={launchVSFormVisible}
+          onClose={this.closeLaunchVSForm}
+          onLaunch={this.launchVS}
+          onLaunchCustom={this.openLaunchVSAdvancedForm}
+        />
       </div>
     );
   }
