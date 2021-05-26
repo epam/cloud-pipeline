@@ -28,7 +28,7 @@ class RangeDatePicker extends React.Component {
         dateFrom: toLocalMomentDate(this.props.from),
         dateTo: toLocalMomentDate(this.props.to)
       });
-    }, 500); 
+    }, 500);
   }
     static propTypes = {
       from: PropTypes.string,
@@ -55,11 +55,14 @@ class RangeDatePicker extends React.Component {
     }
     disabledEndDate = (endValue) => {
       const startValue = this.state.dateFrom;
-      if (!startValue || !endValue) {
+      if (!startValue) {
+        return endValue > toLocalMomentDate(moment().toDate());
+      } else if (!endValue) {
         return false;
       }
       return (
-        endValue < startValue
+        endValue < startValue ||
+        endValue > currentDate
       );
     }
     onChange = (field, value) => {
@@ -146,7 +149,6 @@ class RangeDatePicker extends React.Component {
                 allowClear
                 disabledDate={this.disabledEndDate}
                 showTime
-                defaultValue={currentDate}
                 format={DATE_FORMAT}
                 value={this.state.dateTo || null}
                 placeholder="to"
@@ -169,7 +171,7 @@ class RangeDatePicker extends React.Component {
               <Button
                 type="primary"
                 onClick={() => this.handleRangeChange()}
-                disabled={!this.state.dateFrom || !this.state.dateTo}
+                disabled={!this.state.dateFrom && !this.state.dateTo}
               >
                 Apply
               </Button>
@@ -198,7 +200,6 @@ class RangeDatePicker extends React.Component {
           >
             <Icon
               style={{
-                fontSize: 14,
                 pointerEvents: 'auto'
               }}
               type="filter"

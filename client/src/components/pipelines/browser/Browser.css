@@ -373,8 +373,6 @@ tr.table-row-selected {
 .metadata-column-header {
   cursor: pointer;
   display: block;
-  height:38px;
-  line-height: 38px;
   text-align: center;
 }
 
