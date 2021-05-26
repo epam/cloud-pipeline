@@ -58,6 +58,7 @@ import Breadcrumbs from '../../special/Breadcrumbs';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
+import FilterControl from './metadata-controls/FilterControl';
 
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
@@ -121,7 +122,6 @@ function getToDate (key) {
 })
 @observer
 export default class Metadata extends React.Component {
-
   static propTypes = {
     onSelectItems: PropTypes.func,
     initialSelection: PropTypes.array,
@@ -930,7 +930,7 @@ export default class Metadata extends React.Component {
     };
     const onDateRangeChanged = async (range, key) => {
       let filterModel = {...this.state.filterModel};
-      if (range && range.from.trim() && range.to.trim()) {
+      if (range) {
         const {from, to} = range;
         // here should be another format for filter value (according to api)
         filterModel.filters.push({key, value: `${from}:${to}`});
@@ -985,7 +985,23 @@ export default class Metadata extends React.Component {
                 to={getToDate(key)}
                 onChange={(e) => onDateRangeChanged(e, key)}
               />
-            </Button>) : null
+            </Button>)
+            : (
+              <Button
+                shape="circle"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  marginLeft: 5,
+                  border: 'none'
+                }}
+              >
+                <FilterControl
+                  columnName={key}
+                  list={this._currentMetadata}
+                  onSearch={(tags) => console.log('onSearch...', tags)}
+                />
+              </Button>
+            )
           }
         </span>
       );
