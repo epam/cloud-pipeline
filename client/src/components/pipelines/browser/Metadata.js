@@ -1338,6 +1338,7 @@ export default class Metadata extends React.Component {
         onOk () {
           leave(nextLocation);
         },
+        onCancel: () => this.props.onReloadTree(false),
         okText: 'Yes',
         cancelText: 'No'
       });
