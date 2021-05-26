@@ -141,6 +141,7 @@ export default class Metadata extends React.Component {
     metadata: false,
     selectedItem: null,
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
+    selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
     selectedColumns: [],
     filterModel: {
@@ -1298,6 +1299,10 @@ export default class Metadata extends React.Component {
   };
 
   componentDidMount () {
+    const {route, router} = this.props;
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.leavePageWithSelectedItems.bind(this));
+    };
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
       this.setState({selectedColumns: [...this.columns]});
@@ -1306,46 +1311,72 @@ export default class Metadata extends React.Component {
     })();
   };
 
+  leavePageWithSelectedItems (nextLocation) {
+    const {router} = this.props;
+    const {selectedItemsCanBeSkipped} = this.state;
+
+    const resetSelectedItemsCanBeSkipped = () => {
+      this.resetSelectedItemsTimeout = setTimeout(
+        () => this.setState && this.setState({selectedItemsCanBeSkipped: false}),
+        0
+      );
+    };
+
+    const leave = nextLocation => {
+      this.setState({selectedItemsCanBeSkipped: true},
+        () => {
+          router.push(nextLocation);
+          resetSelectedItemsCanBeSkipped();
+        }
+      );
+      return true;
+    };
+
+    if (this.state.selectedItems && this.state.selectedItems.length && !selectedItemsCanBeSkipped) {
+      Modal.confirm({
+        title: 'All selected items will be reset. Continue?',
+        onOk () {
+          leave(nextLocation);
+        },
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+      return false;
+    }
+  };
+
+  componentWillUnmount () {
+    this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
+  }
+
   async componentWillReceiveProps (nextProps) {
     if (nextProps.initialSelection) {
       this.setState({selectedItems: nextProps.initialSelection});
     }
     if (nextProps.folderId !== this.props.folderId ||
       nextProps.metadataClass !== this.props.metadataClass) {
-      const reset = async () => {
-        this.setState({
-          selectedItem: null,
-          selectedItems: [],
-          selectedItemsAreShowing: false,
-          filterModel: {
-            filters: [],
-            folderId: parseInt(nextProps.folderId),
-            metadataClass: nextProps.metadataClass,
-            orderBy: [],
-            page: 1,
-            pageSize: PAGE_SIZE,
-            searchQueries: []
-          }
-        });
-        if (nextProps.onSelectItems) {
-          nextProps.onSelectItems(this.state.selectedItems);
+      this.setState({
+        selectedItem: null,
+        selectedItems: [],
+        selectedItemsAreShowing: false,
+        filterModel: {
+          filters: [],
+          folderId: parseInt(nextProps.folderId),
+          metadataClass: nextProps.metadataClass,
+          orderBy: [],
+          page: 1,
+          pageSize: PAGE_SIZE,
+          searchQueries: []
         }
-        this._totalCount = 0;
-        await this.props.entityFields.fetch();
-        await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
-        this.setState({selectedColumns: [...this.columns]});
-        await this.loadData(this.state.filterModel);
+      });
+      if (nextProps.onSelectItems) {
+        nextProps.onSelectItems(this.state.selectedItems);
       }
-      if (this.state.selectedItems && this.state.selectedItems.length) {
-        Modal.confirm({
-          title: 'All selected items will be reset. Continue?',
-          onOk: reset,
-          okText: 'Yes',
-          cancelText: 'No'
-        });
-      } else {
-        reset();
-      }
+      this._totalCount = 0;
+      await this.props.entityFields.fetch();
+      await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
+      this.setState({selectedColumns: [...this.columns]});
+      await this.loadData(this.state.filterModel);
     }
     if (nextProps.folderId !== this.props.folderId) {
       await this.loadCurrentProject();
