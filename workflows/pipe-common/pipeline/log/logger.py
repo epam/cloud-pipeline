@@ -146,7 +146,8 @@ class Logger:
 
 class CloudPipelineLogger:
 
-    _DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+    _DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+    _DATE_WITH_MILLISECONDS = '%s.%03d'
 
     def __init__(self, api, run_id):
         self._api = api
@@ -165,5 +166,6 @@ class CloudPipelineLogger:
         self._log(message=message, task=task, status='FAILURE')
 
     def _log(self, message, task, status):
-        self._api.log_efficiently(run_id=self._run_id, message=message, task=task, status=status,
-                                  date=datetime.datetime.utcnow().strftime(self._DATE_FORMAT))
+        now_utc = datetime.datetime.utcnow()
+        formatted_dt = self._DATE_WITH_MILLISECONDS % (now_utc.strftime(self._DATE_FORMAT), now_utc.microsecond / 1000)
+        self._api.log_efficiently(run_id=self._run_id, message=message, task=task, status=status, date=formatted_dt)
