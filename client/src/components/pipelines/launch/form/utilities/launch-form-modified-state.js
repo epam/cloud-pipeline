@@ -33,11 +33,8 @@ import {
   CP_CAP_LIMIT_MOUNTS
 } from './parameters';
 import {
-  dinDEnabled,
-  noMachineEnabled,
-  singularityEnabled,
-  systemDEnabled,
-  moduleEnabled
+  checkRunCapabilitiesModified,
+  getEnabledCapabilities
 } from './run-capabilities';
 
 function formItemInitialized (form, formName) {
@@ -260,14 +257,10 @@ function parametersCheck (form, parameters, state) {
 }
 
 function runCapabilitiesCheck (state, parameters) {
-  const dinD = dinDEnabled(parameters.parameters);
-  const singularity = singularityEnabled(parameters.parameters);
-  const systemD = systemDEnabled(parameters.parameters);
-  const noMachine = noMachineEnabled(parameters.parameters);
-  const module = moduleEnabled(parameters.parameters);
-  return dinD !== state.dinD || singularity !== state.singularity ||
-    systemD !== state.systemD || noMachine !== state.noMachine ||
-    module !== state.module;
+  return checkRunCapabilitiesModified(
+    state.runCapabilities,
+    getEnabledCapabilities(parameters.parameters)
+  );
 }
 
 function checkRootEntityModified (props, state) {

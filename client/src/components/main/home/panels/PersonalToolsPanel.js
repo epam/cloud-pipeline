@@ -288,7 +288,7 @@ export default class PersonalToolsPanel extends React.Component {
     } else {
       const toolValue = toolRequest.value;
       const versions = (toolTagsInfo.value.versions || [])
-        .map(v => ({[v.version]: v.scanResult}))
+        .map(v => ({[v.version]: v}))
         .reduce((r, c) => ({...r, ...c}), {});
 
       let defaultTag;

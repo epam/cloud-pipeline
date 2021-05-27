@@ -126,6 +126,22 @@ class ClusterNodeMonitor extends React.Component {
   liveUpdateTimer;
 
   @computed
+  get windowsOS () {
+    const {node} = this.props;
+    if (node.loaded) {
+      const {
+        labels = {},
+        systemInfo = {}
+      } = node.value || {};
+      if (systemInfo.operatingSystem) {
+        return /^windows$/i.test(systemInfo.operatingSystem);
+      }
+      return /^windows$/i.test(labels['kubernetes.io.host']);
+    }
+    return false;
+  }
+
+  @computed
   get wholeRangeEnabled() {
     const {chartsData} = this.props;
     return !!chartsData.instanceFrom;
@@ -475,6 +491,9 @@ class ClusterNodeMonitor extends React.Component {
   };
 
   render () {
+    if (this.windowsOS || !this.props.node.loaded) {
+      return null;
+    }
     const {
       chartsData
     } = this.props;

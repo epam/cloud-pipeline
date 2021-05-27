@@ -1145,7 +1145,10 @@ class Logs extends localization.LocalizedReactComponent {
       this.initializeEnvironmentFinished &&
       !this.isDtsEnvironment
     ) {
-      const {status, podIP} = this.props.run.value;
+      const {status, platform, podIP} = this.props.run.value;
+      if (/^windows$/i.test(platform)) {
+        return false;
+      }
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(this.props.run.value) &&
         podIP;

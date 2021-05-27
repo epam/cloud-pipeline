@@ -99,11 +99,10 @@ import {
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import ServerlessAPIButton from '../../../special/serverless-api-button';
 import RunCapabilities, {
-  dinDEnabled,
-  noMachineEnabled,
-  singularityEnabled,
-  systemDEnabled,
-  moduleEnabled,
+  addCapability,
+  applyCapabilities,
+  getEnabledCapabilities,
+  hasPlatformSpecificCapabilities,
   RUN_CAPABILITIES
 } from './utilities/run-capabilities';
 import {
@@ -114,9 +113,6 @@ import {
   CP_CAP_KUBE,
   CP_CAP_DIND_CONTAINER,
   CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_DESKTOP_NM,
-  CP_CAP_SINGULARITY,
-  CP_CAP_MODULES,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
@@ -317,11 +313,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) || [],
     autoPause: true,
     showLaunchCommands: false,
-    dinD: false,
-    singularity: false,
-    systemD: false,
-    noMachine: false,
-    module: false
+    runCapabilities: []
   };
 
   formItemLayout = {
@@ -385,6 +377,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable toolDefaultCmd;
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
+  @observable toolPlatform = null;
   @observable toolAllowSensitive = true;
 
   @action
@@ -464,41 +457,34 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   @computed
-  get selectedRunCapabilities () {
-    const {dinD, singularity, systemD, noMachine, module} = this.state;
-
-    return [
-      dinD ? RUN_CAPABILITIES.dinD : false,
-      singularity ? RUN_CAPABILITIES.singularity : false,
-      systemD ? RUN_CAPABILITIES.systemD : false,
-      noMachine ? RUN_CAPABILITIES.noMachine : false,
-      module ? RUN_CAPABILITIES.module : false
-    ].filter(Boolean);
-  };
+  get isWindowsPlatform () {
+    return /^windows$/i.test(this.toolPlatform);
+  }
 
   onRunCapabilitiesSelect = (capabilities) => {
     this.setState({
-      dinD: capabilities.includes(RUN_CAPABILITIES.dinD),
-      singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
-      systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
-      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine),
-      module: capabilities.includes(RUN_CAPABILITIES.module)
+      runCapabilities: (capabilities || []).slice()
     }, this.formFieldsChanged);
   };
 
-  renderAdditionalRunCapabilities = () => (
-    <FormItem
-      className={getFormItemClassName(styles.formItem, 'runCapabilities')}
-      {...this.formItemLayout}
-      label="Run capabilities"
-      hasFeedback
-    >
-      <RunCapabilities
-        values={this.selectedRunCapabilities}
-        onChange={this.onRunCapabilitiesSelect}
-      />
-    </FormItem>
-  );
+  renderAdditionalRunCapabilities = () => {
+    if (hasPlatformSpecificCapabilities(this.toolPlatform)) {
+      return (
+        <FormItem
+          className={getFormItemClassName(styles.formItem, 'runCapabilities')}
+          {...this.formItemLayout}
+          label="Run capabilities"
+          hasFeedback
+        >
+          <RunCapabilities
+            values={this.state.runCapabilities}
+            onChange={this.onRunCapabilitiesSelect}
+            platform={this.toolPlatform}
+          />
+        </FormItem>
+      );
+    }
+  }
 
   @observable
   _fireCloudConfigurations = null;
@@ -864,11 +850,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
-    const dinD = dinDEnabled(this.props.parameters.parameters);
-    const singularity = singularityEnabled(this.props.parameters.parameters);
-    const systemD = systemDEnabled(this.props.parameters.parameters);
-    const noMachine = noMachineEnabled(this.props.parameters.parameters);
-    const module = moduleEnabled(this.props.parameters.parameters);
+    const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -887,11 +869,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         slurmEnabled: slurmEnabledValue,
         kubeEnabled: kubeEnabledValue,
         autoScaledPriceType: autoScaledPriceTypeValue,
-        dinD,
-        singularity,
-        systemD,
-        noMachine,
-        module,
+        runCapabilities,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -947,11 +925,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         slurmEnabled: slurmEnabledValue,
         kubeEnabled: kubeEnabledValue,
         autoScaledPriceType: autoScaledPriceTypeValue,
-        dinD,
-        singularity,
-        systemD,
-        noMachine,
-        module,
+        runCapabilities,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -1021,6 +995,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined
     };
+    if (this.isWindowsPlatform) {
+      payload.node_count = undefined;
+    }
     if (!this.props.detached) {
       delete payload.endpointName;
       delete payload.stopAfter;
@@ -1070,7 +1047,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         }
       }
-      if (values[ADVANCED].limitMounts) {
+      if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
         payload[PARAMETERS][CP_CAP_LIMIT_MOUNTS] = {
           type: 'string',
           required: false,
@@ -1163,36 +1140,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       }
     }
-    if (this.state.dinD) {
-      payload[PARAMETERS][CP_CAP_DIND_CONTAINER] = {
-        type: 'boolean',
-        value: true
-      };
-    }
-    if (this.state.systemD) {
-      payload[PARAMETERS][CP_CAP_SYSTEMD_CONTAINER] = {
-        type: 'boolean',
-        value: true
-      };
-    }
-    if (this.state.singularity) {
-      payload[PARAMETERS][CP_CAP_SINGULARITY] = {
-        type: 'boolean',
-        value: true
-      };
-    }
-    if (this.state.noMachine) {
-      payload[PARAMETERS][CP_CAP_DESKTOP_NM] = {
-        type: 'boolean',
-        value: true
-      };
-    }
-    if (this.state.module) {
-      payload[PARAMETERS][CP_CAP_MODULES] = {
-        type: 'boolean',
-        value: true
-      };
-    }
+    applyCapabilities(this.toolPlatform, payload[PARAMETERS], this.state.runCapabilities);
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
       payload.pipelineVersion = this.state.version;
@@ -1251,6 +1199,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
         : undefined
     };
+    if (this.isWindowsPlatform) {
+      payload.node_count = undefined;
+    }
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
       !this.state.autoScaledCluster &&
@@ -1292,7 +1243,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       }
     }
-    if (values[ADVANCED].limitMounts) {
+    if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
       payload.params[CP_CAP_LIMIT_MOUNTS] = {
         type: 'string',
         required: false,
@@ -1384,36 +1335,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
-    if (this.state.dinD) {
-      payload.params[CP_CAP_DIND_CONTAINER] = {
-        type: 'boolean',
-        value: true
-      };
-    }
-    if (this.state.systemD) {
-      payload.params[CP_CAP_SYSTEMD_CONTAINER] = {
-        type: 'boolean',
-        value: true
-      };
-    }
-    if (this.state.singularity) {
-      payload.params[CP_CAP_SINGULARITY] = {
-        type: 'boolean',
-        value: true
-      };
-    }
-    if (this.state.noMachine) {
-      payload.params[CP_CAP_DESKTOP_NM] = {
-        type: 'boolean',
-        value: true
-      };
-    }
-    if (this.state.module) {
-      payload.params[CP_CAP_MODULES] = {
-        type: 'boolean',
-        value: true
-      };
-    }
+    applyCapabilities(this.toolPlatform, payload.params, this.state.runCapabilities);
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1562,11 +1484,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
-    const dinD = dinDEnabled(this.props.parameters.parameters);
-    const singularity = singularityEnabled(this.props.parameters.parameters);
-    const systemD = systemDEnabled(this.props.parameters.parameters);
-    const noMachine = noMachineEnabled(this.props.parameters.parameters);
-    const module = moduleEnabled(this.props.parameters.parameters);
+    const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
@@ -1576,11 +1494,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       slurmEnabled: slurmEnabledValue,
       kubeEnabled: kubeEnabledValue,
       autoScaledPriceType: autoScaledPriceTypeValue,
-      dinD,
-      singularity,
-      systemD,
-      noMachine,
-      module,
+      runCapabilities,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
       this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -3334,6 +3248,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this._toolSettings = null;
     this.regionDisabledByToolSettings = false;
     this.toolCloudRegion = null;
+    this.toolPlatform = null;
     this.toolAllowSensitive = true;
     this.toolDefaultCmd = undefined;
     this.setState({
@@ -3360,6 +3275,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.toolAllowSensitive = im.allowSensitive;
             this._toolSettings = new LoadToolVersionSettings(im.id, version);
             await this._toolSettings.fetchIfNeededOrWait();
+
+            if (
+              this._toolSettings &&
+              this._toolSettings.loaded &&
+              this._toolSettings.value &&
+              this._toolSettings.value[0]
+            ) {
+              this.toolPlatform = this._toolSettings.value[0].platform;
+            } else {
+              this.toolPlatform = undefined;
+            }
 
             if (this._toolSettings && this._toolSettings.loaded && this._toolSettings.value &&
               this._toolSettings.value[0] && this._toolSettings.value[0].settings &&
@@ -3525,10 +3451,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       kubeEnabled,
       autoScaledPriceType
     } = configuration;
-    let {dinD, systemD} = this.state;
+    let {runCapabilities} = this.state;
     if (kubeEnabled) {
-      dinD = true;
-      systemD = true;
+      runCapabilities = addCapability(
+        runCapabilities,
+        RUN_CAPABILITIES.dinD,
+        RUN_CAPABILITIES.systemD
+      );
     }
     this.setState({
       launchCluster,
@@ -3541,8 +3470,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       nodesCount,
       maxNodesCount,
       autoScaledPriceType,
-      dinD,
-      systemD
+      runCapabilities
     }, () => {
       this.closeConfigureClusterDialog();
       const priceType = this.getSectionFieldValue(ADVANCED)('is_spot') ||
@@ -3952,6 +3880,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderLimitMountsFormItem = () => {
+    if (this.isWindowsPlatform) {
+      return null;
+    }
     const {dataStorageAvailable} = this.props;
     if (dataStorageAvailable.loaded) {
       const getDefaultValue = () => {
@@ -4870,7 +4801,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     }
                     {this.renderFormItemRow(this.renderDiskFormItem, hints.diskHint)}
                     {
-                      !this.state.fireCloudMethodName && !this.state.isDts &&
+                      !this.isWindowsPlatform && !this.state.fireCloudMethodName && !this.state.isDts &&
                       <Row type="flex" justify="end" style={{paddingRight: 30, marginBottom: 10}}>
                         <a
                           onClick={this.openConfigureClusterDialog}
@@ -4896,7 +4827,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       onClose={this.closeConfigureClusterDialog}
                       onChange={this.onChangeClusterConfiguration}
                       visible={this.state.configureClusterDialogVisible}
-                      disabled={this.props.readOnly && !this.props.canExecute} />
+                      disabled={this.props.readOnly && !this.props.canExecute}
+                    />
                     {
                       this.renderFormItemRow(
                         this.renderAWSRegionSelection,
