@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ public final class KubernetesConstants {
     public static final String NODE_LOST = "NodeLost";
     public static final String POD_UNSCHEDULABLE = "Unschedulable";
     public static final String POD_RUNNING_PHASE = "Running";
+    public static final String POD_NODE_SELECTOR_OPERATOR_IN = "In";
 
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
