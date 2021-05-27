@@ -84,11 +84,12 @@ if __name__ == '__main__':
     distribution_url = os.environ['DISTRIBUTION_URL'] = os.getenv('DISTRIBUTION_URL')
     api_url = os.environ['API'] = os.getenv('API')
     api_token = os.environ['API_TOKEN'] = os.getenv('API_TOKEN')
-    node_owner = os.environ['CP_NODE_OWNER'] = os.getenv('CP_NODE_OWNER', 'ROOT')
+    node_owner = os.environ['CP_NODE_OWNER'] = os.getenv('CP_NODE_OWNER', 'Administrator')
     edge_url = os.environ['EDGE'] = os.getenv('EDGE', 'https://cp-edge.default.svc.cluster.local:31081')
     node_private_key_path = os.environ['CP_NODE_PRIVATE_KEY'] = os.getenv('CP_NODE_PRIVATE_KEY', os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = os.environ['OWNER'] = os.getenv('OWNER')
     owner_password = os.environ['OWNER_PASSWORD'] = os.getenv('OWNER_PASSWORD', os.getenv('SSH_PASS'))
+    owner_groups = os.environ['OWNER_GROUPS'] = os.getenv('OWNER_GROUPS', 'Administrators')
     task_path = os.environ['CP_TASK_PATH']
     python_dir = os.environ['CP_PYTHON_DIR'] = os.environ.get('CP_PYTHON_DIR', 'c:\\python')
     requires_cloud_data = _extract_boolean_flag('CP_CAP_WIN_INSTALL_CLOUD_DATA')
@@ -160,6 +161,26 @@ if __name__ == '__main__':
                      f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"',
                      user=node_owner)
 
+    logging.info('Configuring owner account on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.account import create_user; '
+                     f'create_user(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"',
+                     user=node_owner)
+
+    logging.info('Configuring seamless logon on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_seamless_logon_win import configure_seamless_logon_win; '
+                     f'configure_seamless_logon_win(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"',
+                     user=node_owner)
+
+    logging.info('Configuring system settings on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_system_settings_win import configure_system_settings_win; '
+                     f'configure_system_settings_win()\\"',
+                     user=node_owner)
+
+    logging.info('Restarting logon processes on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.proc import terminate_processes; '
+                     f'terminate_processes(\'winlogon.exe\')\\"',
+                     user=node_owner)
+
     if requires_cloud_data:
         install_cloud_data_task = 'InstallCloudData'
         api_logger.info('Installing Cloud-Data application...', task=install_cloud_data_task)
@@ -171,17 +192,11 @@ if __name__ == '__main__':
 
         api_logger.info('Configuring Cloud-Data App on the node...', task=install_cloud_data_task)
         node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_cloud_data_win import configure_cloud_data_win; '
-                         f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\', \'{node_owner}\', \'{owner}\', \'{api_token}\')\\"',
+                         f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\', \'{owner}\', \'{owner}\', \'{api_token}\')\\"',
                          output_task=install_cloud_data_task, user=node_owner)
         api_logger.success('Cloud-Data installed and configured successfully!', task=install_cloud_data_task)
 
-    logging.info('Configuring owner account on the node...')
-    node_ssh.execute(f'AddUser -UserName {owner} -UserPassword {owner_password}',
-                     user=node_owner)
-
     logging.info('Configuring pipe on the node...')
-    node_ssh.execute(f'pipe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac',
-                     user=node_owner)
     node_ssh.execute(f'pipe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac',
                      user=owner)
 
@@ -220,7 +235,7 @@ if __name__ == '__main__':
     api_logger.success('Environment initialization finished', task='InitializeEnvironment')
 
     logging.info('Executing task...')
-    task_wrapping_command = f'powershell -Command ". {host_root}\\NodeEnv.ps1; & {task_path} -ErrorAction Stop"'
+    task_wrapping_command = f'powershell -Command "& {task_path} -ErrorAction Stop"'
     logging.info(f'Task command: {task_wrapping_command}')
     try:
         exit_code = subprocess.call(task_wrapping_command, cwd=analysis_dir)

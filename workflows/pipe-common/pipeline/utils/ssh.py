@@ -46,5 +46,5 @@ class HostSSH:
             else:
                 logging.warning(stripped_line)
         if exit_code != 0:
-            raise SSHError('Command has exited with ' + exit_code)
+            raise SSHError('Command has finished with exit code ' + str(exit_code))
         client.close()

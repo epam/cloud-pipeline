@@ -25,7 +25,7 @@ function InstallNoMachineIfRequired {
     | ForEach-Object { $_.Count -gt 0 }
     if (-not($nomachineInstalled)) {
         Write-Host "Installing NoMachine..."
-        Invoke-WebRequest 'https://download.nomachine.com/download/7.4/Windows/nomachine_7.4.1_1.exe' -Outfile .\nomachine.exe
+        Invoke-WebRequest 'https://download.nomachine.com/download/7.6/Windows/nomachine_7.6.2_4.exe' -Outfile .\nomachine.exe
         cmd /c "nomachine.exe /verysilent"
         $restartRequired=$true
     }
@@ -45,47 +45,22 @@ function InstallWebDAVIfRequired {
     return $restartRequired
 }
 
-function RenameComputerIfRequired {
+function InstallPGinaIfRequired {
     $restartRequired=$false
-    $computerName=$(hostname)
-    $instanceId=$(Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/instance-id)
-    if ($instanceId -ne $computerName) {
-        Write-Host "Renaming computer from $computerName to $instanceId..."
-        Rename-Computer -NewName $instanceId -Force
-        $restartRequired=$true
-    }
-    return $restartRequired
-}
-
-function AddUserIfRequired($UserName, $UserPassword) {
-    try {
-        Get-LocalUser $UserName -ErrorAction Stop
-    } catch {
-        Write-Host "Creating user $UserName..."
-        New-LocalUser -Name $UserName -Password $(ConvertTo-SecureString -String $UserPassword -AsPlainText -Force) -AccountNeverExpires
-        Add-LocalGroupMember -Group "Administrators" -Member "$UserName"
-    }
-}
-
-function GetOrGenerateDefaultPassword() {
-    $RegPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
-    try {
-        return Get-ItemProperty $RegPath "DefaultPassword" -ErrorAction Stop | ForEach-Object { $_.DefaultPassword }
-    } catch {
-        return New-Guid
-    }
-}
-
-function EnableAutoLoginIfRequired($UserName, $UserPassword) {
-    $restartRequired=$false
-    $RegPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
-    try {
-        Get-ItemProperty $RegPath "DefaultUserName" -ErrorAction Stop
-    } catch {
-        Write-Host "Enabling auto login for $UserName..."
-        Set-ItemProperty $RegPath "AutoAdminLogon" -Value "1" -type String
-        Set-ItemProperty $RegPath "DefaultUserName" -Value "$UserName" -type String
-        Set-ItemProperty $RegPath "DefaultPassword" -Value "$UserPassword" -type String
+    $pGinaInstalled = Get-Service -Name pgina `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not($pGinaInstalled)) {
+        Write-Host "Installing pGina..."
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/pGina-3.2.4.0-setup.exe" -OutFile "pGina-3.2.4.0-setup.exe"
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/vcredist_x64.exe" -OutFile "vcredist_x64.exe"
+        .\pGina-3.2.4.0-setup.exe /S /D=C:\Program Files\pGina
+        WaitForProcess -ProcessName "pGina-3.2.4.0-setup"
+        .\vcredist_x64.exe /quiet
+        WaitForProcess -ProcessName "vcredist_x64"
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/pGina.Plugin.AuthenticateAllPlugin.dll" -OutFile "C:\Program Files\pGina\Plugins\Contrib\pGina.Plugin.AuthenticateAllPlugin.dll"
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{d0befefb-3d2c-44da-bbad-3b2d04557246}" -Name "Disabled" -Type "DWord" -Value "1"
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{d0befefb-3d2c-44da-bbad-3b2d04557246}" -Name "Disabled" -Type "DWord" -Value "1"
         $restartRequired=$true
     }
     return $restartRequired
@@ -124,12 +99,6 @@ function InstallChromeIfRequired {
         Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -Outfile $workingDir\chrome_installer.exe
         & $workingDir\chrome_installer.exe /silent /install
         WaitForProcess -ProcessName "chrome_installer"
-    }
-}
-
-function DownloadScrambleScriptIfRequired {
-    if (-not(Test-Path .\scramble.exe)) {
-        Invoke-WebRequest 'https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/scramble.exe' -Outfile .\scramble.exe
     }
 }
 
@@ -182,10 +151,16 @@ function DownloadSigWindowsToolsIfRequired {
 }
 
 function PatchSigWindowsTools($KubeHost, $KubePort, $Dns) {
+    $instanceId=$(Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/instance-id)
     $kubeClusterHelperContent = Get-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
     $kubeClusterHelperContent[262] = '    Write-Host "Skipping node joining verification..."'
     $kubeClusterHelperContent[263] = '    return 1'
-    $kubeClusterHelperContent[782] = '    & cmd /c kubeadm join "$(GetAPIServerEndpoint)" --token "$Global:Token" --discovery-token-ca-cert-hash "$Global:CAHash" --ignore-preflight-errors "all" ''2>&1'''
+    $kubeClusterHelperContent[344] = '        $nodeName = "' + $instanceId + '"'
+    $kubeClusterHelperContent[656] = '        "--hostname-override=' + $instanceId + '"'
+    $kubeClusterHelperContent[704] = '        "--hostname-override=' + $instanceId + '"'
+    $kubeClusterHelperContent[723] = '        hostnameOverride = "' + $instanceId + '";'
+    $kubeClusterHelperContent[778] = '        -BinaryPathName "$kubeletBinPath --windows-service --v=6 --log-dir=$logDir --cert-dir=$env:SYSTEMDRIVE\var\lib\kubelet\pki --cni-bin-dir=$CniDir --cni-conf-dir=$CniConf --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --hostname-override=' + $instanceId + ' --pod-infra-container-image=$Global:PauseImage --enable-debugging-handlers  --cgroups-per-qos=false --enforce-node-allocatable=`"`" --logtostderr=false --network-plugin=cni --resolv-conf=`"`" --cluster-dns=`"$KubeDnsServiceIp`" --cluster-domain=cluster.local --feature-gates=$KubeletFeatureGates"'
+    $kubeClusterHelperContent[782] = '    & cmd /c kubeadm join "$(GetAPIServerEndpoint)" --token "$Global:Token" --discovery-token-ca-cert-hash "$Global:CAHash" --ignore-preflight-errors "all" --node-name "' + $instanceId + '" ''2>&1'''
     $kubeClusterHelperContent[1212] = '    Write-Host "Returning kubernetes dns ip..."'
     $kubeClusterHelperContent[1213] = "    return '$Dns'"
     $kubeClusterHelperContent[1217] = '    Write-Host "Returning kubernetes master address..."'
@@ -352,8 +327,6 @@ $runsDir = "c:\runs"
 $kubeDir = "c:\ProgramData\Kubernetes"
 $pythonDir = "c:\python"
 $initLog = "$workingDir\log.txt"
-$defaultUserName = "ROOT"
-$defaultUserPassword = GetOrGenerateDefaultPassword
 
 Write-Host "Creating system directories..."
 NewDirIfRequired -Path $workingDir
@@ -367,9 +340,6 @@ Start-Transcript -path $initLog -append
 Write-Host "Changing working directory..."
 Set-Location -Path "$workingDir"
 
-Write-Host "Creating default user if required..."
-AddUserIfRequired -UserName $defaultUserName -UserPassword $defaultUserPassword
-
 $restartRequired = $false
 
 Write-Host "Installing nomachine if required..."
@@ -380,12 +350,8 @@ Write-Host "Installing WebDAV if required..."
 $restartRequired = (InstallWebDAVIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
-Write-Host "Renaming computer if required..."
-$restartRequired = (RenameComputerIfRequired | Select-Object -Last 1) -or $restartRequired
-Write-Host "Restart required: $restartRequired"
-
-Write-Host "Enabling default user login if required..."
-$restartRequired = (EnableAutoLoginIfRequired -UserName $defaultUserName -UserPassword $defaultUserPassword | Select-Object -Last 1) -or $restartRequired
+Write-Host "Installing pGina if required..."
+$restartRequired = (InstallPGinaIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Restarting computer if required..."
@@ -404,18 +370,6 @@ InstallPythonIfRequired -PythonDir $pythonDir
 
 Write-Host "Installing chrome if required..."
 InstallChromeIfRequired
-
-Write-Host "Downloading scramble script if required..."
-DownloadScrambleScriptIfRequired
-
-Write-Host "Scrambling default user password..."
-$defaultUserScrambledPassword = & ./scramble.exe $defaultUserPassword
-
-Write-Host "Publishing node env script..."
-@"
-`$env:NODE_OWNER='$defaultUserName'
-`$env:NODE_OWNER_SCRAMBLED_PASSWORD='$defaultUserScrambledPassword'
-"@ | Out-File -FilePath "$hostDir\NodeEnv.ps1" -Encoding ascii -Force
 
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
