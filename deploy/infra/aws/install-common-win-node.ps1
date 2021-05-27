@@ -39,7 +39,7 @@ function InstallNoMachineIfRequired {
     | ForEach-Object { $_.Count -gt 0 }
     if (-not($nomachineInstalled)) {
         Write-Host "Installing NoMachine..."
-        Invoke-WebRequest 'https://download.nomachine.com/download/7.4/Windows/nomachine_7.4.1_1.exe' -Outfile .\nomachine.exe
+        Invoke-WebRequest 'https://download.nomachine.com/download/7.6/Windows/nomachine_7.6.2_4.exe' -Outfile .\nomachine.exe
         cmd /c "nomachine.exe /verysilent"
         $restartRequired=$true
     }
@@ -54,6 +54,27 @@ function InstallWebDAVIfRequired {
     if (-not($webDAVInstalled)) {
         Write-Host "Installing WebDAV..."
         Install-WindowsFeature WebDAV-Redirector
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
+function InstallPGinaIfRequired {
+    $restartRequired=$false
+    $pGinaInstalled = Get-Service -Name pgina `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not($pGinaInstalled)) {
+        Write-Host "Installing pGina..."
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/pGina-3.2.4.0-setup.exe" -OutFile "pGina-3.2.4.0-setup.exe"
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/vcredist_x64.exe" -OutFile "vcredist_x64.exe"
+        .\pGina-3.2.4.0-setup.exe /S /D=C:\Program Files\pGina
+        WaitForProcess -ProcessName "pGina-3.2.4.0-setup"
+        .\vcredist_x64.exe /quiet
+        WaitForProcess -ProcessName "vcredist_x64"
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/pGina.Plugin.AuthenticateAllPlugin.dll" -OutFile "C:\Program Files\pGina\Plugins\Contrib\pGina.Plugin.AuthenticateAllPlugin.dll"
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{d0befefb-3d2c-44da-bbad-3b2d04557246}" -Name "Disabled" -Type "DWord" -Value "1"
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{d0befefb-3d2c-44da-bbad-3b2d04557246}" -Name "Disabled" -Type "DWord" -Value "1"
         $restartRequired=$true
     }
     return $restartRequired
@@ -85,12 +106,6 @@ function InstallChromeIfRequired {
         Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -Outfile $workingDir\chrome_installer.exe
         & $workingDir\chrome_installer.exe /silent /install
         WaitForProcess -ProcessName "chrome_installer"
-    }
-}
-
-function DownloadScrambleScriptIfRequired {
-    if (-not(Test-Path .\scramble.exe)) {
-        Invoke-WebRequest 'https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/scramble.exe' -Outfile .\scramble.exe
     }
 }
 
@@ -209,14 +224,14 @@ InstallNoMachineIfRequired
 Write-Host "Installing WebDAV if required..."
 InstallWebDAVIfRequired
 
+Write-Host "Installing pGina if required..."
+InstallPGinaIfRequired
+
 Write-Host "Installing python if required..."
 InstallPythonIfRequired -PythonDir $pythonDir
 
 Write-Host "Installing chrome if required..."
 InstallChromeIfRequired
-
-Write-Host "Downloading scramble script if required..."
-DownloadScrambleScriptIfRequired
 
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
@@ -225,7 +240,7 @@ OpenPortIfRequired -Port 8888
 Write-Host "Installing OpenSSH server if required..."
 InstallOpenSshServerIfRequired
 
-Write-Host "Generating SSH keys..."
+Write-Host "Generating temporary SSH keys..."
 GenerateSshKeys -Path $homeDir
 
 Write-Host "Downloading Sig Windows Tools if required..."
@@ -237,7 +252,7 @@ InitSigWindowsToolsConfigFile -KubeHost "default" -KubeToken "default" -KubeCert
 Write-Host "Installing kubernetes using Sig Windows Tools if required..."
 InstallKubeUsingSigWindowsToolsIfRequired -KubeDir "$kubeDir"
 
-Write-Host "Removing SSH keys..."
+Write-Host "Removing temporary SSH keys..."
 Remove-Item -Recurse -Force "$homeDir\.ssh"
 
 Write-Host "Scheduling instance initialization on next launch..."

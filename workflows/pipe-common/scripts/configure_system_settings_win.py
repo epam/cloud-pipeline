@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-param (
-    $UserName,
-    $UserPassword
-)
+from pipeline.utils.reg import set_local_machine_dword_value
 
-$SecuredUserPassword = ConvertTo-SecureString -String $UserPassword -AsPlainText -Force
-New-LocalUser -Name $UserName -Password $SecuredUserPassword -AccountNeverExpires
-Add-LocalGroupMember -Group "Administrators" -Member "$UserName"
+
+_win_policies_reg_path = 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System'
+
+
+def configure_system_settings_win():
+    set_local_machine_dword_value(_win_policies_reg_path, 'disablecad', 1)
+    set_local_machine_dword_value(_win_policies_reg_path, 'NoLockScreen', 1)
+    set_local_machine_dword_value(_win_policies_reg_path, 'HideRestart', 1)
+    set_local_machine_dword_value(_win_policies_reg_path, 'HideShutDown', 1)

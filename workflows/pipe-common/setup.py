@@ -54,6 +54,8 @@ setup(name='pipeline',
             'tornado==4.5.3',
             'tzlocal==2.1',
             'urllib3==1.25.9',
-            'paramiko==2.6.0'
+            'paramiko==2.6.0',
+            'psutil==5.8.0',
+            'pywin32==300'
       ],
       zip_safe=False)

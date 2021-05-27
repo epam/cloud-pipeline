@@ -36,7 +36,6 @@ def get_nxs_template():
     if not os.path.isfile(Config.template_path):
         raise RuntimeError('Template file not found at {}'.format(Config.template_path))
 
-    template_data = None
     with open(Config.template_path, 'r') as template_file:
         template_data = template_file.read()
     template_data = template_data.format(CP_PROXY=Config.proxy, 
@@ -52,21 +51,19 @@ def get_nxs_template():
                 "attachment; filename=cloud-service-{}.nxs".format(Config.connection_name)})
 
 
-def get_user_credentials():
-    user_name = os.getenv('NODE_OWNER')
-    user_password = os.getenv('NODE_OWNER_SCRAMBLED_PASSWORD')
-    if not user_password:
-        plain_user_password = os.getenv('NODE_OWNER_PASSWORD')
-        if plain_user_password:
-            user_password = subprocess.check_output('powershell -Command "& ${env:NOMACHINE_HOME}/scramble.exe %s"'
-                                                    % plain_user_password, shell=True).decode('utf-8')
-    return user_name, user_password
-
-
 def start(local_port, nomachine_port, proxy, proxy_port, template_path):
     local_ip = socket.gethostbyname(socket.gethostname())
 
-    user_name, user_password = get_user_credentials()
+    user_name = os.getenv('OWNER')
+    if not user_name:
+        raise RuntimeError('Cannot get OWNER name from environment')
+
+    ssh_pass = os.getenv('OWNER_PASSWORD')
+    if not ssh_pass:
+        raise RuntimeError('Cannot get OWNER_PASSWORD name from environment')
+
+    user_password = subprocess.check_output('powershell -Command "& ${env:NOMACHINE_HOME}/scramble.exe %s"'
+                                            % ssh_pass, shell=True).decode('utf-8')
 
     connection_name = os.getenv('RUN_ID')
     if not connection_name or len(connection_name) == 0:
