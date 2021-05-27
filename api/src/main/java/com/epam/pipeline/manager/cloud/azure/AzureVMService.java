@@ -157,6 +157,30 @@ public class AzureVMService {
         }
     }
 
+    public void createAndAttachVolume(String runId, Long size, AzureRegion region) {
+        final Azure azure = AzureHelper.buildClient(region.getAuthFile());
+        final PagedList<GenericResource> resources = azure.genericResources()
+                .listByTag(region.getResourceGroup(), TAG_NAME, runId);
+        createAndAttachVolume(
+                azure,
+                findVMContainerInPagedResult(resources.currentPage(), resources)
+                        .orElseThrow(IllegalArgumentException::new),
+                size
+        );
+    }
+
+    private void createAndAttachVolume(Azure azure, GenericResource vmc, Long size) {
+        final int sizeInGb = Math.toIntExact(size / 1024 / 1024 / 1024);
+        if (vmc.resourceType().equals(VIRTUAL_MACHINE_SCALE_SET_TYPE)) {
+           azure.virtualMachineScaleSets().getById(vmc.id()).update().withNewDataDisk(Math.toIntExact(sizeInGb)).apply();
+        } else if (vmc.resourceType().equals(VIRTUAL_MACHINES_TYPE)){
+            azure.virtualMachines().getById(vmc.id()).update().withNewDataDisk(Math.toIntExact(sizeInGb)).apply();
+        } else {
+            throw new AzureException(messageHelper.getMessage(
+                    MessageConstants.ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE, vmc.id()));
+        }
+    }
+
     private Optional<String> getScaleSetName(final String instanceId) {
         final Matcher matcher = LOW_PRIORITY_VM_NAME_PATTERN.matcher(instanceId);
         return matcher.matches() ? Optional.ofNullable(matcher.group(1)) : Optional.empty();

@@ -234,6 +234,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request) {
+        vmService.createAndAttachVolume(String.valueOf(runId), request.getSize(), region);
         throw new UnsupportedOperationException("Disk attaching doesn't work with Azure provider yet.");
     }
 
