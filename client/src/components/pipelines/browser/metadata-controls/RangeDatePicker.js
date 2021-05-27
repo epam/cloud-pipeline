@@ -5,8 +5,7 @@ import {Popover, Icon, DatePicker, Button} from 'antd';
 import moment from 'moment';
 
 const FULL_DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
-const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
-const currentDate = toLocalMomentDate(moment().toDate());
+const DATE_FORMAT = 'YYYY-MM-DD';
 
 function toLocalMomentDate (string) {
   if (!string) {
@@ -62,7 +61,7 @@ class RangeDatePicker extends React.Component {
       }
       return (
         endValue < startValue ||
-        endValue > currentDate
+        endValue > toLocalMomentDate(moment().toDate())
       );
     }
     onChange = (field, value) => {
@@ -130,7 +129,6 @@ class RangeDatePicker extends React.Component {
                 id="from"
                 disabledDate={this.disabledStartDate}
                 format={DATE_FORMAT}
-                showTime
                 value={this.state.dateFrom || null}
                 placeholder="from"
                 onChange={this.onStartChange}
@@ -148,7 +146,6 @@ class RangeDatePicker extends React.Component {
                 id="to"
                 allowClear
                 disabledDate={this.disabledEndDate}
-                showTime
                 format={DATE_FORMAT}
                 value={this.state.dateTo || null}
                 placeholder="to"
