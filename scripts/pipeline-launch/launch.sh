@@ -1223,7 +1223,7 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
       fi
 
-      fsbrowser_setup
+      fsbrowser_setup "$GIT_REPO" "$REPO_REVISION" "$RESUMED_RUN" "$BRANCH"
       echo "------"
       echo
 fi
