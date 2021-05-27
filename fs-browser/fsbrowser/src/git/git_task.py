@@ -14,6 +14,8 @@
 import os
 import traceback
 
+import pygit2
+
 from fsbrowser.src.model.task import Task
 
 
@@ -61,6 +63,7 @@ class GitTask(Task):
 
             status_files = git_client.status(full_repo_path)
             if status_files:
+                self._prepare_for_pull(status_files, git_client, full_repo_path)
                 git_client.stash(full_repo_path)
             pull_conflicts = git_client.pull(full_repo_path, commit_allowed=False)
             if status_files:
@@ -141,3 +144,9 @@ class GitTask(Task):
         if self.conflicts:
             result.update({'conflicts': self.conflicts})
         return result
+
+    @staticmethod
+    def _prepare_for_pull(status_files, client, repo_path):
+        for status_file in status_files:
+            if status_file.state_code & pygit2.GIT_STATUS_WT_NEW:
+                client.add(repo_path, status_file)
