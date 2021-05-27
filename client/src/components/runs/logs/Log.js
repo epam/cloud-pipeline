@@ -1152,9 +1152,13 @@ class Logs extends localization.LocalizedReactComponent {
     ) {
       const {
         status,
+        platform,
         podIP,
         pipelineRunParameters = []
       } = this.props.run.value;
+      if (/^windows$/i.test(platform)) {
+        return false;
+      }
       const cpFSBrowserEnabled = pipelineRunParameters
         .find(p => /^CP_FSBROWSER_ENABLED$/i.test(p.name));
       if (cpFSBrowserEnabled && `${cpFSBrowserEnabled.value}` === 'false') {
