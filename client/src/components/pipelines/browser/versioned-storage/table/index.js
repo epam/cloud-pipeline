@@ -30,6 +30,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import UploadButton from '../../../../special/UploadButton';
+import VSTableNavigation from './vs-table-navigation';
 import roleModel from '../../../../../utils/roleModel';
 import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
 import COLUMNS from './columns';
@@ -198,54 +199,62 @@ class VersionedStorageTable extends React.Component {
   renderTableControls = () => {
     const {
       controlsEnabled,
-      versionedStorage
+      versionedStorage,
+      path,
+      onNavigate
     } = this.props;
     if (roleModel.writeAllowed(versionedStorage)) {
       return (
-        <div className={styles.tableControls}>
-          <Dropdown
-            placement="bottomRight"
-            trigger={['hover']}
-            overlay={
-              <Menu
-                selectedKeys={[]}
-                onClick={this.onCreateActionSelect}
-                style={{width: 200}}>
-                <Menu.Item
-                  key={TABLE_MENU_KEYS.folder}
-                  disabled={!controlsEnabled}
-                >
-                  <Icon type="folder" /> Folder
-                </Menu.Item>
-                <Menu.Item
-                  key={TABLE_MENU_KEYS.file}
-                  disabled={!controlsEnabled}
-                >
-                  <Icon type="file" /> File
-                </Menu.Item>
-              </Menu>
-            }
-            key="create actions">
-            <Button
-              type="primary"
-              id="create-button"
-              size="small"
-              className={styles.tableControl}
-              disabled={!controlsEnabled}
-            >
-              <Icon type="plus" />
-              Create
-              <Icon type="down" />
-            </Button>
-          </Dropdown>
-          <UploadButton
-            multiple
-            synchronous
-            onRefresh={this.onUploadFinished}
-            validate={this.validateUploadFiles}
-            title={'Upload'}
-            action={this.uploadPath}
+        <div className={styles.tableControlsContainer}>
+          <VSTableNavigation
+            path={path}
+            onNavigate={onNavigate}
           />
+          <div className={styles.tableControls}>
+            <Dropdown
+              placement="bottomRight"
+              trigger={['hover']}
+              overlay={
+                <Menu
+                  selectedKeys={[]}
+                  onClick={this.onCreateActionSelect}
+                  style={{width: 200}}>
+                  <Menu.Item
+                    key={TABLE_MENU_KEYS.folder}
+                    disabled={!controlsEnabled}
+                  >
+                    <Icon type="folder" /> Folder
+                  </Menu.Item>
+                  <Menu.Item
+                    key={TABLE_MENU_KEYS.file}
+                    disabled={!controlsEnabled}
+                  >
+                    <Icon type="file" /> File
+                  </Menu.Item>
+                </Menu>
+              }
+              key="create actions">
+              <Button
+                type="primary"
+                id="create-button"
+                size="small"
+                className={styles.tableControl}
+                disabled={!controlsEnabled}
+              >
+                <Icon type="plus" />
+                Create
+                <Icon type="down" />
+              </Button>
+            </Dropdown>
+            <UploadButton
+              multiple
+              synchronous
+              onRefresh={this.onUploadFinished}
+              validate={this.validateUploadFiles}
+              title={'Upload'}
+              action={this.uploadPath}
+            />
+          </div>
         </div>
       );
     }
