@@ -39,17 +39,21 @@ function clone_repository {
 }
 
 _REPO_DIR=$1
+_GIT_REPO=$2
+_REPO_REVISION=$3
+_RESUMED_RUN=$4
+_BRANCH=$5
 
 # check whether we shall get code from repository before executing a command or not
-if [ -z "$GIT_REPO" ] ;
+if [ -z "$_GIT_REPO" ] ;
 then
       echo "GIT_REPO is not defined, skipping clone"
-elif  [ "$RESUMED_RUN" == true ] ;
+elif  [ "$_RESUMED_RUN" == true ] ;
 then
       echo "Skipping pipeline repository clone for a resumed run"
 else
       # clone current pipeline repo
-      clone_repository $GIT_REPO $_REPO_DIR 3 10
+      clone_repository $_GIT_REPO $_REPO_DIR 3 10
       _CLONE_RESULT=$?
       if [ "$_CLONE_RESULT" -ne 0 ];
       then
@@ -58,11 +62,11 @@ else
       fi
       cd $_REPO_DIR
 
-      if [ -z "$BRANCH" ]
+      if [ -z "$_BRANCH" ]
       then
-            git -c http.sslVerify=false checkout $REPO_REVISION -q
+            git -c http.sslVerify=false checkout $_REPO_REVISION -q
       else
-            git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
+            git -c http.sslVerify=false checkout -b $_BRANCH $_REPO_REVISION -q
       fi
       cd -
 fi
