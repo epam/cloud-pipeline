@@ -164,9 +164,6 @@ public class PipelineRunManager {
     private PipelineConfigurationManager configurationManager;
 
     @Autowired
-    private ToolApiService toolApiService;
-
-    @Autowired
     private FolderApiService folderApiService;
 
     @Autowired
@@ -205,23 +202,27 @@ public class PipelineRunManager {
      * @return
      */
     @ToolSecurityPolicyCheck
-    public PipelineRun runCmd(PipelineStart runVO) {
+    public PipelineRun runCmd(final PipelineStart runVO) {
+        LOGGER.debug("Tool '{}' will be launched on behalf of '{}'", runVO.getDockerImage(),
+                authManager.getAuthorizedUser());
         Assert.notNull(runVO.getInstanceType(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "instance_type"));
         Assert.notNull(runVO.getHddSize(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "instance_disk"));
 
-        int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
+        final int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
-        Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
-        PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
-        boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
+        final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
+        final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
+        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
+                configuration.getSharedWithRoles()));
+        final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
-        PipelineRun run = launchPipeline(configuration, null, null,
+        final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
                 runVO.getParentRunId(), null, null, runVO.getRunSids());
         run.setParent(tool);
@@ -281,7 +282,7 @@ public class PipelineRunManager {
     @ToolSecurityPolicyCheck
     public PipelineRun runPipeline(final PipelineStart runVO) {
         final Long pipelineId = runVO.getPipelineId();
-        LOGGER.debug("Pipeline '{}' will be launched as '{}'", pipelineId, authManager.getAuthorizedUser());
+        LOGGER.debug("Pipeline '{}' will be launched on behalf of '{}'", pipelineId, authManager.getAuthorizedUser());
         final String version = runVO.getVersion();
         final int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
@@ -295,8 +296,7 @@ public class PipelineRunManager {
                 configuration.getSharedWithRoles()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
-        //check that tool execution is allowed
-        toolApiService.loadToolForExecution(configuration.getDockerImage());
+        permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
                 runVO.getParentRunId(), null, null, runVO.getRunSids());

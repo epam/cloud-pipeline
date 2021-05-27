@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -84,13 +83,6 @@ public class ToolApiService {
         } else {
             return toolManager.loadTool(registry, image);
         }
-    }
-
-    @PostAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(returnObject, 'EXECUTE')")
-    @AclMask
-    public Tool loadToolForExecution(String image) {
-        return toolManager.loadByNameOrId(image);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY +

@@ -56,14 +56,17 @@ import com.epam.pipeline.manager.security.acl.AclFilter;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.manager.security.acl.AclMaskPage;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
@@ -76,7 +79,6 @@ import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_WRITE;
 @RequiredArgsConstructor
 public class RunApiService {
 
-    private final ToolApiService toolApiService;
     private final PipelineRunManager runManager;
     private final PipelineRunCRUDService runCRUDService;
     private final FilterManager filterManager;
@@ -88,14 +90,25 @@ public class RunApiService {
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
     private final PipelineRunKubernetesManager pipelineRunKubernetesManager;
     private final PipelineRunAsManager pipelineRunAsManager;
+    private final RunPermissionManager runPermissionManager;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
-        //check that tool execution is allowed
         Assert.notNull(runVO.getDockerImage(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "docker_image"));
-        toolApiService.loadToolForExecution(runVO.getDockerImage());
-        return runVO.getUseRunId() == null ? runManager.runCmd(runVO) : runManager.runPod(runVO);
+        runPermissionManager.checkToolRunPermission(runVO.getDockerImage());
+
+        if (Objects.nonNull(runVO.getUseRunId())) {
+            return runManager.runPod(runVO);
+        }
+
+        final String runAsUserName = pipelineRunAsManager.getRunAsUserName(runVO);
+        if (StringUtils.isEmpty(runAsUserName)) {
+            return runManager.runCmd(runVO);
+        }
+
+        runPermissionManager.checkToolRunPermissionToRunAs(runVO.getDockerImage(), runAsUserName);
+        return pipelineRunAsManager.runTool(runVO);
     }
 
     @PreAuthorize("(hasRole('ADMIN') OR "
