@@ -25,7 +25,7 @@ function InstallNoMachineIfRequired {
     | ForEach-Object { $_.Count -gt 0 }
     if (-not($nomachineInstalled)) {
         Write-Host "Installing NoMachine..."
-        Invoke-WebRequest 'https://download.nomachine.com/download/7.6/Windows/nomachine_7.6.2_4.exe' -Outfile .\nomachine.exe
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nomachine/nomachine_7.6.2_4.exe" -Outfile .\nomachine.exe
         cmd /c "nomachine.exe /verysilent"
         $restartRequired=$true
     }
@@ -87,7 +87,7 @@ function WaitForProcess($ProcessName) {
 function InstallPythonIfRequired($PythonDir) {
     if (-not(Test-Path "$PythonDir")) {
         Write-Host "Installing python..."
-        Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.8.9/python-3.8.9-amd64.exe" -OutFile "$workingDir\python-3.8.9-amd64.exe"
+        Invoke-WebRequest -Uri "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python-3.8.9-amd64.exe" -OutFile "$workingDir\python-3.8.9-amd64.exe"
         & "$workingDir\python-3.8.9-amd64.exe" /quiet TargetDir=$PythonDir InstallAllUsers=1 PrependPath=1
         WaitForProcess -ProcessName "python-3.8.9-amd64"
     }
@@ -96,9 +96,9 @@ function InstallPythonIfRequired($PythonDir) {
 function InstallChromeIfRequired {
     if (-not(Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
         Write-Host "Installing chrome..."
-        Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -Outfile $workingDir\chrome_installer.exe
-        & $workingDir\chrome_installer.exe /silent /install
-        WaitForProcess -ProcessName "chrome_installer"
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile $workingDir\ChromeSetup.exe
+        & $workingDir\ChromeSetup.exe /silent /install
+        WaitForProcess -ProcessName "ChromeSetup"
     }
 }
 
@@ -120,6 +120,12 @@ function GenerateSshKeys($Path) {
     if (!(Test-Path "$Path\.ssh\id_rsa")) {
         cmd /c "ssh-keygen.exe -t rsa -N """" -f ""$Path\.ssh\id_rsa"""
     }
+}
+
+function AddPublicKeyToAuthorizedKeys($SourcePath, $DestinationPath) {
+    NewDirIfRequired -Path (Split-Path -Path $DestinationPath)
+    Get-Content $SourcePath | Out-File -FilePath $DestinationPath -Encoding ascii -Force
+    SetCorrectGitAcl -Path $DestinationPath
 }
 
 function SetCorrectGitAcl($Path) {
@@ -145,7 +151,7 @@ function ConfigureAndRestartDockerDaemon {
 function DownloadSigWindowsToolsIfRequired {
     if (-not(Test-Path .\sig-windows-tools)) {
         NewDirIfRequired -Path .\sig-windows-tools
-        Invoke-WebRequest 'https://github.com/kubernetes-sigs/sig-windows-tools/archive/00012ee6d171b105e7009bff8b2e42d96a45426f.zip' -Outfile .\sig-windows-tools.zip
+        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/sig-windows-tools-00012ee6d171b105e7009bff8b2e42d96a45426f.zip" -Outfile .\sig-windows-tools.zip
         tar -xvf .\sig-windows-tools.zip --strip-components=1 -C sig-windows-tools
     }
 }
@@ -185,7 +191,7 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
         "Name" : "flannel",
         "Source" : [{
             "Name" : "flanneld",
-            "Url" : "https://github.com/coreos/flannel/releases/download/v0.11.0/flanneld.exe"
+            "Url" : "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/flanneld.exe"
             }
         ],
         "Plugin" : {
@@ -195,8 +201,8 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
     },
     "Kubernetes" : {
         "Source" : {
-            "Release" : "1.15.5",
-            "Url" : "https://dl.k8s.io/v1.15.5/kubernetes-node-windows-amd64.tar.gz"
+            "Release" : "1.15.4",
+            "Url" : "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/kubernetes-node-windows-amd64.tar.gz"
         },
         "ControlPlane" : {
             "IpAddress" : "$KubeHost",
@@ -381,10 +387,9 @@ InstallOpenSshServerIfRequired
 Write-Host "Generating SSH keys..."
 GenerateSshKeys -Path $homeDir
 
-Write-Host "Adding node SSH keys to administrators authorized hosts..."
-Get-Content "$homeDir\.ssh\id_rsa.pub" `
-    | Out-File -FilePath C:\ProgramData\ssh\administrators_authorized_keys -Encoding ascii -Force
-SetCorrectGitAcl -Path C:\ProgramData\ssh\administrators_authorized_keys
+Write-Host "Adding node SSH keys to authorized keys..."
+AddPublicKeyToAuthorizedKeys -SourcePath "$homeDir\.ssh\id_rsa.pub" -DestinationPath C:\Windows\.ssh\authorized_keys
+AddPublicKeyToAuthorizedKeys -SourcePath "$homeDir\.ssh\id_rsa.pub" -DestinationPath C:\ProgramData\ssh\administrators_authorized_keys
 
 Write-Host "Publishing node SSH keys..."
 Copy-Item -Path "$homeDir\.ssh" -Destination "$hostDir\.ssh" -Recurse
