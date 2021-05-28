@@ -967,41 +967,32 @@ export default class Metadata extends React.Component {
           onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
           {icon}{getColumnTitle(key)}
-          {(this.dateKeys.includes(key)) ? (
-            <Button
-              shape="circle"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                marginLeft: 5,
-                border: 'none',
-                color: (
-                  dateFiltersApplied()
-                    .filter(obj => obj.key === key)).length
-                  ? '#108ee9' : 'grey'
-              }}
-            >
-              <RangeDatePicker
-                from={getFromDate(key)}
-                to={getToDate(key)}
-                onChange={(e) => onDateRangeChanged(e, key)}
-              />
-            </Button>)
-            : (
-              <Button
-                shape="circle"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  marginLeft: 5,
-                  border: 'none'
-                }}
-              >
+          <Button
+            shape="circle"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              marginLeft: 5,
+              border: 'none',
+              color: (
+                dateFiltersApplied()
+                  .filter(obj => obj.key === key)).length
+                ? '#108ee9' : 'grey'
+            }}
+          >{this.dateKeys.includes(key)
+              ? (
+                <RangeDatePicker
+                  from={getFromDate(key)}
+                  to={getToDate(key)}
+                  onChange={(e) => onDateRangeChanged(e, key)}
+                />
+              ) : (
                 <FilterControl
                   columnName={key}
                   onSearch={(tags) => console.log('onSearch...', tags)}
                 />
-              </Button>
-            )
-          }
+              )
+            }
+          </Button>
         </span>
       );
     };
