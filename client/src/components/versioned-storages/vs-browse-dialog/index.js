@@ -24,10 +24,9 @@ import {
   Icon,
   Input,
   Modal,
-  Select,
   Table
 } from 'antd';
-import PipelineVersions from '../../../models/pipelines/Version';
+import VSVersions from '../vs-versions-select';
 import styles from './vs-browse-dialog.css';
 
 class VSBrowseDialog extends React.Component {
@@ -62,7 +61,7 @@ class VSBrowseDialog extends React.Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevState.pipelineId !== this.state.pipelineId) {
-      this.wrapPromiseAction(this.fetchPipelineVersions)();
+      this.pipelineChanged();
     }
     if (prevProps.visible !== this.props.visible && !this.props.visible) {
       this.clearSelection();
@@ -105,31 +104,10 @@ class VSBrowseDialog extends React.Component {
     });
   }
 
-  fetchPipelineVersions = () => {
-    const {
-      pipelineId
-    } = this.state;
-    if (pipelineId) {
-      return new Promise((resolve) => {
-        const request = new PipelineVersions(pipelineId);
-        request.fetch()
-          .then(() => {
-            if (request.error) {
-              resolve({error: request.error});
-            } else {
-              const versions = Array.from(request.value || []);
-              const version = versions[0]?.commitId;
-              resolve({
-                error: undefined,
-                version,
-                versions
-              });
-            }
-          })
-          .catch(e => resolve({error: e.message}));
-      });
-    }
-    return Promise.resolve();
+  pipelineChanged = () => {
+    this.setState({
+      version: undefined
+    });
   };
 
   onVersionsCellClicked = storage => {
@@ -192,47 +170,22 @@ class VSBrowseDialog extends React.Component {
   renderVSVersions = (storage) => {
     const {
       pipelineId,
-      version,
-      versions,
-      error,
-      pending
+      version
     } = this.state;
     const {
       repositories
     } = this.props;
     if (pipelineId && +pipelineId === +(storage.id)) {
-      if (pending) {
-        return (<Icon type="loading" />);
-      }
-      if (error) {
-        return (
-          <span className={styles.error}>
-            {error}
-          </span>
-        );
-      }
-      if (versions.length === 0) {
-        return (
-          <span className={styles.error}>
-            No versions configured
-          </span>
-        );
-      }
       const onChangeVersion = v => this.setState({version: v});
       return (
-        <Select
+        <VSVersions
+          className={styles.versionsSelect}
+          rowClassName={styles.versionRow}
           value={version}
           onChange={onChangeVersion}
-          size="small"
-        >
-          {
-            versions.map(v => (
-              <Select.Option key={v.commitId} value={v.commitId}>
-                {v.name}
-              </Select.Option>
-            ))
-          }
-        </Select>
+          repository={pipelineId}
+          setFirstVersionByDefault
+        />
       );
     } else {
       const repo = (repositories || []).find(r => +(r.id) === +(storage.id));

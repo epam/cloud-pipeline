@@ -32,12 +32,17 @@ import styles from './vs-actions.css';
 import VSAbortMerge from '../../../models/versioned-storage/abort-merge';
 import VSClone from '../../../models/versioned-storage/clone';
 import VSCommit from '../../../models/versioned-storage/commit';
+import VSCheckout from '../../../models/versioned-storage/checkout';
 import VSCurrentState from '../../../models/versioned-storage/current-state';
 import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
 import VSConflictError from '../../../models/versioned-storage/conflict-error';
 import resolveFileConflict from '../../../models/versioned-storage/resolve-file-conflict';
-import {GitCommitDialog, ConflictsDialog} from './components';
+import {
+  CheckoutDialog,
+  GitCommitDialog,
+  ConflictsDialog
+} from './components';
 import '../../../staticStyles/vs-actions-dropdown.css';
 
 const SUBMENU_POSITION = {
@@ -53,6 +58,7 @@ class VSActions extends React.Component {
     vsBrowserVisible: false,
     subMenuPosition: SUBMENU_POSITION.right,
     gitCommit: undefined,
+    gitCheckout: undefined,
     gitDiff: undefined,
     conflicts: undefined
   };
@@ -185,10 +191,13 @@ class VSActions extends React.Component {
           message.error(request.error, 5);
         } else {
           const {task} = request.value;
-          const vsTaskStatus = new VSTaskStatus(this.props.run?.id, task);
-          const promise = vsTaskStatus.fetchUntilDone();
-          this.pushOperation(vsTaskStatus, promise);
-          return promise;
+          if (task) {
+            const vsTaskStatus = new VSTaskStatus(this.props.run?.id, task);
+            const promise = vsTaskStatus.fetchUntilDone();
+            this.pushOperation(vsTaskStatus, promise);
+            return promise;
+          }
+          return Promise.resolve();
         }
       })
       .then(() => {
@@ -523,6 +532,54 @@ class VSActions extends React.Component {
     }
   };
 
+  openGitCheckoutModal = (storage) => {
+    this.setState({
+      gitCheckout: storage
+    });
+  };
+
+  closeGitCheckoutModal = () => {
+    this.setState({
+      gitCheckout: undefined
+    });
+  };
+
+  doCheckout = (version) => {
+    const {
+      gitCheckout
+    } = this.state;
+    if (gitCheckout) {
+      return new Promise((resolve) => {
+        const {id, name} = gitCheckout;
+        const hide = message.loading((
+          <span>
+            Checking out revision <b>{version}</b> for the <b>{name}</b> storage...
+          </span>
+        ), 0);
+        const onSuccess = () => message.success(
+          (
+            <span>
+              Revision <b>{version}</b> checked out
+            </span>
+          ),
+          5
+        );
+        this.closeGitCheckoutModal();
+        this.performRequestWithStatus(
+          new VSCheckout(this.props.run?.id, id, version),
+          resolve,
+          this.onConflictsDetected,
+          {
+            hide,
+            storage: gitCheckout,
+            onSuccess,
+            mergeInProgress: false
+          }
+        );
+      });
+    }
+  };
+
   closeGitDiffModal = () => {
     this.setState({
       gitDiff: undefined
@@ -664,6 +721,14 @@ class VSActions extends React.Component {
             >
               <Icon type="sync" /> Refresh
             </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item
+              key={`checkout-${storage.id}`}
+              disabled={mergeInProgress || unsaved}
+            >
+              <Icon type="fork" /> Checkout revision
+            </Menu.Item>
+            <Menu.Divider />
             {
               hasConflicts && (
                 <Menu.Item
@@ -702,6 +767,12 @@ class VSActions extends React.Component {
             if (storage) {
               this.onResolveConflictsVS(storage);
             }
+            break;
+          case 'checkout':
+            if (storage) {
+              this.openGitCheckoutModal(storage);
+            }
+            break;
         }
         this.setState({dropDownVisible: false});
       };
@@ -737,6 +808,7 @@ class VSActions extends React.Component {
     const {
       dropDownVisible,
       gitDiff,
+      gitCheckout,
       gitCommit,
       conflicts
     } = this.state;
@@ -790,6 +862,12 @@ class VSActions extends React.Component {
             run={run?.id}
             mergeInProgress={conflicts?.mergeInProgress}
             storage={conflicts?.storage}
+          />
+          <CheckoutDialog
+            visible={!!gitCheckout}
+            repository={gitCheckout}
+            onClose={this.closeGitCheckoutModal}
+            onSelect={this.doCheckout}
           />
         </a>
       </Dropdown>

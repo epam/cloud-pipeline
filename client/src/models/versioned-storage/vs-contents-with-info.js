@@ -28,7 +28,7 @@ export default class VersionedStorageListWithInfo extends Remote {
     this.id = id;
     let query = [
       `page=${page}`,
-      `pageSize=${pageSize}`,
+      `page_size=${pageSize}`,
       version && `version=${version}`,
       path && `path=${encodeURIComponent(path)}`
     ].filter(Boolean).join('&');
