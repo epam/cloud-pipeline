@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.metadata;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -53,6 +54,10 @@ public class MetadataFilter {
     private List<OrderBy> orderBy;
     @ApiModelProperty(notes = "list string to perform substring insensitive search in external ids")
     private List<String> externalIdQueries;
+    @ApiModelProperty(notes = "Start created date to filter for metadata")
+    private LocalDate startDateFrom;
+    @ApiModelProperty(notes = "End created date to filter for metadata")
+    private LocalDate endDateTo;
 
     @Getter
     @Setter
