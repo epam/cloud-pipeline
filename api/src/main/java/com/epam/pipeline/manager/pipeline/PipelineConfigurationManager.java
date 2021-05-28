@@ -22,7 +22,9 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
@@ -38,6 +40,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
@@ -76,6 +79,16 @@ public class PipelineConfigurationManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    public PipelineConfiguration getPipelineConfigurationForPipeline(final Pipeline pipeline,
+                                                                     final PipelineStart runVO) {
+        if (PipelineType.VERSIONED_STORAGE.equals(pipeline.getPipelineType())) {
+            Assert.isTrue(StringUtils.hasText(runVO.getDockerImage()),
+                    messageHelper.getMessage(MessageConstants.ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE));
+            return getPipelineConfiguration(runVO, toolManager.loadByNameOrId(runVO.getDockerImage()));
+        }
+        return getPipelineConfiguration(runVO);
+    }
 
     public PipelineConfiguration getPipelineConfiguration(final PipelineStart runVO) {
         return getPipelineConfiguration(runVO, null);

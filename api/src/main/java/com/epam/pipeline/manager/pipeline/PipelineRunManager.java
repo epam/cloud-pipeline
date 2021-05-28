@@ -295,7 +295,8 @@ public class PipelineRunManager {
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
         final Pipeline pipeline = pipelineManager.load(pipelineId);
-        final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
+        final PipelineConfiguration configuration = configurationManager
+                .getPipelineConfigurationForPipeline(pipeline, runVO);
         runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
                 configuration.getSharedWithRoles()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);

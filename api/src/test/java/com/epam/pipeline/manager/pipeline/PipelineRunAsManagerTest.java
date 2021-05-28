@@ -56,8 +56,10 @@ public class PipelineRunAsManagerTest {
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final CheckPermissionHelper permissionHelper = mock(CheckPermissionHelper.class);
     private final Executor runAsExecutor = Executors.newSingleThreadExecutor();
+    private final PipelineManager pipelineManager = mock(PipelineManager.class);
     private final PipelineRunAsManager manager = new PipelineRunAsManager(pipelineRunManager, userRunnersManager,
-            userManager, authManager, configurationManager, messageHelper, permissionHelper, runAsExecutor);
+            userManager, authManager, configurationManager, messageHelper, permissionHelper, runAsExecutor,
+            pipelineManager);
 
     @Test
     @WithMockUser
