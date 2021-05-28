@@ -321,8 +321,13 @@ public class GitManager {
         return this.getGitlabClientForPipeline(pipeline).getCommits(getRevisionName(versionName), since);
     }
 
-    private boolean folderExists(Pipeline pipeline, String folder) throws GitClientException {
-        return this.fileExists(pipeline, Paths.get(folder, GIT_FOLDER_TOKEN_FILE).toString());
+    private boolean folderExists(Pipeline pipeline, String folder) {
+        try {
+            return !getGitlabClientForPipeline(pipeline)
+                    .getRepositoryContents(folder, null, false).isEmpty();
+        } catch (GitClientException e) {
+            return false;
+        }
     }
 
     private boolean fileExists(Pipeline pipeline, String filePath) throws GitClientException {
@@ -495,16 +500,9 @@ public class GitManager {
                             filePath));
         }
         GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
-        boolean fileExists = false;
-        try {
-            fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (UnexpectedResponseStatusException exception) {
-            LOGGER.debug(exception.getMessage(), exception);
-        }
-
         GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
         String message =
-                getCommitMessage(commitMessage, filePath, fileExists, gitPushCommitActionEntry);
+                getCommitMessage(commitMessage, filePath, fileExists(pipeline, filePath), gitPushCommitActionEntry);
         gitPushCommitActionEntry.setFilePath(filePath);
         gitPushCommitActionEntry.setContent(fileContent);
 
@@ -540,13 +538,7 @@ public class GitManager {
             if (!StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
                 action = ACTION_MOVE;
             } else {
-                boolean fileExists = false;
-                try {
-                    fileExists = gitlabClient.getFileContents(sourcePath, GIT_MASTER_REPOSITORY) != null;
-                } catch (UnexpectedResponseStatusException exception) {
-                    LOGGER.debug(exception.getMessage(), exception);
-                }
-                if (fileExists) {
+                if (fileExists(pipeline, sourcePath)) {
                     action = "update";
                 } else {
                     action = "create";
@@ -578,14 +570,7 @@ public class GitManager {
             commitMessage = String.format("Renaming %s to %s", filePreviousPath, filePath);
         }
 
-        boolean fileExists = false;
-        try {
-            fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (UnexpectedResponseStatusException exception) {
-            LOGGER.debug(exception.getMessage(), exception);
-        }
-
-        Assert.isTrue(!fileExists,
+        Assert.isTrue(!fileExists(pipeline, filePath),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, filePath));
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
@@ -627,15 +612,9 @@ public class GitManager {
                     Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                             messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, filePath)));
 
-            boolean fileExists = false;
-            try {
-                fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-            } catch (UnexpectedResponseStatusException exception) {
-                LOGGER.debug(exception.getMessage(), exception);
-            }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
             commitMessage =
-                    getCommitMessage(commitMessage, filePath, fileExists, gitPushCommitActionEntry);
+                    getCommitMessage(commitMessage, filePath, fileExists(pipeline, filePath), gitPushCommitActionEntry);
             gitPushCommitActionEntry.setFilePath(filePath);
             gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(file.getBytes()));
             gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);

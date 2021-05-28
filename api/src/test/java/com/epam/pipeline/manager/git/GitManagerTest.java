@@ -477,7 +477,16 @@ public class GitManagerTest extends AbstractManagerTest {
         final PipelineSourceItemVO folder = new PipelineSourceItemVO();
         folder.setPath(DOCS);
         folder.setLastCommitId(pipeline.getCurrentVersion().getCommitId());
-        mockFileContentRequest(DOCS + File.separator + GITKEEP, GIT_MASTER_REPOSITORY, FILE_CONTENT);
+        final GitRepositoryEntry bla = new GitRepositoryEntry();
+        bla.setName(README_FILE);
+        bla.setType(BLOB_TYPE);
+        bla.setPath(DOCS + "/" + README_FILE);
+        final List<GitRepositoryEntry> tree = singletonList(bla);
+        givenThat(
+            get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
+                .withQueryParam(PATH, equalTo(DOCS))
+                .willReturn(okJson(with(tree)))
+        );
         gitManager.createOrRenameFolder(pipeline.getId(), folder);
     }
 
@@ -487,18 +496,11 @@ public class GitManagerTest extends AbstractManagerTest {
         final PipelineSourceItemVO folder = new PipelineSourceItemVO();
         folder.setPath(DOCS);
         folder.setLastCommitId(pipeline.getCurrentVersion().getCommitId());
-        final GitRepositoryEntry bla = new GitRepositoryEntry();
-        bla.setName(README_FILE);
-        bla.setType(BLOB_TYPE);
-        bla.setPath(DOCS + "/" + README_FILE);
-        final List<GitRepositoryEntry> tree = singletonList(bla);
         givenThat(
-                get(urlPathEqualTo(api(REPOSITORY_TREE)))
-                        .withQueryParam(REF_NAME, equalTo(GIT_MASTER_REPOSITORY))
+                get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                         .withQueryParam(PATH, equalTo(DOCS))
-                        .willReturn(okJson(with(tree)))
+                        .willReturn(notFound())
         );
-        mockFileContentRequestDoesnotExist(DOCS + File.separator + GITKEEP, GIT_MASTER_REPOSITORY);
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
         final GitCommitEntry resultingCommit = gitManager.createOrRenameFolder(pipeline.getId(), folder);
         assertThat(resultingCommit, is(expectedCommit));
@@ -710,13 +712,6 @@ public class GitManagerTest extends AbstractManagerTest {
                         .withQueryParam(REF, equalTo(ref))
                         .willReturn(okJson(with(gitFile)))
         );
-    }
-
-    private void mockFileContentRequestDoesnotExist(final String filePath, final String ref) {
-        givenThat(
-                get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(filePath))))
-                        .withQueryParam(REF, equalTo(ref))
-                        .willReturn(notFound()));
     }
 
     private String encodeUrlPath(final String filePath) {
