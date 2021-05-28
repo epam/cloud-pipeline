@@ -274,7 +274,7 @@ class VersionedStorageTable extends React.Component {
         <Button
           onClick={this.hideDeleteDialog}
         >
-          CANCEL
+          Cancel
         </Button>
         <Button
           type="danger"
@@ -283,7 +283,7 @@ class VersionedStorageTable extends React.Component {
             this.hideDeleteDialog();
           }}
         >
-          DELETE
+          Delete
         </Button>
       </Row>
     );

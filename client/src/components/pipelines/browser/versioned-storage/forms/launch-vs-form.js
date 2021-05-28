@@ -316,17 +316,6 @@ class LaunchVSForm extends React.Component {
     onLaunch && onLaunch(tool, tag);
   };
 
-  renderTool1 = (tool) => {
-    return (
-      <div
-        key={`${tool.id}`}
-        className={styles.tool}
-      >
-        {tool.image}
-      </div>
-    );
-  };
-
   renderTool = (tool) => {
     const {
       filter: search,
@@ -483,6 +472,11 @@ class LaunchVSForm extends React.Component {
             </div>
           )
         }
+        <div
+          className={styles.checkbox}
+        >
+          <Icon type="check-circle" />
+        </div>
       </div>
     );
   };
@@ -504,6 +498,7 @@ class LaunchVSForm extends React.Component {
       );
     }
     let personalTools = [];
+    let personalGroupId;
     if (authenticatedUserInfo.loaded) {
       const {
         groups: adGroups = [],
@@ -511,6 +506,7 @@ class LaunchVSForm extends React.Component {
       } = authenticatedUserInfo.value;
       const personalGroup = getDefaultGroup(this.groups, adGroups.slice(), userRoles.slice());
       if (personalGroup) {
+        personalGroupId = personalGroup.id;
         personalTools = (personalGroup.tools || []).map(tool => ({
           ...tool,
           group: personalGroup,
@@ -524,14 +520,9 @@ class LaunchVSForm extends React.Component {
     } = this.state;
     const filterRegEx = filter && filter.length ? (new RegExp(filter, 'i')) : /./;
     const filterTool = (tool) =>
-      (
-        (filter && filter.length) ||
-        (!selectedTool || selectedTool.id !== tool.id)
-      ) && (
-        filterRegEx.test(tool.image) ||
-        filterRegEx.test(tool.group.name) ||
-        filterRegEx.test(tool.registry.description)
-      );
+      filterRegEx.test(tool.image) ||
+      filterRegEx.test(tool.group.name) ||
+      filterRegEx.test(tool.registry.description);
     const filteredPersonalTools = personalTools.filter(filterTool);
     const filteredTools = this.tools
       .filter(filterTool)
@@ -541,14 +532,11 @@ class LaunchVSForm extends React.Component {
       <div
         className={styles.tools}
       >
-        {
-          selectedTool &&
-          !(filter && filter.length) &&
-          this.renderTool(selectedTool)
-        }
         {filteredPersonalTools.map(this.renderTool)}
         {
-          showAllToolsSection && (
+          (
+            showAllToolsSection || (selectedTool && selectedTool.group.id !== personalGroupId)
+          ) && (
             <div
               className={styles.divider}
             >
@@ -569,6 +557,12 @@ class LaunchVSForm extends React.Component {
               </div>
             </div>
           )
+        }
+        {
+          !showAllToolsSection &&
+          selectedTool &&
+          selectedTool.group.id !== personalGroupId &&
+          this.renderTool(selectedTool)
         }
         {
           showAllToolsSection && (
@@ -603,26 +597,26 @@ class LaunchVSForm extends React.Component {
             className={styles.footer}
           >
             <Button
-              onClick={onClose}
+              disabled={error || pending}
+              onClick={onLaunchCustom}
+              style={{
+                marginRight: 5
+              }}
             >
-              CANCEL
+              Run custom
             </Button>
             <div>
               <Button
-                disabled={error || pending}
-                onClick={onLaunchCustom}
-                style={{
-                  marginRight: 5
-                }}
+                onClick={onClose}
               >
-                CUSTOM
+                Cancel
               </Button>
               <Button
                 type="primary"
                 disabled={!tool || error || pending}
                 onClick={this.handleLaunch}
               >
-                LAUNCH
+                Launch
               </Button>
             </div>
           </div>

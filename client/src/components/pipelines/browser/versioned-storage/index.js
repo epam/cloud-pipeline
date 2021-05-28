@@ -327,14 +327,18 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         if (request.error) {
           throw new Error(request.error);
         } else if (request.loaded) {
+          console.log(request.value);
           const {id} = request.value;
-          return Promise.resolve(id);
+          return Promise.resolve(+id);
         }
       })
-      .catch(e => message.error(e.message, 5))
+      .catch(e => {
+        message.error(e.message, 5);
+        return Promise.resolve();
+      })
       .then((runId) => {
         hide();
-        if (runId) {
+        if (typeof runId === 'number') {
           router.push(`/run/${runId}`);
         }
       });

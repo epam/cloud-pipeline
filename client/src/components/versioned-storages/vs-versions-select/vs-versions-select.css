@@ -25,3 +25,16 @@
 .load-more:hover {
   text-decoration: underline;
 }
+
+.commit {
+  display: flex;
+  align-items: center;
+}
+
+.commit span:not(.accent) {
+  color: #999;
+}
+
+.commit .accent {
+  color: #666;
+}

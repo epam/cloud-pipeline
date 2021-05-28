@@ -262,13 +262,13 @@ class HistoryFilter extends localization.LocalizedReactComponent {
           onClick={this.handleReset}
           disabled={this.filtersIsEmpty}
         >
-          RESET
+          Reset
         </Button>
         <Button
           type="primary"
           onClick={this.handleOk}
         >
-          APPLY
+          Apply
         </Button>
       </Row>);
     return (

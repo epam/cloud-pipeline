@@ -49,7 +49,6 @@ export default class VSFileContentUpdate extends VSRemote {
       request.open('POST', `${this.constructor.prefix}${this.url}`);
       Object.entries(headers)
         .forEach(([header, value]) => {
-          console.log('setting header', header, value);
           request.setRequestHeader(header, value);
         });
       request.send(this.contents);

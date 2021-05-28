@@ -23,6 +23,8 @@ import {
 } from 'antd';
 import LoadVSCommits from '../../../models/versioned-storage/load-commits';
 import styles from './vs-versions-select.css';
+import UserName from '../../special/UserName';
+import displayDate from "../../../utils/displayDate";
 
 function loadVersions (repository, page = 0) {
   const request = new LoadVSCommits(repository, page);
@@ -176,6 +178,12 @@ class VSVersions extends React.Component {
         size="small"
         dropdownMatchSelectWidth={dropdownMatchSelectWidth}
         style={style}
+        showSearch
+        filterOption={
+          (input, option) => !option.props.searchValue ||
+            option.props.searchValue.length === 0 ||
+            option.props.searchValue.find(o => o.indexOf(input.toLowerCase()) >= 0)
+        }
       >
         {
           versions.map((version) => (
@@ -183,8 +191,29 @@ class VSVersions extends React.Component {
               className={rowClassName}
               key={version.commit}
               value={version.commit}
+              searchValue={[
+                (version.commit || '').toLowerCase(),
+                (version.author || '').toLowerCase(),
+                (version.commit_message || '').toLowerCase()
+              ]}
             >
-              <b>{version.commit.slice(0, 7)}</b> {version.commit_message}
+              <div
+                className={styles.commit}
+              >
+                <UserName
+                  userName={version.author}
+                />
+                <span style={{marginRight: 5}}>,</span>
+                <span>
+                  {displayDate(version.committer_date, 'MMM D, YYYY, HH:mm')}
+                </span>
+                <span style={{marginRight: 5}}>:</span>
+                <span
+                  className={styles.accent}
+                >
+                  {version.commit_message}
+                </span>
+              </div>
             </Select.Option>
           ))
         }
@@ -194,6 +223,8 @@ class VSVersions extends React.Component {
               className={styles.versionRow}
               disabled
               key="load more"
+              value=""
+              searchValue={[]}
             >
               <div
                 className={styles.loadMore}

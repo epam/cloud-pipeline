@@ -130,7 +130,7 @@ class Conflicts extends React.Component {
           getGridTemplateColumns(newFilesPanelWidth);
       }
       this.resizeInfo.newWidth = newFilesPanelWidth;
-      if (this.ide) {
+      if (this.ide && typeof this.ide.updateScrollBars === 'function') {
         this.ide.updateScrollBars();
       }
     }
@@ -144,7 +144,7 @@ class Conflicts extends React.Component {
       this.setState({
         filesWidth: newWidth || 200
       });
-      if (this.ide) {
+      if (this.ide && typeof this.ide.updateScrollBars === 'function') {
         this.ide.updateScrollBars();
       }
     }
