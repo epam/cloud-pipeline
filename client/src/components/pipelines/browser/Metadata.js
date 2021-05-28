@@ -24,7 +24,18 @@ import MetadataEntityFilter from '../../../models/folderMetadata/MetadataEntityF
 import MetadataEntityKeys from '../../../models/folderMetadata/MetadataEntityKeys';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataEntityLoadExternal';
-import {Button, Checkbox, Col, Icon, Input, message, Modal, Pagination, Row} from 'antd';
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  Icon,
+  Input,
+  message,
+  Menu,
+  Modal,
+  Pagination,
+  Row
+} from 'antd';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -57,7 +68,10 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
+import RangeDatePicker from './metadata-controls/RangeDatePicker';
+import FilterControl from './metadata-controls/FilterControl';
 
+const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
@@ -85,6 +99,12 @@ function getColumnTitle (key) {
     return 'Created Date';
   }
   return key;
+}
+function getFromDate (key) {
+  return '';
+}
+function getToDate (key) {
+  return '';
 }
 
 @connect({
@@ -114,7 +134,6 @@ function getColumnTitle (key) {
 })
 @observer
 export default class Metadata extends React.Component {
-
   static propTypes = {
     onSelectItems: PropTypes.func,
     initialSelection: PropTypes.array,
@@ -128,6 +147,7 @@ export default class Metadata extends React.Component {
   columns = [];
   defaultColumns = [];
   @observable keys;
+  dateKeys = [];
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -140,8 +160,12 @@ export default class Metadata extends React.Component {
     metadata: false,
     selectedItem: null,
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
+    selectedItemsCanBeSkipped: false,
+    selectedItemsAreShowing: false,
     selectedColumns: [],
     filterModel: {
+      startDateFrom: undefined,
+      endDateTo: undefined,
       filters: [],
       folderId: parseInt(this.props.folderId),
       metadataClass: this.props.metadataClass,
@@ -158,6 +182,8 @@ export default class Metadata extends React.Component {
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false
   };
+
+  uploadButton;
 
   @computed
   get entityTypes () {
@@ -255,6 +281,19 @@ export default class Metadata extends React.Component {
     });
   };
 
+  onDateRangeChanged = async (range) => {
+    let filterModel = {...this.state.filterModel};
+    const {
+      from,
+      to
+    } = range || {};
+    filterModel.startDateFrom = from;
+    filterModel.endDateTo = to;
+    await this.setState({filterModel});
+    this.loadData(this.state.filterModel);
+    this.forceUpdate();
+  };
+
   closeAddInstanceForm = () => {
     this.setState({
       addInstanceFormVisible: false
@@ -293,48 +332,165 @@ export default class Metadata extends React.Component {
     }
   };
 
+  handleFilterApplied = async (key, dataArray) => {
+    const filterModel = {...this.state.filterModel};
+    if (key && dataArray && dataArray.length) {
+      const filterObj = {key: unmapColumnName(key), values: dataArray};
+      const currentFilterIndex = filterModel.filters
+        .findIndex(filter => filter.key === unmapColumnName(key));
+      if (currentFilterIndex > -1) {
+        filterModel.filters[currentFilterIndex] = filterObj;
+      } else {
+        filterModel.filters.push(filterObj);
+      }
+    } else {
+      filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
+    }
+    await this.setState({filterModel});
+    this.paginationOnChange(FIRST_PAGE);
+    this.loadData(this.state.filterModel);
+  }
+
   loadData = async (filterModel) => {
     this.setState({loading: true});
     this.metadataRequest = new MetadataEntityFilter();
-    let orderBy;
+    let orderBy, filters;
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
+      filters = (filterModel.filters || [])
+        .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
-    await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}));
-    if (this.metadataRequest.error) {
-      message.error(this.metadataRequest.error, 5);
-      this._currentMetadata = [];
-    } else {
-      if (this.metadataRequest.value) {
-        this._totalCount = this.metadataRequest.value.totalCount;
-        if (!this.state.filterModel.searchQueries.length) {
-          const parentFolderId = this.props.folderId;
-          if (this._totalCount <= 0) {
-            this.props.router.push(`/folder/${parentFolderId}`);
-            return;
-          }
+    if (!this.state.selectedItemsAreShowing) {
+      await this.metadataRequest.send(
+        {
+          ...filterModel,
+          orderBy,
+          filters,
         }
-        this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
-          v.data = v.data || {};
-          v.data.rowKey = {
-            value: v.id,
-            type: 'string'
-          };
-          v.data.ID = {
-            value: v.externalId,
-            type: 'string'
-          };
-          v.data.createdDate = {
-            value: v.createdDate,
-            type: 'date'
-          };
-          return v.data;
+      );
+      if (this.metadataRequest.error) {
+        message.error(this.metadataRequest.error, 5);
+        this._currentMetadata = [];
+      } else {
+        if (this.metadataRequest.value) {
+          this._totalCount = this.metadataRequest.value.totalCount;
+          //           if (!this.state.filterModel.searchQueries.length) {
+          //             const parentFolderId = this.props.folderId;
+          //             if (this._totalCount <= 0) {
+          //               this.props.router.push(`/folder/${parentFolderId}`);
+          //               return;
+          //             }
+          //           }
+          if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
+            this._classEntity = {
+              id: this.metadataRequest.value.elements[0].classEntity.id,
+              name: this.metadataRequest.value.elements[0].classEntity.name
+            };
+          }
+          this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
+            v.data = v.data || {};
+            v.data.rowKey = {
+              value: v.id,
+              type: 'string'
+            };
+            v.data.ID = {
+              value: v.externalId,
+              type: 'string'
+            };
+            v.data.createdDate = {
+              value: v.createdDate,
+              type: 'date'
+            };
+            return v.data;
+          });
+        }
+      }
+    } else {
+      const {page, pageSize} = this.state.filterModel;
+      const selectedItems = [...this.state.selectedItems];
+      this._totalCount = selectedItems.length;
+
+      const firstRow = Math.max((page - 1) * pageSize, 0);
+      const lastRow = Math.min(page * pageSize, selectedItems.length);
+
+      if (orderBy && orderBy.length) {
+        const field = orderBy[0].field === 'externalId' ? 'ID' : orderBy[0].field;
+        const desc = orderBy[0].desc;
+        selectedItems.sort((a, b) => {
+          if (!desc) {
+            return a[field].value >= b[field].value ? 1 : -1;
+          } else {
+            return a[field].value < b[field].value ? 1 : -1;
+          }
         });
+        this._currentMetadata = selectedItems.slice(firstRow, lastRow);
+      } else {
+        this._currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
     this.setState({loading: false});
   };
+
+  filterApplied = (key) => {
+    const {filters, startDateFrom, endDateTo} = this.state.filterModel;
+    if (key !== 'createdDate') {
+      return filters
+        .filter(filterObj => filterObj.key === unmapColumnName(key)).length;
+    } else {
+      return startDateFrom || endDateTo;
+    }
+  };
+
+  renderFilterButton = (key) => {
+    if (this.state.selectedItemsAreShowing) {
+      return null;
+    }
+    const {filterModel = {}} = this.state;
+    const {
+      filters = [],
+      startDateFrom,
+      endDateTo
+    } = filterModel;
+    const filter = filters.find(filter => filter.key === unmapColumnName(key));
+    const values = filter ? (filter.values || []) : [];
+    const button = (
+      <Button
+        shape="circle"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          marginLeft: 5,
+          border: 'none',
+          color: (
+            this.filterApplied(key)
+              ? '#108ee9' : 'grey'
+          )
+        }}
+      >
+        <Icon type="filter" />
+      </Button>);
+
+    if (key === 'createdDate') {
+      return (
+        <RangeDatePicker
+          from={startDateFrom}
+          to={endDateTo}
+          onChange={(e) => this.onDateRangeChanged(e, key)}
+        >
+          {button}
+        </RangeDatePicker>
+      );
+    }
+    return (
+      <FilterControl
+        columnName={key}
+        onSearch={(tags) => this.handleFilterApplied(key, tags)}
+        value={values}
+      >
+        {button}
+      </FilterControl>
+    );
+  }
 
   renderDataStorageLinks = (data) => {
     const urls = [];
@@ -425,9 +581,12 @@ export default class Metadata extends React.Component {
 
       if (this.defaultColumns && this.defaultColumns.length < newColumns.length) {
         const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
-        this.state.selectedColumns.push(...addedColumns);
-        this.setState({selectedColumns: this.state.selectedColumns});
+        this.setState({selectedColumns: [...this.state.selectedColumns, ...addedColumns]});
       }
+      if (this.defaultColumns && this.defaultColumns.length === newColumns.length) {
+        this.setState({selectedColumns: [...newColumns]});
+      }
+
       this.defaultColumns = this.columns = newColumns;
     }
   };
@@ -467,6 +626,10 @@ export default class Metadata extends React.Component {
   };
 
   onSearchQueriesChanged = async () => {
+    this.setState(
+      {selectedItemsAreShowing: false},
+      () => this.paginationOnChange(FIRST_PAGE)
+    );
     await this.loadData(this.state.filterModel);
   };
 
@@ -496,6 +659,12 @@ export default class Metadata extends React.Component {
     if (selectedItem) {
       const index = selectedItems.indexOf(selectedItem);
       selectedItems.splice(index, 1);
+      if (selectedItems.length === 0) {
+        this.setState(
+          {selectedItemsAreShowing: false},
+          () => this.paginationOnChange(FIRST_PAGE)
+        );
+      }
     } else {
       selectedItems.push(item);
     }
@@ -516,7 +685,7 @@ export default class Metadata extends React.Component {
     this.setState({selectedColumns});
   };
 
-  onResetColums = () => {
+  onResetColumns = () => {
     this.columns = [...this.defaultColumns];
     this.setState({selectedColumns: [...this.defaultColumns]});
   };
@@ -535,8 +704,21 @@ export default class Metadata extends React.Component {
       this.setState({selectedItem: selectedItem, metadata: true});
     }
   };
+  onClearFilters = () => {
+    const {filterModel} = this.state;
+    filterModel.filters = [];
+    filterModel.startDateFrom = undefined;
+    filterModel.endDateTo = undefined;
+    this.setState(
+      {filterModel},
+      () => this.paginationOnChange(FIRST_PAGE)
+    );
+  };
   onClearSelectionItems = () => {
-    this.setState({selectedItems: []});
+    this.setState({
+      selectedItems: [],
+      selectedItemsAreShowing: false
+    }, () => this.paginationOnChange(FIRST_PAGE));
   };
   onCopySelectionItems = () => {
     this.setState({
@@ -705,26 +887,22 @@ export default class Metadata extends React.Component {
               }
             }
           })}
+          getResizerProps={() => ({style: {width: '6px', right: '-3px'}})}
           PadRowComponent={
             () =>
               <div className={styles.metadataColumnCell}>
                 <span>{'\u00A0'}</span>
               </div>
           }
-          showPagination={false} />,
+          showPagination={false}
+          NoDataComponent={() => <div className={`${styles.noData}`}>No rows found</div>} />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10}}>
           <Pagination
             size="small"
             pageSize={PAGE_SIZE}
             current={this.state.filterModel.page}
             total={this._totalCount}
-            onChange={
-              async (page) => {
-                this.state.filterModel.page = page;
-                await this.loadData(this.state.filterModel);
-                this.setState({filterModel: this.state.filterModel});
-              }
-            } />
+            onChange={async (page) => this.paginationOnChange(page)} />
         </Row>
       ];
     };
@@ -758,7 +936,6 @@ export default class Metadata extends React.Component {
         />
       );
     };
-
     const onPanelClose = (key) => {
       switch (key) {
         case METADATA_PANEL_KEY:
@@ -771,15 +948,37 @@ export default class Metadata extends React.Component {
       ...((this.metadataRequest.value && this.metadataRequest.value.elements) || []),
       this.externalMetadataEntity
     ];
-    const [currentItem] = this.state.selectedItem && this.state.selectedItem.rowKey
+    let [currentItem] = this.state.selectedItem && this.state.selectedItem.rowKey
       ? allMetadata.filter(metadata => metadata.id === this.state.selectedItem.rowKey.value)
       : [];
+    if (
+      this.state.selectedItemsAreShowing &&
+      this.state.selectedItem &&
+      this.state.selectedItem.rowKey
+    ) {
+      [currentItem] = this.state.selectedItems
+        .filter(item => item.rowKey.value === this.state.selectedItem.rowKey.value)
+        .map(item => {
+          item = {
+            data: {...item},
+            classEntity: {...this._classEntity},
+            createdDate: item.createdDate.value,
+            externalId: item.ID.value,
+            id: item.rowKey.value,
+            parent: {
+              id: this.state.filterModel.folderId
+            }
+          };
+          return item;
+        });
+    }
 
     return (
       <ContentMetadataPanel
         style={{flex: 1, overflow: 'auto'}}
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
+          {this.renderTableActions()}
           {renderTable()}
           {renderConfigurationBrowser()}
           {renderCopyEntitiesDialog()}
@@ -789,7 +988,7 @@ export default class Metadata extends React.Component {
           <MetadataPanel
             key={METADATA_PANEL_KEY}
             readOnly={!(roleModel.writeAllowed(this.props.folder.value) &&
-            this.props.folderId !== undefined)}
+              this.props.folderId !== undefined)}
             readOnlyKeys={['ID', 'createdDate']}
             columnNamesFn={getColumnTitle}
             classId={currentItem ? currentItem.classEntity.id : null}
@@ -806,6 +1005,12 @@ export default class Metadata extends React.Component {
               const [selectedItem] =
                 this._currentMetadata
                   .filter(metadata => metadata.rowKey.value === currentItem.id);
+              if (this.state.selectedItems && this.state.selectedItems.length) {
+                const selectedItems = this.state.selectedItems.map(item => {
+                  return item.rowKey.value === currentItem.id ? selectedItem : item;
+                });
+                this.setState({selectedItems: [...selectedItems]});
+              }
               this.setState({selectedItem: selectedItem});
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
@@ -842,59 +1047,147 @@ export default class Metadata extends React.Component {
   };
 
   renderActions = () => {
-    const actions = [];
-    if (roleModel.writeAllowed(this.props.folder.value) &&
-      this.props.folderId !== undefined && !this.props.hideUploadMetadataBtn) {
-      actions.push(
-        roleModel.manager.entities(
+    if (this.props.folder.pending && !this.props.folder.loaded) {
+      return null;
+    }
+    const metadataManager = roleModel.writeAllowed(this.props.folder.value) &&
+      this.props.folderId !== undefined &&
+      roleModel.isManager.entities(this);
+    if (
+      metadataManager &&
+      !this.props.hideUploadMetadataBtn && !this.props.readOnly
+    ) {
+      const Actions = {
+        addMetadata: 'add-metadata',
+        upload: 'upload',
+        deleteClass: 'delete',
+        showAttributes: 'show-attributes',
+        transfer: 'transfer'
+      };
+      const triggerMenuItem = ({key}) => {
+        switch (key) {
+          case Actions.addMetadata:
+            this.openAddInstanceForm();
+            break;
+          case Actions.upload:
+            if (this.uploadButton) {
+              this.uploadButton.triggerClick();
+            }
+            break;
+          case Actions.deleteClass:
+            this.deleteMetadataClassConfirm();
+            break;
+          case Actions.showAttributes:
+            this.setState({metadata: !this.state.metadata});
+            break;
+          case Actions.transfer:
+            this.onOpenUploadToBucketDialog();
+            break;
+        }
+      };
+      const menuItems = [];
+      menuItems.push((
+        <Menu.Item
+          key={Actions.addMetadata}
+          className={Actions.addMetadata}
+        >
+          <Icon
+            type="plus"
+            style={{marginRight: 5}}
+          />
+          Add instance
+        </Menu.Item>
+      ));
+      menuItems.push((
+        <Menu.Item
+          key={Actions.upload}
+          className={Actions.upload}
+        >
+          <Icon
+            type="upload"
+            style={{marginRight: 5}}
+          />
+          Upload metadata
+        </Menu.Item>
+      ));
+      if (
+        this.transferJobId &&
+        this.transferJobVersion &&
+        this.currentClassEntityPathFields.length > 0
+      ) {
+        menuItems.push((
+          <Menu.Item
+            key={Actions.transfer}
+            className={Actions.transfer}
+          >
+            <Icon
+              type="cloud-upload-o"
+              style={{marginRight: 5}}
+            />
+            Transfer to the cloud
+          </Menu.Item>
+        ));
+        menuItems.push((
+          <Menu.Divider key="divider-1" />
+        ));
+      }
+      menuItems.push((
+        <Menu.Item
+          key={Actions.deleteClass}
+          className={Actions.deleteClass}
+          style={{color: 'red'}}
+        >
+          <Icon
+            type="delete"
+            style={{marginRight: 5}}
+          />
+          Delete class
+        </Menu.Item>
+      ));
+      menuItems.push((
+        <Menu.Divider key="divider-2" />
+      ));
+      menuItems.push((
+        <Menu.Item
+          key={Actions.showAttributes}
+          className={Actions.showAttributes}
+        >
+          {
+            this.state.metadata ? 'Hide attributes' : 'Show attributes'
+          }
+        </Menu.Item>
+      ));
+      const menu = (
+        <Menu
+          onClick={triggerMenuItem}
+        >
+          {menuItems}
+        </Menu>
+      );
+      return (
+        <Dropdown
+          overlay={menu}
+          trigger={['click']}
+        >
           <Button
-            disabled={this.entityTypes.length === 0}
             size="small"
-            onClick={this.openAddInstanceForm}
-            key="add-metadata">
-            <Icon type="plus" />Add instance
-          </Button>,
-          'add-metadata'
-        )
-      );
-      actions.push(
-        roleModel.manager.entities(
-          <UploadButton
-            key="upload-metadata"
-            multiple={false}
-            synchronous
-            onRefresh={async () => {
-              await this.props.entityFields.fetch();
-              await this.props.folder.fetch();
-              if (this.props.onReloadTree) {
-                this.props.onReloadTree(true);
-              }
-            }}
-            title={'Upload metadata'}
-            action={MetadataEntityUpload.uploadUrl(this.props.folderId)} />,
-          'upload-metadata'
-        )
-      );
-      actions.push(
-        roleModel.manager.entities(
-          <Button
-            key="delete-metadata"
-            type="danger"
-            style={{lineHeight: 1}}
-            onClick={this.deleteMetadataClassConfirm}
-            size="small">
-            <Icon type="delete" />
-            Delete class
-          </Button>,
-          'delete-metadata'
-        )
+            style={{lineHeight: 1, margin: '0 0 0 5px'}}
+          >
+            <Icon
+              type="setting"
+            />
+          </Button>
+        </Dropdown>
       );
     }
-    actions.push(
+    return (
       <Button
         key="metadata"
         id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
-        style={{marginRight: 10}}
+        style={{
+          lineHeight: 1,
+          marginLeft: 5
+        }}
         size="small"
         onClick={() => this.setState({metadata: !this.state.metadata})}>
         {
@@ -902,11 +1195,10 @@ export default class Metadata extends React.Component {
         }
       </Button>
     );
-    return actions.filter(action => !!action);
   };
 
   get tableColumns () {
-    const onHeaderClicked = (key, e) => {
+    const onHeaderClicked = (e, key) => {
       if (e) {
         e.stopPropagation();
       }
@@ -931,9 +1223,10 @@ export default class Metadata extends React.Component {
       }
       return (
         <span
-          onClick={(e) => onHeaderClicked(key)}
+          onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
           {icon}{getColumnTitle(key)}
+          {this.renderFilterButton(key)}
         </span>
       );
     };
@@ -958,71 +1251,8 @@ export default class Metadata extends React.Component {
         </div>
       );
     };
-    const renderAdditionalActions = () => {
-      if (roleModel.writeAllowed(this.props.folder.value) && !this.props.readOnly &&
-        roleModel.isManager.entities(this)) {
-        return (
-          <Row type="flex" justify="space-between">
-            <Col style={{padding: 3, textAlign: 'left'}}>
-              {
-                this.state.selectedItems &&
-                this.state.selectedItems.length > 0 &&
-                <span> Selected {this.state.selectedItems ? this.state.selectedItems.length : 0} items </span>
-              }
-            </Col>
-            <Col>
-              <Row style={{paddingRight: 5}} className={styles.currentFolderActions}>
-                <Button
-                  key="delete"
-                  size="small"
-                  type="danger"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onDeleteSelectedItems}>
-                  DELETE
-                </Button>
-                <Button
-                  key="clear_selection"
-                  size="small"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onClearSelectionItems}>
-                  CLEAR SELECTION
-                </Button>
-                <Button
-                  key="copy_selection"
-                  size="small"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onCopySelectionItems}
-                >
-                  COPY
-                </Button>
-                {
-                  this.transferJobId && this.transferJobVersion && this.currentClassEntityPathFields.length > 0 &&
-                  <Button
-                    key="download_selection"
-                    size="small"
-                    type="primary"
-                    onClick={this.onOpenUploadToBucketDialog}>
-                    TRANSFER TO THE CLOUD
-                  </Button>
-                }
-                <Button
-                  key="run"
-                  size="small"
-                  type="primary"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={() => this.setState({configurationBrowserVisible: true})}>
-                  RUN
-                </Button>
-              </Row>
-            </Col>
-          </Row>
-        );
-      } else {
-        return null;
-      }
-    };
 
-    const allColumns = [
+    return [
       {
         id: 'selection',
         accessor: item => item,
@@ -1098,66 +1328,273 @@ export default class Metadata extends React.Component {
                 );
               }
             }
-          })
-        };
+          })};
       })];
-
-    if (this.props.readOnly) {
-      return allColumns;
-    } else {
-      return [{
-        id: 'title',
-        headerClassName: styles.metadataAdditionalActions,
-        Header: () => renderAdditionalActions(),
-        columns: allColumns
-      }];
-    }
   };
+
+  renderTableActions = () => {
+    const {
+      filterModel = {},
+      selectedItems = [],
+      selectedItemsAreShowing
+    } = this.state;
+    const selectedItemsString =
+      `${selectedItems.length} selected item${selectedItems.length === 1 ? '' : 's'}`;
+    const renderClearFiltersButton = () => {
+      const {
+        filters = [],
+        startDateFrom,
+        endDateTo
+      } = filterModel;
+      const filtersEnabled = filters.length > 0 || !!startDateFrom || !!endDateTo;
+      if (!selectedItemsAreShowing && filtersEnabled) {
+        return (
+          <Button
+            key="clear_filters"
+            size="small"
+            onClick={this.onClearFilters}
+            style={{marginLeft: 5, marginRight: 5}}
+          >
+            <Icon
+              type="close"
+            />
+            Clear filters
+          </Button>
+        );
+      }
+      return null;
+    };
+    const renderSelectionInfo = () => {
+      if (selectedItems.length === 0) {
+        return null;
+      }
+      if (selectedItemsAreShowing && selectedItems.length > 0) {
+        return (
+          <span
+            style={{marginLeft: 5}}
+            key="info"
+          >
+            {/* eslint-disable-next-line */}
+            Currently viewing {selectedItemsString}
+          </span>
+        );
+      }
+      return null;
+    };
+    const renderSelectionControl = () => {
+      if (selectedItems.length === 0) {
+        return null;
+      }
+      const Actions = {
+        delete: 'delete-selected-items',
+        clearSelection: 'clear-selection',
+        copySelection: 'copy-selection'
+      };
+      const triggerMenuItem = ({key}) => {
+        switch (key) {
+          case Actions.delete:
+            this.onDeleteSelectedItems();
+            break;
+          case Actions.clearSelection:
+            this.onClearSelectionItems();
+            break;
+          case Actions.copySelection:
+            this.onCopySelectionItems();
+            break;
+        }
+      };
+      const menuItems = [(
+        <Menu.Item
+          key={Actions.clearSelection}
+        >
+          Clear selection
+        </Menu.Item>
+      )];
+      if (
+        roleModel.writeAllowed(this.props.folder.value) &&
+        !this.props.readOnly &&
+        roleModel.isManager.entities(this)
+      ) {
+        menuItems.push((
+          <Menu.Item
+            key={Actions.copySelection}
+          >
+            Copy
+          </Menu.Item>
+        ));
+        menuItems.push((<Menu.Divider key="divider" />));
+        menuItems.push((
+          <Menu.Item
+            key={Actions.delete}
+            style={{color: 'red'}}
+          >
+            Delete
+          </Menu.Item>
+        ));
+      }
+      const menu = (
+        <Menu
+          onClick={triggerMenuItem}
+          style={{width: 150}}
+        >
+          {menuItems}
+        </Menu>
+      );
+      return (
+        <Button.Group>
+          <Button
+            size="small"
+            onClick={this.handleClickShowSelectedItems}
+          >
+            {
+              selectedItemsAreShowing
+                ? 'Show all metadata items'
+                : `Show ${selectedItemsString}`
+            }
+          </Button>
+          <Dropdown
+            overlay={menu}
+            trigger={['click']}
+          >
+            <Button
+              size="small"
+            >
+              <Icon type="down" />
+            </Button>
+          </Dropdown>
+        </Button.Group>
+      );
+    };
+    const renderRunButton = () => {
+      if (
+        roleModel.writeAllowed(this.props.folder.value) &&
+        !this.props.readOnly &&
+        roleModel.isManager.entities(this)
+      ) {
+        return (
+          <Button
+            key="run"
+            size="small"
+            type="primary"
+            disabled={selectedItems.length === 0}
+            onClick={() => this.setState({configurationBrowserVisible: true})}>
+            RUN
+          </Button>
+        );
+      }
+      return null;
+    };
+    return (
+      <Row
+        className={styles.metadataAdditionalActions}
+        type="flex"
+        justify="space-between"
+        align="middle"
+      >
+        <div
+          style={{
+            display: 'inline-flex',
+            flexDirection: 'row',
+            alignItems: 'center'
+          }}
+        >
+          {renderSelectionControl()}
+          {renderClearFiltersButton()}
+          {renderSelectionInfo()}
+        </div>
+        {renderRunButton()}
+      </Row>
+    );
+  };
+
+  handleClickShowSelectedItems = () => {
+    this.setState({
+      selectedItem: null,
+      metadata: false,
+      selectedItemsAreShowing: !this.state.selectedItemsAreShowing
+    }, () => this.paginationOnChange(FIRST_PAGE));
+  }
+
+  paginationOnChange = async (page) => {
+    const {filterModel} = this.state;
+    filterModel.page = page;
+    await this.loadData(filterModel);
+    this.setState({filterModel});
+  }
 
   render () {
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row
           type="flex"
-          justify="space-between"
+          justify="end"
           align="middle"
-          style={{minHeight: 41, marginBottom: 6}}>
-          <Col>
-            <span className={styles.itemHeader}>
-              <Breadcrumbs
-                id={parseInt(this.props.folderId)}
-                type={ItemTypes.metadata}
-                textEditableField={this.props.metadataClass}
-                readOnlyEditableField
-                icon="appstore-o"
-                iconClassName={styles.editableControl}
-                subject={this.props.folder.value}
-              />
-            </span>
-            <span className={styles.searchControl}>
-              <Input.Search
-                id="search-metadata-input"
-                placeholder="Search"
-                value={this.state.filterModel.searchQueries[0]}
-                onPressEnter={this.onSearchQueriesChanged}
-                onChange={(e) => {
-                  this.state.filterModel.searchQueries = [e.target.value.trim()];
-                  this.setState({filterModel: this.state.filterModel});
-                }}
-              />
-              <DropdownWithMultiselect
-                onColumnSelect={this.onColumnSelect}
-                onSetOrder={this.onSetOrder}
-                selectedColumns={this.state.selectedColumns}
-                columns={this.columns}
-                onResetColums={this.onResetColums}
-                columnNameFn={getColumnTitle}
-              />
-            </span>
-          </Col>
-          <Col className={styles.currentFolderActions}>
-            {this.renderActions()}
-          </Col>
+          style={{
+            minHeight: 41,
+            marginBottom: 6,
+            flexWrap: 'wrap'
+          }}
+        >
+          <div
+            className={styles.itemHeader}
+            style={{flex: 'initial', marginRight: 'auto'}}
+          >
+            <Breadcrumbs
+              id={parseInt(this.props.folderId)}
+              type={ItemTypes.metadata}
+              textEditableField={this.props.metadataClass}
+              readOnlyEditableField
+              icon="appstore-o"
+              iconClassName={styles.editableControl}
+              subject={this.props.folder.value}
+            />
+          </div>
+          <Input.Search
+            style={{
+              minWidth: 200,
+              marginLeft: 5,
+              flex: 1
+            }}
+            id="search-metadata-input"
+            placeholder="Search"
+            value={this.state.filterModel.searchQueries[0]}
+            onPressEnter={this.onSearchQueriesChanged}
+            onChange={(e) => {
+              const {filterModel} = this.state;
+              filterModel.searchQueries = [e.target.value.trim()];
+              this.setState({filterModel});
+            }}
+            size="small"
+          />
+          <DropdownWithMultiselect
+            onColumnSelect={this.onColumnSelect}
+            onSetOrder={this.onSetOrder}
+            selectedColumns={this.state.selectedColumns}
+            columns={this.columns}
+            onResetColumns={this.onResetColumns}
+            columnNameFn={getColumnTitle}
+            size="small"
+            style={{marginLeft: 5}}
+          />
+          {this.renderActions()}
+          <UploadButton
+            key="upload-metadata"
+            multiple={false}
+            synchronous
+            onRefresh={async () => {
+              await this.props.entityFields.fetch();
+              await this.props.folder.fetch();
+              if (this.props.onReloadTree) {
+                this.props.onReloadTree(true);
+              }
+            }}
+            style={{display: 'none'}}
+            title={'Upload metadata'}
+            action={MetadataEntityUpload.uploadUrl(this.props.folderId)}
+            onInitialized={component => {
+              this.uploadButton = component;
+            }}
+          />
         </Row>
         {this.renderContent()}
         <AddInstanceForm
@@ -1181,38 +1618,84 @@ export default class Metadata extends React.Component {
   };
 
   componentDidMount () {
+    const {route, router} = this.props;
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.leavePageWithSelectedItems.bind(this));
+    };
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
-      this.state.selectedColumns = [...this.columns];
+      this.setState({selectedColumns: [...this.columns]});
       await this.loadData(this.state.filterModel);
       await this.loadCurrentProject();
     })();
   };
 
+  leavePageWithSelectedItems (nextLocation) {
+    const {router} = this.props;
+    const {selectedItemsCanBeSkipped} = this.state;
+
+    const resetSelectedItemsCanBeSkipped = () => {
+      this.resetSelectedItemsTimeout = setTimeout(
+        () => this.setState && this.setState({selectedItemsCanBeSkipped: false}),
+        0
+      );
+    };
+
+    const leave = nextLocation => {
+      this.setState({selectedItemsCanBeSkipped: true},
+        () => {
+          router.push(nextLocation);
+          resetSelectedItemsCanBeSkipped();
+        }
+      );
+      return true;
+    };
+
+    if (this.state.selectedItems && this.state.selectedItems.length && !selectedItemsCanBeSkipped) {
+      Modal.confirm({
+        title: 'All selected items will be reset. Continue?',
+        onOk () {
+          leave(nextLocation);
+        },
+        onCancel: () => this.props.onReloadTree(false),
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+      return false;
+    }
+  };
+
+  componentWillUnmount () {
+    this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
+  }
+
   async componentWillReceiveProps (nextProps) {
     if (nextProps.initialSelection) {
-      this.state.selectedItems = nextProps.initialSelection;
+      this.setState({selectedItems: nextProps.initialSelection});
     }
     if (nextProps.folderId !== this.props.folderId ||
       nextProps.metadataClass !== this.props.metadataClass) {
-      this.state.selectedItem = null;
-      this.state.selectedItems = [];
-      this.state.filterModel = {
-        filters: [],
-        folderId: parseInt(nextProps.folderId),
-        metadataClass: nextProps.metadataClass,
-        orderBy: [],
-        page: 1,
-        pageSize: PAGE_SIZE,
-        searchQueries: []
-      };
+      this.setState({
+        selectedItem: null,
+        selectedItems: [],
+        selectedItemsAreShowing: false,
+        filterModel: {
+          filters: [],
+          folderId: parseInt(nextProps.folderId),
+          metadataClass: nextProps.metadataClass,
+          orderBy: [],
+          page: 1,
+          pageSize: PAGE_SIZE,
+          searchQueries: []
+        }
+      });
       if (nextProps.onSelectItems) {
         nextProps.onSelectItems(this.state.selectedItems);
       }
       this._totalCount = 0;
       await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
-      this.state.selectedColumns = [...this.columns];
+      this.setState({selectedColumns: [...this.columns]});
       await this.loadData(this.state.filterModel);
     }
     if (nextProps.folderId !== this.props.folderId) {

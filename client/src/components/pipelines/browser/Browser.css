@@ -363,7 +363,8 @@ tr.table-row-selected {
 }
 
 .metadata-table {
-  border-radius: 5px;
+  border-radius: 0 0 5px 5px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .metadata-table div {
@@ -372,9 +373,12 @@ tr.table-row-selected {
 
 .metadata-column-header {
   cursor: pointer;
-  display: block;
-  text-align: left;
-  padding: 6px 0;
+  height:28px;
+  width:100%;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .metadata-column-cell {
@@ -389,6 +393,11 @@ tr.table-row-selected {
 
 .metadata-additional-actions {
   background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px 5px 0 0;
+  border-bottom: none;
+  padding: 5px;
+  min-height: 37px;
 }
 
 .actions-sub-menu ul {
@@ -593,6 +602,12 @@ tr.table-row-selected {
   background-color: #fff;
   border-color: #108ee9;
   text-decoration: none;
+}
+
+.noData {
+  margin: auto;
+  padding: 5px;
+  color: rgba(0,0,0,0.5);
 }
 
 @media screen and (max-width: 1280px) {
