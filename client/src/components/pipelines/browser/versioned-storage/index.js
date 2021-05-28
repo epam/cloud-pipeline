@@ -796,7 +796,15 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   renderEditItemForm = () => {
-    const {createDocument, renameDocument} = this.state;
+    const {
+      createDocument,
+      renameDocument
+    } = this.state;
+    const {
+      pipelineId,
+      path
+    } = this.props;
+    const documentType = createDocument || getDocumentType(renameDocument);
     return (
       <div>
         <CreateItemForm
@@ -805,6 +813,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           visible={!!createDocument}
           onCancel={this.closeCreateDocumentDialog}
           onSubmit={this.onCreateDocument}
+          pipelineId={pipelineId}
+          path={path}
+          documentType={documentType}
         />
         <CreateItemForm
           pending={false}
@@ -813,6 +824,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           name={renameDocument && renameDocument.name}
           onCancel={this.closeRenameDocumentDialog}
           onSubmit={this.onRenameDocument}
+          pipelineId={pipelineId}
+          path={path}
+          documentType={documentType}
         />
       </div>
     );
