@@ -66,12 +66,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     onDelete: PropTypes.func,
     pending: PropTypes.bool,
     visible: PropTypes.bool,
-    pipelineTemplate: PropTypes.object,
-    showRepositorySettings: PropTypes.bool
-  };
-
-  static defaultProps = {
-    showRepositorySettings: true
+    pipelineTemplate: PropTypes.object
   };
 
   formItemLayout = {
@@ -194,7 +189,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         )}
       </Form.Item>
     ));
-    if (this.props.showRepositorySettings) {
+    if (!isVersionedStorage) {
       if (this.state.editRepositorySettings) {
         formItems.push((
           <Form.Item

@@ -982,7 +982,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           visible={editStorageDialog}
           pending={pending}
           pipeline={pipeline.value}
-          showRepositorySettings={false}
         />
         {this.renderEditItemForm()}
         <LaunchVSForm
