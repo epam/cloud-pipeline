@@ -1048,7 +1048,7 @@ export default class Metadata extends React.Component {
                   }
                   <a onClick={() => this.handleClickShowSelectedItems()}>{
                     this.state.selectedItemsAreShowing
-                      ? 'Revert the previous view'
+                      ? 'Show all metadata items'
                       : `Show
                         ${this.state.selectedItems ? this.state.selectedItems.length : 0}
                         selected item${this.state.selectedItems.length > 1 ? 's' : ''}`}
