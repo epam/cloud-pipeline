@@ -81,8 +81,9 @@ if __name__ == '__main__':
     log_dir = os.environ['LOG_DIR'] = os.getenv('LOG_DIR', os.path.join(run_dir, 'logs'))
     pipe_dir = os.environ['PIPE_DIR'] = os.getenv('PIPE_DIR', os.path.join(run_dir, 'pipe'))
     analysis_dir = os.environ['ANALYSIS_DIR'] = os.getenv('ANALYSIS_DIR', os.path.join(run_dir, 'analysis'))
+    resources_dir = os.environ['RESOURCES_DIR'] = os.getenv('RESOURCES_DIR', os.path.join(run_dir, 'resources'))
     distribution_url = os.environ['DISTRIBUTION_URL'] = os.getenv('DISTRIBUTION_URL')
-    api_url = os.environ['API'] = os.getenv('API')
+    api_url = os.environ['API'] = os.getenv('API', 'https://cp-api-srv.default.svc.cluster.local:31080/pipeline/restapi/')
     api_token = os.environ['API_TOKEN'] = os.getenv('API_TOKEN')
     node_owner = os.environ['CP_NODE_OWNER'] = os.getenv('CP_NODE_OWNER', 'Administrator')
     edge_url = os.environ['EDGE'] = os.getenv('EDGE', 'https://cp-edge.default.svc.cluster.local:31081')
@@ -90,7 +91,10 @@ if __name__ == '__main__':
     owner = os.environ['OWNER'] = os.getenv('OWNER')
     owner_password = os.environ['OWNER_PASSWORD'] = os.getenv('OWNER_PASSWORD', os.getenv('SSH_PASS'))
     owner_groups = os.environ['OWNER_GROUPS'] = os.getenv('OWNER_GROUPS', 'Administrators')
-    task_path = os.environ['CP_TASK_PATH']
+    logon_title = os.environ['CP_LOGON_TITLE'] = os.getenv('CP_LOGON_TITLE', 'Login as ' + owner)
+    logon_image_url = os.environ['CP_LOGON_IMAGE_URL'] = os.getenv('CP_LOGON_IMAGE_URL', 'https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/logon.bmp')
+    logon_image_path = os.environ['CP_LOGON_IMAGE_PATH'] = os.getenv('CP_LOGON_IMAGE_PATH', os.path.join(resources_dir, 'logon.bmp'))
+    task_path = os.environ['CP_TASK_PATH'] = os.getenv('CP_TASK_PATH', '.\\task.ps1')
     python_dir = os.environ['CP_PYTHON_DIR'] = os.environ.get('CP_PYTHON_DIR', 'c:\\python')
     requires_cloud_data = _extract_boolean_flag('CP_CAP_WIN_INSTALL_CLOUD_DATA')
     cloud_data_distribution_url = \
@@ -107,6 +111,7 @@ if __name__ == '__main__':
     _mkdir(log_dir)
     _mkdir(pipe_dir)
     _mkdir(analysis_dir)
+    _mkdir(resources_dir)
 
     logging.info('Installing python packages...')
     _install_python_packages('urllib3==1.25.9', 'requests==2.22.0')
@@ -122,6 +127,7 @@ if __name__ == '__main__':
 
     logging.info('Installing pipe common...')
     _install_python_packages(common_repo_dir)
+
     from pipeline.api import PipelineAPI
     from pipeline.log.logger import CloudPipelineLogger
     from pipeline.utils.ssh import HostSSH
@@ -166,9 +172,13 @@ if __name__ == '__main__':
                      f'create_user(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"',
                      user=node_owner)
 
+    logging.info('Downloading seamless logon image...')
+    _download_file(logon_image_url, logon_image_path)
+
     logging.info('Configuring seamless logon on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_seamless_logon_win import configure_seamless_logon_win; '
-                     f'configure_seamless_logon_win(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"',
+                     f'configure_seamless_logon_win(\'{owner}\', \'{owner_password}\', \'{owner_groups}\', '
+                     f'                             \'{logon_title}\', \'{_escape_backslashes(logon_image_path)}\')\\"',
                      user=node_owner)
 
     logging.info('Configuring system settings on the node...')

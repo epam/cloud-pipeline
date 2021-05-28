@@ -125,10 +125,15 @@ function GenerateSshKeys($Path) {
 function AddPublicKeyToAuthorizedKeys($SourcePath, $DestinationPath) {
     NewDirIfRequired -Path (Split-Path -Path $DestinationPath)
     Get-Content $SourcePath | Out-File -FilePath $DestinationPath -Encoding ascii -Force
-    SetCorrectGitAcl -Path $DestinationPath
+    RestrictRegularUsersAccess -Path $DestinationPath
 }
 
-function SetCorrectGitAcl($Path) {
+function CopyPrivateKey($SourcePath, $DestinationPath) {
+    Copy-Item -Path (Split-Path -Path $SourcePath) -Destination (Split-Path -Path $DestinationPath) -Recurse
+    RestrictRegularUsersAccess -Path $DestinationPath
+}
+
+function RestrictRegularUsersAccess($Path) {
     $acl = Get-Acl $Path
     $rules = $acl.Access `
         | Where-Object { $_.IdentityReference -in "NT AUTHORITY\SYSTEM","BUILTIN\Administrators" }
@@ -224,6 +229,7 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
 }
 "@
     $configfile|Out-File -FilePath .\Kubeclustervxlan.json -Encoding ascii -Force
+    RestrictRegularUsersAccess -Path .\Kubeclustervxlan.json
 }
 
 function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
@@ -262,6 +268,7 @@ users:
 current-context: kubernetes-user@kubernetes
 "@
     $kubeConfig | Out-File -FilePath "$KubeDir\config" -Encoding ascii -Force
+    RestrictRegularUsersAccess -Path "$KubeDir\config"
 }
 
 function JoinKubeClusterUsingSigWindowsTools {
@@ -392,8 +399,7 @@ AddPublicKeyToAuthorizedKeys -SourcePath "$homeDir\.ssh\id_rsa.pub" -Destination
 AddPublicKeyToAuthorizedKeys -SourcePath "$homeDir\.ssh\id_rsa.pub" -DestinationPath C:\ProgramData\ssh\administrators_authorized_keys
 
 Write-Host "Publishing node SSH keys..."
-Copy-Item -Path "$homeDir\.ssh" -Destination "$hostDir\.ssh" -Recurse
-SetCorrectGitAcl -Path "$hostDir\.ssh\id_rsa"
+CopyPrivateKey -SourcePath "$homeDir\.ssh\id_rsa" -DestinationPath "$hostDir\.ssh\id_rsa"
 
 Write-Host "Configuring docker daemon..."
 ConfigureAndRestartDockerDaemon

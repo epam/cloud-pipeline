@@ -35,9 +35,9 @@ _pgina_single_user_login_plugin_reg_path = _pgina_plugins_reg_path + '\\' + _pgi
 _pgina_local_machine_plugin_reg_path = _pgina_plugins_reg_path + '\\' + _pgina_local_machine_plugin_guid
 
 
-def configure_seamless_logon_win(username, password, groups):
+def configure_seamless_logon_win(username, password, groups, logon_title, logon_image_path):
     _enable_pgina()
-    _configure_login_screen(username)
+    _configure_login_screen(logon_title, logon_image_path)
     _configure_singe_user_login_plugin(username, password)
     _configure_local_machine_plugin(groups)
     _enable_plugins()
@@ -49,10 +49,11 @@ def _enable_pgina():
     set_local_machine_dword_value(_win64_pgina_credentials_provider_reg_path, 'Disabled', 0)
 
 
-def _configure_login_screen(username):
+def _configure_login_screen(logon_title, logon_image_path):
     set_local_machine_str_value(_pgina_reg_path, 'HideUsernameField', 'True')
     set_local_machine_str_value(_pgina_reg_path, 'HidePasswordField', 'True')
-    set_local_machine_str_value(_pgina_reg_path, 'Motd', 'Login as ' + username)
+    set_local_machine_str_value(_pgina_reg_path, 'Motd', logon_title)
+    set_local_machine_str_value(_pgina_reg_path, 'TileImage', logon_image_path)
 
 
 def _configure_singe_user_login_plugin(username, password):
