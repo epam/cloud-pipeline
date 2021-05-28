@@ -458,6 +458,9 @@ class VSActions extends React.Component {
         .catch((e) => {
           hide();
           message.error(e.message, 5);
+          this.setState({
+            conflicts: {...conflicts, pending: false}
+          });
         });
     });
   };

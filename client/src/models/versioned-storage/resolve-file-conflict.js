@@ -38,6 +38,10 @@ function wrapFetchStatus (runId, task) {
 
 export default function resolveFileConflict (runId, storageId, file, contents) {
   return new Promise((resolve, reject) => {
+    if (contents && contents.binary) {
+      reject(new Error('Binary file cannot be resolved yet'));
+      return;
+    }
     const updateRequest = new VSFileContentUpdate(runId, storageId, file, contents);
     updateRequest.fetch()
       .then((updateResult) => {

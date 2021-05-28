@@ -88,6 +88,14 @@ class FileDiffPresenter extends React.PureComponent {
   };
 
   renderPresentation = () => {
+    const {binary} = this.props;
+    if (binary) {
+      return (
+        <div className={styles.emptyContent}>
+          Binary file
+        </div>
+      );
+    }
     const {rawHtml} = this.state;
     if (rawHtml) {
       return (

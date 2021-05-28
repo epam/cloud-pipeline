@@ -184,6 +184,7 @@ class VersionedStorageTable extends React.Component {
   };
 
   validateUploadFiles = (files) => {
+    return true;
     const {contents} = this.props;
     if (files && contents) {
       const sourceFileNames = contents.map(record => record.git_object.name);

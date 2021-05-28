@@ -55,6 +55,10 @@ class RemotePost {
     return this._response;
   }
 
+  @observable responseStatus = undefined;
+  @observable responseStatusText = undefined;
+  @observable responseError = false;
+
   async fetch () {
     await this.send({});
   }
@@ -81,6 +85,12 @@ class RemotePost {
           {...fetchOptions, body: stringifiedBody}
         );
         if (!this.constructor.noResponse) {
+          this.responseError = !response.ok;
+          this.responseStatus = response.status;
+          this.responseStatusText = response.statusText;
+          if (!response.ok) {
+            throw new Error(response.statusText || `HTTP Error ${response.status}`);
+          }
           const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
           this.update(data);
         } else {
