@@ -8,32 +8,16 @@ const Option = Select.Option;
 @observer
 class FilterControl extends React.PureComponent {
 
-  async componentDidMount () {
-    const tags = [];
-    await setTimeout(() => {
-      const {columnName, list} = this.props;
-      for (let i = 0; i < list.length; i++) {
-        if (list[i][columnName] && list[i][columnName].value) {
-          const currentValue = list[i][columnName].value;
-          if (!this.state.tags.includes(currentValue)) {
-            tags.push(currentValue);
-          }
-        }
-      }
-    }, 1000);
-    this.setState({tags});
-  }
   state = {
     tags: [],
     selectedTags: [],
     popoverVisible: false
   }
   static propTypes = {
-    list: PropTypes.arrayOf(object),
     columnName: PropTypes.string,
     onSearch: PropTypes.func
   }
-  clearAll = () => {
+  resetFilter = () => {
     this.setState({
       selectedTags: []
     });
@@ -44,7 +28,10 @@ class FilterControl extends React.PureComponent {
       popoverVisible: true,
       selectedTags: value
     });
-    this.props.onSearch(value);
+  }
+  handleApplyFilter = () => {
+    this.props.onSearch(this.state.selectedTags);
+    this.handlePopoverVisibleChange(false);
   }
   handlePopoverVisibleChange = (visible) => {
     this.setState({
@@ -57,21 +44,32 @@ class FilterControl extends React.PureComponent {
       <div style={{maxWidth: 250}}>
         <Select
           value={selectedTags}
-          mode="multiple"
+          mode="tags"
           style={{width: '100%'}}
           placeholder="Please select"
           onChange={this.handleInputConfirm}
         >
-          {tags.length > 0 && (
-            tags.map((tag, index) => (
-              <Option
-                key={tag + index}
-                value={tag}
-              >{tag}</Option>
-            ))
-          )}
+          {tags.map((tag, index) => (
+            <Option
+              key={tag + index}
+              value={tag}
+            >{tag}</Option>
+          ))}
         </Select>
-        {selectedTags.length >= 3 && (<div style={{marginTop: 10}}><Button onClick={this.clearAll}>Clear all</Button></div>)}
+        <div style={{marginTop: 10, display: 'flex', justifyContent: 'space-between'}}>
+          <Button
+            type="danger"
+            onClick={this.resetFilter}
+            style={{
+              visibility: !selectedTags.length ? 'hidden' : 'visible',
+              marginRight: 5}}
+          >Reset</Button>
+          <Button
+            type="primary"
+            onClick={this.handleApplyFilter}
+            disabled={!selectedTags.length}
+          >Apply filter</Button>
+        </div>
       </div>);
     return (
       <Popover

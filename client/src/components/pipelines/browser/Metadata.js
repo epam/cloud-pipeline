@@ -997,7 +997,6 @@ export default class Metadata extends React.Component {
               >
                 <FilterControl
                   columnName={key}
-                  list={this._currentMetadata}
                   onSearch={(tags) => console.log('onSearch...', tags)}
                 />
               </Button>
