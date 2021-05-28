@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -64,6 +65,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private Pattern orderPattern = Pattern.compile("@ORDER_CLAUSE@");
     private Pattern searchPattern = Pattern.compile("@QUERY@");
     private static final String AND = " AND ";
+    private static final String OR = " OR ";
     private static final int BATCH_SIZE = 1000;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
@@ -368,12 +370,24 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             clause.append(AND);
             MetadataField field = MetadataEntityParameters.getFieldNames().get(filter.getKey().toUpperCase());
             if (field != null) {
-                clause.append(format("%s::text = '%s'", field.getDbName(), filter.getValue()));
+                clause.append(addFilterClause(filter, "%s::text LIKE '%%%s%%'", field.getDbName()));
             } else {
-                clause.append(format("e.data -> '%s' @> '{\"value\":\"%s\"}'", filter.getKey(),
-                        filter.getValue()));
+                clause.append(addFilterClause(filter, "e.data #>> '{%s,value}' LIKE '%%%s%%'", filter.getKey()));
             }
         });
+    }
+
+    private String addFilterClause(MetadataFilter.FilterQuery filter, String template, String dbName) {
+        if (CollectionUtils.isEmpty(filter.getValues())) {
+            return StringUtils.EMPTY;
+        }
+        StringBuilder clause = new StringBuilder();
+        clause.append('(');
+        filter.getValues().forEach(value -> {
+            clause.append(String.format(template, dbName, value));
+            clause.append(OR);
+        });
+        return clause.substring(0, clause.length() - OR.length()) + ")";
     }
 
     private void addDateConditions(StringBuilder clause, MetadataFilter metadataFilter) {
