@@ -30,8 +30,14 @@ def _mkdir(path):
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def _install_python_packages(*packages):
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q'] + list(packages))
+def _install_python_packages(packages, index_url=None, trusted_host=None):
+    install_command = [sys.executable, '-m', 'pip', 'install', '-q']
+    if index_url:
+        install_command += ['--index-url', index_url]
+    if trusted_host:
+        install_command += ['--trusted-host', trusted_host]
+    install_command += list(packages)
+    subprocess.check_call(install_command)
 
 
 def _download_file(source_url, target_path):
@@ -70,7 +76,8 @@ def _parse_host_and_port(url, default_host, default_port):
 
 
 if __name__ == '__main__':
-    logging_format = os.environ['CP_LOGGING_FORMAT'] = os.getenv('CP_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    logging_format = os.environ['CP_LOGGING_FORMAT'] = \
+        os.getenv('CP_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
     logging_level = os.environ['CP_LOGGING_LEVEL'] = os.getenv('CP_LOGGING_LEVEL', 'INFO')
     host_root = os.environ['CP_HOST_ROOT_DIR'] = os.getenv('CP_HOST_ROOT_DIR', 'c:\\host')
     runs_root = os.environ['CP_RUNS_ROOT_DIR'] = os.getenv('CP_RUNS_ROOT_DIR', 'c:\\runs')
@@ -83,19 +90,32 @@ if __name__ == '__main__':
     analysis_dir = os.environ['ANALYSIS_DIR'] = os.getenv('ANALYSIS_DIR', os.path.join(run_dir, 'analysis'))
     resources_dir = os.environ['RESOURCES_DIR'] = os.getenv('RESOURCES_DIR', os.path.join(run_dir, 'resources'))
     distribution_url = os.environ['DISTRIBUTION_URL'] = os.getenv('DISTRIBUTION_URL')
-    api_url = os.environ['API'] = os.getenv('API', 'https://cp-api-srv.default.svc.cluster.local:31080/pipeline/restapi/')
+    api_url = os.environ['API'] = \
+        os.getenv('API', 'https://cp-api-srv.default.svc.cluster.local:31080/pipeline/restapi/')
     api_token = os.environ['API_TOKEN'] = os.getenv('API_TOKEN')
     node_owner = os.environ['CP_NODE_OWNER'] = os.getenv('CP_NODE_OWNER', 'Administrator')
     edge_url = os.environ['EDGE'] = os.getenv('EDGE', 'https://cp-edge.default.svc.cluster.local:31081')
-    node_private_key_path = os.environ['CP_NODE_PRIVATE_KEY'] = os.getenv('CP_NODE_PRIVATE_KEY', os.path.join(host_root, '.ssh', 'id_rsa'))
+    node_private_key_path = os.environ['CP_NODE_PRIVATE_KEY'] = \
+        os.getenv('CP_NODE_PRIVATE_KEY', os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = os.environ['OWNER'] = os.getenv('OWNER')
     owner_password = os.environ['OWNER_PASSWORD'] = os.getenv('OWNER_PASSWORD', os.getenv('SSH_PASS'))
     owner_groups = os.environ['OWNER_GROUPS'] = os.getenv('OWNER_GROUPS', 'Administrators')
     logon_title = os.environ['CP_LOGON_TITLE'] = os.getenv('CP_LOGON_TITLE', 'Login as ' + owner)
-    logon_image_url = os.environ['CP_LOGON_IMAGE_URL'] = os.getenv('CP_LOGON_IMAGE_URL', 'https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/logon.bmp')
-    logon_image_path = os.environ['CP_LOGON_IMAGE_PATH'] = os.getenv('CP_LOGON_IMAGE_PATH', os.path.join(resources_dir, 'logon.bmp'))
+    logon_image_url = os.environ['CP_LOGON_IMAGE_URL'] = \
+        os.getenv('CP_LOGON_IMAGE_URL',
+                  'https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/logon.bmp')
+    logon_image_path = os.environ['CP_LOGON_IMAGE_PATH'] = \
+        os.getenv('CP_LOGON_IMAGE_PATH', os.path.join(resources_dir, 'logon.bmp'))
     task_path = os.environ['CP_TASK_PATH'] = os.getenv('CP_TASK_PATH', '.\\task.ps1')
     python_dir = os.environ['CP_PYTHON_DIR'] = os.environ.get('CP_PYTHON_DIR', 'c:\\python')
+    requires_repo = os.environ['CP_REPO_ENABLED'] = os.getenv('CP_REPO_ENABLED', 'false')
+    requires_repo = requires_repo.lower() == 'true'
+    repo_pypi_base_url = os.environ['CP_REPO_PYPI_BASE_URL_DEFAULT'] = \
+        os.getenv('CP_REPO_PYPI_BASE_URL_DEFAULT',
+                  'http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple')
+    repo_pypi_trusted_host = os.environ['CP_REPO_PYPI_TRUSTED_HOST_DEFAULT'] = \
+        os.getenv('CP_REPO_PYPI_TRUSTED_HOST_DEFAULT',
+                  'cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com')
     requires_cloud_data = _extract_boolean_flag('CP_CAP_WIN_INSTALL_CLOUD_DATA')
     cloud_data_distribution_url = \
         os.environ['CP_CLOUD_DATA_WIN_DISTRIBUTION_URL'] = \
@@ -113,8 +133,14 @@ if __name__ == '__main__':
     _mkdir(analysis_dir)
     _mkdir(resources_dir)
 
+    logging.info('Configuring cloud pipeline repositories...')
+    if not requires_repo:
+        repo_pypi_base_url = None
+        repo_pypi_trusted_host = None
+
     logging.info('Installing python packages...')
-    _install_python_packages('urllib3==1.25.9', 'requests==2.22.0')
+    _install_python_packages(['urllib3==1.25.9', 'requests==2.22.0'],
+                             index_url=repo_pypi_base_url, trusted_host=repo_pypi_trusted_host)
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     import requests
@@ -126,7 +152,8 @@ if __name__ == '__main__':
     _extract_archive(os.path.join(common_repo_dir, 'pipe-common.tar.gz'), common_repo_dir)
 
     logging.info('Installing pipe common...')
-    _install_python_packages(common_repo_dir)
+    _install_python_packages([common_repo_dir],
+                             index_url=repo_pypi_base_url, trusted_host=repo_pypi_trusted_host)
 
     from pipeline.api import PipelineAPI
     from pipeline.log.logger import CloudPipelineLogger
@@ -149,7 +176,10 @@ if __name__ == '__main__':
     _extract_archive(os.path.join(pipe_dir, 'pipe.zip'), os.path.dirname(pipe_dir))
 
     logging.info('Configuring pipe...')
-    subprocess.check_call(f'powershell -Command "pipe.exe configure --api \'{api_url}\' --auth-token \'{api_token}\' --timezone local --proxy pac"')
+    subprocess.check_call(f'powershell -Command "pipe.exe configure --api \'{api_url}\''
+                          f'                                        --auth-token \'{api_token}\''
+                          f'                                        --timezone local'
+                          f'                                        --proxy pac"')
 
     logging.info('Preparing for SSH connections to the node...')
     run = api.load_run_efficiently(run_id)
@@ -161,14 +191,16 @@ if __name__ == '__main__':
                      user=node_owner)
 
     logging.info('Configuring PATH on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.path import add_to_path; '
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from pipeline.utils.path import add_to_path; '
                      f'add_to_path(\'{_escape_backslashes(python_dir)}\'); '
                      f'add_to_path(\'{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\'); '
                      f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"',
                      user=node_owner)
 
     logging.info('Configuring owner account on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.account import create_user; '
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from pipeline.utils.account import create_user; '
                      f'create_user(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"',
                      user=node_owner)
 
@@ -176,18 +208,21 @@ if __name__ == '__main__':
     _download_file(logon_image_url, logon_image_path)
 
     logging.info('Configuring seamless logon on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_seamless_logon_win import configure_seamless_logon_win; '
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from scripts.configure_seamless_logon_win import configure_seamless_logon_win; '
                      f'configure_seamless_logon_win(\'{owner}\', \'{owner_password}\', \'{owner_groups}\', '
                      f'                             \'{logon_title}\', \'{_escape_backslashes(logon_image_path)}\')\\"',
                      user=node_owner)
 
     logging.info('Configuring system settings on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_system_settings_win import configure_system_settings_win; '
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from scripts.configure_system_settings_win import configure_system_settings_win; '
                      f'configure_system_settings_win()\\"',
                      user=node_owner)
 
     logging.info('Restarting logon processes on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.proc import terminate_processes; '
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from pipeline.utils.proc import terminate_processes; '
                      f'terminate_processes(\'winlogon.exe\')\\"',
                      user=node_owner)
 
@@ -201,8 +236,10 @@ if __name__ == '__main__':
         _extract_archive(os.path.join(run_dir, 'cloud-data.zip'), run_dir)
 
         api_logger.info('Configuring Cloud-Data App on the node...', task=install_cloud_data_task)
-        node_ssh.execute(f'{python_dir}\\python.exe -c \\"from scripts.configure_cloud_data_win import configure_cloud_data_win; '
-                         f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\', \'{owner}\', \'{owner}\', \'{api_token}\')\\"',
+        node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                         f'from scripts.configure_cloud_data_win import configure_cloud_data_win; '
+                         f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\','
+                         f'                         \'{owner}\', \'{owner}\', \'{api_token}\')\\"',
                          output_task=install_cloud_data_task, user=node_owner)
         api_logger.success('Cloud-Data installed and configured successfully!', task=install_cloud_data_task)
 
