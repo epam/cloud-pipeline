@@ -290,7 +290,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       pipeline
     } = this.props;
     if (router && pipelineId && pipeline.loaded && pipeline.value.currentVersion) {
-      router.push(`/launch/${pipelineId}/${pipeline.value.currentVersion.name}/default`);
+      router.push(`/launch/${pipelineId}/${pipeline.value.currentVersion.name}/default?vs=true`);
     }
   };
 

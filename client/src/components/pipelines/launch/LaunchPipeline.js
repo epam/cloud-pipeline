@@ -42,6 +42,7 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
 @runPipelineActions
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
+  const isVersionedStorage = components.vs;
   return {
     allowedInstanceTypes: allowedInstanceTypes,
     preferences,
@@ -55,7 +56,7 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
     tool: params.image ? new LoadTool(params.image) : undefined,
     toolVersion: params.image ? components.version : undefined,
     toolSettings: params.image ? new LoadToolVersionSettings(params.image) : undefined,
-    configurations: params.id && params.version
+    configurations: params.id && params.version && !isVersionedStorage
       ? new PipelineConfigurations(params.id, params.version) : undefined
   };
 })
