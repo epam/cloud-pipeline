@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
+from abc import ABCMeta, abstractmethod
+
 import paramiko
 
 
@@ -20,31 +21,53 @@ class SSHError(RuntimeError):
     pass
 
 
-class HostSSH:
+class CloudPipelineSSH:
+    __metaclass__ = ABCMeta
 
-    def __init__(self, host, private_key_path, logger=None):
+    @abstractmethod
+    def execute(self, command, user=None, logger=None):
+        pass
+
+
+class LogSSH(CloudPipelineSSH):
+
+    def __init__(self, logger, inner):
+        self._logger = logger
+        self._inner = inner
+
+    def execute(self, command, user=None, logger=None):
+        self._inner.execute(command, user=user, logger=logger or self._logger)
+
+
+class UserSSH(CloudPipelineSSH):
+
+    def __init__(self, user, inner):
+        self._user = user
+        self._inner = inner
+
+    def execute(self, command, user=None, logger=None):
+        self._inner.execute(command, user=user or self._user, logger=logger)
+
+
+class HostSSH(CloudPipelineSSH):
+
+    def __init__(self, host, private_key_path):
         self._host = host
         self._private_key_path = private_key_path
-        self._logger = logger
 
-    def execute(self, command, user, output_task=None):
+    def execute(self, command, user=None, logger=None):
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
         client.connect(self._host, username=user, key_filename=self._private_key_path)
         _, stdout, stderr = client.exec_command(command)
         exit_code = stdout.channel.recv_exit_status()
-        for line in stdout:
-            stripped_line = line.strip('\n')
-            if output_task and self._logger:
-                self._logger.info(stripped_line, output_task)
-            else:
-                logging.info(stripped_line)
-        for line in stderr:
-            stripped_line = line.strip('\n')
-            if output_task and self._logger:
-                self._logger.warn(stripped_line, output_task)
-            else:
-                logging.warning(stripped_line)
+        if logger:
+            for line in stdout:
+                stripped_line = line.strip('\n')
+                logger.info(stripped_line)
+            for line in stderr:
+                stripped_line = line.strip('\n')
+                logger.warn(stripped_line)
         if exit_code != 0:
             raise SSHError('Command has finished with exit code ' + str(exit_code))
         client.close()
