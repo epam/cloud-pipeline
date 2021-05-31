@@ -7,6 +7,7 @@ const Option = Select.Option;
 
 @observer
 class FilterControl extends React.PureComponent {
+
   state = {
     tags: [],
     selectedTags: [],
@@ -20,11 +21,11 @@ class FilterControl extends React.PureComponent {
     this.setState({
       selectedTags: []
     });
-    this.props.onSearch([]);
+    this.props.onSearch(null);
+    this.handlePopoverVisibleChange(false);
   }
-  handleInputConfirm = (value) => {
-    this.setState({
-      popoverVisible: true,
+  handleInputConfirm = async (value) => {
+    await this.setState({
       selectedTags: value
     });
   }
@@ -74,8 +75,8 @@ class FilterControl extends React.PureComponent {
           <Button
             type="danger"
             onClick={this.resetFilter}
+            disabled={!selectedTags.length}
             style={{
-              display: !selectedTags.length ? 'none' : 'block',
               marginLeft: 10,
               marginTop: 8,
               width: 100}}
@@ -101,7 +102,7 @@ class FilterControl extends React.PureComponent {
           </div>
         )}
         content={content}
-        trigger={'click'}
+        trigger={['focus']}
         visible={popoverVisible}
         onVisibleChange={this.handlePopoverVisibleChange}
       >

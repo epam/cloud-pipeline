@@ -153,6 +153,8 @@ export default class Metadata extends React.Component {
     selectedItemsAreShowing: false,
     selectedColumns: [],
     filterModel: {
+      startDateFrom: '',
+      endDateTo: '',
       filters: [],
       folderId: parseInt(this.props.folderId),
       metadataClass: this.props.metadataClass,
@@ -280,14 +282,15 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onDateRangeChanged = async (range, key) => {
+  onDateRangeChanged = async (range) => {
     let filterModel = {...this.state.filterModel};
     if (range) {
       const {from, to} = range;
-      // here should be another format for filter value (according to api)
-      filterModel.filters.push({key, value: `${from}:${to}`});
+      filterModel.startDateFrom = from;
+      filterModel.endDateTo = to;
     } else {
-      filterModel.filters = filterModel.filters.filter(filter => filter.key !== key);
+      filterModel.startDateFrom = '';
+      filterModel.endDateTo = '';
     }
     await this.setState({filterModel});
     this.loadData(this.state.filterModel);
@@ -333,16 +336,18 @@ export default class Metadata extends React.Component {
   };
 
   handleFilterApplied = async (key, dataArray) => {
+    const filterModel = {...this.state.filterModel};
     if (key && dataArray) {
-      const filterModel = {...this.state.filterModel};
       filterModel.filters.push({
-        key,
-        value: dataArray.toString()
+        key: unmapColumnName(key),
+        values: dataArray
       });
-      await this.setState({filterModel});
-      // this.loadData(this.state.filterModel);
-      // this.forceUpdate();
+    } else {
+      filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
     }
+    await this.setState({filterModel});
+    this.loadData(this.state.filterModel);
+    this.forceUpdate();
   }
 
   loadData = async (filterModel) => {
@@ -421,8 +426,9 @@ export default class Metadata extends React.Component {
   };
 
   filterApplied = (key) => {
-    return this.state.filterModel.filters
-      .filter(filterObj => filterObj.key === key);
+    const {filters, startDateFrom, endDateTo} = this.state.filterModel;
+    return filters
+      .filter(filterObj => filterObj.key === key).length || startDateFrom || endDateTo;
   };
 
   shouldAddFilterButton = (key) => {
@@ -441,7 +447,7 @@ export default class Metadata extends React.Component {
           marginLeft: 5,
           border: 'none',
           color: (
-            this.filterApplied(key).length
+            this.filterApplied(key)
               ? '#108ee9' : 'grey'
           )
         }}

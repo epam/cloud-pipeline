@@ -4,7 +4,6 @@ import {observer} from 'mobx-react';
 import {Popover, Icon, DatePicker, Button} from 'antd';
 import moment from 'moment';
 
-const FULL_DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 const DATE_FORMAT = 'YYYY-MM-DD';
 
 function toLocalMomentDate (string) {
@@ -101,10 +100,10 @@ class RangeDatePicker extends React.Component {
       const {onChange} = this.props;
       onChange({
         from: dateFrom
-          ? moment.utc(dateFrom).format(FULL_DATE_FORMAT)
+          ? moment.utc(dateFrom).format(DATE_FORMAT)
           : undefined,
         to: dateTo
-          ? moment.utc(dateTo).format(FULL_DATE_FORMAT)
+          ? moment.utc(dateTo).format(DATE_FORMAT)
           : undefined
       });
       this.handleRangeFilterVisibility(false);
