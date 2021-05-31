@@ -196,6 +196,12 @@
   width: 70%;
 }
 
+.tool-title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .group-row:hover .group-title,
 .tool-row:hover .tool-title {
   text-decoration: underline;
