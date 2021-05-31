@@ -44,7 +44,7 @@ public class MetadataFilter {
     @ApiModelProperty(notes = "list of strings to perform substring case "
             + "insensitive search in metadata attributes")
     private List<String> searchQueries;
-    @ApiModelProperty(notes = "list of key-values pairs for exact match, "
+    @ApiModelProperty(notes = "list of key-values pairs for match, "
             + "key may be an arbitrary string or one of predefined "
             + "available field names: ENTITY_ID, ENTITY_NAME, EXTERNAL_ID, PARENT_ID")
     private List<FilterQuery> filters;
@@ -65,7 +65,7 @@ public class MetadataFilter {
     @AllArgsConstructor
     public static class FilterQuery {
         private String key;
-        private String value;
+        private List<String> values;
     }
 
     @Getter
