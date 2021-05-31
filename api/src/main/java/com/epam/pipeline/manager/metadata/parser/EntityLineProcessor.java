@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import org.apache.commons.lang.StringUtils;
 @RequiredArgsConstructor
 public class EntityLineProcessor implements LineProcessor<MetadataParsingResult> {
 
+    private static final String NAME_FIELD = "name";
     private final String delimiter;
     private final Folder parent;
     private final MetadataClass metadataClass;
@@ -75,7 +76,11 @@ public class EntityLineProcessor implements LineProcessor<MetadataParsingResult>
                 }
                 PipeConfValue previousValue = entity.getData().get(field.getName());
                 Map<String, Set<String>> currentArrayValue = arrayValues.get(entity.getExternalId());
-                entity.getData().put(field.getName(), getValue(field, value, previousValue, currentArrayValue));
+                PipeConfValue currentValue = getValue(field, value, previousValue, currentArrayValue);
+                entity.getData().put(field.getName(), currentValue);
+                if (NAME_FIELD.equalsIgnoreCase(field.getName())) {
+                    entity.setName(currentValue.getValue());
+                }
             }
         });
         return true;

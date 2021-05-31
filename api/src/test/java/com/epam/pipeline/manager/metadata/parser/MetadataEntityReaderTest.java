@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,6 +167,7 @@ public class MetadataEntityReaderTest {
 
     private MetadataEntity createSample(String id, String name, String type, String patient, String pairs) {
         MetadataEntity sample = new MetadataEntity();
+        sample.setName(name);
         sample.setClassEntity(metadataClass);
         sample.setParent(parent);
         sample.setExternalId(id);

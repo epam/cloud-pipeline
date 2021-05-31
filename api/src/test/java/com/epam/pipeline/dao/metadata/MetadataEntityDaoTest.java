@@ -362,32 +362,37 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         //filter by field
         MetadataFilter filterByField = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery("externalId", EXTERNAL_ID_2)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery("externalId", Collections.singletonList(EXTERNAL_ID_2))),
                 Collections.emptyList(), false);
         checkFilterRequest(filterByField, Collections.singletonList(folder1Sample2));
 
         //filter by json
         MetadataFilter filterByValue = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1, DATA_VALUE_2)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(DATA_VALUE_2))),
                 Collections.emptyList(), false);
         checkFilterRequest(filterByValue, Collections.singletonList(folder1Sample2));
 
         MetadataFilter filterByValueRec = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1, DATA_VALUE_1)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(DATA_VALUE_1))),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueRec, Collections.singletonList(folder1Sample1));
 
         MetadataFilter filterByValueWrongValue = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1, TEST_USER)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(TEST_USER))),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueWrongValue, Collections.emptyList());
 
         MetadataFilter filterByValueWrongKey = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_VALUE_2, DATA_VALUE_2)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery(DATA_VALUE_2, Collections.singletonList(DATA_VALUE_2))),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueWrongKey, Collections.emptyList());
 
@@ -543,6 +548,50 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         Assert.assertEquals(metadataEntity.getExternalId(), result.getExternalId());
         Assert.assertEquals(metadataEntity.getData(), result.getData());
         verifyFolderTree(parent, result.getParent());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testMultipleFieldFilter() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        MetadataEntity folder1Sample1 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        MetadataEntity folder1Sample2 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        MetadataFilter filterByMultipleValues = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1,
+                        Arrays.asList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2), DATA_VALUE_1))),
+                Collections.emptyList(), false);
+        checkFilterRequest(filterByMultipleValues, Arrays.asList(folder1Sample1, folder1Sample2));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testSubstringMatchFieldFilter() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        //this object is created to check that request doesn't return data that does not match the filter
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        MetadataEntity folder1Sample2 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+        MetadataFilter filterByValueSubstring = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1,
+                        Collections.singletonList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2)))),
+                Collections.emptyList(), false);
+        checkFilterRequest(filterByValueSubstring, Collections.singletonList(folder1Sample2));
     }
 
     private MetadataField getDataField(String key) {
