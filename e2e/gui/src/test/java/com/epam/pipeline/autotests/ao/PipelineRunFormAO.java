@@ -84,7 +84,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     @Deprecated
     public PipelineRunFormAO(final String pipelineName) {
         this.pipelineName = pipelineName;
-        ensure(LAUNCH_COMMANDS, appears, enabled);
+        ensure(LAUNCH_COMMANDS, appears);
         expandTab(EXEC_ENVIRONMENT);
         expandTab(ADVANCED_PANEL);
         expandTab(PARAMETERS_PANEL);
