@@ -56,6 +56,7 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
     public AWSProfileCredentials create(final AWSProfileCredentials credentials) {
         validateProfileCredentials(credentials);
         final AWSProfileCredentialsEntity entity = mapper.toAWSEntity(credentials);
+        entity.setPolicy(AWSUtils.getPolicy(credentials.getPolicy()));
         entity.setId(null);
         return mapper.toAWSDto(repository.save(entity));
     }
@@ -67,7 +68,7 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
         final AWSProfileCredentialsEntity entity = findEntity(id);
         entity.setAssumedRole(credentials.getAssumedRole());
         entity.setProfileName(credentials.getProfileName());
-        entity.setPolicy(credentials.getPolicy());
+        entity.setPolicy(AWSUtils.getPolicy(credentials.getPolicy()));
         repository.save(entity);
         return mapper.toAWSDto(entity);
     }
