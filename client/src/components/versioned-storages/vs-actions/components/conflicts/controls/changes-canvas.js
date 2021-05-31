@@ -107,8 +107,7 @@ export default function renderChanges (canvas, conflictedFile, branch, options =
     if (context) {
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.fillStyle = renderingConfig.background;
-      context.rect(0, 0, canvas.width, canvas.height);
-      context.fill();
+      context.fillRect(0, 0, canvas.width, canvas.height);
       const currentModifications = (conflictedFile?.changes || [])
         .filter(m => m.branch === branch);
       for (let i = 0; i < currentModifications.length; i++) {
