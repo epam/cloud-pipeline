@@ -25,7 +25,6 @@ import {
   Icon,
   Input,
   Modal,
-  message,
   Row
 } from 'antd';
 import classNames from 'classnames';
@@ -33,6 +32,7 @@ import UploadButton from '../../../../special/UploadButton';
 import VSTableNavigation from './vs-table-navigation';
 import roleModel from '../../../../../utils/roleModel';
 import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
+import checkFileExistence from '../utils';
 import COLUMNS from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
@@ -183,18 +183,70 @@ class VersionedStorageTable extends React.Component {
     afterUpload && afterUpload();
   };
 
-  validateUploadFiles = (files) => {
-    return true;
-    const {contents} = this.props;
-    if (files && contents) {
-      const sourceFileNames = contents.map(record => record.git_object.name);
-      const fileNames = files.map(file => file.name);
-      const dublicates = sourceFileNames.filter(sName => fileNames.includes(sName));
-      if (dublicates.length > 0) {
-        dublicates.forEach(dublicate => message.error(`File '${dublicate}' already exists`));
+  checkFilesExistence = async (files) => {
+    const {
+      pipelineId,
+      path
+    } = this.props;
+    return Promise.all(files.map((file) => checkFileExistence(
+      pipelineId,
+      `${path || ''}${file.name}`
+    ).then((exist) => (exist ? file : undefined))
+    ));
+  };
+
+  askUserAboutConflicts = async (files, duplicateFiles) => {
+    const singleFile = duplicateFiles.length === 1;
+    const getModalContent = (contentFiles) => {
+      if (!contentFiles.length) {
+        return null;
       }
-      return !dublicates.length;
+      return (
+        <div className={styles.conflictModal}>
+          <span className={styles.conflictTitle}>
+            {`Duplicate ${singleFile ? 'file' : 'files'}:`}
+          </span>
+          <ul className={styles.conflictList}>
+            {contentFiles.map(file => (
+              <li key={file.name}>
+                {file.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    };
+    return new Promise((resolve) => {
+      if (duplicateFiles.length) {
+        Modal.confirm({
+          title: 'Some files already exist:',
+          style: {
+            wordWrap: 'break-word'
+          },
+          onCancel: () => {
+            resolve([]);
+          },
+          onOk: () => {
+            resolve(files);
+          },
+          okText: `Overwrite`,
+          cancelText: 'Cancel',
+          content: getModalContent(duplicateFiles)
+        });
+      } else {
+        resolve(files);
+      }
+    });
+  };
+
+  validateAndFilter = async (files) => {
+    const duplicateFiles = await this.checkFilesExistence(files)
+      .then(files => files.filter(Boolean));
+    let uploadFiles = files;
+    if (duplicateFiles.length) {
+      uploadFiles = await this.askUserAboutConflicts(files, duplicateFiles);
     }
+    return uploadFiles;
   };
 
   renderTableControls = () => {
@@ -251,7 +303,7 @@ class VersionedStorageTable extends React.Component {
               multiple
               synchronous
               onRefresh={this.onUploadFinished}
-              validate={this.validateUploadFiles}
+              validateAndFilter={this.validateAndFilter}
               title={'Upload'}
               action={this.uploadPath}
             />

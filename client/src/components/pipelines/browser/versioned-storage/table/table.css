@@ -156,3 +156,19 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+.conflict-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.conflict-title {
+  font-weight: bold;
+}
+
+.conflict-list {
+  display: flex;
+  flex-direction: column;
+  margin-left: 15px;
+  list-style: disc;
+}
