@@ -381,13 +381,11 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         if (CollectionUtils.isEmpty(filter.getValues())) {
             return StringUtils.EMPTY;
         }
-        StringBuilder clause = new StringBuilder();
-        clause.append('(');
-        filter.getValues().forEach(value -> {
-            clause.append(String.format(template, dbName, value));
-            clause.append(OR);
-        });
-        return clause.substring(0, clause.length() - OR.length()) + ")";
+        String clauses = filter.getValues()
+                .stream()
+                .map(value -> format(template, dbName, value))
+                .collect(Collectors.joining(OR));
+        return format("( %s )", clauses);
     }
 
     private void addDateConditions(StringBuilder clause, MetadataFilter metadataFilter) {

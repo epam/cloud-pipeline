@@ -37,6 +37,7 @@ import org.apache.commons.lang.StringUtils;
 @RequiredArgsConstructor
 public class EntityLineProcessor implements LineProcessor<MetadataParsingResult> {
 
+    private static final String NAME_FIELD = "name";
     private final String delimiter;
     private final Folder parent;
     private final MetadataClass metadataClass;
@@ -77,7 +78,7 @@ public class EntityLineProcessor implements LineProcessor<MetadataParsingResult>
                 Map<String, Set<String>> currentArrayValue = arrayValues.get(entity.getExternalId());
                 PipeConfValue currentValue = getValue(field, value, previousValue, currentArrayValue);
                 entity.getData().put(field.getName(), currentValue);
-                if ("name".equals(field.getName())) {
+                if (NAME_FIELD.equalsIgnoreCase(field.getName())) {
                     entity.setName(currentValue.getValue());
                 }
             }
