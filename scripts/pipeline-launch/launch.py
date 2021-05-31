@@ -233,7 +233,14 @@ if __name__ == '__main__':
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                          f'from scripts.configure_cloud_data_win import configure_cloud_data_win; '
                          f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\','
-                         f'                         \'{owner}\', \'{owner}\', \'{api_token}\')\\"')
+                         f'                         \'{owner}\', \'{api_token}\')\\"')
+
+        cloud_data_config_finalization_script_path = _escape_backslashes(
+            os.path.join(common_repo_dir, 'powershell\\FinalizeCloudDataConfig.ps1'))
+        cloud_data_config_tmp_path = os.path.join(run_dir, ".pipe-webdav-client")
+        task_ssh.execute(f'RegisterCloudDataConfigurationTask -UserName \\"{owner}\\"'
+                         f' -CloudDataConfigFolder \\"{_escape_backslashes(cloud_data_config_tmp_path)}\\"'
+                         f' -FinalizingScript \\"{cloud_data_config_finalization_script_path}\\" | Out-Null')
         task_logger.success('Cloud-Data installed and configured successfully!')
 
     logger.info('Configuring pipe on the node...')
@@ -257,7 +264,7 @@ if __name__ == '__main__':
         task_ssh.execute(f'ImportCertificate -FilePath "\'{edge_root_cert_path}\'"'
                          f' -CertStoreLocation Cert:\\\\LocalMachine\\\\Root')
         task_logger.info('Preparing environment for storage mapping...')
-        task_ssh.execute(f'InitializeEnvironmentToMountDrive | Out-Null')
+        task_ssh.execute(f'InitializeEnvironmentToMountDrive -UserName \'{owner}\'| Out-Null')
 
         task_logger.info('Mapping network storage...')
         mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
