@@ -589,6 +589,28 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         checkFilterRequest(filterByValueSubstring, Collections.singletonList(folder1Sample2));
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testSearchByExternalId() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        //this object is created to check that request doesn't return data that does not match the search
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        MetadataEntity folder1Sample2 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        MetadataFilter searchByExternalId = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.singletonList(EXTERNAL_ID_2.substring(EXTERNAL_ID_2.length() / 2)),
+                Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+        checkFilterRequest(searchByExternalId, Collections.singletonList(folder1Sample2));
+    }
+
     private MetadataField getDataField(String key) {
         return new MetadataField(key, null, false);
     }
