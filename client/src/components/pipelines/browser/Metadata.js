@@ -57,6 +57,8 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
+import RangeDatePicker from './metadata-controls/RangeDatePicker';
+import FilterControl from './metadata-controls/FilterControl';
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -87,6 +89,12 @@ function getColumnTitle (key) {
   }
   return key;
 }
+function getFromDate (key) {
+  return '';
+}
+function getToDate (key) {
+  return '';
+}
 
 @connect({
   folders,
@@ -115,7 +123,6 @@ function getColumnTitle (key) {
 })
 @observer
 export default class Metadata extends React.Component {
-
   static propTypes = {
     onSelectItems: PropTypes.func,
     initialSelection: PropTypes.array,
@@ -129,6 +136,7 @@ export default class Metadata extends React.Component {
   columns = [];
   defaultColumns = [];
   @observable keys;
+  dateKeys = [];
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -299,9 +307,11 @@ export default class Metadata extends React.Component {
   loadData = async (filterModel) => {
     this.setState({loading: true});
     this.metadataRequest = new MetadataEntityFilter();
-    let orderBy;
+    let orderBy, filters;
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
+        .map(o => ({...o, field: unmapColumnName(o.field)}));
+      filters = (filterModel.filters || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
     if (!this.state.selectedItemsAreShowing) {
@@ -312,13 +322,13 @@ export default class Metadata extends React.Component {
       } else {
         if (this.metadataRequest.value) {
           this._totalCount = this.metadataRequest.value.totalCount;
-          if (!this.state.filterModel.searchQueries.length) {
-            const parentFolderId = this.props.folderId;
-            if (this._totalCount <= 0) {
-              this.props.router.push(`/folder/${parentFolderId}`);
-              return;
-            }
-          }
+//           if (!this.state.filterModel.searchQueries.length) {
+//             const parentFolderId = this.props.folderId;
+//             if (this._totalCount <= 0) {
+//               this.props.router.push(`/folder/${parentFolderId}`);
+//               return;
+//             }
+//           }
           if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
             this._classEntity = {
               id: this.metadataRequest.value.elements[0].classEntity.id,
@@ -802,7 +812,6 @@ export default class Metadata extends React.Component {
         />
       );
     };
-
     const onPanelClose = (key) => {
       switch (key) {
         case METADATA_PANEL_KEY:
@@ -977,7 +986,7 @@ export default class Metadata extends React.Component {
   };
 
   get tableColumns () {
-    const onHeaderClicked = (key, e) => {
+    const onHeaderClicked = (e, key) => {
       if (e) {
         e.stopPropagation();
       }
@@ -990,7 +999,31 @@ export default class Metadata extends React.Component {
         this.onOrderByChanged(key);
       }
     };
+    const onDateRangeChanged = async (range, key) => {
+      let filterModel = {...this.state.filterModel};
+      if (range) {
+        const {from, to} = range;
+        // here should be another format for filter value (according to api)
+        filterModel.filters.push({key, value: `${from}:${to}`});
+      } else {
+        // reset filter settings
+        filterModel.filters = filterModel.filters.filter(filter => filter.key !== key);
+      }
+      await this.setState({filterModel});
+      this.loadData(this.state.filterModel);
+      this.forceUpdate();
+    };
     const renderTitle = (key) => {
+      this._currentMetadata
+        .forEach((obj) => {
+          if (obj[key] && obj[key].type === 'date' && !this.dateKeys.includes(key)) {
+            this.dateKeys.push(key);
+          }
+        });
+      const dateFiltersApplied = () => {
+        return this.state.filterModel.filters
+          .filter(filterObj => this.dateKeys.includes(filterObj.key));
+      };
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       let icon;
       if (orderBy) {
@@ -1002,9 +1035,35 @@ export default class Metadata extends React.Component {
       }
       return (
         <span
-          onClick={(e) => onHeaderClicked(key)}
+          onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
           {icon}{getColumnTitle(key)}
+          <Button
+            shape="circle"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              marginLeft: 5,
+              border: 'none',
+              color: (
+                dateFiltersApplied()
+                  .filter(obj => obj.key === key)).length
+                ? '#108ee9' : 'grey'
+            }}
+          >{this.dateKeys.includes(key)
+              ? (
+                <RangeDatePicker
+                  from={getFromDate(key)}
+                  to={getToDate(key)}
+                  onChange={(e) => onDateRangeChanged(e, key)}
+                />
+              ) : (
+                <FilterControl
+                  columnName={key}
+                  onSearch={(tags) => console.log('onSearch...', tags)}
+                />
+              )
+            }
+          </Button>
         </span>
       );
     };
@@ -1082,7 +1141,8 @@ export default class Metadata extends React.Component {
                   COPY
                 </Button>
                 {
-                  this.transferJobId && this.transferJobVersion && this.currentClassEntityPathFields.length > 0 &&
+                  this.transferJobId && this.transferJobVersion &&
+                  this.currentClassEntityPathFields.length > 0 &&
                   <Button
                     key="download_selection"
                     size="small"
@@ -1184,8 +1244,7 @@ export default class Metadata extends React.Component {
                 );
               }
             }
-          })
-        };
+          })};
       })];
 
     if (this.props.readOnly) {
