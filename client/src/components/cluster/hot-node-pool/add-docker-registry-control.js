@@ -26,7 +26,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
-import LoadToolTags from '../../../models/tools/LoadToolTags';
+import LoadToolTags from '../../../models/tools/LoadToolAttributes';
 import styles from './add-docker-registry-control.css';
 
 @inject('dockerRegistries')
@@ -96,13 +96,15 @@ class AddDockerRegistryControl extends React.Component {
             result.push(tools);
             for (let t = 0; t < groupTools.length; t++) {
               const tool = groupTools[t];
-              tools.tools.push({
-                ...tool,
-                dockerImage: `${registry.path}/${tool.image}`,
-                registry,
-                group,
-                name: tool.image.split('/').pop()
-              });
+              if (!/^windows$/i.test(tool.platform)) {
+                tools.tools.push({
+                  ...tool,
+                  dockerImage: `${registry.path}/${tool.image}`,
+                  registry,
+                  group,
+                  name: tool.image.split('/').pop()
+                });
+              }
             }
           }
         }
@@ -185,7 +187,11 @@ class AddDockerRegistryControl extends React.Component {
                 .fetch()
                 .then(() => {
                   if (versionsRequest.loaded) {
-                    resolve(versionsRequest.value);
+                    const {versions = []} = versionsRequest.value || {};
+                    const nonWindowsVersions = versions
+                      .filter(v => !v.attributes || !/^windows$/i.test(v.attributes.platform))
+                      .map(v => v.version);
+                    resolve(nonWindowsVersions);
                   } else {
                     resolve([]);
                   }
@@ -241,6 +247,7 @@ class AddDockerRegistryControl extends React.Component {
           value={version}
           onChange={this.onChangeDockerVersion}
           style={{width: 200, marginLeft: 5}}
+          getPopupContainer={node => node.parentNode}
         >
           {
             versions.map((v) => (
@@ -301,6 +308,7 @@ class AddDockerRegistryControl extends React.Component {
             filterOption={(input, option) =>
               option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
+            getPopupContainer={node => node.parentNode}
           >
             {
               this.tools.map(group => (
@@ -353,6 +361,6 @@ AddDockerRegistryControl.propTypes = {
 
 AddDockerRegistryControl.defaultProps = {
   showDelete: true
-}
+};
 
 export default AddDockerRegistryControl;
