@@ -56,9 +56,6 @@ class GitTask(Task):
     def pull(self, git_client, full_repo_path, is_head_detached):
         try:
             self.pulling()
-            if is_head_detached:
-                git_client.revert(full_repo_path)
-
             self._check_pull_possibility(git_client, full_repo_path)
 
             status_files = git_client.status(full_repo_path)
@@ -69,14 +66,15 @@ class GitTask(Task):
             if status_files:
                 git_client.unstash(full_repo_path)
 
-            if is_head_detached:
-                git_client.set_head(full_repo_path)
-
             stash_conflicts = self._conflicts_in_status(git_client, full_repo_path)
             conflicts = list(set(stash_conflicts + self._build_pull_conflicts(pull_conflicts)))
             if conflicts:
                 self._conflicts_failure(conflicts)
                 return
+
+            if is_head_detached:
+                git_client.set_head(full_repo_path)
+
             self.success()
         except Exception as e:
             self.logger.log(traceback.format_exc())

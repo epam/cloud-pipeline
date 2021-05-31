@@ -21,6 +21,9 @@ class GitFile:
         self.path = path
         self.state = None
         self.state_code = None
+        self.binary = None
+        self.new_size = None
+        self.old_size = None
 
     def is_modified(self):
         return self.state_code & pygit2.GIT_STATUS_INDEX_MODIFIED or self.state_code & pygit2.GIT_STATUS_WT_MODIFIED
@@ -82,5 +85,8 @@ class GitFile:
     def to_json(self):
         return {
             "status": self.state,
-            "path": self.path
+            "path": self.path,
+            "binary": self.binary,
+            "new_size": self.new_size,
+            "old_size": self.old_size
         }

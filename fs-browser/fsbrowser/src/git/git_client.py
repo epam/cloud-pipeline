@@ -102,6 +102,11 @@ class GitClient:
         diff_patch = git_diff_helper.find_patch_between_revisions(file_path, revision_a, revision_b)
         return git_diff_helper.build_diff_object(diff_patch)
 
+    def diff_status(self, repo_path, git_file):
+        git_diff_helper = GitDiffHelper(self._repository(repo_path), self.logger, True)
+        diff_patch = git_diff_helper.find_patch(git_file.path)
+        return git_diff_helper.build_status_diff(diff_patch, git_file, repo_path)
+
     def status(self, repo_path):
         repo = self._repository(repo_path)
         status_result = repo.status()
@@ -210,10 +215,27 @@ class GitClient:
         else:
             self._checkout(repo, revision)
 
+    def checkout_path(self, repo_path, file_path, remote_flag):
+        repo = self._repository(repo_path)
+        self.find_conflicted_file_by_path(self.status(repo_path), file_path)
+
+        if self._is_merge_in_progress(repo):
+            ref_name = 'MERGE_HEAD' if remote_flag else 'HEAD'
+        else:
+            ref_name = 'HEAD' if remote_flag else 'refs/stash'
+        repo.checkout(ref_name, paths=[file_path], strategy=pygit2.GIT_CHECKOUT_FORCE)
+
     def merge_abort(self, repo_path, branch=GitHelper.DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
         self._finish_merge(repo)
         repo.checkout('refs/heads/%s' % branch, strategy=pygit2.GIT_CHECKOUT_FORCE)
+
+    @staticmethod
+    def find_conflicted_file_by_path(git_files, file_path):
+        git_file = [git_file for git_file in git_files if git_file.path == file_path and git_file.is_conflicted()]
+        if not git_file:
+            raise RuntimeError("Path '%s' did not match any conflicted files" % file_path)
+        return git_file[0]
 
     def _build_callback(self):
         user_pass = pygit2.UserPass(self.user_name, self.token)
