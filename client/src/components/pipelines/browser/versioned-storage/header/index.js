@@ -21,8 +21,6 @@ import {
   Row,
   Col,
   Button,
-  Menu,
-  Dropdown,
   Icon
 } from 'antd';
 import localization from '../../../../../utils/localization';
@@ -34,8 +32,10 @@ import styles from './header.css';
 @localization.localizedComponent
 @observer
 class VersionedStorageHeader extends localization.LocalizedReactComponent {
-  onRunClick = (event) => {
-    event && event.stopPropagation();
+  onRunClick = () => {
+    const {actions = {}} = this.props;
+    const {runVersionedStorage} = actions;
+    runVersionedStorage && runVersionedStorage();
   };
 
   onGenerateReportClick = (event) => {
@@ -101,7 +101,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
               textEditableField={pipeline.value.name}
               onSaveEditableField={this.onRenameStorage}
               editStyleEditableField={{flex: 1}}
-              icon="share-alt"
+              icon="inbox"
               iconClassName={styles.versionedStorageIcon}
               lock={pipeline.value.locked}
               subject={pipeline.value}
@@ -109,14 +109,19 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
           </Col>
           <Col className={styles.headerActions}>
             <Row type="flex" justify="end">
-              <Button
-                size="small"
-                onClick={(event) => this.onRunClick(event)}
-                className={styles.controlBtn}
-                disabled
-              >
-                RUN
-              </Button>
+              {
+                roleModel.executeAllowed(pipeline.value) && (
+                  <Button
+                    size="small"
+                    type="primary"
+                    onClick={this.onRunClick}
+                    className={styles.controlBtn}
+                    disabled={readOnly}
+                  >
+                    RUN
+                  </Button>
+                )
+              }
               <Button
                 size="small"
                 type="primary"
@@ -127,14 +132,18 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
                 Generate report
               </Button>
               {this.renderActions()}
-              <Button
-                style={{lineHeight: 1}}
-                size="small"
-                onClick={this.onSettingsClick}
-                disabled={readOnly}
-              >
-                <Icon type="setting" />
-              </Button>
+              {
+                roleModel.isOwner(pipeline.value) && (
+                  <Button
+                    style={{lineHeight: 1}}
+                    size="small"
+                    onClick={this.onSettingsClick}
+                    disabled={readOnly}
+                  >
+                    <Icon type="setting" />
+                  </Button>
+                )
+              }
             </Row>
           </Col>
         </Row>
@@ -156,7 +165,8 @@ VersionedStorageHeader.propTypes = {
   actions: PropTypes.shape({
     openHistoryPanel: PropTypes.func,
     closeHistoryPanel: PropTypes.func,
-    openEditStorageDialog: PropTypes.func
+    openEditStorageDialog: PropTypes.func,
+    runVersionedStorage: PropTypes.func
   }),
   readOnly: PropTypes.bool,
   issuesPanelOpen: PropTypes.bool,

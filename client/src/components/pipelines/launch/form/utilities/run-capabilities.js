@@ -7,7 +7,7 @@ import {
   CP_CAP_SYSTEMD_CONTAINER,
   CP_CAP_SINGULARITY,
   CP_CAP_DESKTOP_NM,
-  CP_CAP_MODULES
+  CP_CAP_MODULES, CP_DISABLE_HYPER_THREADING
 } from './parameters';
 
 export const RUN_CAPABILITIES = {
@@ -15,7 +15,8 @@ export const RUN_CAPABILITIES = {
   singularity: 'Singularity',
   systemD: 'SystemD',
   noMachine: 'NoMachine',
-  module: 'Module'
+  module: 'Module',
+  disableHyperThreading: 'Disable Hyper-Threading'
 };
 
 export default class RunCapabilities extends React.Component {
@@ -84,4 +85,8 @@ export function noMachineEnabled (parameters) {
 
 export function moduleEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_MODULES);
+}
+
+export function disableHyperThreadingEnabled (parameters) {
+  return booleanParameterIsSetToValue(parameters, CP_DISABLE_HYPER_THREADING);
 }

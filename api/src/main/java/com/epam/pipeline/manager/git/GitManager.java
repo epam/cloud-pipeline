@@ -345,13 +345,13 @@ public class GitManager {
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_FOLDER_NAME, folderName));
         Pipeline pipeline = pipelineManager.load(id, true);
         if (folderVO.getPreviousPath() == null) {
-            // Previous path is missing: creating update
+            // Previous path is missing: creating folder
             return createFolder(pipeline,
                     folderVO.getPath(),
                     folderVO.getLastCommitId(),
                     folderVO.getComment());
         } else {
-            // else: renaming update
+            // else: renaming folder
             return renameFolder(pipeline,
                     folderVO.getPreviousPath(),
                     folderVO.getPath(),
@@ -366,8 +366,10 @@ public class GitManager {
                                        String commitMessage) throws GitClientException {
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
+        Assert.isTrue(!folderExists(pipeline, folder),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, folder));
         if (commitMessage == null) {
-            commitMessage = String.format("Creating folder '%s'", folder);
+            commitMessage = String.format("Creating folder %s", folder);
         }
         List<String> filesToCreate = new ArrayList<>();
         Path folderToCreate = Paths.get(folder);
@@ -395,7 +397,7 @@ public class GitManager {
                                        String lastCommitId,
                                        String commitMessage) throws GitClientException {
         if (commitMessage == null) {
-            commitMessage = String.format("Renaming folder '%s' to '%s'", folder, newFolderName);
+            commitMessage = String.format("Renaming folder %s to %s", folder, newFolderName);
         }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
@@ -425,7 +427,7 @@ public class GitManager {
                                        String lastCommitId,
                                        String commitMessage) throws GitClientException {
         if (commitMessage == null) {
-            commitMessage = String.format("Removing folder '%s'", folder);
+            commitMessage = String.format("Removing folder %s", folder);
         }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
@@ -523,7 +525,7 @@ public class GitManager {
         GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         if (StringUtils.isNullOrEmpty(sourceItemVOList.getComment())) {
-            gitPushCommitEntry.setCommitMessage(String.format("Updating files '%s'", StringUtils.join(", ",
+            gitPushCommitEntry.setCommitMessage(String.format("Updating files %s", StringUtils.join(", ",
                     String.valueOf(sourceItemVOList.getItems().stream().map(PipelineSourceItemVO::getPath)))));
         } else {
             gitPushCommitEntry.setCommitMessage(sourceItemVOList.getComment());
@@ -573,8 +575,18 @@ public class GitManager {
         final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
 
         if (StringUtils.isNullOrEmpty(commitMessage)) {
-            commitMessage = String.format("Renaming '%s' to '%s", filePreviousPath, filePath);
+            commitMessage = String.format("Renaming %s to %s", filePreviousPath, filePath);
         }
+
+        boolean fileExists = false;
+        try {
+            fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
+        } catch (UnexpectedResponseStatusException exception) {
+            LOGGER.debug(exception.getMessage(), exception);
+        }
+
+        Assert.isTrue(!fileExists,
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, filePath));
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(commitMessage);
@@ -647,12 +659,12 @@ public class GitManager {
         if (fileExists) {
             gitPushCommitActionEntry.setAction("update");
             if (StringUtils.isNullOrEmpty(commitMessage)) {
-                message = String.format("Updating '%s'", filePath);
+                message = String.format("Updating %s", filePath);
             }
         } else {
             gitPushCommitActionEntry.setAction("create");
             if (StringUtils.isNullOrEmpty(commitMessage)) {
-                message = String.format("Creating '%s'", filePath);
+                message = String.format("Creating %s", filePath);
             }
         }
         return message;
@@ -921,6 +933,20 @@ public class GitManager {
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
                 GitRepositoryUrl.from(pipeline.getRepository()), path, version, page, pageSize
         ));
+    }
+
+    public GitReaderObject lsTreeRepositoryObject(Long id, String version, String path) {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        final GitReaderEntryListing<GitReaderObject> listing =
+                callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
+                    GitRepositoryUrl.from(pipeline.getRepository()), path, version, 0L, 1
+                ));
+        if (CollectionUtils.isNotEmpty(listing.getListing())) {
+            return listing.getListing().get(0);
+        }
+        throw new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_PATH_DOESNT_EXIST, path)
+        );
     }
 
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,

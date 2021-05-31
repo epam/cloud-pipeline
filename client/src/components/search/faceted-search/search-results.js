@@ -132,17 +132,6 @@ class SearchResults extends React.Component {
     }
   };
 
-  onInfiniteScrollOffsetChanged = (offset, pageSize) => {
-    const {
-      onChangeOffset,
-      offset: currentOffset,
-      pageSize: currentPageSize
-    } = this.props;
-    if (onChangeOffset && (currentOffset !== offset || currentPageSize !== pageSize)) {
-      onChangeOffset(offset, pageSize);
-    }
-  };
-
   onInitializeInfiniteScroll = (infiniteScroll) => {
     this.infiniteScroll = infiniteScroll;
   };
@@ -261,19 +250,21 @@ class SearchResults extends React.Component {
   renderResultsList = () => {
     const {
       documents,
-      documentsOffset,
       disabled,
       error,
+      hasElementsAfter,
+      hasElementsBefore,
       showResults,
-      total,
-      offset
+      onLoadData,
+      onPageSizeChanged,
+      pageSize
     } = this.props;
     if (error) {
       return (
         <Alert type="error" message={error} />
       );
     }
-    if (showResults && total === 0) {
+    if (showResults && (documents || []).length === 0) {
       return (
         <Alert type="info" message="Nothing found" />
       );
@@ -294,13 +285,14 @@ class SearchResults extends React.Component {
         >
           <InfiniteScroll
             className={classNames(styles.infiniteScroll, styles.list)}
-            dataOffset={documentsOffset}
             disabled={disabled}
             error={error}
-            offset={offset}
-            total={total}
-            onOffsetChanged={this.onInfiniteScrollOffsetChanged}
+            hasElementsAfter={hasElementsAfter}
+            hasElementsBefore={hasElementsBefore}
+            onScrollToEnd={onLoadData}
+            onPageSizeChanged={onPageSizeChanged}
             elements={documents}
+            pageSize={pageSize}
             rowRenderer={this.renderSearchResultItem}
             rowMargin={RESULT_ITEM_MARGIN}
             rowHeight={RESULT_ITEM_HEIGHT}
@@ -440,11 +432,13 @@ class SearchResults extends React.Component {
   renderResultsTable = () => {
     const {
       documents,
-      documentsOffset,
       disabled,
       error,
-      total,
-      offset,
+      hasElementsAfter,
+      hasElementsBefore,
+      onPageSizeChanged,
+      onLoadData,
+      pageSize,
       showResults
     } = this.props;
     if (error) {
@@ -452,7 +446,7 @@ class SearchResults extends React.Component {
         <Alert type="error" message={error} />
       );
     }
-    if (showResults && total === 0) {
+    if (showResults && (documents || []).length === 0) {
       return (
         <Alert type="info" message="Nothing found" />
       );
@@ -464,13 +458,14 @@ class SearchResults extends React.Component {
       >
         <InfiniteScroll
           className={classNames(styles.infiniteScroll, styles.table)}
-          dataOffset={documentsOffset}
           disabled={disabled}
           error={error}
-          offset={offset}
-          total={total}
-          onOffsetChanged={this.onInfiniteScrollOffsetChanged}
+          hasElementsAfter={hasElementsAfter}
+          hasElementsBefore={hasElementsBefore}
+          onScrollToEnd={onLoadData}
+          onPageSizeChanged={onPageSizeChanged}
           elements={documents}
+          pageSize={pageSize}
           headerRenderer={this.renderTableHeader}
           rowRenderer={this.renderTableRow}
           rowMargin={0}
@@ -511,15 +506,15 @@ class SearchResults extends React.Component {
 SearchResults.propTypes = {
   className: PropTypes.string,
   documents: PropTypes.array,
-  documentsOffset: PropTypes.number,
   error: PropTypes.string,
-  onChangeOffset: PropTypes.func,
+  hasElementsAfter: PropTypes.bool,
+  hasElementsBefore: PropTypes.bool,
+  onLoadData: PropTypes.func,
+  onPageSizeChanged: PropTypes.func,
   onNavigate: PropTypes.func,
-  offset: PropTypes.number,
   pageSize: PropTypes.number,
   showResults: PropTypes.bool,
   style: PropTypes.object,
-  total: PropTypes.number,
   onChangeDocumentType: PropTypes.func,
   onChangeBottomOffset: PropTypes.func,
   mode: PropTypes.oneOf([PresentationModes.list, PresentationModes.table]),
@@ -528,11 +523,9 @@ SearchResults.propTypes = {
 
 SearchResults.defaultProps = {
   documents: [],
-  documentsOffset: 0,
-  offset: 0,
   pageSize: 20,
-  total: 0,
   documentTypes: []
 };
 
 export default inject('preferences')(observer(SearchResults));
+export {DEFAULT_PAGE_SIZE} from './controls/infinite-scroll';

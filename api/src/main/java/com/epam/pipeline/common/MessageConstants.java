@@ -35,6 +35,7 @@ public final class MessageConstants {
     public static final String ERROR_PIPELINE_REPO_EXISTS = "error.pipeline.name.exists";
     public static final String ERROR_INVALID_PIPELINE_NAME = "error.pipeline.name.invalid";
     public static final String ERROR_INVALID_PIPELINE_REVISION_NAME = "error.pipeline.revision.name.invalid";
+    public static final String ERROR_REPOSITORY_PATH_DOESNT_EXIST = "error.repository.path.doesnt.exist";
 
     //Pipeline config
     public static final String ERROR_CONFIG_INVALID = "error.pipeline.config.invalid";
@@ -266,6 +267,7 @@ public final class MessageConstants {
     public static final String ERROR_REPOSITORY_FOLDER_NOT_FOUND = "error.repository.folder.not.found";
     public static final String ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS =
             "error.repository.folder.already.exists";
+    public static final String ERROR_REPOSITORY_FILE_ALREADY_EXISTS = "error.repository.file.already.exists";
     public static final String ERROR_REPOSITORY_ROOT_FOLDER_CANNOT_BE_REMOVED =
             "error.repository.root.folder.cannot.be.removed";
     public static final String ERROR_REPOSITORY_FOLDER_CANNOT_BE_REMOVED =

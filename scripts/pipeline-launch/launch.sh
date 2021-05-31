@@ -1207,16 +1207,23 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             exit 1
       fi
 
+      rm -f /bin/fsbrowser
+      rm -f /usr/bin/fsbrowser
+      rm -f /usr/local/bin/fsbrowser
+      rm -f /sbin/fsbrowser
+      rm -f /usr/sbin/fsbrowser
+      rm -f /usr/local/sbin/fsbrowser
+
       tar -xf "$CP_FSBROWSER_NAME" -C ${CP_USR_BIN}/
       rm -f "$CP_FSBROWSER_NAME"
 
-      CP_FSBROWSER_BIN=${CP_USR_BIN}/app/app
+      CP_FSBROWSER_BIN=${CP_USR_BIN}/fsbrowser-cli/fsbrowser-cli
       if [ -f "$CP_FSBROWSER_BIN" ]; then
             ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
             ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
       fi
 
-      fsbrowser_setup
+      fsbrowser_setup "$GIT_REPO" "$REPO_REVISION" "$RESUMED_RUN" "$BRANCH"
       echo "------"
       echo
 fi

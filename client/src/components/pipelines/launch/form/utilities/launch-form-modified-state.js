@@ -37,7 +37,7 @@ import {
   noMachineEnabled,
   singularityEnabled,
   systemDEnabled,
-  moduleEnabled
+  moduleEnabled, disableHyperThreadingEnabled
 } from './run-capabilities';
 
 function formItemInitialized (form, formName) {
@@ -265,9 +265,11 @@ function runCapabilitiesCheck (state, parameters) {
   const systemD = systemDEnabled(parameters.parameters);
   const noMachine = noMachineEnabled(parameters.parameters);
   const module = moduleEnabled(parameters.parameters);
+  const disableHyperThreading = disableHyperThreadingEnabled(parameters.parameters);
   return dinD !== state.dinD || singularity !== state.singularity ||
     systemD !== state.systemD || noMachine !== state.noMachine ||
-    module !== state.module;
+    module !== state.module ||
+    disableHyperThreading !== state.disableHyperThreading;
 }
 
 function checkRootEntityModified (props, state) {

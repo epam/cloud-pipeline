@@ -104,6 +104,7 @@ import RunCapabilities, {
   singularityEnabled,
   systemDEnabled,
   moduleEnabled,
+  disableHyperThreadingEnabled,
   RUN_CAPABILITIES
 } from './utilities/run-capabilities';
 import {
@@ -120,7 +121,7 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE
+  CP_CAP_AUTOSCALE_PRICE_TYPE, CP_DISABLE_HYPER_THREADING
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
@@ -321,7 +322,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     singularity: false,
     systemD: false,
     noMachine: false,
-    module: false
+    module: false,
+    disableHyperThreading: false
   };
 
   formItemLayout = {
@@ -465,14 +467,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get selectedRunCapabilities () {
-    const {dinD, singularity, systemD, noMachine, module} = this.state;
+    const {
+      dinD,
+      singularity,
+      systemD,
+      noMachine,
+      module,
+      disableHyperThreading
+    } = this.state;
 
     return [
       dinD ? RUN_CAPABILITIES.dinD : false,
       singularity ? RUN_CAPABILITIES.singularity : false,
       systemD ? RUN_CAPABILITIES.systemD : false,
       noMachine ? RUN_CAPABILITIES.noMachine : false,
-      module ? RUN_CAPABILITIES.module : false
+      module ? RUN_CAPABILITIES.module : false,
+      disableHyperThreading ? RUN_CAPABILITIES.disableHyperThreading : false
     ].filter(Boolean);
   };
 
@@ -482,7 +492,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
       systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
       noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine),
-      module: capabilities.includes(RUN_CAPABILITIES.module)
+      module: capabilities.includes(RUN_CAPABILITIES.module),
+      disableHyperThreading: capabilities.includes(RUN_CAPABILITIES.disableHyperThreading)
     }, this.formFieldsChanged);
   };
 
@@ -869,6 +880,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const systemD = systemDEnabled(this.props.parameters.parameters);
     const noMachine = noMachineEnabled(this.props.parameters.parameters);
     const module = moduleEnabled(this.props.parameters.parameters);
+    const disableHyperThreading = disableHyperThreadingEnabled(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -892,6 +904,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         systemD,
         noMachine,
         module,
+        disableHyperThreading,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -952,6 +965,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         systemD,
         noMachine,
         module,
+        disableHyperThreading,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -1193,6 +1207,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
+    if (this.state.disableHyperThreading) {
+      payload[PARAMETERS][CP_DISABLE_HYPER_THREADING] = {
+        type: 'boolean',
+        value: true
+      }
+    }
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
       payload.pipelineVersion = this.state.version;
@@ -1414,6 +1434,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
+    if (this.state.disableHyperThreading) {
+      payload.params[CP_DISABLE_HYPER_THREADING] = {
+        type: 'boolean',
+        value: true
+      }
+    }
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1567,6 +1593,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const systemD = systemDEnabled(this.props.parameters.parameters);
     const noMachine = noMachineEnabled(this.props.parameters.parameters);
     const module = moduleEnabled(this.props.parameters.parameters);
+    const disableHyperThreading = disableHyperThreadingEnabled(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
@@ -1581,6 +1608,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       systemD,
       noMachine,
       module,
+      disableHyperThreading,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
       this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -4667,6 +4695,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {
                 !this.props.detached && !this.props.editConfigurationMode && (
                   <Button
+                    id="launch-command-button"
                     disabled={!this.launchCommandPayload}
                     style={{verticalAlign: 'middle', marginRight: 5}}
                     onClick={this.showLaunchCommands}

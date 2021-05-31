@@ -19,24 +19,28 @@ import fetchFacets from './fetch-facets';
 import getItemUrl from './get-item-url';
 import getFacetFilterToken from './facet-filter-token';
 
-export default function facetsSearch (query, filters, offset, pageSize, options) {
+export default function facetsSearch (
+  query,
+  filters,
+  pageSize,
+  options,
+  scrollingParameters
+) {
   const {
     facets = [],
     facetsToken: currentFacetsToken,
     facetsCount,
-    stores,
-    total
+    stores
   } = options;
   const facetsToken = getFacetFilterToken(
     query,
     filters,
-    0,
     1
   );
   const doFetchFacets = currentFacetsToken !== facetsToken;
   return new Promise((resolve) => {
     const promises = [
-      doSearch(query, filters, offset, pageSize, facets)
+      doSearch(query, filters, pageSize, facets, scrollingParameters)
     ];
     if (doFetchFacets && Object.keys(filters || {}).length > 0) {
       // if {filters} is empty (Object.keys.length === 0)
@@ -55,9 +59,7 @@ export default function facetsSearch (query, filters, offset, pageSize, options)
         const {
           error,
           documents = [],
-          documentsOffset = 0,
-          facets: facetsCountFromSearch,
-          totalHits
+          facets: facetsCountFromSearch
         } = searchResult;
         let facetsCountUpdated, facetsTokenUpdated;
         if (facetsCountResult) {
@@ -81,11 +83,7 @@ export default function facetsSearch (query, filters, offset, pageSize, options)
               error,
               facetsCount: facetsCountUpdated,
               facetsToken: facetsTokenUpdated,
-              documents: documents.slice(),
-              documentsOffset,
-              totalHits: doFetchFacets || totalHits !== undefined
-                ? totalHits
-                : total
+              documents: documents.slice()
             });
           });
       });

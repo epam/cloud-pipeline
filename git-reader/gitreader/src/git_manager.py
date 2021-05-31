@@ -89,8 +89,6 @@ class GitManager(object):
             args.append(filters.ref)
 
         if len(filters.path_masks) > 0:
-            if len(filters.path_masks) == 1:
-                args.append("--follow")
             args.append('--')
             args.append(filters.path_masks)
 
@@ -116,7 +114,7 @@ class GitManager(object):
             return 0, result
         git_ls_tree_result = git_ls_tree_result.split("\n")
         for line in git_ls_tree_result[offset:offset + page_size]:
-            git_ls_tree_line = line.split()
+            git_ls_tree_line = line.split(maxsplit=4)
             name = os.path.basename(git_ls_tree_line[4])
             result.append(GitObject(
                             git_id=git_ls_tree_line[4],

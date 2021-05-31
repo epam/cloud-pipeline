@@ -22,16 +22,15 @@ import prepareChanges from './changes/prepare';
 import VSFileContent from '../../../../../../models/versioned-storage/file-content';
 import VSConflictDiff from '../../../../../../models/versioned-storage/conflict-diff';
 
-function fetchDiff (run, storage, file, revision, mergeInProgress) {
+function fetchDiff (run, storage, file, options = {}) {
   return new Promise((resolve) => {
     const request = new VSConflictDiff(
       run,
       storage?.id,
       file,
-      revision,
       {
         linesCount: 0,
-        mergeInProgress
+        ...options
       }
     );
     request
@@ -226,21 +225,19 @@ export default function analyzeConflicts (run, storage, mergeInProgress, file) {
                 // merge conflict
                 // head:
                 promises.push(
-                  fetchDiff(run, storage, file, undefined, mergeInProgress)
+                  fetchDiff(run, storage, file, {mergeInProgress})
                 );
                 // remote:
                 promises.push(
                   remoteSHA
-                    ? fetchDiff(run, storage, file, remoteSHA, mergeInProgress)
+                    ? fetchDiff(run, storage, file, {revision: remoteSHA, mergeInProgress})
                     : Promise.resolve(undefined)
                 );
               } else {
-                // todo: stash conflict
                 // head:
-                // promises.push(fetchDiff(run, storage, file, undefined, mergeInProgress));
-                promises.push(Promise.resolve(undefined));
+                promises.push(fetchDiff(run, storage, file, {mergeInProgress}));
                 // remote:
-                promises.push(Promise.resolve(undefined));
+                promises.push(fetchDiff(run, storage, file, {mergeInProgress, remote: true}));
               }
               Promise.all(promises)
                 .then((payloads) => {

@@ -70,8 +70,12 @@ public abstract class AbstractCloudPipelineEntityLoader<T> implements EntityLoad
 
     protected abstract AclClass getAclClass(T entity);
 
-    protected EntityContainer<T> buildContainer(final Long id) {
+    protected EntityContainer<T> buildContainer(final Long id) throws EntityNotFoundException {
         final T entity = fetchEntity(id);
+        if (entity == null) {
+            throw new EntityNotFoundException(
+                    String.format("%s: Failed to find entity with id %d.",this.getClass().getSimpleName(), id));
+        }
         return EntityContainer.<T>builder()
                 .entity(entity)
                 .owner(loadUser(getOwner(entity)))

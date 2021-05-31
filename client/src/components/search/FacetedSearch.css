@@ -71,9 +71,8 @@
   margin: 0 6px;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-between;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .container .actions > * {
@@ -99,7 +98,7 @@
 
 .container .clear-filters-btn {
   position: sticky;
-  top: 0px;
+  top: 0;
   left: calc(100% - 74px);
   padding: 2px 5px;
   border-radius: 3px;

@@ -377,8 +377,8 @@ public class PipelineController extends AbstractRestController {
     @RequestMapping(value = "/pipeline/{id}/folder", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Creates or renames pipeline update.",
-            notes = "Creates or renames pipeline update.",
+            value = "Creates or renames pipeline folder.",
+            notes = "Creates or renames pipeline folder.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -716,6 +716,22 @@ public class PipelineController extends AbstractRestController {
             @RequestParam(value = PAGE, required = false) final Long page,
             @RequestParam(value = PAGE_SIZE, required = false) final Integer pageSize) throws GitClientException {
         return Result.success(pipelineApiService.lsTreeRepositoryContent(id, version, path, page, pageSize));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/path", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns pipeline repository object.",
+            notes = "Returns pipeline repository object or throws exception of such path doesn't exists.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitReaderObject> lsTreeRepositoryObject(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestParam(value = PATH, required = false) final String path) throws GitClientException {
+        return Result.success(pipelineApiService.lsTreeRepositoryObject(id, version, path));
     }
 
     @RequestMapping(value = "/pipeline/{id}/logs_tree", method = RequestMethod.GET)

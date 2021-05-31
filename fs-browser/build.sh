@@ -42,8 +42,8 @@ python ${PYINSTALLER_PATH}/pyinstaller/pyinstaller.py -y --clean \
   --add-data /usr/local/lib/python3.6/site-packages/flasgger:flasgger \
   --hidden-import=pygit2 \
   --hidden-import=requests \
-  --hidden-import=pkg_resources.py2_warn ${FSBROWSER_SOURCES_DIR}/fsbrowser/app.py
-tar -zcf ${FSBROWSER_DIST_PATH}/fsbrowser.tar.gz -C ${FSBROWSER_DIST_PATH} app
+  --hidden-import=pkg_resources.py2_warn ${FSBROWSER_SOURCES_DIR}/fsbrowser/fsbrowser-cli.py
+tar -zcf ${FSBROWSER_DIST_PATH}/fsbrowser.tar.gz -C ${FSBROWSER_DIST_PATH} fsbrowser-cli
 EOL
 
 docker pull $_BUILD_DOCKER_IMAGE &> /dev/null

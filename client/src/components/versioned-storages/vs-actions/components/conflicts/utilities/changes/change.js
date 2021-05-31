@@ -340,9 +340,6 @@ export default class Change {
    */
   discard (callback) {
     this.status = ChangeStatuses.discarded;
-    if (this.conflict && this.branch !== Merged) {
-
-    }
     callback && callback();
     return () => {
       this.status = ChangeStatuses.prepared;

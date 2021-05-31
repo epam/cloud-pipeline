@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -63,14 +64,11 @@ public class PipelineRunAsManager {
     }
 
     public PipelineRun runPipeline(final PipelineStart runVO) {
-        final String runAsUser = getRunAsUserName(runVO);
-        configureRunnerSids(runVO, runAsUser);
-        try {
-            return CompletableFuture.supplyAsync(() -> run(runVO, runAsUser), runAsExecutor).get();
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new IllegalStateException(e);
-        }
+        return run(runVO, () -> pipelineRunManager.runPipeline(runVO));
+    }
+
+    public PipelineRun runTool(final PipelineStart runVO) {
+        return run(runVO, () -> pipelineRunManager.runCmd(runVO));
     }
 
     public boolean hasCurrentUserAsRunner(final String runAsUserName) {
@@ -85,10 +83,25 @@ public class PipelineRunAsManager {
                 : userManager.loadUserByNameOrId(currentUserConfiguration.getRunAs()).getUserName();
     }
 
-    private PipelineRun run(final PipelineStart runVO, final String runAsUserName) {
+    private PipelineRun run(final PipelineStart runVO, final Callable<PipelineRun> runCallable) {
+        final String runAsUser = getRunAsUserName(runVO);
+        configureRunnerSids(runVO, runAsUser);
+        return supplyRunAsync(runAsUser, runCallable);
+    }
+
+    private PipelineRun supplyRunAsync(final String runAsUser, final Callable<PipelineRun> runCallable) {
         try {
-            return new DelegatingSecurityContextCallable<>(() -> pipelineRunManager.runPipeline(runVO),
-                    permissionHelper.createContext(runAsUserName)).call();
+            return CompletableFuture.supplyAsync(() -> runWithUserContext(runAsUser, runCallable), runAsExecutor).get();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private PipelineRun runWithUserContext(final String runAsUserName, final Callable<PipelineRun> runCallable) {
+        try {
+            return new DelegatingSecurityContextCallable<>(runCallable, permissionHelper.createContext(runAsUserName))
+                    .call();
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new IllegalStateException(e);

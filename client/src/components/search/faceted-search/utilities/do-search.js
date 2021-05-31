@@ -16,14 +16,20 @@
 
 import {FacetedSearch} from '../../../../models/search';
 
-function doSearch (query, filters, offset, pageSize, facets) {
+function doSearch (
+  query,
+  filters,
+  pageSize,
+  facets,
+  scrollingParameters
+) {
   const payload = {
     query: query || '*',
     filters: {...filters},
     facets,
-    offset,
     pageSize,
-    highlight: false
+    highlight: false,
+    scrollingParameters
   };
   return new Promise((resolve) => {
     const request = new FacetedSearch();
@@ -34,14 +40,11 @@ function doSearch (query, filters, offset, pageSize, facets) {
         } else {
           const {
             documents = [],
-            facets = {},
-            totalHits = 0
+            facets = {}
           } = request.value || {};
           resolve({
             documents,
-            documentsOffset: offset,
-            facets,
-            totalHits
+            facets
           });
         }
       })

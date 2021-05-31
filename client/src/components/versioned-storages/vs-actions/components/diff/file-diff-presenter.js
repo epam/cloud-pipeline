@@ -32,8 +32,6 @@ class FileDiffPresenter extends React.PureComponent {
     initialized: false
   };
 
-  diff2HtmlNode;
-
   componentDidMount () {
     this.updatePresentation();
   }

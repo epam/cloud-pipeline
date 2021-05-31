@@ -76,6 +76,20 @@ class VSHistory extends React.Component {
     );
   }
 
+  get path () {
+    const {
+      path: rawPath,
+      isFolder
+    } = this.props;
+    let path = rawPath;
+    if (rawPath && isFolder && !rawPath.endsWith('/')) {
+      path = rawPath.concat('/');
+    } else if (rawPath && !isFolder && rawPath.endsWith('/')) {
+      path = rawPath.slice(0, -1);
+    }
+    return path;
+  }
+
   componentDidMount () {
     this.fetchCommits();
   }
@@ -142,9 +156,7 @@ class VSHistory extends React.Component {
 
   fetchCommits = () => {
     const {
-      versionedStorageId,
-      path: rawPath,
-      isFolder
+      versionedStorageId
     } = this.props;
     if (!versionedStorageId) {
       return;
@@ -164,19 +176,13 @@ class VSHistory extends React.Component {
         pageSize,
         filters
       } = this.state;
-      let path = rawPath;
-      if (rawPath && isFolder && !rawPath.endsWith('/')) {
-        path = rawPath.concat('/');
-      } else if (rawPath && !isFolder && rawPath.endsWith('/')) {
-        path = rawPath.slice(0, -1);
-      }
       const request = new LoadVSCommits(
         versionedStorageId,
         page,
         pageSize
       );
       const filtersPayload = {
-        path,
+        path: this.path,
         ...(filters || {})
       };
       request
@@ -282,6 +288,8 @@ class VSHistory extends React.Component {
                 key={commit.commit}
                 commit={commit}
                 disabled={pending}
+                versionedStorageId={versionedStorageId}
+                path={this.path}
               />
             ))
           }

@@ -84,7 +84,7 @@
   line-height: 1;
 }
 
-.commit .button.diff {
+.commit .diff {
   float: right;
 }
 
@@ -113,3 +113,9 @@
 }
 
 .commit .date {}
+
+.diff-content .empty-content {
+  font-style: italic;
+  color: #999;
+  padding: 5px;
+}

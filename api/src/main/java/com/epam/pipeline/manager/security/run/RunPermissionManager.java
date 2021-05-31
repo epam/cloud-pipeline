@@ -41,11 +41,13 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
+import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -98,7 +100,7 @@ public class RunPermissionManager {
     public boolean runStatusPermission(Long runId, TaskStatus taskStatus, String permissionName) {
         final PipelineRun pipelineRun = runCRUDService.loadRunById(runId);
         if (taskStatus.isFinal()) {
-            return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner());
+            return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner()) || isRunSshAllowed(pipelineRun);
         }
         return runPermission(pipelineRun, permissionName);
     }
@@ -164,14 +166,33 @@ public class RunPermissionManager {
         }
     }
 
-    public boolean hasPipelinePermissionToRunAs(final PipelineStart runVO, final AbstractSecuredEntity pipeline,
-                                                final String permissionName) {
+    public boolean hasEntityPermissionToRunAs(final PipelineStart runVO, final AbstractSecuredEntity entity,
+                                              final String permissionName) {
         final String runAsUserName = runAsManager.getRunAsUserName(runVO);
+        return hasEntityPermissionToRunAs(entity, runAsUserName, permissionName);
+    }
+
+    public boolean hasEntityPermissionToRunAs(final AbstractSecuredEntity entity, final String runAsUserName,
+                                              final String permissionName) {
         if (StringUtils.isEmpty(runAsUserName)) {
             return true;
         }
-        return permissionsHelper.isAllowed(permissionName, pipeline, runAsUserName)
+        return permissionsHelper.isAllowed(permissionName, entity, runAsUserName)
                 && runAsManager.hasCurrentUserAsRunner(runAsUserName);
+    }
+
+    public void checkToolRunPermission(final String image) {
+        final AbstractSecuredEntity tool = toolManager.loadByNameOrId(image);
+        if (!permissionsHelper.isAllowed(AclPermission.EXECUTE_NAME, tool)) {
+            throw new AccessDeniedException("Access is denied");
+        }
+    }
+
+    public void checkToolRunPermissionToRunAs(final String image, final String runAsUserName) {
+        final AbstractSecuredEntity tool = toolManager.loadByNameOrId(image);
+        if (!hasEntityPermissionToRunAs(tool, runAsUserName, AclPermission.EXECUTE_NAME)) {
+            throw new AccessDeniedException("Access is denied");
+        }
     }
 
     private boolean isSharedWithPrincipal(final List<RunSid> sshSharedSids, final PipelineUser currentUser) {

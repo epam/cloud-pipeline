@@ -41,6 +41,29 @@
   outline: #fff;
 }
 
+.tabular-file-container {
+  overflow: auto;
+}
+
+.tabular-file-container .tabular {
+  border-collapse: collapse;
+  border: 1px solid #ccc;
+  width: 100%;
+}
+
+.tabular-file-container .tabular th,
+.tabular-file-container .tabular td {
+  padding: 2px 4px;
+  border: 1px solid #ccc;
+  min-width: 25px;
+}
+
+.tabular-file-container .tabular th {
+  background-color: #f0f0f0;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .preview-header-container {
   display: flex;
   flex-direction: column;

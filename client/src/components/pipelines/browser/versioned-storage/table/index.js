@@ -30,6 +30,8 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import UploadButton from '../../../../special/UploadButton';
+import VSTableNavigation from './vs-table-navigation';
+import roleModel from '../../../../../utils/roleModel';
 import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
 import COLUMNS from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
@@ -64,7 +66,11 @@ class VersionedStorageTable extends React.Component {
   }
 
   get data () {
-    const {contents, showNavigateBack} = this.props;
+    const {
+      contents,
+      showNavigateBack,
+      versionedStorage
+    } = this.props;
     if (!contents) {
       return null;
     }
@@ -75,7 +81,10 @@ class VersionedStorageTable extends React.Component {
     const content = contents
       .map(content => ({
         ...content.commit,
-        ...content.git_object
+        ...content.git_object,
+        mask: versionedStorage
+          ? versionedStorage.mask
+          : 0
       })).sort(typeSorter);
     return showNavigateBack ? [navigateBack, ...content] : content;
   };
@@ -96,8 +105,8 @@ class VersionedStorageTable extends React.Component {
     const {pipelineId, path} = this.props;
     return PipelineFileUpdate.uploadUrl(
       pipelineId,
-      path || '',
-      {trimTrailingSlash: true}
+      path || '/',
+      {trimTrailingSlash: !!path}
     );
   }
 
@@ -188,54 +197,68 @@ class VersionedStorageTable extends React.Component {
   };
 
   renderTableControls = () => {
-    const {controlsEnabled} = this.props;
-    return (
-      <div className={styles.tableControls}>
-        <Dropdown
-          placement="bottomRight"
-          trigger={['hover']}
-          overlay={
-            <Menu
-              selectedKeys={[]}
-              onClick={this.onCreateActionSelect}
-              style={{width: 200}}>
-              <Menu.Item
-                key={TABLE_MENU_KEYS.folder}
+    const {
+      controlsEnabled,
+      versionedStorage,
+      path,
+      onNavigate
+    } = this.props;
+    if (roleModel.writeAllowed(versionedStorage)) {
+      return (
+        <div className={styles.tableControlsContainer}>
+          <VSTableNavigation
+            path={path}
+            onNavigate={onNavigate}
+          />
+          <div className={styles.tableControls}>
+            <Dropdown
+              placement="bottomRight"
+              trigger={['hover']}
+              overlay={
+                <Menu
+                  selectedKeys={[]}
+                  onClick={this.onCreateActionSelect}
+                  style={{width: 200}}>
+                  <Menu.Item
+                    key={TABLE_MENU_KEYS.folder}
+                    disabled={!controlsEnabled}
+                  >
+                    <Icon type="folder" /> Folder
+                  </Menu.Item>
+                  <Menu.Item
+                    key={TABLE_MENU_KEYS.file}
+                    disabled={!controlsEnabled}
+                  >
+                    <Icon type="file" /> File
+                  </Menu.Item>
+                </Menu>
+              }
+              key="create actions">
+              <Button
+                type="primary"
+                id="create-button"
+                size="small"
+                className={styles.tableControl}
                 disabled={!controlsEnabled}
               >
-                <Icon type="folder" /> Folder
-              </Menu.Item>
-              <Menu.Item
-                key={TABLE_MENU_KEYS.file}
-                disabled={!controlsEnabled}
-              >
-                <Icon type="file" /> File
-              </Menu.Item>
-            </Menu>
-          }
-          key="create actions">
-          <Button
-            type="primary"
-            id="create-button"
-            size="small"
-            className={styles.tableControl}
-            disabled={!controlsEnabled}
-          >
-            <Icon type="plus" />
-            Create
-            <Icon type="down" />
-          </Button>
-        </Dropdown>
-        <UploadButton
-          multiple
-          synchronous
-          onRefresh={this.onUploadFinished}
-          validate={this.validateUploadFiles}
-          title={'Upload'}
-          action={this.uploadPath}
-        />
-      </div>
-    );
+                <Icon type="plus" />
+                Create
+                <Icon type="down" />
+              </Button>
+            </Dropdown>
+            <UploadButton
+              multiple
+              synchronous
+              onRefresh={this.onUploadFinished}
+              validate={this.validateUploadFiles}
+              title={'Upload'}
+              action={this.uploadPath}
+            />
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   renderDeleteDialog = () => {
@@ -357,7 +380,8 @@ VersionedStorageTable.PropTypes = {
   ]),
   path: PropTypes.string,
   afterUpload: PropTypes.func,
-  style: PropTypes.object
+  style: PropTypes.object,
+  versionedStorage: PropTypes.object
 };
 
 export default VersionedStorageTable;

@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Icon} from 'antd';
+import {Icon} from 'antd';
+import CommitDiffButton from './commit-diff-button';
 import UserName from '../../../../special/UserName';
 import displayDate from '../../../../../utils/displayDate';
 import styles from './history.css';
@@ -27,7 +28,9 @@ function CommitCard (
     className,
     commit,
     disabled = false,
-    style
+    path,
+    style,
+    versionedStorageId
   }
 ) {
   if (!commit) {
@@ -46,22 +49,12 @@ function CommitCard (
       }
       style={style}
     >
-      <Button
-        size="small"
-        className={
-          classNames(
-            styles.button,
-            styles.diff
-          )
-        }
+      <CommitDiffButton
         disabled={disabled}
-        style={{
-          float: 'right'
-        }}
-      >
-        <Icon type="left" />
-        <Icon type="right" />
-      </Button>
+        commit={commit?.commit}
+        path={path}
+        versionedStorageId={versionedStorageId}
+      />
       <div>
         {
           commit.commit_message && (
@@ -119,7 +112,9 @@ CommitCard.propTypes = {
   className: PropTypes.string,
   commit: PropTypes.object,
   disabled: PropTypes.bool,
-  style: PropTypes.object
+  path: PropTypes.string,
+  style: PropTypes.object,
+  versionedStorageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
 export default CommitCard;

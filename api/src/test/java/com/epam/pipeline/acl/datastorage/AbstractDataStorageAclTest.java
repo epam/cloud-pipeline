@@ -69,6 +69,7 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
         doReturn(entity).when(mockEntityManager).load(AclClass.DATA_STORAGE, ID);
     }
 
+    @Override
     protected void mockUserContext(final UserContext context) {
         doReturn(context).when(mockAuthManager).getUserContext();
     }

@@ -25,9 +25,10 @@ export default class VSFileContentUpdate extends VSRemote {
   }
 
   async doRegularFetch () {
+    const {headers = {}} = this.constructor.fetchOptions || {};
     return new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
-      request.withCredentials = true;
+      request.withCredentials = false;
       request.onreadystatechange = function () {
         if (request.readyState !== 4) return;
         if (request.status !== 200) {
@@ -46,6 +47,11 @@ export default class VSFileContentUpdate extends VSRemote {
         }
       };
       request.open('POST', `${this.constructor.prefix}${this.url}`);
+      Object.entries(headers)
+        .forEach(([header, value]) => {
+          console.log('setting header', header, value);
+          request.setRequestHeader(header, value);
+        });
       request.send(this.contents);
     });
   }

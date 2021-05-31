@@ -60,6 +60,7 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 
+const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
@@ -148,6 +149,8 @@ export default class Metadata extends React.Component {
     metadata: false,
     selectedItem: null,
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
+    selectedItemsCanBeSkipped: false,
+    selectedItemsAreShowing: false,
     selectedColumns: [],
     filterModel: {
       filters: [],
@@ -311,36 +314,66 @@ export default class Metadata extends React.Component {
       filters = (filterModel.filters || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
-    await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy, filters}));
-    if (this.metadataRequest.error) {
-      message.error(this.metadataRequest.error, 5);
-      this._currentMetadata = [];
+    if (!this.state.selectedItemsAreShowing) {
+      await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}));
+      if (this.metadataRequest.error) {
+        message.error(this.metadataRequest.error, 5);
+        this._currentMetadata = [];
+      } else {
+        if (this.metadataRequest.value) {
+          this._totalCount = this.metadataRequest.value.totalCount;
+//           if (!this.state.filterModel.searchQueries.length) {
+//             const parentFolderId = this.props.folderId;
+//             if (this._totalCount <= 0) {
+//               this.props.router.push(`/folder/${parentFolderId}`);
+//               return;
+//             }
+//           }
+          if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
+            this._classEntity = {
+              id: this.metadataRequest.value.elements[0].classEntity.id,
+              name: this.metadataRequest.value.elements[0].classEntity.name
+            };
+          }
+          this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
+            v.data = v.data || {};
+            v.data.rowKey = {
+              value: v.id,
+              type: 'string'
+            };
+            v.data.ID = {
+              value: v.externalId,
+              type: 'string'
+            };
+            v.data.createdDate = {
+              value: v.createdDate,
+              type: 'date'
+            };
+            return v.data;
+          });
+        }
+      }
     } else {
-      if (this.metadataRequest.value) {
-        this._totalCount = this.metadataRequest.value.totalCount;
-        // if (!this.state.filterModel.searchQueries.length) {
-        //   const parentFolderId = this.props.folderId;
-        //   if (this._totalCount <= 0) {
-        //     this.props.router.push(`/folder/${parentFolderId}`);
-        //     return;
-        //   }
-        // }
-        this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
-          v.data = v.data || {};
-          v.data.rowKey = {
-            value: v.id,
-            type: 'string'
-          };
-          v.data.ID = {
-            value: v.externalId,
-            type: 'string'
-          };
-          v.data.createdDate = {
-            value: v.createdDate,
-            type: 'date'
-          };
-          return v.data;
+      const {page, pageSize} = this.state.filterModel;
+      const selectedItems = [...this.state.selectedItems];
+      this._totalCount = selectedItems.length;
+
+      const firstRow = Math.max((page - 1) * pageSize, 0);
+      const lastRow = Math.min(page * pageSize, selectedItems.length);
+
+      if (orderBy && orderBy.length) {
+        const field = orderBy[0].field === 'externalId' ? 'ID' : orderBy[0].field;
+        const desc = orderBy[0].desc;
+        selectedItems.sort((a, b) => {
+          if (!desc) {
+            return a[field].value >= b[field].value ? 1 : -1;
+          } else {
+            return a[field].value < b[field].value ? 1 : -1;
+          }
         });
+        this._currentMetadata = selectedItems.slice(firstRow, lastRow);
+      } else {
+        this._currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
     this.setState({loading: false});
@@ -435,9 +468,12 @@ export default class Metadata extends React.Component {
 
       if (this.defaultColumns && this.defaultColumns.length < newColumns.length) {
         const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
-        this.state.selectedColumns.push(...addedColumns);
-        this.setState({selectedColumns: this.state.selectedColumns});
+        this.setState({selectedColumns: [...this.state.selectedColumns, ...addedColumns]});
       }
+      if (this.defaultColumns && this.defaultColumns.length === newColumns.length) {
+        this.setState({selectedColumns: [...newColumns]});
+      }
+
       this.defaultColumns = this.columns = newColumns;
     }
   };
@@ -477,6 +513,10 @@ export default class Metadata extends React.Component {
   };
 
   onSearchQueriesChanged = async () => {
+    this.setState(
+      {selectedItemsAreShowing: false},
+      () => this.paginationOnChange(FIRST_PAGE)
+    );
     await this.loadData(this.state.filterModel);
   };
 
@@ -506,6 +546,12 @@ export default class Metadata extends React.Component {
     if (selectedItem) {
       const index = selectedItems.indexOf(selectedItem);
       selectedItems.splice(index, 1);
+      if (selectedItems.length === 0) {
+        this.setState(
+          {selectedItemsAreShowing: false},
+          () => this.paginationOnChange(FIRST_PAGE)
+        );
+      }
     } else {
       selectedItems.push(item);
     }
@@ -546,7 +592,10 @@ export default class Metadata extends React.Component {
     }
   };
   onClearSelectionItems = () => {
-    this.setState({selectedItems: []});
+    this.setState({
+      selectedItems: [],
+      selectedItemsAreShowing: false
+    }, () => this.paginationOnChange(FIRST_PAGE));
   };
   onCopySelectionItems = () => {
     this.setState({
@@ -721,20 +770,15 @@ export default class Metadata extends React.Component {
                 <span>{'\u00A0'}</span>
               </div>
           }
-          showPagination={false} />,
+          showPagination={false}
+          NoDataComponent={() => <div className={`${styles.noData}`}>No rows found</div>} />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10}}>
           <Pagination
             size="small"
             pageSize={PAGE_SIZE}
             current={this.state.filterModel.page}
             total={this._totalCount}
-            onChange={
-              async (page) => {
-                this.state.filterModel.page = page;
-                await this.loadData(this.state.filterModel);
-                this.setState({filterModel: this.state.filterModel});
-              }
-            } />
+            onChange={async (page) => this.paginationOnChange(page)} />
         </Row>
       ];
     };
@@ -780,9 +824,30 @@ export default class Metadata extends React.Component {
       ...((this.metadataRequest.value && this.metadataRequest.value.elements) || []),
       this.externalMetadataEntity
     ];
-    const [currentItem] = this.state.selectedItem && this.state.selectedItem.rowKey
+    let [currentItem] = this.state.selectedItem && this.state.selectedItem.rowKey
       ? allMetadata.filter(metadata => metadata.id === this.state.selectedItem.rowKey.value)
       : [];
+    if (
+      this.state.selectedItemsAreShowing &&
+      this.state.selectedItem &&
+      this.state.selectedItem.rowKey
+    ) {
+      [currentItem] = this.state.selectedItems
+        .filter(item => item.rowKey.value === this.state.selectedItem.rowKey.value)
+        .map(item => {
+          item = {
+            data: {...item},
+            classEntity: {...this._classEntity},
+            createdDate: item.createdDate.value,
+            externalId: item.ID.value,
+            id: item.rowKey.value,
+            parent: {
+              id: this.state.filterModel.folderId
+            }
+          };
+          return item;
+        });
+    }
 
     return (
       <ContentMetadataPanel
@@ -815,6 +880,12 @@ export default class Metadata extends React.Component {
               const [selectedItem] =
                 this._currentMetadata
                   .filter(metadata => metadata.rowKey.value === currentItem.id);
+              if (this.state.selectedItems && this.state.selectedItems.length) {
+                const selectedItems = this.state.selectedItems.map(item => {
+                  return item.rowKey.value === currentItem.id ? selectedItem : item;
+                });
+                this.setState({selectedItems: [...selectedItems]});
+              }
               this.setState({selectedItem: selectedItem});
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
@@ -1026,7 +1097,22 @@ export default class Metadata extends React.Component {
               {
                 this.state.selectedItems &&
                 this.state.selectedItems.length > 0 &&
-                <span> Selected {this.state.selectedItems ? this.state.selectedItems.length : 0} items </span>
+                <div>
+                  {
+                    this.state.selectedItemsAreShowing
+                      ? `Currently viewing
+                        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
+                        selected item${this.state.selectedItems.length > 1 ? 's' : ''}. `
+                      : null
+                  }
+                  <a onClick={() => this.handleClickShowSelectedItems()}>{
+                    this.state.selectedItemsAreShowing
+                      ? 'Show all metadata items'
+                      : `Show
+                        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
+                        selected item${this.state.selectedItems.length > 1 ? 's' : ''}`}
+                  </a>
+                </div>
               }
             </Col>
             <Col>
@@ -1173,6 +1259,37 @@ export default class Metadata extends React.Component {
     }
   };
 
+  handleClickShowSelectedItems = () => {
+    const showSelectedItems = () => {
+      this.setState({
+        selectedItem: null,
+        metadata: false,
+        selectedItemsAreShowing: !this.state.selectedItemsAreShowing
+      }, () => this.paginationOnChange(FIRST_PAGE));
+    };
+
+    if (!this.state.selectedItemsAreShowing &&
+      this.state.filterModel.filters &&
+      this.state.filterModel.filters.length
+    ) {
+      Modal.confirm({
+        title: 'All filters will be reset. Continue?',
+        onOk: showSelectedItems,
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+    } else {
+      showSelectedItems();
+    }
+  }
+
+  paginationOnChange = async (page) => {
+    const {filterModel} = this.state;
+    filterModel.page = page;
+    await this.loadData(filterModel);
+    this.setState({filterModel});
+  }
+
   render () {
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
@@ -1200,8 +1317,9 @@ export default class Metadata extends React.Component {
                 value={this.state.filterModel.searchQueries[0]}
                 onPressEnter={this.onSearchQueriesChanged}
                 onChange={(e) => {
-                  this.state.filterModel.searchQueries = [e.target.value.trim()];
-                  this.setState({filterModel: this.state.filterModel});
+                  const {filterModel} = this.state;
+                  filterModel.searchQueries = [e.target.value.trim()];
+                  this.setState({filterModel});
                 }}
               />
               <DropdownWithMultiselect
@@ -1240,38 +1358,84 @@ export default class Metadata extends React.Component {
   };
 
   componentDidMount () {
+    const {route, router} = this.props;
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.leavePageWithSelectedItems.bind(this));
+    };
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
-      this.state.selectedColumns = [...this.columns];
+      this.setState({selectedColumns: [...this.columns]});
       await this.loadData(this.state.filterModel);
       await this.loadCurrentProject();
     })();
   };
 
+  leavePageWithSelectedItems (nextLocation) {
+    const {router} = this.props;
+    const {selectedItemsCanBeSkipped} = this.state;
+
+    const resetSelectedItemsCanBeSkipped = () => {
+      this.resetSelectedItemsTimeout = setTimeout(
+        () => this.setState && this.setState({selectedItemsCanBeSkipped: false}),
+        0
+      );
+    };
+
+    const leave = nextLocation => {
+      this.setState({selectedItemsCanBeSkipped: true},
+        () => {
+          router.push(nextLocation);
+          resetSelectedItemsCanBeSkipped();
+        }
+      );
+      return true;
+    };
+
+    if (this.state.selectedItems && this.state.selectedItems.length && !selectedItemsCanBeSkipped) {
+      Modal.confirm({
+        title: 'All selected items will be reset. Continue?',
+        onOk () {
+          leave(nextLocation);
+        },
+        onCancel: () => this.props.onReloadTree(false),
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+      return false;
+    }
+  };
+
+  componentWillUnmount () {
+    this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
+  }
+
   async componentWillReceiveProps (nextProps) {
     if (nextProps.initialSelection) {
-      this.state.selectedItems = nextProps.initialSelection;
+      this.setState({selectedItems: nextProps.initialSelection});
     }
     if (nextProps.folderId !== this.props.folderId ||
       nextProps.metadataClass !== this.props.metadataClass) {
-      this.state.selectedItem = null;
-      this.state.selectedItems = [];
-      this.state.filterModel = {
-        filters: [],
-        folderId: parseInt(nextProps.folderId),
-        metadataClass: nextProps.metadataClass,
-        orderBy: [],
-        page: 1,
-        pageSize: PAGE_SIZE,
-        searchQueries: []
-      };
+      this.setState({
+        selectedItem: null,
+        selectedItems: [],
+        selectedItemsAreShowing: false,
+        filterModel: {
+          filters: [],
+          folderId: parseInt(nextProps.folderId),
+          metadataClass: nextProps.metadataClass,
+          orderBy: [],
+          page: 1,
+          pageSize: PAGE_SIZE,
+          searchQueries: []
+        }
+      });
       if (nextProps.onSelectItems) {
         nextProps.onSelectItems(this.state.selectedItems);
       }
       this._totalCount = 0;
       await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
-      this.state.selectedColumns = [...this.columns];
+      this.setState({selectedColumns: [...this.columns]});
       await this.loadData(this.state.filterModel);
     }
     if (nextProps.folderId !== this.props.folderId) {

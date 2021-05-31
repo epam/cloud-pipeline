@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
@@ -49,13 +50,19 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.ARROW;
+import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
+import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.VERSIONS;
+import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.utils.Conditions.backgroundColor;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
@@ -348,5 +355,62 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         $(toolVersion(version)).find(button("Remove from white list")).should(visible);
         $(toolVersion(version)).find(button("Add to white list")).should(hidden);
         return this;
+    }
+
+    public VersionSettingsAO versionSettings() {
+        click(versionTab("SETTINGS"));
+        return new VersionSettingsAO();
+    }
+
+    public class VersionSettingsAO implements AccessObject<VersionSettingsAO> {
+        public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(DISK, context().find(byId("disk"))),
+                entry(INSTANCE_TYPE, context().find(byText("Instance type")).closest(".ant-row")
+                        .find(byClassName("ant-select-selection__rendered"))),
+                entry(PRICE_TYPE, context().find(byText("Price type")).closest(".ant-row")
+                        .find(byClassName("ant-select-selection__rendered"))),
+                entry(DEFAULT_COMMAND, context().find(byText("Cmd template:")).closest(".ant-row")
+                        .find(byClassName("tools__code-editor"))),
+                entry(SAVE, context().find(button("SAVE")))
+        );
+
+        public VersionSettingsAO setInstanceType(final String instanceType) {
+            click(INSTANCE_TYPE);
+            $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu"))).find(withText(instanceType))
+                    .shouldBe(visible).click();
+            return this;
+        }
+
+        public VersionSettingsAO setPriceType(final String priceType) {
+            click(PRICE_TYPE);
+            $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu")))
+                    .find(withText(priceType))
+                    .shouldBe(visible)
+                    .click();
+            return this;
+        }
+
+        public VersionSettingsAO setDisk(final String disk) {
+            return setValue(DISK, disk);
+        }
+
+        public VersionSettingsAO setDefaultCommand(final String command) {
+            SelenideElement defaultCommand = get(DEFAULT_COMMAND);
+            Utils.clearTextField(defaultCommand);
+            Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
+            return this;
+        }
+
+        public VersionSettingsAO saveIfNeeded() {
+            if(get(SAVE).isEnabled()) {
+                click(SAVE);
+            }
+            return this;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
     }
 }

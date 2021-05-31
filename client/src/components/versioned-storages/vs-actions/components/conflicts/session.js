@@ -33,7 +33,7 @@ class ConflictsSessionFile {
   @computed
   get resolved () {
     if (this._info) {
-      return !(this._info.changes || []).find(change => !change.resolved);
+      return this._info.resolved;
     }
     return false;
   }
