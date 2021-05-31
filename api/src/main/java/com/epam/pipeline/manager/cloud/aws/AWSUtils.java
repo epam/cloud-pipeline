@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 public final class AWSUtils {
 
     private static final String EMPTY_KEY_ARN = "NONE";
+    private static final String EMPTY_JSON = "{}";
 
     private AWSUtils() {
         //no op
@@ -69,7 +70,7 @@ public final class AWSUtils {
     }
 
     public static String getPolicy(final String policy) {
-        return StringUtils.isBlank(policy) ? null : policy;
+        return StringUtils.isBlank(policy) || EMPTY_JSON.equals(policy) ? null : policy;
     }
 
     public static TemporaryCredentials generate(final Integer duration, final String policy, final String role,
