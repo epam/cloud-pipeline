@@ -18,11 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
 import {Alert, Card} from 'antd';
-import connect from '../../../utils/connect';
 import localization from '../../../utils/localization';
-import pipelines from '../../../models/pipelines/Pipelines';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
-import preferences from '../../../models/preferences/PreferencesLoad';
 import LoadTool from '../../../models/tools/LoadTool';
 import AllowedInstanceTypes from '../../../models/utils/AllowedInstanceTypes';
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
@@ -33,16 +30,26 @@ import LoadingView from '../../special/LoadingView';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import queryParameters from '../../../utils/queryParameters';
 import LaunchPipelineForm from './form/LaunchPipelineForm';
+import getToolLaunchingOptions from './utilities/get-tool-launching-options';
+import versionedStorageLaunchInfoEqual from './utilities/versioned-storage-launch-info-equal';
 
-@connect({
-  pipelines, preferences
-})
 @localization.localizedComponent
 @submitsRun
 @runPipelineActions
+@inject('awsRegions', 'pipelines', 'preferences')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
   const isVersionedStorage = components.vs;
+  let versionedStorageLaunchInfo;
+  if (isVersionedStorage) {
+    versionedStorageLaunchInfo = {
+      toolId: components.tool,
+      tool: components.tool ? new LoadTool(components.tool) : undefined,
+      version: components.tool && components.version
+        ? components.version
+        : undefined
+    };
+  }
   return {
     allowedInstanceTypes: allowedInstanceTypes,
     preferences,
@@ -57,7 +64,9 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
     toolVersion: params.image ? components.version : undefined,
     toolSettings: params.image ? new LoadToolVersionSettings(params.image) : undefined,
     configurations: params.id && params.version && !isVersionedStorage
-      ? new PipelineConfigurations(params.id, params.version) : undefined
+      ? new PipelineConfigurations(params.id, params.version) : undefined,
+    isVersionedStorage,
+    versionedStorageLaunchInfo
   };
 })
 @observer
@@ -65,6 +74,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   state = {launching: false, configName: null};
 
   @observable allowedInstanceTypes;
+  @observable versionedStoragesLaunchPayload;
 
   get pipelinePending () {
     return !!this.props.pipeline && this.props.pipeline.pending;
@@ -84,6 +94,17 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   get toolSettingsPending () {
     return !!this.props.toolSettings && this.props.toolSettings.pending;
+  }
+
+  get versionedStoragesLaunchPayloadPending () {
+    return this.props.isVersionedStorage &&
+      (
+        !this.versionedStoragesLaunchPayload ||
+        (
+          this.versionedStoragesLaunchPayload.pending &&
+          !this.versionedStoragesLaunchPayload.loaded
+        )
+      );
   }
 
   getPipelineParameter = (parameterName) => {
@@ -232,6 +253,27 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       return parameters;
     } else if (this.getConfigurationParameters()) {
       return this.getConfigurationParameters();
+    } else if (
+      this.props.isVersionedStorage &&
+      this.versionedStoragesLaunchPayload &&
+      this.versionedStoragesLaunchPayload.loaded &&
+      this.versionedStoragesLaunchPayload.value
+    ) {
+      const payload = this.versionedStoragesLaunchPayload.value;
+      return {
+        cmd_template: payload.cmdTemplate,
+        docker_image: payload.dockerImage,
+        is_spot: payload.isSpot,
+        instance_size: payload.instanceType,
+        instance_disk: payload.hddSize,
+        node_count: payload.nodeCount,
+        timeout: payload.timeout,
+        parameters: {...(payload.params || {})},
+        cloudRegionId: payload.cloudRegionId,
+        allowedInstanceTypes: this.props.allowedInstanceTypes,
+        pipelineId: this.props.pipelineId ? +(this.props.pipelineId) : undefined,
+        pipelineVersion: this.props.version
+      };
     }
     return {
       allowedInstanceTypes: this.props.allowedInstanceTypes,
@@ -268,7 +310,11 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     this.setState({configName: name});
   };
 
-  componentDidUpdate () {
+  componentDidMount () {
+    this.loadVersionedStorageLaunchPayload();
+  }
+
+  componentDidUpdate (prevProps) {
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = this.props.image
@@ -282,7 +328,62 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         toolId: this.props.image
       });
     }
+    if (
+      (!this.versionedStoragesLaunchPayload && this.props.versionedStorageLaunchInfo) ||
+      !versionedStorageLaunchInfoEqual(
+        prevProps.versionedStorageLaunchInfo,
+        this.props.versionedStorageLaunchInfo
+      )
+    ) {
+      this.loadVersionedStorageLaunchPayload();
+    }
   }
+
+  loadVersionedStorageLaunchPayload = () => {
+    const {
+      versionedStorageLaunchInfo,
+      isVersionedStorage
+    } = this.props;
+    if (!isVersionedStorage) {
+      this.versionedStoragesLaunchPayload = undefined;
+    } else if (versionedStorageLaunchInfo && versionedStorageLaunchInfo.tool) {
+      this.versionedStoragesLaunchPayload = {
+        loaded: false,
+        pending: true
+      };
+      versionedStorageLaunchInfo.tool
+        .fetchIfNeededOrWait()
+        .then(() => {
+          if (versionedStorageLaunchInfo.tool.loaded) {
+            return getToolLaunchingOptions(
+              this.props,
+              versionedStorageLaunchInfo.tool.value,
+              versionedStorageLaunchInfo.version
+            );
+          } else {
+            throw new Error(versionedStorageLaunchInfo.tool.error || '');
+          }
+        })
+        .then(launchPayload => {
+          this.versionedStoragesLaunchPayload = {
+            loaded: true,
+            pending: false,
+            value: launchPayload
+          };
+        })
+        .catch((e) => {
+          this.versionedStoragesLaunchPayload = {
+            pending: false,
+            loaded: false,
+            error: e.message
+          };
+        });
+    } else {
+      this.versionedStoragesLaunchPayload = {
+        loaded: true
+      };
+    }
+  };
 
   render () {
     if (this.pipelinePending ||
@@ -290,6 +391,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       this.runPending ||
       this.toolPending ||
       this.toolSettingsPending ||
+      this.versionedStoragesLaunchPayloadPending ||
       (!this.props.preferences.loaded && this.props.preferences.pending) ||
       !this.allowedInstanceTypes) {
       return <LoadingView />;
@@ -309,6 +411,9 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     }
     if (this.props.toolSettings && this.props.toolSettings.error) {
       errors.push(this.props.toolSettings.error);
+    }
+    if (this.versionedStoragesLaunchPayload && this.versionedStoragesLaunchPayload.error) {
+      errors.push(this.versionedStoragesLaunchPayload.error);
     }
     const parameters = this.getParameters();
     return (

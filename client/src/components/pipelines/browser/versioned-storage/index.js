@@ -40,7 +40,8 @@ import VersionedStorageListWithInfo
   from '../../../../models/versioned-storage/vs-contents-with-info';
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
 import InfoPanel from './info-panel';
-import LaunchVSForm, {getLaunchingOptions} from './forms/launch-vs-form';
+import LaunchVSForm from './forms/launch-vs-form';
+import getToolLaunchingOptions from '../../launch/utilities/get-tool-launching-options';
 import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
 import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken';
 import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
@@ -283,14 +284,22 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     });
   };
 
-  openLaunchVSAdvancedForm = () => {
+  openLaunchVSAdvancedForm = (tool, tag) => {
     const {
       router,
       pipelineId,
       pipeline
     } = this.props;
     if (router && pipelineId && pipeline.loaded && pipeline.value.currentVersion) {
-      router.push(`/launch/${pipelineId}/${pipeline.value.currentVersion.name}/default?vs=true`);
+      const options = [
+        `vs=true`,
+        tool && `tool=${tool.id}`,
+        tool && tag && `version=${tag}`
+      ]
+        .filter(Boolean);
+      router.push(
+        `/launch/${pipelineId}/${pipeline.value.currentVersion.name}/default?${options.join('&')}`
+      );
     }
   };
 
@@ -314,7 +323,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       currentVersion = {}
     } = pipeline.value || {};
     const request = new PipelineRunner();
-    getLaunchingOptions({awsRegions, preferences}, tool, tag)
+    getToolLaunchingOptions({awsRegions, preferences}, tool, tag)
       .then((launchPayload) => {
         const payload = {
           ...launchPayload,
