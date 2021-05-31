@@ -24,7 +24,7 @@ import {
 import LoadVSCommits from '../../../models/versioned-storage/load-commits';
 import styles from './vs-versions-select.css';
 import UserName from '../../special/UserName';
-import displayDate from "../../../utils/displayDate";
+import displayDate from '../../../utils/displayDate';
 
 function loadVersions (repository, page = 0) {
   const request = new LoadVSCommits(repository, page);
