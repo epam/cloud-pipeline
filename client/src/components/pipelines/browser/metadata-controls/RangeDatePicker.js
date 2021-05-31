@@ -37,7 +37,6 @@ class RangeDatePicker extends React.Component {
     state = {
       dateFrom: toLocalMomentDate(this.props.from),
       dateTo: toLocalMomentDate(this.props.to),
-      visible: false,
       fromPickerVisible: false,
       toPickerVisible: false,
       rangeFilterVisible: false
@@ -193,11 +192,12 @@ class RangeDatePicker extends React.Component {
             )}
             trigger={['click', 'mouseover']}
             visible={this.state.rangeFilterVisible}
-            onVisibleChange={this.handleVisibleChange}
+            onVisibleChange={this.handleRangeFilterVisibility}
           >
             <Icon
               style={{
-                pointerEvents: 'auto'
+                pointerEvents: 'auto',
+                zIndex: 1000
               }}
               type="filter"
               onClick={() => {

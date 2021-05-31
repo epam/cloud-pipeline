@@ -237,6 +237,20 @@ export default class Metadata extends React.Component {
     }
     return [];
   }
+  @computed
+  get currentAllClassEntityFields () {
+    if (!this.keys) {
+      return [];
+    }
+    const [metadata] = this.entityTypes
+      .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
+    if (metadata) {
+      return (metadata.fields || [])
+        .filter(f => f.type !== 'date')
+        .map(f => f.name);
+    }
+    return [];
+  }
 
   @computed
   get currentMetadataClassId () {
@@ -264,6 +278,20 @@ export default class Metadata extends React.Component {
     this.setState({
       addInstanceFormVisible: true
     });
+  };
+
+  onDateRangeChanged = async (range, key) => {
+    let filterModel = {...this.state.filterModel};
+    if (range) {
+      const {from, to} = range;
+      // here should be another format for filter value (according to api)
+      filterModel.filters.push({key, value: `${from}:${to}`});
+    } else {
+      filterModel.filters = filterModel.filters.filter(filter => filter.key !== key);
+    }
+    await this.setState({filterModel});
+    this.loadData(this.state.filterModel);
+    this.forceUpdate();
   };
 
   closeAddInstanceForm = () => {
@@ -304,6 +332,19 @@ export default class Metadata extends React.Component {
     }
   };
 
+  handleFilterApplied = async (key, dataArray) => {
+    if (key && dataArray) {
+      const filterModel = {...this.state.filterModel};
+      filterModel.filters.push({
+        key,
+        value: dataArray.toString()
+      });
+      await this.setState({filterModel});
+      // this.loadData(this.state.filterModel);
+      // this.forceUpdate();
+    }
+  }
+
   loadData = async (filterModel) => {
     this.setState({loading: true});
     this.metadataRequest = new MetadataEntityFilter();
@@ -315,20 +356,20 @@ export default class Metadata extends React.Component {
         .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
     if (!this.state.selectedItemsAreShowing) {
-      await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}));
+      await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}, {filters}));
       if (this.metadataRequest.error) {
         message.error(this.metadataRequest.error, 5);
         this._currentMetadata = [];
       } else {
         if (this.metadataRequest.value) {
           this._totalCount = this.metadataRequest.value.totalCount;
-//           if (!this.state.filterModel.searchQueries.length) {
-//             const parentFolderId = this.props.folderId;
-//             if (this._totalCount <= 0) {
-//               this.props.router.push(`/folder/${parentFolderId}`);
-//               return;
-//             }
-//           }
+          //           if (!this.state.filterModel.searchQueries.length) {
+          //             const parentFolderId = this.props.folderId;
+          //             if (this._totalCount <= 0) {
+          //               this.props.router.push(`/folder/${parentFolderId}`);
+          //               return;
+          //             }
+          //           }
           if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
             this._classEntity = {
               id: this.metadataRequest.value.elements[0].classEntity.id,
@@ -378,6 +419,47 @@ export default class Metadata extends React.Component {
     }
     this.setState({loading: false});
   };
+
+  filterApplied = (key) => {
+    return this.state.filterModel.filters
+      .filter(filterObj => filterObj.key === key);
+  };
+
+  shouldAddFilterButton = (key) => {
+    return this.currentAllClassEntityFields.includes(key) ||
+    unmapColumnName(key) === 'externalId' ||
+    key === 'createdDate';
+  };
+
+  renderFilterButton = (key) => {
+    return (
+      this.shouldAddFilterButton(key) &&
+      (<Button
+        shape="circle"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          marginLeft: 5,
+          border: 'none',
+          color: (
+            this.filterApplied(key).length
+              ? '#108ee9' : 'grey'
+          )
+        }}
+      >
+        {key === 'createdDate'
+          ? (
+            <RangeDatePicker
+              from={getFromDate(key)}
+              to={getToDate(key)}
+              onChange={(e) => this.onDateRangeChanged(e, key)}
+            />)
+          : (
+            <FilterControl
+              columnName={key}
+              onSearch={(tags) => this.handleFilterApplied(key, tags)}
+            />)}
+      </Button>));
+  }
 
   renderDataStorageLinks = (data) => {
     const urls = [];
@@ -764,6 +846,7 @@ export default class Metadata extends React.Component {
               }
             }
           })}
+          getResizerProps={() => ({style: {width: '6px', right: '-3px'}})}
           PadRowComponent={
             () =>
               <div className={styles.metadataColumnCell}>
@@ -999,31 +1082,7 @@ export default class Metadata extends React.Component {
         this.onOrderByChanged(key);
       }
     };
-    const onDateRangeChanged = async (range, key) => {
-      let filterModel = {...this.state.filterModel};
-      if (range) {
-        const {from, to} = range;
-        // here should be another format for filter value (according to api)
-        filterModel.filters.push({key, value: `${from}:${to}`});
-      } else {
-        // reset filter settings
-        filterModel.filters = filterModel.filters.filter(filter => filter.key !== key);
-      }
-      await this.setState({filterModel});
-      this.loadData(this.state.filterModel);
-      this.forceUpdate();
-    };
     const renderTitle = (key) => {
-      this._currentMetadata
-        .forEach((obj) => {
-          if (obj[key] && obj[key].type === 'date' && !this.dateKeys.includes(key)) {
-            this.dateKeys.push(key);
-          }
-        });
-      const dateFiltersApplied = () => {
-        return this.state.filterModel.filters
-          .filter(filterObj => this.dateKeys.includes(filterObj.key));
-      };
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       let icon;
       if (orderBy) {
@@ -1038,32 +1097,7 @@ export default class Metadata extends React.Component {
           onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
           {icon}{getColumnTitle(key)}
-          <Button
-            shape="circle"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              marginLeft: 5,
-              border: 'none',
-              color: (
-                dateFiltersApplied()
-                  .filter(obj => obj.key === key)).length
-                ? '#108ee9' : 'grey'
-            }}
-          >{this.dateKeys.includes(key)
-              ? (
-                <RangeDatePicker
-                  from={getFromDate(key)}
-                  to={getToDate(key)}
-                  onChange={(e) => onDateRangeChanged(e, key)}
-                />
-              ) : (
-                <FilterControl
-                  columnName={key}
-                  onSearch={(tags) => console.log('onSearch...', tags)}
-                />
-              )
-            }
-          </Button>
+          {this.renderFilterButton(key)}
         </span>
       );
     };
