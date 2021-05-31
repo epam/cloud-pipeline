@@ -30,6 +30,7 @@ import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.InstanceViewStatus;
 import com.microsoft.azure.management.compute.VirtualMachine;
+import com.microsoft.azure.management.compute.VirtualMachineDataDisk;
 import com.microsoft.azure.management.compute.VirtualMachineInstanceView;
 import com.microsoft.azure.management.compute.VirtualMachineScaleSet;
 import com.microsoft.azure.management.compute.VirtualMachineScaleSetVM;
@@ -157,7 +158,7 @@ public class AzureVMService {
         }
     }
 
-    public void createAndAttachVolume(String runId, Long size, AzureRegion region) {
+    public void createAndAttachVolume(final String runId, final Long size, final AzureRegion region) {
         final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, runId);
@@ -169,12 +170,36 @@ public class AzureVMService {
         );
     }
 
-    private void createAndAttachVolume(Azure azure, GenericResource vmc, Long size) {
-        final int sizeInGb = Math.toIntExact(size / 1024 / 1024 / 1024);
+    private void createAndAttachVolume(final Azure azure, GenericResource vmc, final Long size) {
+        final int sizeInGb = Math.toIntExact(size);
         if (vmc.resourceType().equals(VIRTUAL_MACHINE_SCALE_SET_TYPE)) {
-           azure.virtualMachineScaleSets().getById(vmc.id()).update().withNewDataDisk(Math.toIntExact(sizeInGb)).apply();
-        } else if (vmc.resourceType().equals(VIRTUAL_MACHINES_TYPE)){
-            azure.virtualMachines().getById(vmc.id()).update().withNewDataDisk(Math.toIntExact(sizeInGb)).apply();
+            VirtualMachineScaleSet scaleSet = azure.virtualMachineScaleSets().getById(vmc.id());
+            final Optional<VirtualMachineDataDisk> dataDisk =
+                    scaleSet.virtualMachines().list().stream().findFirst().flatMap(
+                            vm -> vm.dataDisks().values().stream().findFirst()
+                    );
+            if (dataDisk.isPresent()) {
+                VirtualMachineDataDisk disk = dataDisk.get();
+                scaleSet.update().withNewDataDisk(Math.toIntExact(sizeInGb),
+                        disk.lun() + 1, disk.cachingType(), disk.storageAccountType()).apply();
+            } else {
+                scaleSet.update().withNewDataDisk(Math.toIntExact(sizeInGb)).apply();
+            }
+            scaleSet.virtualMachines().updateInstances(
+                    scaleSet.virtualMachines().list().stream()
+                            .map(VirtualMachineScaleSetVM::instanceId)
+                            .toArray(String[]::new)
+            );
+        } else if (vmc.resourceType().equals(VIRTUAL_MACHINES_TYPE)) {
+            final VirtualMachine virtualMachine = azure.virtualMachines().getById(vmc.id());
+            final Optional<VirtualMachineDataDisk> dataDisk = virtualMachine.dataDisks().values().stream().findFirst();
+            if (dataDisk.isPresent()) {
+                VirtualMachineDataDisk disk = dataDisk.get();
+                virtualMachine.update().withNewDataDisk(Math.toIntExact(sizeInGb),
+                       disk.lun() + 1, disk.cachingType(), disk.storageAccountType()).apply();
+            } else {
+                virtualMachine.update().withNewDataDisk(Math.toIntExact(sizeInGb)).apply();
+            }
         } else {
             throw new AzureException(messageHelper.getMessage(
                     MessageConstants.ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE, vmc.id()));
