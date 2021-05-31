@@ -119,20 +119,23 @@ class VSVersions extends React.Component {
     this.setState({
       versions: []
     }, () => {
-      this.appendPage(0)
-        .then(() => {
-          const {
-            versions = []
-          } = this.state;
-          const {
-            value: version,
-            setFirstVersionByDefault
-          } = this.props;
-          if (setFirstVersionByDefault && !version && versions.length > 0) {
-            const {onChange} = this.props;
-            onChange && onChange(versions[0].commit);
-          }
-        });
+      const {repository} = this.props;
+      if (repository) {
+        this.appendPage(0)
+          .then(() => {
+            const {
+              versions = []
+            } = this.state;
+            const {
+              value: version,
+              setFirstVersionByDefault
+            } = this.props;
+            if (setFirstVersionByDefault && !version && versions.length > 0) {
+              const {onChange} = this.props;
+              onChange && onChange(versions[0].commit);
+            }
+          });
+      }
     });
   };
 
