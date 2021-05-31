@@ -23,13 +23,13 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">5</div>
+<div class="counter">6</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">5</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">56m55.21s</div>
+<div class="counter">47m45.56s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">60%</div>
+<div class="percent">16%</div>
 <p>successful</p>
 </div>
 </td>
@@ -69,24 +69,24 @@
 <li>
 <a href="#tab2">Standard output</a>
 </li>
-<li>
-<a href="#tab3">Standard error</a>
-</li>
 </ul>
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="pauseAndResumeEndpointValidation - EPMCMBIBPC-2626"></a>
-<h3 class="failures">pauseAndResumeEndpointValidation - EPMCMBIBPC-2626</h3>
+<a name="dockerExtraMultiValidation - EPMCMBIBPC-2627"></a>
+<h3 class="failures">dockerExtraMultiValidation - EPMCMBIBPC-2627</h3>
 <span class="code">
-<pre>Element not found {By.id: owner}
+<pre>Element not found {By.tagName: a.findBy(exact text 'PAUSE')}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1622281189165.70.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1622281189165.70.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;owner&quot;}
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1622450597075.56.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1622450597075.56.html
+Timeout: 1200 s.
+Caused by: Element not found {By.tagName: a.findBy(exact text 'PAUSE')}
+Expected: exact text 'PAUSE'
+Screenshot: null
+Timeout: 0 ms.
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
@@ -94,15 +94,11 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.ToolPageAO.validateEndpointPage(ToolPageAO.java:65)
-	at com.epam.pipeline.autotests.PauseResumeTest.lambda$null$24(PauseResumeTest.java:291)
-	at com.epam.pipeline.autotests.PauseResumeTest.checkNodePage(PauseResumeTest.java:300)
-	at com.epam.pipeline.autotests.PauseResumeTest.lambda$null$25(PauseResumeTest.java:291)
-	at com.epam.pipeline.autotests.ao.AccessObject.inAnotherTab(AccessObject.java:452)
-	at com.epam.pipeline.autotests.PauseResumeTest.lambda$pauseAndResumeEndpointValidation$26(PauseResumeTest.java:290)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.waitForPauseButton(LogAO.java:145)
+	at com.epam.pipeline.autotests.PauseResumeTest.lambda$dockerExtraMultiValidation$14(PauseResumeTest.java:175)
 	at com.epam.pipeline.autotests.ao.RunsMenuAO.log(RunsMenuAO.java:145)
-	at com.epam.pipeline.autotests.PauseResumeTest.pauseAndResumeEndpointValidation(PauseResumeTest.java:276)
+	at com.epam.pipeline.autotests.PauseResumeTest.dockerExtraMultiValidation(PauseResumeTest.java:173)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -116,17 +112,66 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;owner&quot;}
+Caused by: Element not found {By.tagName: a.findBy(exact text 'PAUSE')}
+Expected: exact text 'PAUSE'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 24 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="fallBackPreferences"></a>
+<h3 class="failures">fallBackPreferences</h3>
+<span class="code">
+<pre>Element not found {By.id: userName}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1622452172662.60.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1622452172662.60.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AuthenticationPageAO.login(AuthenticationPageAO.java:26)
+	at com.epam.pipeline.autotests.mixins.Authorization.loginAs(Authorization.java:60)
+	at com.epam.pipeline.autotests.mixins.Authorization.lambda$loginAsAdminAndPerform$2(Authorization.java:88)
+	at com.epam.pipeline.autotests.mixins.Authorization.logoutIfNeededAndPerform(Authorization.java:82)
+	at com.epam.pipeline.autotests.mixins.Authorization.loginAsAdminAndPerform(Authorization.java:87)
+	at com.epam.pipeline.autotests.PauseResumeTest.fallBackPreferences(PauseResumeTest.java:96)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;userName&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8aa3af51529e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '63e1cb80174e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 87b5ad55a3abce7418a5c4f759621df2
-*** Element info: {Using=id, value=owner}
+Session ID: e5cf4dead0657b666f7c5679ff36d1de
+*** Element info: {Using=id, value=userName}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -145,7 +190,150 @@ Session ID: 87b5ad55a3abce7418a5c4f759621df2
 	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
 	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 28 more
+	... 26 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="pauseAndResumeEndpointValidation - EPMCMBIBPC-2626"></a>
+<h3 class="failures">pauseAndResumeEndpointValidation - EPMCMBIBPC-2626</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-tools}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1622452001154.58.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1622452001154.58.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-tools&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.tools(Navigation.java:54)
+	at com.epam.pipeline.autotests.PauseResumeTest.pauseAndResumeEndpointValidation(PauseResumeTest.java:264)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-tools&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '63e1cb80174e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: e5cf4dead0657b666f7c5679ff36d1de
+*** Element info: {Using=id, value=navigation-button-tools}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
+	at org.openqa.selenium.By$ById.findElement(By.java:218)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="pauseAndResumeValidation - EPMCMBIBPC-2309"></a>
+<h3 class="failures">pauseAndResumeValidation - EPMCMBIBPC-2309</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-runs}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1622451920887.57.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1622451920887.57.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-runs&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.NavigationMenuAO.runs(NavigationMenuAO.java:48)
+	at com.epam.pipeline.autotests.ao.ShellAO.waitUntilTextAppears(ShellAO.java:167)
+	at com.epam.pipeline.autotests.PauseResumeTest.lambda$null$7(PauseResumeTest.java:136)
+	at com.epam.pipeline.autotests.ao.LogAO.ssh(LogAO.java:91)
+	at com.epam.pipeline.autotests.PauseResumeTest.lambda$null$8(PauseResumeTest.java:135)
+	at com.epam.pipeline.autotests.ao.AccessObject.inAnotherTab(AccessObject.java:452)
+	at com.epam.pipeline.autotests.PauseResumeTest.lambda$pauseAndResumeValidation$12(PauseResumeTest.java:134)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.log(RunsMenuAO.java:145)
+	at com.epam.pipeline.autotests.PauseResumeTest.pauseAndResumeValidation(PauseResumeTest.java:113)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;navigation-button-runs&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '63e1cb80174e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: e5cf4dead0657b666f7c5679ff36d1de
+*** Element info: {Using=id, value=navigation-button-runs}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementById(RemoteWebDriver.java:417)
+	at org.openqa.selenium.By$ById.findElement(By.java:218)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 29 more
 </pre>
 </span>
 </div>
@@ -153,12 +341,12 @@ Session ID: 87b5ad55a3abce7418a5c4f759621df2
 <a name="stopRuns"></a>
 <h3 class="failures">stopRuns</h3>
 <span class="code">
-<pre>Element not found {#run-71815-stop-button}
+<pre>Element not found {#run-71919-stop-button}
 Expected: enabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1622281257477.71.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1622281257477.71.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1622452221450.61.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1622452221450.61.html
 Timeout: 5 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-71815-stop-button&quot;}
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-71919-stop-button&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -187,17 +375,17 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-71815-stop-button&quot;}
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-71919-stop-button&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8aa3af51529e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '63e1cb80174e', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 87b5ad55a3abce7418a5c4f759621df2
-*** Element info: {Using=css selector, value=#run-71815-stop-button}
+Session ID: e5cf4dead0657b666f7c5679ff36d1de
+*** Element info: {Using=css selector, value=#run-71919-stop-button}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -232,28 +420,33 @@ Session ID: 87b5ad55a3abce7418a5c4f759621df2
 </tr>
 </thead>
 <tr>
-<td class="success">dockerExtraMultiValidation - EPMCMBIBPC-2627</td>
-<td>5m12.24s</td>
-<td class="success">passed</td>
+<td class="failures">dockerExtraMultiValidation - EPMCMBIBPC-2627</td>
+<td>21m32.72s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">fallBackPreferences</td>
+<td>2m51.50s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">pauseAndResumeEndpointValidation - EPMCMBIBPC-2626</td>
-<td>30m13.85s</td>
+<td>1m20.23s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">pauseAndResumeRunsPageValidation - EPMCMBIBPC-2632</td>
-<td>10m23.68s</td>
+<td>9m14.04s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">pauseAndResumeValidation - EPMCMBIBPC-2309</td>
-<td>10m45.90s</td>
-<td class="success">passed</td>
+<td class="failures">pauseAndResumeValidation - EPMCMBIBPC-2309</td>
+<td>12m14.90s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">stopRuns</td>
-<td>19.540s</td>
+<td>32.163s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -261,43 +454,16 @@ Session ID: 87b5ad55a3abce7418a5c4f759621df2
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 71815 from [71815]
-Returns latest run with runId 71816 from [71815, 71816]
-Returns latest run with runId 71816 from [71815, 71816]
-Returns latest run with runId 71816 from [71815, 71816]
-Returns latest run with runId 71816 from [71815, 71816]
-Returns latest run with runId 71816 from [71815, 71816]
-Returns latest run with runId 71816 from [71815, 71816]
-Returns latest run with runId 71816 from [71815, 71816]
-Returns latest run with runId 71817 from [71815, 71816, 71817]
-Returns latest run with runId 71817 from [71815, 71816, 71817]
-Returns latest run with runId 71818 from [71815, 71816, 71817, 71818]
-Returns latest run with runId 71818 from [71815, 71816, 71817, 71818]
-Returns latest run with runId 71818 from [71815, 71816, 71817, 71818]
-</pre>
-</span>
-</div>
-<div id="tab3" class="tab">
-<h2>Standard error</h2>
-<span class="code">
-<pre>May 29, 2021 9:17:57 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 627 -&gt; ChromeDriver: chrome on LINUX (9b7d2136f174a07ed4135212e0b6e705)
-May 29, 2021 9:17:57 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
-INFO: Trying to close the browser ChromeDriver ...
-May 29, 2021 9:17:57 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 102 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 20037
-Only local connections are allowed.
-May 29, 2021 9:17:57 AM org.openqa.selenium.remote.ProtocolHandshake createSession
-INFO: Detected dialect: OSS
-May 29, 2021 9:17:58 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
-INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-May 29, 2021 9:17:58 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
-INFO: Selenide v. 4.10.01
-May 29, 2021 9:17:58 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
-INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-May 29, 2021 9:17:58 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 627: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (87b5ad55a3abce7418a5c4f759621df2)
+<pre>Returns latest run with runId 71918 from [71918]
+Returns latest run with runId 71919 from [71918, 71919]
+Returns latest run with runId 71919 from [71918, 71919]
+Returns latest run with runId 71919 from [71918, 71919]
+Returns latest run with runId 71919 from [71918, 71919]
+Returns latest run with runId 71919 from [71918, 71919]
+Returns latest run with runId 71919 from [71918, 71919]
+Returns latest run with runId 71919 from [71918, 71919]
+Returns latest run with runId 71920 from [71918, 71919, 71920]
+Returns latest run with runId 71920 from [71918, 71919, 71920]
 </pre>
 </span>
 </div>
@@ -309,7 +475,7 @@ INFO: Create webdriver in current thread 627: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 29, 2021 2:44:53 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 31, 2021 3:15:29 PM</p>
 </div>
 </div>
 </body>
