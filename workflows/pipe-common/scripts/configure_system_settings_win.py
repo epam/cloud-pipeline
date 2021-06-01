@@ -16,10 +16,12 @@ from pipeline.utils.reg import set_local_machine_dword_value
 
 
 _win_policies_reg_path = 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System'
+_win_personalization_reg_path = 'SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization'
+_win_start_menu_reg_path = 'SOFTWARE\\Microsoft\\PolicyManager\\default\\Start'
 
 
 def configure_system_settings_win():
     set_local_machine_dword_value(_win_policies_reg_path, 'disablecad', 1)
-    set_local_machine_dword_value(_win_policies_reg_path, 'NoLockScreen', 1)
-    set_local_machine_dword_value(_win_policies_reg_path, 'HideRestart', 1)
-    set_local_machine_dword_value(_win_policies_reg_path, 'HideShutDown', 1)
+    set_local_machine_dword_value(_win_personalization_reg_path, 'NoLockScreen', 1)
+    set_local_machine_dword_value(_win_start_menu_reg_path + '\\HideShutDown', 'value', 1)
+    set_local_machine_dword_value(_win_start_menu_reg_path + '\\HideRestart', 'value', 1)
