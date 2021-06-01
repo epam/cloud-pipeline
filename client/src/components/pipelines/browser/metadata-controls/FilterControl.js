@@ -114,10 +114,7 @@ class FilterControl extends React.PureComponent {
               alignItems: 'center',
               cursor: 'pointer'
             }}>
-            <h4>Specify filter for
-              <span style={{color: '#109ee9', padding: 5, fontWeight: 600}}>
-                {this.props.columnName}
-              </span>values
+            <h4>Specify filter for <span style={{fontWeight: 600}}>{this.props.columnName}</span>
             </h4>
             <Icon type="close" onClick={() => this.handlePopoverVisibleChange(false)} />
           </div>
