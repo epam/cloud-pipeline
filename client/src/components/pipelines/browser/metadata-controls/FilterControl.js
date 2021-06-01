@@ -26,7 +26,8 @@ class FilterControl extends React.PureComponent {
   }
   handleInputConfirm = async (value) => {
     await this.setState({
-      selectedTags: value
+      selectedTags: value,
+      popoverVisible: true
     });
   }
   handleApplyFilter = () => {
@@ -102,7 +103,7 @@ class FilterControl extends React.PureComponent {
           </div>
         )}
         content={content}
-        trigger={['focus']}
+        trigger={['focus', 'click']}
         visible={popoverVisible}
         onVisibleChange={this.handlePopoverVisibleChange}
       >
