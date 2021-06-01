@@ -35,7 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collection;
@@ -424,15 +424,15 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
     public void testDateFilter() {
         MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
         Folder folder1 = createFolder();
-        LocalDate date1 = LocalDate.now();
-        LocalDate date2 = LocalDate.now().minusDays(1);
+        LocalDateTime date1 = LocalDateTime.now();
+        LocalDateTime date2 = LocalDateTime.now().minusDays(1);
         MetadataEntity folder1Sample1 = ObjectCreatorUtils.createMetadataEntity(folder1, metadataClass1,
                 TEST_ENTITY_NAME_1, EXTERNAL_ID_1, new HashMap<>(),
-                Date.from(date1.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                Date.from(date1.atZone(ZoneId.systemDefault()).toInstant()));
         metadataEntityDao.createMetadataEntity(folder1Sample1);
         MetadataEntity folder1Sample2 = ObjectCreatorUtils.createMetadataEntity(folder1, metadataClass1,
                 TEST_ENTITY_NAME_1, EXTERNAL_ID_2, new HashMap<>(),
-                Date.from(date2.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                Date.from(date2.atZone(ZoneId.systemDefault()).toInstant()));
         metadataEntityDao.createMetadataEntity(folder1Sample2);
 
         MetadataFilter filterByDate = createFilter(folder1.getId(), metadataClass1.getName(),
@@ -664,8 +664,8 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
     private MetadataFilter createFilter(Long folderId, String className,
                                         List<String> searchQueries, List<MetadataFilter.FilterQuery> filters,
                                         List<MetadataFilter.OrderBy> sorting, boolean recursive,
-                                        List<String> externalIds, LocalDate startDateFrom,
-                                        LocalDate endDateTo) {
+                                        List<String> externalIds, LocalDateTime startDateFrom,
+                                        LocalDateTime endDateTo) {
         MetadataFilter filter = new MetadataFilter();
         filter.setFolderId(folderId);
         filter.setMetadataClass(className);
