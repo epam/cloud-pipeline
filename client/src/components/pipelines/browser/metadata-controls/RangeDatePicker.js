@@ -4,7 +4,6 @@ import {observer} from 'mobx-react';
 import {Popover, Icon, DatePicker, Button} from 'antd';
 import moment from 'moment';
 
-const FULL_DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 const DATE_FORMAT = 'YYYY-MM-DD';
 
 function toLocalMomentDate (string) {
@@ -32,12 +31,12 @@ class RangeDatePicker extends React.Component {
     static propTypes = {
       from: PropTypes.string,
       to: PropTypes.string,
-      onChange: PropTypes.func
+      onChange: PropTypes.func,
+      children: PropTypes.node
     }
     state = {
       dateFrom: toLocalMomentDate(this.props.from),
       dateTo: toLocalMomentDate(this.props.to),
-      visible: false,
       fromPickerVisible: false,
       toPickerVisible: false,
       rangeFilterVisible: false
@@ -102,10 +101,10 @@ class RangeDatePicker extends React.Component {
       const {onChange} = this.props;
       onChange({
         from: dateFrom
-          ? moment.utc(dateFrom).format(FULL_DATE_FORMAT)
+          ? moment.utc(dateFrom).format(DATE_FORMAT)
           : undefined,
         to: dateTo
-          ? moment.utc(dateTo).format(FULL_DATE_FORMAT)
+          ? moment.utc(dateTo).format(DATE_FORMAT)
           : undefined
       });
       this.handleRangeFilterVisibility(false);
@@ -122,7 +121,7 @@ class RangeDatePicker extends React.Component {
     render () {
       if (this.props.from !== undefined && this.props.to !== undefined) {
         const content = (
-          <div style={{display: 'flex', flexDirection: 'column'}}>
+          <div style={{display: 'flex', flexDirection: 'column', width: 280}}>
             <div style={{display: 'flex', flexDirection: 'column', marginTop: 5}}>
               <label htmlFor="from" style={{marginRight: 5, fontWeight: 800}}>From</label>
               <DatePicker
@@ -138,7 +137,7 @@ class RangeDatePicker extends React.Component {
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              marginTop: 5,
+              marginTop: 10,
               cursor: 'pointer'
             }}>
               <label htmlFor="to" style={{marginRight: 5, fontWeight: 800}}>To</label>
@@ -155,7 +154,7 @@ class RangeDatePicker extends React.Component {
             </div>
             <div
               style={{
-                marginTop: 10,
+                margin: '20px 0px 10px 0px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center'
@@ -193,19 +192,9 @@ class RangeDatePicker extends React.Component {
             )}
             trigger={['click', 'mouseover']}
             visible={this.state.rangeFilterVisible}
-            onVisibleChange={this.handleVisibleChange}
+            onVisibleChange={this.handleRangeFilterVisibility}
           >
-            <Icon
-              style={{
-                pointerEvents: 'auto'
-              }}
-              type="filter"
-              onClick={() => {
-                this.setState({
-                  rangeFilterVisible: true
-                });
-              }}
-            />
+            {this.props.children}
           </Popover>);
       } else {
         return null;

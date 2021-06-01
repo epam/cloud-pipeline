@@ -15,18 +15,23 @@ class FilterControl extends React.PureComponent {
   }
   static propTypes = {
     columnName: PropTypes.string,
-    onSearch: PropTypes.func
+    onSearch: PropTypes.func,
+    children: PropTypes.node
   }
+  getContainer = (triggernode) => {
+    return triggernode.parentNode;
+  };
   resetFilter = () => {
     this.setState({
       selectedTags: []
     });
-    this.props.onSearch([]);
+    this.props.onSearch(null);
+    this.handlePopoverVisibleChange(false);
   }
-  handleInputConfirm = (value) => {
-    this.setState({
-      popoverVisible: true,
-      selectedTags: value
+  handleInputConfirm = async (value) => {
+    await this.setState({
+      selectedTags: value,
+      popoverVisible: true
     });
   }
   handleApplyFilter = () => {
@@ -41,34 +46,41 @@ class FilterControl extends React.PureComponent {
   render () {
     const {tags, selectedTags, popoverVisible} = this.state;
     const content = (
-      <div style={{maxWidth: 250}}>
-        <Select
-          value={selectedTags}
-          mode="tags"
-          style={{width: '100%'}}
-          placeholder="Please select"
-          onChange={this.handleInputConfirm}
-        >
-          {tags.map((tag, index) => (
-            <Option
-              key={tag + index}
-              value={tag}
-            >{tag}</Option>
-          ))}
-        </Select>
-        <div style={{marginTop: 10, display: 'flex', justifyContent: 'space-between'}}>
-          <Button
-            type="danger"
-            onClick={this.resetFilter}
-            style={{
-              visibility: !selectedTags.length ? 'hidden' : 'visible',
-              marginRight: 5}}
-          >Reset</Button>
+      <div style={{width: 280, padding: '8px 0px'}}>
+        <div style={{width: 280, display: 'flex', alignItems: 'center'}}>
+          <Select
+            value={selectedTags}
+            mode="tags"
+            style={{width: 280}}
+            placeholder="Type or select tags"
+            onChange={this.handleInputConfirm}
+            getPopupContainer={this.getContainer}
+          >
+            {tags.map((tag, index) => (
+              <Option
+                key={tag + index}
+                value={tag}
+              >{tag}</Option>
+            ))}
+          </Select>
+        </div>
+        <div style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 10
+        }}>
           <Button
             type="primary"
             onClick={this.handleApplyFilter}
             disabled={!selectedTags.length}
-          >Apply filter</Button>
+          >Apply</Button>
+          <Button
+            type="danger"
+            onClick={this.resetFilter}
+            disabled={!selectedTags.length}
+          >Reset</Button>
         </div>
       </div>);
     return (
@@ -77,7 +89,7 @@ class FilterControl extends React.PureComponent {
         title={(
           <div
             style={{
-              maxWidth: 300,
+              width: 280,
               marginTop: 5,
               display: 'flex',
               justifyContent: 'space-between',
@@ -89,21 +101,11 @@ class FilterControl extends React.PureComponent {
           </div>
         )}
         content={content}
-        trigger={'click'}
+        trigger={['click']}
         visible={popoverVisible}
+        onVisibleChange={this.handlePopoverVisibleChange}
       >
-        <Icon
-          type="filter"
-          style={{
-            pointerEvents: 'auto',
-            color: selectedTags.length ? '#108ee9' : 'grey'
-          }}
-          onClick={() => {
-            this.setState({
-              popoverVisible: true
-            });
-          }}
-        />
+        {this.props.children}
       </Popover>
     );
   }
