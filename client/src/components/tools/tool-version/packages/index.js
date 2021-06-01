@@ -44,6 +44,45 @@ export default class Packages extends React.Component {
     selectedEcosystem: null
   };
 
+  componentDidMount () {
+    this.checkToolPlatform();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (!this.state.selectedEcosystem && this.ecosystems.length > 0) {
+      this.setState({
+        selectedEcosystem: this.ecosystems[0]
+      });
+    }
+    this.checkToolPlatform();
+  }
+
+  checkToolPlatform () {
+    if (/^windows$/i.test(this.toolPlatform)) {
+      const {
+        router,
+        toolId,
+        version
+      } = this.props;
+      if (router) {
+        router.push(`/tool/${toolId}/info/${version}/settings`);
+      }
+    }
+  }
+
+  @computed
+  get toolPlatform () {
+    const {versions} = this.props;
+    if (
+      versions.loaded &&
+      versions.value &&
+      versions.value.attributes
+    ) {
+      return versions.value.attributes.platform;
+    }
+    return undefined;
+  }
+
   @computed
   get ecosystems () {
     if (this.props.versions.loaded &&
@@ -171,6 +210,9 @@ export default class Packages extends React.Component {
     if (this.props.versions.error) {
       return <Alert type="error" message={this.props.versions.error} />;
     }
+    if (/^windows$/i.test(this.toolPlatform)) {
+      return null;
+    }
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" align="middle">
@@ -213,13 +255,5 @@ export default class Packages extends React.Component {
         </div>
       </div>
     );
-  }
-
-  componentDidUpdate () {
-    if (!this.state.selectedEcosystem && this.ecosystems.length > 0) {
-      this.setState({
-        selectedEcosystem: this.ecosystems[0]
-      });
-    }
   }
 }

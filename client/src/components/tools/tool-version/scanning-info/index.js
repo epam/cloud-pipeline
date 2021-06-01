@@ -51,6 +51,40 @@ export default class ToolScanningInfo extends React.Component {
     severitySortOrder: DESCEND
   };
 
+  componentDidMount () {
+    this.checkToolPlatform();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    this.checkToolPlatform();
+  }
+
+  checkToolPlatform () {
+    if (/^windows$/i.test(this.toolPlatform)) {
+      const {
+        router,
+        toolId,
+        version
+      } = this.props;
+      if (router) {
+        router.push(`/tool/${toolId}/info/${version}/settings`);
+      }
+    }
+  }
+
+  @computed
+  get toolPlatform () {
+    const {versions} = this.props;
+    if (
+      versions.loaded &&
+      versions.value &&
+      versions.value.attributes
+    ) {
+      return versions.value.attributes.platform;
+    }
+    return undefined;
+  }
+
   @computed
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
@@ -267,6 +301,9 @@ export default class ToolScanningInfo extends React.Component {
       return (
         <Alert type="error" message="You have no permissions to view tool details" />
       );
+    }
+    if (/^windows$/i.test(this.toolPlatform)) {
+      return null;
     }
 
     return this.renderVulnerabilityTable();
