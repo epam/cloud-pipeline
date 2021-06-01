@@ -122,32 +122,43 @@ class RangeDatePicker extends React.Component {
       if (this.props.from !== undefined && this.props.to !== undefined) {
         const content = (
           <div style={{display: 'flex', flexDirection: 'column', width: 280}}>
-            <div style={{display: 'flex', flexDirection: 'column', marginTop: 5}}>
-              <label htmlFor="from" style={{marginRight: 5, fontWeight: 800}}>From</label>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-start',
+              alignItems: 'center',
+              marginTop: 5
+            }}>
+              <label
+                htmlFor="from"
+                style={{marginRight: 5, width: '15%', fontWeight: 800}}
+              >From</label>
               <DatePicker
+                style={{width: '85%'}}
                 id="from"
                 disabledDate={this.disabledStartDate}
+                placeholder=""
                 format={DATE_FORMAT}
                 value={this.state.dateFrom || null}
-                placeholder="from"
                 onChange={this.onStartChange}
                 onOpenChange={this.handleStartOpenChange}
               />
             </div>
             <div style={{
               display: 'flex',
-              flexDirection: 'column',
+              justifyContent: 'flex-start',
+            
               marginTop: 10,
               cursor: 'pointer'
             }}>
-              <label htmlFor="to" style={{marginRight: 5, fontWeight: 800}}>To</label>
+              <label htmlFor="to" style={{marginRight: 5, width: '15%', fontWeight: 800}}>To</label>
               <DatePicker
+                style={{width: '85%'}}
                 id="to"
                 allowClear
                 disabledDate={this.disabledEndDate}
+                placeholder=""
                 format={DATE_FORMAT}
                 value={this.state.dateTo || null}
-                placeholder="to"
                 onChange={this.onEndChange}
                 onOpenChange={this.handleEndOpenChange}
               />
@@ -161,7 +172,9 @@ class RangeDatePicker extends React.Component {
               }}>
               <Button
                 type="danger"
-                onClick={() => this.resetRange()}>
+                onClick={() => this.resetRange()}
+                disabled={!this.state.dateFrom && !this.state.dateTo}
+              >
                 Reset
               </Button>
               <Button

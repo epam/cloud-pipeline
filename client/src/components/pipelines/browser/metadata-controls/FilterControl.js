@@ -47,6 +47,9 @@ class FilterControl extends React.PureComponent {
       selectedTags: value,
       popoverVisible: true
     });
+    if (!this.state.selectedTags.length) {
+      this.resetFilter();
+    }
   }
   handleApplyFilter = () => {
     this.props.onSearch(this.state.selectedTags);
@@ -66,8 +69,8 @@ class FilterControl extends React.PureComponent {
             value={selectedTags}
             mode="tags"
             style={{width: 280}}
-            placeholder="Type or select tags"
-            notFoundContent="Specify tags to filter"
+            placeholder="Type selector and press enter"
+            dropdownStyle={{display: 'none'}}
             onChange={this.handleInputConfirm}
             getPopupContainer={this.getContainer}
           >
@@ -111,7 +114,11 @@ class FilterControl extends React.PureComponent {
               alignItems: 'center',
               cursor: 'pointer'
             }}>
-            <h4>Add new tag for search</h4>
+            <h4>Specify filter for
+              <span style={{color: '#109ee9', padding: 5, fontWeight: 600}}>
+                {this.props.columnName}
+              </span>values
+            </h4>
             <Icon type="close" onClick={() => this.handlePopoverVisibleChange(false)} />
           </div>
         )}
