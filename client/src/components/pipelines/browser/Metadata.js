@@ -239,20 +239,6 @@ export default class Metadata extends React.Component {
     }
     return [];
   }
-  @computed
-  get currentAllClassEntityFields () {
-    if (!this.keys) {
-      return [];
-    }
-    const [metadata] = this.entityTypes
-      .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
-    if (metadata) {
-      return (metadata.fields || [])
-        .filter(f => f.type !== 'date')
-        .map(f => f.name);
-    }
-    return [];
-  }
 
   @computed
   get currentMetadataClassId () {
@@ -337,17 +323,20 @@ export default class Metadata extends React.Component {
 
   handleFilterApplied = async (key, dataArray) => {
     const filterModel = {...this.state.filterModel};
+    const filterObj = {key: unmapColumnName(key), values: dataArray};
     if (key && dataArray) {
-      filterModel.filters.push({
-        key: unmapColumnName(key),
-        values: dataArray
-      });
+      const currentFilterIndex = filterModel.filters
+        .findIndex(filter => filter.key === unmapColumnName(key));
+      if (currentFilterIndex > -1) {
+        filterModel.filters[currentFilterIndex] = filterObj;
+      } else {
+        filterModel.filters.push(filterObj);
+      }
     } else {
       filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
     }
     await this.setState({filterModel});
     this.loadData(this.state.filterModel);
-    this.forceUpdate();
   }
 
   loadData = async (filterModel) => {
@@ -435,14 +424,8 @@ export default class Metadata extends React.Component {
     }
   };
 
-  shouldAddFilterButton = (key) => {
-    return this.currentAllClassEntityFields.includes(key) ||
-    unmapColumnName(key) === 'externalId' ||
-    key === 'createdDate';
-  };
-
   renderFilterButton = (key) => {
-    if (!this.shouldAddFilterButton(key) || this.state.selectedItemsAreShowing) {
+    if (this.state.selectedItemsAreShowing) {
       return null;
     }
     const {filterModel = {}} = this.state;
