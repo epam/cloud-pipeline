@@ -447,7 +447,7 @@ export default class Metadata extends React.Component {
     }
     const {filterModel = {}} = this.state;
     const {filters = []} = filterModel;
-    const filter = filters.find(filter => filter.key === key);
+    const filter = filters.find(filter => filter.key === unmapColumnName(key));
     const values = filter ? (filter.values || []) : [];
     const button = (
       <Button
