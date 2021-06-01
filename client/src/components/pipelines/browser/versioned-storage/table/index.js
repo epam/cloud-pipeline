@@ -197,8 +197,22 @@ class VersionedStorageTable extends React.Component {
 
   askUserAboutConflicts = async (files, duplicateFiles) => {
     const singleFile = duplicateFiles.length === 1;
+    const getModalTitle = (contentFiles) => {
+      return singleFile
+        ? (
+          <span
+            style={{wordBreak: 'break-word'}}
+          >
+            File {contentFiles[0]?.name || ''} already exist. Overwrite?
+          </span>
+        ) : (
+          <span>
+            Some files already exist:
+          </span>
+        );
+    };
     const getModalContent = (contentFiles) => {
-      if (!contentFiles.length) {
+      if (!contentFiles.length || singleFile) {
         return null;
       }
       return (
@@ -219,7 +233,7 @@ class VersionedStorageTable extends React.Component {
     return new Promise((resolve) => {
       if (duplicateFiles.length) {
         Modal.confirm({
-          title: 'Some files already exist:',
+          title: getModalTitle(duplicateFiles),
           style: {
             wordWrap: 'break-word'
           },
