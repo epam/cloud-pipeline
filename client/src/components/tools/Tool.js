@@ -1010,7 +1010,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && !this.state.isShowUnscannedVersion) {
       data = data.filter(d => d.status !== ScanStatuses.notScanned);
     }
-    console.log(data);
     return (
       <Row style={{width: '100%'}}>
         {
