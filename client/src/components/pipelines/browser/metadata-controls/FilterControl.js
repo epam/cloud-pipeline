@@ -15,8 +15,23 @@ class FilterControl extends React.PureComponent {
   static propTypes = {
     columnName: PropTypes.string,
     onSearch: PropTypes.func,
-    children: PropTypes.node
+    children: PropTypes.node,
+    value: PropTypes.arrayOf(PropTypes.string)
   }
+  componentDidMount () {
+    this.updateStateFromProps();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.value !== this.props.value) {
+      this.updateStateFromProps();
+    }
+  }
+  updateStateFromProps = () => {
+    const {value = []} = this.props;
+    this.setState({selectedTags: value});
+  };
+
   getContainer = (triggernode) => {
     return triggernode.parentNode;
   };

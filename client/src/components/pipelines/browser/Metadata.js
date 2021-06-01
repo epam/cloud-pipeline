@@ -445,6 +445,10 @@ export default class Metadata extends React.Component {
     if (!this.shouldAddFilterButton(key) || this.state.selectedItemsAreShowing) {
       return null;
     }
+    const {filterModel = {}} = this.state;
+    const {filters = []} = filterModel;
+    const filter = filters.find(filter => filter.key === key);
+    const values = filter ? (filter.values || []) : [];
     const button = (
       <Button
         shape="circle"
@@ -473,6 +477,7 @@ export default class Metadata extends React.Component {
       <FilterControl
         columnName={key}
         onSearch={(tags) => this.handleFilterApplied(key, tags)}
+        value={values}
       >{button}</FilterControl>
     );
   }
