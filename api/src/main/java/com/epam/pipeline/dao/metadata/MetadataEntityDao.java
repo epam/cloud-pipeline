@@ -358,7 +358,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         searchQueries.forEach(query -> {
             String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
             clause.append(AND);
-            clause.append(searchPattern.matcher(searchClauseQuery).replaceFirst(formattedQuery));
+            clause.append(searchPattern.matcher(searchClauseQuery).replaceAll(formattedQuery));
         });
     }
 

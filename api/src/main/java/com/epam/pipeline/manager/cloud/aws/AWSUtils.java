@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 public final class AWSUtils {
 
     private static final String EMPTY_KEY_ARN = "NONE";
+    private static final String EMPTY_JSON = "{}";
 
     private AWSUtils() {
         //no op
@@ -68,18 +69,22 @@ public final class AWSUtils {
         return storage.getTempCredentialsRole();
     }
 
+    public static String getPolicy(final String policy) {
+        return StringUtils.isBlank(policy) || EMPTY_JSON.equals(policy) ? null : policy;
+    }
+
     public static TemporaryCredentials generate(final Integer duration, final String policy, final String role,
                                                 final String profile, final String regionCode) {
         final String sessionName = "SessionID-" + PasswordGenerator.generateRandomString(10);
 
         final AssumeRoleRequest assumeRoleRequest = new AssumeRoleRequest()
                 .withDurationSeconds(duration)
-                .withPolicy(policy)
+                .withPolicy(getPolicy(policy))
                 .withRoleSessionName(sessionName)
                 .withRoleArn(role);
 
         final AssumeRoleResult assumeRoleResult = AWSSecurityTokenServiceClientBuilder.standard()
-                .withCredentials(AWSUtils.getCredentialsProvider(profile))
+                .withCredentials(getCredentialsProvider(profile))
                 .build()
                 .assumeRole(assumeRoleRequest);
         final Credentials resultingCredentials = assumeRoleResult.getCredentials();
