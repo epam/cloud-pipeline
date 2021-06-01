@@ -178,9 +178,9 @@ class VersionedStorageTable extends React.Component {
     onTableActionClick && onTableActionClick(action);
   };
 
-  onUploadFinished = (event) => {
+  onUploadFinished = (uploadedFiles) => {
     const {afterUpload} = this.props;
-    afterUpload && afterUpload();
+    afterUpload && afterUpload(uploadedFiles);
   };
 
   checkFilesExistence = async (files) => {

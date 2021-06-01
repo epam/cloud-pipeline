@@ -142,6 +142,9 @@ class UploadButton extends React.Component {
     if (!this.state.uploadInfoClosable) {
       return;
     }
+    const {
+      uploadingFiles = []
+    } = this.state;
     this.setState({
       uploadInfoVisible: false,
       uploadInfoClosable: false,
@@ -149,7 +152,7 @@ class UploadButton extends React.Component {
       synchronousUploadingFiles: []
     }, async () => {
       if (this.props.onRefresh) {
-        this.props.onRefresh();
+        this.props.onRefresh(uploadingFiles.map(f => f.name));
       }
     });
   };
