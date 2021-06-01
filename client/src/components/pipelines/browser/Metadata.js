@@ -427,8 +427,12 @@ export default class Metadata extends React.Component {
 
   filterApplied = (key) => {
     const {filters, startDateFrom, endDateTo} = this.state.filterModel;
-    return filters
-      .filter(filterObj => filterObj.key === key).length || startDateFrom || endDateTo;
+    if (key !== 'createdDate') {
+      return filters
+        .filter(filterObj => filterObj.key === unmapColumnName(key)).length;
+    } else {
+      return startDateFrom || endDateTo;
+    }
   };
 
   shouldAddFilterButton = (key) => {
@@ -438,9 +442,11 @@ export default class Metadata extends React.Component {
   };
 
   renderFilterButton = (key) => {
-    return (
-      this.shouldAddFilterButton(key) &&
-      (<Button
+    if (!this.shouldAddFilterButton(key)) {
+      return null;
+    }
+    const button = (
+      <Button
         shape="circle"
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -452,19 +458,23 @@ export default class Metadata extends React.Component {
           )
         }}
       >
-        {key === 'createdDate'
-          ? (
-            <RangeDatePicker
-              from={getFromDate(key)}
-              to={getToDate(key)}
-              onChange={(e) => this.onDateRangeChanged(e, key)}
-            />)
-          : (
-            <FilterControl
-              columnName={key}
-              onSearch={(tags) => this.handleFilterApplied(key, tags)}
-            />)}
-      </Button>));
+        <Icon type="filter" />
+      </Button>);
+
+    if (key === 'createdDate') {
+      return (
+        <RangeDatePicker
+          from={getFromDate(key)}
+          to={getToDate(key)}
+          onChange={(e) => this.onDateRangeChanged(e, key)}
+        >{button}</RangeDatePicker>);
+    }
+    return (
+      <FilterControl
+        columnName={key}
+        onSearch={(tags) => this.handleFilterApplied(key, tags)}
+      >{button}</FilterControl>
+    );
   }
 
   renderDataStorageLinks = (data) => {

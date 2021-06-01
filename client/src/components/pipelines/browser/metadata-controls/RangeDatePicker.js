@@ -31,7 +31,8 @@ class RangeDatePicker extends React.Component {
     static propTypes = {
       from: PropTypes.string,
       to: PropTypes.string,
-      onChange: PropTypes.func
+      onChange: PropTypes.func,
+      children: PropTypes.node
     }
     state = {
       dateFrom: toLocalMomentDate(this.props.from),
@@ -193,18 +194,7 @@ class RangeDatePicker extends React.Component {
             visible={this.state.rangeFilterVisible}
             onVisibleChange={this.handleRangeFilterVisibility}
           >
-            <Icon
-              style={{
-                pointerEvents: 'auto',
-                zIndex: 1000
-              }}
-              type="filter"
-              onClick={() => {
-                this.setState({
-                  rangeFilterVisible: true
-                });
-              }}
-            />
+            {this.props.children}
           </Popover>);
       } else {
         return null;

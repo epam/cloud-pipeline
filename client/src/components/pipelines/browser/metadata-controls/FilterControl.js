@@ -15,7 +15,8 @@ class FilterControl extends React.PureComponent {
   }
   static propTypes = {
     columnName: PropTypes.string,
-    onSearch: PropTypes.func
+    onSearch: PropTypes.func,
+    children: PropTypes.node
   }
   getContainer = (triggernode) => {
     return triggernode.parentNode;
@@ -104,19 +105,7 @@ class FilterControl extends React.PureComponent {
         visible={popoverVisible}
         onVisibleChange={this.handlePopoverVisibleChange}
       >
-        <Icon
-          type="filter"
-          style={{
-            pointerEvents: 'auto',
-            color: selectedTags.length ? '#108ee9' : 'grey',
-            zIndex: 1000
-          }}
-          onClick={() => {
-            this.setState({
-              popoverVisible: true
-            });
-          }}
-        />
+        {this.props.children}
       </Popover>
     );
   }
