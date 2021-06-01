@@ -7,7 +7,6 @@ const Option = Select.Option;
 
 @observer
 class FilterControl extends React.PureComponent {
-
   state = {
     tags: [],
     selectedTags: [],
@@ -16,8 +15,23 @@ class FilterControl extends React.PureComponent {
   static propTypes = {
     columnName: PropTypes.string,
     onSearch: PropTypes.func,
-    children: PropTypes.node
+    children: PropTypes.node,
+    value: PropTypes.arrayOf(PropTypes.string)
   }
+  componentDidMount () {
+    this.updateStateFromProps();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.value !== this.props.value) {
+      this.updateStateFromProps();
+    }
+  }
+  updateStateFromProps = () => {
+    const {value = []} = this.props;
+    this.setState({selectedTags: value});
+  };
+
   getContainer = (triggernode) => {
     return triggernode.parentNode;
   };
@@ -53,6 +67,7 @@ class FilterControl extends React.PureComponent {
             mode="tags"
             style={{width: 280}}
             placeholder="Type or select tags"
+            notFoundContent="Specify tags to filter"
             onChange={this.handleInputConfirm}
             getPopupContainer={this.getContainer}
           >
@@ -72,15 +87,15 @@ class FilterControl extends React.PureComponent {
           marginTop: 10
         }}>
           <Button
-            type="primary"
-            onClick={this.handleApplyFilter}
-            disabled={!selectedTags.length}
-          >Apply</Button>
-          <Button
             type="danger"
             onClick={this.resetFilter}
             disabled={!selectedTags.length}
           >Reset</Button>
+          <Button
+            type="primary"
+            onClick={this.handleApplyFilter}
+            disabled={!selectedTags.length}
+          >Apply</Button>
         </div>
       </div>);
     return (
