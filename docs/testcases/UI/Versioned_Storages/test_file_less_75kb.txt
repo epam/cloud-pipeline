@@ -1,0 +1,1154 @@
+5. Manage Metadata
+Overview
+"Details" view
+Controls
+Search field
+Sorting control
+"Change view"
++ Add instance
+Upload metadata
+Show attributes/Hide attributes
+Bulk operation panel
+Overview
+Metadata is a CP object that defines custom data entities (see the definition below) associated with raw data files (fastq, bcl, etc.) or data parameters (see the picture below, arrow 1). By using this object a user can create a complex analysis environment. For example, you can customize your analysis to work with a subset of your data.
+Two important concepts of the metadata object is an Entity and an Instance of an entity.
+
+Entity - abstract category of comparable objects. For example, entity "Sample" can contain sequencing data from different people (see the picture below, arrow 2).
+An Instance of an entity - a specific representation of an entity. For example, sequencing data from a particular patient in the "Sample" entity is an instance of that entity (see the picture below, arrow 3).
+"Details" view
+"Details" panel displays content as a table of entity instances. Each column is an attribute of an instance, which is duplicated in the "Attribute" panel.
+Note: more about managing instance's attribute you can learn here.
+
+CP_ManageMetadata
+
+Controls
+CP_ManageMetadata
+
+The following buttons are available in the metadata entity space:
+
+Search field
+To find a particular instance of an entity a user shall use the Search field (see the picture above, 1), which is searching for the occurrence of entered text in the ID column of the table.
+
+Sorting control
+To sort instances of an entity in a table, a user shall click a header of the desired column: 1 click sorts a list in an ascending order, the next click sorts a list in a descending order, the next click reset sorting.
+
+"Change view"
+This control (see the picture above, 2) allows customizing the view of the table with instances of an entity. For more information see 5.3. Customize view of the entity instance table.
+
++ Add instance
+To add a new instance in the current metadata container, click + Add instance control (see the picture above, 3). For more information see 5.1. Add/Delete metadata items.
+
+Upload metadata
+Use this control (see the picture above, 4) to create the metadata object or to add entities to the metadata object/to add instances of an entity to the existing entity. See here for more information - 5.2. Upload metadata.
+
+Show attributes/Hide attributes
+This button (see the picture above, 5) allows to view or edit attributes of a particular instance of an entity. For more information see 17. CP objects tagging by additional attributes.
+
+Bulk operation panel
+This panel allows to execute operations for more than one item. You can tick desired items and the panel switch to active mode.
+
+CP_ManageMetadata
+
+Control	Description
+DELETE	To delete one or more metadata item (1). See more details here.
+CLEAR SELECTION	Clears all selected items (2). The panel is deactivated.
+TRANSFER TO THE CLOUD	To download files from the external ftp/http resources (3). See more details here.
+RUN	Allows to execute run configurations for the selected items (4). See details here.
+6. Manage Pipeline
+Pipeline object GUI
+"Details" view pane
+"Details" controls
+Pipeline versions GUI
+Pipeline controls
+Pipeline launching page
+Pipeline version tabs
+DOCUMENTS
+CODE
+CONFIGURATION
+HISTORY
+STORAGE RULES
+GRAPH
+Default environment variables
+Pipelines represent a sequence of tasks that are executed along with each other in order to process some data. They help to automate complex tasks that consist of many sub-tasks.
+
+This chapter describes Pipeline space GUI and the main working scenarios.
+
+Pipeline object GUI
+As far as the pipeline is one of CP objects which stored in "Library" space, the Pipeline workspace is separated into two panes:
+
+"Hierarchy" view pane
+"Details" view pane.
+Note: also you can view general information and some details about the specific pipeline via CLI. See 14.4 View pipeline definitions via CLI.
+
+"Details" view pane
+The "Details" view pane displays content of a selected object. In case of a pipeline, you will see:
+
+a list of pipeline versions with a description of last update and date of the last update;
+specific space's controls.
+CP_ManagePipeline
+
+"Details" controls
+Control	Description
+Displays icon	This icon includes:
+"Attributes" control (1) opens Attributes pane. Here you can see a list of "key=value" attributes of the pipeline. For more info see here.
+Note: If the selected pipeline has any defined attribute, Attributes pane is shown by default.
+Issues shows/hides the issues of the current pipeline to discuss. To learn more see here.
+"Gear" icon	This control (2) allows to rename, change the description, delete and edit repository settings i.e. Repository address and Token
+Git repository	"Git repository" control (3) shows a git repository address where pipeline versions are stored, which could be copied and pasted into a browser address field:
+CP_ManagePipeline
+If for your purposes ssh protocol is required, you may click the HTTPS/SSH selector and choose the SSH item:
+CP_ManagePipeline
+In that case, you will get a reformatted SSH address:
+CP_ManagePipeline
+Also a user can work directly with git from the console on the running node. For more information, how to configure Git client to work with the Cloud Pipeline, see here.
+To clone a pipeline a user shall have READ permissions, to push WRITE permission are also needed. For more info see 13. Permissions.
+Release	"Release" control (4) is used to tag a particular pipeline version with a name. A draft pipeline version has the control only.
+Note: you can edit the last pipeline version only.
+Run	Each pipeline version item of the selected pipeline's list has a "Run" control (5) to launch a pipeline version.
+Pipeline versions GUI
+Pipeline version interface displays full information about a pipeline version: supporting documentation, code files, and configurations, history of version runnings, etc.
+
+Pipeline controls
+The following buttons are available to manage this space.
+
+Control	Description
+Run	This button launch a pipeline version. When a user clicks the button, the "Launch a pipeline" page opens.
+"Gear" icon	This control allows to rename, change the description, delete and edit repository settings i.e. Repository address and Token.
+Git repository	Shows a git repository address where pipeline versions are stored, which could be copied and pasted in a browser line.
+Also a user can work directly with git from the console on the running node. For more information, how to configure Git client to work with the Cloud Pipeline, see here.
+To clone a pipeline a user shall have READ permissions, to push WRITE permission is also needed. For more info see 13. Permissions.
+Pipeline launching page
+"Launch a pipeline" page shows parameters of a default configuration the pipeline version. This page has the same view as a "Configuration" tab of a pipeline version. Here you can select any other configuration from the list and/or change parameters for this specific run (changes in configuration will be applied only to this specific run).
+
+Pipeline version tabs
+Pipeline version space dramatically differs from the Pipeline space. You can open it: just click on it.
+The whole information is organized into the following tabs in "Details" view pane.
+
+DOCUMENTS
+The "Documents" tab contains documentation associated with the pipeline, e.g. README, pipeline description, etc. See an example here.
+Note: README.md file is created automatically and contains default text which could be easily edited by a user.
+
+Documents tab controls
+CP_ManagePipeline
+
+The following buttons are available to manage this section:
+
+Control	Description
+Upload (a)	This control (a) allows to upload documentation files.
+Delete (b)	"Delete" control (b) helps to delete a file.
+Rename (c)	To rename a file a user shall use a "Rename" control (c).
+Download (d)	This control (d) allows downloading pipeline documentation file to your local machine.
+Edit (e)	"Edit" control (e) helps a user to edit any text files (e.g. README) here in a text editor using a markdown language. 
+CODE
+This section contains a list of scripts to run a pipeline. Here you can create new files, folders and upload files here. Each script file could be edited (see details here).
+Note: .json configuration file can also be edited in the Configuration tab via GUI.
+
+Code tab controls
+CP_ManagePipeline
+
+The following controls are available:
+
+Control	Description
+Plus button (a)	This control is to create a new folder in a pipeline version. The folder's name shall be specified.
++ New file (b)	To create a new file in the current folder.
+Upload (c)	To upload files from your local file system to a pipeline version.
+Rename (d)	Each file or folder has a "Rename" control which allows renaming a file/folder.
+Delete (e)	Each file or folder has a "Delete" control which deletes a file/folder.
+The list of system files
+All newly created pipelines have at least 2 starting files no matter what pipeline template you've chosen.
+Only newly created DEFAULT pipeline has 1 starting file (config.json).
+
+main_file
+This file contains a pipeline scenario. By default, it is named after a pipeline, but this may be changed in the configuration file.
+Note: the main_file is usually an entry point to start pipeline execution.
+To create your own scenario the default template of the main file shall be edited (see details here).
+
+Example: below is the piece of the main_file of the Gromacs pipeline:
+CP_ManagePipeline
+
+config.json
+This file contains pipeline execution parameters. You can not rename or delete it because of it's used in pipeline scripts and they will not work without it.
+Note: it is advised that pipeline execution settings are modified via CONFIGURATION tab (e.g. if you want to change default settings for pipeline execution) or via Launch pipeline page (e.g. if you want to change pipeline settings for a current run). Manual config.json editing should be used only for advanced users (primarily developers) since json format is not validated in this case.
+Note: all attributes from config.json are available as environment variables for pipeline execution.
+
+The config.json file for every pipeline template have the following settings:
+
+Setting	Description
+main_file	A name of the main file for that pipeline.
+instance_size	instance type in terms of the specific Cloud Provider that specifies an amount of RAM in Gb, CPU and GPU cores number (e.g. "m4.xlarge" for AWS EC2 instance).
+instance_disk	An instance's disk size in Gb.
+docker_image	A name of the Docker image that will be used in the current pipeline.
+cmd_template	Command line template that will be executed at the running instance in the pipeline.
+
+cmd_template can use environment variables:
+To address the main_file parameter value, use the following construction - [main_file]
+To address all other parameters, usual Linux environment variables style shall be used (e.g. $docker_image)
+parameters	Pipeline execution parameters  (e.g. path to the data storage with input data). A parameter has a name and set of attributes. There are 3 possible keys for each parameter:
+"type" - key specifies a type for current parameter,
+"value" - key specifies default value for parameter,
+"required" - key specifies whether this parameter must be set ("required": true) or might not ("required": false)
+Example: config.json file of the Gromacs pipeline:
+CP_ManagePipeline
+
+Note: In addition to main_file and config.json you can add any number of files to the CODE section and combine it in one whole scenario.
+
+CONFIGURATION
+This section represents pipeline execution parameters which are set in config.json file. The parameters can be changed here and config.json file will be changed respectively. See how to edit configuration here.
+
+CP_ManagePipeline
+
+A configuration specifies:
+
+Section	Control	Description
+Name	Pipeline and its configuration names.
+Estimated price per hour	Control shows machine hours prices. If you navigate mouse to "info" icon, you'll see the maximum, minimum and average price for a particular pipeline version run as well as the price per hour.
+Exec environment		This section lists execution environment parameters.
+Docker image	A name of a Docker image to use for a pipeline execution (e.g. "library/gromacs-gpu").
+Node type	An instance type in terms of the specific Cloud Provider: CPU, RAM, GPU (e.g. 2 CPU cores, 8 Gb RAM, 0 GPU cores).
+Disk	Size of a disk in gigabytes, that will be attached to the instance in Gb.
+Configure cluster button	On-click, pop-up window will be shown:
+CP_ManagePipeline
+Here you can configure cluster or auto-scaled cluster. Cluster is a collection of instances which are connected so that they can be used together on a task. In both cases, a number of additional worker nodes with some main node as cluster head are launching (total number of pipelines = "number of working nodes" + 1). See v.0.14 - 7.2. Launch Detached Configuration for details.
+
+In case of using cluster, an exact count of worker nodes is directly defined by the user before launching the task and could not changing during the run.
+
+In case of using auto-scaled cluster, a max count of worker nodes is defined by the user before launching the task but really used count of worker nodes can change during the run depending on the jobs queue load. See Appendix C. Working with autoscaled cluster runs for details.
+
+For configure cluster:
+in opened window click Cluster button
+specify a number of child nodes (workers' count)
+if you want to use GridEngine server for the cluster, tick the Enable GridEngine checkbox. Setting of that checkbox automatically adds the CP_CAP_SGE system parameter with value true.
+Note: you may set this and other system parameters manually - see the example of using system parameters here.
+if you want to use Apache Spark for the cluster, tick the Enable Apache Spark checkbox. Setting of that checkbox automatically adds the CP_CAP_SPARK system parameter with value true. See the example of using Apache Spark here.
+if you want to use Slurm for the cluster, tick the Enable Slurm checkbox. Setting of that checkbox automatically adds the CP_CAP_SLURM system parameter with value true. See the example of using Slurm here.
+click OK button:
+CP_ManagePipeline
+When user selects Cluster option, information on total cluster resources is shown. Resources are calculated as (CPU/RAM/GPU)*(NUMBER_OF_WORKERS+1):
+CP_ManagePipeline
+
+For configure auto-scaled cluster:
+in opened window click Auto-scaled cluster button
+specify a number of child nodes (workers' count) in field Auto-scaled up to and click OK button:
+CP_ManagePipeline
+Note: that number is meaning total count of "auto-scaled" nodes - it is the max count of worker nodes that could be attached to the main node to work together as cluster. These nodes will be attached to the cluster only in case if some jobs are in waiting state longer than a specific time. Also these nodes will be dropped from the cluster in case when jobs queue is empty or all jobs are running and there are some idle nodes longer than a specific time.
+Note: about timeout periods for scale-up and scale-down of auto-scaled cluster see here.
+additionally you may enable hybrid mode for the auto-scaled cluster - it allows to scale-up the cluster (attach a worker node) with the instance type distinct of the master - worker is being picked up based on the amount of unsatisfied CPU requirements of all pending jobs. For that behavior, set the "Enable Hybrid cluster" checkbox. For more details see here.
+additionally you may specify a number of "persistent" child nodes (workers' count) - click Setup default child nodes count, input Default child nodes number and click Ok button:
+CP_ManagePipeline
+These default child nodes will be never "scaled-down" during the run regardless of jobs queue load. In the example above, total count of "auto-scaled" nodes - 3, and 1 of them is "persistent".
+Note: total count of child nodes always must be greater than count of default ("persistent") child nodes.
+if you don't want to use default ("persistent") child nodes in your auto-scaled cluster - click Reset button opposite the Default child nodes field.
+additionally you may choose a price type for workers that will be attached during the run - via the "Workers price type" dropdown list - workers' price type can be automatically the same as the master node type (by default) or forcibly specified regardless on the master's type:
+CP_ManagePipeline
+When user selects Auto-scaled cluster, information on total cluster resources is shown as interval - from the "min" configuration to "max" configuration:
+"min" configuration resources are calculated as (CPU/RAM/GPU)*(NUMBER_OF_DEFAULT_WORKERS+1)
+"max" configuration resources are calculated as (CPU/RAM/GPU)*(TOTAL_NUMBER_OF_WORKERS+1)
+
+E.g. for auto-scaled cluster with 2 child nodes and without default ("persistent") child nodes (NUMBER_OF_DEFAULT_WORKERS = 0; TOTAL_NUMBER_OF_WORKERS = 2):
+CP_ManagePipeline
+
+E.g. for auto-scaled cluster with 2 child nodes and 1 default ("persistent") child node (NUMBER_OF_DEFAULT_WORKERS = 1; TOTAL_NUMBER_OF_WORKERS = 2):
+CP_ManagePipeline
+
+Note: in some specific configurations such as hybrid autoscaling clusters amount of resources can vary beyond the shown interval.
+Note: if you don't want to use any cluster - click Single node button and then click OK button.
+Cloud Region	A specific region for a compute node placement.
+Please note, if a non-default region is selected - certain CP features may be unavailable:
+FS mounts usage from the another region (e.g. "EU West" region cannot use FS mounts from the "US East"). Regular storages will be still available
+If a specific tool, used for a run, requires an on-premise license server (e.g. monolix, matlab, schrodinger, etc.) - such instances shall be run in a region, that hosts those license servers.
+Note: if a specific platform deployment has a number of Cloud Providers registered (e.g. AWS+Azure, GCP+Azure) - in that control Cloud Provider auxiliary icons also will be displayed, e.g.:
+CP_ManagePipeline
+For a single-Provider deployments only Cloud Region icons are displayed.
+Advanced		
+Price type	Choose Spot or On-demand type of instance. You can look information about price types hovering "Info" icon and based on it make your choice.
+Timeout (min)	After this time pipeline will shut down (optional).
+Limit mounts	Allow to specify storages that should be mounted. See here.
+Cmd template	A shell command that will be executed to start a pipeline.
+"Start idle"	The flag sets cmd_template to sleep infinity. For more information about starting a job in this mode refer to 15. Interactive services.
+Parameters		This section lists pipeline specific parameters that can be used during a pipeline run. Pipeline parameters can be assigned the following types:
+String - generic scalar value (e.g. Sample name).
+Boolean - boolean value.
+Path - path in a data storage hierarchy.
+Input - path in a data storage hierarchy. During pipeline initialization, this path will be used to download input data on the calculation node for processing from a storage.
+Output - path in a data storage hierarchy. During pipeline finalization, this path will be used to upload resulting data to a storage.
+Common - path in a data storage hierarchy. Similar to "Input" type, but this data will not be erased from a calculation node, when a pipeline is finished (this is useful for reference data, as it can be reused by further pipeline runs that share the same reference).
+Note: You can use Project attribute values as parameters for the Run:
+Click an empty parameter value field.
+Enter "project."
+In the drop-down list select the Project attribute value:
+CP_ManagePipeline
+Add parameter	This control helps to add an additional parameter to a configuration.
+Configuration tab controls
+Control	Description
+Add	To create a customized configuration for the pipeline, click the + ADD button in the upper-right corner of the screen. For more details see here.
+Save	This button saves changes in a configuration.
+HISTORY
+This section contains information about all the current pipeline version's runs. Runs info is organized into a table with the following columns:
+
+CP_ManagePipeline
+
+Run - each record of that column contains two rows: in upper - run name that consists of pipeline name and run id, in bottom - Cloud Region.
+Note: if a specific platform deployment has a number of Cloud Providers registered (e.g. AWS+Azure, GCP+Azure) - corresponding text information also has a Provider name, e.g.:
+CP_ManagePipeline
+
+Parent-run - id of the run that executed current run (this field is non-empty only for runs that are executed by other runs).
+Pipeline - each record of that column contains two rows: in upper - pipeline name, in bottom - pipeline version.
+Docker image - base docker image name.
+Started - time pipeline started running.
+Completed - time pipeline finished execution.
+Elapsed - each record of that column contains two rows: in upper - pipeline running time, in bottom - run's estimated price, which is calculated based on the run duration, region and instance type.
+Owner - user who launched run.
+You can filter runs by clicking the filter icon. By using the filter control you can choose whether display runs for current pipeline version or display runs for all pipeline versions.
+
+History tab controls
+Control	Description
+PAUSE (a)	To pause running pipeline press this control. This control is available only for on-demand instances.
+STOP (b)	To stop running pipeline press this control.
+LOG (c)	"Log" control opens detailed information about the run. You'll be redirected to "Runs" space (see 11. Manage Runs).
+RESUME (d)	To resume pausing pipeline press this control. This control is available only for on-demand instances.
+TERMINATE (e)	To terminate node without waiting of the pipeline resuming. This control is available only for on-demand instances, which were paused.
+RERUN (f)	This control reruns completed pipeline's runs.
+Pipeline run's states
+Icons at the left represent the current state of the pipeline runs:  
+
+CP_ManagePipeline - Queued state ("sandglass" icon) - a run is waiting in the queue for the available compute node.
+CP_ManagePipeline - Initializing state ("rotating" icon) - a run is being initialized.
+CP_ManagePipeline - Pulling state ("download" icon) - now pipeline Docker image is downloaded to the node.
+CP_ManagePipeline - Running state ("play" icon) - a pipeline is running. The node is appearing and pipeline input data is being downloaded to the node before the "InitializeEnvironment" service task appears.
+CP_ManagePipeline - Paused state ("pause" icon) - a run is paused. At this moment compute node is already stopped but keeps it's state. Such run may be resumed.
+CP_ManagePipeline - Success state ("OK" icon) - successful pipeline execution.
+CP_ManagePipeline - Failed state ("caution" icon) - unsuccessful pipeline execution.
+CP_ManagePipeline - Stopped state ("clock" icon) - a pipeline manually stopped.
+CP_ManagePipeline
+
+Also, help tooltips are provided when hovering a run state icon, e.g.:
+CP_ManagePipeline
+CP_ManagePipeline
+
+STORAGE RULES
+This section displays a list of rules used to upload data to the output data storage, once pipeline finished. It helps to store only data you need and minimize the amount of interim data in data storages.
+
+CP_ManagePipeline
+
+Info is organized into a table with the following columns:
+
+Mask column contains a relative path from the $ANALYSIS_DIR folder (see Default environment variables section below for more information). Mask uses bash syntax to specify the data that you want to upload from the $ANALYSIS_DIR. Data from the specified path will be uploaded to the bucket from the pipeline node.
+Note: by default whole $ANALYSIS_DIR folder is uploaded to the cloud bucket (default Mask is - "*"). For example, "*.txt*" mask specifies that all files with .txt extension need to be uploaded from the $ANALYSIS_DIR to the data storage.
+Note: Be accurate when specifying masks - if wildcard mask ("*") is specified, all files will be uploaded, no matter what additional masks are specified.
+The Created column shows date and time of rules creation.
+Move to Short-Term Storage column indicates whether pipeline output data will be moved to a short-term storage.
+Storage rules tab control
+Control	Description
+Add new rule (a)	This control allows adding a new data managing rule.
+Delete (b)	To delete a data managing rule press this control.
+GRAPH
+This section represents the sequence of pipeline tasks as a directed graph.
+
+Tasks are graph vertices, edges represent execution order. A task can be executed only when all input edges - associated tasks - are completed (see more information about creating a pipeline with GRAPH section here).
+Note: only for Luigi and WDL pipelines.
+Note: If main_file has mistakes, pipeline workflow won't be visualized.
+
+CP_ManagePipeline
+
+Graph tab controls
+When a PipelineBuilder graph is loaded, the following layout controls become available to the user.
+
+CP_ManagePipeline
+
+Control	Description
+Save	saves changes.
+Revert	reverts all changes to the last saving.
+Layout	performs graph linearization, make it more readable.
+Fit	zooms graph to fit the screen.
+Show links	enables/disables workflow level links to the tasks. It is disabled by default, as for large workflows it overwhelms the visualization.
+Zoom out	zooms graph out.
+Zoom in	zooms graph in.
+Search element	allows to find specific object at the graph.
+Fullscreen	expands graph to the full screen.
+Default environment variables
+Pipeline scripts (e.g. main_file) use default environmental variables for pipeline execution. These variables are set in internal CP scripts:
+
+RUN_ID - pipeline run ID.
+PIPELINE_NAME - pipeline name.
+COMMON_DIR - directory where pipeline common data (parameter with "type": "common") will be stored.
+ANALYSIS_DIR - directory where output data of the pipeline (parameter with "type": "output") will be stored.
+INPUT_DIR - directory where input data of the pipeline (parameter with "type": "input") will be stored.
+SCRIPTS_DIR - directory where all pipeline scripts and config.json file will be stored.
+
+6.1. Create and configure pipeline
+Create a pipeline in a Library space
+Customize a pipeline version
+Edit documentation (optional)
+Edit code section
+Edit pipeline configuration (optional)
+Add/delete storage rules (optional)
+Edit a pipeline info
+Example: Create Pipeline
+Pipeline input data
+Pipeline output folder
+Configure the main_file
+Configure pipeline input/output parameters via GUI
+Check the results of pipeline execution
+Example: Add pipeline configuration
+Example: Create a configuration that uses system parameter
+Example: Limit mounted storages
+To create a Pipeline in a Folder you need to have WRITE permission for that folder and the ROLE_PIPELINE_MANAGER role. To edit pipeline you need just WRITE permissions for a pipeline. For more information see 13. Permissions.
+
+To create a working pipeline version you need:
+
+Create a pipeline in a Library space
+Customize a pipeline version:
+Edit documentation (optional)
+Edit Code file
+Edit Configuration, Add new configuration (optional)
+Add storage rules (optional).
+Create a pipeline in a Library space
+Go to the "Library" tab and select a folder.
+Click + Create → Pipeline and choose one of the built-in pipeline templates (Python, Shell, Snakemake, Luigi, WDL, Nextflow) or choose DEFAULT item to create a pipeline without a template. Pipeline template defines the programming language for a pipeline. As templates are empty user shall write pipeline logic on his own.
+Enter pipeline's name (pipeline description is optional) in the popped-up form.
+Click the Create button.
+A new pipeline will appear in the folder.
+CP_CreateAndConfigurePipeline
+Note: To configure repository where to store pipeline versions click the Edit repository settings button.
+Click on the button and two additional fields will appear: Repository (repository address) and Token (password to access a repository).
+CP_CreateAndConfigurePipeline
+The new pipeline will appear in a Library space.
+Customize a pipeline version
+Click a pipeline version to start its configuration process.
+CP_CreateAndConfigurePipeline
+
+Edit documentation (optional)
+This option allows you to make a detailed description of your pipelines.
+Navigate to the Documents tab and:
+
+Click Edit.
+CP_CreateAndConfigurePipeline
+Change the document using a markdown language.
+Click the Save button.
+CP_CreateAndConfigurePipeline
+Enter a description of the change and click Commit.
+CP_CreateAndConfigurePipeline
+Changes are saved.
+CP_CreateAndConfigurePipeline
+Edit code section
+It is not optional because you need to create a pipeline that will be tailored to your specific needs. For that purpose, you need to extend basic pipeline templates/add new files.
+
+Navigate to the Code tab. Click on any file you want to edit.
+CP_CreateAndConfigurePipeline
+Note: each pipeline version has a default code file: it named after a pipeline and has a respective extension.
+A new window with file contents will open. Click the Edit button and change the code file in the desired way.
+CP_CreateAndConfigurePipeline
+When you are done, click the Save button.
+CP_CreateAndConfigurePipeline
+You'll be asked to write a Commit message (e.g. 'added second "echo" command'). Then click the Commit button.
+CP_CreateAndConfigurePipeline
+After that changes will be applied to your file.
+Note: all code files are downloaded to the node to run the pipeline. Just adding a new file to the Code section doesn't change anything. You need to specify the order of scripts execution by yourself. E.g. you have three files in your pipeline: first.sh (main_file), second.sh and config.json. cmd_template parameter is chmod +x $SCRIPTS_DIR/src/* && $SCRIPTS_DIR/src/[main_file]. So in the first.sh file you need to explicitly specify execution of second.sh script for them both to run inside your pipeline, otherwise this file will be ignored.
+
+Edit pipeline configuration (optional)
+See details about pipeline configuration parameters here.
+
+Every pipeline has default pipeline configuration from the moment it was created.
+To change default pipeline configuration:
+
+Navigate to the Configuration tab.
+Expand "Exec environment" and "Advanced" tabs to see a full list of pipeline parameters. "Parameters" tab is opened by default.
+CP_CreateAndConfigurePipeline
+Change any parameter you need. In this example, we will set Cloud Region to Europe Ireland, Disk to 40 Gb and set the Timeout to 400 mins.
+CP_CreateAndConfigurePipeline
+Click the Save button.
+CP_CreateAndConfigurePipeline
+Now this will be the default pipeline configuration for the pipeline execution.
+Add/delete storage rules (optional)
+This section allows configuring what data will be transferred to an STS after pipeline execution.
+To add a new rule:
+
+Click the Add new rule button. A pop-up will appear.
+CP_CreateAndConfigurePipeline
+Enter File mask and then tick the box "Move to STS" to move pipeline output data to STS after pipeline execution.
+CP_CreateAndConfigurePipeline
+Note: If many rules with different Masks are present all of them are checked one by one. If a file corresponds to any of rules - it will be uploaded to the bucket.
+To delete storage rule click the Delete button in the right part of the storage rule's row.
+Edit a pipeline info
+To edit a pipeline info:
+
+Click the Gear icon in the right upper corner of the pipeline page
+The popup with the pipeline info will be opened:
+CP_CreateAndConfigurePipeline
+Here you can edit pipeline name (a) and description (b)
+To edit repository settings click the corresponding button (c):
+CP_CreateAndConfigurePipeline
+Here you can edit access token to a repository (d)
+Note: the "Repository" field is disabled for the existing pipelines
+Click the SAVE button to save changes
+Note: if you rename a pipeline the corresponding GitLab repo will be automatically renamed too. So, the clone/pull/push URL will change. Make sure to change the remote address, if this pipeline is used somewhere. How it works:
+
+Open the pipeline:
+CP_CreateAndConfigurePipeline
+Click the GIT REPOSITORY button in the right upper corner of the page:
+CP_CreateAndConfigurePipeline
+Pipeline name and repository name are identical
+Click the Gear icon in the right upper corner.
+In the popup change pipeline name and click the SAVE button:
+CP_CreateAndConfigurePipeline
+Click the GIT REPOSITORY button again:
+CP_CreateAndConfigurePipeline
+Pipeline name and repository name are identical
+Also, if you want just rename a pipeline without changing its other info fields:
+
+Hover over the pipeline name at the "breadcrumbs" control in the top of the pipeline page - the "edit" symbol will appear:
+CP_CreateAndConfigurePipeline
+Click the pipeline name - the field will become available to edit. Rename the pipeline:
+CP_CreateAndConfigurePipeline
+Press the Enter key or click any empty space - a new pipeline name will be saved:
+CP_CreateAndConfigurePipeline
+Example: Create Pipeline
+We will create a simple Shell pipeline (Shell template used). For that purpose, we will click + Create → Pipeline → SHELL.
+CP_CreateAndConfigurePipeline
+
+Then we will write Pipeline name (1), Pipeline description (2) and click Create (3).
+CP_CreateAndConfigurePipeline
+
+This pipeline will:
+
+Download a file.
+Rename it.
+Upload renamed the file to the bucket.
+Pipeline input data
+This is where pipeline input data is stored. About storages see here. This path will be used in pipeline parameters later on.
+CP_CreateAndConfigurePipeline
+
+Pipeline output folder
+This is where pipeline output data will be stored after pipeline execution. About storages see here. This path will be used in pipeline parameters later on.
+CP_CreateAndConfigurePipeline
+
+Configure the main_file
+The pipeline will consist of 2 files: main_file and config.json.
+CP_CreateAndConfigurePipeline
+
+Let's extend the main_file so that it renames the input file and puts it into the $ANALYSIS_DIR folder on the node from which data will be uploaded to the bucket. To do that click the main_file name and click the Edit button. Then type all the pipeline instructions.
+CP_CreateAndConfigurePipeline
+Click the Save button, input a commit message and click the Commit button.
+
+Configure pipeline input/output parameters via GUI
+Click the Run button.
+CP_CreateAndConfigurePipeline
+In the pipeline run configuration select the arrow near the Add parameter button and select the "Input path parameter" option from the drop-down list.
+CP_CreateAndConfigurePipeline
+Name the parameter (e.g. "input") and click on the grey "download" icon to select the path to the pipeline input data (we described pipeline input data above).
+For pipeline output folder parameter choose the "Output path parameter" option from the drop-down list, name it and click on the grey "upload" icon to select the path to the pipeline output folder (we described pipeline output data above).
+This is how everything looks after these parameters are set:
+CP_CreateAndConfigurePipeline
+Leave all other parameters default and click the Launch button.
+Check the results of pipeline execution
+After pipeline finished its execution, you can find the renamed file in the output folder:
+CP_CreateAndConfigurePipeline
+
+Example: Add pipeline configuration
+In this example, we will create a new pipeline configuration for the example pipeline and set it as default one. To add new pipeline configuration perform the following steps:
+
+Select a pipeline
+Select a pipeline version
+Navigate to the CONFIGURATION tab
+Click the + ADD button in the upper-right corner of the screen
+Specify Configuration name, Description (optionally) and the Template - this is a pipeline configuration, from which the new pipeline configuration will inherit its parameters (right now only the "default" template is available).
+Click the Create button.
+CP_CreateAndConfigurePipeline
+As you can see, the new configuration has the same parameters as the default configuration.
+Use Delete (1), Set as default (2) or Save (3) buttons to delete, set as default or save this configuration respectively.
+CP_CreateAndConfigurePipeline
+Expand the Exec environment section (1) and then Specify 30 GB Disk size (2), click the control to choose another Docker image (3). Click the Save button (4).
+CP_CreateAndConfigurePipeline
+Set "new-configuration" as default with the Set as default button.
+Navigate to the CODE tab. As you can see, config.json file now contains information about two configurations: "default" and "new-configuration". "new-configuration" is default one for pipeline execution.
+CP_CreateAndConfigurePipeline
+Example: Create a configuration that uses system parameter
+Users can specify system parameters (per run), that change/configure special behavior for the current run.
+
+In the example below we will use the system parameter, that installs and allows using of the DIND (Docker in Docker) in the launched container:
+
+Select a pipeline
+Select a pipeline version
+Navigate to the CONFIGURATION tab
+In the CONFIGURATION tab expand the Advanced section, set "Start idle" checkbox and click the Add system parameter button:
+CP_CreateAndConfigurePipeline
+Click the CP_CAP_DIND_CONTAINER option and then click the OK button:
+CP_CreateAndConfigurePipeline
+This option will enable docker engine for a run using a containerized approach.
+Added system parameter appears on the configuration page. Save the configuration - now it will use "Docker inside Docker" technology while running:
+CP_CreateAndConfigurePipeline
+To see it, click the Run button in the upper-right corner to launch the configuration.
+Edit or add any parameters you want on the Launch page and click the Launch button in the upper-right corner:
+CP_CreateAndConfigurePipeline
+Confirm the launch in the appeared pop-up.
+In the ACTIVE RUNS tab press the just-launched pipeline name.
+CP_CreateAndConfigurePipeline
+Wait until the SSH hyperlink will appear in the upper-right corner, click it:
+CP_CreateAndConfigurePipeline
+On the opened tab specify the command docker version and then press "Enter" key:
+CP_CreateAndConfigurePipeline
+As you can see, DinD works correctly.
+Example: Limit mounted storages
+By default, all available to a user storages are mounted to the launched container during the run initialization. User could have access to them via /cloud-data or ~/cloud-data folder using the interactive sessions (SSH/Web endpoints/Desktop) or pipeline runs.
+
+Note: to a user only storages are available for which he has READ permission. For more information see 13. Permissions.
+
+To limit the number of data storages being mounted to a specific pipeline run:
+
+Select a pipeline
+Select a pipeline version
+Navigate to the CONFIGURATION tab
+In the CONFIGURATION tab expand the Advanced section, click the field next to the "Limit mounts" label:
+CP_CreateAndConfigurePipeline
+In the pop-up select storages you want to mount during the run, e.g.:
+CP_CreateAndConfigurePipeline
+Confirm your choise by click the OK button
+Selected storages will appear in the field next to the "Limit mounts" label:
+CP_CreateAndConfigurePipeline
+Set "Start idle" checkbox and click the Save button:
+CP_CreateAndConfigurePipeline
+Click the Run button in the upper-right corner to launch the configuration. Edit or add any parameters you want on the Launch page and click the Launch button in the upper-right corner:
+CP_CreateAndConfigurePipeline
+Confirm the launch in the appeared pop-up.
+In the ACTIVE RUNS tab press the just-launched pipeline name.
+CP_CreateAndConfigurePipeline
+At the Run logs page expand the "Parameters" section:
+CP_CreateAndConfigurePipeline
+Here you can see IDs of the storages selected at step 5
+Wait until the SSH hyperlink will appear in the upper-right corner, click it.
+On the opened tab specify the command ls cloud-data/ and then press "Enter" key:
+CP_CreateAndConfigurePipeline
+Here you can see the list of the mounted storages that is equal to the list of the selected storages at step 5. Other storages were not mounted.
+Each mounted storage is available for the interactive/batch jobs using the path /cloud-data/{storage_name}.
+
+5. Manage Metadata
+Overview
+"Details" view
+Controls
+Search field
+Sorting control
+"Change view"
++ Add instance
+Upload metadata
+Show attributes/Hide attributes
+Bulk operation panel
+Overview
+Metadata is a CP object that defines custom data entities (see the definition below) associated with raw data files (fastq, bcl, etc.) or data parameters (see the picture below, arrow 1). By using this object a user can create a complex analysis environment. For example, you can customize your analysis to work with a subset of your data.
+Two important concepts of the metadata object is an Entity and an Instance of an entity.
+
+Entity - abstract category of comparable objects. For example, entity "Sample" can contain sequencing data from different people (see the picture below, arrow 2).
+An Instance of an entity - a specific representation of an entity. For example, sequencing data from a particular patient in the "Sample" entity is an instance of that entity (see the picture below, arrow 3).
+"Details" view
+"Details" panel displays content as a table of entity instances. Each column is an attribute of an instance, which is duplicated in the "Attribute" panel.
+Note: more about managing instance's attribute you can learn here.
+
+CP_ManageMetadata
+
+Controls
+CP_ManageMetadata
+
+The following buttons are available in the metadata entity space:
+
+Search field
+To find a particular instance of an entity a user shall use the Search field (see the picture above, 1), which is searching for the occurrence of entered text in the ID column of the table.
+
+Sorting control
+To sort instances of an entity in a table, a user shall click a header of the desired column: 1 click sorts a list in an ascending order, the next click sorts a list in a descending order, the next click reset sorting.
+
+"Change view"
+This control (see the picture above, 2) allows customizing the view of the table with instances of an entity. For more information see 5.3. Customize view of the entity instance table.
+
++ Add instance
+To add a new instance in the current metadata container, click + Add instance control (see the picture above, 3). For more information see 5.1. Add/Delete metadata items.
+
+Upload metadata
+Use this control (see the picture above, 4) to create the metadata object or to add entities to the metadata object/to add instances of an entity to the existing entity. See here for more information - 5.2. Upload metadata.
+
+Show attributes/Hide attributes
+This button (see the picture above, 5) allows to view or edit attributes of a particular instance of an entity. For more information see 17. CP objects tagging by additional attributes.
+
+Bulk operation panel
+This panel allows to execute operations for more than one item. You can tick desired items and the panel switch to active mode.
+
+CP_ManageMetadata
+
+Control	Description
+DELETE	To delete one or more metadata item (1). See more details here.
+CLEAR SELECTION	Clears all selected items (2). The panel is deactivated.
+TRANSFER TO THE CLOUD	To download files from the external ftp/http resources (3). See more details here.
+RUN	Allows to execute run configurations for the selected items (4). See details here.
+6. Manage Pipeline
+Pipeline object GUI
+"Details" view pane
+"Details" controls
+Pipeline versions GUI
+Pipeline controls
+Pipeline launching page
+Pipeline version tabs
+DOCUMENTS
+CODE
+CONFIGURATION
+HISTORY
+STORAGE RULES
+GRAPH
+Default environment variables
+Pipelines represent a sequence of tasks that are executed along with each other in order to process some data. They help to automate complex tasks that consist of many sub-tasks.
+
+This chapter describes Pipeline space GUI and the main working scenarios.
+
+Pipeline object GUI
+As far as the pipeline is one of CP objects which stored in "Library" space, the Pipeline workspace is separated into two panes:
+
+"Hierarchy" view pane
+"Details" view pane.
+Note: also you can view general information and some details about the specific pipeline via CLI. See 14.4 View pipeline definitions via CLI.
+
+"Details" view pane
+The "Details" view pane displays content of a selected object. In case of a pipeline, you will see:
+
+a list of pipeline versions with a description of last update and date of the last update;
+specific space's controls.
+CP_ManagePipeline
+
+"Details" controls
+Control	Description
+Displays icon	This icon includes:
+"Attributes" control (1) opens Attributes pane. Here you can see a list of "key=value" attributes of the pipeline. For more info see here.
+Note: If the selected pipeline has any defined attribute, Attributes pane is shown by default.
+Issues shows/hides the issues of the current pipeline to discuss. To learn more see here.
+"Gear" icon	This control (2) allows to rename, change the description, delete and edit repository settings i.e. Repository address and Token
+Git repository	"Git repository" control (3) shows a git repository address where pipeline versions are stored, which could be copied and pasted into a browser address field:
+CP_ManagePipeline
+If for your purposes ssh protocol is required, you may click the HTTPS/SSH selector and choose the SSH item:
+CP_ManagePipeline
+In that case, you will get a reformatted SSH address:
+CP_ManagePipeline
+Also a user can work directly with git from the console on the running node. For more information, how to configure Git client to work with the Cloud Pipeline, see here.
+To clone a pipeline a user shall have READ permissions, to push WRITE permission are also needed. For more info see 13. Permissions.
+Release	"Release" control (4) is used to tag a particular pipeline version with a name. A draft pipeline version has the control only.
+Note: you can edit the last pipeline version only.
+Run	Each pipeline version item of the selected pipeline's list has a "Run" control (5) to launch a pipeline version.
+Pipeline versions GUI
+Pipeline version interface displays full information about a pipeline version: supporting documentation, code files, and configurations, history of version runnings, etc.
+
+Pipeline controls
+The following buttons are available to manage this space.
+
+Control	Description
+Run	This button launch a pipeline version. When a user clicks the button, the "Launch a pipeline" page opens.
+"Gear" icon	This control allows to rename, change the description, delete and edit repository settings i.e. Repository address and Token.
+Git repository	Shows a git repository address where pipeline versions are stored, which could be copied and pasted in a browser line.
+Also a user can work directly with git from the console on the running node. For more information, how to configure Git client to work with the Cloud Pipeline, see here.
+To clone a pipeline a user shall have READ permissions, to push WRITE permission is also needed. For more info see 13. Permissions.
+Pipeline launching page
+"Launch a pipeline" page shows parameters of a default configuration the pipeline version. This page has the same view as a "Configuration" tab of a pipeline version. Here you can select any other configuration from the list and/or change parameters for this specific run (changes in configuration will be applied only to this specific run).
+
+Pipeline version tabs
+Pipeline version space dramatically differs from the Pipeline space. You can open it: just click on it.
+The whole information is organized into the following tabs in "Details" view pane.
+
+DOCUMENTS
+The "Documents" tab contains documentation associated with the pipeline, e.g. README, pipeline description, etc. See an example here.
+Note: README.md file is created automatically and contains default text which could be easily edited by a user.
+
+Documents tab controls
+CP_ManagePipeline
+
+The following buttons are available to manage this section:
+
+Control	Description
+Upload (a)	This control (a) allows to upload documentation files.
+Delete (b)	"Delete" control (b) helps to delete a file.
+Rename (c)	To rename a file a user shall use a "Rename" control (c).
+Download (d)	This control (d) allows downloading pipeline documentation file to your local machine.
+Edit (e)	"Edit" control (e) helps a user to edit any text files (e.g. README) here in a text editor using a markdown language. 
+CODE
+This section contains a list of scripts to run a pipeline. Here you can create new files, folders and upload files here. Each script file could be edited (see details here).
+Note: .json configuration file can also be edited in the Configuration tab via GUI.
+
+Code tab controls
+CP_ManagePipeline
+
+The following controls are available:
+
+Control	Description
+Plus button (a)	This control is to create a new folder in a pipeline version. The folder's name shall be specified.
++ New file (b)	To create a new file in the current folder.
+Upload (c)	To upload files from your local file system to a pipeline version.
+Rename (d)	Each file or folder has a "Rename" control which allows renaming a file/folder.
+Delete (e)	Each file or folder has a "Delete" control which deletes a file/folder.
+The list of system files
+All newly created pipelines have at least 2 starting files no matter what pipeline template you've chosen.
+Only newly created DEFAULT pipeline has 1 starting file (config.json).
+
+main_file
+This file contains a pipeline scenario. By default, it is named after a pipeline, but this may be changed in the configuration file.
+Note: the main_file is usually an entry point to start pipeline execution.
+To create your own scenario the default template of the main file shall be edited (see details here).
+
+Example: below is the piece of the main_file of the Gromacs pipeline:
+CP_ManagePipeline
+
+config.json
+This file contains pipeline execution parameters. You can not rename or delete it because of it's used in pipeline scripts and they will not work without it.
+Note: it is advised that pipeline execution settings are modified via CONFIGURATION tab (e.g. if you want to change default settings for pipeline execution) or via Launch pipeline page (e.g. if you want to change pipeline settings for a current run). Manual config.json editing should be used only for advanced users (primarily developers) since json format is not validated in this case.
+Note: all attributes from config.json are available as environment variables for pipeline execution.
+
+The config.json file for every pipeline template have the following settings:
+
+Setting	Description
+main_file	A name of the main file for that pipeline.
+instance_size	instance type in terms of the specific Cloud Provider that specifies an amount of RAM in Gb, CPU and GPU cores number (e.g. "m4.xlarge" for AWS EC2 instance).
+instance_disk	An instance's disk size in Gb.
+docker_image	A name of the Docker image that will be used in the current pipeline.
+cmd_template	Command line template that will be executed at the running instance in the pipeline.
+
+cmd_template can use environment variables:
+To address the main_file parameter value, use the following construction - [main_file]
+To address all other parameters, usual Linux environment variables style shall be used (e.g. $docker_image)
+parameters	Pipeline execution parameters  (e.g. path to the data storage with input data). A parameter has a name and set of attributes. There are 3 possible keys for each parameter:
+"type" - key specifies a type for current parameter,
+"value" - key specifies default value for parameter,
+"required" - key specifies whether this parameter must be set ("required": true) or might not ("required": false)
+Example: config.json file of the Gromacs pipeline:
+CP_ManagePipeline
+
+Note: In addition to main_file and config.json you can add any number of files to the CODE section and combine it in one whole scenario.
+
+CONFIGURATION
+This section represents pipeline execution parameters which are set in config.json file. The parameters can be changed here and config.json file will be changed respectively. See how to edit configuration here.
+
+CP_ManagePipeline
+
+A configuration specifies:
+
+Section	Control	Description
+Name	Pipeline and its configuration names.
+Estimated price per hour	Control shows machine hours prices. If you navigate mouse to "info" icon, you'll see the maximum, minimum and average price for a particular pipeline version run as well as the price per hour.
+Exec environment		This section lists execution environment parameters.
+Docker image	A name of a Docker image to use for a pipeline execution (e.g. "library/gromacs-gpu").
+Node type	An instance type in terms of the specific Cloud Provider: CPU, RAM, GPU (e.g. 2 CPU cores, 8 Gb RAM, 0 GPU cores).
+Disk	Size of a disk in gigabytes, that will be attached to the instance in Gb.
+Configure cluster button	On-click, pop-up window will be shown:
+CP_ManagePipeline
+Here you can configure cluster or auto-scaled cluster. Cluster is a collection of instances which are connected so that they can be used together on a task. In both cases, a number of additional worker nodes with some main node as cluster head are launching (total number of pipelines = "number of working nodes" + 1). See v.0.14 - 7.2. Launch Detached Configuration for details.
+
+In case of using cluster, an exact count of worker nodes is directly defined by the user before launching the task and could not changing during the run.
+
+In case of using auto-scaled cluster, a max count of worker nodes is defined by the user before launching the task but really used count of worker nodes can change during the run depending on the jobs queue load. See Appendix C. Working with autoscaled cluster runs for details.
+
+For configure cluster:
+in opened window click Cluster button
+specify a number of child nodes (workers' count)
+if you want to use GridEngine server for the cluster, tick the Enable GridEngine checkbox. Setting of that checkbox automatically adds the CP_CAP_SGE system parameter with value true.
+Note: you may set this and other system parameters manually - see the example of using system parameters here.
+if you want to use Apache Spark for the cluster, tick the Enable Apache Spark checkbox. Setting of that checkbox automatically adds the CP_CAP_SPARK system parameter with value true. See the example of using Apache Spark here.
+if you want to use Slurm for the cluster, tick the Enable Slurm checkbox. Setting of that checkbox automatically adds the CP_CAP_SLURM system parameter with value true. See the example of using Slurm here.
+click OK button:
+CP_ManagePipeline
+When user selects Cluster option, information on total cluster resources is shown. Resources are calculated as (CPU/RAM/GPU)*(NUMBER_OF_WORKERS+1):
+CP_ManagePipeline
+
+For configure auto-scaled cluster:
+in opened window click Auto-scaled cluster button
+specify a number of child nodes (workers' count) in field Auto-scaled up to and click OK button:
+CP_ManagePipeline
+Note: that number is meaning total count of "auto-scaled" nodes - it is the max count of worker nodes that could be attached to the main node to work together as cluster. These nodes will be attached to the cluster only in case if some jobs are in waiting state longer than a specific time. Also these nodes will be dropped from the cluster in case when jobs queue is empty or all jobs are running and there are some idle nodes longer than a specific time.
+Note: about timeout periods for scale-up and scale-down of auto-scaled cluster see here.
+additionally you may enable hybrid mode for the auto-scaled cluster - it allows to scale-up the cluster (attach a worker node) with the instance type distinct of the master - worker is being picked up based on the amount of unsatisfied CPU requirements of all pending jobs. For that behavior, set the "Enable Hybrid cluster" checkbox. For more details see here.
+additionally you may specify a number of "persistent" child nodes (workers' count) - click Setup default child nodes count, input Default child nodes number and click Ok button:
+CP_ManagePipeline
+These default child nodes will be never "scaled-down" during the run regardless of jobs queue load. In the example above, total count of "auto-scaled" nodes - 3, and 1 of them is "persistent".
+Note: total count of child nodes always must be greater than count of default ("persistent") child nodes.
+if you don't want to use default ("persistent") child nodes in your auto-scaled cluster - click Reset button opposite the Default child nodes field.
+additionally you may choose a price type for workers that will be attached during the run - via the "Workers price type" dropdown list - workers' price type can be automatically the same as the master node type (by default) or forcibly specified regardless on the master's type:
+CP_ManagePipeline
+When user selects Auto-scaled cluster, information on total cluster resources is shown as interval - from the "min" configuration to "max" configuration:
+"min" configuration resources are calculated as (CPU/RAM/GPU)*(NUMBER_OF_DEFAULT_WORKERS+1)
+"max" configuration resources are calculated as (CPU/RAM/GPU)*(TOTAL_NUMBER_OF_WORKERS+1)
+
+E.g. for auto-scaled cluster with 2 child nodes and without default ("persistent") child nodes (NUMBER_OF_DEFAULT_WORKERS = 0; TOTAL_NUMBER_OF_WORKERS = 2):
+CP_ManagePipeline
+
+E.g. for auto-scaled cluster with 2 child nodes and 1 default ("persistent") child node (NUMBER_OF_DEFAULT_WORKERS = 1; TOTAL_NUMBER_OF_WORKERS = 2):
+CP_ManagePipeline
+
+Note: in some specific configurations such as hybrid autoscaling clusters amount of resources can vary beyond the shown interval.
+Note: if you don't want to use any cluster - click Single node button and then click OK button.
+Cloud Region	A specific region for a compute node placement.
+Please note, if a non-default region is selected - certain CP features may be unavailable:
+FS mounts usage from the another region (e.g. "EU West" region cannot use FS mounts from the "US East"). Regular storages will be still available
+If a specific tool, used for a run, requires an on-premise license server (e.g. monolix, matlab, schrodinger, etc.) - such instances shall be run in a region, that hosts those license servers.
+Note: if a specific platform deployment has a number of Cloud Providers registered (e.g. AWS+Azure, GCP+Azure) - in that control Cloud Provider auxiliary icons also will be displayed, e.g.:
+CP_ManagePipeline
+For a single-Provider deployments only Cloud Region icons are displayed.
+Advanced		
+Price type	Choose Spot or On-demand type of instance. You can look information about price types hovering "Info" icon and based on it make your choice.
+Timeout (min)	After this time pipeline will shut down (optional).
+Limit mounts	Allow to specify storages that should be mounted. See here.
+Cmd template	A shell command that will be executed to start a pipeline.
+"Start idle"	The flag sets cmd_template to sleep infinity. For more information about starting a job in this mode refer to 15. Interactive services.
+Parameters		This section lists pipeline specific parameters that can be used during a pipeline run. Pipeline parameters can be assigned the following types:
+String - generic scalar value (e.g. Sample name).
+Boolean - boolean value.
+Path - path in a data storage hierarchy.
+Input - path in a data storage hierarchy. During pipeline initialization, this path will be used to download input data on the calculation node for processing from a storage.
+Output - path in a data storage hierarchy. During pipeline finalization, this path will be used to upload resulting data to a storage.
+Common - path in a data storage hierarchy. Similar to "Input" type, but this data will not be erased from a calculation node, when a pipeline is finished (this is useful for reference data, as it can be reused by further pipeline runs that share the same reference).
+Note: You can use Project attribute values as parameters for the Run:
+Click an empty parameter value field.
+Enter "project."
+In the drop-down list select the Project attribute value:
+CP_ManagePipeline
+Add parameter	This control helps to add an additional parameter to a configuration.
+Configuration tab controls
+Control	Description
+Add	To create a customized configuration for the pipeline, click the + ADD button in the upper-right corner of the screen. For more details see here.
+Save	This button saves changes in a configuration.
+HISTORY
+This section contains information about all the current pipeline version's runs. Runs info is organized into a table with the following columns:
+
+CP_ManagePipeline
+
+Run - each record of that column contains two rows: in upper - run name that consists of pipeline name and run id, in bottom - Cloud Region.
+Note: if a specific platform deployment has a number of Cloud Providers registered (e.g. AWS+Azure, GCP+Azure) - corresponding text information also has a Provider name, e.g.:
+CP_ManagePipeline
+
+Parent-run - id of the run that executed current run (this field is non-empty only for runs that are executed by other runs).
+Pipeline - each record of that column contains two rows: in upper - pipeline name, in bottom - pipeline version.
+Docker image - base docker image name.
+Started - time pipeline started running.
+Completed - time pipeline finished execution.
+Elapsed - each record of that column contains two rows: in upper - pipeline running time, in bottom - run's estimated price, which is calculated based on the run duration, region and instance type.
+Owner - user who launched run.
+You can filter runs by clicking the filter icon. By using the filter control you can choose whether display runs for current pipeline version or display runs for all pipeline versions.
+
+History tab controls
+Control	Description
+PAUSE (a)	To pause running pipeline press this control. This control is available only for on-demand instances.
+STOP (b)	To stop running pipeline press this control.
+LOG (c)	"Log" control opens detailed information about the run. You'll be redirected to "Runs" space (see 11. Manage Runs).
+RESUME (d)	To resume pausing pipeline press this control. This control is available only for on-demand instances.
+TERMINATE (e)	To terminate node without waiting of the pipeline resuming. This control is available only for on-demand instances, which were paused.
+RERUN (f)	This control reruns completed pipeline's runs.
+Pipeline run's states
+Icons at the left represent the current state of the pipeline runs:  
+
+CP_ManagePipeline - Queued state ("sandglass" icon) - a run is waiting in the queue for the available compute node.
+CP_ManagePipeline - Initializing state ("rotating" icon) - a run is being initialized.
+CP_ManagePipeline - Pulling state ("download" icon) - now pipeline Docker image is downloaded to the node.
+CP_ManagePipeline - Running state ("play" icon) - a pipeline is running. The node is appearing and pipeline input data is being downloaded to the node before the "InitializeEnvironment" service task appears.
+CP_ManagePipeline - Paused state ("pause" icon) - a run is paused. At this moment compute node is already stopped but keeps it's state. Such run may be resumed.
+CP_ManagePipeline - Success state ("OK" icon) - successful pipeline execution.
+CP_ManagePipeline - Failed state ("caution" icon) - unsuccessful pipeline execution.
+CP_ManagePipeline - Stopped state ("clock" icon) - a pipeline manually stopped.
+CP_ManagePipeline
+
+Also, help tooltips are provided when hovering a run state icon, e.g.:
+CP_ManagePipeline
+CP_ManagePipeline
+
+STORAGE RULES
+This section displays a list of rules used to upload data to the output data storage, once pipeline finished. It helps to store only data you need and minimize the amount of interim data in data storages.
+
+CP_ManagePipeline
+
+Info is organized into a table with the following columns:
+
+Mask column contains a relative path from the $ANALYSIS_DIR folder (see Default environment variables section below for more information). Mask uses bash syntax to specify the data that you want to upload from the $ANALYSIS_DIR. Data from the specified path will be uploaded to the bucket from the pipeline node.
+Note: by default whole $ANALYSIS_DIR folder is uploaded to the cloud bucket (default Mask is - "*"). For example, "*.txt*" mask specifies that all files with .txt extension need to be uploaded from the $ANALYSIS_DIR to the data storage.
+Note: Be accurate when specifying masks - if wildcard mask ("*") is specified, all files will be uploaded, no matter what additional masks are specified.
+The Created column shows date and time of rules creation.
+Move to Short-Term Storage column indicates whether pipeline output data will be moved to a short-term storage.
+Storage rules tab control
+Control	Description
+Add new rule (a)	This control allows adding a new data managing rule.
+Delete (b)	To delete a data managing rule press this control.
+GRAPH
+This section represents the sequence of pipeline tasks as a directed graph.
+
+Tasks are graph vertices, edges represent execution order. A task can be executed only when all input edges - associated tasks - are completed (see more information about creating a pipeline with GRAPH section here).
+Note: only for Luigi and WDL pipelines.
+Note: If main_file has mistakes, pipeline workflow won't be visualized.
+
+CP_ManagePipeline
+
+Graph tab controls
+When a PipelineBuilder graph is loaded, the following layout controls become available to the user.
+
+CP_ManagePipeline
+
+Control	Description
+Save	saves changes.
+Revert	reverts all changes to the last saving.
+Layout	performs graph linearization, make it more readable.
+Fit	zooms graph to fit the screen.
+Show links	enables/disables workflow level links to the tasks. It is disabled by default, as for large workflows it overwhelms the visualization.
+Zoom out	zooms graph out.
+Zoom in	zooms graph in.
+Search element	allows to find specific object at the graph.
+Fullscreen	expands graph to the full screen.
+Default environment variables
+Pipeline scripts (e.g. main_file) use default environmental variables for pipeline execution. These variables are set in internal CP scripts:
+
+RUN_ID - pipeline run ID.
+PIPELINE_NAME - pipeline name.
+COMMON_DIR - directory where pipeline common data (parameter with "type": "common") will be stored.
+ANALYSIS_DIR - directory where output data of the pipeline (parameter with "type": "output") will be stored.
+INPUT_DIR - directory where input data of the pipeline (parameter with "type": "input") will be stored.
+SCRIPTS_DIR - directory where all pipeline scripts and config.json file will be stored.
+
+6.1. Create and configure pipeline
+Create a pipeline in a Library space
+Customize a pipeline version
+Edit documentation (optional)
+Edit code section
+Edit pipeline configuration (optional)
+Add/delete storage rules (optional)
+Edit a pipeline info
+Example: Create Pipeline
+Pipeline input data
+Pipeline output folder
+Configure the main_file
+Configure pipeline input/output parameters via GUI
+Check the results of pipeline execution
+Example: Add pipeline configuration
+Example: Create a configuration that uses system parameter
+Example: Limit mounted storages
+To create a Pipeline in a Folder you need to have WRITE permission for that folder and the ROLE_PIPELINE_MANAGER role. To edit pipeline you need just WRITE permissions for a pipeline. For more information see 13. Permissions.
+
+To create a working pipeline version you need:
+
+Create a pipeline in a Library space
+Customize a pipeline version:
+Edit documentation (optional)
+Edit Code file
+Edit Configuration, Add new configuration (optional)
+Add storage rules (optional).
+Create a pipeline in a Library space
+Go to the "Library" tab and select a folder.
+Click + Create → Pipeline and choose one of the built-in pipeline templates (Python, Shell, Snakemake, Luigi, WDL, Nextflow) or choose DEFAULT item to create a pipeline without a template. Pipeline template defines the programming language for a pipeline. As templates are empty user shall write pipeline logic on his own.
+Enter pipeline's name (pipeline description is optional) in the popped-up form.
+Click the Create button.
+A new pipeline will appear in the folder.
+CP_CreateAndConfigurePipeline
+Note: To configure repository where to store pipeline versions click the Edit repository settings button.
+Click on the button and two additional fields will appear: Repository (repository address) and Token (password to access a repository).
+CP_CreateAndConfigurePipeline
+The new pipeline will appear in a Library space.
+Customize a pipeline version
+Click a pipeline version to start its configuration process.
+CP_CreateAndConfigurePipeline
+
+Edit documentation (optional)
+This option allows you to make a detailed description of your pipelines.
+Navigate to the Documents tab and:
+
+Click Edit.
+CP_CreateAndConfigurePipeline
+Change the document using a markdown language.
+Click the Save button.
+CP_CreateAndConfigurePipeline
+Enter a description of the change and click Commit.
+CP_CreateAndConfigurePipeline
+Changes are saved.
+CP_CreateAndConfigurePipeline
+Edit code section
+It is not optional because you need to create a pipeline that will be tailored to your specific needs. For that purpose, you need to extend basic pipeline templates/add new files.
+
+Navigate to the Code tab. Click on any file you want to edit.
+CP_CreateAndConfigurePipeline
+Note: each pipeline version has a default code file: it named after a pipeline and has a respective extension.
+A new window with file contents will open. Click the Edit button and change the code file in the desired way.
+CP_CreateAndConfigurePipeline
+When you are done, click the Save button.
+CP_CreateAndConfigurePipeline
+You'll be asked to write a Commit message (e.g. 'added second "echo" command'). Then click the Commit button.
+CP_CreateAndConfigurePipeline
+After that changes will be applied to your file.
+Note: all code files are downloaded to the node to run the pipeline. Just adding a new file to the Code section doesn't change anything. You need to specify the order of scripts execution by yourself. E.g. you have three files in your pipeline: first.sh (main_file), second.sh and config.json. cmd_template parameter is chmod +x $SCRIPTS_DIR/src/* && $SCRIPTS_DIR/src/[main_file]. So in the first.sh file you need to explicitly specify execution of second.sh script for them both to run inside your pipeline, otherwise this file will be ignored.
+
+Edit pipeline configuration (optional)
+See details about pipeline configuration parameters here.
+
+Every pipeline has default pipeline configuration from the moment it was created.
+To change default pipeline configuration:
+
+Navigate to the Configuration tab.
+Expand "Exec environment" and "Advanced" tabs to see a full list of pipeline parameters. "Parameters" tab is opened by default.
+CP_CreateAndConfigurePipeline
+Change any parameter you need. In this example, we will set Cloud Region to Europe Ireland, Disk to 40 Gb and set the Timeout to 400 mins.
+CP_CreateAndConfigurePipeline
+Click the Save button.
+CP_CreateAndConfigurePipeline
+Now this will be the default pipeline configuration for the pipeline execution.
+Add/delete storage rules (optional)
+This section allows configuring what data will be transferred to an STS after pipeline execution.
+To add a new rule:
+
+Click the Add new rule button. A pop-up will appear.
+CP_CreateAndConfigurePipeline
+Enter File mask and then tick the box "Move to STS" to move pipeline output data to STS after pipeline execution.
+CP_CreateAndConfigurePipeline
+Note: If many rules with different Masks are present all of them are checked one by one. If a file corresponds to any of rules - it will be uploaded to the bucket.
+To delete storage rule click the Delete button in the right part of the storage rule's row.
+Edit a pipeline info
+To edit a pipeline info:
+
+Hover over the pipeline name at the "breadcrumbs" control in the top of the pipeline page - the "edit" symbol will appear:
+CP_CreateAndConfigurePipeline
+Click the pipeline name - the field will become available to edit. Rename the pipeline:
+CP_CreateAndConfigurePipeline
+Press the Enter key or click any empty space - a new pipeline name will be saved:
+CP_CreateAndConfigurePipeline
+Example: Create Pipeline
+We will create a simple Shell pipeline (Shell template used). For that purpose, we will click + Create → Pipeline → SHELL.
+CP_CreateAndConfigurePipeline
+
+Download a file.
+Rename it.
+Upload renamed the file to the bucket.
+Pipeline input data
+This is where pipeline input data is stored. About storages see here. This path will be used in pipeline parameters later on.
+CP_CreateAndConfigurePipeline
+
+Pipeline output folder
+This is where pipeline output data will be stored after pipeline execution. About storages see here. This path will be used in pipeline parameters later on.
+
+Let's extend the main_file so that it renames the input file and puts it into the $ANALYSIS_DIR folder on the node from which data will be uploaded to the bucket. To do that click the main_file name and click the Edit button. Then type all the pipeline instructions.
+Click the Save button, input a commit message and click the Commit button.
+
+Example: Add pipeline configuration
+In this example, we will create a new pipeline configuration for the example pipeline and set it as default one. To add new pipeline configuration perform the following steps:
+
+Specify Configuration name, Description (optionally) and the Template - this is a pipeline configuration, from which the new pipeline configuration will inherit its parameters (right now only the "default" template is available).
+Click the Create button.
+CP_CreateAndConfigurePipeline
+As you can see, the new configuration has the same parameters as the default configuration.
+Use Delete (1), Set as default (2) or Save (3) buttons to delete, set as default or save this configuration respectively.
+CP_CreateAndConfigurePipeline
+Expand the Exec environment section (1) and then Specify 30 GB Disk size (2), click the control to choose another Docker image (3). 
+
+In the example below we will use the system parameter, that installs and allows using of the DIND (Docker in Docker) in the launched container:
+
+Navigate to the CONFIGURATION tab
+In the CONFIGURATION tab expand the Advanced section, set "Start idle" checkbox and click the Add system parameter button:
+CP_CreateAndConfigurePipeline
+Click the CP_CAP_DIND_CONTAINER option and then click the OK button:
+CP_CreateAndConfigurePipeline
+This option will enable docker engine for a run using a containerized approach.
+Added system parameter appears on the configuration page. Save the configuration - now it will use "Docker inside Docker" technology while running:
+CP_CreateAndConfigurePipeline
+To see it, click the Run button in the upper-right corner to launch the configuration.
+Edit or add any parameters you want on the Launch page and click the Launch button in the upper-right corner:
+CP_CreateAndConfigurePipeline
+Confirm the launch in the appeared pop-up.
+In the ACTIVE RUNS tab press the just-launched pipeline name.
+CP_CreateAndConfigurePipeline
+Wait until the SSH hyperlink will appear in the upper-right corner, click it:
+CP_CreateAndConfigurePipeline
+On the opened tab specify the command docker version and then press "Enter" key:
+CP_CreateAndConfigurePipeline
+As you can see, DinD works correctly.
+Example: Limit mounted storages
+By default, all available to a user storages are mounted to the launched container during the run initialization. User could have access to them via /cloud-data or ~/cloud-data folder using the interactive sessions (SSH/Web endpoints/Desktop) or pipeline runs.
