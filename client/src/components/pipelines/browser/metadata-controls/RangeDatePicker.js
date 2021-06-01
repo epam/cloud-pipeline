@@ -146,7 +146,7 @@ class RangeDatePicker extends React.Component {
             <div style={{
               display: 'flex',
               justifyContent: 'flex-start',
-            
+              alignItems: 'center',
               marginTop: 10,
               cursor: 'pointer'
             }}>
