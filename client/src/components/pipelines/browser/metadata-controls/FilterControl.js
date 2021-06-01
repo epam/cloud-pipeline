@@ -42,8 +42,8 @@ class FilterControl extends React.PureComponent {
   render () {
     const {tags, selectedTags, popoverVisible} = this.state;
     const content = (
-      <div style={{display: 'flex', maxWidth: 300, padding: 16, justifyContent: 'space-between'}}>
-        <div style={{width: '60%', display: 'flex', alignItems: 'center'}}>
+      <div style={{maxWidth: 300, padding: 16}}>
+        <div style={{width: '100%', display: 'flex', alignItems: 'center'}}>
           <Select
             value={selectedTags}
             mode="tags"
@@ -60,27 +60,21 @@ class FilterControl extends React.PureComponent {
           </Select>
         </div>
         <div style={{
-          width: '40%',
-          margin: '10 auto',
+          width: '100%',
           display: 'flex',
-          flexDirection: 'column',
-          justifyItems: 'center',
-          alignItems: 'center'
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 10
         }}>
           <Button
             type="primary"
             onClick={this.handleApplyFilter}
             disabled={!selectedTags.length}
-            style={{marginLeft: 10, width: 100}}
           >Apply</Button>
           <Button
             type="danger"
             onClick={this.resetFilter}
             disabled={!selectedTags.length}
-            style={{
-              marginLeft: 10,
-              marginTop: 8,
-              width: 100}}
           >Reset</Button>
         </div>
       </div>);
