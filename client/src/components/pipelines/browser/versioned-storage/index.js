@@ -746,7 +746,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     const {
       selectedFile
     } = this.state;
-    const uploadedFiles = files.map(file => path ? `${path}/${file}` : file);
+    const pathCorrected = path && path.endsWith('/') ? path.slice(0, -1) : path;
+    const uploadedFiles = files
+      .map(file => pathCorrected && pathCorrected.length ? `${pathCorrected}/${file}` : file);
     const parentFolderId = pipeline.value.parentFolderId;
     const hide = message.loading('Updating folder content', 0);
     parentFolderId
