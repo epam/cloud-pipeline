@@ -17,6 +17,9 @@ class FilterControl extends React.PureComponent {
     columnName: PropTypes.string,
     onSearch: PropTypes.func
   }
+  getContainer = (triggernode) => {
+    return triggernode.parentNode;
+  };
   resetFilter = () => {
     this.setState({
       selectedTags: []
@@ -42,14 +45,15 @@ class FilterControl extends React.PureComponent {
   render () {
     const {tags, selectedTags, popoverVisible} = this.state;
     const content = (
-      <div style={{maxWidth: 300, padding: 16}}>
-        <div style={{width: '100%', display: 'flex', alignItems: 'center'}}>
+      <div style={{width: 280, padding: '8px 0px'}}>
+        <div style={{width: 280, display: 'flex', alignItems: 'center'}}>
           <Select
             value={selectedTags}
             mode="tags"
-            style={{width: '100%'}}
+            style={{width: 280}}
             placeholder="Type or select tags"
             onChange={this.handleInputConfirm}
+            getPopupContainer={this.getContainer}
           >
             {tags.map((tag, index) => (
               <Option
@@ -84,8 +88,7 @@ class FilterControl extends React.PureComponent {
         title={(
           <div
             style={{
-              width: 300,
-              maxWidth: 300,
+              width: 280,
               marginTop: 5,
               display: 'flex',
               justifyContent: 'space-between',
@@ -97,7 +100,7 @@ class FilterControl extends React.PureComponent {
           </div>
         )}
         content={content}
-        trigger={['focus', 'click']}
+        trigger={['click']}
         visible={popoverVisible}
         onVisibleChange={this.handlePopoverVisibleChange}
       >

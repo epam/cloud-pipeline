@@ -120,7 +120,7 @@ class RangeDatePicker extends React.Component {
     render () {
       if (this.props.from !== undefined && this.props.to !== undefined) {
         const content = (
-          <div style={{display: 'flex', flexDirection: 'column'}}>
+          <div style={{display: 'flex', flexDirection: 'column', width: 280}}>
             <div style={{display: 'flex', flexDirection: 'column', marginTop: 5}}>
               <label htmlFor="from" style={{marginRight: 5, fontWeight: 800}}>From</label>
               <DatePicker
@@ -136,7 +136,7 @@ class RangeDatePicker extends React.Component {
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              marginTop: 5,
+              marginTop: 10,
               cursor: 'pointer'
             }}>
               <label htmlFor="to" style={{marginRight: 5, fontWeight: 800}}>To</label>
@@ -153,7 +153,7 @@ class RangeDatePicker extends React.Component {
             </div>
             <div
               style={{
-                marginTop: 10,
+                margin: '20px 0px 10px 0px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center'
