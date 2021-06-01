@@ -29,5 +29,5 @@ export default function versionedStorageLaunchInfoEqual (info1, info2) {
     toolId: toolId2,
     version: version2
   } = info2;
-  return +toolId1 === +toolId2 && version1 === version2;
+  return toolId1 === toolId2 && version1 === version2;
 }
