@@ -69,7 +69,7 @@ class FilterControl extends React.PureComponent {
             value={selectedTags}
             mode="tags"
             style={{width: 280}}
-            placeholder="Type selector and press enter"
+            placeholder="Type filter and press enter"
             dropdownStyle={{display: 'none'}}
             onChange={this.handleInputConfirm}
             getPopupContainer={this.getContainer}
