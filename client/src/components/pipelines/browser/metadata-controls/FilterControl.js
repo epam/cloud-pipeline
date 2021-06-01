@@ -7,7 +7,6 @@ const Option = Select.Option;
 
 @observer
 class FilterControl extends React.PureComponent {
-
   state = {
     tags: [],
     selectedTags: [],
@@ -53,6 +52,7 @@ class FilterControl extends React.PureComponent {
             mode="tags"
             style={{width: 280}}
             placeholder="Type or select tags"
+            notFoundContent="Specify tags to filter"
             onChange={this.handleInputConfirm}
             getPopupContainer={this.getContainer}
           >
@@ -72,15 +72,15 @@ class FilterControl extends React.PureComponent {
           marginTop: 10
         }}>
           <Button
-            type="primary"
-            onClick={this.handleApplyFilter}
-            disabled={!selectedTags.length}
-          >Apply</Button>
-          <Button
             type="danger"
             onClick={this.resetFilter}
             disabled={!selectedTags.length}
           >Reset</Button>
+          <Button
+            type="primary"
+            onClick={this.handleApplyFilter}
+            disabled={!selectedTags.length}
+          >Apply</Button>
         </div>
       </div>);
     return (

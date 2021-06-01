@@ -442,7 +442,7 @@ export default class Metadata extends React.Component {
   };
 
   renderFilterButton = (key) => {
-    if (!this.shouldAddFilterButton(key)) {
+    if (!this.shouldAddFilterButton(key) || this.state.selectedItemsAreShowing) {
       return null;
     }
     const button = (
@@ -1310,27 +1310,11 @@ export default class Metadata extends React.Component {
   };
 
   handleClickShowSelectedItems = () => {
-    const showSelectedItems = () => {
-      this.setState({
-        selectedItem: null,
-        metadata: false,
-        selectedItemsAreShowing: !this.state.selectedItemsAreShowing
-      }, () => this.paginationOnChange(FIRST_PAGE));
-    };
-
-    if (!this.state.selectedItemsAreShowing &&
-      this.state.filterModel.filters &&
-      this.state.filterModel.filters.length
-    ) {
-      Modal.confirm({
-        title: 'All filters will be reset. Continue?',
-        onOk: showSelectedItems,
-        okText: 'Yes',
-        cancelText: 'No'
-      });
-    } else {
-      showSelectedItems();
-    }
+    this.setState({
+      selectedItem: null,
+      metadata: false,
+      selectedItemsAreShowing: !this.state.selectedItemsAreShowing
+    }, () => this.paginationOnChange(FIRST_PAGE));
   }
 
   paginationOnChange = async (page) => {
