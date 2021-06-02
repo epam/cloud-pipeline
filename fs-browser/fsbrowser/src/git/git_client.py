@@ -105,7 +105,7 @@ class GitClient:
     def diff_status(self, repo_path, git_file):
         git_diff_helper = GitDiffHelper(self._repository(repo_path), self.logger, True)
         diff_patch = git_diff_helper.find_patch(git_file.path)
-        return git_diff_helper.build_status_diff(diff_patch, git_file, repo_path)
+        return git_diff_helper.build_status_diff(diff_patch, git_file)
 
     def status(self, repo_path):
         repo = self._repository(repo_path)
