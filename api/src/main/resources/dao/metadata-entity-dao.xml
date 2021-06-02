@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -357,11 +357,12 @@
         <property name="searchClauseQuery">
             <value>
                 <![CDATA[
+                    (LOWER(e.external_id) LIKE '%@QUERY@%' OR
                     EXISTS(
                         SELECT 1
                         FROM jsonb_each(e.data) AS e(key, value)
                         WHERE LOWER(e.value ->> 'value') LIKE '%@QUERY@%'
-                    )
+                    ))
                 ]]>
             </value>
         </property>

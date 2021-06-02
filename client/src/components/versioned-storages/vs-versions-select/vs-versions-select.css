@@ -14,63 +14,27 @@
  *  limitations under the License.
  */
 
-.footer {
+.load-more {
+  cursor: pointer;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 }
 
-.row {
-  cursor: pointer;
+.load-more:hover {
+  text-decoration: underline;
 }
 
-.row td {
-  height: 35px;
+.commit {
+  display: flex;
+  align-items: center;
 }
 
-.row .check {
-  display: none;
+.commit span:not(.accent) {
+  color: #999;
 }
 
-.row.cloned {
-  color: #aaa;
-  font-style: italic;
-}
-
-.row.selected .check,
-.row.cloned .check {
-  display: block;
-}
-
-.check-cell {
-  width: 30px;
-}
-
-.cell {
-  cursor: pointer;
-}
-
-.error {
-  color: red;
-}
-
-.versions {
-  text-align: right;
-}
-
-.filter {
-  margin: 5px 0;
-}
-
-.filter input {
-  width: 100%;
-}
-
-.versions-select {
-  width: 200px;
-}
-
-.version-row {
-  max-width: 300px;
+.commit .accent {
+  color: #666;
 }

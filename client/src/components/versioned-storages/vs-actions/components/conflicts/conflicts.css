@@ -267,3 +267,15 @@
 .code:focus {
   outline: none;
 }
+
+.binary-file-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  min-height: 100px;
+}
+
+.binary-file-container .alert > *:not(:first-child) {
+  margin-left: 5px;
+}

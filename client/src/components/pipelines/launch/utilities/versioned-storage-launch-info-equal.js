@@ -14,63 +14,20 @@
  *  limitations under the License.
  */
 
-.footer {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.row {
-  cursor: pointer;
-}
-
-.row td {
-  height: 35px;
-}
-
-.row .check {
-  display: none;
-}
-
-.row.cloned {
-  color: #aaa;
-  font-style: italic;
-}
-
-.row.selected .check,
-.row.cloned .check {
-  display: block;
-}
-
-.check-cell {
-  width: 30px;
-}
-
-.cell {
-  cursor: pointer;
-}
-
-.error {
-  color: red;
-}
-
-.versions {
-  text-align: right;
-}
-
-.filter {
-  margin: 5px 0;
-}
-
-.filter input {
-  width: 100%;
-}
-
-.versions-select {
-  width: 200px;
-}
-
-.version-row {
-  max-width: 300px;
+export default function versionedStorageLaunchInfoEqual (info1, info2) {
+  if (!info1 && !info2) {
+    return true;
+  }
+  if (!info1 || !info2) {
+    return false;
+  }
+  const {
+    toolId: toolId1,
+    version: version1
+  } = info1;
+  const {
+    toolId: toolId2,
+    version: version2
+  } = info2;
+  return toolId1 === toolId2 && version1 === version2;
 }

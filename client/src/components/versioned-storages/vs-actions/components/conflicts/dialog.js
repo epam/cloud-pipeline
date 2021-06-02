@@ -111,7 +111,7 @@ class ConflictsDialog extends React.Component {
                   disabled={disabled}
                   onClick={this.onAbortClicked}
                 >
-                  CANCEL
+                  Cancel
                 </Button>
               )
             }
@@ -123,7 +123,7 @@ class ConflictsDialog extends React.Component {
               disabled={!resolved || disabled}
               onClick={this.onResolveClicked}
             >
-              RESOLVE
+              Resolve
             </Button>
           </div>
         )}

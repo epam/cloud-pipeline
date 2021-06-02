@@ -659,12 +659,12 @@ public class GitManager {
         if (fileExists) {
             gitPushCommitActionEntry.setAction("update");
             if (StringUtils.isNullOrEmpty(commitMessage)) {
-                message = String.format("Updating %s", filePath);
+                message = String.format("Updating file %s", filePath);
             }
         } else {
             gitPushCommitActionEntry.setAction("create");
             if (StringUtils.isNullOrEmpty(commitMessage)) {
-                message = String.format("Creating %s", filePath);
+                message = String.format("Creating file %s", filePath);
             }
         }
         return message;

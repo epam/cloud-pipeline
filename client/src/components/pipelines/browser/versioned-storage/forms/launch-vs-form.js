@@ -30,9 +30,6 @@ import roleModel from '../../../../../utils/roleModel';
 import highlightText from '../../../../special/highlightText';
 import ToolImage from '../../../../../models/tools/ToolImage';
 import LoadToolTags from '../../../../../models/tools/LoadToolTags';
-import LoadToolVersionSettings from '../../../../../models/tools/LoadToolVersionSettings';
-import AllowedInstanceTypes from '../../../../../models/utils/AllowedInstanceTypes';
-import {modifyPayloadForAllowedInstanceTypes} from '../../../../runs/actions';
 import styles from './launch-vs-form.css';
 
 const findGroupByNameSelector = (name) => (group) => {
@@ -64,175 +61,6 @@ function getDefaultGroup (groups = [], adGroups = [], userRoles = []) {
   return findGroupByName(groups, 'library') ||
     findGroupByName(groups, 'default') ||
     groups[0];
-}
-
-function prepareParameters (parameters) {
-  const result = {};
-  for (let key in parameters) {
-    if (parameters.hasOwnProperty(key)) {
-      result[key] = {
-        type: parameters[key].type,
-        value: parameters[key].value,
-        required: parameters[key].required,
-        defaultValue: parameters[key].defaultValue
-      };
-    }
-  }
-  return result;
-}
-
-function parameterIsNotEmpty (parameter, additionalCriteria) {
-  return parameter !== null &&
-    parameter !== undefined &&
-    `${parameter}`.trim().length > 0 &&
-    (!additionalCriteria || additionalCriteria(parameter));
-}
-
-function chooseDefaultValue (
-  versionValue,
-  toolValue,
-  settingsValue,
-  additionalCriteria
-) {
-  if (parameterIsNotEmpty(versionValue, additionalCriteria)) {
-    return versionValue;
-  }
-  if (parameterIsNotEmpty(toolValue, additionalCriteria)) {
-    return toolValue;
-  }
-  return settingsValue;
-}
-
-export function getLaunchingOptions (
-  stores,
-  tool,
-  toolVersion = 'latest'
-) {
-  return new Promise((resolve, reject) => {
-    const {
-      awsRegions,
-      preferences
-    } = stores || {};
-    if (!preferences) {
-      reject(new Error('Error fetching preferences'));
-      return;
-    }
-    if (!awsRegions) {
-      reject(new Error('Error fetching cloud regions'));
-      return;
-    }
-    const request = new LoadToolVersionSettings(tool.id);
-    preferences
-      .fetchIfNeededOrWait()
-      .then(() => {
-        if (preferences.error) {
-          reject(new Error(preferences.error));
-        } else if (!preferences.loaded) {
-          reject(new Error('Error fetching preferences'));
-        } else {
-          return Promise.resolve();
-        }
-      })
-      .then(() => awsRegions.fetchIfNeededOrWait())
-      .then(() => {
-        if (awsRegions.error) {
-          reject(new Error(awsRegions.error));
-        } else if (!awsRegions.loaded) {
-          reject(new Error('Error fetching cloud regions'));
-        } else {
-          return Promise.resolve();
-        }
-      })
-      .then(() => request.fetch())
-      .then(() => {
-        if (request.error) {
-          reject(new Error(request.error));
-        } else if (!request.loaded) {
-          reject(new Error('Error fetching tool parameters'));
-        } else {
-          const options = (request.value || []).slice();
-          const extractSettings = o => {
-            if (!o || !o.settings || o.settings.length === 0) {
-              return undefined;
-            }
-            return (
-              o.settings.find(s => s.default) ||
-              o.settings[0] ||
-              {}
-            ).configuration;
-          };
-          const latestVersion = extractSettings(options.find(o => o.version === 'latest'));
-          const currentVersion = extractSettings(options.find(o => o.version === toolVersion));
-          if (!latestVersion && !currentVersion) {
-            if (toolVersion === 'latest') {
-              reject(new Error('Latest version not found'));
-            } else {
-              reject(new Error(`Latest and ${toolVersion} versions not found`));
-            }
-          } else {
-            const versionSettingValue = (settingName) => {
-              if (currentVersion) {
-                return currentVersion[settingName];
-              }
-              if (latestVersion) {
-                return latestVersion[settingName];
-              }
-              return null;
-            };
-            const defaultRegion = (awsRegions.value || []).find(r => r.default) || {};
-            const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
-              ? versionSettingValue('cloudRegionId')
-              : defaultRegion.id;
-            const isSpotValue = parameterIsNotEmpty(versionSettingValue('is_spot'))
-              ? versionSettingValue('is_spot')
-              : preferences.useSpot;
-            const allowedInstanceTypesRequest = new AllowedInstanceTypes(
-              tool.id,
-              cloudRegionIdValue,
-              isSpotValue
-            );
-            allowedInstanceTypesRequest
-              .fetch()
-              .then(() => {
-                const payload = modifyPayloadForAllowedInstanceTypes({
-                  instanceType:
-                    chooseDefaultValue(
-                      versionSettingValue('instance_size'),
-                      tool.instanceType,
-                      preferences.getPreferenceValue('cluster.instance.type')
-                    ),
-                  hddSize: +chooseDefaultValue(
-                    versionSettingValue('instance_disk'),
-                    tool.disk,
-                    preferences.getPreferenceValue('cluster.instance.hdd'),
-                    p => +p > 0
-                  ),
-                  timeout: +(tool.timeout || 0),
-                  cmdTemplate: chooseDefaultValue(
-                    versionSettingValue('cmd_template'),
-                    tool.defaultCommand,
-                    preferences.getPreferenceValue('launch.cmd.template')
-                  ),
-                  dockerImage: tool.registry
-                    ? `${tool.registry.path}/${tool.image}${toolVersion ? `:${toolVersion}` : ''}`
-                    : `${tool.image}${toolVersion ? `:${toolVersion}` : ''}`,
-                  params: parameterIsNotEmpty(versionSettingValue('parameters'))
-                    ? prepareParameters(versionSettingValue('parameters'))
-                    : {},
-                  isSpot: isSpotValue,
-                  nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
-                    ? +versionSettingValue('node_count')
-                    : undefined,
-                  cloudRegionId: cloudRegionIdValue
-                }, allowedInstanceTypesRequest);
-                resolve(payload);
-              })
-              .catch(reject);
-          }
-        }
-      })
-      .catch(reject);
-  });
 }
 
 @inject('dockerRegistries')
@@ -276,8 +104,7 @@ class LaunchVSForm extends React.Component {
           result.push(
             ...(tools.map(tool => ({
               ...tool,
-              group,
-              registry
+              group
             })))
           );
         }
@@ -316,15 +143,10 @@ class LaunchVSForm extends React.Component {
     onLaunch && onLaunch(tool, tag);
   };
 
-  renderTool1 = (tool) => {
-    return (
-      <div
-        key={`${tool.id}`}
-        className={styles.tool}
-      >
-        {tool.image}
-      </div>
-    );
+  handleCustomLaunch = () => {
+    const {onLaunchCustom} = this.props;
+    const {tool, tag} = this.state;
+    onLaunchCustom && onLaunchCustom(tool, tag);
   };
 
   renderTool = (tool) => {
@@ -404,7 +226,13 @@ class LaunchVSForm extends React.Component {
         </div>,
         <div key="group">
           <span style={{fontSize: 'smaller'}}>
-            <span>{tool.registry.description || tool.registry.path}</span>
+            <span>
+              {
+                tool.group && tool.group.registry
+                  ? (tool.group.registry.description || tool.group.registry.path)
+                  : tool.registry
+              }
+            </span>
             <Icon type="caret-right" style={{fontSize: 'smaller', margin: '0 2px'}} />
             <span>{highlightText(group, search)}</span>
           </span>
@@ -483,6 +311,11 @@ class LaunchVSForm extends React.Component {
             </div>
           )
         }
+        <div
+          className={styles.checkbox}
+        >
+          <Icon type="check-circle" />
+        </div>
       </div>
     );
   };
@@ -504,6 +337,7 @@ class LaunchVSForm extends React.Component {
       );
     }
     let personalTools = [];
+    let personalGroupId;
     if (authenticatedUserInfo.loaded) {
       const {
         groups: adGroups = [],
@@ -511,10 +345,10 @@ class LaunchVSForm extends React.Component {
       } = authenticatedUserInfo.value;
       const personalGroup = getDefaultGroup(this.groups, adGroups.slice(), userRoles.slice());
       if (personalGroup) {
+        personalGroupId = personalGroup.id;
         personalTools = (personalGroup.tools || []).map(tool => ({
           ...tool,
-          group: personalGroup,
-          registry: personalGroup.registry
+          group: personalGroup
         }));
       }
     }
@@ -524,13 +358,11 @@ class LaunchVSForm extends React.Component {
     } = this.state;
     const filterRegEx = filter && filter.length ? (new RegExp(filter, 'i')) : /./;
     const filterTool = (tool) =>
+      filterRegEx.test(tool.image) ||
+      filterRegEx.test(tool.group.name) ||
       (
-        (filter && filter.length) ||
-        (!selectedTool || selectedTool.id !== tool.id)
-      ) && (
-        filterRegEx.test(tool.image) ||
-        filterRegEx.test(tool.group.name) ||
-        filterRegEx.test(tool.registry.description)
+        tool.group && tool.group.registry &&
+        filterRegEx.test(tool.group.registry.description)
       );
     const filteredPersonalTools = personalTools.filter(filterTool);
     const filteredTools = this.tools
@@ -541,14 +373,11 @@ class LaunchVSForm extends React.Component {
       <div
         className={styles.tools}
       >
-        {
-          selectedTool &&
-          !(filter && filter.length) &&
-          this.renderTool(selectedTool)
-        }
         {filteredPersonalTools.map(this.renderTool)}
         {
-          showAllToolsSection && (
+          (
+            showAllToolsSection || (selectedTool && selectedTool.group.id !== personalGroupId)
+          ) && (
             <div
               className={styles.divider}
             >
@@ -571,6 +400,12 @@ class LaunchVSForm extends React.Component {
           )
         }
         {
+          !showAllToolsSection &&
+          selectedTool &&
+          selectedTool.group.id !== personalGroupId &&
+          this.renderTool(selectedTool)
+        }
+        {
           showAllToolsSection && (
             filteredTools.map(this.renderTool)
           )
@@ -582,7 +417,6 @@ class LaunchVSForm extends React.Component {
   render () {
     const {
       onClose,
-      onLaunchCustom,
       visible,
       dockerRegistries
     } = this.props;
@@ -603,26 +437,26 @@ class LaunchVSForm extends React.Component {
             className={styles.footer}
           >
             <Button
-              onClick={onClose}
+              disabled={error || pending}
+              onClick={this.handleCustomLaunch}
+              style={{
+                marginRight: 5
+              }}
             >
-              CANCEL
+              Run custom
             </Button>
             <div>
               <Button
-                disabled={error || pending}
-                onClick={onLaunchCustom}
-                style={{
-                  marginRight: 5
-                }}
+                onClick={onClose}
               >
-                CUSTOM
+                Cancel
               </Button>
               <Button
                 type="primary"
                 disabled={!tool || error || pending}
                 onClick={this.handleLaunch}
               >
-                LAUNCH
+                Launch
               </Button>
             </div>
           </div>

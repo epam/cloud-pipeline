@@ -15,21 +15,26 @@
  */
 
 import React from 'react';
-import {Button, Modal, Form, Input, Row, Spin} from 'antd';
+import {
+  Button,
+  Modal,
+  Form,
+  Input,
+  Row,
+  Spin,
+  message
+} from 'antd';
 import PropTypes from 'prop-types';
+import checkFileExistence from '../utils';
 
 // eslint-disable-next-line
 const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, "_", "-", and "."';
 
 @Form.create()
-export default class CreateItemForm extends React.Component {
-  static propTypes = {
-    onCancel: PropTypes.func,
-    onSubmit: PropTypes.func,
-    pending: PropTypes.bool,
-    visible: PropTypes.bool,
-    name: PropTypes.string,
-    title: PropTypes.string
+class CreateItemForm extends React.Component {
+  state = {
+    checkInProgress: false,
+    pathOccupied: false
   };
 
   formItemLayout = {
@@ -44,15 +49,50 @@ export default class CreateItemForm extends React.Component {
   };
 
   handleSubmit = (e) => {
+    const {onSubmit, form, documentType} = this.props;
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
+    form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        this.props.onSubmit(values);
+        this.checkPathExistence().then((pathExist) => {
+          if (pathExist) {
+            this.setState({pathOccupied: true}, () => {
+              message.error(`${documentType} with that name already exists`);
+            });
+          } else {
+            this.setState({pathOccupied: false}, () => {
+              onSubmit && onSubmit(values);
+            });
+          }
+        });
       }
     });
   };
 
+  onNameChange = () => {
+    const {pathOccupied} = this.state;
+    if (pathOccupied) {
+      this.setState({pathOccupied: false});
+    }
+  };
+
+  checkPathExistence = async () => {
+    const {
+      pipelineId,
+      path,
+      form
+    } = this.props;
+    this.setState({checkInProgress: true});
+    const pathExist = await checkFileExistence(
+      pipelineId,
+      `${path || ''}${form.getFieldsValue().name}`
+    );
+    this.setState({checkInProgress: false});
+    return pathExist;
+  };
+
   render () {
+    const {pathOccupied, checkInProgress} = this.state;
+    const {documentType} = this.props;
     const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
@@ -61,29 +101,32 @@ export default class CreateItemForm extends React.Component {
       </Row>
     );
     const onClose = () => {
-      resetFields();
-    };
-    const nameShouldNotBeTheSameValidator = (rule, value, callback) => {
-      let error;
-      if (this.props.name && value && value.toLowerCase() === this.props.name.toLowerCase()) {
-        error = 'Name should not be the same';
-      }
-      callback(error);
+      this.setState({
+        checkInProgress: false,
+        pathOccupied: false
+      }, () => {
+        resetFields();
+      });
     };
     return (
       <Modal
         maskClosable={!this.props.pending}
         afterClose={() => onClose()}
-        closable={!this.props.pending}
+        closable={!this.props.pending && !pathOccupied}
         visible={this.props.visible}
         title={this.props.title}
         onCancel={this.props.onCancel}
         footer={modalFooter}>
-        <Spin spinning={this.props.pending}>
+        <Spin spinning={this.props.pending || checkInProgress}>
           <Form>
             <Form.Item
               {...this.formItemLayout}
               label="Name"
+              validateStatus={pathOccupied ? 'error' : undefined}
+              help={pathOccupied
+                ? `${documentType} with that name already exists`
+                : undefined
+              }
             >
               {getFieldDecorator('name', {
                 rules: [
@@ -94,15 +137,16 @@ export default class CreateItemForm extends React.Component {
                   {
                     pattern: /^[\da-zA-Z.\-_]+$/,
                     message: NAME_VALIDATION_TEXT
-                  },
-                  {validator: nameShouldNotBeTheSameValidator}
+                  }
                 ],
                 initialValue: this.props.name
               })(
                 <Input
                   ref={this.initializeNameInput}
                   onPressEnter={this.handleSubmit}
-                  disabled={this.props.pending} />
+                  disabled={this.props.pending}
+                  onChange={this.onNameChange}
+                />
               )}
             </Form.Item>
             <Form.Item
@@ -148,3 +192,20 @@ export default class CreateItemForm extends React.Component {
     }
   }
 }
+
+CreateItemForm.propTypes = {
+  onCancel: PropTypes.func,
+  onSubmit: PropTypes.func,
+  pending: PropTypes.bool,
+  visible: PropTypes.bool,
+  name: PropTypes.string,
+  title: PropTypes.string,
+  pipelineId: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number
+  ]),
+  path: PropTypes.string,
+  documentType: PropTypes.string
+};
+
+export default CreateItemForm;

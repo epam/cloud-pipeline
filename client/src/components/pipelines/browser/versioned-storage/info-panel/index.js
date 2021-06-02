@@ -156,6 +156,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
           const binary = isBinary(content);
           const parseAsTabular = Papa.parse(content);
           const isTabular = !binary &&
+            /\.(csv|tsv)$/i.test(file.path) &&
             parseAsTabular.errors.length === 0 &&
             !parseAsTabular.data.find(item => item.find(isBinary));
           this.setState({

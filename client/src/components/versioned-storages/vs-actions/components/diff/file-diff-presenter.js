@@ -25,6 +25,12 @@ import 'highlight.js/styles/github.css';
 import 'diff2html/bundles/css/diff2html.min.css';
 import '../../../../../staticStyles/git-diff-presentation.css';
 
+const DIFF_TYPE_DICTIONARY = {
+  deleted: 'deleted',
+  created: 'created',
+  modified: 'changed'
+};
+
 class FileDiffPresenter extends React.PureComponent {
   state = {
     rawHtml: undefined,
@@ -82,6 +88,14 @@ class FileDiffPresenter extends React.PureComponent {
   };
 
   renderPresentation = () => {
+    const {binary} = this.props;
+    if (binary) {
+      return (
+        <div className={styles.emptyContent}>
+          Binary file
+        </div>
+      );
+    }
     const {rawHtml} = this.state;
     if (rawHtml) {
       return (
@@ -114,7 +128,7 @@ class FileDiffPresenter extends React.PureComponent {
             <span
               className={classNames(styles.type, styles[type.toLowerCase()])}
             >
-              {type}
+              {DIFF_TYPE_DICTIONARY[type] || type}
             </span>
           </div>
         </div>

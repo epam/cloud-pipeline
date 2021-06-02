@@ -25,7 +25,7 @@ import ChangeStatuses from '../changes/statuses';
 
 const ConflictedFileStart = Symbol('conflicted file');
 
-export default class ConflictedFile {
+class ConflictedFile {
   @observable changesHash = 0;
   @observable changes = [];
   constructor () {
@@ -704,3 +704,29 @@ export default class ConflictedFile {
     return ConflictedFile.findCommon(item, getChild, ...candidatesSets);
   }
 }
+
+class BinaryConflictedFile extends ConflictedFile {
+  @observable acceptedBranch;
+  binary = true;
+
+  @computed
+  get resolved () {
+    return !!this.acceptedBranch && this.acceptedBranch !== Merged;
+  }
+
+  acceptBranch (branch) {
+    if (branch !== Merged) {
+      this.acceptedBranch = branch;
+    }
+    this.notify();
+  }
+
+  getMergedText () {
+    return {
+      binary: true,
+      branch: this.acceptedBranch
+    };
+  }
+}
+
+export {BinaryConflictedFile, ConflictedFile};

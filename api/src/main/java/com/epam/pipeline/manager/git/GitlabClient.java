@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.util.UriUtils;
 import retrofit2.Call;
 import retrofit2.HttpException;
 import retrofit2.Response;
@@ -55,7 +56,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -599,7 +599,7 @@ public class GitlabClient {
     }
 
     private String encodePath(final String path) throws UnsupportedEncodingException {
-        return URLEncoder.encode(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
+        return UriUtils.encodePathSegment(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
                                                                                   DOT_CHAR_URL_ENCODING_REPLACEMENT);
     }
 }

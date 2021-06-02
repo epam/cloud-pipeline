@@ -14,63 +14,6 @@
  *  limitations under the License.
  */
 
-.footer {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
+import checkFileExistence from './check-file-existence';
 
-.row {
-  cursor: pointer;
-}
-
-.row td {
-  height: 35px;
-}
-
-.row .check {
-  display: none;
-}
-
-.row.cloned {
-  color: #aaa;
-  font-style: italic;
-}
-
-.row.selected .check,
-.row.cloned .check {
-  display: block;
-}
-
-.check-cell {
-  width: 30px;
-}
-
-.cell {
-  cursor: pointer;
-}
-
-.error {
-  color: red;
-}
-
-.versions {
-  text-align: right;
-}
-
-.filter {
-  margin: 5px 0;
-}
-
-.filter input {
-  width: 100%;
-}
-
-.versions-select {
-  width: 200px;
-}
-
-.version-row {
-  max-width: 300px;
-}
+export default checkFileExistence;

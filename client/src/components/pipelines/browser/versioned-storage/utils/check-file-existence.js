@@ -14,63 +14,22 @@
  *  limitations under the License.
  */
 
-.footer {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
+import VSFileCheck from '../../../../../models/versioned-storage/file-check';
 
-.row {
-  cursor: pointer;
-}
+function checkFileExistence (storageId, path) {
+  return new Promise((resolve) => {
+    const request = new VSFileCheck(storageId, path);
+    request
+      .fetch()
+      .then(() => {
+        if (!request.error && request.loaded && request.value?.path) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      })
+      .catch(() => resolve(false));
+  });
+};
 
-.row td {
-  height: 35px;
-}
-
-.row .check {
-  display: none;
-}
-
-.row.cloned {
-  color: #aaa;
-  font-style: italic;
-}
-
-.row.selected .check,
-.row.cloned .check {
-  display: block;
-}
-
-.check-cell {
-  width: 30px;
-}
-
-.cell {
-  cursor: pointer;
-}
-
-.error {
-  color: red;
-}
-
-.versions {
-  text-align: right;
-}
-
-.filter {
-  margin: 5px 0;
-}
-
-.filter input {
-  width: 100%;
-}
-
-.versions-select {
-  width: 200px;
-}
-
-.version-row {
-  max-width: 300px;
-}
+export default checkFileExistence;

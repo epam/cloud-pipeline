@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
@@ -40,6 +41,7 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -58,6 +60,7 @@ public class PipelineRunAsManager {
     private final MessageHelper messageHelper;
     private final CheckPermissionHelper permissionHelper;
     private final Executor runAsExecutor;
+    private final PipelineManager pipelineManager;
 
     public boolean runAsAnotherUser(final PipelineStart runVO) {
         return !StringUtils.isEmpty(getRunAsUserName(runVO));
@@ -77,7 +80,7 @@ public class PipelineRunAsManager {
     }
 
     public String getRunAsUserName(final PipelineStart runVO) {
-        final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
+        final PipelineConfiguration currentUserConfiguration = getPipelineConfiguration(runVO);
         return StringUtils.isEmpty(currentUserConfiguration.getRunAs())
                 ? runVO.getRunAs()
                 : userManager.loadUserByNameOrId(currentUserConfiguration.getRunAs()).getUserName();
@@ -127,5 +130,14 @@ public class PipelineRunAsManager {
         runSids.add(runSid);
 
         return new ArrayList<>(runSids);
+    }
+
+    private PipelineConfiguration getPipelineConfiguration(final PipelineStart runVO) {
+        final Long pipelineId = runVO.getPipelineId();
+        if (Objects.nonNull(pipelineId)) {
+            final Pipeline pipeline = pipelineManager.load(pipelineId);
+            return configurationManager.getPipelineConfigurationForPipeline(pipeline, runVO);
+        }
+        return configurationManager.getPipelineConfiguration(runVO);
     }
 }

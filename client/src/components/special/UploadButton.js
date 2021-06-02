@@ -142,6 +142,9 @@ class UploadButton extends React.Component {
     if (!this.state.uploadInfoClosable) {
       return;
     }
+    const {
+      uploadingFiles = []
+    } = this.state;
     this.setState({
       uploadInfoVisible: false,
       uploadInfoClosable: false,
@@ -149,18 +152,38 @@ class UploadButton extends React.Component {
       synchronousUploadingFiles: []
     }, async () => {
       if (this.props.onRefresh) {
-        this.props.onRefresh();
+        this.props.onRefresh(uploadingFiles.map(f => f.name));
       }
     });
   };
 
   onUploadStatusChangedSynchronous = async () => {
+    const {validate, validateAndFilter} = this.props;
+    const {synchronousUploadingFiles} = this.state;
     if (this.uploadTimeout) {
       clearTimeout(this.uploadTimeout);
       this.uploadTimeout = null;
     }
-    if (this.props.validate) {
-      const validationResult = await this.props.validate(this.state.synchronousUploadingFiles);
+    if (validateAndFilter) {
+      const validationResult = await validateAndFilter(synchronousUploadingFiles);
+      if (validationResult && Array.isArray(validationResult) && validationResult.length) {
+        this.setState({
+          uploadInfoVisible: false,
+          uploadInfoClosable: false,
+          uploadingFiles: validationResult,
+          synchronousUploadingFiles: validationResult
+        });
+      } else {
+        this.setState({
+          uploadInfoVisible: false,
+          uploadInfoClosable: false,
+          uploadingFiles: [],
+          synchronousUploadingFiles: []
+        });
+        return;
+      }
+    } else if (validate) {
+      const validationResult = await validate(this.state.synchronousUploadingFiles);
       if (!validationResult) {
         this.setState({
           uploadInfoVisible: false,

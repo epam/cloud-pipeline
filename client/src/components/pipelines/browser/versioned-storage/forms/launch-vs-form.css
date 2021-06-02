@@ -42,14 +42,29 @@
   cursor: pointer;
 }
 
+.tools .tool .checkbox {
+  width: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tools .tool i {
+  visibility: hidden;
+  font-size: larger;
+}
+
+.tools .tool.selected i {
+  visibility: visible;
+}
+
 .tools .tool:hover {
-  border-color: #0e77ca;
-  background-color: rgb(171, 215, 253);
+  background-color: #eee;
 }
 
 .tools .tool.selected {
-  background-color: rgb(204, 233, 255);
-  border-color: #0e77ca;
+  background-color: #eee;
+  border-color: #aaa;
 }
 
 .tools .tool .info {
