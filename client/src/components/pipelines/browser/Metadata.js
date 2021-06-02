@@ -677,6 +677,14 @@ export default class Metadata extends React.Component {
       this.setState({selectedItem: selectedItem, metadata: true});
     }
   };
+  onClearFilters = () => {
+    const {filterModel} = this.state;
+    filterModel.filters = [];
+    this.setState(
+      {filterModel},
+      () => this.paginationOnChange(FIRST_PAGE)
+    );
+  };
   onClearSelectionItems = () => {
     this.setState({
       selectedItems: [],
@@ -1153,6 +1161,22 @@ export default class Metadata extends React.Component {
                 </div>
               }
             </Col>
+            {
+              !this.state.selectedItemsAreShowing &&
+              this.state.filterModel.filters &&
+              this.state.filterModel.filters.length
+                ? <Col style={{borderRight: '1px solid #d9d9d9', marginLeft: 'auto'}}>
+                  <Row style={{paddingRight: '10px'}} className={styles.currentFolderActions}>
+                    <Button
+                      key="clear_filters"
+                      size="small"
+                      onClick={this.onClearFilters}>
+                      CLEAR FILTERS
+                    </Button>
+                  </Row>
+                </Col>
+                : null
+            }
             <Col>
               <Row style={{paddingRight: 5}} className={styles.currentFolderActions}>
                 <Button
