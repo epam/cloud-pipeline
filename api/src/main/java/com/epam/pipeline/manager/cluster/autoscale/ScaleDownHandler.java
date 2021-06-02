@@ -137,7 +137,7 @@ public class ScaleDownHandler {
             cloudFacade.scaleDownNode(currentRunId);
             return;
         }
-        if ("windows".equalsIgnoreCase(previousConfiguration.getInstance().getNodePlatform())) {
+        if (KubernetesConstants.WINDOWS.equalsIgnoreCase(previousConfiguration.getInstance().getNodePlatform())) {
             log.debug("Scaling down node {} for finished Windows-based pipeline.", nodeLabel);
             cloudFacade.scaleDownNode(currentRunId);
             return;
