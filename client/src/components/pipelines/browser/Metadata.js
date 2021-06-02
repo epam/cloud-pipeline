@@ -644,13 +644,13 @@ export default class Metadata extends React.Component {
       selectedItemsAreShowing: false,
       filterModel
     });
+    this.onClearFilters();
     if (filters && filters.length) {
       filters.forEach(filter => {
         const [key, dataArray] = Object.values(filter);
         this.handleFilterApplied(key, dataArray);
       });
     } else {
-      this.onClearFilters();
       await this.loadData(this.state.filterModel);
     }
   };
