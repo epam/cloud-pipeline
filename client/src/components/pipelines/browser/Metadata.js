@@ -71,6 +71,7 @@ import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
+import parseSearchQuery from './metadata-controls/parse-search-query';
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -159,6 +160,7 @@ export default class Metadata extends React.Component {
   state = {
     loading: false,
     metadata: false,
+    searchQuery: [],
     selectedItem: null,
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
@@ -613,11 +615,22 @@ export default class Metadata extends React.Component {
   };
 
   onSearchQueriesChanged = async () => {
+    const {filterModel} = this.state;
+    const {filters, searchQueries} = parseSearchQuery(this.state.searchQuery[0]);
+    filterModel.searchQueries = [...searchQueries];
     this.setState(
-      {selectedItemsAreShowing: false},
+      {selectedItemsAreShowing: false, filterModel},
       () => this.paginationOnChange(FIRST_PAGE)
     );
-    await this.loadData(this.state.filterModel);
+    if (filters && filters.length) {
+      filters.forEach(filter => {
+        const [key, dataArray] = Object.values(filter);
+        this.handleFilterApplied(key, dataArray);
+      });
+    } else {
+      this.onClearFilters();
+      await this.loadData(this.state.filterModel);
+    }
   };
 
   onOrderByChanged = async (key, value) => {
@@ -1553,12 +1566,11 @@ export default class Metadata extends React.Component {
             }}
             id="search-metadata-input"
             placeholder="Search"
-            value={this.state.filterModel.searchQueries[0]}
+            value={this.state.searchQuery[0]}
             onPressEnter={this.onSearchQueriesChanged}
             onChange={(e) => {
-              const {filterModel} = this.state;
-              filterModel.searchQueries = [e.target.value.trim()];
-              this.setState({filterModel});
+              const searchQuery = [e.target.value];
+              this.setState({searchQuery});
             }}
             size="small"
           />
@@ -1672,6 +1684,7 @@ export default class Metadata extends React.Component {
     if (nextProps.folderId !== this.props.folderId ||
       nextProps.metadataClass !== this.props.metadataClass) {
       this.setState({
+        searchQuery: [],
         selectedItem: null,
         selectedItems: [],
         selectedItemsAreShowing: false,
