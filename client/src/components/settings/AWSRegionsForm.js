@@ -689,26 +689,16 @@ class AWSRegionForm extends React.Component {
   formItemLayout = {
     labelCol: {
       xs: {span: 24},
-      sm: {span: 3}
+      sm: {span: 5}
     },
     wrapperCol: {
       xs: {span: 24},
-      sm: {span: 21}
+      sm: {span: 19}
     },
     style: {marginBottom: 2}
   };
 
-  formItemLayoutWideLabel = {
-    labelCol: {
-      xs: {span: 24},
-      sm: {span: 8}
-    },
-    wrapperCol: {
-      xs: {span: 24},
-      sm: {span: 16}
-    },
-    style: {marginBottom: 2}
-  };
+  formItemLayoutWideLabel = this.formItemLayout;
 
   defaultCheckBoxFormItemLayout = {
     wrapperCol: {
@@ -717,8 +707,8 @@ class AWSRegionForm extends React.Component {
         offset: 0
       },
       sm: {
-        span: 14,
-        offset: 3
+        span: 19,
+        offset: 5
       }
     },
     style: {marginBottom: 2}
@@ -1423,8 +1413,18 @@ class AWSRegionForm extends React.Component {
     };
     return (
       <div style={{width: '100%', flex: 1, display: 'flex', flexDirection: 'column'}}>
-        <div style={{flex: 1, width: '100%', overflowY: 'auto'}}>
-          <Form className="edit-region-form" layout="horizontal">
+        <div
+          style={{
+            flex: 1,
+            width: '100%',
+            overflowY: 'auto',
+            paddingRight: 10
+          }}
+        >
+          <Form
+            className="edit-region-form"
+            layout="horizontal"
+          >
             <Form.Item
               label="Region ID"
               required
@@ -1505,7 +1505,7 @@ class AWSRegionForm extends React.Component {
             <Form.Item
               {...this.formItemLayoutWideLabel}
               className={this.getFieldClassName('mountStorageRule')}
-              label="Mount storages across other regions"
+              label="Mount storages across regions"
             >
               {getFieldDecorator('mountStorageRule', {
                 initialValue: this.props.region.mountStorageRule
@@ -1891,8 +1891,8 @@ class AWSRegionForm extends React.Component {
             </Form.Item>
             <Row type="flex">
               <Col
-                xs={24}
-                sm={3}
+                xs={this.formItemLayout.labelCol.xs.span}
+                sm={this.formItemLayout.labelCol.sm.span}
                 style={{
                   textAlign: 'right',
                   paddingRight: 8,
@@ -1902,7 +1902,10 @@ class AWSRegionForm extends React.Component {
                 }}>
                 Permissions:
               </Col>
-              <Col xs={24} sm={21}>
+              <Col
+                xs={this.formItemLayout.wrapperCol.xs.span}
+                sm={this.formItemLayout.wrapperCol.sm.span}
+              >
                 {this.renderPermissionsTable()}
               </Col>
             </Row>
@@ -1972,7 +1975,11 @@ class AWSRegionForm extends React.Component {
       this.rebuild();
     } else if (!prevProps.region && this.props.region) {
       this.rebuild();
-    } else if (prevProps.region && this.props.region && prevProps.region.id !== this.props.region.id) {
+    } else if (
+      prevProps.region &&
+      this.props.region &&
+      prevProps.region.id !== this.props.region.id
+    ) {
       this.rebuild();
     }
   }
@@ -1994,6 +2001,7 @@ class AWSRegionForm extends React.Component {
 
   componentDidMount () {
     this.props.onInitialize && this.props.onInitialize(this);
+    this.rebuild();
   }
 }
 
