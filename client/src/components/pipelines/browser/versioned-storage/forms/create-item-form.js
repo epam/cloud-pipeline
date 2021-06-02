@@ -21,8 +21,7 @@ import {
   Form,
   Input,
   Row,
-  Spin,
-  message
+  Spin
 } from 'antd';
 import PropTypes from 'prop-types';
 import checkFileExistence from '../utils';
@@ -49,15 +48,13 @@ class CreateItemForm extends React.Component {
   };
 
   handleSubmit = (e) => {
-    const {onSubmit, form, documentType} = this.props;
+    const {onSubmit, form} = this.props;
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
         this.checkPathExistence().then((pathExist) => {
           if (pathExist) {
-            this.setState({pathOccupied: true}, () => {
-              message.error(`${documentType} with that name already exists`);
-            });
+            this.setState({pathOccupied: true});
           } else {
             this.setState({pathOccupied: false}, () => {
               onSubmit && onSubmit(values);
