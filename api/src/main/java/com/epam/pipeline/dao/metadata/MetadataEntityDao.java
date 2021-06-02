@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
+import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -334,7 +335,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private String makeWhereClause(MetadataFilter filter) {
         StringBuilder clause = new StringBuilder();
         addFilterConditions(clause, filter.getFilters());
-        addSearchConditions(clause, filter.getSearchQueries());
+        addSearchConditions(clause, filter.getSearchQueries(), filter.getLogicalSearchOperator());
         addExternalIdsConditions(clause, filter.getExternalIdQueries());
         addDateConditions(clause, filter);
         return clause.toString();
@@ -351,15 +352,14 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         });
     }
 
-    private void addSearchConditions(StringBuilder clause, List<String> searchQueries) {
+    private void addSearchConditions(StringBuilder clause, List<String> searchQueries, String searchOperator) {
         if (CollectionUtils.isEmpty(searchQueries)) {
             return;
         }
-        searchQueries.forEach(query -> {
-            String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
-            clause.append(AND);
-            clause.append(searchPattern.matcher(searchClauseQuery).replaceAll(formattedQuery));
-        });
+        String clauses = searchQueries.stream()
+                .map(this::applySearchClause)
+                .collect(Collectors.joining(getOperator(searchOperator)));
+        clause.append(AND).append(clauses);
     }
 
     private void addFilterConditions(StringBuilder clause, List<MetadataFilter.FilterQuery> filters) {
@@ -412,6 +412,18 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             return fieldValue.getDbName();
         }
         return format("e.data ->> '%s'", field);
+    }
+
+    private String applySearchClause(String query) {
+        String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
+        return searchPattern.matcher(searchClauseQuery).replaceAll(formattedQuery);
+    }
+
+    private String getOperator(String operator) {
+        if (!StringUtils.isBlank(operator) && MetadataParsingUtils.AND.equalsIgnoreCase(operator.trim())) {
+            return AND;
+        }
+        return OR;
     }
 
     enum MetadataEntityParameters {

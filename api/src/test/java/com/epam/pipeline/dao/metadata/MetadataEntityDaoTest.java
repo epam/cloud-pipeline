@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
+import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -614,6 +615,50 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 Collections.emptyList(),
                 Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
         checkFilterRequest(searchByExternalId, Collections.singletonList(folder1Sample2));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testSearchANDOperator() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        MetadataFilter searchANDOperator = createFilter(folder1.getId(), metadataClass1.getName(),
+                Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
+                        DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2)), Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+        searchANDOperator.setLogicalSearchOperator(MetadataParsingUtils.AND);
+        checkFilterRequest(searchANDOperator, Collections.emptyList());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testSearchOROperator() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        MetadataEntity folder1Sample1 =createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        MetadataEntity folder1Sample2 =createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        MetadataFilter searchANDOperator = createFilter(folder1.getId(), metadataClass1.getName(),
+                Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
+                        DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2)), Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+        searchANDOperator.setLogicalSearchOperator(MetadataParsingUtils.OR);
+        checkFilterRequest(searchANDOperator, Arrays.asList(folder1Sample1, folder1Sample2));
     }
 
     private MetadataField getDataField(String key) {
