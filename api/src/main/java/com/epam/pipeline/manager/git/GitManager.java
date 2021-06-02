@@ -365,25 +365,31 @@ public class GitManager {
         }
     }
 
-    private GitCommitEntry createFolder(Pipeline pipeline,
-                                       String folder,
-                                       String lastCommitId,
-                                       String commitMessage) throws GitClientException {
+    private GitCommitEntry createFolder(final Pipeline pipeline,
+                                        final String folder,
+                                        final String lastCommitId,
+                                        String commitMessage) throws GitClientException {
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         Assert.isTrue(!folderExists(pipeline, folder),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, folder));
+
         if (commitMessage == null) {
             commitMessage = String.format("Creating folder %s", folder);
         }
-        List<String> filesToCreate = new ArrayList<>();
+        final List<String> filesToCreate = new ArrayList<>();
+        final List<String> foldersToCheck = new ArrayList<>();
         Path folderToCreate = Paths.get(folder);
         while (folderToCreate != null && !StringUtils.isNullOrEmpty(folderToCreate.toString())) {
             if (!this.folderExists(pipeline, folderToCreate.toString())) {
                 filesToCreate.add(Paths.get(folderToCreate.toString(), GIT_FOLDER_TOKEN_FILE).toString());
+                foldersToCheck.add(folderToCreate.toString());
             }
             folderToCreate = folderToCreate.getParent();
         }
+
+        checkFolderHierarchyIfFileExists(pipeline, foldersToCheck);
+
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(commitMessage);
         for (String file : filesToCreate) {
@@ -394,6 +400,15 @@ public class GitManager {
             gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
         }
         return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
+    }
+
+    private void checkFolderHierarchyIfFileExists(final Pipeline pipeline, final List<String> folders) throws GitClientException {
+        for (String folder : folders) {
+            if (!this.folderExists(pipeline, folder)) {
+                Assert.isTrue(!fileExists(pipeline, folder),
+                        messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, folder));
+            }
+        }
     }
 
     private GitCommitEntry renameFolder(Pipeline pipeline,

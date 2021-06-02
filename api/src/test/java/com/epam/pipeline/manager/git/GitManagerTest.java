@@ -487,6 +487,31 @@ public class GitManagerTest extends AbstractManagerTest {
                 .withQueryParam(PATH, equalTo(DOCS))
                 .willReturn(okJson(with(tree)))
         );
+        givenThat(
+                get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
+                        .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
+                        .willReturn(notFound())
+        );
+        gitManager.createOrRenameFolder(pipeline.getId(), folder);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void createFolderShouldFailIfFileWithTheSameNameExists() throws GitClientException {
+        final Pipeline pipeline = testingPipeline();
+        final PipelineSourceItemVO folder = new PipelineSourceItemVO();
+        folder.setPath(DOCS);
+        folder.setLastCommitId(pipeline.getCurrentVersion().getCommitId());
+        final GitRepositoryEntry bla = new GitRepositoryEntry();
+        bla.setName(README_FILE);
+        bla.setType(BLOB_TYPE);
+        bla.setPath(DOCS + "/" + README_FILE);
+        final List<GitRepositoryEntry> tree = singletonList(bla);
+        givenThat(
+                get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
+                        .withQueryParam(PATH, equalTo(DOCS))
+                        .willReturn(okJson(with(tree)))
+        );
+        mockFileContentRequest(DOCS, GIT_MASTER_REPOSITORY, FILE_CONTENT);
         gitManager.createOrRenameFolder(pipeline.getId(), folder);
     }
 
@@ -501,11 +526,15 @@ public class GitManagerTest extends AbstractManagerTest {
                         .withQueryParam(PATH, equalTo(DOCS))
                         .willReturn(notFound())
         );
+        givenThat(
+                get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
+                        .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
+                        .willReturn(notFound())
+        );
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
         final GitCommitEntry resultingCommit = gitManager.createOrRenameFolder(pipeline.getId(), folder);
         assertThat(resultingCommit, is(expectedCommit));
     }
-
 
     @Test
     @Ignore
