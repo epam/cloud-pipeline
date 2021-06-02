@@ -640,10 +640,10 @@ export default class Metadata extends React.Component {
     const {filterModel} = this.state;
     const {filters, searchQueries} = parseSearchQuery(this.state.searchQuery[0]);
     filterModel.searchQueries = [...searchQueries];
-    this.setState(
-      {selectedItemsAreShowing: false, filterModel},
-      () => this.paginationOnChange(FIRST_PAGE)
-    );
+    this.setState({
+      selectedItemsAreShowing: false,
+      filterModel
+    });
     if (filters && filters.length) {
       filters.forEach(filter => {
         const [key, dataArray] = Object.values(filter);
