@@ -197,16 +197,30 @@ class ClusterNodeMonitor extends React.Component {
     return false;
   }
 
-  componentDidMount() {
+  componentDidMount () {
     this.liveUpdateTimer = setInterval(
       this.invokeLiveUpdate,
       LIVE_UPDATE_INTERVAL
     );
     this.initializeRange();
+    this.checkWindowsBasedNode();
   }
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
+  componentDidUpdate (prevProps, prevState, snapshot) {
     this.initializeRange();
+    this.checkWindowsBasedNode();
+  }
+
+  checkWindowsBasedNode = () => {
+    if (this.windowsOS) {
+      const {
+        router,
+        node
+      } = this.props;
+      if (node && node.loaded && router) {
+        router.push(`/cluster/${node.value.name}/info`);
+      }
+    }
   }
 
   componentWillUnmount() {
