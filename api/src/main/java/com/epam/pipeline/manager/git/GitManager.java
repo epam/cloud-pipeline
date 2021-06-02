@@ -402,7 +402,8 @@ public class GitManager {
         return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
     }
 
-    private void checkFolderHierarchyIfFileExists(final Pipeline pipeline, final List<String> folders) throws GitClientException {
+    private void checkFolderHierarchyIfFileExists(final Pipeline pipeline, final List<String> folders)
+            throws GitClientException {
         for (String folder : folders) {
             if (!this.folderExists(pipeline, folder)) {
                 Assert.isTrue(!fileExists(pipeline, folder),
