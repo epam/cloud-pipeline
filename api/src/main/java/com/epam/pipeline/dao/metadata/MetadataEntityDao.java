@@ -67,7 +67,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private static final String AND = " AND ";
     private static final String OR = " OR ";
     private static final int BATCH_SIZE = 1000;
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -370,9 +370,9 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             clause.append(AND);
             MetadataField field = MetadataEntityParameters.getFieldNames().get(filter.getKey().toUpperCase());
             if (field != null) {
-                clause.append(addFilterClause(filter, "%s::text LIKE '%%%s%%'", field.getDbName()));
+                clause.append(addFilterClause(filter, "%s::text ILIKE '%%%s%%'", field.getDbName()));
             } else {
-                clause.append(addFilterClause(filter, "e.data #>> '{%s,value}' LIKE '%%%s%%'", filter.getKey()));
+                clause.append(addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey()));
             }
         });
     }
