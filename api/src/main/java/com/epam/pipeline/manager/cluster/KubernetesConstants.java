@@ -54,6 +54,8 @@ public final class KubernetesConstants {
     public static final String POD_RUNNING_PHASE = "Running";
     public static final String POD_NODE_SELECTOR_OPERATOR_IN = "In";
 
+    public static final String WINDOWS = "windows";
+
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
 

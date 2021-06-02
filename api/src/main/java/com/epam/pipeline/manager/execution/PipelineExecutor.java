@@ -178,7 +178,7 @@ public class PipelineExecutor {
         spec.setRestartPolicy("Never");
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
         spec.setDnsPolicy("ClusterFirst");
-        if ("windows".equalsIgnoreCase(run.getPlatform())
+        if (KubernetesConstants.WINDOWS.equalsIgnoreCase(run.getPlatform())
             && nodeSelector.containsKey(KubernetesConstants.RUN_ID_LABEL)) {
             spec.setAffinity(buildNodeSelectorAffinity(nodeSelector.get(KubernetesConstants.RUN_ID_LABEL)));
         } else {
@@ -194,7 +194,7 @@ public class PipelineExecutor {
                 KubernetesConstants.CP_CAP_DIND_NATIVE);
         boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
-        if ("windows".equals(run.getPlatform())) {
+        if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
             spec.setVolumes(getWindowsVolumes());
         } else {
             spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
@@ -254,7 +254,7 @@ public class PipelineExecutor {
         container.setSecurityContext(securityContext);
         container.setEnv(envVars);
         container.setImage(dockerImage);
-        if ("windows".equals(run.getPlatform())) {
+        if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
             container.setCommand(Collections.singletonList("powershell"));
             if (!StringUtils.isEmpty(command)) {
                 container.setArgs(Arrays.asList("-command", command));
