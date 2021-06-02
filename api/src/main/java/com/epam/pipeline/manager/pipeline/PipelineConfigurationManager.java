@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -75,6 +76,9 @@ public class PipelineConfigurationManager {
     private ToolManager toolManager;
 
     @Autowired
+    private PipelineManager pipelineManager;
+
+    @Autowired
     private MessageHelper messageHelper;
 
     @Autowired
@@ -87,10 +91,15 @@ public class PipelineConfigurationManager {
                     messageHelper.getMessage(MessageConstants.ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE));
             return getPipelineConfiguration(runVO, toolManager.loadByNameOrId(runVO.getDockerImage()));
         }
-        return getPipelineConfiguration(runVO);
+        return getPipelineConfiguration(runVO, null);
     }
 
     public PipelineConfiguration getPipelineConfiguration(final PipelineStart runVO) {
+        final Long pipelineId = runVO.getPipelineId();
+        if (Objects.nonNull(pipelineId)) {
+            final Pipeline pipeline = pipelineManager.load(pipelineId);
+            return getPipelineConfigurationForPipeline(pipeline, runVO);
+        }
         return getPipelineConfiguration(runVO, null);
     }
 
