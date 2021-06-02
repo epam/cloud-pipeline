@@ -24,7 +24,19 @@ import MetadataEntityFilter from '../../../models/folderMetadata/MetadataEntityF
 import MetadataEntityKeys from '../../../models/folderMetadata/MetadataEntityKeys';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataEntityLoadExternal';
-import {Button, Checkbox, Col, Icon, Input, message, Modal, Pagination, Row} from 'antd';
+import {
+  Button,
+  Checkbox,
+  Col,
+  Dropdown,
+  Icon,
+  Input,
+  message,
+  Menu,
+  Modal,
+  Pagination,
+  Row
+} from 'antd';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -171,6 +183,8 @@ export default class Metadata extends React.Component {
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false
   };
+
+  uploadButton;
 
   @computed
   get entityTypes () {
@@ -658,7 +672,7 @@ export default class Metadata extends React.Component {
     this.setState({selectedColumns});
   };
 
-  onResetColums = () => {
+  onResetColumns = () => {
     this.columns = [...this.defaultColumns];
     this.setState({selectedColumns: [...this.defaultColumns]});
   };
@@ -676,6 +690,14 @@ export default class Metadata extends React.Component {
     } else {
       this.setState({selectedItem: selectedItem, metadata: true});
     }
+  };
+  onClearFilters = () => {
+    const {filterModel} = this.state;
+    filterModel.filters = [];
+    this.setState(
+      {filterModel},
+      () => this.paginationOnChange(FIRST_PAGE)
+    );
   };
   onClearSelectionItems = () => {
     this.setState({
@@ -941,6 +963,7 @@ export default class Metadata extends React.Component {
         style={{flex: 1, overflow: 'auto'}}
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
+          {this.renderTableActions()}
           {renderTable()}
           {renderConfigurationBrowser()}
           {renderCopyEntitiesDialog()}
@@ -1009,59 +1032,147 @@ export default class Metadata extends React.Component {
   };
 
   renderActions = () => {
-    const actions = [];
-    if (roleModel.writeAllowed(this.props.folder.value) &&
-      this.props.folderId !== undefined && !this.props.hideUploadMetadataBtn) {
-      actions.push(
-        roleModel.manager.entities(
+    if (this.props.folder.pending && !this.props.folder.loaded) {
+      return null;
+    }
+    const metadataManager = roleModel.writeAllowed(this.props.folder.value) &&
+      this.props.folderId !== undefined &&
+      roleModel.isManager.entities(this);
+    if (
+      metadataManager &&
+      !this.props.hideUploadMetadataBtn && !this.props.readOnly
+    ) {
+      const Actions = {
+        addMetadata: 'add-metadata',
+        upload: 'upload',
+        deleteClass: 'delete',
+        showAttributes: 'show-attributes',
+        transfer: 'transfer'
+      };
+      const triggerMenuItem = ({key}) => {
+        switch (key) {
+          case Actions.addMetadata:
+            this.openAddInstanceForm();
+            break;
+          case Actions.upload:
+            if (this.uploadButton) {
+              this.uploadButton.triggerClick();
+            }
+            break;
+          case Actions.deleteClass:
+            this.deleteMetadataClassConfirm();
+            break;
+          case Actions.showAttributes:
+            this.setState({metadata: !this.state.metadata});
+            break;
+          case Actions.transfer:
+            this.onOpenUploadToBucketDialog();
+            break;
+        }
+      };
+      const menuItems = [];
+      menuItems.push((
+        <Menu.Item
+          key={Actions.addMetadata}
+          className={Actions.addMetadata}
+        >
+          <Icon
+            type="plus"
+            style={{marginRight: 5}}
+          />
+          Add instance
+        </Menu.Item>
+      ));
+      menuItems.push((
+        <Menu.Item
+          key={Actions.upload}
+          className={Actions.upload}
+        >
+          <Icon
+            type="upload"
+            style={{marginRight: 5}}
+          />
+          Upload metadata
+        </Menu.Item>
+      ));
+      if (
+        this.transferJobId &&
+        this.transferJobVersion &&
+        this.currentClassEntityPathFields.length > 0
+      ) {
+        menuItems.push((
+          <Menu.Item
+            key={Actions.transfer}
+            className={Actions.transfer}
+          >
+            <Icon
+              type="cloud-upload-o"
+              style={{marginRight: 5}}
+            />
+            Transfer to the cloud
+          </Menu.Item>
+        ));
+        menuItems.push((
+          <Menu.Divider key="divider-1" />
+        ));
+      }
+      menuItems.push((
+        <Menu.Item
+          key={Actions.deleteClass}
+          className={Actions.deleteClass}
+          style={{color: 'red'}}
+        >
+          <Icon
+            type="delete"
+            style={{marginRight: 5}}
+          />
+          Delete class
+        </Menu.Item>
+      ));
+      menuItems.push((
+        <Menu.Divider key="divider-2" />
+      ));
+      menuItems.push((
+        <Menu.Item
+          key={Actions.showAttributes}
+          className={Actions.showAttributes}
+        >
+          {
+            this.state.metadata ? 'Hide attributes' : 'Show attributes'
+          }
+        </Menu.Item>
+      ));
+      const menu = (
+        <Menu
+          onClick={triggerMenuItem}
+        >
+          {menuItems}
+        </Menu>
+      );
+      return (
+        <Dropdown
+          overlay={menu}
+          trigger={['click']}
+        >
           <Button
-            disabled={this.entityTypes.length === 0}
             size="small"
-            onClick={this.openAddInstanceForm}
-            key="add-metadata">
-            <Icon type="plus" />Add instance
-          </Button>,
-          'add-metadata'
-        )
-      );
-      actions.push(
-        roleModel.manager.entities(
-          <UploadButton
-            key="upload-metadata"
-            multiple={false}
-            synchronous
-            onRefresh={async () => {
-              await this.props.entityFields.fetch();
-              await this.props.folder.fetch();
-              if (this.props.onReloadTree) {
-                this.props.onReloadTree(true);
-              }
-            }}
-            title={'Upload metadata'}
-            action={MetadataEntityUpload.uploadUrl(this.props.folderId)} />,
-          'upload-metadata'
-        )
-      );
-      actions.push(
-        roleModel.manager.entities(
-          <Button
-            key="delete-metadata"
-            type="danger"
-            style={{lineHeight: 1}}
-            onClick={this.deleteMetadataClassConfirm}
-            size="small">
-            <Icon type="delete" />
-            Delete class
-          </Button>,
-          'delete-metadata'
-        )
+            style={{lineHeight: 1, margin: '0 0 0 5px'}}
+          >
+            <Icon
+              type="setting"
+            />
+          </Button>
+        </Dropdown>
       );
     }
-    actions.push(
+    return (
       <Button
         key="metadata"
         id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
-        style={{marginRight: 10}}
+        style={{
+          lineHeight: 1,
+          marginLeft: 5
+        }}
         size="small"
         onClick={() => this.setState({metadata: !this.state.metadata})}>
         {
@@ -1069,7 +1180,6 @@ export default class Metadata extends React.Component {
         }
       </Button>
     );
-    return actions.filter(action => !!action);
   };
 
   get tableColumns () {
@@ -1126,87 +1236,8 @@ export default class Metadata extends React.Component {
         </div>
       );
     };
-    const renderAdditionalActions = () => {
-      if (roleModel.writeAllowed(this.props.folder.value) && !this.props.readOnly &&
-        roleModel.isManager.entities(this)) {
-        return (
-          <Row type="flex" justify="space-between">
-            <Col style={{padding: 3, textAlign: 'left'}}>
-              {
-                this.state.selectedItems &&
-                this.state.selectedItems.length > 0 &&
-                <div>
-                  {
-                    this.state.selectedItemsAreShowing
-                      ? `Currently viewing
-                        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
-                        selected item${this.state.selectedItems.length > 1 ? 's' : ''}. `
-                      : null
-                  }
-                  <a onClick={() => this.handleClickShowSelectedItems()}>{
-                    this.state.selectedItemsAreShowing
-                      ? 'Show all metadata items'
-                      : `Show
-                        ${this.state.selectedItems ? this.state.selectedItems.length : 0}
-                        selected item${this.state.selectedItems.length > 1 ? 's' : ''}`}
-                  </a>
-                </div>
-              }
-            </Col>
-            <Col>
-              <Row style={{paddingRight: 5}} className={styles.currentFolderActions}>
-                <Button
-                  key="delete"
-                  size="small"
-                  type="danger"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onDeleteSelectedItems}>
-                  DELETE
-                </Button>
-                <Button
-                  key="clear_selection"
-                  size="small"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onClearSelectionItems}>
-                  CLEAR SELECTION
-                </Button>
-                <Button
-                  key="copy_selection"
-                  size="small"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={this.onCopySelectionItems}
-                >
-                  COPY
-                </Button>
-                {
-                  this.transferJobId && this.transferJobVersion &&
-                  this.currentClassEntityPathFields.length > 0 &&
-                  <Button
-                    key="download_selection"
-                    size="small"
-                    type="primary"
-                    onClick={this.onOpenUploadToBucketDialog}>
-                    TRANSFER TO THE CLOUD
-                  </Button>
-                }
-                <Button
-                  key="run"
-                  size="small"
-                  type="primary"
-                  disabled={!this.state.selectedItems || this.state.selectedItems.length === 0}
-                  onClick={() => this.setState({configurationBrowserVisible: true})}>
-                  RUN
-                </Button>
-              </Row>
-            </Col>
-          </Row>
-        );
-      } else {
-        return null;
-      }
-    };
 
-    const allColumns = [
+    return [
       {
         id: 'selection',
         accessor: item => item,
@@ -1284,17 +1315,192 @@ export default class Metadata extends React.Component {
             }
           })};
       })];
+  };
 
-    if (this.props.readOnly) {
-      return allColumns;
-    } else {
-      return [{
-        id: 'title',
-        headerClassName: styles.metadataAdditionalActions,
-        Header: () => renderAdditionalActions(),
-        columns: allColumns
-      }];
-    }
+  renderTableActions = () => {
+    const renderClearFiltersButton = () => {
+      const {
+        filterModel = {},
+        selectedItemsAreShowing
+      } = this.state;
+      const {
+        filters = []
+      } = filterModel;
+      if (!selectedItemsAreShowing && filters.length > 0) {
+        return (
+          <Button
+            key="clear_filters"
+            size="small"
+            onClick={this.onClearFilters}
+            style={{marginLeft: 5, marginRight: 5}}
+          >
+            <Icon
+              type="close"
+            />
+            Clear filters
+          </Button>
+        );
+      }
+      return null;
+    };
+    const renderSelectionControl = () => {
+      const {
+        selectedItems = [],
+        selectedItemsAreShowing
+      } = this.state;
+      if (selectedItems.length === 0) {
+        return (
+          <div>
+            {'\u00A0'}
+          </div>
+        );
+      }
+      const selectedItemsString =
+        `${selectedItems.length} selected item${selectedItems.length === 1 ? '' : 's'}`;
+      const info = selectedItemsAreShowing && selectedItems.length > 0
+        ? (
+          <span style={{marginLeft: 5}}>
+            {/* eslint-disable-next-line */}
+            Currently viewing {selectedItemsString}
+          </span>
+        )
+        : undefined;
+      if (
+        roleModel.writeAllowed(this.props.folder.value) &&
+        !this.props.readOnly &&
+        roleModel.isManager.entities(this)
+      ) {
+        const Actions = {
+          delete: 'delete-selected-items',
+          clearSelection: 'clear-selection',
+          copySelection: 'copy-selection'
+        };
+        const triggerMenuItem = ({key}) => {
+          switch (key) {
+            case Actions.delete:
+              this.onDeleteSelectedItems();
+              break;
+            case Actions.clearSelection:
+              this.onClearSelectionItems();
+              break;
+            case Actions.copySelection:
+              this.onCopySelectionItems();
+              break;
+          }
+        };
+        const menu = (
+          <Menu
+            onClick={triggerMenuItem}
+            style={{width: 150}}
+          >
+            <Menu.Item
+              key={Actions.clearSelection}
+            >
+              Clear selection
+            </Menu.Item>
+            <Menu.Item
+              key={Actions.copySelection}
+            >
+              Copy
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item
+              key={Actions.delete}
+              style={{color: 'red'}}
+            >
+              Delete
+            </Menu.Item>
+          </Menu>
+        );
+        return (
+          <div
+            style={{
+              display: 'inline-flex',
+              flexDirection: 'row',
+              alignItems: 'center'
+            }}
+          >
+            <Button.Group>
+              <Button
+                size="small"
+                onClick={this.handleClickShowSelectedItems}
+              >
+                {
+                  selectedItemsAreShowing
+                    ? 'Show all metadata items'
+                    : `Show ${selectedItemsString}`
+                }
+              </Button>
+              <Dropdown
+                overlay={menu}
+                trigger={['click']}
+              >
+                <Button
+                  size="small"
+                >
+                  <Icon type="down" />
+                </Button>
+              </Dropdown>
+            </Button.Group>
+            {info}
+            {renderClearFiltersButton()}
+          </div>
+        );
+      }
+      return (
+        <div
+          style={{
+            display: 'inline-flex',
+            flexDirection: 'row',
+            alignItems: 'center'
+          }}
+        >
+          <Button
+            size="small"
+            onClick={this.handleClickShowSelectedItems}
+          >
+            {
+              selectedItemsAreShowing
+                ? 'Show all metadata items'
+                : `Show ${selectedItemsString}`
+            }
+          </Button>
+          {info}
+          {renderClearFiltersButton()}
+        </div>
+      );
+    };
+    const renderRunButton = () => {
+      if (
+        roleModel.writeAllowed(this.props.folder.value) &&
+        !this.props.readOnly &&
+        roleModel.isManager.entities(this)
+      ) {
+        const {selectedItems = []} = this.state;
+        return (
+          <Button
+            key="run"
+            size="small"
+            type="primary"
+            disabled={selectedItems.length === 0}
+            onClick={() => this.setState({configurationBrowserVisible: true})}>
+            RUN
+          </Button>
+        );
+      }
+      return null;
+    };
+    return (
+      <Row
+        className={styles.metadataAdditionalActions}
+        type="flex"
+        justify="space-between"
+        align="middle"
+      >
+        {renderSelectionControl()}
+        {renderRunButton()}
+      </Row>
+    );
   };
 
   handleClickShowSelectedItems = () => {
@@ -1319,44 +1525,72 @@ export default class Metadata extends React.Component {
           type="flex"
           justify="space-between"
           align="middle"
-          style={{minHeight: 41, marginBottom: 6}}>
-          <Col>
-            <span className={styles.itemHeader}>
-              <Breadcrumbs
-                id={parseInt(this.props.folderId)}
-                type={ItemTypes.metadata}
-                textEditableField={this.props.metadataClass}
-                readOnlyEditableField
-                icon="appstore-o"
-                iconClassName={styles.editableControl}
-                subject={this.props.folder.value}
-              />
-            </span>
-            <span className={styles.searchControl}>
-              <Input.Search
-                id="search-metadata-input"
-                placeholder="Search"
-                value={this.state.filterModel.searchQueries[0]}
-                onPressEnter={this.onSearchQueriesChanged}
-                onChange={(e) => {
-                  const {filterModel} = this.state;
-                  filterModel.searchQueries = [e.target.value.trim()];
-                  this.setState({filterModel});
-                }}
-              />
-              <DropdownWithMultiselect
-                onColumnSelect={this.onColumnSelect}
-                onSetOrder={this.onSetOrder}
-                selectedColumns={this.state.selectedColumns}
-                columns={this.columns}
-                onResetColums={this.onResetColums}
-                columnNameFn={getColumnTitle}
-              />
-            </span>
-          </Col>
-          <Col className={styles.currentFolderActions}>
-            {this.renderActions()}
-          </Col>
+          style={{
+            minHeight: 41,
+            marginBottom: 6,
+            flexWrap: 'wrap'
+          }}
+        >
+          <div
+            className={styles.itemHeader}
+            style={{flex: 'initial'}}
+          >
+            <Breadcrumbs
+              id={parseInt(this.props.folderId)}
+              type={ItemTypes.metadata}
+              textEditableField={this.props.metadataClass}
+              readOnlyEditableField
+              icon="appstore-o"
+              iconClassName={styles.editableControl}
+              subject={this.props.folder.value}
+            />
+          </div>
+          <Input.Search
+            style={{
+              minWidth: 200,
+              marginLeft: 5,
+              flex: 1
+            }}
+            id="search-metadata-input"
+            placeholder="Search"
+            value={this.state.filterModel.searchQueries[0]}
+            onPressEnter={this.onSearchQueriesChanged}
+            onChange={(e) => {
+              const {filterModel} = this.state;
+              filterModel.searchQueries = [e.target.value.trim()];
+              this.setState({filterModel});
+            }}
+            size="small"
+          />
+          <DropdownWithMultiselect
+            onColumnSelect={this.onColumnSelect}
+            onSetOrder={this.onSetOrder}
+            selectedColumns={this.state.selectedColumns}
+            columns={this.columns}
+            onResetColumns={this.onResetColumns}
+            columnNameFn={getColumnTitle}
+            size="small"
+            style={{marginLeft: 5}}
+          />
+          {this.renderActions()}
+          <UploadButton
+            key="upload-metadata"
+            multiple={false}
+            synchronous
+            onRefresh={async () => {
+              await this.props.entityFields.fetch();
+              await this.props.folder.fetch();
+              if (this.props.onReloadTree) {
+                this.props.onReloadTree(true);
+              }
+            }}
+            style={{display: 'none'}}
+            title={'Upload metadata'}
+            action={MetadataEntityUpload.uploadUrl(this.props.folderId)}
+            onInitialized={component => {
+              this.uploadButton = component;
+            }}
+          />
         </Row>
         {this.renderContent()}
         <AddInstanceForm

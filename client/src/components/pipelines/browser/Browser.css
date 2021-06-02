@@ -361,8 +361,10 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
 tr.table-row-selected {
   background-color: #d2eafb;
 }
+
 .metadata-table {
-  border-radius: 5px;
+  border-radius: 0 0 5px 5px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .metadata-table div {
@@ -391,6 +393,11 @@ tr.table-row-selected {
 
 .metadata-additional-actions {
   background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px 5px 0 0;
+  border-bottom: none;
+  padding: 5px;
+  min-height: 37px;
 }
 
 .actions-sub-menu ul {
