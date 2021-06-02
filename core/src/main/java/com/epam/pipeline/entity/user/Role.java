@@ -32,8 +32,6 @@ import javax.persistence.ManyToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
-import javax.persistence.Table;
-import javax.persistence.Transient;
 import java.io.Serializable;
 import java.util.List;
 
