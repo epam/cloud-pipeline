@@ -46,7 +46,7 @@ auth = HTTPBasicAuth()
 
 
 def get_file_stream(path_to_file):
-    with open(path_to_file, "r") as f:
+    with open(path_to_file, "rb") as f:
         yield f.read()
 
 
@@ -797,8 +797,9 @@ def checkout_version_storage(vs_id):
 @auth.login_required
 def version_storage_file_resolve(vs_id):
     """
-    Registers changes after conflicts resolving for specified file
-    If file has no conflicts an error will be occurred. Performs `git add` operation.
+    Registers changes after fetch conflicts resolving. If file was not specified and head was detached
+    performs `git checkout HEAD` operation.
+    If specified file has no conflicts an error will be occurred. Performs `git add` operation for files.
     ---
     parameters:
       - name: vs_id
@@ -808,7 +809,7 @@ def version_storage_file_resolve(vs_id):
       - name: path
         in: query
         type: string
-        required: true
+        required: false
     definitions:
       Object:
         type: object
@@ -957,6 +958,46 @@ def version_storage_merge_abort(vs_id):
     manager = app.config['git_manager']
     try:
         manager.merge_abort(vs_id)
+        return jsonify(success({}))
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/vs/<vs_id>/checkout/path', methods=['POST'])
+@auth.login_required
+def version_storage_checkout_path(vs_id):
+    """
+    Accepts remote or local changes for specified file. (This file shall be in `conflicts` state).
+    ---
+    parameters:
+      - name: vs_id
+        in: path
+        type: string
+        required: true
+      - name: path
+        in: query
+        type: string
+        required: true
+      - name: remote
+        in: query
+        type: boolean
+        required: false
+        default: false
+    definitions:
+      Object:
+        type: object
+    responses:
+      200:
+        schema:
+          $ref: '#/definitions/Object'
+    """
+    path = flask.request.args.get('path')
+    manager = app.config['git_manager']
+    remote = flask.request.args.get("remote")
+    remote_flag = False if not remote else str_to_bool(remote)
+    try:
+        manager.checkout_path(vs_id, path, remote_flag)
         return jsonify(success({}))
     except Exception as e:
         manager.logger.log(traceback.format_exc())

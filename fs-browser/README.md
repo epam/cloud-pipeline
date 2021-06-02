@@ -263,8 +263,10 @@ Response example:
 }
 ```
 
-- `POST /vs/<id>/conflicts` - registers changes after conflicts resolving for specified file in `path` request
-parameter. If file has no conflicts an error will be occurred. Performs `git add` operation.
+- `POST /vs/<id>/conflicts` - registers changes after conflicts resolving. If `path` request parameter specified 
+performs `git add` operation. If specified file has no conflicts an error will be occurred. If `path` is not 
+specified and HEAD detached this method performs `git checkout HEAD` operation to set HEAD after refresh. 
+This method shall be called after all conflicts resolving caused by the `fetch` operation.
 
 Request example:
 ```
@@ -290,9 +292,9 @@ Response example:
 {    
     "payload": {
        "files": [
-          { "file": "relative/file_name1"; "status": "modified"},
-          { "file": "relative/file_name2"; "status": "created"},
-          { "file": "relative/file_name3"; "status": "deleted"}
+          { "file": "relative/file_name1"; "status": "modified", "binary": false, "new_size": 1, "old_size": 2 },
+          { "file": "relative/file_name2"; "status": "created",  "binary": true, "new_size": 1, "old_size": null },
+          { "file": "relative/file_name3"; "status": "deleted", "binary": true, "new_size": null, "old_size": 2 }
        ],
        "merge_in_progress": false,
        "unsaved": false
@@ -449,3 +451,7 @@ Request example:
 curl -X POST http://127.0.0.1:8080/vs/1/merge/abort
 ```
 
+- `POST /vs/<vs_id>/checkout/path?path=<file path>&remote=<true/false>` - provides ability to accepts 
+`theirs` or `ours` changes. This method checkouts specified file. This file shall contain conflicts. 
+If `remote` flag (default: false) specified the remote (or `theirs`) changes shall be accepted. 
+Otherwise local (or `ours`).
