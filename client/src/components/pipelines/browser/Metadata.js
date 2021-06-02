@@ -323,8 +323,8 @@ export default class Metadata extends React.Component {
 
   handleFilterApplied = async (key, dataArray) => {
     const filterModel = {...this.state.filterModel};
-    const filterObj = {key: unmapColumnName(key), values: dataArray};
-    if (key && dataArray) {
+    if (key && dataArray && dataArray.length) {
+      const filterObj = {key: unmapColumnName(key), values: dataArray};
       const currentFilterIndex = filterModel.filters
         .findIndex(filter => filter.key === unmapColumnName(key));
       if (currentFilterIndex > -1) {
