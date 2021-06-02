@@ -336,6 +336,7 @@ export default class Metadata extends React.Component {
       filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
     }
     await this.setState({filterModel});
+    this.paginationOnChange(FIRST_PAGE);
     this.loadData(this.state.filterModel);
   }
 
