@@ -997,7 +997,7 @@ export default class Metadata extends React.Component {
           <MetadataPanel
             key={METADATA_PANEL_KEY}
             readOnly={!(roleModel.writeAllowed(this.props.folder.value) &&
-            this.props.folderId !== undefined)}
+              this.props.folderId !== undefined)}
             readOnlyKeys={['ID', 'createdDate']}
             columnNamesFn={getColumnTitle}
             classId={currentItem ? currentItem.classEntity.id : null}
@@ -1394,89 +1394,84 @@ export default class Metadata extends React.Component {
       if (selectedItems.length === 0) {
         return null;
       }
+      const Actions = {
+        delete: 'delete-selected-items',
+        clearSelection: 'clear-selection',
+        copySelection: 'copy-selection'
+      };
+      const triggerMenuItem = ({key}) => {
+        switch (key) {
+          case Actions.delete:
+            this.onDeleteSelectedItems();
+            break;
+          case Actions.clearSelection:
+            this.onClearSelectionItems();
+            break;
+          case Actions.copySelection:
+            this.onCopySelectionItems();
+            break;
+        }
+      };
+      const menuItems = [(
+        <Menu.Item
+          key={Actions.clearSelection}
+        >
+          Clear selection
+        </Menu.Item>
+      )];
       if (
         roleModel.writeAllowed(this.props.folder.value) &&
         !this.props.readOnly &&
         roleModel.isManager.entities(this)
       ) {
-        const Actions = {
-          delete: 'delete-selected-items',
-          clearSelection: 'clear-selection',
-          copySelection: 'copy-selection'
-        };
-        const triggerMenuItem = ({key}) => {
-          switch (key) {
-            case Actions.delete:
-              this.onDeleteSelectedItems();
-              break;
-            case Actions.clearSelection:
-              this.onClearSelectionItems();
-              break;
-            case Actions.copySelection:
-              this.onCopySelectionItems();
-              break;
-          }
-        };
-        const menu = (
-          <Menu
-            onClick={triggerMenuItem}
-            style={{width: 150}}
+        menuItems.push((
+          <Menu.Item
+            key={Actions.copySelection}
           >
-            <Menu.Item
-              key={Actions.clearSelection}
-            >
-              Clear selection
-            </Menu.Item>
-            <Menu.Item
-              key={Actions.copySelection}
-            >
-              Copy
-            </Menu.Item>
-            <Menu.Divider />
-            <Menu.Item
-              key={Actions.delete}
-              style={{color: 'red'}}
-            >
-              Delete
-            </Menu.Item>
-          </Menu>
-        );
-        return (
-          <Button.Group>
+            Copy
+          </Menu.Item>
+        ));
+        menuItems.push((<Menu.Divider key="divider" />));
+        menuItems.push((
+          <Menu.Item
+            key={Actions.delete}
+            style={{color: 'red'}}
+          >
+            Delete
+          </Menu.Item>
+        ));
+      }
+      const menu = (
+        <Menu
+          onClick={triggerMenuItem}
+          style={{width: 150}}
+        >
+          {menuItems}
+        </Menu>
+      );
+      return (
+        <Button.Group>
+          <Button
+            size="small"
+            onClick={this.handleClickShowSelectedItems}
+          >
+            {
+              selectedItemsAreShowing
+                ? 'Show all metadata items'
+                : `Show ${selectedItemsString}`
+            }
+          </Button>
+          <Dropdown
+            overlay={menu}
+            trigger={['click']}
+          >
             <Button
               size="small"
-              onClick={this.handleClickShowSelectedItems}
             >
-              {
-                selectedItemsAreShowing
-                  ? 'Show all metadata items'
-                  : `Show ${selectedItemsString}`
-              }
+              <Icon type="down" />
             </Button>
-            <Dropdown
-              overlay={menu}
-              trigger={['click']}
-            >
-              <Button
-                size="small"
-              >
-                <Icon type="down" />
-              </Button>
-            </Dropdown>
-          </Button.Group>
-        );
-      }
-      return (
-        <Button
-          size="small"
-          onClick={this.handleClickShowSelectedItems}
-        >
-          {
-            selectedItemsAreShowing
-              ? 'Show all metadata items'
-              : `Show ${selectedItemsString}`
-          }
-        </Button>
+          </Dropdown>
+        </Button.Group>
       );
     };
     const renderRunButton = () => {
