@@ -162,7 +162,7 @@ public class AzureVMService {
         final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, runId);
-        createAndAttachVolume(
+        createAndAttachAzureVolumeToVMContainer(
                 azure,
                 findVMContainerInPagedResult(resources.currentPage(), resources)
                         .orElseThrow(IllegalArgumentException::new),
@@ -170,16 +170,16 @@ public class AzureVMService {
         );
     }
 
-    private void createAndAttachVolume(final Azure azure, GenericResource vmc, final Long size) {
+    private void createAndAttachAzureVolumeToVMContainer(final Azure azure, GenericResource vmc, final Long size) {
         final int sizeInGb = Math.toIntExact(size);
         if (vmc.resourceType().equals(VIRTUAL_MACHINE_SCALE_SET_TYPE)) {
-            VirtualMachineScaleSet scaleSet = azure.virtualMachineScaleSets().getById(vmc.id());
+            final VirtualMachineScaleSet scaleSet = azure.virtualMachineScaleSets().getById(vmc.id());
             final Optional<VirtualMachineDataDisk> dataDisk =
                     scaleSet.virtualMachines().list().stream().findFirst().flatMap(
                             vm -> vm.dataDisks().values().stream().findFirst()
                     );
             if (dataDisk.isPresent()) {
-                VirtualMachineDataDisk disk = dataDisk.get();
+                final VirtualMachineDataDisk disk = dataDisk.get();
                 scaleSet.update().withNewDataDisk(Math.toIntExact(sizeInGb),
                         disk.lun() + 1, disk.cachingType(), disk.storageAccountType()).apply();
             } else {
@@ -194,7 +194,7 @@ public class AzureVMService {
             final VirtualMachine virtualMachine = azure.virtualMachines().getById(vmc.id());
             final Optional<VirtualMachineDataDisk> dataDisk = virtualMachine.dataDisks().values().stream().findFirst();
             if (dataDisk.isPresent()) {
-                VirtualMachineDataDisk disk = dataDisk.get();
+                final VirtualMachineDataDisk disk = dataDisk.get();
                 virtualMachine.update().withNewDataDisk(Math.toIntExact(sizeInGb),
                        disk.lun() + 1, disk.cachingType(), disk.storageAccountType()).apply();
             } else {
