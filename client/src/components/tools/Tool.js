@@ -693,6 +693,9 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   getVersionScanningInfo = (item) => {
+    if (/^windows$/i.test(item.platform)) {
+      return null;
+    }
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && item.status) {
       let scanningInfo;
       switch (item.status.toUpperCase()) {
