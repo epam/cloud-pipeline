@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.metadata;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
+import com.epam.pipeline.entity.metadata.LogicalSearchOperator;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -28,7 +29,6 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
-import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -352,13 +352,13 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         });
     }
 
-    private void addSearchConditions(StringBuilder clause, List<String> searchQueries, String searchOperator) {
+    private void addSearchConditions(StringBuilder clause, List<String> searchQueries, LogicalSearchOperator operator) {
         if (CollectionUtils.isEmpty(searchQueries)) {
             return;
         }
         String clauses = searchQueries.stream()
                 .map(this::applySearchClause)
-                .collect(Collectors.joining(getOperator(searchOperator)));
+                .collect(Collectors.joining(getOperator(operator)));
         clause.append(AND).append(clauses);
     }
 
@@ -419,8 +419,8 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         return searchPattern.matcher(searchClauseQuery).replaceAll(formattedQuery);
     }
 
-    private String getOperator(String operator) {
-        if (!StringUtils.isBlank(operator) && MetadataParsingUtils.AND.equalsIgnoreCase(operator.trim())) {
+    private String getOperator(LogicalSearchOperator operator) {
+        if (operator == LogicalSearchOperator.AND) {
             return AND;
         }
         return OR;

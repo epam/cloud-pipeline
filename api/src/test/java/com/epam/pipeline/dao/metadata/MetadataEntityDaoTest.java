@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.metadata.LogicalSearchOperator;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -28,7 +29,6 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
-import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -635,7 +635,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
                         DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2)), Collections.emptyList(),
                 Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
-        searchANDOperator.setLogicalSearchOperator(MetadataParsingUtils.AND);
+        searchANDOperator.setLogicalSearchOperator(LogicalSearchOperator.AND);
         checkFilterRequest(searchANDOperator, Collections.emptyList());
     }
 
@@ -657,7 +657,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
                         DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2)), Collections.emptyList(),
                 Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
-        searchANDOperator.setLogicalSearchOperator(MetadataParsingUtils.OR);
+        searchANDOperator.setLogicalSearchOperator(LogicalSearchOperator.OR);
         checkFilterRequest(searchANDOperator, Arrays.asList(folder1Sample1, folder1Sample2));
     }
 

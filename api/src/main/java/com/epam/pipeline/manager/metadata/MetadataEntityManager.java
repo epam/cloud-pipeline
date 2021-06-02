@@ -62,9 +62,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.manager.utils.MetadataParsingUtils.AND;
-import static com.epam.pipeline.manager.utils.MetadataParsingUtils.OR;
-
 @Service
 public class MetadataEntityManager implements SecuredEntityManager {
 
@@ -296,9 +293,6 @@ public class MetadataEntityManager implements SecuredEntityManager {
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
         Assert.isTrue(filter.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
-        Assert.isTrue(checkSearchOperator(filter.getLogicalSearchOperator()),
-                messageHelper.getMessage(MessageConstants.ERROR_INVALID_METADATA_SEARCH_OPERATOR,
-                        String.format("%s or %s", AND, OR), filter.getLogicalSearchOperator()));
         List<MetadataEntity> result = metadataEntityDao.filterEntities(filter);
         List<PipeConfValue> paths = result.stream()
                 .map(entry -> entry.getData().values())
@@ -423,10 +417,6 @@ public class MetadataEntityManager implements SecuredEntityManager {
                     .getMessage(MessageConstants.ERROR_METADATA_ENTITY_NOT_FOUND, id));
         }
         return entity;
-    }
-
-    private boolean checkSearchOperator(String operator) {
-        return StringUtils.isBlank(operator) || OR.equalsIgnoreCase(operator) || AND.equalsIgnoreCase(operator);
     }
 
     @Override
