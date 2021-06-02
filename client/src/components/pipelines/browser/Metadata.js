@@ -36,7 +36,6 @@ import {
   Pagination,
   Row
 } from 'antd';
-import moment from 'moment-timezone';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -363,19 +362,11 @@ export default class Metadata extends React.Component {
         .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
     if (!this.state.selectedItemsAreShowing) {
-      const startDateFrom = filterModel.startDateFrom
-        ? moment.utc(filterModel.startDateFrom).format('YYYY-MM-DD')
-        : undefined;
-      const endDateTo = filterModel.endDateTo
-        ? moment.utc(filterModel.endDateTo).add(1, 'd').format('YYYY-MM-DD')
-        : undefined;
       await this.metadataRequest.send(
         {
           ...filterModel,
           orderBy,
           filters,
-          startDateFrom,
-          endDateTo
         }
       );
       if (this.metadataRequest.error) {
