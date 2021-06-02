@@ -3,8 +3,6 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Popover, Button, Icon, Select} from 'antd';
 
-const Option = Select.Option;
-
 @observer
 class FilterControl extends React.PureComponent {
   state = {

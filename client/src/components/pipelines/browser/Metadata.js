@@ -27,7 +27,6 @@ import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataE
 import {
   Button,
   Checkbox,
-  Col,
   Dropdown,
   Icon,
   Input,
@@ -37,6 +36,7 @@ import {
   Pagination,
   Row
 } from 'antd';
+import moment from 'moment-timezone';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -167,8 +167,8 @@ export default class Metadata extends React.Component {
     selectedItemsAreShowing: false,
     selectedColumns: [],
     filterModel: {
-      startDateFrom: '',
-      endDateTo: '',
+      startDateFrom: undefined,
+      endDateTo: undefined,
       filters: [],
       folderId: parseInt(this.props.folderId),
       metadataClass: this.props.metadataClass,
@@ -286,14 +286,12 @@ export default class Metadata extends React.Component {
 
   onDateRangeChanged = async (range) => {
     let filterModel = {...this.state.filterModel};
-    if (range) {
-      const {from, to} = range;
-      filterModel.startDateFrom = from;
-      filterModel.endDateTo = to;
-    } else {
-      filterModel.startDateFrom = '';
-      filterModel.endDateTo = '';
-    }
+    const {
+      from,
+      to
+    } = range || {};
+    filterModel.startDateFrom = from;
+    filterModel.endDateTo = to;
     await this.setState({filterModel});
     this.loadData(this.state.filterModel);
     this.forceUpdate();
@@ -352,6 +350,7 @@ export default class Metadata extends React.Component {
       filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
     }
     await this.setState({filterModel});
+    this.paginationOnChange(FIRST_PAGE);
     this.loadData(this.state.filterModel);
   }
 
@@ -366,7 +365,21 @@ export default class Metadata extends React.Component {
         .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
     if (!this.state.selectedItemsAreShowing) {
-      await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}, {filters}));
+      const startDateFrom = filterModel.startDateFrom
+        ? moment.utc(filterModel.startDateFrom).format('YYYY-MM-DD')
+        : undefined;
+      const endDateTo = filterModel.endDateTo
+        ? moment.utc(filterModel.endDateTo).add(1, 'd').format('YYYY-MM-DD')
+        : undefined;
+      await this.metadataRequest.send(
+        {
+          ...filterModel,
+          orderBy,
+          filters,
+          startDateFrom,
+          endDateTo
+        }
+      );
       if (this.metadataRequest.error) {
         message.error(this.metadataRequest.error, 5);
         this._currentMetadata = [];
@@ -445,7 +458,11 @@ export default class Metadata extends React.Component {
       return null;
     }
     const {filterModel = {}} = this.state;
-    const {filters = []} = filterModel;
+    const {
+      filters = [],
+      startDateFrom,
+      endDateTo
+    } = filterModel;
     const filter = filters.find(filter => filter.key === unmapColumnName(key));
     const values = filter ? (filter.values || []) : [];
     const button = (
@@ -467,17 +484,22 @@ export default class Metadata extends React.Component {
     if (key === 'createdDate') {
       return (
         <RangeDatePicker
-          from={getFromDate(key)}
-          to={getToDate(key)}
+          from={startDateFrom}
+          to={endDateTo}
           onChange={(e) => this.onDateRangeChanged(e, key)}
-        >{button}</RangeDatePicker>);
+        >
+          {button}
+        </RangeDatePicker>
+      );
     }
     return (
       <FilterControl
         columnName={key}
         onSearch={(tags) => this.handleFilterApplied(key, tags)}
         value={values}
-      >{button}</FilterControl>
+      >
+        {button}
+      </FilterControl>
     );
   }
 
@@ -707,6 +729,8 @@ export default class Metadata extends React.Component {
   onClearFilters = () => {
     const {filterModel} = this.state;
     filterModel.filters = [];
+    filterModel.startDateFrom = undefined;
+    filterModel.endDateTo = undefined;
     this.setState(
       {filterModel},
       () => this.paginationOnChange(FIRST_PAGE)
@@ -1331,15 +1355,21 @@ export default class Metadata extends React.Component {
   };
 
   renderTableActions = () => {
+    const {
+      filterModel = {},
+      selectedItems = [],
+      selectedItemsAreShowing
+    } = this.state;
+    const selectedItemsString =
+      `${selectedItems.length} selected item${selectedItems.length === 1 ? '' : 's'}`;
     const renderClearFiltersButton = () => {
       const {
-        filterModel = {},
-        selectedItemsAreShowing
-      } = this.state;
-      const {
-        filters = []
+        filters = [],
+        startDateFrom,
+        endDateTo
       } = filterModel;
-      if (!selectedItemsAreShowing && filters.length > 0) {
+      const filtersEnabled = filters.length > 0 || !!startDateFrom || !!endDateTo;
+      if (!selectedItemsAreShowing && filtersEnabled) {
         return (
           <Button
             key="clear_filters"
@@ -1356,28 +1386,27 @@ export default class Metadata extends React.Component {
       }
       return null;
     };
-    const renderSelectionControl = () => {
-      const {
-        selectedItems = [],
-        selectedItemsAreShowing
-      } = this.state;
+    const renderSelectionInfo = () => {
       if (selectedItems.length === 0) {
-        return (
-          <div>
-            {'\u00A0'}
-          </div>
-        );
+        return null;
       }
-      const selectedItemsString =
-        `${selectedItems.length} selected item${selectedItems.length === 1 ? '' : 's'}`;
-      const info = selectedItemsAreShowing && selectedItems.length > 0
-        ? (
-          <span style={{marginLeft: 5}}>
+      if (selectedItemsAreShowing && selectedItems.length > 0) {
+        return (
+          <span
+            style={{marginLeft: 5}}
+            key="info"
+          >
             {/* eslint-disable-next-line */}
             Currently viewing {selectedItemsString}
           </span>
-        )
-        : undefined;
+        );
+      }
+      return null;
+    };
+    const renderSelectionControl = () => {
+      if (selectedItems.length === 0) {
+        return null;
+      }
       if (
         roleModel.writeAllowed(this.props.folder.value) &&
         !this.props.readOnly &&
@@ -1426,61 +1455,41 @@ export default class Metadata extends React.Component {
           </Menu>
         );
         return (
-          <div
-            style={{
-              display: 'inline-flex',
-              flexDirection: 'row',
-              alignItems: 'center'
-            }}
-          >
-            <Button.Group>
+          <Button.Group>
+            <Button
+              size="small"
+              onClick={this.handleClickShowSelectedItems}
+            >
+              {
+                selectedItemsAreShowing
+                  ? 'Show all metadata items'
+                  : `Show ${selectedItemsString}`
+              }
+            </Button>
+            <Dropdown
+              overlay={menu}
+              trigger={['click']}
+            >
               <Button
                 size="small"
-                onClick={this.handleClickShowSelectedItems}
               >
-                {
-                  selectedItemsAreShowing
-                    ? 'Show all metadata items'
-                    : `Show ${selectedItemsString}`
-                }
+                <Icon type="down" />
               </Button>
-              <Dropdown
-                overlay={menu}
-                trigger={['click']}
-              >
-                <Button
-                  size="small"
-                >
-                  <Icon type="down" />
-                </Button>
-              </Dropdown>
-            </Button.Group>
-            {info}
-            {renderClearFiltersButton()}
-          </div>
+            </Dropdown>
+          </Button.Group>
         );
       }
       return (
-        <div
-          style={{
-            display: 'inline-flex',
-            flexDirection: 'row',
-            alignItems: 'center'
-          }}
+        <Button
+          size="small"
+          onClick={this.handleClickShowSelectedItems}
         >
-          <Button
-            size="small"
-            onClick={this.handleClickShowSelectedItems}
-          >
-            {
-              selectedItemsAreShowing
-                ? 'Show all metadata items'
-                : `Show ${selectedItemsString}`
-            }
-          </Button>
-          {info}
-          {renderClearFiltersButton()}
-        </div>
+          {
+            selectedItemsAreShowing
+              ? 'Show all metadata items'
+              : `Show ${selectedItemsString}`
+          }
+        </Button>
       );
     };
     const renderRunButton = () => {
@@ -1489,7 +1498,6 @@ export default class Metadata extends React.Component {
         !this.props.readOnly &&
         roleModel.isManager.entities(this)
       ) {
-        const {selectedItems = []} = this.state;
         return (
           <Button
             key="run"
@@ -1510,7 +1518,17 @@ export default class Metadata extends React.Component {
         justify="space-between"
         align="middle"
       >
-        {renderSelectionControl()}
+        <div
+          style={{
+            display: 'inline-flex',
+            flexDirection: 'row',
+            alignItems: 'center'
+          }}
+        >
+          {renderSelectionControl()}
+          {renderClearFiltersButton()}
+          {renderSelectionInfo()}
+        </div>
         {renderRunButton()}
       </Row>
     );
@@ -1536,7 +1554,7 @@ export default class Metadata extends React.Component {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row
           type="flex"
-          justify="space-between"
+          justify="end"
           align="middle"
           style={{
             minHeight: 41,
@@ -1546,7 +1564,7 @@ export default class Metadata extends React.Component {
         >
           <div
             className={styles.itemHeader}
-            style={{flex: 'initial'}}
+            style={{flex: 'initial', marginRight: 'auto'}}
           >
             <Breadcrumbs
               id={parseInt(this.props.folderId)}
