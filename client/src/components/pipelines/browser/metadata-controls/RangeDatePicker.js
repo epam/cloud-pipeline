@@ -4,7 +4,8 @@ import {observer} from 'mobx-react';
 import {Popover, Icon, DatePicker, Button} from 'antd';
 import moment from 'moment';
 
-const DATE_FORMAT = 'YYYY-MM-DD';
+const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
+const DATE_DISPLAY_FORMAT = 'YYYY-MM-DD';
 
 function toLocalMomentDate (string) {
   if (!string) {
@@ -20,198 +21,242 @@ function toLocalMomentDate (string) {
 
 @observer
 class RangeDatePicker extends React.Component {
-  componentDidMount () {
-    setTimeout(() => {
-      this.setState({
-        dateFrom: toLocalMomentDate(this.props.from),
-        dateTo: toLocalMomentDate(this.props.to)
-      });
-    }, 500);
+  state = {
+    dateFrom: undefined,
+    dateTo: undefined,
+    fromPickerVisible: false,
+    toPickerVisible: false,
+    rangeFilterVisible: false
   }
-    static propTypes = {
-      from: PropTypes.string,
-      to: PropTypes.string,
-      onChange: PropTypes.func,
-      children: PropTypes.node
+
+  get modified () {
+    const {from, to} = this.props;
+    const {dateFrom, dateTo} = this.state;
+    const stateFrom = dateFrom ? moment.utc(dateFrom).format(DATE_FORMAT) : undefined;
+    const stateTo = dateTo ? moment.utc(dateTo).format(DATE_FORMAT) : undefined;
+    return from !== stateFrom || to !== stateTo;
+  }
+
+  componentDidMount () {
+    this.updateValuesFromProps();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      this.props.from !== prevProps.from ||
+      this.props.to !== prevProps.to ||
+      prevState.rangeFilterVisible !== this.state.rangeFilterVisible
+    ) {
+      this.updateValuesFromProps();
     }
-    state = {
+  }
+
+  updateValuesFromProps = () => {
+    this.setState({
       dateFrom: toLocalMomentDate(this.props.from),
-      dateTo: toLocalMomentDate(this.props.to),
-      fromPickerVisible: false,
-      toPickerVisible: false,
-      rangeFilterVisible: false
-    }
+      dateTo: toLocalMomentDate(this.props.to)
+    });
+  };
 
-    disabledStartDate = (startValue) => {
-      const endValue = this.state.dateTo;
-      if (!startValue || !endValue) {
-        return false;
-      }
-      return (
-        startValue > endValue
-      );
+  disabledStartDate = (startValue) => {
+    const endValue = this.state.dateTo;
+    if (!startValue || !endValue) {
+      return false;
     }
-    disabledEndDate = (endValue) => {
-      const startValue = this.state.dateFrom;
-      if (!startValue) {
-        return endValue > toLocalMomentDate(moment().toDate());
-      } else if (!endValue) {
-        return false;
-      }
-      return (
-        endValue < startValue ||
-        endValue > toLocalMomentDate(moment().toDate())
-      );
+    return (
+      startValue > endValue
+    );
+  }
+  disabledEndDate = (endValue) => {
+    const startValue = this.state.dateFrom;
+    if (!startValue) {
+      return endValue > toLocalMomentDate(moment().toDate());
+    } else if (!endValue) {
+      return false;
     }
-    onChange = (field, value) => {
-      this.setState({
-        [field]: value
-      });
-    }
-    onStartChange = (value) => {
-      this.onChange('dateFrom', value);
-    }
-    onEndChange = (value) => {
-      this.onChange('dateTo', value);
-    }
-    handleStartOpenChange= (open) => {
-      this.setState({
-        fromPickerVisible: open
-      });
-    }
-    handleEndOpenChange = (endOpen) => {
-      this.setState({
-        toPickerVisible: endOpen
-      });
-    }
-    handleVisibleChange = (visible) => {
-      this.setState({visible});
-    }
-    handleRangeFilterVisibility = (visible) => {
-      const {fromPickerVisible, toPickerVisible} = this.state;
-      if (visible || (!fromPickerVisible && !toPickerVisible)) {
-        this.setState({
-          rangeFilterVisible: visible
-        });
-      }
-    };
+    return (
+      endValue < startValue ||
+      endValue > toLocalMomentDate(moment().toDate())
+    );
+  }
 
-    handleRangeChange = () => {
-      const {dateFrom, dateTo} = this.state;
-      const {onChange} = this.props;
-      onChange({
-        from: dateFrom
-          ? moment.utc(dateFrom).format(DATE_FORMAT)
-          : undefined,
-        to: dateTo
-          ? moment.utc(dateTo).format(DATE_FORMAT)
-          : undefined
+  onStartChange = (value) => {
+    if (value) {
+      this.setState({
+        dateFrom: moment(value).startOf('D')
       });
-      this.handleRangeFilterVisibility(false);
-    };
-    resetRange = async () => {
-      const {onChange} = this.props;
-      await this.setState({
-        dateFrom: null,
-        dateTo: null
+    } else {
+      this.setState({
+        dateFrom: undefined
       });
-      onChange(null);
-      this.handleRangeFilterVisibility(false);
     }
-    render () {
-      if (this.props.from !== undefined && this.props.to !== undefined) {
-        const content = (
-          <div style={{display: 'flex', flexDirection: 'column', width: 280}}>
-            <div style={{
+  }
+
+  onEndChange = (value) => {
+    if (value) {
+      this.setState({
+        dateTo: moment(value).endOf('D')
+      });
+    } else {
+      this.setState({
+        dateTo: undefined
+      });
+    }
+  }
+  handleStartOpenChange = (open) => {
+    this.setState({
+      fromPickerVisible: open
+    });
+  }
+  handleEndOpenChange = (endOpen) => {
+    this.setState({
+      toPickerVisible: endOpen
+    });
+  }
+  handleVisibleChange = (visible) => {
+    this.setState({visible});
+  }
+  handleRangeFilterVisibility = (visible) => {
+    const {fromPickerVisible, toPickerVisible} = this.state;
+    if (visible || (!fromPickerVisible && !toPickerVisible)) {
+      this.setState({
+        rangeFilterVisible: visible
+      });
+    }
+  };
+
+  handleRangeChange = () => {
+    const {dateFrom, dateTo} = this.state;
+    const {onChange} = this.props;
+    onChange({
+      from: dateFrom
+        ? moment.utc(dateFrom).format(DATE_FORMAT)
+        : undefined,
+      to: dateTo
+        ? moment.utc(dateTo).format(DATE_FORMAT)
+        : undefined
+    });
+    this.handleRangeFilterVisibility(false);
+  };
+  resetRange = async () => {
+    const {onChange} = this.props;
+    await this.setState({
+      dateFrom: null,
+      dateTo: null
+    });
+    onChange(null);
+    this.handleRangeFilterVisibility(false);
+  }
+
+  render () {
+    const content = (
+      <div style={{display: 'flex', flexDirection: 'column', width: 280}}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-start',
+          alignItems: 'center',
+          marginTop: 5
+        }}>
+          <label
+            htmlFor="from"
+            style={{marginRight: 5, width: '15%', fontWeight: 800}}
+          >
+            From
+          </label>
+          <DatePicker
+            style={{width: '85%'}}
+            id="from"
+            disabledDate={this.disabledStartDate}
+            placeholder=""
+            format={DATE_DISPLAY_FORMAT}
+            value={this.state.dateFrom || null}
+            onChange={this.onStartChange}
+            onOpenChange={this.handleStartOpenChange}
+          />
+        </div>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-start',
+          alignItems: 'center',
+          marginTop: 10,
+          cursor: 'pointer'
+        }}>
+          <label
+            htmlFor="to"
+            style={{marginRight: 5, width: '15%', fontWeight: 800}}
+          >
+            To
+          </label>
+          <DatePicker
+            style={{width: '85%'}}
+            id="to"
+            allowClear
+            disabledDate={this.disabledEndDate}
+            placeholder=""
+            format={DATE_DISPLAY_FORMAT}
+            value={this.state.dateTo || null}
+            onChange={this.onEndChange}
+            onOpenChange={this.handleEndOpenChange}
+          />
+        </div>
+        <div
+          style={{
+            margin: '20px 0px 10px 0px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+          <Button
+            type="danger"
+            onClick={() => this.resetRange()}
+            disabled={!this.props.from && !this.props.to}
+          >
+            Reset
+          </Button>
+          <Button
+            type="primary"
+            onClick={() => this.handleRangeChange()}
+            disabled={!this.modified}
+          >
+            Apply
+          </Button>
+        </div>
+      </div>
+    );
+    return (
+      <Popover
+        content={content}
+        title={(
+          <div
+            style={{
+              marginTop: 5,
               display: 'flex',
-              justifyContent: 'flex-start',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              marginTop: 5
-            }}>
-              <label
-                htmlFor="from"
-                style={{marginRight: 5, width: '15%', fontWeight: 800}}
-              >From</label>
-              <DatePicker
-                style={{width: '85%'}}
-                id="from"
-                disabledDate={this.disabledStartDate}
-                placeholder=""
-                format={DATE_FORMAT}
-                value={this.state.dateFrom || null}
-                onChange={this.onStartChange}
-                onOpenChange={this.handleStartOpenChange}
-              />
-            </div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'flex-start',
-              alignItems: 'center',
-              marginTop: 10,
               cursor: 'pointer'
             }}>
-              <label htmlFor="to" style={{marginRight: 5, width: '15%', fontWeight: 800}}>To</label>
-              <DatePicker
-                style={{width: '85%'}}
-                id="to"
-                allowClear
-                disabledDate={this.disabledEndDate}
-                placeholder=""
-                format={DATE_FORMAT}
-                value={this.state.dateTo || null}
-                onChange={this.onEndChange}
-                onOpenChange={this.handleEndOpenChange}
-              />
-            </div>
-            <div
-              style={{
-                margin: '20px 0px 10px 0px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-              <Button
-                type="danger"
-                onClick={() => this.resetRange()}
-                disabled={!this.state.dateFrom && !this.state.dateTo}
-              >
-                Reset
-              </Button>
-              <Button
-                type="primary"
-                onClick={() => this.handleRangeChange()}
-                disabled={!this.state.dateFrom && !this.state.dateTo}
-              >
-                Apply
-              </Button>
-            </div>
+            <h4>Select date range</h4>
+            <Icon
+              type="close"
+              onClick={() => this.handleRangeFilterVisibility(false)}
+            />
           </div>
-        );
-        return (
-          <Popover
-            content={content}
-            title={(
-              <div
-                style={{
-                  marginTop: 5,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  cursor: 'pointer'
-                }}>
-                <h4>Select date range</h4>
-                <Icon type="close" onClick={() => this.handleRangeFilterVisibility(false)} />
-              </div>
-            )}
-            trigger={['click', 'mouseover']}
-            visible={this.state.rangeFilterVisible}
-            onVisibleChange={this.handleRangeFilterVisibility}
-          >
-            {this.props.children}
-          </Popover>);
-      } else {
-        return null;
-      }
-    }
+        )}
+        trigger={['click', 'mouseover']}
+        visible={this.state.rangeFilterVisible}
+        onVisibleChange={this.handleRangeFilterVisibility}
+      >
+        {this.props.children}
+      </Popover>
+    );
+  }
 }
+
+RangeDatePicker.propTypes = {
+  from: PropTypes.string,
+  to: PropTypes.string,
+  onChange: PropTypes.func,
+  children: PropTypes.node
+};
+
 export default RangeDatePicker;
