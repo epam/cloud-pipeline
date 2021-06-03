@@ -1840,15 +1840,17 @@ class Logs extends localization.LocalizedReactComponent {
               {CommitStatusButton}
             </Row>
             <br />
-            <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              <VSActions
-                run={this.props.run.value}
-                showDownIcon
-                trigger={['click']}
-              >
-                VERSIONED STORAGE
-              </VSActions>
-            </Row>
+            {!this.props.run.value.sensitive ? (
+              <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
+                <VSActions
+                  run={this.props.run.value}
+                  showDownIcon
+                  trigger={['click']}
+                >
+                  VERSIONED STORAGE
+                </VSActions>
+              </Row>
+            ) : null}
           </Col>
         </Row>
         <Row>
