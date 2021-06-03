@@ -561,6 +561,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   onDeleteDocument = async (document, comment) => {
     if (this.lastCommitId) {
+      const {selectedFile} = this.state;
       const {
         pipeline,
         pipelineId,
@@ -592,6 +593,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           ? folders.invalidateFolder(parentFolderId)
           : pipelinesLibrary.invalidateCache();
         await pipeline.fetch();
+        if (selectedFile && selectedFile.path === document.path) {
+          this.clearSelectedFile();
+        }
       }
       this.pathWasChanged();
     }
