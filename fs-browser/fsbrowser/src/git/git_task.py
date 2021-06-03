@@ -67,7 +67,7 @@ class GitTask(Task):
                 git_client.unstash(full_repo_path)
 
             stash_conflicts = self._conflicts_in_status(git_client, full_repo_path)
-            conflicts = list(set(stash_conflicts + self._build_pull_conflicts(pull_conflicts)))
+            conflicts = list(set(stash_conflicts + pull_conflicts))
             if conflicts:
                 self._conflicts_failure(conflicts)
                 return
@@ -91,7 +91,7 @@ class GitTask(Task):
             self.pulling()
             conflicts = git_client.pull(full_repo_path)
             if conflicts:
-                self._conflicts_failure(self._build_pull_conflicts(conflicts))
+                self._conflicts_failure(conflicts)
                 return
 
             self.pushing()
@@ -125,12 +125,6 @@ class GitTask(Task):
         if conflicts:
             self._conflicts_failure(conflicts)
             raise RuntimeError('Automatic merge failed. Please resolve conflicts and then try again')
-
-    @staticmethod
-    def _build_pull_conflicts(conflicts):
-        if not conflicts:
-            return []
-        return [conflict[0].path for conflict in conflicts]
 
     def _conflicts_failure(self, conflicts):
         self.conflicts = conflicts
