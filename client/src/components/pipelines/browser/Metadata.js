@@ -70,6 +70,7 @@ import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
+import parseSearchQuery from './metadata-controls/parse-search-query';
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -99,12 +100,6 @@ function getColumnTitle (key) {
     return 'Created Date';
   }
   return key;
-}
-function getFromDate (key) {
-  return '';
-}
-function getToDate (key) {
-  return '';
 }
 
 @connect({
@@ -141,7 +136,6 @@ export default class Metadata extends React.Component {
     readOnly: PropTypes.bool
   };
 
-  _currentMetadata = [];
   _totalCount = 0;
 
   columns = [];
@@ -158,6 +152,7 @@ export default class Metadata extends React.Component {
   state = {
     loading: false,
     metadata: false,
+    searchQuery: undefined,
     selectedItem: null,
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
@@ -180,7 +175,8 @@ export default class Metadata extends React.Component {
     currentProjectId: null,
     currentMetadataEntityForCurrentProject: [],
     uploadToBucketVisible: false,
-    copyEntitiesDialogVisible: false
+    copyEntitiesDialogVisible: false,
+    currentMetadata: []
   };
 
   uploadButton;
@@ -227,8 +223,9 @@ export default class Metadata extends React.Component {
       return [];
     }
     const ownKeys = this.keys.filter(k => !k.predefined).map(k => k.name);
+    const metadataClass = (this.props.metadataClass || '').toLowerCase();
     const [metadata] = this.entityTypes
-      .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
+      .filter(e => e.metadataClass.name.toLowerCase() === metadataClass);
     if (metadata) {
       return (metadata.fields || [])
         .filter(f => ownKeys.indexOf(f.name) >= 0)
@@ -243,8 +240,9 @@ export default class Metadata extends React.Component {
       return [];
     }
     const ownKeys = this.keys.filter(k => !k.predefined).map(k => k.name);
+    const metadataClass = (this.props.metadataClass || '').toLowerCase();
     const [metadata] = this.entityTypes
-      .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
+      .filter(e => e.metadataClass.name.toLowerCase() === metadataClass);
     if (metadata) {
       return (metadata.fields || [])
         .filter(f => f.type.toLowerCase() === 'path' && ownKeys.indexOf(f.name) >= 0)
@@ -289,9 +287,10 @@ export default class Metadata extends React.Component {
     } = range || {};
     filterModel.startDateFrom = from;
     filterModel.endDateTo = to;
-    await this.setState({filterModel});
-    this.loadData(this.state.filterModel);
-    this.forceUpdate();
+    this.setState(
+      {filterModel},
+      () => this.loadData()
+    );
   };
 
   closeAddInstanceForm = () => {
@@ -320,7 +319,7 @@ export default class Metadata extends React.Component {
       } else {
         await this.props.entityFields.fetch();
         await this.loadColumns(this.props.folderId, this.props.metadataClass);
-        await this.loadData(this.state.filterModel);
+        await this.loadData();
         await this.props.folder.fetch();
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this.props.folder.value.parentId);
@@ -346,49 +345,46 @@ export default class Metadata extends React.Component {
     } else {
       filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
     }
-    await this.setState({filterModel});
-    this.paginationOnChange(FIRST_PAGE);
-    this.loadData(this.state.filterModel);
+    filterModel.page = FIRST_PAGE;
+    this.setState(
+      {filterModel},
+      () => this.loadData()
+    );
   }
 
-  loadData = async (filterModel) => {
+  loadData = async () => {
     this.setState({loading: true});
     this.metadataRequest = new MetadataEntityFilter();
+    const {filterModel, selectedItemsAreShowing, selectedItems} = this.state;
     let orderBy, filters;
+    let currentMetadata = [];
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
       filters = (filterModel.filters || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
-    if (!this.state.selectedItemsAreShowing) {
+    if (!selectedItemsAreShowing) {
       await this.metadataRequest.send(
         {
           ...filterModel,
           orderBy,
-          filters,
+          filters
         }
       );
       if (this.metadataRequest.error) {
         message.error(this.metadataRequest.error, 5);
-        this._currentMetadata = [];
+        currentMetadata = [];
       } else {
         if (this.metadataRequest.value) {
           this._totalCount = this.metadataRequest.value.totalCount;
-          //           if (!this.state.filterModel.searchQueries.length) {
-          //             const parentFolderId = this.props.folderId;
-          //             if (this._totalCount <= 0) {
-          //               this.props.router.push(`/folder/${parentFolderId}`);
-          //               return;
-          //             }
-          //           }
           if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
             this._classEntity = {
               id: this.metadataRequest.value.elements[0].classEntity.id,
               name: this.metadataRequest.value.elements[0].classEntity.name
             };
           }
-          this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
+          currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
             v.data = v.data || {};
             v.data.rowKey = {
               value: v.id,
@@ -407,8 +403,7 @@ export default class Metadata extends React.Component {
         }
       }
     } else {
-      const {page, pageSize} = this.state.filterModel;
-      const selectedItems = [...this.state.selectedItems];
+      const {page, pageSize} = filterModel;
       this._totalCount = selectedItems.length;
 
       const firstRow = Math.max((page - 1) * pageSize, 0);
@@ -424,12 +419,12 @@ export default class Metadata extends React.Component {
             return a[field].value < b[field].value ? 1 : -1;
           }
         });
-        this._currentMetadata = selectedItems.slice(firstRow, lastRow);
+        currentMetadata = selectedItems.slice(firstRow, lastRow);
       } else {
-        this._currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
+        currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
-    this.setState({loading: false});
+    this.setState({loading: false, currentMetadata});
   };
 
   filterApplied = (key) => {
@@ -531,7 +526,7 @@ export default class Metadata extends React.Component {
         message.error(request.error, 5);
       }
       this.setState({selectedItems: [], selectedItem: null, metadata: false});
-      await this.loadData(this.state.filterModel);
+      await this.loadData();
       await this.props.folder.fetch();
       if (this.props.onReloadTree) {
         this.props.onReloadTree(true);
@@ -621,21 +616,41 @@ export default class Metadata extends React.Component {
         value: metadataEntityLoadExternalRequest.value.createdDate,
         type: 'date'
       };
-      this.setState({metadata: true, selectedItem: selectedItem});
+      this.setState({metadata: true, selectedItem});
     }
   };
 
   onSearchQueriesChanged = async () => {
-    this.setState(
-      {selectedItemsAreShowing: false},
-      () => this.paginationOnChange(FIRST_PAGE)
-    );
-    await this.loadData(this.state.filterModel);
+    const {filterModel, searchQuery} = this.state;
+    const {
+      folderId,
+      metadataClass
+    } = this.props;
+    const {filters, searchQueries} = parseSearchQuery(searchQuery);
+    const {orderBy = []} = filterModel || {};
+    const newFilterModel = {
+      startDateFrom: undefined,
+      endDateTo: undefined,
+      filters: filters.map(filter => ({
+        ...filter,
+        key: unmapColumnName(filter.key)
+      })),
+      folderId: parseInt(folderId),
+      metadataClass: metadataClass,
+      orderBy,
+      page: 1,
+      pageSize: PAGE_SIZE,
+      searchQueries
+    };
+    this.setState({
+      filterModel: newFilterModel,
+      selectedItemsAreShowing: false
+    }, () => this.loadData());
   };
 
   onOrderByChanged = async (key, value) => {
     if (key) {
-      const filterModel = this.state.filterModel;
+      const {filterModel} = this.state;
       const [currentOrderBy] = filterModel.orderBy.filter(f => f.field === key);
       if (currentOrderBy) {
         const index = filterModel.orderBy.indexOf(currentOrderBy);
@@ -644,7 +659,7 @@ export default class Metadata extends React.Component {
       if (value) {
         filterModel.orderBy = [{field: key, desc: value === DESCEND}];
       }
-      await this.loadData(this.state.filterModel);
+      await this.loadData();
     }
   };
 
@@ -697,11 +712,11 @@ export default class Metadata extends React.Component {
 
   onRowClick = (item) => {
     const [selectedItem] =
-      this._currentMetadata.filter(column => column.rowKey === item.rowKey);
+      this.state.currentMetadata.filter(column => column.rowKey === item.rowKey);
     if (this.state.selectedItem && this.state.selectedItem.rowKey === selectedItem.rowKey) {
       this.setState({selectedItem: null, metadata: false});
     } else {
-      this.setState({selectedItem: selectedItem, metadata: true});
+      this.setState({selectedItem, metadata: true});
     }
   };
   onClearFilters = () => {
@@ -709,9 +724,14 @@ export default class Metadata extends React.Component {
     filterModel.filters = [];
     filterModel.startDateFrom = undefined;
     filterModel.endDateTo = undefined;
+    filterModel.page = 1;
+    filterModel.searchQueries = [];
     this.setState(
-      {filterModel},
-      () => this.paginationOnChange(FIRST_PAGE)
+      {
+        filterModel,
+        searchQuery: undefined
+      },
+      () => this.loadData()
     );
   };
   onClearSelectionItems = () => {
@@ -730,7 +750,7 @@ export default class Metadata extends React.Component {
       copyEntitiesDialogVisible: false
     }, () => {
       if (destinationFolder) {
-        this.loadData(this.state.filterModel);
+        this.loadData();
       }
       this.props.folders.invalidateFolder(this.props.folderId);
       this.props.folders.invalidateFolder(destinationFolder);
@@ -806,7 +826,9 @@ export default class Metadata extends React.Component {
         FILE_NAME_FORMAT_COLUMN: getParam(values.nameField, 'string', false),
         CREATE_FOLDERS_FOR_COLUMNS: getParam(values.createFolders, 'boolean', false),
         UPDATE_PATH_VALUES: getParam(values.updatePathValues, 'boolean', false),
-        MAX_THREADS_COUNT: values.threadsCount ? getParam(values.threadsCount, 'string', false) : undefined
+        MAX_THREADS_COUNT: values.threadsCount
+          ? getParam(values.threadsCount, 'string', false)
+          : undefined
       }
     };
     await PipelineRunner.send({...payload, force: true});
@@ -873,7 +895,7 @@ export default class Metadata extends React.Component {
           sortable={false}
           minRows={0}
           columns={this.tableColumns}
-          data={this._currentMetadata}
+          data={this.state.currentMetadata}
           getTableProps={() => ({style: {overflowY: 'hidden'}})}
           getTdProps={(state, rowInfo, column, instance) => ({
             onClick: (e) => {
@@ -1001,9 +1023,9 @@ export default class Metadata extends React.Component {
             onUpdateMetadata={async () => {
               await this.props.entityFields.fetch();
               await this.loadColumns(this.props.folderId, this.props.metadataClass);
-              await this.loadData(this.state.filterModel);
+              await this.loadData();
               const [selectedItem] =
-                this._currentMetadata
+                this.state.currentMetadata
                   .filter(metadata => metadata.rowKey.value === currentItem.id);
               if (this.state.selectedItems && this.state.selectedItems.length) {
                 const selectedItems = this.state.selectedItems.map(item => {
@@ -1011,7 +1033,7 @@ export default class Metadata extends React.Component {
                 });
                 this.setState({selectedItems: [...selectedItems]});
               }
-              this.setState({selectedItem: selectedItem});
+              this.setState({selectedItem});
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);
@@ -1026,7 +1048,10 @@ export default class Metadata extends React.Component {
   deleteMetadataClassConfirm = () => {
     const onDeleteMetadataClass = async () => {
       const hide = message.loading(`Removing class '${this.props.metadataClass}'...`, -1);
-      const request = new MetadataEntityDeleteFromProject(this.props.folderId, this.props.metadataClass);
+      const request = new MetadataEntityDeleteFromProject(
+        this.props.folderId,
+        this.props.metadataClass
+      );
       await request.fetch();
       if (request.error) {
         hide();
@@ -1344,9 +1369,13 @@ export default class Metadata extends React.Component {
       const {
         filters = [],
         startDateFrom,
-        endDateTo
+        endDateTo,
+        searchQueries = []
       } = filterModel;
-      const filtersEnabled = filters.length > 0 || !!startDateFrom || !!endDateTo;
+      const filtersEnabled = filters.length > 0 ||
+        !!startDateFrom ||
+        !!endDateTo ||
+        searchQueries.length > 0;
       if (!selectedItemsAreShowing && filtersEnabled) {
         return (
           <Button
@@ -1518,8 +1547,10 @@ export default class Metadata extends React.Component {
   paginationOnChange = async (page) => {
     const {filterModel} = this.state;
     filterModel.page = page;
-    await this.loadData(filterModel);
-    this.setState({filterModel});
+    this.setState(
+      {filterModel},
+      () => this.loadData()
+    );
   }
 
   render () {
@@ -1557,12 +1588,10 @@ export default class Metadata extends React.Component {
             }}
             id="search-metadata-input"
             placeholder="Search"
-            value={this.state.filterModel.searchQueries[0]}
+            value={this.state.searchQuery}
             onPressEnter={this.onSearchQueriesChanged}
             onChange={(e) => {
-              const {filterModel} = this.state;
-              filterModel.searchQueries = [e.target.value.trim()];
-              this.setState({filterModel});
+              this.setState({searchQuery: e.target.value});
             }}
             size="small"
           />
@@ -1608,7 +1637,10 @@ export default class Metadata extends React.Component {
         />
         <UploadToDatastorageForm
           visible={this.state.uploadToBucketVisible}
-          fields={this.currentClassEntityFields.filter(f => f.type.toLowerCase() !== 'path').map(f => f.name)}
+          fields={
+            this.currentClassEntityFields
+              .filter(f => f.type.toLowerCase() !== 'path').map(f => f.name)
+          }
           pathFields={this.currentClassEntityPathFields.map(f => f.name)}
           onTransfer={this.onStartUploadToBucket}
           onClose={this.onCloseUploadToBucketDialog}
@@ -1625,7 +1657,7 @@ export default class Metadata extends React.Component {
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
       this.setState({selectedColumns: [...this.columns]});
-      await this.loadData(this.state.filterModel);
+      await this.loadData();
       await this.loadCurrentProject();
     })();
   };
@@ -1676,6 +1708,7 @@ export default class Metadata extends React.Component {
     if (nextProps.folderId !== this.props.folderId ||
       nextProps.metadataClass !== this.props.metadataClass) {
       this.setState({
+        searchQuery: undefined,
         selectedItem: null,
         selectedItems: [],
         selectedItemsAreShowing: false,
@@ -1696,7 +1729,7 @@ export default class Metadata extends React.Component {
       await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
       this.setState({selectedColumns: [...this.columns]});
-      await this.loadData(this.state.filterModel);
+      await this.loadData();
     }
     if (nextProps.folderId !== this.props.folderId) {
       await this.loadCurrentProject();
