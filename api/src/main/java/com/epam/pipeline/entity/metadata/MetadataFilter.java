@@ -61,7 +61,7 @@ public class MetadataFilter {
     @ApiModelProperty(notes = "End created date to filter for metadata")
     private LocalDateTime endDateTo;
     @ApiModelProperty(notes = "Logical operator for search queries. Default: OR", allowableValues = "AND, OR")
-    private LogicalSearchOperator logicalSearchOperator;
+    private LogicalSearchOperator logicalSearchOperator = LogicalSearchOperator.OR;
 
 
     @Getter

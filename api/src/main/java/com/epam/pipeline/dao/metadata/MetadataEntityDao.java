@@ -358,7 +358,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
         String clauses = searchQueries.stream()
                 .map(this::applySearchClause)
-                .collect(Collectors.joining(getOperator(operator)));
+                .collect(Collectors.joining(format(" %s ", operator.getOperator())));
         clause.append(AND).append(clauses);
     }
 
@@ -417,13 +417,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private String applySearchClause(String query) {
         String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
         return searchPattern.matcher(searchClauseQuery).replaceAll(formattedQuery);
-    }
-
-    private String getOperator(LogicalSearchOperator operator) {
-        if (operator == LogicalSearchOperator.AND) {
-            return AND;
-        }
-        return OR;
     }
 
     enum MetadataEntityParameters {
