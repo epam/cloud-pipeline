@@ -170,7 +170,8 @@ public class AzureVMService {
         );
     }
 
-    private void createAndAttachAzureVolumeToVMContainer(final Azure azure, GenericResource vmc, final Long size) {
+    private void createAndAttachAzureVolumeToVMContainer(final Azure azure,
+                                                         final GenericResource vmc, final Long size) {
         final int sizeInGb = Math.toIntExact(size);
         if (vmc.resourceType().equals(VIRTUAL_MACHINE_SCALE_SET_TYPE)) {
             final VirtualMachineScaleSet scaleSet = azure.virtualMachineScaleSets().getById(vmc.id());
