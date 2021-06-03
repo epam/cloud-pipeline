@@ -16,23 +16,19 @@ import json
 import pathlib
 import os
 import platform
-import subprocess
+from win32com.client import Dispatch
 
-_CREATE_SHORTCUT_PSHELL_SCRIPT_TEMPLATE = '''
-$s=(New-Object -COM WScript.Shell).CreateShortcut(\'C:\\Users\\Public\\Desktop\\Cloud-Data.lnk\');
-$s.TargetPath=\'{}\\cloud-data.exe\';
-$s.Save()
-'''
-
-
-def _run_powershell(cmd):
-    completed = subprocess.run(["powershell", "-Command", cmd], capture_output=False)
-    return completed
+_PUBLIC_CLOUD_DATA_SHORTCUT_PATH = 'C:\\Users\\Public\\Desktop\\Cloud-Data.lnk'
 
 
 def _create_cloud_data_shortcut(cloud_data_parent_dir):
+    shell = Dispatch('WScript.Shell')
+    cloud_data_shortcut_path = os.path.join(_PUBLIC_CLOUD_DATA_SHORTCUT_PATH, )
+    shortcut = shell.CreateShortCut(cloud_data_shortcut_path)
     cloud_data_dir = os.path.join(cloud_data_parent_dir, 'cloud-data-app')
-    _run_powershell(_CREATE_SHORTCUT_PSHELL_SCRIPT_TEMPLATE.format(cloud_data_dir))
+    cloud_data_executable = os.path.join(cloud_data_dir, 'cloud-data.exe')
+    shortcut.Targetpath = cloud_data_executable
+    shortcut.save()
 
 
 def _create_cloud_data_config(cloud_data_parent_dir, edge_url, username, token):
