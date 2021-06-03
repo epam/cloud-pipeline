@@ -70,6 +70,7 @@ import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
+import parseSearchQuery from './metadata-controls/parse-search-query';
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -99,12 +100,6 @@ function getColumnTitle (key) {
     return 'Created Date';
   }
   return key;
-}
-function getFromDate (key) {
-  return '';
-}
-function getToDate (key) {
-  return '';
 }
 
 @connect({
@@ -158,6 +153,7 @@ export default class Metadata extends React.Component {
   state = {
     loading: false,
     metadata: false,
+    searchQuery: undefined,
     selectedItem: null,
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
@@ -227,8 +223,9 @@ export default class Metadata extends React.Component {
       return [];
     }
     const ownKeys = this.keys.filter(k => !k.predefined).map(k => k.name);
+    const metadataClass = (this.props.metadataClass || '').toLowerCase();
     const [metadata] = this.entityTypes
-      .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
+      .filter(e => e.metadataClass.name.toLowerCase() === metadataClass);
     if (metadata) {
       return (metadata.fields || [])
         .filter(f => ownKeys.indexOf(f.name) >= 0)
@@ -243,8 +240,9 @@ export default class Metadata extends React.Component {
       return [];
     }
     const ownKeys = this.keys.filter(k => !k.predefined).map(k => k.name);
+    const metadataClass = (this.props.metadataClass || '').toLowerCase();
     const [metadata] = this.entityTypes
-      .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
+      .filter(e => e.metadataClass.name.toLowerCase() === metadataClass);
     if (metadata) {
       return (metadata.fields || [])
         .filter(f => f.type.toLowerCase() === 'path' && ownKeys.indexOf(f.name) >= 0)
@@ -366,7 +364,7 @@ export default class Metadata extends React.Component {
         {
           ...filterModel,
           orderBy,
-          filters,
+          filters
         }
       );
       if (this.metadataRequest.error) {
@@ -626,11 +624,30 @@ export default class Metadata extends React.Component {
   };
 
   onSearchQueriesChanged = async () => {
-    this.setState(
-      {selectedItemsAreShowing: false},
-      () => this.paginationOnChange(FIRST_PAGE)
-    );
-    await this.loadData(this.state.filterModel);
+    const {filterModel, searchQuery} = this.state;
+    const {
+      folderId,
+      metadataClass
+    } = this.props;
+    const {filters, searchQueries} = parseSearchQuery(searchQuery);
+    const {orderBy = []} = filterModel || {};
+    const newFilterModel = {
+      startDateFrom: undefined,
+      endDateTo: undefined,
+      filters: filters.map(filter => ({
+        ...filter,
+        key: unmapColumnName(filter.key)
+      })),
+      folderId: parseInt(folderId),
+      metadataClass: metadataClass,
+      orderBy,
+      page: 1,
+      pageSize: PAGE_SIZE,
+      searchQueries
+    };
+    this.setState({
+      filterModel: newFilterModel
+    }, () => this.loadData(newFilterModel));
   };
 
   onOrderByChanged = async (key, value) => {
@@ -806,7 +823,9 @@ export default class Metadata extends React.Component {
         FILE_NAME_FORMAT_COLUMN: getParam(values.nameField, 'string', false),
         CREATE_FOLDERS_FOR_COLUMNS: getParam(values.createFolders, 'boolean', false),
         UPDATE_PATH_VALUES: getParam(values.updatePathValues, 'boolean', false),
-        MAX_THREADS_COUNT: values.threadsCount ? getParam(values.threadsCount, 'string', false) : undefined
+        MAX_THREADS_COUNT: values.threadsCount
+          ? getParam(values.threadsCount, 'string', false)
+          : undefined
       }
     };
     await PipelineRunner.send({...payload, force: true});
@@ -1026,7 +1045,10 @@ export default class Metadata extends React.Component {
   deleteMetadataClassConfirm = () => {
     const onDeleteMetadataClass = async () => {
       const hide = message.loading(`Removing class '${this.props.metadataClass}'...`, -1);
-      const request = new MetadataEntityDeleteFromProject(this.props.folderId, this.props.metadataClass);
+      const request = new MetadataEntityDeleteFromProject(
+        this.props.folderId,
+        this.props.metadataClass
+      );
       await request.fetch();
       if (request.error) {
         hide();
@@ -1557,12 +1579,10 @@ export default class Metadata extends React.Component {
             }}
             id="search-metadata-input"
             placeholder="Search"
-            value={this.state.filterModel.searchQueries[0]}
+            value={this.state.searchQuery}
             onPressEnter={this.onSearchQueriesChanged}
             onChange={(e) => {
-              const {filterModel} = this.state;
-              filterModel.searchQueries = [e.target.value.trim()];
-              this.setState({filterModel});
+              this.setState({searchQuery: e.target.value});
             }}
             size="small"
           />
@@ -1608,7 +1628,10 @@ export default class Metadata extends React.Component {
         />
         <UploadToDatastorageForm
           visible={this.state.uploadToBucketVisible}
-          fields={this.currentClassEntityFields.filter(f => f.type.toLowerCase() !== 'path').map(f => f.name)}
+          fields={
+            this.currentClassEntityFields
+              .filter(f => f.type.toLowerCase() !== 'path').map(f => f.name)
+          }
           pathFields={this.currentClassEntityPathFields.map(f => f.name)}
           onTransfer={this.onStartUploadToBucket}
           onClose={this.onCloseUploadToBucketDialog}
@@ -1676,6 +1699,7 @@ export default class Metadata extends React.Component {
     if (nextProps.folderId !== this.props.folderId ||
       nextProps.metadataClass !== this.props.metadataClass) {
       this.setState({
+        searchQuery: undefined,
         selectedItem: null,
         selectedItems: [],
         selectedItemsAreShowing: false,
