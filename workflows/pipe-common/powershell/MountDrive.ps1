@@ -20,18 +20,19 @@ function Try-MountDrive {
         $UserName,
         $BearerToken
     )
-
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name WarnonZoneCrossing -Value 0
     $DavURL = "https://<EDGE_HOST>:<EDGE_PORT>/webdav"
-
     $InternetExplorer = New-Object -ComObject internetexplorer.application
     $AuthHeader = "Authorization:$BearerToken"
     $DavSsoUrl = "$DavURL/auth-sso/"
     $InternetExplorer.navigate($DavSsoUrl, $null, $null, $null, $AuthHeader)
-    $WaitingTimeout = 10
+    $InternetExplorer.Visible = $false
+    $WaitingTimeout = 5
     While ($WaitingTimeout -ge 0 -And $InternetExplorer -ne $null -And $InternetExplorer.Busy ) {
         Start-Sleep -Seconds 1
         $WaitingTimeout--
     }
+    Start-Sleep -Seconds 2
     taskkill /F /T /IM iexplore.exe
     $MountResult = $(net use Z: "$DavURL/$UserName/" 2>&1 )
     $MountExitCode = $LASTEXITCODE
@@ -49,7 +50,17 @@ function Try-MountDrive {
     return $MountExitCode
 }
 
-$MaxRetries = 3
+function Show-PopUp {
+    param(
+        $Message,
+        $Header
+    )
+
+    $infoPopup = New-Object -ComObject Wscript.Shell
+    $infoPopup.Popup($Message, 0, $Header, 0x0)
+}
+
+$MaxRetries = 30
 for ($RetryNum = 1; $RetryNum -le $MaxRetries; $RetryNum++) {
     $MountOutput = Try-MountDrive "$UserName" "$BearerToken"
     if ("Object[]".equals($MountOutput.gettype().name)) {
@@ -58,16 +69,22 @@ for ($RetryNum = 1; $RetryNum -le $MaxRetries; $RetryNum++) {
         $MountExitCode = MountOutput
     }
     if ($MountExitCode -eq 0) {
-        Write-Host "Storage available for '$UserName' are mounted into Z:\"
+        $SuccessMsg = "Storage available for '$UserName' are mounted into Z:\"
+        Write-Host $SuccessMsg
+        Show-PopUp "$SuccessMsg" "StorageMapping"
         exit 0
     }
     if ($MountExitCode -eq 85) {
-        Write-Host "WebDAV mapping: Device Z:\ is already in use"
+        $WarnInUseMsg ="WebDAV mapping: Device Z:\ is already in use"
+        Write-Host $WarnInUseMsg
+        Show-PopUp "$WarnInUseMsg" "StorageMapping"
         exit 0
     }
     Write-Host "Retrying in 10 seconds..."
     Start-Sleep -Seconds 10
 }
-Write-Host "WebDAV mapping: Drive mapping failed!"
+$FailMsg = "WebDAV mapping: Drive mapping failed!"
+Write-Host $FailMsg
+Show-PopUp "$FailMsg" "StorageMapping [ERROR]"
 pause
 exit 1

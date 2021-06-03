@@ -20,19 +20,9 @@ param (
     $MountingScript
 )
 
-function SetPlaceholderInFile {
-    param(
-        $Placeholder,
-        $Replacement,
-        $TargetFile
-    )
-    ((Get-Content -path $TargetFile -Raw) -replace "$Placeholder", "$Replacement") | Set-Content -Path $TargetFile
-}
-
 SetPlaceholderInFile -Placeholder "<USER_NAME>" -Replacement $UserName -TargetFile $MountingScript
 SetPlaceholderInFile -Placeholder "<USER_TOKEN>" -Replacement $BearerToken -TargetFile $MountingScript
 SetPlaceholderInFile -Placeholder "<EDGE_HOST>" -Replacement $EdgeHost -TargetFile $MountingScript
 SetPlaceholderInFile -Placeholder "<EDGE_PORT>" -Replacement $EdgePort -TargetFile $MountingScript
-SCHTASKS /CREATE /SC ONLOGON /TN "MountCloudPipileneDav" /TR "powershell.exe -windowstyle hidden $MountingScript"
-SCHTASKS /RUN /TN "MountCloudPipileneDav"
+SCHTASKS /CREATE /RU "$UserName" /SC ONLOGON /TN "MountCloudPipileneDav" /TR "powershell.exe -windowstyle hidden $MountingScript"
 exit $LASTEXITCODE

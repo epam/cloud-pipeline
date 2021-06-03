@@ -12,14 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$WinRegistryInternetSettingsPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+param (
+    $UserName
+)
+
+New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS
+$UserDetails = Get-WmiObject win32_useraccount | Where-Object {$_.Name -eq "$UserName"}
+$UserSid = $UserDetails.SID
+$MicrosoftUserSetting="HKU:\$UserSid\Software\Microsoft"
+
+$WinRegistryInternetSettingsPath = "$MicrosoftUserSetting\Windows\CurrentVersion\Internet Settings"
 $WinRegistryTrustedSitesPath = "$WinRegistryInternetSettingsPath\ZoneMap\EscDomains"
 New-Item -Path "$WinRegistryTrustedSitesPath" -Name "cluster.local"
 New-Item -Path "$WinRegistryTrustedSitesPath\cluster.local" -Name "cp-edge.default.svc"
 New-ItemProperty -Path "$WinRegistryTrustedSitesPath\cluster.local\cp-edge.default.svc" -Name https -PropertyType DWORD -Value 2
 New-Item -Path "$WinRegistryTrustedSitesPath" -Name "internet"
 New-ItemProperty -Path "$WinRegistryTrustedSitesPath\internet" -Name about -PropertyType DWORD -Value 2
-New-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Main" -Name DisableFirstRunCustomize -PropertyType DWORD -Value 1
+New-ItemProperty -Path "$MicrosoftUserSetting\Internet Explorer\Main" -Name DisableFirstRunCustomize -PropertyType DWORD -Value 1
 Set-ItemProperty -Path "$WinRegistryInternetSettingsPath" -Name WarnonZoneCrossing -Value 0
 
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WebClient\Parameters" -Name FileSizeLimitInBytes -Value $([uint32]::MaxValue)
