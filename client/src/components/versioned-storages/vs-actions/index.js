@@ -734,6 +734,13 @@ class VSActions extends React.Component {
               disabled={!saveEnabled}
             >
               <Icon type="save" /> Save
+              {
+                storage.detached && (
+                  <span style={{marginLeft: 5}}>
+                    (current revision is not the latest)
+                  </span>
+                )
+              }
             </Menu.Item>
             <Menu.Item
               key={`refresh-${storage.id}`}
