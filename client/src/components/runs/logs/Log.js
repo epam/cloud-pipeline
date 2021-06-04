@@ -55,7 +55,8 @@ import {
   canPauseRun,
   canStopRun,
   runPipelineActions,
-  terminateRun
+  terminateRun,
+  openReRunForm
 } from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
@@ -327,16 +328,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   reRunPipeline = () => {
-    const {pipelineId, version, id, configName} = this.props.run.value;
-    if (pipelineId && version && id) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-    } else if (pipelineId && version && configName) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-    } else if (pipelineId && version) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-    } else if (id) {
-      this.props.router.push(`/launch/${id}`);
-    }
+    return openReRunForm(this.props.run.value, this.props);
   };
 
   loadParentRunInfo = (runId) => {
