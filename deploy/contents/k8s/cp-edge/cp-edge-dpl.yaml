@@ -51,6 +51,9 @@ spec:
             - mountPath: /opt/docker-registry/pki
               name: docker-pki
               readOnly: true
+            - mountPath: /opt/idp/pki
+              name: idp-pki
+              readOnly: true
             - mountPath: /opt/edge/pki
               name: edge-pki
               readOnly: true
@@ -77,6 +80,9 @@ spec:
         - name: docker-pki
           hostPath:
             path: /opt/docker-registry/pki/
+        - name: idp-pki
+          hostPath:
+            path: /opt/idp/pki/
         - name: edge-pki
           hostPath:
             path: /opt/edge/pki
