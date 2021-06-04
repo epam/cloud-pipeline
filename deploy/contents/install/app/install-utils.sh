@@ -835,92 +835,92 @@ function prepare_kube_dns {
         kubectl patch deployment kube-dns \
             --namespace kube-system \
             --type='json' \
-            -p='[
+            -p="[
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/shareProcessNamespace",
-                        "value": true
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/shareProcessNamespace\",
+                        \"value\": true
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/volumes/-",
-                        "value": {
-                            "configMap": {
-                                "name": "cp-dnsmasq-hosts",
-                                "optional": true
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/volumes/-\",
+                        \"value\": {
+                            \"configMap\": {
+                                \"name\": \"cp-dnsmasq-hosts\",
+                                \"optional\": true
                             },
-                            "name": "cp-dnsmasq-hosts"
+                            \"name\": \"cp-dnsmasq-hosts\"
                         }
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/volumes/-",
-                        "value": {
-                            "emptyDir": {},
-                            "name": "cp-dnsmasq-pods"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/volumes/-\",
+                        \"value\": {
+                            \"emptyDir\": {},
+                            \"name\": \"cp-dnsmasq-pods\"
                         }
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/volumeMounts/-",
-                        "value": {
-                            "mountPath": "/etc/hosts.d/hosts",
-                            "name": "cp-dnsmasq-hosts"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/volumeMounts/-\",
+                        \"value\": {
+                            \"mountPath\": \"/etc/hosts.d/hosts\",
+                            \"name\": \"cp-dnsmasq-hosts\"
                         }
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/volumeMounts/-",
-                        "value": {
-                            "mountPath": "/etc/hosts.d/pods",
-                            "name": "cp-dnsmasq-pods"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/volumeMounts/-\",
+                        \"value\": {
+                            \"mountPath\": \"/etc/hosts.d/pods\",
+                            \"name\": \"cp-dnsmasq-pods\"
                         }
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/args/-",
-                        "value": "--dns-forward-max=5000"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/args/-\",
+                        \"value\": \"--dns-forward-max=5000\"
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/args/-",
-                        "value": "--hostsdir=/etc/hosts.d/hosts"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/args/-\",
+                        \"value\": \"--hostsdir=/etc/hosts.d/hosts\"
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/args/-",
-                        "value": "--hostsdir=/etc/hosts.d/pods"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/args/-\",
+                        \"value\": \"--hostsdir=/etc/hosts.d/pods\"
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/args/-",
-                        "value": "--bind-interfaces"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/1/args/-\",
+                        \"value\": \"--bind-interfaces\"
                     },
                     {
-                        "op": "replace",
-                        "path": "/spec/template/spec/containers/2/image",
-                        "value": "gcr.io/google-containers/k8s-dns-sidecar:1.15.11"
+                        \"op\": \"replace\",
+                        \"path\": \"/spec/template/spec/containers/2/image\",
+                        \"value\": \"gcr.io/google-containers/k8s-dns-sidecar:1.15.11\"
                     },
                     {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/-",
-                        "value": {
-                            "command": [
-                                "python",
-                                "/sync-hosts.py"
+                        \"op\": \"add\",
+                        \"path\": \"/spec/template/spec/containers/-\",
+                        \"value\": {
+                            \"command\": [
+                                \"python\",
+                                \"/sync-hosts.py\"
                             ],
-                            "image": "${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:dns-hosts-sync-$CP_VERSION",
-                            "imagePullPolicy": "IfNotPresent",
-                            "name": "pods",
-                            "volumeMounts": [
+                            \"image\": \"${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:dns-hosts-sync-$CP_VERSION\",
+                            \"imagePullPolicy\": \"IfNotPresent\",
+                            \"name\": \"pods\",
+                            \"volumeMounts\": [
                                 {
-                                    "mountPath": "/etc/hosts.d/pods",
-                                    "name": "cp-dnsmasq-pods"
+                                    \"mountPath\": \"/etc/hosts.d/pods\",
+                                    \"name\": \"cp-dnsmasq-pods\"
                                 }
                             ]
                         }
                     }
-                ]'
+                ]"
         if [ $? -ne 0 ]; then
             print_err "Unable to patch kube-dns deployment"
             return 1
@@ -1060,8 +1060,8 @@ function register_custom_name_in_dns {
             return 1
         fi
         # Delete existing entry
-        if grep -q "$custom_name" <<< "$current_custom_names"; then
-            current_custom_names="$(sed "/$custom_name/d" <<< "$current_custom_names")"
+        if grep -q " $custom_name" <<< "$current_custom_names"; then
+            current_custom_names="$(sed "/ $custom_name/d" <<< "$current_custom_names")"
         fi
         # And add an update one
         current_custom_names="$current_custom_names\n${custom_target_value} ${custom_name}"
