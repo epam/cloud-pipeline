@@ -726,8 +726,13 @@ export default class Metadata extends React.Component {
     filterModel.filters = [];
     filterModel.startDateFrom = undefined;
     filterModel.endDateTo = undefined;
+    filterModel.page = 1;
+    filterModel.searchQueries = [];
     this.setState(
-      {filterModel},
+      {
+        filterModel,
+        searchQuery: undefined
+      },
       () => this.paginationOnChange(FIRST_PAGE)
     );
   };
@@ -1366,9 +1371,13 @@ export default class Metadata extends React.Component {
       const {
         filters = [],
         startDateFrom,
-        endDateTo
+        endDateTo,
+        searchQueries = []
       } = filterModel;
-      const filtersEnabled = filters.length > 0 || !!startDateFrom || !!endDateTo;
+      const filtersEnabled = filters.length > 0 ||
+        !!startDateFrom ||
+        !!endDateTo ||
+        searchQueries.length > 0;
       if (!selectedItemsAreShowing && filtersEnabled) {
         return (
           <Button
