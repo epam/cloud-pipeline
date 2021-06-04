@@ -177,7 +177,7 @@ public class AzureVMService {
             final VirtualMachineScaleSet scaleSet = azure.virtualMachineScaleSets().getById(vmc.id());
             final Optional<VirtualMachineDataDisk> dataDisk =
                     scaleSet.virtualMachines().list().stream().findFirst().flatMap(
-                            vm -> vm.dataDisks().values().stream().findFirst()
+                        vm -> vm.dataDisks().values().stream().findFirst()
                     );
             if (dataDisk.isPresent()) {
                 final VirtualMachineDataDisk disk = dataDisk.get();
