@@ -138,10 +138,7 @@ export default class Metadata extends React.Component {
 
   _totalCount = 0;
 
-  columns = [];
-  defaultColumns = [];
   @observable keys;
-  dateKeys = [];
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -157,6 +154,8 @@ export default class Metadata extends React.Component {
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
+    columns: [],
+    defaultColumns: [],
     selectedColumns: [],
     filterModel: {
       startDateFrom: undefined,
@@ -279,7 +278,7 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onDateRangeChanged = async (range) => {
+  onDateRangeChanged = (range) => {
     let filterModel = {...this.state.filterModel};
     const {
       from,
@@ -331,7 +330,7 @@ export default class Metadata extends React.Component {
     }
   };
 
-  handleFilterApplied = async (key, dataArray) => {
+  handleFilterApplied = (key, dataArray) => {
     const filterModel = {...this.state.filterModel};
     if (key && dataArray && dataArray.length) {
       const filterObj = {key: unmapColumnName(key), values: dataArray};
@@ -546,7 +545,6 @@ export default class Metadata extends React.Component {
   };
 
   loadColumns = async (folderId, metadataClass) => {
-    this.columns = [];
     this.setState({loading: true});
     const metadataEntityKeysRequest =
       new MetadataEntityKeys(folderId, metadataClass);
@@ -568,21 +566,25 @@ export default class Metadata extends React.Component {
         return 0;
       };
       const predefinedSort = (a, b) => b.predefined - a.predefined;
+      let selectedColumns = [...this.state.selectedColumns];
       const newColumns = (metadataEntityKeysRequest.value || [])
         .sort(externalIdSort)
         .sort(predefinedSort)
         .filter(filterColumns)
         .map(mapColumnName);
 
-      if (this.defaultColumns && this.defaultColumns.length < newColumns.length) {
-        const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
-        this.setState({selectedColumns: [...this.state.selectedColumns, ...addedColumns]});
+      if (this.state.defaultColumns && this.state.defaultColumns.length < newColumns.length) {
+        const addedColumns = newColumns.filter(column => !this.state.defaultColumns.includes(column));
+        selectedColumns = [...this.state.selectedColumns, ...addedColumns];
       }
-      if (this.defaultColumns && this.defaultColumns.length === newColumns.length) {
-        this.setState({selectedColumns: [...newColumns]});
+      if (this.state.defaultColumns && this.state.defaultColumns.length === newColumns.length) {
+        selectedColumns = [...newColumns];
       }
-
-      this.defaultColumns = this.columns = newColumns;
+      this.setState({
+        selectedColumns,
+        defaultColumns: newColumns,
+        columns: newColumns
+      });
     }
   };
 
@@ -701,13 +703,14 @@ export default class Metadata extends React.Component {
   };
 
   onResetColumns = () => {
-    this.columns = [...this.defaultColumns];
-    this.setState({selectedColumns: [...this.defaultColumns]});
+    this.setState({
+      columns: [...this.state.defaultColumns],
+      selectedColumns: [...this.state.defaultColumns]
+    });
   };
 
   onSetOrder = (order) => {
-    this.columns = order;
-    this.forceUpdate();
+    this.setState({columns: order});
   };
 
   onRowClick = (item) => {
@@ -1300,7 +1303,7 @@ export default class Metadata extends React.Component {
           );
         })
       },
-      ...this.columns.filter(c => this.state.selectedColumns.indexOf(c) >= 0).map(key => {
+      ...this.state.columns.filter(c => this.state.selectedColumns.indexOf(c) >= 0).map(key => {
         return {
           accessor: key,
           style: {
@@ -1322,7 +1325,7 @@ export default class Metadata extends React.Component {
                 let count = 0;
                 try {
                   count = JSON.parse(data.value).length;
-                } catch (___) {}
+                } catch (___) { }
                 let value = `${count} ${referenceType}(s)`;
                 return <a
                   title={value}
@@ -1353,7 +1356,8 @@ export default class Metadata extends React.Component {
                 );
               }
             }
-          })};
+          })
+        };
       })];
   };
 
@@ -1402,9 +1406,7 @@ export default class Metadata extends React.Component {
           <span
             style={{marginLeft: 5}}
             key="info"
-          >
-            {/* eslint-disable-next-line */}
-            Currently viewing {selectedItemsString}
+          > Currently viewing {selectedItemsString}
           </span>
         );
       }
@@ -1599,7 +1601,7 @@ export default class Metadata extends React.Component {
             onColumnSelect={this.onColumnSelect}
             onSetOrder={this.onSetOrder}
             selectedColumns={this.state.selectedColumns}
-            columns={this.columns}
+            columns={this.state.columns}
             onResetColumns={this.onResetColumns}
             columnNameFn={getColumnTitle}
             size="small"
@@ -1656,7 +1658,7 @@ export default class Metadata extends React.Component {
     };
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
-      this.setState({selectedColumns: [...this.columns]});
+      this.setState({selectedColumns: [...this.state.columns]});
       await this.loadData();
       await this.loadCurrentProject();
     })();
@@ -1728,7 +1730,7 @@ export default class Metadata extends React.Component {
       this._totalCount = 0;
       await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
-      this.setState({selectedColumns: [...this.columns]});
+      this.setState({selectedColumns: [...this.state.columns]});
       await this.loadData();
     }
     if (nextProps.folderId !== this.props.folderId) {
