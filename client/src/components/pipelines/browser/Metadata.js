@@ -646,7 +646,8 @@ export default class Metadata extends React.Component {
       searchQueries
     };
     this.setState({
-      filterModel: newFilterModel
+      filterModel: newFilterModel,
+      selectedItemsAreShowing: false
     }, () => this.loadData(newFilterModel));
   };
 
