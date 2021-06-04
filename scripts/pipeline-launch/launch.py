@@ -259,10 +259,9 @@ if __name__ == '__main__':
         edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
         from urllib.parse import urlparse
         edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
-        task_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.pki import save_root_cert;'
-                         f' save_root_cert(\'{edge_host}\', {edge_port}, \'{edge_root_cert_path}\')\\"')
-        task_ssh.execute(f'ImportCertificate -FilePath "\'{edge_root_cert_path}\'"'
-                         f' -CertStoreLocation Cert:\\\\LocalMachine\\\\Root')
+        task_ssh.execute(f'{python_dir}\\python.exe -c '
+                         f'\\"from scripts.add_root_certificate_win import add_root_cert_to_trusted_root_win;'
+                         f'   add_root_cert_to_trusted_root_win(\'{edge_host}\', {edge_port})\\"')
         task_logger.info('Configuring environment for storage mapping...')
         task_ssh.execute(f'{python_dir}\\python.exe -c '
                          f'\\"from scripts.configure_drive_mount_env_win import configure_drive_mount_env_win; '
