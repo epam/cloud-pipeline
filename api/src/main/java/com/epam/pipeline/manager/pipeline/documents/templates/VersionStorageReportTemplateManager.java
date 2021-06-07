@@ -26,7 +26,8 @@ import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.VSReportTemplates;
-import com.epam.pipeline.manager.pipeline.documents.templates.structure.CommitDiffsGrouping;
+import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGrouping;
+import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGroupType;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.DiffUtils;
@@ -161,10 +162,10 @@ public class VersionStorageReportTemplateManager {
 
     private List<Pair<String, XWPFDocument>> prepareDiffsForReportDoc(final Pipeline loaded, final GitDiff gitDiff,
                                                                       final GitDiffReportFilter reportFilters) {
-        return CommitDiffsGrouping.builder()
+        return GitDiffGrouping.builder()
                 .includeDiff(reportFilters.isIncludeDiff())
                 .diffGrouping(
-                        getGroupType(reportFilters) == CommitDiffsGrouping.GroupType.BY_COMMIT
+                        getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT
                             ? gitDiff.getEntries().stream()
                             .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
                             : gitDiff.getEntries().stream()
@@ -198,7 +199,7 @@ public class VersionStorageReportTemplateManager {
                         }
                         fillTemplate(report, loaded, p.getSecond(), reportFilters);
                         return Pair.of(
-                                (getGroupType(reportFilters) == CommitDiffsGrouping.GroupType.BY_COMMIT
+                                (getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT
                                         ? REVISION + NAME_SEPARATOR : ""
                                 ) + p.getFirst().replace("/", NAME_SEPARATOR) + DOCX,
                                 report
@@ -212,9 +213,9 @@ public class VersionStorageReportTemplateManager {
                 .collect(Collectors.toList());
     }
 
-    private CommitDiffsGrouping.GroupType getGroupType(final GitDiffReportFilter reportFilter) {
+    private GitDiffGroupType getGroupType(final GitDiffReportFilter reportFilter) {
         if (reportFilter.getGroupType() == null) {
-            return CommitDiffsGrouping.GroupType.BY_COMMIT;
+            return GitDiffGroupType.BY_COMMIT;
         }
         return reportFilter.getGroupType();
     }

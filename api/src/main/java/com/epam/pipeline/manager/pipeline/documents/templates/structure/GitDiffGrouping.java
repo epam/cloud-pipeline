@@ -9,16 +9,11 @@ import java.util.Map;
 
 @Value
 @Builder
-public class CommitDiffsGrouping {
+public class GitDiffGrouping {
 
-    GroupType type;
+    GitDiffGroupType type;
     boolean archive;
     boolean includeDiff;
     Map<String, List<GitDiffEntry>> diffGrouping;
-
-    public enum GroupType {
-        BY_COMMIT,
-        BY_FILE
-    }
 
 }

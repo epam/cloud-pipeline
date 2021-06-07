@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.git;
 
-import com.epam.pipeline.manager.pipeline.documents.templates.structure.CommitDiffsGrouping;
+import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGroupType;
 import lombok.Builder;
 import lombok.Value;
 
@@ -25,6 +25,6 @@ import lombok.Value;
 public class GitDiffReportFilter {
     GitCommitsFilter commitsFilter;
     boolean includeDiff;
-    CommitDiffsGrouping.GroupType groupType;
+    GitDiffGroupType groupType;
     boolean archive;
 }

@@ -23,7 +23,7 @@ import java.util.List;
 
 
 /**
- * Represents Gitlab repository commit
+ * Represents Git diff that is split by commits
  */
 @Data
 @Builder

@@ -365,8 +365,8 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public Pair<String, byte[]> generateReportForVersionedStorage(final Long id, final GitDiffReportFilter reportFilters) {
-        return fileGenerationManager
-                .generateVersionStorageReport(id, reportFilters);
+    public Pair<String, byte[]> generateReportForVersionedStorage(final Long id,
+                                                                  final GitDiffReportFilter reportFilters) {
+        return fileGenerationManager.generateVersionStorageReport(id, reportFilters);
     }
 }

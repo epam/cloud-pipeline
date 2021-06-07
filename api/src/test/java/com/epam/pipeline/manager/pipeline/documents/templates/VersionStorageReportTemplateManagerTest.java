@@ -12,7 +12,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
-import com.epam.pipeline.manager.pipeline.documents.templates.structure.CommitDiffsGrouping;
+import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGroupType;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +31,7 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
                         .builder()
                         .authors(Collections.singletonList("user1@test.com")
                         ).build()
-            ).groupType(CommitDiffsGrouping.GroupType.BY_COMMIT).build();
+            ).groupType(GitDiffGroupType.BY_COMMIT).build();
 
 
     public static final GitDiffReportFilter GIT_COMMITS_FILTER_2 =
@@ -42,7 +42,7 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
                                     .builder()
                                     .authors(Collections.singletonList("user2@test.com"))
                                     .build()
-                    ).groupType(CommitDiffsGrouping.GroupType.BY_COMMIT).build();
+                    ).groupType(GitDiffGroupType.BY_COMMIT).build();
 
     @MockBean
     private PipelineManager pipelineManager;

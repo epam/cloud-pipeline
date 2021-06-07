@@ -19,7 +19,8 @@ package com.epam.pipeline.manager.pipeline.documents.templates.processors.versio
 import com.epam.pipeline.entity.git.GitDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
-import com.epam.pipeline.manager.pipeline.documents.templates.structure.CommitDiffsGrouping;
+import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGrouping;
+import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGroupType;
 import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
 import io.reflectoring.diffparser.api.model.Range;
@@ -78,8 +79,8 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     }
 
     void insertData(final XWPFParagraph paragraph, final XWPFRun runTemplate, final Object data) {
-        if (data instanceof CommitDiffsGrouping) {
-            final CommitDiffsGrouping diffsGrouping = (CommitDiffsGrouping)data;
+        if (data instanceof GitDiffGrouping) {
+            final GitDiffGrouping diffsGrouping = (GitDiffGrouping)data;
             if (!diffsGrouping.isIncludeDiff() || diffsGrouping.isArchive()) {
                 return;
             }
@@ -104,10 +105,10 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     }
 
     private void addHeader(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
-                           final CommitDiffsGrouping.GroupType type, final String groupingKey,
+                           final GitDiffGroupType type, final String groupingKey,
                            final List<GitDiffEntry> diffEntries) {
 
-        if (type.equals(CommitDiffsGrouping.GroupType.BY_COMMIT)) {
+        if (type.equals(GitDiffGroupType.BY_COMMIT)) {
             insertTextData(paragraph, "In revision ", false, fontFamily, fontSize + 4, false);
             insertTextData(paragraph, groupingKey.substring(0, 9), true, fontFamily, fontSize + 4, false);
             insertTextData(paragraph, " by ", false, fontFamily, fontSize + 4, false);
@@ -136,8 +137,8 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     }
 
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
-                                         final CommitDiffsGrouping.GroupType type, final GitDiffEntry diffEntry) {
-        if (type.equals(CommitDiffsGrouping.GroupType.BY_COMMIT)) {
+                                         final GitDiffGroupType type, final GitDiffEntry diffEntry) {
+        if (type.equals(GitDiffGroupType.BY_COMMIT)) {
             final String file = diffEntry.getDiff().getFromFileName().contains("/dev/null")
                     ? diffEntry.getDiff().getToFileName()
                     : diffEntry.getDiff().getFromFileName();

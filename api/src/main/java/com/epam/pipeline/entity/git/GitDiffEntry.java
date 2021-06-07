@@ -23,7 +23,7 @@ import lombok.Data;
 
 
 /**
- * Represents Gitlab repository commit
+ * Stores Git diff object and commit information
  */
 @Data
 @Builder
