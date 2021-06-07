@@ -238,9 +238,11 @@ if __name__ == '__main__':
         cloud_data_config_finalization_script_path = _escape_backslashes(
             os.path.join(common_repo_dir, 'powershell\\FinalizeCloudDataConfig.ps1'))
         cloud_data_config_tmp_path = os.path.join(run_dir, ".pipe-webdav-client")
-        task_ssh.execute(f'RegisterCloudDataConfigurationTask -UserName \\"{owner}\\"'
-                         f' -CloudDataConfigFolder \\"{_escape_backslashes(cloud_data_config_tmp_path)}\\"'
-                         f' -FinalizingScript \\"{cloud_data_config_finalization_script_path}\\" | Out-Null')
+        task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                         f'from scripts.schedule_cloud_data_configuration_finalization_win import schedule; '
+                         f'schedule(\'{owner}\','
+                         f'         \'{_escape_backslashes(cloud_data_config_tmp_path)}\','
+                         f'         \'{cloud_data_config_finalization_script_path}\')\\"')
         task_logger.success('Cloud-Data installed and configured successfully!')
 
     logger.info('Configuring pipe on the node...')
@@ -269,12 +271,10 @@ if __name__ == '__main__':
 
         task_logger.info('Mapping network storage...')
         mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
-        task_ssh.execute(f'RegisterMountingTask -UserName \\"{owner}\\"'
-                         f' -BearerToken \\"{api_token}\\"'
-                         f' -EdgeHost \\"{edge_host}\\"'
-                         f' -EdgePort \\"{edge_port}\\"'
-                         f' -MountingScript \\"{mounting_script_path}\\"'
-                         f' | Out-Null')
+        task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                         f'from scripts.schedule_drive_mapping_win import schedule; '
+                         f'schedule(\'{owner}\', \'{edge_host}\', \'{edge_port}\', \'{api_token}\','
+                         f'         \'{mounting_script_path}\')\\"')
         task_logger.success('Drive mapping performed successfully!')
 
     run_logger.success('Environment initialization finished', task='InitializeEnvironment')

@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-param (
-    $UserName,
-    $CloudDataConfigFolder,
-    $FinalizingScript
-)
-$UserNameLowercase = $UserName.ToLower()
-$UserDefaultHomeFolder = "C:\\Users\\$UserNameLowercase"
+from pipeline.utils.scheduler import schedule_powershell_script_on_logon
 
-SetPlaceholderInFile -Placeholder "<USER_DEFAULT_HOME>" -Replacement $UserDefaultHomeFolder -TargetFile $FinalizingScript
-SetPlaceholderInFile -Placeholder "<CLOUD_DATA_CONFIG_DIR>" -Replacement $CloudDataConfigFolder -TargetFile $FinalizingScript
 
-SCHTASKS /CREATE /RU "$UserName" /SC ONLOGON /TN "MoveCloudDataConfig" /TR "powershell.exe $FinalizingScript"
+def schedule(username, edge_host, edge_port, token, script):
+    replacement_dict = {
+        '<USER_NAME>': username,
+        '<USER_TOKEN>': token,
+        '<EDGE_HOST>': edge_host,
+        '<EDGE_PORT>': edge_port
+    }
+    schedule_powershell_script_on_logon(username, 'CloudPipelineDriveMapping', script, replacement_dict, True)
