@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">3</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h1m18.99s</div>
+<div class="counter">58m28.95s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">60%</div>
+<div class="percent">40%</div>
 <p>successful</p>
 </div>
 </td>
@@ -76,13 +76,88 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
+<a name="dockerExtraMultiValidation - EPMCMBIBPC-2627"></a>
+<h3 class="failures">dockerExtraMultiValidation - EPMCMBIBPC-2627</h3>
+<span class="code">
+<pre>Element not found {By.className: ant-select-dropdown-menu}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1623055059307.70.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1623055059307.70.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-select-dropdown-menu&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.findElements(Unknown Source)
+	at com.codeborne.selenide.impl.WebElementSelector.findElements(WebElementSelector.java:38)
+	at com.codeborne.selenide.impl.BySelectorCollection.getActualElements(BySelectorCollection.java:38)
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:50)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.impl.WebElementSource.findAndAssertElementIsVisible(WebElementSource.java:72)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setTypeValue(PipelineRunFormAO.java:117)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setLaunchOptions(PipelineRunFormAO.java:103)
+	at com.epam.pipeline.autotests.PauseResumeTest.dockerExtraMultiValidation(PauseResumeTest.java:161)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-select-dropdown-menu&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'cdb42aae14eb', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: ddad68403a1371f737fe0e8dc4cb01ab
+*** Element info: {Using=class name, value=ant-select-dropdown-menu}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByClassName(RemoteWebDriver.java:457)
+	at org.openqa.selenium.By$ByClassName.findElement(By.java:391)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
+	... 29 more
+</pre>
+</span>
+</div>
+<div class="test">
 <a name="pauseAndResumeEndpointValidation - EPMCMBIBPC-2626"></a>
 <h3 class="failures">pauseAndResumeEndpointValidation - EPMCMBIBPC-2626</h3>
 <span class="code">
 <pre>Element not found {By.id: owner}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1622885573421.70.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1622885573421.70.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1623058375744.77.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1623058375744.77.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;owner&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -122,10 +197,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'bdf9c6fde17c', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'cdb42aae14eb', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 52973f1d005bbdf94c4c8cf55125a12a
+Session ID: 8c70566e21869c73a16ca294c9e6cd03
 *** Element info: {Using=id, value=owner}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -153,12 +228,12 @@ Session ID: 52973f1d005bbdf94c4c8cf55125a12a
 <a name="stopRuns"></a>
 <h3 class="failures">stopRuns</h3>
 <span class="code">
-<pre>Element not found {#run-72711-stop-button}
+<pre>Element not found {#run-72817-stop-button}
 Expected: enabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1622885640722.71.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1622885640722.71.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1623058447757.78.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1623058447757.78.html
 Timeout: 5 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-72711-stop-button&quot;}
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-72817-stop-button&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -187,17 +262,17 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-72711-stop-button&quot;}
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-72817-stop-button&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'bdf9c6fde17c', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'cdb42aae14eb', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 52973f1d005bbdf94c4c8cf55125a12a
-*** Element info: {Using=css selector, value=#run-72711-stop-button}
+Session ID: 8c70566e21869c73a16ca294c9e6cd03
+*** Element info: {Using=css selector, value=#run-72817-stop-button}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -232,28 +307,28 @@ Session ID: 52973f1d005bbdf94c4c8cf55125a12a
 </tr>
 </thead>
 <tr>
-<td class="success">dockerExtraMultiValidation - EPMCMBIBPC-2627</td>
-<td>6m46.98s</td>
-<td class="success">passed</td>
+<td class="failures">dockerExtraMultiValidation - EPMCMBIBPC-2627</td>
+<td>3m27.20s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">pauseAndResumeEndpointValidation - EPMCMBIBPC-2626</td>
-<td>30m34.27s</td>
+<td>30m34.61s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">pauseAndResumeRunsPageValidation - EPMCMBIBPC-2632</td>
-<td>11m8.18s</td>
+<td>11m34.57s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pauseAndResumeValidation - EPMCMBIBPC-2309</td>
-<td>12m29.81s</td>
+<td>12m32.44s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">stopRuns</td>
-<td>19.747s</td>
+<td>20.125s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -261,43 +336,42 @@ Session ID: 52973f1d005bbdf94c4c8cf55125a12a
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 72711 from [72711]
-Returns latest run with runId 72712 from [72711, 72712]
-Returns latest run with runId 72712 from [72711, 72712]
-Returns latest run with runId 72712 from [72711, 72712]
-Returns latest run with runId 72712 from [72711, 72712]
-Returns latest run with runId 72712 from [72711, 72712]
-Returns latest run with runId 72712 from [72711, 72712]
-Returns latest run with runId 72712 from [72711, 72712]
-Returns latest run with runId 72713 from [72711, 72712, 72713]
-Returns latest run with runId 72713 from [72711, 72712, 72713]
-Returns latest run with runId 72714 from [72711, 72712, 72713, 72714]
-Returns latest run with runId 72714 from [72711, 72712, 72713, 72714]
-Returns latest run with runId 72714 from [72711, 72712, 72713, 72714]
+<pre>Returns latest run with runId 72817 from [72817]
+Returns latest run with runId 72817 from [72817]
+Returns latest run with runId 72817 from [72817]
+Returns latest run with runId 72817 from [72817]
+Returns latest run with runId 72817 from [72817]
+Returns latest run with runId 72817 from [72817]
+Returns latest run with runId 72817 from [72817]
+Returns latest run with runId 72818 from [72817, 72818]
+Returns latest run with runId 72818 from [72817, 72818]
+Returns latest run with runId 72821 from [72817, 72818, 72821]
+Returns latest run with runId 72821 from [72817, 72818, 72821]
+Returns latest run with runId 72821 from [72817, 72818, 72821]
 </pre>
 </span>
 </div>
 <div id="tab3" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Jun 05, 2021 9:11:01 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Close webdriver: 606 -&gt; ChromeDriver: chrome on LINUX (b689da07aded43245222c2acd4f0e40d)
-Jun 05, 2021 9:11:01 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+<pre>Jun 07, 2021 9:10:59 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 605 -&gt; ChromeDriver: chrome on LINUX (ddad68403a1371f737fe0e8dc4cb01ab)
+Jun 07, 2021 9:10:59 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
 INFO: Trying to close the browser ChromeDriver ...
-Jun 05, 2021 9:11:01 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
-INFO: Closed webdriver in 99 ms
-Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 31087
+Jun 07, 2021 9:10:59 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 94 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 2004
 Only local connections are allowed.
-Jun 05, 2021 9:11:02 AM org.openqa.selenium.remote.ProtocolHandshake createSession
+Jun 07, 2021 9:11:00 AM org.openqa.selenium.remote.ProtocolHandshake createSession
 INFO: Detected dialect: OSS
-Jun 05, 2021 9:11:02 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+Jun 07, 2021 9:11:00 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
 INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
-Jun 05, 2021 9:11:02 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+Jun 07, 2021 9:11:00 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
 INFO: Selenide v. 4.10.01
-Jun 05, 2021 9:11:02 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+Jun 07, 2021 9:11:00 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
 INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
-Jun 05, 2021 9:11:02 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
-INFO: Create webdriver in current thread 606: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (52973f1d005bbdf94c4c8cf55125a12a)
+Jun 07, 2021 9:11:00 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 605: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (8c70566e21869c73a16ca294c9e6cd03)
 </pre>
 </span>
 </div>
@@ -309,7 +383,7 @@ INFO: Create webdriver in current thread 606: ChromeDriver -&gt; ChromeDriver: c
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jun 5, 2021 3:53:16 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jun 7, 2021 4:38:19 PM</p>
 </div>
 </div>
 </body>
