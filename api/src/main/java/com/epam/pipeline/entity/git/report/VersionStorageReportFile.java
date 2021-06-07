@@ -16,15 +16,12 @@
 
 package com.epam.pipeline.entity.git.report;
 
-import com.epam.pipeline.entity.git.GitCommitsFilter;
 import lombok.Builder;
 import lombok.Value;
 
 @Value
-@Builder(toBuilder = true)
-public class GitDiffReportFilter {
-    GitCommitsFilter commitsFilter;
-    boolean includeDiff;
-    GitDiffGroupType groupType;
-    boolean archive;
+@Builder
+public class VersionStorageReportFile {
+    String name;
+    byte[] content;
 }

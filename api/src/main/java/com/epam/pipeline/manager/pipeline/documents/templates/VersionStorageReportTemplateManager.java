@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.git.GitDiff;
 import com.epam.pipeline.entity.git.GitDiffEntry;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
+import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.git.GitManager;
@@ -65,8 +66,8 @@ public class VersionStorageReportTemplateManager {
     private final GitManager gitManager;
     private final PreferenceManager preferenceManager;
 
-    public Pair<String, byte[]> generateReport(final Long pipelineId,
-                                               final GitDiffReportFilter reportFilters) {
+    public VersionStorageReportFile generateReport(final Long pipelineId,
+                                                   final GitDiffReportFilter reportFilters) {
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final GitDiff gitDiff = fetchAndNormalizeDiffs(pipeline.getId(), reportFilters);
         try {
@@ -78,7 +79,10 @@ public class VersionStorageReportTemplateManager {
                 throw new IllegalArgumentException("No data for report");
             }
 
-            return Pair.of(resolveReportName(pipeline, diffReportFiles), writeReport(diffReportFiles));
+            return VersionStorageReportFile.builder()
+                    .name(resolveReportName(pipeline, diffReportFiles))
+                    .content(writeReport(diffReportFiles))
+                    .build();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new IllegalStateException(e);
@@ -203,6 +207,8 @@ public class VersionStorageReportTemplateManager {
         int size = getBodyElements.size();
         for (int i = 0; i < size; i++) {
             this.changeBodyElement(getBodyElements.get(i), storage, diff, reportFilter);
+            // we need to check size every time because after replacing some placeholder
+            // with a value there could be more elements then before
             size = getBodyElements.size();
         }
     }

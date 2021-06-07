@@ -25,7 +25,13 @@ import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
 import io.reflectoring.diffparser.api.model.Range;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.xwpf.usermodel.*;
+import org.apache.poi.xwpf.usermodel.BreakType;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
+import org.apache.poi.xwpf.usermodel.XWPFTableCell;
+import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.apache.xmlbeans.XmlCursor;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
 
@@ -46,32 +52,24 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     private static final String DELETION_SIGN = "-";
     public static final int SMALL_COLUMN_SIZE = 512;
     public static final int CONTENT_COLUMN_SIZE = 8960;
-
-    private XWPFParagraph paragraph;
+    public static final int HEADER_FONT_DELTA = 4;
+    public static final int REPORT_DIFF_TABLE_COL_SIZE = 4;
 
     public VSReportTemplateDiffProcessor(final ReportDataExtractor dataProducer) {
         super(dataProducer);
     }
 
-    @Override
-    boolean find(final XWPFParagraph paragraph, final String template) {
-        if (paragraph == null || StringUtils.isBlank(paragraph.getText())) {
-            return false;
-        }
-        if (paragraph.getText().contains(template)) {
-            this.paragraph = paragraph;
-            return true;
-        }
-        return false;
-    }
-
-    void replacePlaceholderWithData(final XWPFParagraph paragraph, final Object data) {
-        if (this.paragraph == null || this.paragraph != paragraph) {
+    void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Object data) {
+        if (StringUtils.isBlank(paragraph.getText()) || !paragraph.getText().contains(template)) {
             return;
         }
+        // We clean up all runs except one
         while (paragraph.getRuns().size() != 1) {
             paragraph.removeRun(0);
         }
+
+        // Remove all text from this run, we can just remove whole run and create clean one
+        // but we want to save run properties
         for (int pos = 0; pos < paragraph.getRuns().get(0).getCTR().sizeOfTArray(); pos++) {
             paragraph.getRuns().get(0).setText("", pos);
         }
@@ -109,29 +107,32 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
                            final List<GitDiffEntry> diffEntries) {
 
         if (type.equals(GitDiffGroupType.BY_COMMIT)) {
-            insertTextData(paragraph, "In revision ", false, fontFamily, fontSize + 4, false);
-            insertTextData(paragraph, groupingKey.substring(0, 9), true, fontFamily, fontSize + 4, false);
-            insertTextData(paragraph, " by ", false, fontFamily, fontSize + 4, false);
+            insertTextData(paragraph, "In revision ", false, fontFamily,
+                    fontSize + HEADER_FONT_DELTA, false);
+            insertTextData(paragraph, groupingKey.substring(0, 9), true, fontFamily,
+                    fontSize + HEADER_FONT_DELTA, false);
+            insertTextData(paragraph, " by ", false, fontFamily, fontSize + HEADER_FONT_DELTA, false);
 
             insertTextData(paragraph,
                     diffEntries.stream().findFirst()
                         .map(GitDiffEntry::getCommit)
                         .map(GitReaderRepositoryCommit::getAuthor).orElse(""),
-                    true, fontFamily, fontSize + 4,
+                    true, fontFamily, fontSize + HEADER_FONT_DELTA,
                     false);
 
-            insertTextData(paragraph, " at ", false, fontFamily, fontSize + 4, false);
+            insertTextData(paragraph, " at ", false, fontFamily, fontSize + HEADER_FONT_DELTA, false);
 
             insertTextData(paragraph,
                     diffEntries.stream().findFirst()
                         .map(GitDiffEntry::getCommit)
                         .map(c -> ReportDataExtractor.DATE_FORMAT.format(c.getAuthorDate())).orElse(""),
-                    false, fontFamily, fontSize + 4, false
+                    false, fontFamily, fontSize + HEADER_FONT_DELTA, false
             );
         } else {
-            insertTextData(paragraph, "Changes of file ", false, fontFamily, fontSize + 4, false);
-            insertTextData(paragraph, groupingKey, true, fontFamily, fontSize + 4, false);
-            insertTextData(paragraph, ":", false, fontFamily, fontSize + 4, false);
+            insertTextData(paragraph, "Changes of file ", false, fontFamily,
+                    fontSize + HEADER_FONT_DELTA, false);
+            insertTextData(paragraph, groupingKey, true, fontFamily, fontSize + HEADER_FONT_DELTA, false);
+            insertTextData(paragraph, ":", false, fontFamily, fontSize + HEADER_FONT_DELTA, false);
         }
         paragraph.createRun().addBreak(BreakType.TEXT_WRAPPING);
     }
@@ -197,7 +198,6 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     private void fillTableWithDiffHunk(final String fontFamily, final int fontSize,
                                        final XWPFTable xwpfTable, final Hunk hunk) {
         final List<Line> lines = hunk.getLines();
-
         int fromFileCurrentLine = Optional.ofNullable(hunk.getFromFileRange()).map(Range::getLineStart).orElse(0);
         int toFileCurrentLine = Optional.ofNullable(hunk.getToFileRange()).map(Range::getLineStart).orElse(0);
 
@@ -205,20 +205,11 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
             final Line line = lines.get(i);
             final XWPFTableRow xwpfTableRow = xwpfTable.insertNewTableRow(i);
 
-            for (int colIndex = 0; colIndex < 4; colIndex++) {
+            for (int colIndex = 0; colIndex < REPORT_DIFF_TABLE_COL_SIZE; colIndex++) {
                 final XWPFTableCell xwpfTableCell = xwpfTableRow.addNewTableCell();
-                while (!xwpfTableCell.getParagraphs().isEmpty()) {
-                    xwpfTableCell.removeParagraph(0);
-                }
-
-                final XWPFParagraph xwpfParagraph = xwpfTableCell.addParagraph();
-                final  XWPFRun xwpfRun = xwpfParagraph.createRun();
-                xwpfParagraph.setAlignment(ParagraphAlignment.LEFT);
-                xwpfRun.setFontFamily(fontFamily);
-                xwpfRun.setFontSize(fontSize);
+                final XWPFRun xwpfRun = createCellRun(fontFamily, fontSize, xwpfTableCell);
 
                 String cellData = EMPTY;
-                String color = COLOR_WHITE;
                 if (colIndex == 0 && (line.getLineType().equals(Line.LineType.FROM)
                         || line.getLineType().equals(Line.LineType.NEUTRAL))) {
                      cellData = String.valueOf(fromFileCurrentLine);
@@ -237,27 +228,48 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
                     cellData = line.getContent();
                 }
 
-                if (line.getLineType().equals(Line.LineType.TO)) {
-                    color = COLOR_GREEN;
-                } else if (line.getLineType().equals(Line.LineType.FROM)) {
-                    color = COLOR_RED;
-                }
-
+                // We set size for all columns except last one to constantly small to provide
+                // more space for content column
                 if (colIndex < 3) {
-                    CTTcPr ctTcPr = xwpfTableCell.getCTTc().addNewTcPr();
-                    CTTblWidth cellWidth = ctTcPr.addNewTcW();
-                    cellWidth.setType(xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getTcW().getType());
-                    cellWidth.setW(BigInteger.valueOf(4L));
-                    if (xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getGridSpan() != null) {
-                        ctTcPr.setGridSpan(xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getGridSpan());
-                    }
+                    configureColumnWidth(xwpfTableRow, colIndex, xwpfTableCell);
                 }
 
                 xwpfRun.setText(cellData, 0);
                 xwpfRun.setFontSize(xwpfRun.getFontSize() - 2);
-                xwpfTableCell.setColor(color);
+                xwpfTableCell.setColor(getLineColor(line));
             }
         }
+    }
+
+    private String getLineColor(Line line) {
+        if (line.getLineType().equals(Line.LineType.TO)) {
+           return COLOR_GREEN;
+        } else if (line.getLineType().equals(Line.LineType.FROM)) {
+            return COLOR_RED;
+        }
+        return COLOR_WHITE;
+    }
+
+    private void configureColumnWidth(XWPFTableRow xwpfTableRow, int colIndex, XWPFTableCell xwpfTableCell) {
+        CTTcPr ctTcPr = xwpfTableCell.getCTTc().addNewTcPr();
+        CTTblWidth cellWidth = ctTcPr.addNewTcW();
+        cellWidth.setType(xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getTcW().getType());
+        cellWidth.setW(BigInteger.valueOf(4L));
+        if (xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getGridSpan() != null) {
+            ctTcPr.setGridSpan(xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getGridSpan());
+        }
+    }
+
+    private XWPFRun createCellRun(String fontFamily, int fontSize, XWPFTableCell xwpfTableCell) {
+        while (!xwpfTableCell.getParagraphs().isEmpty()) {
+            xwpfTableCell.removeParagraph(0);
+        }
+        final XWPFParagraph xwpfParagraph = xwpfTableCell.addParagraph();
+        final  XWPFRun xwpfRun = xwpfParagraph.createRun();
+        xwpfParagraph.setAlignment(ParagraphAlignment.LEFT);
+        xwpfRun.setFontFamily(fontFamily);
+        xwpfRun.setFontSize(fontSize);
+        return xwpfRun;
     }
 
     private XWPFTable createTable(final XWPFParagraph paragraph) {

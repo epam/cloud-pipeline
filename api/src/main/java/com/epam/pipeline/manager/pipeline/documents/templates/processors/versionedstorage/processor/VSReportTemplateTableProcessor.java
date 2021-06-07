@@ -30,93 +30,124 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProcessor {
 
-    public VSReportTemplateTableProcessor(ReportDataExtractor dataProducer) {
+    public VSReportTemplateTableProcessor(final ReportDataExtractor dataProducer) {
         super(dataProducer);
     }
 
-    void replacePlaceholderWithData(XWPFParagraph paragraph, Object data) {
-        if (this.xwpfRun == null || paragraph == null) {
+    void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Object data) {
+        if (paragraph == null) {
             return;
         }
-        int globalStartIndex = 0;
-        boolean shouldMoveRun = false;
-        int runToRemoveIndex = 0;
-        XWPFParagraph currentParagraph = null;
-        final List<XWPFRun> runs = paragraph.getRuns();
-        XmlCursor xmlCursor = paragraph.getCTP().newCursor();
-        xmlCursor.toNextSibling();
-        for (XWPFRun run : runs) {
-            if (!shouldMoveRun) {
-                runToRemoveIndex++;
-            }
-            String runText = run.getText(0);
-            if (runText == null) {
-                continue;
-            }
-            int globalEndIndex = globalStartIndex + runText.length();
-            if (globalStartIndex > this.end || globalEndIndex < this.start) {
-                globalStartIndex = globalEndIndex;
-                if (shouldMoveRun && currentParagraph != null) {
-                    XWPFRun newRun = currentParagraph.createRun();
-                    this.copyRunProperties(run, newRun, true);
+        final String replaceRegex = "(?i)\\{" + template + "}";
+        final Pattern pattern = Pattern.compile(replaceRegex, Pattern.CASE_INSENSITIVE);
+        final Matcher matcher = pattern.matcher(paragraph.getText().replace("\t", ""));
+        if (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
+            boolean dataInserted = false;
+            boolean shouldMoveRun = false;
+            int globalStartIndex = 0;
+            int runToRemoveIndex = 0;
+            XWPFParagraph currentParagraph = null;
+            final List<XWPFRun> runs = paragraph.getRuns();
+            final XmlCursor xmlCursor = paragraph.getCTP().newCursor();
+            xmlCursor.toNextSibling();
+            outer: for (XWPFRun run : runs) {
+                for (int pos = 0; pos < run.getCTR().sizeOfTArray(); pos++) {
+                    if (!shouldMoveRun) {
+                        runToRemoveIndex++;
+                    }
+                    String runText = run.getText(pos);
+                    if (runText == null) {
+                        continue;
+                    }
+                    int globalEndIndex = globalStartIndex + runText.length();
+                    if (globalStartIndex > end || globalEndIndex < start) {
+                        globalStartIndex = globalEndIndex;
+                        if (shouldMoveRun && currentParagraph != null) {
+                            XWPFRun newRun = currentParagraph.createRun();
+                            this.copyRunProperties(run, newRun, true);
+                        }
+                        continue;
+                    }
+                    final int replaceFrom = Math.max(globalStartIndex, start) - globalStartIndex;
+                    final int replaceTo = Math.min(globalEndIndex, end) - globalStartIndex;
+                    // Since it is possible that placeholder text can be split on several runs inside a paragraph
+                    // we need to replace part of placeholder with data only once, so lets replace it as soon
+                    // as we on appropriate position and save state of in in dataInserted
+                    if (replaceTo - replaceFrom > 0 && !dataInserted) {
+                        currentParagraph = replacePlaceholderAndSplitRun(
+                                paragraph, data, xmlCursor, run, pos, runText, replaceFrom, replaceTo
+                        );
+                        if (currentParagraph == null) {
+                            break outer;
+                        }
+                        shouldMoveRun = true;
+                        dataInserted = true;
+                    } else {
+                        runText = runText.substring(0, replaceFrom).concat(runText.substring(replaceTo));
+                        run.setText(runText, pos);
+                        if (shouldMoveRun && currentParagraph != null) {
+                            XWPFRun newRun = currentParagraph.createRun();
+                            this.copyRunProperties(run, newRun, true);
+                        }
+                    }
+                    globalStartIndex = globalEndIndex;
                 }
-                continue;
             }
-            int replaceFrom = Math.max(globalStartIndex, this.start) - globalStartIndex;
-            int replaceTo = Math.min(globalEndIndex, this.end) - globalStartIndex;
-            if (this.xwpfRun.equals(run)) {
-                String beforePlaceholderText = runText.substring(0, replaceFrom);
-                run.setText(beforePlaceholderText, 0);
 
-                this.insertData(paragraph, run, xmlCursor, data);
-
-                if (!xmlCursor.isStart()) {
-                    break;
-                }
-
-                currentParagraph = paragraph.getDocument().insertNewParagraph(xmlCursor);
-                this.copyParagraphProperties(paragraph, currentParagraph);
-
-                String afterPlaceholderText = runText.substring(replaceTo);
-                shouldMoveRun = true;
-                if (currentParagraph != null) {
-                    XWPFRun newRun = currentParagraph.createRun();
-                    this.copyRunProperties(run, newRun);
-                    newRun.setText(afterPlaceholderText, 0);
-                }
-            } else {
-                runText = runText.substring(0, replaceFrom).concat(runText.substring(replaceTo));
-                run.setText(runText, 0);
-                if (shouldMoveRun && currentParagraph != null) {
-                    XWPFRun newRun = currentParagraph.createRun();
-                    this.copyRunProperties(run, newRun, true);
-                }
+            while (paragraph.getRuns().size() > runToRemoveIndex) {
+                paragraph.removeRun(runToRemoveIndex);
             }
-            globalStartIndex = globalEndIndex;
-        }
-
-        while (paragraph.getRuns().size() > runToRemoveIndex) {
-            paragraph.removeRun(runToRemoveIndex);
         }
     }
 
-    void insertData(XWPFParagraph splittedParagraph, XWPFRun runTemplate, XmlCursor cursor, Object data) {
+    private XWPFParagraph replacePlaceholderAndSplitRun(final XWPFParagraph paragraph,
+                                                        final Object data,
+                                                        final XmlCursor xmlCursor,
+                                                        final XWPFRun run,
+                                                        final int pos,
+                                                        final String runText,
+                                                        final int replaceFrom,
+                                                        final int replaceTo) {
+        final String beforePlaceholderText = runText.substring(0, replaceFrom);
+        run.setText(beforePlaceholderText, pos);
+
+        this.insertData(paragraph, run, xmlCursor, data);
+        if (!xmlCursor.isStart()) {
+            return null;
+        }
+
+        final XWPFParagraph newParagraph = paragraph.getDocument().insertNewParagraph(xmlCursor);
+        this.copyParagraphProperties(paragraph, newParagraph);
+
+        final String afterPlaceholderText = runText.substring(replaceTo);
+        XWPFRun newRun = newParagraph.createRun();
+        this.copyRunProperties(run, newRun);
+        newRun.setText(afterPlaceholderText, pos);
+        return newParagraph;
+    }
+
+    private void insertData(final XWPFParagraph splittedParagraph, final XWPFRun runTemplate,
+                    final XmlCursor cursor, final Object data) {
         if (data instanceof Table) {
             Table table = (Table)data;
-            XWPFTable xwpfTable = splittedParagraph.getDocument().insertNewTbl(cursor);
+            final XWPFTable xwpfTable = splittedParagraph.getDocument().insertNewTbl(cursor);
             xwpfTable.removeRow(0);
             CTTblPr properties = xwpfTable.getCTTbl().getTblPr();
             if (properties == null) {
                 properties = xwpfTable.getCTTbl().addNewTblPr();
             }
-            CTJc jc = (properties.isSetJc() ? properties.getJc() : properties.addNewJc());
+            final CTJc jc = (properties.isSetJc() ? properties.getJc() : properties.addNewJc());
             jc.setVal(STJc.CENTER);
 
-            CTTblBorders borders = properties.addNewTblBorders();
+            final CTTblBorders borders = properties.addNewTblBorders();
             borders.addNewBottom().setVal(STBorder.SINGLE);
             borders.addNewLeft().setVal(STBorder.SINGLE);
             borders.addNewRight().setVal(STBorder.SINGLE);
@@ -164,17 +195,17 @@ public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProc
         xwpfRun.setText(data.get(), 0);
     }
 
-    void copyParagraphProperties(XWPFParagraph original, XWPFParagraph copy) {
-        CTPPr pPr = copy.getCTP().isSetPPr() ? copy.getCTP().getPPr() : copy.getCTP().addNewPPr();
+    private void copyParagraphProperties(final XWPFParagraph original, final XWPFParagraph copy) {
+        final CTPPr pPr = copy.getCTP().isSetPPr() ? copy.getCTP().getPPr() : copy.getCTP().addNewPPr();
         pPr.set(original.getCTP().getPPr());
     }
 
-    void copyRunProperties(XWPFRun original, XWPFRun copy) {
+    private void copyRunProperties(final XWPFRun original, final XWPFRun copy) {
         this.copyRunProperties(original, copy, false);
     }
 
-    void copyRunProperties(XWPFRun original, XWPFRun copy, boolean copyText) {
-        CTRPr rPr = copy.getCTR().isSetRPr() ? copy.getCTR().getRPr() : copy.getCTR().addNewRPr();
+    private void copyRunProperties(final XWPFRun original, final XWPFRun copy, final boolean copyText) {
+        final CTRPr rPr = copy.getCTR().isSetRPr() ? copy.getCTR().getRPr() : copy.getCTR().addNewRPr();
         rPr.set(original.getCTR().getRPr());
         if (copyText) {
             copy.setText(original.getText(0));

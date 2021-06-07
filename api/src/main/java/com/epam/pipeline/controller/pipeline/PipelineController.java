@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
+import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -58,7 +59,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -832,7 +832,7 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestBody final GitDiffReportFilter filter,
             final HttpServletResponse response) throws IOException {
-        final Pair<String, byte[]> report = pipelineApiService.generateReportForVersionedStorage(id, filter);
-        writeFileToResponse(response, report.getSecond(), report.getFirst());
+        final VersionStorageReportFile report = pipelineApiService.generateReportForVersionedStorage(id, filter);
+        writeFileToResponse(response, report.getContent(), report.getName());
     }
 }
