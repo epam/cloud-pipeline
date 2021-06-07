@@ -23,6 +23,7 @@ import Preview from '../preview';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
 import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
+import {FacetSettingsStorage} from '../faceted-search/utilities';
 import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
 
@@ -64,7 +65,7 @@ class SearchResults extends React.Component {
     columnWidths: {},
     columns: DocumentColumns.map(column => column.key),
     extraColumnsConfiguration: [],
-    arrangedColumns: []
+    arrangedColumnKeys: (FacetSettingsStorage.load().arrangedColumnKeys || [])
   };
 
   dividerRefs = {};
@@ -88,14 +89,14 @@ class SearchResults extends React.Component {
       prevState.columnWidths !== this.state.columnWidths ||
       prevState.resizingColumn !== this.state.resizingColumn ||
       prevState.columns !== this.state.columns ||
-      prevState.arrangedColumns !== this.state.arrangedColumns ||
+      prevState.arrangedColumnKeys !== this.state.arrangedColumnKeys ||
       prevState.draggingCell !== this.state.draggingCell
     ) {
       if (this.infiniteScroll) {
         this.infiniteScroll.forceUpdate();
       }
     }
-  }
+  };
 
   componentDidMount () {
     window.addEventListener('mousemove', this.onResize);
@@ -108,7 +109,7 @@ class SearchResults extends React.Component {
           this.setState({extraColumnsConfiguration: extra}, this.updateDocumentTypes);
         }
       });
-  }
+  };
 
   componentWillUnmount () {
     if (this.animationFrame) {
@@ -117,12 +118,12 @@ class SearchResults extends React.Component {
     window.removeEventListener('mousemove', this.onResize);
     window.removeEventListener('mouseup', this.stopResizing);
     window.removeEventListener('keydown', this.onKeyDown);
-  }
+  };
 
   get columnsConfiguration () {
     const {extraColumnsConfiguration = []} = this.state;
     return [...DocumentColumns, ...extraColumnsConfiguration];
-  }
+  };
 
   get columns () {
     const {columns} = this.state;
@@ -130,15 +131,19 @@ class SearchResults extends React.Component {
       return this.columnsConfiguration;
     }
     return this.columnsConfiguration.filter(k => columns.has(k.key));
-  }
+  };
 
   get arrangedColumns () {
-    const {arrangedColumns} = this.state;
-    if (arrangedColumns && arrangedColumns.length) {
-      return arrangedColumns;
+    const {arrangedColumnKeys} = this.state;
+    if (arrangedColumnKeys && arrangedColumnKeys.length) {
+      const arrangedColumns = arrangedColumnKeys
+        .map((key) => this.columns.find(column => column.key === key))
+        .filter(Boolean);
+      const restColumns = this.columns.filter(column => !arrangedColumnKeys.includes(column.key));
+      return [...arrangedColumns, ...restColumns];
     }
     return this.columns;
-  }
+  };
 
   updateDocumentTypes = () => {
     const {documentTypes} = this.props;
@@ -199,7 +204,7 @@ class SearchResults extends React.Component {
     if (preview && event.key && event.key.toLowerCase() === 'escape') {
       this.closePreview();
     }
-  }
+  };
 
   setPreview = (info, delayed) => {
     if (this.previewTimeout) {
@@ -220,13 +225,13 @@ class SearchResults extends React.Component {
 
   closePreview = () => {
     this.setState({preview: undefined});
-  }
+  };
 
   onPreviewWrapperClick = (event) => {
     if (event && event.target === event.currentTarget) {
       this.closePreview();
     }
-  }
+  };
 
   navigate = (item) => (e) => {
     if (this.props.disabled) {
@@ -243,7 +248,7 @@ class SearchResults extends React.Component {
     if (onNavigate) {
       onNavigate(item);
     }
-  }
+  };
 
   renderPreview = () => {
     const {preview} = this.state;
@@ -265,7 +270,7 @@ class SearchResults extends React.Component {
         </div>
       </div>
     );
-  }
+  };
 
   renderResultsList = () => {
     const {
@@ -321,7 +326,7 @@ class SearchResults extends React.Component {
         </div>
       </div>
     );
-  }
+  };
 
   getGridTemplate = (headerTemplate) => {
     const {columnWidths, draggingCell} = this.state;
@@ -361,7 +366,7 @@ class SearchResults extends React.Component {
         this.setState({columnWidths: {...columnWidths}});
       }
     }
-  }
+  };
 
   stopResizing = (event) => {
     const {resizingColumn} = this.state;
@@ -371,7 +376,7 @@ class SearchResults extends React.Component {
     }
     window.removeEventListener('mousemove', this.onResize);
     window.removeEventListener('mouseup', this.stopResizing);
-  }
+  };
 
   initResizing = (event, column) => {
     const {resizingColumn} = this.state;
@@ -381,7 +386,7 @@ class SearchResults extends React.Component {
     if (!resizingColumn) {
       this.setState({resizingColumn: column.key});
     }
-  }
+  };
 
   getDropIndex = (dropX) => {
     const {draggingCell} = this.state;
@@ -404,14 +409,17 @@ class SearchResults extends React.Component {
       }
     } catch (___) {}
     return -1;
-  }
+  };
 
   rearrangeTable = (init, target) => {
     const columns = [...this.arrangedColumns];
     const movingColumn = columns.splice(init, 1)[0];
     columns.splice(target, 0, movingColumn);
-    this.setState({arrangedColumns: columns});
-  }
+    const keys = columns.map(column => column.key);
+    this.setState({arrangedColumnKeys: keys}, () => {
+      FacetSettingsStorage.updateParameter({arrangedColumnKeys: keys});
+    });
+  };
 
   initCellDragging = (event, column) => {
     if (!event) {
@@ -435,7 +443,7 @@ class SearchResults extends React.Component {
         this.startCellDragging(event);
       }
     });
-  }
+  };
 
   startCellDragging = (event) => {
     const {header, dragger} = this.rects;
@@ -447,7 +455,7 @@ class SearchResults extends React.Component {
       ? header.right - header.x - dragger.width - scrollWidth
       : Math.max(3, event.clientX - header.x - (dragger.width / 2));
     this.draggerRef.style.left = `${draggerX}px`;
-  }
+  };
 
   stopCellDragging = (event) => {
     const {draggingCell} = this.state;
@@ -464,7 +472,7 @@ class SearchResults extends React.Component {
     });
     window.removeEventListener('mousemove', this.startCellDragging, false);
     window.removeEventListener('mouseup', this.stopCellDragging, false);
-  }
+  };
 
   renderTableRow = (resultItem, rowIndex) => {
     const {disabled} = this.props;
@@ -514,7 +522,7 @@ class SearchResults extends React.Component {
         }
       </a>
     );
-  }
+  };
 
   renderTableHeader = () => {
     const {
@@ -560,7 +568,7 @@ class SearchResults extends React.Component {
         ]))}
       </div>
     );
-  }
+  };
 
   renderResultsTable = () => {
     const {
@@ -607,7 +615,7 @@ class SearchResults extends React.Component {
         />
       </div>
     );
-  }
+  };
 
   render () {
     const {
@@ -644,7 +652,7 @@ class SearchResults extends React.Component {
         ) : null}
       </div>
     );
-  }
+  };
 }
 
 SearchResults.propTypes = {

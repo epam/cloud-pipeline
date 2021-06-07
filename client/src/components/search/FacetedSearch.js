@@ -35,7 +35,7 @@ import {
   facetsSearch,
   getFacetFilterToken,
   fetchFacets,
-  FacetModeStorage
+  FacetSettingsStorage
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
 import styles from './FacetedSearch.css';
@@ -65,11 +65,11 @@ class FacetedSearch extends React.Component {
     isLastPage: false,
     query: undefined,
     pageSize: DEFAULT_PAGE_SIZE,
-    presentationMode: FacetModeStorage.load() || PresentationModes.list,
+    presentationMode: FacetSettingsStorage.load().mode || PresentationModes.list,
     showResults: false,
     searchToken: undefined,
     facetsToken: undefined
-  }
+  };
 
   componentDidMount () {
     const {facetedFilters} = this.props;
@@ -82,7 +82,7 @@ class FacetedSearch extends React.Component {
     } else {
       this.doSearch();
     }
-  }
+  };
 
   get documentTypeFilter () {
     const {
@@ -144,7 +144,7 @@ class FacetedSearch extends React.Component {
             )
           )
       }));
-  }
+  };
 
   get activeFiltersIsEmpty () {
     const {activeFilters} = this.state;
@@ -152,7 +152,7 @@ class FacetedSearch extends React.Component {
       return !Object.keys(activeFilters).length;
     }
     return true;
-  }
+  };
 
   getFilterPreferences = (filterName) => {
     const {systemDictionaries, preferences} = this.props;
@@ -195,7 +195,7 @@ class FacetedSearch extends React.Component {
       };
     }
     return null;
-  }
+  };
 
   onChangeFilter = (group) => (selection) => {
     if (!group) {
@@ -209,14 +209,14 @@ class FacetedSearch extends React.Component {
       delete newFilters[group];
     }
     this.setState({activeFilters: newFilters}, () => this.doSearch());
-  }
+  };
 
   onClearFilters = () => {
     if (this.activeFiltersIsEmpty) {
       return;
     }
     this.setState({activeFilters: {}}, () => this.doSearch());
-  }
+  };
 
   doSearch = (continuousOptions = undefined) => {
     this.setState({
@@ -401,13 +401,13 @@ class FacetedSearch extends React.Component {
 
   onChangePresentationMode = (mode) => {
     const {presentationMode} = this.state;
-    if (mode === presentationMode) {
+    if (mode === presentationMode || !PresentationModes[mode]) {
       return null;
     }
     this.setState({presentationMode: mode}, () => {
-      FacetModeStorage.save(mode);
+      FacetSettingsStorage.updateParameter({mode});
     });
-  }
+  };
 
   onQueryChange = (e) => {
     this.setState({
@@ -420,7 +420,7 @@ class FacetedSearch extends React.Component {
       return;
     }
     this.props.router.push(item.url);
-  }
+  };
 
   onPageSizeChanged = (newPageSize) => {
     const {
@@ -466,7 +466,7 @@ class FacetedSearch extends React.Component {
         documentTypes={(activeFilters || {})[DocumentTypeFilterName]}
       />
     );
-  }
+  };
 
   render () {
     const {systemDictionaries} = this.props;

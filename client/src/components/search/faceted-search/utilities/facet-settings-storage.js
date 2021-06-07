@@ -14,18 +14,27 @@
  *  limitations under the License.
 */
 
-import {PresentationModes} from '../controls';
-
-class FacetModeStorage {
+class FacetSettingsStorage {
   static load () {
-    return localStorage.getItem('facetMode');
-  }
+    const settings = localStorage.getItem('facetedSettings');
+    return settings ? JSON.parse(settings) : {};
+  };
 
-  static save (viewMode) {
-    if (viewMode && PresentationModes[viewMode]) {
-      localStorage.setItem('facetMode', viewMode);
+  static save (settings) {
+    if (settings) {
+      localStorage.setItem('facetedSettings', JSON.stringify(settings));
     }
-  }
+  };
+
+  static updateParameter (parameter) {
+    if (parameter) {
+      const settings = this.load();
+      localStorage.setItem('facetedSettings', JSON.stringify({
+        ...settings,
+        ...parameter
+      }));
+    }
+  };
 }
 
-export default FacetModeStorage;
+export default FacetSettingsStorage;
