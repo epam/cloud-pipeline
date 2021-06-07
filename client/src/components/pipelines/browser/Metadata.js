@@ -155,8 +155,6 @@ export default class Metadata extends React.Component {
     selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
     columns: [],
-    defaultColumns: [],
-    selectedColumns: [],
     filterModel: {
       startDateFrom: undefined,
       endDateTo: undefined,
@@ -182,18 +180,19 @@ export default class Metadata extends React.Component {
 
   @computed
   get entityTypes () {
-    if (this.props.entityFields.loaded && this.props.metadataClasses.loaded) {
-      const entityFields = (this.props.entityFields.value || [])
+    const {entityFields, metadataClasses} = this.props;
+    if (entityFields.loaded && metadataClasses.loaded) {
+      const mappedEntityFields = (entityFields.value || [])
         .map(e => e);
-      const ignoreClasses = new Set(entityFields.map(f => f.metadataClass.id));
-      const otherClasses = (this.props.metadataClasses.value || [])
+      const ignoreClasses = new Set(mappedEntityFields.map(f => f.metadataClass.id));
+      const otherClasses = (metadataClasses.value || [])
         .filter(({id}) => !ignoreClasses.has(id))
         .map(metadataClass => ({
           fields: [],
           metadataClass: {...metadataClass, outOfProject: true}
         }));
       return [
-        ...entityFields,
+        ...mappedEntityFields,
         ...otherClasses
       ];
     }
@@ -202,16 +201,18 @@ export default class Metadata extends React.Component {
 
   @computed
   get transferJobId () {
-    if (this.props.preferences.loaded) {
-      return +this.props.preferences.getPreferenceValue('storage.transfer.pipeline.id');
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return +preferences.getPreferenceValue('storage.transfer.pipeline.id');
     }
     return null;
   }
 
   @computed
   get transferJobVersion () {
-    if (this.props.preferences.loaded) {
-      return this.props.preferences.getPreferenceValue('storage.transfer.pipeline.version');
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return preferences.getPreferenceValue('storage.transfer.pipeline.version');
     }
     return null;
   }
@@ -375,15 +376,23 @@ export default class Metadata extends React.Component {
         message.error(this.metadataRequest.error, 5);
         currentMetadata = [];
       } else {
-        if (this.metadataRequest.value) {
-          this._totalCount = this.metadataRequest.value.totalCount;
-          if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
+        const {value} = this.metadataRequest;
+        if (value) {
+          this._totalCount = value.totalCount;
+          //           if (!this.state.filterModel.searchQueries.length) {
+          //             const parentFolderId = this.props.folderId;
+          //             if (this._totalCount <= 0) {
+          //               this.props.router.push(`/folder/${parentFolderId}`);
+          //               return;
+          //             }
+          //           }
+          if (value.elements && value.elements.length) {
             this._classEntity = {
-              id: this.metadataRequest.value.elements[0].classEntity.id,
-              name: this.metadataRequest.value.elements[0].classEntity.name
+              id: value.elements[0].classEntity.id,
+              name: value.elements[0].classEntity.name
             };
           }
-          currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
+          currentMetadata = (value.elements || []).map(v => {
             v.data = v.data || {};
             v.data.rowKey = {
               value: v.id,
@@ -566,23 +575,14 @@ export default class Metadata extends React.Component {
         return 0;
       };
       const predefinedSort = (a, b) => b.predefined - a.predefined;
-      let selectedColumns = [...this.state.selectedColumns];
       const newColumns = (metadataEntityKeysRequest.value || [])
         .sort(externalIdSort)
         .sort(predefinedSort)
         .filter(filterColumns)
-        .map(mapColumnName);
-
-      if (this.state.defaultColumns && this.state.defaultColumns.length < newColumns.length) {
-        const addedColumns = newColumns.filter(column => !this.state.defaultColumns.includes(column));
-        selectedColumns = [...this.state.selectedColumns, ...addedColumns];
-      }
-      if (this.state.defaultColumns && this.state.defaultColumns.length === newColumns.length) {
-        selectedColumns = [...newColumns];
-      }
+        .map(column => {
+          return {key: mapColumnName(column), selected: true};
+        });
       this.setState({
-        selectedColumns,
-        defaultColumns: newColumns,
         columns: newColumns
       });
     }
@@ -692,20 +692,20 @@ export default class Metadata extends React.Component {
   };
 
   onColumnSelect = (item) => {
-    const selectedColumns = this.state.selectedColumns;
-    const index = selectedColumns.indexOf(item);
-    if (index !== -1) {
-      selectedColumns.splice(index, 1);
-    } else {
-      selectedColumns.push(item);
-    }
-    this.setState({selectedColumns});
+    const currentColumns = [...this.state.columns];
+
+    const index = currentColumns.findIndex(obj => obj.key === item);
+    const isSelected = currentColumns.findIndex(obj => obj.key === item && obj.selected) > -1;
+
+    currentColumns[index] = {key: item, selected: !isSelected};
+    this.setState({columns: currentColumns});
   };
 
   onResetColumns = () => {
     this.setState({
-      columns: [...this.state.defaultColumns],
-      selectedColumns: [...this.state.defaultColumns]
+      columns: this.state.columns.map(({key, selected}) => {
+        return {key, selected: true};
+      })
     });
   };
 
@@ -1303,7 +1303,7 @@ export default class Metadata extends React.Component {
           );
         })
       },
-      ...this.state.columns.filter(c => this.state.selectedColumns.indexOf(c) >= 0).map(key => {
+      ...this.state.columns.filter(c => c.selected).map(({key}) => {
         return {
           accessor: key,
           style: {
@@ -1600,7 +1600,6 @@ export default class Metadata extends React.Component {
           <DropdownWithMultiselect
             onColumnSelect={this.onColumnSelect}
             onSetOrder={this.onSetOrder}
-            selectedColumns={this.state.selectedColumns}
             columns={this.state.columns}
             onResetColumns={this.onResetColumns}
             columnNameFn={getColumnTitle}
@@ -1658,7 +1657,6 @@ export default class Metadata extends React.Component {
     };
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
-      this.setState({selectedColumns: [...this.state.columns]});
       await this.loadData();
       await this.loadCurrentProject();
     })();
@@ -1730,7 +1728,6 @@ export default class Metadata extends React.Component {
       this._totalCount = 0;
       await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
-      this.setState({selectedColumns: [...this.state.columns]});
       await this.loadData();
     }
     if (nextProps.folderId !== this.props.folderId) {
