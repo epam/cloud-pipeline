@@ -136,7 +136,6 @@ export default class Metadata extends React.Component {
     readOnly: PropTypes.bool
   };
 
-  _currentMetadata = [];
   _totalCount = 0;
 
   columns = [];
@@ -176,7 +175,8 @@ export default class Metadata extends React.Component {
     currentProjectId: null,
     currentMetadataEntityForCurrentProject: [],
     uploadToBucketVisible: false,
-    copyEntitiesDialogVisible: false
+    copyEntitiesDialogVisible: false,
+    currentMetadata: []
   };
 
   uploadButton;
@@ -353,6 +353,7 @@ export default class Metadata extends React.Component {
     this.setState({loading: true});
     this.metadataRequest = new MetadataEntityFilter();
     let orderBy, filters;
+    let currentMetadata = [];
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
@@ -369,7 +370,7 @@ export default class Metadata extends React.Component {
       );
       if (this.metadataRequest.error) {
         message.error(this.metadataRequest.error, 5);
-        this._currentMetadata = [];
+        currentMetadata = [];
       } else {
         if (this.metadataRequest.value) {
           this._totalCount = this.metadataRequest.value.totalCount;
@@ -386,7 +387,7 @@ export default class Metadata extends React.Component {
               name: this.metadataRequest.value.elements[0].classEntity.name
             };
           }
-          this._currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
+          currentMetadata = (this.metadataRequest.value.elements || []).map(v => {
             v.data = v.data || {};
             v.data.rowKey = {
               value: v.id,
@@ -422,12 +423,12 @@ export default class Metadata extends React.Component {
             return a[field].value < b[field].value ? 1 : -1;
           }
         });
-        this._currentMetadata = selectedItems.slice(firstRow, lastRow);
+        currentMetadata = selectedItems.slice(firstRow, lastRow);
       } else {
-        this._currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
+        currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
-    this.setState({loading: false});
+    this.setState({loading: false, currentMetadata});
   };
 
   filterApplied = (key) => {
@@ -715,7 +716,7 @@ export default class Metadata extends React.Component {
 
   onRowClick = (item) => {
     const [selectedItem] =
-      this._currentMetadata.filter(column => column.rowKey === item.rowKey);
+      this.state.currentMetadata.filter(column => column.rowKey === item.rowKey);
     if (this.state.selectedItem && this.state.selectedItem.rowKey === selectedItem.rowKey) {
       this.setState({selectedItem: null, metadata: false});
     } else {
@@ -898,7 +899,7 @@ export default class Metadata extends React.Component {
           sortable={false}
           minRows={0}
           columns={this.tableColumns}
-          data={this._currentMetadata}
+          data={this.state.currentMetadata}
           getTableProps={() => ({style: {overflowY: 'hidden'}})}
           getTdProps={(state, rowInfo, column, instance) => ({
             onClick: (e) => {
@@ -1028,7 +1029,7 @@ export default class Metadata extends React.Component {
               await this.loadColumns(this.props.folderId, this.props.metadataClass);
               await this.loadData(this.state.filterModel);
               const [selectedItem] =
-                this._currentMetadata
+                this.state.currentMetadata
                   .filter(metadata => metadata.rowKey.value === currentItem.id);
               if (this.state.selectedItems && this.state.selectedItems.length) {
                 const selectedItems = this.state.selectedItems.map(item => {
