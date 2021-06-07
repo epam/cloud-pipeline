@@ -32,6 +32,20 @@ function InstallNoMachineIfRequired {
     return $restartRequired
 }
 
+function InstallOpenSshServerIfRequired {
+    $restartRequired=$false
+    $openSshServerInstalled = Get-WindowsCapability -Online `
+        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
+        | ForEach-Object { $_.State -eq "Installed" }
+    if (-not($openSshServerInstalled)) {
+        Write-Host "Installing OpenSSH server..."
+        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
+        $restartRequired=$false
+    }
+    return $restartRequired
+}
+
 function InstallWebDAVIfRequired {
     $restartRequired=$false
     $webDAVInstalled = Get-WindowsFeature `
@@ -64,6 +78,11 @@ function InstallPGinaIfRequired {
         $restartRequired=$true
     }
     return $restartRequired
+}
+
+function StartOpenSSHServices {
+    Set-Service -Name sshd -StartupType Automatic
+    Start-Service sshd
 }
 
 function StartWebDAVServices {
@@ -99,19 +118,6 @@ function InstallChromeIfRequired {
         Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile $workingDir\ChromeSetup.exe
         & $workingDir\ChromeSetup.exe /silent /install
         WaitForProcess -ProcessName "ChromeSetup"
-    }
-}
-
-function InstallOpenSshServerIfRequired {
-    $openSshServerInstalled = Get-WindowsCapability -Online `
-        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
-        | ForEach-Object { $_.State -eq "Installed" }
-    if (-not($openSshServerInstalled)) {
-        Write-Host "Installing OpenSSH server..."
-        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-        Set-Service -Name sshd -StartupType Automatic
-        Start-Service sshd
-        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
     }
 }
 
@@ -206,7 +212,7 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
     },
     "Kubernetes" : {
         "Source" : {
-            "Release" : "1.15.4",
+            "Release" : "1.15.5",
             "Url" : "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/kubernetes-node-windows-amd64.tar.gz"
         },
         "ControlPlane" : {
@@ -329,8 +335,8 @@ $kubeCertHash = "@KUBE_CERT_HASH@"
 $kubeNodeToken = "@KUBE_NODE_TOKEN@"
 $dnsProxyPost = "@dns_proxy_post@"
 
-$interface = "Ethernet 3"
-$interfacePost = "vEthernet (Ethernet 3)"
+$interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
+$interfacePost = "vEthernet ($interface)"
 $awsAddrs = @("169.254.169.254/32", "169.254.169.250/32", "169.254.169.251/32", "169.254.169.249/32", "169.254.169.123/32", "169.254.169.253/32")
 
 $homeDir = "$env:USERPROFILE"
@@ -359,6 +365,10 @@ Write-Host "Installing nomachine if required..."
 $restartRequired = (InstallNoMachineIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
+Write-Host "Installing OpenSSH server if required..."
+$restartRequired = (InstallOpenSshServerIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
 Write-Host "Installing WebDAV if required..."
 $restartRequired = (InstallWebDAVIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
@@ -375,6 +385,9 @@ if ($restartRequired) {
     Exit
 }
 
+Write-Host "Starting OpenSSH services..."
+StartOpenSSHServices
+
 Write-Host "Starting WebDAV services..."
 StartWebDAVServices
 
@@ -387,9 +400,6 @@ InstallChromeIfRequired
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
 OpenPortIfRequired -Port 8888
-
-Write-Host "Installing OpenSSH server if required..."
-InstallOpenSshServerIfRequired
 
 Write-Host "Generating SSH keys..."
 GenerateSshKeys -Path $homeDir

@@ -46,6 +46,20 @@ function InstallNoMachineIfRequired {
     return $restartRequired
 }
 
+function InstallOpenSshServerIfRequired {
+    $restartRequired=$false
+    $openSshServerInstalled = Get-WindowsCapability -Online `
+        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
+        | ForEach-Object { $_.State -eq "Installed" }
+    if (-not($openSshServerInstalled)) {
+        Write-Host "Installing OpenSSH server..."
+        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
+        $restartRequired=$false
+    }
+    return $restartRequired
+}
+
 function InstallWebDAVIfRequired {
     $restartRequired=$false
     $webDAVInstalled = Get-WindowsFeature `
@@ -109,19 +123,6 @@ function InstallChromeIfRequired {
     }
 }
 
-function InstallOpenSshServerIfRequired {
-    $openSshServerInstalled = Get-WindowsCapability -Online `
-        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
-        | ForEach-Object { $_.State -eq "Installed" }
-    if (-not($openSshServerInstalled)) {
-        Write-Host "Installing OpenSSH server..."
-        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-        Start-Service sshd
-        Set-Service -Name sshd -StartupType 'Automatic'
-        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
-    }
-}
-
 function GenerateSshKeys($Path) {
     NewDirIfRequired -Path "$Path\.ssh"
     if (!(Test-Path "$Path\.ssh\id_rsa")) {
@@ -162,7 +163,7 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
     },
     "Kubernetes" : {
         "Source" : {
-            "Release" : "1.15.4",
+            "Release" : "1.15.5",
             "Url" : "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/kubernetes-node-windows-amd64.tar.gz"
         },
         "ControlPlane" : {
@@ -197,6 +198,9 @@ function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
     }
 }
 
+$interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
+
+$homeDir = "$env:USERPROFILE"
 $workingDir="c:\init"
 $kubeDir="c:\ProgramData\Kubernetes"
 $pythonDir = "c:\python"
@@ -221,6 +225,9 @@ Set-Location -Path "$workingDir"
 Write-Host "Installing nomachine if required..."
 InstallNoMachineIfRequired
 
+Write-Host "Installing OpenSSH server if required..."
+InstallOpenSshServerIfRequired
+
 Write-Host "Installing WebDAV if required..."
 InstallWebDAVIfRequired
 
@@ -237,9 +244,6 @@ Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
 OpenPortIfRequired -Port 8888
 
-Write-Host "Installing OpenSSH server if required..."
-InstallOpenSshServerIfRequired
-
 Write-Host "Generating temporary SSH keys..."
 GenerateSshKeys -Path $homeDir
 
@@ -247,7 +251,7 @@ Write-Host "Downloading Sig Windows Tools if required..."
 DownloadSigWindowsToolsIfRequired
 
 Write-Host "Generating Sig Windows Tools dummy config file..."
-InitSigWindowsToolsConfigFile -KubeHost "default" -KubeToken "default" -KubeCertHash "default" -KubeDir "$kubeDir" -Interface "Ethernet 3"
+InitSigWindowsToolsConfigFile -KubeHost "default" -KubeToken "default" -KubeCertHash "default" -KubeDir "$kubeDir" -Interface "$interface"
 
 Write-Host "Installing kubernetes using Sig Windows Tools if required..."
 InstallKubeUsingSigWindowsToolsIfRequired -KubeDir "$kubeDir"
