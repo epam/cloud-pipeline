@@ -647,11 +647,11 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
 
         Map<String, PipeConfValue> data1 = new HashMap<>();
         data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
-        MetadataEntity folder1Sample1 =createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+        MetadataEntity folder1Sample1 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
 
         Map<String, PipeConfValue> data2 = new HashMap<>();
         data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
-        MetadataEntity folder1Sample2 =createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+        MetadataEntity folder1Sample2 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
 
         MetadataFilter searchANDOperator = createFilter(folder1.getId(), metadataClass1.getName(),
                 Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
@@ -659,6 +659,33 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
                 Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
         searchANDOperator.setLogicalSearchOperator(LogicalSearchOperator.OR);
         checkFilterRequest(searchANDOperator, Arrays.asList(folder1Sample1, folder1Sample2));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testCombineFilterAndSearch() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+
+        MetadataEntity folder1Sample1 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data2);
+        MetadataEntity folder1Sample2 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        //this object is created to check that request doesn't return data that does not match the search
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1 + 2, data1);
+
+        MetadataFilter combineSearchAndFilter = createFilter(folder1.getId(), metadataClass1.getName(),
+                Arrays.asList(DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2),
+                        DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2)),
+                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1,
+                        Collections.singletonList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2)))),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+        checkFilterRequest(combineSearchAndFilter, Arrays.asList(folder1Sample1, folder1Sample2));
     }
 
     private MetadataField getDataField(String key) {
