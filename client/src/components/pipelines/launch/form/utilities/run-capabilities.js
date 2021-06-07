@@ -21,6 +21,7 @@ export const RUN_CAPABILITIES = {
 
 export default class RunCapabilities extends React.Component {
   static propTypes = {
+    disabled: PropTypes.bool,
     values: PropTypes.arrayOf(PropTypes.string),
     onChange: PropTypes.func
   };
@@ -37,11 +38,12 @@ export default class RunCapabilities extends React.Component {
   };
 
   render () {
-    const {values} = this.props;
+    const {disabled, values} = this.props;
 
     return (
       <Select
         allowClear
+        disabled={disabled}
         mode="multiple"
         onChange={this.onSelectionChanged}
         placeholder="None selected"
