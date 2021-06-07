@@ -463,6 +463,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.setState({showLaunchCommands: false});
   };
 
+  get hyperThreadingDisabled () {
+    return this.state.disableHyperThreading;
+  }
+
   @computed
   get selectedRunCapabilities () {
     const {
@@ -3232,12 +3236,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return undefined;
   };
 
+  cpuMapper = cpu => this.hyperThreadingDisabled && !Number.isNaN(Number(cpu))
+    ? (cpu / 2.0)
+    : cpu;
+
   renderInstanceTypeSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
     const instanceTypeStr = (t) =>
-      `${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`;
+      `${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`;
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -3563,8 +3571,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const lines = [];
     if (cpu) {
       maxCPU && maxCPU > cpu
-        ? lines.push(<span>{cpu} - {maxCPU} <b>CPU</b></span>)
-        : lines.push(<span>{cpu} <b>CPU</b></span>);
+        ? lines.push(<span>{this.cpuMapper(cpu)} - {this.cpuMapper(maxCPU)} <b>CPU</b></span>)
+        : lines.push(<span>{this.cpuMapper(cpu)} <b>CPU</b></span>);
     }
     if (ram) {
       maxRAM && maxRAM > ram

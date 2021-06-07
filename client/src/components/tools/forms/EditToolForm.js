@@ -178,6 +178,10 @@ export default class EditToolForm extends React.Component {
     return [];
   }
 
+  get hyperThreadingDisabled () {
+    return this.state.disableHyperThreading;
+  }
+
   showLabelInput = () => {
     this.setState({labelInputVisible: true}, () => this.input.focus());
   };
@@ -927,6 +931,10 @@ export default class EditToolForm extends React.Component {
     });
   };
 
+  cpuMapper = cpu => this.hyperThreadingDisabled && !Number.isNaN(Number(cpu))
+    ? (cpu / 2.0)
+    : cpu;
+
   renderExecutionEnvironmentSummary = () => {
     const instanceTypeValue = this.props.form.getFieldValue('instanceType');
     const [instanceType] = this.instanceTypes.filter(t => t.name === instanceTypeValue);
@@ -962,8 +970,8 @@ export default class EditToolForm extends React.Component {
     const lines = [];
     if (cpu) {
       maxCPU && maxCPU > cpu
-        ? lines.push(<span>{cpu} - {maxCPU} <b>CPU</b></span>)
-        : lines.push(<span>{cpu} <b>CPU</b></span>);
+        ? lines.push(<span>{this.cpuMapper(cpu)} - {this.cpuMapper(maxCPU)} <b>CPU</b></span>)
+        : lines.push(<span>{this.cpuMapper(cpu)} <b>CPU</b></span>);
     }
     if (ram) {
       maxRAM && maxRAM > ram
@@ -1167,10 +1175,10 @@ export default class EditToolForm extends React.Component {
                                   .filter(t => t.instanceFamily === instanceFamily)
                                   .map(t =>
                                     <Select.Option
-                                      title={`${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
+                                      title={`${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
                                       key={t.sku}
                                       value={t.name}>
-                                      {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
+                                      {t.name} (CPU: {this.cpuMapper(t.vcpu)}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
                                     </Select.Option>
                                   )
                               }
@@ -1358,6 +1366,7 @@ export default class EditToolForm extends React.Component {
                 style={{marginTop: 10, marginBottom: 10}}
               >
                 <RunCapabilities
+                  disabled={this.state.pending || this.props.readOnly}
                   values={this.selectedRunCapabilities}
                   onChange={this.onRunCapabilitiesSelect}
                 />
