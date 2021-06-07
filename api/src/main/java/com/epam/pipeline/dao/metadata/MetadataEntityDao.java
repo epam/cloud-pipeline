@@ -359,7 +359,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         String clauses = searchQueries.stream()
                 .map(this::applySearchClause)
                 .collect(Collectors.joining(format(" %s ", operator.getOperator())));
-        clause.append(AND).append(clauses);
+        clause.append(AND).append(format("( %s )", clauses));
     }
 
     private void addFilterConditions(StringBuilder clause, List<MetadataFilter.FilterQuery> filters) {
