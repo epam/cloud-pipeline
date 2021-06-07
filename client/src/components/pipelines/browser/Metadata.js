@@ -287,7 +287,7 @@ export default class Metadata extends React.Component {
     } = range || {};
     filterModel.startDateFrom = from;
     filterModel.endDateTo = to;
-    await this.setState(
+    this.setState(
       {filterModel},
       () => this.loadData()
     );
@@ -345,9 +345,10 @@ export default class Metadata extends React.Component {
     } else {
       filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
     }
-    await this.setState(
+    filterModel.page = FIRST_PAGE;
+    this.setState(
       {filterModel},
-      () => this.paginationOnChange(FIRST_PAGE)
+      () => this.loadData()
     );
   }
 
