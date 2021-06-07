@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
 
 import com.epam.pipeline.entity.git.GitDiff;
-import com.epam.pipeline.entity.git.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 

@@ -19,10 +19,13 @@ package com.epam.pipeline.manager.pipeline.documents.templates.processors.versio
 import com.amazonaws.util.CollectionUtils;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.*;
+import lombok.RequiredArgsConstructor;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.function.Supplier;
 
+@RequiredArgsConstructor
 public enum VSReportTemplates {
     VERSIONED_STORAGE("versioned_storage", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> storage.getName())),
     PAGE_BREAK("page_break", () -> new VSReportTemplatePageBreakProcessor((paragraph, storage, diff, reportFilter) -> "")),
@@ -34,18 +37,18 @@ public enum VSReportTemplates {
         }
         return diff.getFilters().getAuthors();
     })),
-    FILTER_FROM("filter_from", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
-        if (diff.getFilters().getDateFrom() == null) {
-            return "-";
-        }
-        return diff.getFilters().getDateFrom().format(Constants.DATE_TIME_FORMATTER);
-    })),
-    FILTER_TO("filter_to", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
-        if (diff.getFilters().getDateTo() == null) {
-            return "-";
-        }
-        return diff.getFilters().getDateTo().format(Constants.DATE_TIME_FORMATTER);
-    })),
+    FILTER_FROM("filter_from", () -> new VSReportTemplateTextProcessor(
+            (paragraph, storage, diff, reportFilter) ->
+                    Optional.ofNullable(
+                            diff.getFilters().getDateFrom()
+                    ).map(d -> d.format(Constants.DATE_TIME_FORMATTER)
+                    ).orElse("-"))),
+    FILTER_TO("filter_to", () -> new VSReportTemplateTextProcessor(
+            (paragraph, storage, diff, reportFilter) ->
+                    Optional.ofNullable(
+                            diff.getFilters().getDateTo()
+                    ).map(d -> d.format(Constants.DATE_TIME_FORMATTER)
+                    ).orElse("-"))),
     FILTER_TYPES("filter_types", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
         if (CollectionUtils.isNullOrEmpty(diff.getFilters().getExtensions())) {
             return "All Files";
@@ -60,12 +63,6 @@ public enum VSReportTemplates {
 
     public final String template;
     public final Supplier<VSReportTemplateProcessor> templateResolver;
-
-    VSReportTemplates(final String template,
-                      final Supplier<VSReportTemplateProcessor> templateResolver) {
-        this.template = template;
-        this.templateResolver = templateResolver;
-    }
 
     private static class Constants {
         public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");

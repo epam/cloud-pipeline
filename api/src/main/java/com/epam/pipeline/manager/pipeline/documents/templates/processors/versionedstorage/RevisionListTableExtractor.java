@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
 
 import com.epam.pipeline.entity.git.GitDiff;
-import com.epam.pipeline.entity.git.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
@@ -25,6 +25,7 @@ import com.epam.pipeline.manager.pipeline.documents.templates.structure.TableRow
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -34,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,15 +47,7 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
 
     @Override
     public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitDiff diff, GitDiffReportFilter reportFilter) {
-        Matcher matcher = PATTERN.matcher(xwpfParagraph.getText());
-        final Map<RevisionHistoryTableColumn, String> tableColumns;
-        if(matcher.matches()) {
-            final String tableStructure = matcher.group(1);
-            tableColumns = parseTableStructure(tableStructure);
-        } else {
-            tableColumns = Arrays.stream(RevisionHistoryTableColumn.values())
-                    .collect(Collectors.toMap(c -> c, c -> c.defaultColumn));
-        }
+        final Map<RevisionHistoryTableColumn, String> tableColumns = getTableColumns(xwpfParagraph);
         final Table result = new Table();
         result.setContainsHeaderRow(true);
         for (String value : tableColumns.values()) {
@@ -68,26 +62,25 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
                     return new Pair<>(file, gitDiffEntry.getCommit());
                 }).forEachOrdered(fileAndCommit -> {
                     TableRow row = result.addRow(fileAndCommit.getKey() + fileAndCommit.getValue().getCommit());
-                    tableColumns.forEach((e, v) -> result.setData(row.getName(), v, getData(fileAndCommit, e)));
+                    tableColumns.forEach(
+                            (e, v) -> result.setData(row.getName(), v,
+                                    e.dataExtractor.apply(fileAndCommit.getKey(), fileAndCommit.getValue()))
+                    );
                 });
         return result;
     }
 
-    private String getData(Pair<String, GitReaderRepositoryCommit> fileAndCommit, RevisionHistoryTableColumn e) {
-        switch (e) {
-            case PATH:
-                return fileAndCommit.getKey();
-            case AUTHOR:
-                return fileAndCommit.getValue().getAuthor();
-            case DATE_CHANGED:
-                return DATE_FORMAT.format(fileAndCommit.getValue().getAuthorDate());
-            case REVISION:
-                return fileAndCommit.getValue().getCommit().substring(0, 9);
-            case MESSAGE:
-                return fileAndCommit.getValue().getCommitMessage();
-            default:
-                return "";
+    private Map<RevisionHistoryTableColumn, String> getTableColumns(final XWPFParagraph xwpfParagraph) {
+        final Matcher matcher = PATTERN.matcher(xwpfParagraph.getText());
+        final Map<RevisionHistoryTableColumn, String> tableColumns;
+        if(matcher.matches()) {
+            final String tableStructure = matcher.group(1);
+            tableColumns = parseTableStructure(tableStructure);
+        } else {
+            tableColumns = Arrays.stream(RevisionHistoryTableColumn.values())
+                    .collect(Collectors.toMap(c -> c, c -> c.defaultColumn));
         }
+        return tableColumns;
     }
 
     private Map<RevisionHistoryTableColumn, String> parseTableStructure(String tableStructureString) {
@@ -106,50 +99,37 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
         }
     }
 
+    @RequiredArgsConstructor
     public enum RevisionHistoryTableColumn {
 
-        @JsonProperty("revision")
-        REVISION("revision", "Revision"),
-
-        @JsonProperty("date_changed")
-        DATE_CHANGED("date_changed", "Date changed"),
-
         @JsonProperty("path")
-        PATH("path", "Path"),
+        PATH("path", "Path", (file, commit) -> file),
 
         @JsonProperty("author")
-        AUTHOR("author", "Author"),
+        AUTHOR("author", "Author", (file, commit) -> commit.getAuthor()),
+
+        @JsonProperty("date_changed")
+        DATE_CHANGED("date_changed", "Date changed",
+                (file, commit) -> DATE_FORMAT.format(commit.getAuthorDate())),
+
+        @JsonProperty("revision")
+        REVISION("revision", "Revision", (file, commit) -> commit.getCommit().substring(0, 9)),
 
         @JsonProperty("message")
-        MESSAGE("message", "Message");
+        MESSAGE("message", "Message", (file, commit) -> commit.getCommitMessage());
 
-        private static final Map<String, RevisionHistoryTableColumn> BY_VALUE = new HashMap<>();
         private static final Map<RevisionHistoryTableColumn, String> DEFAULT = new LinkedHashMap<>();
 
         static {
-            BY_VALUE.put(PATH.value, PATH);
-            BY_VALUE.put(REVISION.value, REVISION);
-            BY_VALUE.put(DATE_CHANGED.value, DATE_CHANGED);
-            BY_VALUE.put(AUTHOR.value, AUTHOR);
-            BY_VALUE.put(MESSAGE.value, MESSAGE);
-
             for (RevisionHistoryTableColumn value : RevisionHistoryTableColumn.values()) {
                 DEFAULT.put(value, value.defaultColumn);
             }
-
         }
 
         private final String value;
         private final String defaultColumn;
+        private final BiFunction<String, GitReaderRepositoryCommit, String> dataExtractor;
 
-        RevisionHistoryTableColumn(String value, String defaultColumn) {
-            this.value = value;
-            this.defaultColumn = defaultColumn;
-        }
-
-        public static RevisionHistoryTableColumn byValue(final String value) {
-            return BY_VALUE.get(value);
-        }
     }
 
 }

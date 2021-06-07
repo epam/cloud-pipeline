@@ -19,8 +19,8 @@ package com.epam.pipeline.manager.pipeline.documents.templates.processors.versio
 import com.epam.pipeline.entity.git.GitDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
-import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGrouping;
-import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGroupType;
+import com.epam.pipeline.entity.git.report.GitDiffGrouping;
+import com.epam.pipeline.entity.git.report.GitDiffGroupType;
 import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
 import io.reflectoring.diffparser.api.model.Range;

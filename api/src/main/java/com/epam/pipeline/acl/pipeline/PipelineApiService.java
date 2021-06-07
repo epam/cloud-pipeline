@@ -29,7 +29,7 @@ import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;

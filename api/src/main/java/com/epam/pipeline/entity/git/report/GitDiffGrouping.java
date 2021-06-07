@@ -1,4 +1,4 @@
-package com.epam.pipeline.manager.pipeline.documents.templates.structure;
+package com.epam.pipeline.entity.git.report;
 
 import com.epam.pipeline.entity.git.GitDiffEntry;
 import lombok.Builder;

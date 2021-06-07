@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.controller.vo.GenerateFileVO;
-import com.epam.pipeline.entity.git.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplate;
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplateManager;
 import com.epam.pipeline.exception.git.GitClientException;

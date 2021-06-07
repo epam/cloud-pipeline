@@ -29,6 +29,8 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProcessor {
 
@@ -123,38 +125,43 @@ public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProc
             borders.addNewInsideH().setVal(STBorder.SINGLE);
             borders.addNewInsideV().setVal(STBorder.SINGLE);
 
-            for (int rowIndex = -1; rowIndex < table.getRows().size(); rowIndex++) {
-                if (rowIndex == -1 && !table.isContainsHeaderRow()) {
-                    continue;
-                }
-                XWPFTableRow xwpfTableRow = xwpfTable.insertNewTableRow(rowIndex + 1);
-                for (int colIndex = -1; colIndex < table.getColumns().size(); colIndex++) {
-                    if (colIndex == -1 && !table.isContainsHeaderColumn()) {
-                        continue;
-                    }
-                    String text = "";
-                    XWPFTableCell xwpfTableCell = xwpfTableRow.addNewTableCell();
-                    xwpfTableCell.removeParagraph(0);
-                    XWPFParagraph xwpfParagraph = xwpfTableCell.addParagraph();
-                    xwpfParagraph.setAlignment(ParagraphAlignment.CENTER);
-                    xwpfParagraph.setVerticalAlignment(TextAlignment.CENTER);
-                    XWPFRun xwpfRun = xwpfParagraph.createRun();
-                    this.copyRunProperties(runTemplate, xwpfRun);
-                    if (rowIndex == -1 && colIndex >= 0) {
-                        text = table.getColumns().get(colIndex).getName();
-                        xwpfRun.setBold(true);
-                    } else if (colIndex == -1 && rowIndex >= 0) {
-                        text = table.getRows().get(rowIndex).getName();
-                        xwpfRun.setBold(true);
-                    } else if (rowIndex >= 0 && colIndex >= 0) {
-                        Object cellData = table.getData(rowIndex, colIndex);
-                        text = cellData != null ? cellData.toString() : "";
-                    }
-                    xwpfRun.setText(text, 0);
-                }
+            if (table.isContainsHeaderRow()) {
+                final XWPFTableRow headerRow = xwpfTable.insertNewTableRow(0);
+                IntStream.range(
+                        0, table.getColumns().size() - 1
+                ).forEach(colIndex ->
+                        setCellData(runTemplate, headerRow, true, () -> table.getColumns().get(colIndex).getName())
+                );
             }
+            IntStream.range(1, table.getRows().size() - 1).forEach(rowIndex -> {
+                final XWPFTableRow row = xwpfTable.insertNewTableRow(rowIndex);
+                IntStream.range(
+                        0, table.getColumns().size() - 1
+                ).forEach(colIndex ->
+                        setCellData(
+                            runTemplate, row, false,
+                            () -> {
+                                final Object cellData = table.getData(rowIndex, colIndex);
+                                return cellData != null ? cellData.toString() : "";
+                            }
+                        )
+                );
+            });
             cursor.toNextSibling();
         }
+    }
+
+    private void setCellData(final XWPFRun runTemplate, final XWPFTableRow headerRow,
+                             final boolean bold, final Supplier<String> data) {
+        final XWPFTableCell xwpfTableCell = headerRow.addNewTableCell();
+        xwpfTableCell.removeParagraph(0);
+        final XWPFParagraph xwpfParagraph = xwpfTableCell.addParagraph();
+        xwpfParagraph.setAlignment(ParagraphAlignment.CENTER);
+        xwpfParagraph.setVerticalAlignment(TextAlignment.CENTER);
+        final XWPFRun xwpfRun = xwpfParagraph.createRun();
+        copyRunProperties(runTemplate, xwpfRun);
+        xwpfRun.setBold(bold);
+        xwpfRun.setText(data.get(), 0);
     }
 
     void copyParagraphProperties(XWPFParagraph original, XWPFParagraph copy) {

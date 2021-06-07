@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git;
+package com.epam.pipeline.entity.git.report;
 
-import com.epam.pipeline.manager.pipeline.documents.templates.structure.GitDiffGroupType;
+import com.epam.pipeline.entity.git.GitCommitsFilter;
+import com.epam.pipeline.entity.git.report.GitDiffGroupType;
 import lombok.Builder;
 import lombok.Value;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class GitDiffReportFilter {
     GitCommitsFilter commitsFilter;
     boolean includeDiff;
