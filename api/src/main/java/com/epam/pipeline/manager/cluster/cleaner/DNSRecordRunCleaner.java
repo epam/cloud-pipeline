@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,9 +19,10 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.utils.UtilsManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,20 +42,27 @@ public class DNSRecordRunCleaner implements RunCleaner {
     private static final String PORT_DELIMITER = ":";
 
     private final PreferenceManager preferenceManager;
-    private final UtilsManager utilsManager;
+    private final EdgeServiceManager edgeServiceManager;
     private final CloudFacade cloudFacade;
+    private final PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
 
     public DNSRecordRunCleaner(final PreferenceManager preferenceManager,
-                               final UtilsManager utilsManager,
-                               final CloudFacade cloudFacade) {
+                               final EdgeServiceManager edgeServiceManager,
+                               final CloudFacade cloudFacade,
+                               final PipelineRunServiceUrlManager pipelineRunServiceUrlManager) {
         this.preferenceManager = preferenceManager;
-        this.utilsManager = utilsManager;
+        this.edgeServiceManager = edgeServiceManager;
         this.cloudFacade = cloudFacade;
+        this.pipelineRunServiceUrlManager = pipelineRunServiceUrlManager;
     }
 
     @Override
     public void cleanResources(final PipelineRun run) {
-        final String serviceUrls = run.getServiceUrl();
+        final String defaultEdgeRegion = preferenceManager.getPreference(SystemPreferences.DEFAULT_EDGE_REGION);
+        if (StringUtils.isEmpty(defaultEdgeRegion)) {
+            return;
+        }
+        final String serviceUrls = pipelineRunServiceUrlManager.loadByRunIdAndRegion(run.getId(), defaultEdgeRegion);
         if (StringUtils.isEmpty(serviceUrls)) {
             return;
         }
@@ -79,7 +87,7 @@ public class DNSRecordRunCleaner implements RunCleaner {
                         "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
                 );
                 cloudFacade.removeDNSRecord(run.getInstance().getCloudRegionId(),
-                        new InstanceDNSRecord(unify(url), utilsManager.getEdgeDomainNameOrIP(), null));
+                        new InstanceDNSRecord(unify(url), edgeServiceManager.getEdgeDomainNameOrIP(), null));
             }
         });
     }

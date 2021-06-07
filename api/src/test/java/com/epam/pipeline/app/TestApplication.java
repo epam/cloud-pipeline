@@ -27,6 +27,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManag
 import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
@@ -122,6 +123,9 @@ public class TestApplication {
 
     @MockBean
     public UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

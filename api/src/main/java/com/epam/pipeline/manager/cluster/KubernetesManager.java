@@ -21,7 +21,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.MasterPodInfo;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
-import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -51,7 +50,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +68,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -86,7 +83,6 @@ public class KubernetesManager {
     private static final int ATTEMPTS_STATUS_NODE = 60;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesManager.class);
-    private static final String DEFAULT_SVC_SCHEME = "http";
     private static final int NODE_PULL_TIMEOUT = 200;
     private static final String NEW_LINE = "\n";
 
@@ -101,26 +97,22 @@ public class KubernetesManager {
     @Value("${kube.namespace}")
     private String kubeNamespace;
 
-    @Value("${kube.edge.ip.label}")
-    private String kubeEdgeIpLabel;
-
-    @Value("${kube.edge.port.label}")
-    private String kubeEdgePortLabel;
-
-    @Value("${kube.edge.scheme.label:cloud-pipeline/external-scheme}")
-    private String kubeEdgeSchemeLabel;
-
     @Value("${kube.master.pod.check.url}")
     private String kubePodLeaderElectionUrl;
 
     @Value("${kube.current.pod.name}")
     private String kubePodName;
 
-    public ServiceDescription getServiceByLabel(final String label) {
+    public List<Service> getServicesByLabel(final String label) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return findServiceByLabel(client, SERVICE_ROLE_LABEL, label)
-                    .map(this::getServiceDescription)
-                    .orElse(null);
+            return findServicesByLabel(client, SERVICE_ROLE_LABEL, label);
+        }
+    }
+
+    public List<Service> getServicesByLabels(final Map<String, String> labels, final String serviceNameLabel) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            labels.put(SERVICE_ROLE_LABEL, serviceNameLabel);
+            return findServicesByLabels(client, labels);
         }
     }
 
@@ -623,50 +615,6 @@ public class KubernetesManager {
         }
     }
 
-    private ServiceDescription getServiceDescription(final Service service) {
-        final Map<String, String> labels = service.getMetadata().getLabels();
-        final String scheme = getValueFromLabelsOrDefault(labels, kubeEdgeSchemeLabel, () -> DEFAULT_SVC_SCHEME);
-        final String ip = getValueFromLabelsOrDefault(labels, kubeEdgeIpLabel, () -> getExternalIp(service));
-        final Integer port = getServicePort(service);
-        return new ServiceDescription(scheme, ip, port);
-    }
-
-    private String getExternalIp(final Service service) {
-        return ListUtils.emptyIfNull(service.getSpec().getExternalIPs())
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
-                        MessageConstants.ERROR_KUBE_SERVICE_IP_UNDEFINED, service.getMetadata().getName())));
-    }
-
-    private Integer getServicePort(final Service service) {
-        final String portLabelValue = getValueFromLabelsOrDefault(service.getMetadata().getLabels(),
-            kubeEdgePortLabel, () -> {
-                final Integer port = ListUtils.emptyIfNull(service.getSpec().getPorts())
-                        .stream()
-                        .findFirst()
-                        .map(ServicePort::getPort)
-                        .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
-                                    MessageConstants.ERROR_KUBE_SERVICE_PORT_UNDEFINED,
-                                service.getMetadata().getName())));
-                return String.valueOf(port);
-            });
-        if (NumberUtils.isDigits(portLabelValue)) {
-            return Integer.parseInt(portLabelValue);
-        }
-        throw new IllegalArgumentException(messageHelper.getMessage(
-                MessageConstants.ERROR_KUBE_SERVICE_PORT_UNDEFINED, service.getMetadata().getName()));
-    }
-
-    private String getValueFromLabelsOrDefault(final Map<String, String> labels,
-                                               final String labelName,
-                                               final Supplier<String> defaultSupplier) {
-        if (StringUtils.isBlank(labelName) || StringUtils.isBlank(MapUtils.emptyIfNull(labels).get(labelName))) {
-            return defaultSupplier.get();
-        }
-        return labels.get(labelName);
-    }
-
     private void updateStatus(StringBuilder status, NodeCondition condition) {
         if (!status.toString().isEmpty()) {
             status.append(", ");
@@ -776,10 +724,7 @@ public class KubernetesManager {
 
     private Optional<Service> findServiceByLabel(final KubernetesClient client, final String labelName,
                                                  final String labelValue) {
-        final List<Service> items = client.services()
-                .withLabel(labelName, labelValue)
-                .list()
-                .getItems();
+        final List<Service> items = findServicesByLabel(client, labelName, labelValue);
         if (CollectionUtils.isEmpty(items)) {
             return Optional.empty();
         }
@@ -794,5 +739,20 @@ public class KubernetesManager {
                 .withName(name)
                 .get();
         return Optional.ofNullable(item);
+    }
+
+    private List<Service> findServicesByLabel(final KubernetesClient client, final String labelName,
+                                              final String labelValue) {
+        return client.services()
+                .withLabel(labelName, labelValue)
+                .list()
+                .getItems();
+    }
+
+    private List<Service> findServicesByLabels(final KubernetesClient client, final Map<String, String> labels) {
+        return client.services()
+                .withLabels(labels)
+                .list()
+                .getItems();
     }
 }

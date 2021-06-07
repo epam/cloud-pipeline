@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
@@ -517,6 +518,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunAsManager mockPipelineRunAsManager;
+
+    @MockBean
+    protected EdgeServiceManager mockEdgeServiceManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

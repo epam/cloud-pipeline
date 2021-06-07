@@ -89,6 +89,7 @@ import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRep
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -361,4 +362,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    protected PipelineRunServiceUrlRepository mockPipelineRunServiceUrlRepository;
 }

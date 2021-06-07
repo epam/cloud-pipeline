@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster;
+package com.epam.pipeline.repository.run;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
+import org.springframework.data.repository.CrudRepository;
 
-@Getter
-@Service
-@NoArgsConstructor
-@AllArgsConstructor
-public class ServiceDescription {
-    private String scheme;
-    private String ip;
-    private Integer port;
-    private String region;
+import java.util.Optional;
+
+public interface PipelineRunServiceUrlRepository extends CrudRepository<PipelineRunServiceUrl, Long> {
+
+    Iterable<PipelineRunServiceUrl> findByPipelineRunId(Long pipelineRunId);
+
+    Optional<PipelineRunServiceUrl> findByPipelineRunIdAndRegion(Long pipelineRunId, String region);
 }

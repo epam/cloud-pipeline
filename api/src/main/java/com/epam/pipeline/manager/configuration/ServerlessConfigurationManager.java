@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -73,6 +74,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -187,7 +189,7 @@ public class ServerlessConfigurationManager {
 
         for (int i = 0; i < maxRetryCount; i++) {
             final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
-            if (StringUtils.isNotBlank(pipelineRun.getServiceUrl())) {
+            if (MapUtils.isNotEmpty(pipelineRun.getServiceUrl())) {
                 return pipelineRun;
             }
             log.debug("Waiting for run initialization. Try: {}", i + 1);
@@ -219,10 +221,11 @@ public class ServerlessConfigurationManager {
                 .getElements());
     }
 
+    // TODO: is it correct?
     private String getEndpointUrl(final AbstractRunConfigurationEntry configurationEntry,
                                   final PipelineRun pipelineRun) {
         final String endpointName = configurationEntry.getEndpointName();
-        final List<ServiceUrlVO> serviceUrls = ListUtils.emptyIfNull(JsonMapper.parseData(pipelineRun.getServiceUrl(),
+        final List<ServiceUrlVO> serviceUrls = ListUtils.emptyIfNull(JsonMapper.parseData(getServiceUrl(pipelineRun),
                 new TypeReference<List<ServiceUrlVO>>() {}, objectMapper));
 
         if (StringUtils.isNotBlank(endpointName)) {
@@ -363,5 +366,20 @@ public class ServerlessConfigurationManager {
             return StringUtils.EMPTY;
         }
         return StringUtils.stripEnd(normalizeRequestPath(endpointUrl.getPath()), PATH_DELIMITER);
+    }
+
+    private String getServiceUrl(final PipelineRun pipelineRun) {
+        final Map<String, String> serviceUrls = pipelineRun.getServiceUrl();
+        final String defaultEdgeService = preferenceManager.getPreference(SystemPreferences.DEFAULT_EDGE_REGION);
+        if (StringUtils.isBlank(defaultEdgeService)) {
+            return findAnyServiceUrl(serviceUrls);
+        }
+        return serviceUrls.getOrDefault(defaultEdgeService, findAnyServiceUrl(serviceUrls));
+    }
+
+    private String findAnyServiceUrl(final Map<String, String> serviceUrls) {
+        return CollectionUtils.emptyIfNull(MapUtils.emptyIfNull(serviceUrls).values()).stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Could not find any service url"));
     }
 }

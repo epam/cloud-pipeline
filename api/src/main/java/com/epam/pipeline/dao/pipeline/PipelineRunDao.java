@@ -87,7 +87,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String pipelineRunSequence;
     private String createPipelineRunQuery;
     private String loadAllRunsByVersionIdQuery;
-    private String loadAllRunsByServiceURL;
     private String loadRunByIdQuery;
     private String loadSshPasswordQuery;
     private String updateRunStatusQuery;
@@ -104,7 +103,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadPipelineRunsWithPipelineByIdsQuery;
     private String updateRunInstanceQuery;
     private String updatePodIPQuery;
-    private String updateServiceUrlQuery;
     private String loadRunsGroupingQuery;
     private String countRunGroupsQuery;
     private String createPipelineRunSidsQuery;
@@ -345,16 +343,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         String query = wherePattern.matcher(countRunGroupsQuery).replaceFirst(makeFilterCondition(filter,
                 projectFilter, params, false));
         return getNamedParameterJdbcTemplate().queryForObject(query, params, Integer.class);
-    }
-
-    /**
-     * Updates service url for the provided run in a database
-     * @param run run with updated service url
-     **/
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateServiceUrl(PipelineRun run) {
-        getNamedParameterJdbcTemplate().update(updateServiceUrlQuery, PipelineRunParameters
-                .getParameters(run, getConnection()));
     }
 
     /**
@@ -651,14 +639,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
     }
 
-    public List<PipelineRun> loadAllRunsWithServiceURL(final String serviceUrl) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(PipelineRunParameters.SERVICE_URL.name(),
-                DaoHelper.POSTGRES_LIKE_CHARACTER + serviceUrl + DaoHelper.POSTGRES_LIKE_CHARACTER);
-        return getNamedParameterJdbcTemplate().query(loadAllRunsByServiceURL, params,
-                PipelineRunParameters.getRowMapper());
-    }
-
     public List<PipelineRun> loadRunByIdIn(final List<Long> runIds) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(LIST_PARAMETER, runIds);
@@ -721,7 +701,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         ACTUAL_CMD,
         TIMEOUT,
         OWNER,
-        SERVICE_URL,
         PIPELINE_ALLOWED,
         OWNERSHIP,
         POD_IP,
@@ -782,7 +761,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(CMD_TEMPLATE.name(), run.getCmdTemplate());
             params.addValue(ACTUAL_CMD.name(), run.getActualCmd());
             params.addValue(OWNER.name(), run.getOwner());
-            params.addValue(SERVICE_URL.name(), run.getServiceUrl());
             params.addValue(POD_IP.name(), run.getPodIP());
             params.addValue(SSH_PASSWORD.name(), run.getSshPassword());
             params.addValue(CONFIG_NAME.name(), run.getConfigName());
@@ -911,7 +889,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 run.setInstance(instance);
             }
             run.setTimeout(rs.getLong(TIMEOUT.name()));
-            run.setServiceUrl(rs.getString(SERVICE_URL.name()));
             Long parentRunId = rs.getLong(PARENT_ID.name());
             if (!rs.wasNull()) {
                 run.setParentRunId(parentRunId);
@@ -1051,11 +1028,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadAllRunsByServiceURL(String loadAllRunsByServiceURL) {
-        this.loadAllRunsByServiceURL = loadAllRunsByServiceURL;
-    }
-
-    @Required
     public void setUpdateRunStatusQuery(String updateRunStatusQuery) {
         this.updateRunStatusQuery = updateRunStatusQuery;
     }
@@ -1118,11 +1090,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setUpdateRunInstanceQuery(String updateRunInstanceQuery) {
         this.updateRunInstanceQuery = updateRunInstanceQuery;
-    }
-
-    @Required
-    public void setUpdateServiceUrlQuery(String updateServiceUrlQuery) {
-        this.updateServiceUrlQuery = updateServiceUrlQuery;
     }
 
     @Required
