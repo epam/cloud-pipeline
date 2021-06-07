@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.metadata;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -45,7 +46,7 @@ public class MetadataFilter {
     @ApiModelProperty(notes = "list of strings to perform substring case "
             + "insensitive search in metadata attributes")
     private List<String> searchQueries;
-    @ApiModelProperty(notes = "list of key-values pairs for exact match, "
+    @ApiModelProperty(notes = "list of key-values pairs for match, "
             + "key may be an arbitrary string or one of predefined "
             + "available field names: ENTITY_ID, ENTITY_NAME, EXTERNAL_ID, PARENT_ID")
     private List<FilterQuery> filters;
@@ -55,6 +56,13 @@ public class MetadataFilter {
     private List<OrderBy> orderBy;
     @ApiModelProperty(notes = "list string to perform substring insensitive search in external ids")
     private List<String> externalIdQueries;
+    @ApiModelProperty(notes = "Start created date to filter for metadata")
+    private LocalDateTime startDateFrom;
+    @ApiModelProperty(notes = "End created date to filter for metadata")
+    private LocalDateTime endDateTo;
+    @ApiModelProperty(notes = "Logical operator for search queries. Default: OR", allowableValues = "AND, OR")
+    private LogicalSearchOperator logicalSearchOperator = LogicalSearchOperator.OR;
+
 
     @Getter
     @Setter
@@ -62,7 +70,7 @@ public class MetadataFilter {
     @AllArgsConstructor
     public static class FilterQuery {
         private String key;
-        private String value;
+        private List<String> values;
     }
 
     @Getter

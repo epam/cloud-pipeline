@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.metadata.LogicalSearchOperator;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -25,6 +26,7 @@ import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
@@ -34,9 +36,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -261,9 +266,9 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         data.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
 
         MetadataEntity entity1 = ObjectCreatorUtils.createMetadataEntity(folder, metadataClass, TEST_ENTITY_NAME_1,
-                EXTERNAL_ID_1, data);
+                EXTERNAL_ID_1, data, DateUtils.now());
         MetadataEntity entity2 = ObjectCreatorUtils.createMetadataEntity(folder, metadataClass, TEST_ENTITY_NAME_1,
-                EXTERNAL_ID_2, data);
+                EXTERNAL_ID_2, data, DateUtils.now());
         Collection<MetadataEntity> result =
                 metadataEntityDao.batchInsert(Arrays.asList(entity1, entity2));
         Assert.assertTrue(result.stream().allMatch(e -> e.getId() != null));
@@ -358,32 +363,37 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         //filter by field
         MetadataFilter filterByField = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery("externalId", EXTERNAL_ID_2)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery("externalId", Collections.singletonList(EXTERNAL_ID_2))),
                 Collections.emptyList(), false);
         checkFilterRequest(filterByField, Collections.singletonList(folder1Sample2));
 
         //filter by json
         MetadataFilter filterByValue = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1, DATA_VALUE_2)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(DATA_VALUE_2))),
                 Collections.emptyList(), false);
         checkFilterRequest(filterByValue, Collections.singletonList(folder1Sample2));
 
         MetadataFilter filterByValueRec = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1, DATA_VALUE_1)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(DATA_VALUE_1))),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueRec, Collections.singletonList(folder1Sample1));
 
         MetadataFilter filterByValueWrongValue = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1, TEST_USER)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(TEST_USER))),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueWrongValue, Collections.emptyList());
 
         MetadataFilter filterByValueWrongKey = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_VALUE_2, DATA_VALUE_2)),
+                Collections.singletonList(
+                        new MetadataFilter.FilterQuery(DATA_VALUE_2, Collections.singletonList(DATA_VALUE_2))),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueWrongKey, Collections.emptyList());
 
@@ -406,9 +416,35 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataFilter searchByExternalId = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(), Collections.emptyList(),
                 Collections.singletonList(new MetadataFilter.OrderBy("id", false)),
-                false, Collections.singletonList(EXTERNAL_ID_1));
+                false, Collections.singletonList(EXTERNAL_ID_1), null, null);
         checkFilterRequest(searchByExternalId, Collections.singletonList(folder1Sample1));
+    }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testDateFilter() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+        LocalDateTime date1 = LocalDateTime.now();
+        LocalDateTime date2 = LocalDateTime.now().minusDays(1);
+        MetadataEntity folder1Sample1 = ObjectCreatorUtils.createMetadataEntity(folder1, metadataClass1,
+                TEST_ENTITY_NAME_1, EXTERNAL_ID_1, new HashMap<>(),
+                Date.from(date1.atZone(ZoneId.systemDefault()).toInstant()));
+        metadataEntityDao.createMetadataEntity(folder1Sample1);
+        MetadataEntity folder1Sample2 = ObjectCreatorUtils.createMetadataEntity(folder1, metadataClass1,
+                TEST_ENTITY_NAME_1, EXTERNAL_ID_2, new HashMap<>(),
+                Date.from(date2.atZone(ZoneId.systemDefault()).toInstant()));
+        metadataEntityDao.createMetadataEntity(folder1Sample2);
+
+        MetadataFilter filterByDate = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false,
+                Collections.emptyList(), date1, date1.plusDays(1));
+        MetadataFilter filterByDate2 = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false,
+                Collections.emptyList(), date2, date1);
+
+        checkFilterRequest(filterByDate, Collections.singletonList(folder1Sample1));
+        checkFilterRequest(filterByDate2, Arrays.asList(folder1Sample1, folder1Sample2));
     }
 
     @Test
@@ -515,6 +551,116 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         verifyFolderTree(parent, result.getParent());
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testMultipleFieldFilter() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        MetadataEntity folder1Sample1 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        MetadataEntity folder1Sample2 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        MetadataFilter filterByMultipleValues = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1,
+                        Arrays.asList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2), DATA_VALUE_1))),
+                Collections.emptyList(), false);
+        checkFilterRequest(filterByMultipleValues, Arrays.asList(folder1Sample1, folder1Sample2));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testSubstringMatchFieldFilter() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        //this object is created to check that request doesn't return data that does not match the filter
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        MetadataEntity folder1Sample2 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+        MetadataFilter filterByValueSubstring = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1,
+                        Collections.singletonList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2)))),
+                Collections.emptyList(), false);
+        checkFilterRequest(filterByValueSubstring, Collections.singletonList(folder1Sample2));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testSearchByExternalId() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        //this object is created to check that request doesn't return data that does not match the search
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        MetadataEntity folder1Sample2 = createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        MetadataFilter searchByExternalId = createFilter(folder1.getId(), metadataClass1.getName(),
+                Collections.singletonList(EXTERNAL_ID_2.substring(EXTERNAL_ID_2.length() / 2)),
+                Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+        checkFilterRequest(searchByExternalId, Collections.singletonList(folder1Sample2));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testSearchANDOperator() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        MetadataFilter searchANDOperator = createFilter(folder1.getId(), metadataClass1.getName(),
+                Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
+                        DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2)), Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+        searchANDOperator.setLogicalSearchOperator(LogicalSearchOperator.AND);
+        checkFilterRequest(searchANDOperator, Collections.emptyList());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testSearchOROperator() {
+        MetadataClass metadataClass1 = createMetadataClass(CLASS_NAME_1);
+        Folder folder1 = createFolder();
+
+        Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
+        MetadataEntity folder1Sample1 =createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_1, data1);
+
+        Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
+        MetadataEntity folder1Sample2 =createMetadataEntity(folder1, metadataClass1, EXTERNAL_ID_2, data2);
+
+        MetadataFilter searchANDOperator = createFilter(folder1.getId(), metadataClass1.getName(),
+                Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
+                        DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2)), Collections.emptyList(),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+        searchANDOperator.setLogicalSearchOperator(LogicalSearchOperator.OR);
+        checkFilterRequest(searchANDOperator, Arrays.asList(folder1Sample1, folder1Sample2));
+    }
+
     private MetadataField getDataField(String key) {
         return new MetadataField(key, null, false);
     }
@@ -557,12 +703,14 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
     private MetadataFilter createFilter(Long folderId, String className,
             List<String> searchQueries, List<MetadataFilter.FilterQuery> filters,
             List<MetadataFilter.OrderBy> sorting, boolean recursive) {
-        return createFilter(folderId, className, searchQueries, filters, sorting, recursive, null);
+        return createFilter(folderId, className, searchQueries, filters, sorting, recursive, null, null, null);
     }
 
     private MetadataFilter createFilter(Long folderId, String className,
-            List<String> searchQueries, List<MetadataFilter.FilterQuery> filters,
-            List<MetadataFilter.OrderBy> sorting, boolean recursive, List<String> externalIds) {
+                                        List<String> searchQueries, List<MetadataFilter.FilterQuery> filters,
+                                        List<MetadataFilter.OrderBy> sorting, boolean recursive,
+                                        List<String> externalIds, LocalDateTime startDateFrom,
+                                        LocalDateTime endDateTo) {
         MetadataFilter filter = new MetadataFilter();
         filter.setFolderId(folderId);
         filter.setMetadataClass(className);
@@ -573,6 +721,8 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         filter.setOrderBy(sorting);
         filter.setSearchQueries(searchQueries);
         filter.setExternalIdQueries(externalIds);
+        filter.setStartDateFrom(startDateFrom);
+        filter.setEndDateTo(endDateTo);
         return filter;
     }
 
@@ -593,7 +743,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
             String externalId, Map<String, PipeConfValue> data) {
 
         MetadataEntity metadataEntity = ObjectCreatorUtils.createMetadataEntity(folder, metadataClass,
-                TEST_ENTITY_NAME_1, externalId, data);
+                TEST_ENTITY_NAME_1, externalId, data, DateUtils.now());
         metadataEntityDao.createMetadataEntity(metadataEntity);
         return metadataEntity;
     }

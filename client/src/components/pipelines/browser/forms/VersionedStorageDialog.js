@@ -111,10 +111,16 @@ class VersionedStorageDialog extends React.Component {
               {...formItemLayout}
             >
               {getFieldDecorator('name', {
-                rules: [{
-                  required: true,
-                  message: 'Please input repository name'
-                }]
+                rules: [
+                  {
+                    required: true,
+                    message: 'Please input repository name'
+                  },
+                  {
+                    pattern: /^[\da-zA-Z.\-_]+$/,
+                    message: 'Repository name can contain only letters, digits, "_", "-", and "."'
+                  }
+                ]
               })(
                 <Input
                   onPressEnter={this.handleSubmit}
@@ -149,8 +155,8 @@ class VersionedStorageDialog extends React.Component {
                 {getFieldDecorator('foldersStructure', {
                   rules: [
                     {
-                      pattern: /^[\da-zA-Z_\n\-/ ]+$/,
-                      message: 'Path can contain only letters, digits, spaces and "- _ /" symbols'
+                      pattern: /^[\da-zA-Z_\n\-/]+$/,
+                      message: 'Path can contain only letters, digits, "_", "-", "/" and "."'
                     }
                   ],
                   initialValue: ''

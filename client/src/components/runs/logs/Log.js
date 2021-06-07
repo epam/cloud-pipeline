@@ -55,7 +55,8 @@ import {
   canPauseRun,
   canStopRun,
   runPipelineActions,
-  terminateRun
+  terminateRun,
+  openReRunForm
 } from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
@@ -327,16 +328,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   reRunPipeline = () => {
-    const {pipelineId, version, id, configName} = this.props.run.value;
-    if (pipelineId && version && id) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-    } else if (pipelineId && version && configName) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-    } else if (pipelineId && version) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-    } else if (id) {
-      this.props.router.push(`/launch/${id}`);
-    }
+    return openReRunForm(this.props.run.value, this.props);
   };
 
   loadParentRunInfo = (runId) => {
@@ -1157,7 +1149,16 @@ class Logs extends localization.LocalizedReactComponent {
       this.initializeEnvironmentFinished &&
       !this.isDtsEnvironment
     ) {
-      const {status, podIP} = this.props.run.value;
+      const {
+        status,
+        podIP,
+        pipelineRunParameters = []
+      } = this.props.run.value;
+      const cpFSBrowserEnabled = pipelineRunParameters
+        .find(p => /^CP_FSBROWSER_ENABLED$/i.test(p.name));
+      if (cpFSBrowserEnabled && `${cpFSBrowserEnabled.value}` === 'false') {
+        return false;
+      }
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(this.props.run.value) &&
         podIP;
@@ -1672,7 +1673,13 @@ class Logs extends localization.LocalizedReactComponent {
           case 'running':
           case 'pausing':
           case 'resuming':
-            if (roleModel.isOwner(this.props.run.value) && canStopRun(this.props.run.value)) {
+            if (
+              (
+                roleModel.isOwner(this.props.run.value) ||
+                this.props.run.value.sshPassword
+              ) &&
+              canStopRun(this.props.run.value)
+            ) {
               ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
             }
             break;
@@ -1825,15 +1832,17 @@ class Logs extends localization.LocalizedReactComponent {
               {CommitStatusButton}
             </Row>
             <br />
-            <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              <VSActions
-                run={this.props.run.value}
-                showDownIcon
-                trigger={['click']}
-              >
-                VERSIONED STORAGE
-              </VSActions>
-            </Row>
+            {!this.props.run.value.sensitive ? (
+              <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
+                <VSActions
+                  run={this.props.run.value}
+                  showDownIcon
+                  trigger={['click']}
+                >
+                  VERSIONED STORAGE
+                </VSActions>
+              </Row>
+            ) : null}
           </Col>
         </Row>
         <Row>

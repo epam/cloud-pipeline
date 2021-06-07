@@ -27,6 +27,5 @@ export default class VsContentsDiff extends Remote {
       query = '?'.concat(query);
     }
     this.url = `/pipeline/${id}/diff/${commit}${query}`;
-    console.log(this.url);
   }
 }

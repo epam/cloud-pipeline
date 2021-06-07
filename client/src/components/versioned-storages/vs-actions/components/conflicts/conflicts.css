@@ -22,12 +22,27 @@
 }
 
 .conflicts-ide {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: [FILES] 200px [DIVIDER] 10px [IDE] 1fr;
 }
 
 .conflicts-ide .files {
-  width: 200px;
+  grid-column: FILES;
+}
+
+.conflicts-ide .divider {
+  grid-column: DIVIDER;
+  background-color: #fafafa;
+  cursor: col-resize;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.conflicts-ide .divider > div {
+  background-color: #eee;
+  width: 2px;
+  height: 100%;
 }
 
 .conflicts-ide .files-table table {
@@ -47,8 +62,7 @@
 }
 
 .conflicts-ide .resolve-area-container {
-  margin-left: 10px;
-  flex: 1;
+  grid-column: IDE;
   min-width: 0;
 }
 
@@ -59,6 +73,7 @@
 .resolve-changes {
   width: 100%;
   padding: 0 4px;
+  background-color: #fafafa;
 }
 
 .resolve-area {
@@ -66,6 +81,20 @@
   overflow: hidden;
   display: grid;
   position: relative;
+  grid-template-rows: [HEADER] 24px [CONTENT] 1fr;
+}
+
+.resolve-area .header {
+  grid-row: HEADER;
+  background-color: #fafafa;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.resolve-area .header .title {
+  padding: 0 4px;
 }
 
 .resolve-area .canvas-container {
@@ -85,6 +114,7 @@
   display: grid;
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+  grid-row: CONTENT;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -119,6 +149,7 @@
 
 .resolve-area .scroll-container {
   position: absolute;
+  grid-row: CONTENT;
 }
 
 .resolve-area .scroll-container.vertical {
@@ -235,4 +266,16 @@
 .code,
 .code:focus {
   outline: none;
+}
+
+.binary-file-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  min-height: 100px;
+}
+
+.binary-file-container .alert > *:not(:first-child) {
+  margin-left: 5px;
 }

@@ -29,15 +29,23 @@ import VSBrowseDialog from '../vs-browse-dialog';
 import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';
 import styles from './vs-actions.css';
-import '../../../staticStyles/vs-actions-dropdown.css';
+import VSAbortMerge from '../../../models/versioned-storage/abort-merge';
 import VSClone from '../../../models/versioned-storage/clone';
 import VSCommit from '../../../models/versioned-storage/commit';
+import VSCheckout from '../../../models/versioned-storage/checkout';
 import VSCurrentState from '../../../models/versioned-storage/current-state';
 import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
 import VSConflictError from '../../../models/versioned-storage/conflict-error';
 import resolveFileConflict from '../../../models/versioned-storage/resolve-file-conflict';
-import {GitCommitDialog, ConflictsDialog} from './components';
+import VSResolveRepoAfterRefresh from
+  '../../../models/versioned-storage/resolve-repo-after-refresh';
+import {
+  CheckoutDialog,
+  GitCommitDialog,
+  ConflictsDialog
+} from './components';
+import '../../../staticStyles/vs-actions-dropdown.css';
 
 const SUBMENU_POSITION = {
   right: 'right',
@@ -52,6 +60,7 @@ class VSActions extends React.Component {
     vsBrowserVisible: false,
     subMenuPosition: SUBMENU_POSITION.right,
     gitCommit: undefined,
+    gitCheckout: undefined,
     gitDiff: undefined,
     conflicts: undefined
   };
@@ -110,6 +119,22 @@ class VSActions extends React.Component {
     }
   }
 
+  fetchRepositoryStatus = (repository) => new Promise((resolve) => {
+    const request = new VSCurrentState(this.props.run?.id, repository.id);
+    request
+      .fetch()
+      .then(() => {
+        if (request.loaded) {
+          resolve({
+            [repository.id]: request.value
+          });
+        } else {
+          resolve({});
+        }
+      })
+      .catch(() => resolve({}));
+  });
+
   fetchVersionedStoragesStatus = () => {
     if (this.vsList && this.vsList.loaded && this.props.run) {
       this.setState({
@@ -121,22 +146,7 @@ class VSActions extends React.Component {
           }
         }), {})
       }, () => {
-        const wrapFetchRepositoryStatusFn = repository => new Promise((resolve) => {
-          const request = new VSCurrentState(this.props.run?.id, repository.id);
-          request
-            .fetch()
-            .then(() => {
-              if (request.loaded) {
-                resolve({
-                  [repository.id]: request.value
-                });
-              } else {
-                resolve({});
-              }
-            })
-            .catch(() => resolve({}));
-        });
-        Promise.all(this.repositories.map(wrapFetchRepositoryStatusFn))
+        Promise.all(this.repositories.map(this.fetchRepositoryStatus))
           .then(payloads => {
             const storagesStatuses = payloads
               .reduce((acc, cur) => ({
@@ -184,10 +194,13 @@ class VSActions extends React.Component {
           message.error(request.error, 5);
         } else {
           const {task} = request.value;
-          const vsTaskStatus = new VSTaskStatus(this.props.run?.id, task);
-          const promise = vsTaskStatus.fetchUntilDone();
-          this.pushOperation(vsTaskStatus, promise);
-          return promise;
+          if (task) {
+            const vsTaskStatus = new VSTaskStatus(this.props.run?.id, task);
+            const promise = vsTaskStatus.fetchUntilDone();
+            this.pushOperation(vsTaskStatus, promise);
+            return promise;
+          }
+          return Promise.resolve();
         }
       })
       .then(() => {
@@ -315,6 +328,12 @@ class VSActions extends React.Component {
     if (!versionedStorage) {
       return Promise.resolve();
     }
+    const {
+      storagesStatuses
+    } = this.state;
+    const unsaved = storagesStatuses &&
+      storagesStatuses[versionedStorage.id] &&
+      storagesStatuses[versionedStorage.id].unsaved;
     const hide = message.loading((
       <span>
         Fetching <b>{versionedStorage.name}</b> diff...
@@ -324,8 +343,12 @@ class VSActions extends React.Component {
       this.getVSDiff(versionedStorage)
         .then(diff => {
           hide();
-          if (!diff || !diff.length) {
-            message.info('Nothing to save', 5);
+          if (!diff || diff.length === 0) {
+            if (unsaved) {
+              return this.doCommit(versionedStorage);
+            } else {
+              message.info('Nothing to save', 5);
+            }
           } else {
             this.showCommitDialog(versionedStorage, diff);
           }
@@ -366,13 +389,27 @@ class VSActions extends React.Component {
   };
 
   onConflictsDetected = (conflicts, storage, mergeInProgress) => {
-    this.setState({
-      conflicts: {
-        files: conflicts,
-        storage,
-        mergeInProgress
-      }
-    });
+    this.fetchRepositoryStatus(storage)
+      .catch(() => {})
+      .then((status) => {
+        let {storagesStatuses} = this.state;
+        if (status && status.hasOwnProperty(storage.id)) {
+          storagesStatuses = {...(storagesStatuses || {}), ...status};
+        }
+        let filesInfo = [];
+        if (storagesStatuses && storagesStatuses.hasOwnProperty(storage.id)) {
+          filesInfo = (storagesStatuses[storage.id].files || []).slice();
+        }
+        this.setState({
+          storagesStatuses,
+          conflicts: {
+            files: conflicts,
+            filesInfo,
+            storage,
+            mergeInProgress
+          }
+        });
+      });
   };
 
   onCloseConflictsDialog = () => {
@@ -385,10 +422,35 @@ class VSActions extends React.Component {
     const {
       conflicts = {}
     } = this.state;
-    this.setState({conflicts: {...conflicts, pending: true}}, () => {
-      // todo: abort merge
+    const {
+      run
+    } = this.props;
+    const {
+      storage,
+      mergeInProgress
+    } = conflicts;
+    if (!mergeInProgress) {
       this.onCloseConflictsDialog();
-    });
+    } else {
+      this.setState({conflicts: {...conflicts, pending: true}}, () => {
+        const hide = message.loading('Aborting...', 0);
+        const request = new VSAbortMerge(run?.id, storage?.id);
+        request.send()
+          .then(() => {
+            if (request.error) {
+              throw new Error(request.message);
+            } else {
+              hide();
+              message.success('Save operation aborted', 5);
+              this.onCloseConflictsDialog();
+            }
+          })
+          .catch((e) => {
+            hide();
+            message.error(e.message, 5);
+          });
+      });
+    }
   };
 
   onResolveConflicts = (files) => {
@@ -417,11 +479,17 @@ class VSActions extends React.Component {
           if (mergeInProgress) {
             const filesDescription = Object.keys(files).join(', ');
             return this.doCommit(storage, `Resolving conflicted files: ${filesDescription}`);
+          } else {
+            const resolveRepo = new VSResolveRepoAfterRefresh(run?.id, storage?.id);
+            return resolveRepo.send();
           }
         })
         .catch((e) => {
           hide();
           message.error(e.message, 5);
+          this.setState({
+            conflicts: {...conflicts, pending: false}
+          });
         });
     });
   };
@@ -481,6 +549,54 @@ class VSActions extends React.Component {
         storage,
         mergeInProgress
       );
+    }
+  };
+
+  openGitCheckoutModal = (storage) => {
+    this.setState({
+      gitCheckout: storage
+    });
+  };
+
+  closeGitCheckoutModal = () => {
+    this.setState({
+      gitCheckout: undefined
+    });
+  };
+
+  doCheckout = (version) => {
+    const {
+      gitCheckout
+    } = this.state;
+    if (gitCheckout) {
+      return new Promise((resolve) => {
+        const {id, name} = gitCheckout;
+        const hide = message.loading((
+          <span>
+            Checking out revision <b>{version}</b> for the <b>{name}</b> storage...
+          </span>
+        ), 0);
+        const onSuccess = () => message.success(
+          (
+            <span>
+              Revision <b>{version}</b> checked out
+            </span>
+          ),
+          5
+        );
+        this.closeGitCheckoutModal();
+        this.performRequestWithStatus(
+          new VSCheckout(this.props.run?.id, id, version),
+          resolve,
+          this.onConflictsDetected,
+          {
+            hide,
+            storage: gitCheckout,
+            onSuccess,
+            mergeInProgress: false
+          }
+        );
+      });
     }
   };
 
@@ -575,16 +691,19 @@ class VSActions extends React.Component {
         const {
           files = [],
           merge_in_progress: mergeInProgress = false,
-          pending = false
+          pending = false,
+          unsaved = false
         } = status;
         const hasConflicts = !!files.find(f => /^conflicts$/i.test(f.status));
         const hasModifications = !!files.find(f => !/^conflicts$/i.test(f.status));
         const diffEnabled = !pending && files.length > 0;
         const saveEnabled = !storage.detached &&
-          hasModifications &&
-          !hasConflicts &&
+          !pending &&
           !mergeInProgress &&
-          !pending;
+          (
+            (hasModifications && !hasConflicts) ||
+            unsaved
+          );
         const refreshEnabled = !hasConflicts && !mergeInProgress && !pending;
         const Container = array.length === 1 ? Menu.ItemGroup : Menu.SubMenu;
         menuItems.push((
@@ -615,6 +734,13 @@ class VSActions extends React.Component {
               disabled={!saveEnabled}
             >
               <Icon type="save" /> Save
+              {
+                storage.detached && (
+                  <span style={{marginLeft: 5}}>
+                    (current revision is not the latest)
+                  </span>
+                )
+              }
             </Menu.Item>
             <Menu.Item
               key={`refresh-${storage.id}`}
@@ -622,6 +748,14 @@ class VSActions extends React.Component {
             >
               <Icon type="sync" /> Refresh
             </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item
+              key={`checkout-${storage.id}`}
+              disabled={mergeInProgress || unsaved}
+            >
+              <Icon type="fork" /> Checkout revision
+            </Menu.Item>
+            <Menu.Divider />
             {
               hasConflicts && (
                 <Menu.Item
@@ -660,6 +794,12 @@ class VSActions extends React.Component {
             if (storage) {
               this.onResolveConflictsVS(storage);
             }
+            break;
+          case 'checkout':
+            if (storage) {
+              this.openGitCheckoutModal(storage);
+            }
+            break;
         }
         this.setState({dropDownVisible: false});
       };
@@ -695,6 +835,7 @@ class VSActions extends React.Component {
     const {
       dropDownVisible,
       gitDiff,
+      gitCheckout,
       gitCommit,
       conflicts
     } = this.state;
@@ -742,12 +883,19 @@ class VSActions extends React.Component {
             visible={!!conflicts}
             disabled={conflicts?.pending}
             conflicts={conflicts?.files}
+            conflictsInfo={conflicts?.filesInfo}
             onAbort={this.onAbortChanges}
             onClose={this.onCloseConflictsDialog}
             onResolve={this.onResolveConflicts}
             run={run?.id}
             mergeInProgress={conflicts?.mergeInProgress}
             storage={conflicts?.storage}
+          />
+          <CheckoutDialog
+            visible={!!gitCheckout}
+            repository={gitCheckout}
+            onClose={this.closeGitCheckoutModal}
+            onSelect={this.doCheckout}
           />
         </a>
       </Dropdown>

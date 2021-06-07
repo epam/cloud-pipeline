@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import ConflictedFile from './conflicted-file';
+import {BinaryConflictedFile, ConflictedFile} from './conflicted-file';
 import {HeadBranch, RemoteBranch, Merged} from './conflicted-file/branches';
 import readBlobContents from './read-blob-contents';
 import extractRemoteSHA from './extract-remote-sha-from-conflict';
@@ -22,23 +22,25 @@ import prepareChanges from './changes/prepare';
 import VSFileContent from '../../../../../../models/versioned-storage/file-content';
 import VSConflictDiff from '../../../../../../models/versioned-storage/conflict-diff';
 
-function fetchDiff (run, storage, file, revision, mergeInProgress) {
+function fetchDiff (run, storage, file, options = {}) {
   return new Promise((resolve) => {
     const request = new VSConflictDiff(
       run,
       storage?.id,
       file,
-      revision,
       {
         linesCount: 0,
-        mergeInProgress
+        ...options
       }
     );
     request
       .fetch()
       .then(() => {
         if (request.loaded) {
-          resolve((request.value?.lines || []).slice());
+          resolve({
+            lines: (request.value?.lines || []).slice(),
+            binary: request.value?.binary
+          });
         } else {
           resolve(undefined);
         }
@@ -206,11 +208,14 @@ function processDiffs (contents, head, remote, mergeInProgress) {
   return list;
 }
 
-export default function analyzeConflicts (run, storage, mergeInProgress, file) {
+export default function analyzeConflicts (run, storage, mergeInProgress, file, fileInfo) {
   if (!run || !storage || !file) {
     return Promise.resolve({});
   }
-  return new Promise((resolve, reject) => {
+  if (fileInfo && fileInfo.binary) {
+    return Promise.resolve(new BinaryConflictedFile(fileInfo));
+  }
+  return new Promise((resolve) => {
     const request = new VSFileContent(run, storage.id, file);
     request
       .fetch()
@@ -218,47 +223,45 @@ export default function analyzeConflicts (run, storage, mergeInProgress, file) {
         if (request.error) {
           throw new Error(request.error);
         } else {
-          readBlobContents(request.response)
-            .then((contents) => {
-              const remoteSHA = mergeInProgress ? extractRemoteSHA(contents) : undefined;
-              const promises = [];
-              if (mergeInProgress) {
-                // merge conflict
-                // head:
-                promises.push(
-                  fetchDiff(run, storage, file, undefined, mergeInProgress)
-                );
-                // remote:
-                promises.push(
-                  remoteSHA
-                    ? fetchDiff(run, storage, file, remoteSHA, mergeInProgress)
-                    : Promise.resolve(undefined)
-                );
-              } else {
-                // todo: stash conflict
-                // head:
-                // promises.push(fetchDiff(run, storage, file, undefined, mergeInProgress));
-                promises.push(Promise.resolve(undefined));
-                // remote:
-                promises.push(Promise.resolve(undefined));
-              }
-              Promise.all(promises)
-                .then((payloads) => {
-                  const [
-                    head,
-                    remote
-                  ] = payloads;
-                  if (head) {
-                    head.key = 'HEAD';
-                  }
-                  if (remote) {
-                    remote.key = remoteSHA;
-                  }
-                  resolve(processDiffs(contents, head, remote, mergeInProgress));
-                });
-            });
+          return readBlobContents(request.response);
         }
       })
-      .catch(reject);
+      .then((contents) => {
+        const remoteSHA = mergeInProgress ? extractRemoteSHA(contents) : undefined;
+        const promises = [];
+        if (mergeInProgress) {
+          // merge conflict
+          // head:
+          promises.push(
+            fetchDiff(run, storage, file, {mergeInProgress})
+          );
+          // remote:
+          promises.push(
+            remoteSHA
+              ? fetchDiff(run, storage, file, {revision: remoteSHA, mergeInProgress})
+              : Promise.resolve(undefined)
+          );
+        } else {
+          // head:
+          promises.push(fetchDiff(run, storage, file, {mergeInProgress}));
+          // remote:
+          promises.push(fetchDiff(run, storage, file, {mergeInProgress, remote: true}));
+        }
+        return Promise.all([...promises, Promise.resolve(contents)]);
+      })
+      .then((payloads) => {
+        const [
+          head,
+          remote,
+          contents
+        ] = payloads;
+        if (head?.binary || remote?.binary) {
+          throw new Error(`Binary file`);
+        }
+        const headLines = head?.lines;
+        const remoteLines = remote?.lines;
+        resolve(processDiffs(contents, headLines, remoteLines, mergeInProgress));
+      })
+      .catch(() => resolve(new BinaryConflictedFile()));
   });
 }

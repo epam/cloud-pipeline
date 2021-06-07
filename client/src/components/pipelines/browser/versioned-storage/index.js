@@ -40,8 +40,12 @@ import VersionedStorageListWithInfo
   from '../../../../models/versioned-storage/vs-contents-with-info';
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
 import InfoPanel from './info-panel';
+import LaunchVSForm from './forms/launch-vs-form';
+import getToolLaunchingOptions from '../../launch/utilities/get-tool-launching-options';
 import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
 import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken';
+import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
+import PipelineFileInfo from '../../../../models/pipelines/PipelineFileInfo';
 import CreateItemForm from './forms/create-item-form';
 import EditPipelineForm from '../../version/forms/EditPipelineForm';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
@@ -93,7 +97,7 @@ function filterByRestrictedNames (content = {}) {
 @localization.localizedComponent
 @HiddenObjects.checkPipelines(p => (p.params ? p.params.id : p.id))
 @HiddenObjects.injectTreeFilter
-@inject('pipelines', 'folders', 'pipelinesLibrary')
+@inject('pipelines', 'folders', 'pipelinesLibrary', 'preferences', 'awsRegions')
 @inject(({pipelines}, params) => {
   const {location} = params;
   let path;
@@ -121,7 +125,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     pending: false,
     showHistoryPanel: false,
     selectedFile: null,
-    editSelectedFile: false
+    editSelectedFile: false,
+    launchVSFormVisible: false
   };
 
   updateVSRequest = new UpdatePipeline();
@@ -165,7 +170,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     return {
       openHistoryPanel: this.openHistoryPanel,
       closeHistoryPanel: this.closeHistoryPanel,
-      openEditStorageDialog: this.openEditStorageDialog
+      openEditStorageDialog: this.openEditStorageDialog,
+      runVersionedStorage: this.runVersionedStorage
     };
   };
 
@@ -208,7 +214,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         this.setState({
           page,
           pending: false,
+          error: undefined,
           ...result
+        });
+      };
+      const reject = error => {
+        this.setState({
+          page,
+          pending: false,
+          error: error || 'Error fetching versioned storage contents',
+          contents: []
         });
       };
       const request = new VersionedStorageListWithInfo(
@@ -223,7 +238,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         .fetch()
         .then(() => {
           if (request.error || !request.loaded) {
-            resolve({error: request.error || 'Error fetching versioned storage contents'});
+            reject(request.error);
           } else {
             const {
               listing = [],
@@ -232,7 +247,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
             resolve({contents: listing.slice(), lastPage});
           }
         })
-        .catch(e => resolve({error: e.message}));
+        .catch(e => reject(e.message));
     });
   };
 
@@ -240,15 +255,33 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     this.setState({selectedFile: undefined});
   };
 
-  refreshSelectedFile = () => {
-    const {selectedFile} = this.state;
-    if (selectedFile) {
-      const updatedFile = this.filteredContents
-        .find(contentFile => contentFile.git_object.id === selectedFile.id);
-      updatedFile && this.setState({selectedFile: {
-        ...updatedFile.commit,
-        ...updatedFile.git_object
-      }});
+  refreshSelectedFile = (path) => {
+    if (!path) {
+      const {selectedFile} = this.state;
+      if (selectedFile) {
+        path = selectedFile.path;
+      }
+    }
+    if (path) {
+      const request = new PipelineFileInfo(
+        this.props.pipelineId,
+        undefined,
+        path
+      );
+      request
+        .fetch()
+        .then(() => {
+          if (request.loaded) {
+            this.setState({
+              selectedFile: {
+                ...(request.value)
+              }
+            });
+          }
+        })
+        .catch(() => {
+          this.setState({selectedFile: undefined});
+        });
     }
   };
 
@@ -258,6 +291,84 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   closeHistoryPanel = () => {
     this.setState({showHistoryPanel: false, selectedFile: undefined});
+  };
+
+  runVersionedStorage = () => {
+    this.openLaunchVSForm();
+  };
+
+  openLaunchVSForm = () => {
+    this.setState({
+      launchVSFormVisible: true
+    });
+  };
+
+  openLaunchVSAdvancedForm = (tool, tag) => {
+    const {
+      router,
+      pipelineId,
+      pipeline
+    } = this.props;
+    if (router && pipelineId && pipeline.loaded && pipeline.value.currentVersion) {
+      const options = [
+        `vs=true`,
+        tool && `tool=${tool.id}`,
+        tool && tag && `version=${tag}`
+      ]
+        .filter(Boolean);
+      router.push(
+        `/launch/${pipelineId}/${pipeline.value.currentVersion.name}/default?${options.join('&')}`
+      );
+    }
+  };
+
+  closeLaunchVSForm = () => {
+    this.setState({
+      launchVSFormVisible: false
+    });
+  };
+
+  launchVS = (tool, tag) => {
+    const {
+      awsRegions,
+      preferences,
+      pipeline,
+      pipelineId,
+      router
+    } = this.props;
+    this.closeLaunchVSForm();
+    const hide = message.loading('Launching Versioned Storage...', 0);
+    const {
+      currentVersion = {}
+    } = pipeline.value || {};
+    const request = new PipelineRunner();
+    getToolLaunchingOptions({awsRegions, preferences}, tool, tag)
+      .then((launchPayload) => {
+        const payload = {
+          ...launchPayload,
+          pipelineId: +pipelineId,
+          version: currentVersion.name
+        };
+        return request.send({...payload, force: true});
+      })
+      .then(() => {
+        if (request.error) {
+          throw new Error(request.error);
+        } else if (request.loaded) {
+          const {id} = request.value;
+          return Promise.resolve(+id);
+        }
+      })
+      .catch(e => {
+        message.error(e.message, 5);
+        return Promise.resolve();
+      })
+      .then((runId) => {
+        hide();
+        if (typeof runId === 'number') {
+          router.push(`/run/${runId}`);
+        }
+      });
   };
 
   openHistoryPanelWithFileInfo = (file) => {
@@ -450,6 +561,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   onDeleteDocument = async (document, comment) => {
     if (this.lastCommitId) {
+      const {selectedFile} = this.state;
       const {
         pipeline,
         pipelineId,
@@ -481,13 +593,19 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           ? folders.invalidateFolder(parentFolderId)
           : pipelinesLibrary.invalidateCache();
         await pipeline.fetch();
+        if (selectedFile && selectedFile.path === document.path) {
+          this.clearSelectedFile();
+        }
       }
       this.pathWasChanged();
     }
   };
 
   onRenameDocument = async ({name, content}) => {
-    const {renameDocument} = this.state;
+    const {
+      renameDocument,
+      selectedFile
+    } = this.state;
     const {path} = this.props;
     if (this.lastCommitId) {
       const {
@@ -497,22 +615,24 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         pipelinesLibrary
       } = this.props;
       let request;
-      if (renameDocument.type.toLowerCase() === DOCUMENT_TYPES.blob) {
-        request = new PipelineFileUpdate(pipelineId);
-      }
-      if (renameDocument.type.toLowerCase() === DOCUMENT_TYPES.tree) {
+      const isFolder = renameDocument.type.toLowerCase() === DOCUMENT_TYPES.tree;
+      if (isFolder) {
         request = new PipelineFolderUpdate(pipelineId);
+      } else {
+        request = new PipelineFileUpdate(pipelineId);
       }
       if (!request) {
         return;
       }
       const parentFolderId = pipeline.value.parentFolderId;
       const hide = message.loading(`Renaming '${renameDocument.name}'...`, 0);
+      const newPath = `${path || ''}${name}`;
       await request.send({
         lastCommitId: this.lastCommitId,
-        path: `${path || ''}${name}`,
+        path: newPath,
         previousPath: renameDocument.path,
-        comment: content || `Renaming ${renameDocument.name}`
+        comment: content ||
+          `Renaming ${isFolder ? 'folder' : 'file'} ${renameDocument.path} to ${newPath}`
       });
       hide();
       if (request.error) {
@@ -522,6 +642,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           ? folders.invalidateFolder(parentFolderId)
           : pipelinesLibrary.invalidateCache();
         await pipeline.fetch();
+        if (selectedFile && selectedFile.path === renameDocument.path) {
+          this.refreshSelectedFile(newPath);
+        }
       }
       this.pathWasChanged();
       this.closeRenameDocumentDialog();
@@ -617,18 +740,28 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  afterUpload = async () => {
+  afterUpload = async (files = []) => {
     const {
       pipeline,
       folders,
-      pipelinesLibrary
+      pipelinesLibrary,
+      path
     } = this.props;
+    const {
+      selectedFile
+    } = this.state;
+    const pathCorrected = path && path.endsWith('/') ? path.slice(0, -1) : path;
+    const uploadedFiles = files
+      .map(file => pathCorrected && pathCorrected.length ? `${pathCorrected}/${file}` : file);
     const parentFolderId = pipeline.value.parentFolderId;
     const hide = message.loading('Updating folder content', 0);
     parentFolderId
       ? folders.invalidateFolder(parentFolderId)
       : pipelinesLibrary.invalidateCache();
     await pipeline.fetch();
+    if (selectedFile && uploadedFiles.indexOf(selectedFile.path) >= 0) {
+      this.refreshSelectedFile();
+    }
     this.pathWasChanged();
     hide();
   };
@@ -711,7 +844,15 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   renderEditItemForm = () => {
-    const {createDocument, renameDocument} = this.state;
+    const {
+      createDocument,
+      renameDocument
+    } = this.state;
+    const {
+      pipelineId,
+      path
+    } = this.props;
+    const documentType = createDocument || getDocumentType(renameDocument);
     return (
       <div>
         <CreateItemForm
@@ -720,6 +861,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           visible={!!createDocument}
           onCancel={this.closeCreateDocumentDialog}
           onSubmit={this.onCreateDocument}
+          pipelineId={pipelineId}
+          path={path}
+          documentType={documentType}
         />
         <CreateItemForm
           pending={false}
@@ -728,6 +872,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           name={renameDocument && renameDocument.name}
           onCancel={this.closeRenameDocumentDialog}
           onSubmit={this.onRenameDocument}
+          pipelineId={pipelineId}
+          path={path}
+          documentType={documentType}
         />
       </div>
     );
@@ -759,7 +906,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       error,
       lastPage,
       page,
-      selectedFile
+      selectedFile,
+      launchVSFormVisible
     } = this.state;
     const {
       editStorageDialog,
@@ -843,6 +991,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
               onDeleteDocument={this.onDeleteDocument}
               onRenameDocument={this.openRenameDocumentDialog}
               onDownloadFile={this.downloadSingleFile}
+              onNavigate={this.navigate}
               pipelineId={pipelineId}
               path={path}
               afterUpload={this.afterUpload}
@@ -899,9 +1048,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           visible={editStorageDialog}
           pending={pending}
           pipeline={pipeline.value}
-          showRepositorySettings={false}
         />
         {this.renderEditItemForm()}
+        <LaunchVSForm
+          visible={launchVSFormVisible}
+          onClose={this.closeLaunchVSForm}
+          onLaunch={this.launchVS}
+          onLaunchCustom={this.openLaunchVSAdvancedForm}
+        />
       </div>
     );
   }

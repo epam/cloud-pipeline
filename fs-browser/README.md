@@ -15,8 +15,6 @@ pip install -r requirements.txt
 python <path to project>/app.py \
     --working_directory=/root/ \
     --vs_working_directory=/git-workdir/ \
-    --git_user=username \
-    --git_token=password \
     --host=0.0.0.0 \
     --port=8080 \
     --log_dir=/root/logs \ 
@@ -37,8 +35,6 @@ and then run:
 /path/to/dist/app/app \
     --working_directory=/root/ \
     --vs_working_directory=/git-workdir/ \
-    --git_user=username \
-    --git_token=password \
     --host=0.0.0.0 \
     --port=8080 \
     --log_dir=/root/logs \ 
@@ -48,8 +44,6 @@ and then run:
 ## Command line options
 - --working_directory (Required) - the directory on compute node 
 - --vs_working_directory (Required) - the directory where versioned storages shall be stored
-- --git_user (Required) - the git user name
-- --git_token (Required) - th git user password
 - --transfer_storage (Required) - the cloud path for transferring data: <storage name>/<path to cloud directory>. If the <path to cloud directory> is not specified a bucket root will be used
 - --host - the host where this service will be launched. Default: 127.0.0.1
 - --port - the port where this service will be launched. Default: 5000
@@ -269,8 +263,10 @@ Response example:
 }
 ```
 
-- `POST /vs/<id>/conflicts` - registers changes after conflicts resolving for specified file in `path` request
-parameter. If file has no conflicts an error will be occurred. Performs `git add` operation.
+- `POST /vs/<id>/conflicts` - registers changes after conflicts resolving. If `path` request parameter specified 
+performs `git add` operation. If specified file has no conflicts an error will be occurred. If `path` is not 
+specified and HEAD detached this method performs `git checkout HEAD` operation to set HEAD after refresh. 
+This method shall be called after all conflicts resolving caused by the `fetch` operation.
 
 Request example:
 ```
@@ -296,9 +292,9 @@ Response example:
 {    
     "payload": {
        "files": [
-          { "file": "relative/file_name1"; "status": "modified"},
-          { "file": "relative/file_name2"; "status": "created"},
-          { "file": "relative/file_name3"; "status": "deleted"}
+          { "file": "relative/file_name1"; "status": "modified", "binary": false, "new_size": 1, "old_size": 2 },
+          { "file": "relative/file_name2"; "status": "created",  "binary": true, "new_size": 1, "old_size": null },
+          { "file": "relative/file_name3"; "status": "deleted", "binary": true, "new_size": null, "old_size": 2 }
        ],
        "merge_in_progress": false,
        "unsaved": false
@@ -386,6 +382,11 @@ returns `git diff` for specified `path` when merge is in progress. Returns diff 
 commit between local and remote trees. If `revision` not specified the `HEAD` will be used.
 The response is similar to `GET /vs/<id>/diff/files` request.
 
+- `GET /vs/<id>/diff/fetch/conflicts?path=<relative_path_to_file>[&raw=<true/false>&lines_count=1&remote=<true/false>]` -
+returns `git diff` for specified `path` for conflicts after `fetch` operation. If `remote` parameter is true returns 
+diff between newly loaded changes and commit before stash. If `remote` is false (default) returns diff from stash.
+The response is similar to `GET /vs/<id>/diff/files` request.
+
 - `POST /vs/<id>/commit?message=<message>[&files=file1,file2]` - saves local changes to remote: fetches repo, adds 
 changed files, commits changes and pushes to remote. This operation returns task ID since may take a long time.
  Use `status/<task_id>` method to check result.
@@ -442,3 +443,15 @@ Request example:
 ```
 curl -X POST http://127.0.0.1:8080/vs/1/remove
 ```
+
+- `POST /vs/<id>/merge/abort` - aborts merge process. If not merge process found an error will be occurred.
+
+Request example:
+```
+curl -X POST http://127.0.0.1:8080/vs/1/merge/abort
+```
+
+- `POST /vs/<vs_id>/checkout/path?path=<file path>&remote=<true/false>` - provides ability to accepts 
+`theirs` or `ours` changes. This method checkouts specified file. This file shall contain conflicts. 
+If `remote` flag (default: false) specified the remote (or `theirs`) changes shall be accepted. 
+Otherwise local (or `ours`).

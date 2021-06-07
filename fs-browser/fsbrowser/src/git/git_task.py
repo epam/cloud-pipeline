@@ -14,6 +14,8 @@
 import os
 import traceback
 
+import pygit2
+
 from fsbrowser.src.model.task import Task
 
 
@@ -54,26 +56,25 @@ class GitTask(Task):
     def pull(self, git_client, full_repo_path, is_head_detached):
         try:
             self.pulling()
-            if is_head_detached:
-                git_client.revert(full_repo_path)
-
             self._check_pull_possibility(git_client, full_repo_path)
 
             status_files = git_client.status(full_repo_path)
             if status_files:
+                self._prepare_for_pull(status_files, git_client, full_repo_path)
                 git_client.stash(full_repo_path)
             pull_conflicts = git_client.pull(full_repo_path, commit_allowed=False)
             if status_files:
                 git_client.unstash(full_repo_path)
 
-            if is_head_detached:
-                git_client.set_head(full_repo_path)
-
             stash_conflicts = self._conflicts_in_status(git_client, full_repo_path)
-            conflicts = list(set(stash_conflicts + self._build_pull_conflicts(pull_conflicts)))
+            conflicts = list(set(stash_conflicts + pull_conflicts))
             if conflicts:
                 self._conflicts_failure(conflicts)
                 return
+
+            if is_head_detached:
+                git_client.set_head(full_repo_path)
+
             self.success()
         except Exception as e:
             self.logger.log(traceback.format_exc())
@@ -90,7 +91,7 @@ class GitTask(Task):
             self.pulling()
             conflicts = git_client.pull(full_repo_path)
             if conflicts:
-                self._conflicts_failure(self._build_pull_conflicts(conflicts))
+                self._conflicts_failure(conflicts)
                 return
 
             self.pushing()
@@ -125,12 +126,6 @@ class GitTask(Task):
             self._conflicts_failure(conflicts)
             raise RuntimeError('Automatic merge failed. Please resolve conflicts and then try again')
 
-    @staticmethod
-    def _build_pull_conflicts(conflicts):
-        if not conflicts:
-            return []
-        return [conflict[0].path for conflict in conflicts]
-
     def _conflicts_failure(self, conflicts):
         self.conflicts = conflicts
         self.failure()
@@ -141,3 +136,9 @@ class GitTask(Task):
         if self.conflicts:
             result.update({'conflicts': self.conflicts})
         return result
+
+    @staticmethod
+    def _prepare_for_pull(status_files, client, repo_path):
+        for status_file in status_files:
+            if status_file.state_code & pygit2.GIT_STATUS_WT_NEW:
+                client.add(repo_path, status_file)

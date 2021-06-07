@@ -52,13 +52,19 @@ class ConflictsDialog extends React.Component {
       onAbortCallback && onAbortCallback();
     };
     Modal.confirm({
-      title: 'Are you sure you want to abort conflicts resolving?',
+      title: 'Are you sure you want to abort?',
+      content: (
+        <div>
+          Your changes will be saved locally and ready to be pushed to the Versioned Storage.<br />
+        </div>
+      ),
       style: {
         wordWrap: 'break-word'
       },
+      width: 600,
       onOk: () => onAbort(),
-      okText: 'ABORT',
-      cancelText: 'CANCEL'
+      okText: 'Abort',
+      cancelText: 'Continue resolve conflicts'
     });
   };
 
@@ -73,6 +79,7 @@ class ConflictsDialog extends React.Component {
   render () {
     const {
       conflicts,
+      conflictsInfo,
       disabled,
       run,
       storage,
@@ -98,19 +105,26 @@ class ConflictsDialog extends React.Component {
           <div
             className={styles.dialogActions}
           >
-            <Button
-              type="danger"
-              disabled={disabled}
-              onClick={this.onAbortClicked}
-            >
-              ABORT
-            </Button>
+            {
+              mergeInProgress && (
+                <Button
+                  type="danger"
+                  disabled={disabled}
+                  onClick={this.onAbortClicked}
+                >
+                  Cancel
+                </Button>
+              )
+            }
+            {
+              !mergeInProgress && (<div>{'\u00A0'}</div>)
+            }
             <Button
               type="primary"
               disabled={!resolved || disabled}
               onClick={this.onResolveClicked}
             >
-              RESOLVE
+              Resolve
             </Button>
           </div>
         )}
@@ -118,6 +132,7 @@ class ConflictsDialog extends React.Component {
         <Conflicts
           disabled={disabled}
           conflicts={conflicts}
+          conflictsInfo={conflictsInfo}
           run={run}
           storage={storage}
           mergeInProgress={mergeInProgress}
@@ -130,6 +145,7 @@ class ConflictsDialog extends React.Component {
 
 ConflictsDialog.propTypes = {
   conflicts: PropTypes.arrayOf(PropTypes.string),
+  conflictsInfo: PropTypes.array,
   disabled: PropTypes.bool,
   onAbort: PropTypes.func,
   onClose: PropTypes.func,

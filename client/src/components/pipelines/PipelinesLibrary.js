@@ -317,7 +317,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     switch (item.type) {
       case ItemTypes.pipeline: icon = 'fork'; break;
       case ItemTypes.versionedStorage:
-        icon = 'share-alt';
+        icon = 'inbox';
         iconStyle = {
           color: '#2696dd'
         };

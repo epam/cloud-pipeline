@@ -29,11 +29,13 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
+import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.Test;
@@ -42,17 +44,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipeline;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 
+import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -63,6 +69,7 @@ public class RunApiServiceTest extends AbstractAclTest {
     private static final String VISIBILITY_PREFERENCE_KEY = SystemPreferences.RUN_VISIBILITY_POLICY.getKey();
     private final PipelineRun pipelineRun = getPipelineRun(ID, ANOTHER_SIMPLE_USER);
     private final Pipeline pipeline = getPipeline(ANOTHER_SIMPLE_USER);
+    private final UserContext anotherUserContext = new UserContext(ID, ANOTHER_SIMPLE_USER);
 
     @Autowired
     private RunApiService runApiService;
@@ -84,6 +91,9 @@ public class RunApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private ToolManager mockToolManager;
+
+    @Autowired
+    private PipelineRunAsManager mockPipelineRunAsManager;
 
     @Test
     @WithMockUser
@@ -273,6 +283,211 @@ public class RunApiServiceTest extends AbstractAclTest {
         assertThrows(IllegalArgumentException.class, () -> runApiService.generateLaunchCommand(pipeRunCmdStartVO));
     }
 
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = ADMIN_ROLE)
+    public void shouldRunToolForAdmin() {
+        mockAuthUser(SIMPLE_USER);
+        final PipelineStart pipelineStart = runVOForTool();
+        doReturn(getTool(ID, OWNER_USER)).when(mockToolManager).loadByNameOrId(IMAGE1);
+        doReturn(getPipelineRun()).when(mockRunManager).runCmd(pipelineStart);
+
+        verifyRunCmd(pipelineStart);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldRunToolForNonAdmin() {
+        mockAuthUser(SIMPLE_USER);
+        final Tool tool = getTool(ID, OWNER_USER);
+        doReturn(tool).when(mockToolManager).loadByNameOrId(IMAGE1);
+        initAclEntity(tool, AclPermission.EXECUTE);
+        final PipelineStart pipelineStart = runVOForTool();
+        doReturn(getPipelineRun()).when(mockRunManager).runCmd(pipelineStart);
+
+        verifyRunCmd(pipelineStart);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldFailRunToolIfPermissionIsNotGranted() {
+        mockAuthUser(SIMPLE_USER);
+        final Tool tool = getTool(ID, OWNER_USER);
+        doReturn(tool).when(mockToolManager).loadByNameOrId(IMAGE1);
+        initAclEntity(tool);
+        final PipelineStart pipelineStart = runVOForTool();
+        doReturn(getPipelineRun()).when(mockRunManager).runCmd(pipelineStart);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.runCmd(pipelineStart));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = ADMIN_ROLE)
+    public void shouldRunToolForAdminOnBehalfOfOtherUser() {
+        mockAuthUser(SIMPLE_USER);
+        final Tool tool = getTool(ID, OWNER_USER);
+        doReturn(tool).when(mockToolManager).loadByNameOrId(IMAGE1);
+        initAclEntity(tool, Collections.singletonList(
+                new UserPermission(ANOTHER_SIMPLE_USER, AclPermission.EXECUTE.getMask())));
+        final PipelineStart pipelineStart = runVOForTool();
+        mockRunToolOnBehalfOfAnotherUser(pipelineStart);
+
+        verifyRunToolOnBehalfOfAnotherUser(pipelineStart);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldRunToolForNonAdminOnBehalfOfOtherUser() {
+        mockAuthUser(SIMPLE_USER);
+        final Tool tool = getTool(ID, OWNER_USER);
+        doReturn(tool).when(mockToolManager).loadByNameOrId(IMAGE1);
+        initAclEntity(tool, Arrays.asList(
+                new UserPermission(SIMPLE_USER, AclPermission.EXECUTE.getMask()),
+                new UserPermission(ANOTHER_SIMPLE_USER, AclPermission.EXECUTE.getMask())));
+        final PipelineStart pipelineStart = runVOForTool();
+        mockRunToolOnBehalfOfAnotherUser(pipelineStart);
+
+        verifyRunToolOnBehalfOfAnotherUser(pipelineStart);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = ADMIN_ROLE)
+    public void shouldFailRunToolIfPermissionIsNotGrantedOnBehalfOfOtherUser() {
+        mockAuthUser(SIMPLE_USER);
+        final Tool tool = getTool(ID, OWNER_USER);
+        doReturn(tool).when(mockToolManager).loadByNameOrId(IMAGE1);
+        initAclEntity(tool);
+        final PipelineStart pipelineStart = runVOForTool();
+        mockRunToolOnBehalfOfAnotherUser(pipelineStart);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.runCmd(pipelineStart));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = ADMIN_ROLE)
+    public void shouldRunPipelineForAdmin() {
+        mockAuthUser(SIMPLE_USER);
+        final PipelineStart pipelineStart = runVOForPipeline();
+        doReturn(getPipeline(ID, OWNER_USER)).when(mockEntityManager).load(AclClass.PIPELINE, ID);
+        doReturn(getPipelineRun()).when(mockRunManager).runPipeline(pipelineStart);
+
+        verifyRunPipeline(pipelineStart);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldRunPipelineForNonAdmin() {
+        mockAuthUser(SIMPLE_USER);
+        final Pipeline pipeline = getPipeline(ID, OWNER_USER);
+        doReturn(pipeline).when(mockEntityManager).load(AclClass.PIPELINE, ID);
+        initAclEntity(pipeline, AclPermission.EXECUTE);
+        final PipelineStart pipelineStart = runVOForPipeline();
+        doReturn(getPipelineRun()).when(mockRunManager).runPipeline(pipelineStart);
+
+        verifyRunPipeline(pipelineStart);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldFailRunPipelineIfPermissionIsNotGranted() {
+        mockAuthUser(SIMPLE_USER);
+        final Pipeline pipeline = getPipeline(ID, OWNER_USER);
+        doReturn(pipeline).when(mockEntityManager).load(AclClass.PIPELINE, ID);
+        initAclEntity(pipeline);
+        final PipelineStart pipelineStart = runVOForPipeline();
+        doReturn(getPipelineRun()).when(mockRunManager).runPipeline(pipelineStart);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.runPipeline(pipelineStart));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = ADMIN_ROLE)
+    public void shouldRunPipelineForAdminOnBehalfOfOtherUser() {
+        mockAuthUser(SIMPLE_USER);
+        final Pipeline pipeline = getPipeline(ID, OWNER_USER);
+        doReturn(pipeline).when(mockEntityManager).load(AclClass.PIPELINE, ID);
+        initAclEntity(pipeline, Collections.singletonList(
+                new UserPermission(ANOTHER_SIMPLE_USER, AclPermission.EXECUTE.getMask())));
+        final PipelineStart pipelineStart = runVOForPipeline();
+        mockRunPipelineOnBehalfOfAnotherUser(pipelineStart);
+
+        verifyRunPipelineOnBehalfOfAnotherUser(pipelineStart);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldRunPipelineForNonAdminOnBehalfOfOtherUser() {
+        mockAuthUser(SIMPLE_USER);
+        final Pipeline pipeline = getPipeline(ID, OWNER_USER);
+        doReturn(pipeline).when(mockEntityManager).load(AclClass.PIPELINE, ID);
+        initAclEntity(pipeline, Arrays.asList(
+                new UserPermission(SIMPLE_USER, AclPermission.EXECUTE.getMask()),
+                new UserPermission(ANOTHER_SIMPLE_USER, AclPermission.EXECUTE.getMask())));
+        final PipelineStart pipelineStart = runVOForPipeline();
+        mockRunPipelineOnBehalfOfAnotherUser(pipelineStart);
+
+        verifyRunPipelineOnBehalfOfAnotherUser(pipelineStart);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = ADMIN_ROLE)
+    public void shouldNotRunPipelineOnBehalfOfOtherUserIfPermissionIsNotGranted() {
+        mockAuthUser(SIMPLE_USER);
+        final Pipeline pipeline = getPipeline(ID, OWNER_USER);
+        doReturn(pipeline).when(mockEntityManager).load(AclClass.PIPELINE, ID);
+        initAclEntity(pipeline);
+        final PipelineStart pipelineStart = runVOForPipeline();
+        mockRunPipelineOnBehalfOfAnotherUser(pipelineStart);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.runPipeline(pipelineStart));
+    }
+
+    private void mockRunToolOnBehalfOfAnotherUser(final PipelineStart pipelineStart) {
+        doReturn(ANOTHER_SIMPLE_USER).when(mockPipelineRunAsManager).getRunAsUserName(pipelineStart);
+        doReturn(true).when(mockPipelineRunAsManager).hasCurrentUserAsRunner(ANOTHER_SIMPLE_USER);
+        doReturn(getPipelineRun()).when(mockPipelineRunAsManager).runTool(pipelineStart);
+        mockUserContext(anotherUserContext);
+    }
+
+    private void mockRunPipelineOnBehalfOfAnotherUser(final PipelineStart pipelineStart) {
+        doReturn(ANOTHER_SIMPLE_USER).when(mockPipelineRunAsManager).getRunAsUserName(pipelineStart);
+        doReturn(true).when(mockPipelineRunAsManager).hasCurrentUserAsRunner(ANOTHER_SIMPLE_USER);
+        doReturn(true).when(mockPipelineRunAsManager).runAsAnotherUser(pipelineStart);
+        doReturn(getPipelineRun()).when(mockPipelineRunAsManager).runPipeline(pipelineStart);
+        mockUserContext(anotherUserContext);
+    }
+
+    private void verifyRunToolOnBehalfOfAnotherUser(final PipelineStart pipelineStart) {
+        final PipelineRun pipelineRun = runApiService.runCmd(pipelineStart);
+        assertThat(pipelineRun).isNotNull();
+
+        verify(mockPipelineRunAsManager).runTool(pipelineStart);
+        notInvoked(mockRunManager).runCmd(pipelineStart);
+    }
+
+    private void verifyRunCmd(final PipelineStart pipelineStart) {
+        final PipelineRun pipelineRun = runApiService.runCmd(pipelineStart);
+        assertThat(pipelineRun).isNotNull();
+
+        verify(mockRunManager).runCmd(pipelineStart);
+        notInvoked(mockPipelineRunAsManager).runTool(pipelineStart);
+    }
+
+    private void verifyRunPipeline(final PipelineStart pipelineStart) {
+        final PipelineRun pipelineRun = runApiService.runPipeline(pipelineStart);
+        assertThat(pipelineRun).isNotNull();
+
+        verify(mockRunManager).runPipeline(pipelineStart);
+        notInvoked(mockPipelineRunAsManager).runPipeline(pipelineStart);
+    }
+
+    private void verifyRunPipelineOnBehalfOfAnotherUser(final PipelineStart pipelineStart) {
+        final PipelineRun pipelineRun = runApiService.runPipeline(pipelineStart);
+        assertThat(pipelineRun).isNotNull();
+
+        verify(mockPipelineRunAsManager).runPipeline(pipelineStart);
+        notInvoked(mockRunManager).runPipeline(pipelineStart);
+    }
+
     private PipeRunCmdStartVO initPipeRunCmdStartVO(final Pipeline pipeline, final Tool tool) {
         final PipelineStart pipelineStart = new PipelineStart();
         final PipeRunCmdStartVO pipeRunCmdStartVO = new PipeRunCmdStartVO();
@@ -295,5 +510,15 @@ public class RunApiServiceTest extends AbstractAclTest {
         doReturn(preference)
                 .when(mockPreferenceManager)
                 .search(eq(Collections.singletonList(VISIBILITY_PREFERENCE_KEY)));
+    }
+
+    private PipelineStart runVOForTool() {
+        return getPipelineStart(Collections.emptyMap(), IMAGE1);
+    }
+
+    private PipelineStart runVOForPipeline() {
+        final PipelineStart pipelineStart = getPipelineStart(Collections.emptyMap(), IMAGE1);
+        pipelineStart.setPipelineId(ID);
+        return pipelineStart;
     }
 }

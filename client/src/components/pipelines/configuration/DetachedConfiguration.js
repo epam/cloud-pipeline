@@ -1011,7 +1011,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               ref={form => { this.form = form; }}
               readOnly={!this.canModifySources}
               canExecute={this.canExecute}
-              canRunCluster={(this.props.configurations.value.entries || []).length > 1}
+              canRunCluster={false}
               canRemove={
                 this.canModifySources &&
                 this.props.configurations.value.entries &&

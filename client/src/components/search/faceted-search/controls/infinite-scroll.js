@@ -20,16 +20,19 @@ import {Icon} from 'antd';
 import classNames from 'classnames';
 import styles from './controls.css';
 
+const DEFAULT_PAGE_SIZE = 50;
+const SCROLL_BLOCK_DELAY = 100;
+
 class InfiniteScroll extends React.Component {
   state = {
-    offset: 0,
     rowKeyFn: (o, i) => `${i}`,
     scrollerHeight: 0,
-    itemsToDisplay: 0,
-    itemsOnPage: 0
+    itemsOnPage: DEFAULT_PAGE_SIZE
   };
 
   scroller;
+  currentDocumentId;
+  blockUpdateTrigger = true;
 
   componentDidMount () {
     window.addEventListener('resize', this.changePageSize);
@@ -38,6 +41,7 @@ class InfiniteScroll extends React.Component {
     if (onInitialized) {
       onInitialized(this);
     }
+    this.scrollToCurrent();
   }
 
   componentWillUnmount () {
@@ -47,32 +51,17 @@ class InfiniteScroll extends React.Component {
   componentDidUpdate (prevProps, prevState, snapshot) {
     let state = {};
     if (prevProps.rowKey !== this.props.rowKey) {
-      state = {...this.updateRowKey()};
-    }
-    const offsetUpdated = (
-      this.props.offset !== this.state.offset &&
-      prevProps.offset !== this.props.offset
-    ) ||
-      prevProps.dataOffset !== this.props.dataOffset;
-    if (offsetUpdated) {
-      state = {...state, ...this.updateOffset()};
-    }
-    if (Object.keys(state).length > 0) {
-      const offsetWasNotInRange = prevProps.elements.length > 0 &&
-        (
-          prevState.offset < prevProps.dataOffset ||
-          prevState.offset >= prevProps.dataOffset + (prevProps.elements || []).length
-        );
+      state = this.updateRowKey();
       // eslint-disable-next-line
-      this.setState(state, () => {
-        offsetUpdated && this.scrollToCurrentOffset(offsetWasNotInRange);
-      });
+      this.setState(state);
+    } else if (prevProps.elements !== this.props.elements) {
+      this.scrollToCurrent();
     }
   }
 
   shouldComponentUpdate (nextProps, nextState, nextContext) {
     const simpleCheck = o => this.props[o] !== nextProps[o];
-    const shouldUpdate = simpleCheck('className') ||
+    return simpleCheck('className') ||
       simpleCheck('error') ||
       simpleCheck('pageSize') ||
       simpleCheck('pending') ||
@@ -82,25 +71,34 @@ class InfiniteScroll extends React.Component {
       simpleCheck('headerRenderer') ||
       simpleCheck('rowRenderer') ||
       simpleCheck('style') ||
-      simpleCheck('total') ||
-      simpleCheck('elements') ||
-      simpleCheck('dataOffset');
-    if (shouldUpdate) {
-      return true;
-    }
-    const {
-      offset: nextOffset
-    } = nextProps;
-    const {offset: stateOffset} = this.state;
-    return nextOffset !== stateOffset;
+      simpleCheck('elements');
   }
 
+  scrollToCurrent = () => {
+    this.blockUpdateTrigger = true;
+    if (this.scroller) {
+      const {
+        elements = [],
+        hasElementsBefore,
+        rowHeight: height,
+        rowMargin
+      } = this.props;
+      const rowHeight = height + rowMargin;
+      let scrollToIndex = 0;
+      const index = elements.findIndex(doc => doc.elasticId === this.currentDocumentId);
+      if (index >= 0) {
+        scrollToIndex = index;
+      }
+      this.scroller.scrollTop = (scrollToIndex + !!hasElementsBefore) * rowHeight;
+    }
+    setTimeout(() => {
+      this.blockUpdateTrigger = false;
+    }, SCROLL_BLOCK_DELAY);
+  };
+
   updateState = () => {
-    const state = {
-      ...this.updateRowKey(false),
-      ...this.updateOffset(false)
-    };
-    this.setState(state, () => this.scrollToCurrentOffset(true));
+    const state = this.updateRowKey(false);
+    this.setState(state);
   };
 
   updateRowKey = (update = true) => {
@@ -118,72 +116,46 @@ class InfiniteScroll extends React.Component {
     return state;
   };
 
-  updateOffset = (update = true) => {
-    const {offset: propsOffset} = this.props;
-    const state = {
-      offset: propsOffset
-    };
-    if (update) {
-      this.setState(state);
-    }
-    return state;
-  };
-
-  scrollToCurrentOffset = (offsetWasNotInRange) => {
-    if (this.scroller) {
-      const {offset, itemsOnPage} = this.state;
-      const {
-        dataOffset,
-        elements = [],
-        rowHeight,
-        rowMargin
-      } = this.props;
-      const offsetIsNotInRange = elements.length > 0 &&
-        (
-          offset < dataOffset ||
-          offset >= dataOffset + (elements || []).length
-        );
-      if (offsetIsNotInRange) {
-        return;
-      }
-      const extra = (dataOffset > 0 ? 1 : 0);
-      const delta = offsetWasNotInRange
-        ? 0
-        : (this.scroller.scrollTop || 0) % (rowHeight + rowMargin);
-      this.scroller.scrollTop = Math.max(
-        0,
-        Math.min(
-          (offset + extra - dataOffset) * (rowHeight + rowMargin) + delta,
-          (elements.length + extra - itemsOnPage) * (rowHeight + rowMargin)
-        )
-      );
-      this.forceUpdate();
-    }
-  };
-
   onScroll = (e) => {
+    if (this.blockUpdateTrigger) {
+      return;
+    }
     const obj = e.target;
     if (obj) {
       const {
-        dataOffset,
+        hasElementsAfter,
+        hasElementsBefore,
+        elements,
+        pageSize,
         rowHeight: height,
         rowMargin
       } = this.props;
-      const {offset: currentOffset} = this.state;
       const rowHeight = height + rowMargin;
-      const y = obj.scrollTop - (dataOffset > 0 ? rowHeight : 0);
-      const offset = dataOffset + Math.floor(y / rowHeight);
-      if (offset !== currentOffset) {
-        this.setState({offset}, () => {
-          this.reportPageChange();
-        });
+      if (elements && elements.length > 0) {
+        const page = Math.floor(pageSize / 2.0);
+        const correctElementIndex = index => Math.max(0, Math.min(elements.length - 1, index));
+        const currentDocumentIndex = correctElementIndex(
+          Math.floor(obj.scrollTop / rowHeight) - !!hasElementsBefore
+        );
+        this.currentDocumentId = elements[currentDocumentIndex]?.elasticId;
+        if (hasElementsBefore && obj.scrollTop <= rowHeight) {
+          this.reportScroll(elements[correctElementIndex(page)], false);
+        } else if (
+          hasElementsAfter &&
+          (obj.scrollTop + obj.clientHeight + rowHeight) >= obj.scrollHeight
+        ) {
+          this.reportScroll(elements[correctElementIndex(elements.length - page)], true);
+        }
       }
     }
   };
 
   initializeScroller = (o) => {
-    this.scroller = o;
-    this.changePageSize();
+    if (o !== this.scroller) {
+      this.scroller = o;
+      this.changePageSize();
+      this.scrollToCurrent();
+    }
   }
 
   changePageSize = () => {
@@ -195,10 +167,8 @@ class InfiniteScroll extends React.Component {
       const scrollerHeight = this.scroller.clientHeight;
       const itemHeightWithMargin = rowHeight + rowMargin;
       const itemsOnPage = Math.floor(scrollerHeight / itemHeightWithMargin);
-      const itemsToDisplay = itemsOnPage * 3;
       this.setState({
         scrollerHeight,
-        itemsToDisplay,
         itemsOnPage
       }, () => {
         this.reportPageChange();
@@ -206,27 +176,23 @@ class InfiniteScroll extends React.Component {
     }
   }
 
-  reportPageChange = (delayed = false) => {
-    if (this.pageChangeDelay) {
-      clearTimeout(this.pageChangeDelay);
-      this.pageChangeDelay = null;
+  reportPageChange = () => {
+    const {
+      onPageSizeChanged,
+      pageSize
+    } = this.props;
+    const {
+      itemsOnPage
+    } = this.state;
+    if (onPageSizeChanged && pageSize < (itemsOnPage * 3)) {
+      onPageSizeChanged((itemsOnPage * 3) || DEFAULT_PAGE_SIZE);
     }
-    if (delayed) {
-      this.pageChangeDelay = setTimeout(
-        () => this.reportPageChange(),
-        100
-      );
-    } else {
-      const {
-        offset,
-        itemsOnPage
-      } = this.state;
-      const {
-        onOffsetChanged
-      } = this.props;
-      if (onOffsetChanged) {
-        onOffsetChanged(offset, itemsOnPage);
-      }
+  };
+
+  reportScroll = (document, forward = true) => {
+    const {onScrollToEnd} = this.props;
+    if (onScrollToEnd) {
+      onScrollToEnd(document, forward);
     }
   };
 
@@ -244,12 +210,12 @@ class InfiniteScroll extends React.Component {
       elements,
       error,
       style,
-      dataOffset,
+      hasElementsAfter,
+      hasElementsBefore,
       rowHeight,
       rowMargin,
       headerRenderer,
-      rowRenderer,
-      total
+      rowRenderer
     } = this.props;
     const {
       rowKeyFn
@@ -271,7 +237,7 @@ class InfiniteScroll extends React.Component {
         >
           {headerRenderer && headerRenderer()}
           {
-            dataOffset > 0 && (
+            hasElementsBefore && (
               <div
                 className={
                   classNames(
@@ -304,7 +270,7 @@ class InfiniteScroll extends React.Component {
             ))
           }
           {
-            dataOffset + (elements || []).length < total && (
+            hasElementsAfter && (
               <div
                 className={
                   classNames(
@@ -331,12 +297,13 @@ class InfiniteScroll extends React.Component {
 
 InfiniteScroll.propTypes = {
   className: PropTypes.string,
-  dataOffset: PropTypes.number,
   elements: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   error: PropTypes.string,
-  offset: PropTypes.number,
+  hasElementsAfter: PropTypes.bool,
+  hasElementsBefore: PropTypes.bool,
   onInitialized: PropTypes.func,
-  onOffsetChanged: PropTypes.func,
+  onPageSizeChanged: PropTypes.func,
+  onScrollToEnd: PropTypes.func,
   pageSize: PropTypes.number,
   pending: PropTypes.bool,
   rowHeight: PropTypes.number,
@@ -344,8 +311,7 @@ InfiniteScroll.propTypes = {
   rowMargin: PropTypes.number,
   headerRenderer: PropTypes.func,
   rowRenderer: PropTypes.func,
-  style: PropTypes.object,
-  total: PropTypes.number
+  style: PropTypes.object
 };
 
 InfiniteScroll.defaultProps = {
@@ -355,3 +321,4 @@ InfiniteScroll.defaultProps = {
 };
 
 export default InfiniteScroll;
+export {DEFAULT_PAGE_SIZE};

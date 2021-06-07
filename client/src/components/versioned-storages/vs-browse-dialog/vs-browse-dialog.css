@@ -66,3 +66,11 @@
 .filter input {
   width: 100%;
 }
+
+.versions-select {
+  width: 200px;
+}
+
+.version-row {
+  max-width: 300px;
+}

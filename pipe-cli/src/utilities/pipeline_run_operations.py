@@ -243,7 +243,8 @@ class PipelineRunOperations(object):
                                                              region_id=region_id,
                                                              parent_node=parent_node,
                                                              non_pause=non_pause,
-                                                             friendly_url=friendly_url)
+                                                             friendly_url=friendly_url,
+                                                             run_as_user=run_as_user)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))

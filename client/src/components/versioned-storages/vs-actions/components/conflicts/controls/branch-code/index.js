@@ -22,12 +22,16 @@ import Caret from './caret';
 import getClassNameForChange from './utilities/class-name-for-change';
 import getStyleForChange from './utilities/style-for-change';
 import {
-  compareSelectionsInfo,
-  getBranchCodeRangeFromSelection
+  getBranchCodeFromSelection, getBranchCodeRangeFromSelection
 } from './utilities/branch-code-selection';
 import LineStates from '../../utilities/conflicted-file/line-states';
 import ChangeStatuses from '../../utilities/changes/statuses';
 import modificationsRenderConfig from '../changes-display-config';
+import inputOperation, {
+  clearSelection,
+  INSERT_TEXT_KEY,
+  INSERTED_TEXT
+} from '../../utilities/changes/input-operations';
 import styles from '../../conflicts.css';
 
 function getLineTextWithoutBreak (line, branch) {
@@ -65,8 +69,7 @@ class BranchCode extends React.PureComponent {
     caret: undefined,
     focused: false,
     characterSize: 0,
-    marginLeft: 0,
-    selection: undefined
+    marginLeft: 0
   };
 
   container;
@@ -75,95 +78,96 @@ class BranchCode extends React.PureComponent {
   componentWillUnmount () {
     this.detachEventHandlers();
     this.container = null;
+    this.removeFileListeners(this.props.file, this.props.branch);
   }
 
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this.container);
+    this.addFileListeners();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     this.correctCharacterSizeInfo();
+    if (
+      prevProps.file !== this.props.file ||
+      prevProps.branch !== this.props.branch
+    ) {
+      this.removeFileListeners(prevProps.file, prevProps.branch);
+    }
   }
 
-  attachEventHandlers = () => {
-    if (this.container) {
-      this.container.addEventListener('copy', this.copy);
-      document.addEventListener('keydown', this.keyDown);
-      document.addEventListener('keypress', this.keyPressed);
-      document.addEventListener('selectionchange', this.onSelectionChange);
+  addFileListeners = () => {
+    if (this.props.file && this.props.branch && this.props.editable) {
+      this.props.file.addEventListener('caretUpdate', this.moveCursor, this.props.branch);
     }
+  };
+
+  removeFileListeners = (file, branch) => {
+    if (file && branch) {
+      file.removeEventListener('caretUpdate', this.moveCursor, branch);
+    }
+  };
+
+  attachEventHandlers = () => {
+    document.addEventListener('copy', this.copy);
+    document.addEventListener('paste', this.paste, false);
+    document.addEventListener('keydown', this.keyDown);
+    document.addEventListener('keypress', this.keyPressed);
   };
 
   detachEventHandlers = () => {
-    if (this.container) {
-      this.container.removeEventListener('copy', this.copy);
-      document.removeEventListener('keydown', this.keyDown);
-      document.removeEventListener('keypress', this.keyPressed);
-      document.removeEventListener('selectionchange', this.onSelectionChange);
-    }
+    document.removeEventListener('copy', this.copy);
+    document.removeEventListener('paste', this.paste);
+    document.removeEventListener('keydown', this.keyDown);
+    document.removeEventListener('keypress', this.keyPressed);
   };
 
-  copy = () => {
+  copy = (e) => {
     const selection = document.getSelection();
-    if (selection) {
-      // todo: COPY getBranchCodeFromSelection(selection)
+    if (e && e.clipboardData && e.clipboardData.setData) {
+      e.clipboardData.setData('text/plain', getBranchCodeFromSelection(selection));
+      e.preventDefault();
     }
   };
 
-  onSelectionChange = () => {
-    const selection = getBranchCodeRangeFromSelection(document.getSelection());
-    const {file, branch, editable} = this.props;
-    if (!editable) {
-      return;
-    }
-    let selectionInfo;
-    if (selection && file && branch) {
-      const lines = file.getLines(branch, new Set([]));
-      const {
-        start,
-        end
-      } = selection;
-      if (start && end) {
+  paste = (e) => {
+    if (e.clipboardData && e.clipboardData.getData) {
+      let pastedText = '';
+      if (window.clipboardData && window.clipboardData.getData) { // IE
+        pastedText = window.clipboardData.getData('Text');
+      } else if (e.clipboardData && e.clipboardData.getData) {
+        pastedText = e.clipboardData.getData('text/plain');
+      }
+      e.preventDefault();
+      const {branch, editable, file} = this.props;
+      if (!file) {
+        return;
+      }
+      const {focused, caret} = this.state;
+      if (pastedText && focused && editable && caret) {
         const {
-          lineKey: startLineKey
-        } = start;
-        const {
-          lineKey: endLineKey
-        } = end;
-        const startLine = lines.find(line => line.key === startLineKey);
-        const endLine = lines.find(line => line.key === endLineKey);
-        if (startLine && endLine) {
-          selectionInfo = {
-            start: {
-              line: startLine,
-              ...start
-            },
-            end: {
-              line: endLine,
-              ...end
-            }
-          };
+          line: currentLine,
+          offset: prevOffset = 0
+        } = caret;
+        const lineLength = getLineTextWithoutBreak(currentLine, branch).length;
+        const offset = Math.max(0, Math.min(lineLength, prevOffset));
+        const handled = inputOperation(
+          {
+            key: INSERT_TEXT_KEY,
+            [INSERTED_TEXT]: pastedText
+          },
+          file,
+          branch,
+          currentLine,
+          offset
+        );
+        if (handled) {
+          e.stopPropagation();
+          e.preventDefault();
+          return false;
         }
       }
-    }
-    if (!compareSelectionsInfo(this.state.selection, selectionInfo)) {
-      this.setState({selection: selectionInfo});
-    }
-  };
-
-  clearSelection = () => {
-    if (window.getSelection) {
-      if (window.getSelection().empty) {
-        // Chrome
-        window.getSelection().empty();
-      } else if (window.getSelection().removeAllRanges) {
-        // Firefox
-        window.getSelection().removeAllRanges();
-      }
-    } else if (document.selection) {
-      // IE
-      document.selection.empty();
     }
   };
 
@@ -302,15 +306,94 @@ class BranchCode extends React.PureComponent {
     return false;
   };
 
+  extendSelection = (previousLine, previousOffset) => {
+    const {
+      caret
+    } = this.state;
+    const {
+      file,
+      branch
+    } = this.props;
+    const {
+      line,
+      offset
+    } = caret || {};
+    if (
+      line &&
+      offset !== undefined &&
+      file &&
+      branch &&
+      previousLine &&
+      previousOffset !== undefined
+    ) {
+      const lines = file.getLines(branch, new Set([]));
+      const selection = getBranchCodeRangeFromSelection(document.getSelection());
+      let from = {
+        line: previousLine,
+        offset: previousOffset
+      };
+      let to = {
+        line,
+        offset
+      };
+      if (selection) {
+        const {
+          start,
+          end
+        } = selection;
+        if (start && end) {
+          const {
+            lineKey: startLineKey,
+            offset: startOffset
+          } = start;
+          const {
+            lineKey: endLineKey,
+            offset: endOffset
+          } = end;
+          if (startLineKey === previousLine.key && startOffset === previousOffset) {
+            from = {...to};
+            to = {
+              line: lines.find(l => l.key === endLineKey),
+              offset: endOffset
+            };
+          } else if (endLineKey === previousLine.key && endOffset === previousOffset) {
+            from = {
+              line: lines.find(l => l.key === startLineKey),
+              offset: startOffset
+            };
+          }
+        }
+      }
+      if (from.line && to.line) {
+        if (
+          from.line.lineNumber[branch] > to.line.lineNumber[branch] ||
+          (
+            from.line.lineNumber[branch] === to.line.lineNumber[branch] &&
+            from.offset > to.offset
+          )
+        ) {
+          const temp = to;
+          to = from;
+          from = temp;
+        }
+        clearSelection();
+        this.selectCode(from, to);
+      } else {
+        clearSelection();
+      }
+    }
+  }
+
   keyDown = e => {
     const {
       branch,
       editable,
+      file,
       lineHeight,
       verticalScroll
     } = this.props;
     const {focused, caret} = this.state;
-    if (focused && editable && caret) {
+    if (file && focused && editable && caret) {
       const {
         line: currentLine,
         offset: prevOffset = 0
@@ -319,6 +402,7 @@ class BranchCode extends React.PureComponent {
       let offset = prevOffset;
       let handled = false;
       let isSelectionMode = e.shiftKey;
+      let selectionHandled = false;
       const getPageSize = () => {
         let pageSize = 10;
         if (typeof verticalScroll === 'function') {
@@ -334,6 +418,7 @@ class BranchCode extends React.PureComponent {
           if (e.ctrlKey || e.metaKey) {
             handled = true;
             isSelectionMode = true;
+            selectionHandled = true;
             this.selectAll();
           }
           break;
@@ -420,14 +505,22 @@ class BranchCode extends React.PureComponent {
           break;
       }
       if (handled && !isSelectionMode) {
-        this.clearSelection();
+        clearSelection();
       }
       if (handled) {
+        file.finishCurrentInputOperation();
         e.stopPropagation();
         e.preventDefault();
         this.moveCursor({
           line,
           offset
+        }, () => {
+          const {
+            caret: newCaret
+          } = this.state;
+          if (isSelectionMode && newCaret && !selectionHandled) {
+            this.extendSelection(currentLine, prevOffset);
+          }
         });
         return false;
       }
@@ -439,88 +532,18 @@ class BranchCode extends React.PureComponent {
     if (!file) {
       return;
     }
-    const lines = file.getLines(branch, new Set([]));
     const {focused, caret} = this.state;
     if (focused && editable && caret) {
       const {
         line: currentLine,
         offset: prevOffset = 0
       } = caret;
-      let line = currentLine.lineNumber[branch];
-      const nextLine = lines.find(l => l.lineNumber[branch] === line + 1);
-      const prevLine = lines.find(l => l.lineNumber[branch] === line - 1);
       const lineLength = getLineTextWithoutBreak(currentLine, branch).length;
-      let offset = Math.max(0, Math.min(lineLength, prevOffset));
-      let handled = false;
-      const {key} = e;
-      const before = (currentLine.text[branch] || '').slice(0, offset);
-      const after = (currentLine.text[branch] || '').slice(offset);
-      if (/^Enter$/i.test(key)) {
-        // insert new line
-        currentLine.text[branch] = `${before}\n`;
-        const newLine = file.insertLine(currentLine, after, branch);
-        if (newLine) {
-          offset = 0;
-          line = newLine.lineNumber[branch];
-        }
-        handled = true;
-      } else if (/^Backspace$/i.test(key)) {
-        if (before.length > 0) {
-          // just remove symbol before
-          handled = true;
-          currentLine.text[branch] = `${before.slice(0, -1)}${after}`;
-          offset -= 1;
-        } else if (prevLine) {
-          // join this line and previous one into 1 (remove line break)
-          handled = true;
-          currentLine.state[branch] = LineStates.omit;
-          offset = getLineTextWithoutBreak(prevLine, branch).length;
-          prevLine.text[branch] = `${getLineTextWithoutBreak(prevLine, branch)}${after}`;
-          line = prevLine.lineNumber[branch];
-        }
-      } else if (/^(Delete|Del)$/i.test(key)) {
-        const isLineBreakSymbol = after === '\n';
-        if (after.length > 1) {
-          // just remove symbol after
-          handled = true;
-          currentLine.text[branch] = `${before}${after.slice(1)}`;
-        } else if (isLineBreakSymbol && nextLine) {
-          // join this line and next one into 1 (remove line break)
-          handled = true;
-          currentLine.text[branch] = `${before}${nextLine.text[branch]}`;
-          nextLine.state[branch] = LineStates.omit;
-        } else if (isLineBreakSymbol) {
-          // no next line; we must remove line break symbol
-          handled = true;
-          currentLine.text[branch] = before;
-        } else if (after.length === 1) {
-          // last symbol in the line, but it is not a line break.
-          // just removing it
-          handled = true;
-          currentLine.text[branch] = before;
-        } else if (nextLine) {
-          // for some reason we don't have a line break;
-          // normally, that would not happen.
-          // But for safety reason, we'll join this lines anyway
-          handled = true;
-          currentLine.text[branch] = `${before}${nextLine.text[branch]}`;
-          nextLine.state[branch] = LineStates.omit;
-        }
-      } else {
-        // insert character
-        handled = true;
-        currentLine.text[branch] = `${before}${key}${after}`;
-        offset += 1;
-      }
+      const offset = Math.max(0, Math.min(lineLength, prevOffset));
+      const handled = inputOperation(e, file, branch, currentLine, offset);
       if (handled) {
-        file.preProcessLines(branch);
-        file.notify();
         e.stopPropagation();
         e.preventDefault();
-        this.moveCursor({
-          offset,
-          line
-        });
         return false;
       }
     }
@@ -585,7 +608,8 @@ class BranchCode extends React.PureComponent {
     }
     const modificationAction = file.changes.find(
       change => change.branch === changeBranch &&
-        change.lineIndex(changeBranch) === line.lineNumber[changeBranch]
+        change.lineIndex(changeBranch) === line.lineNumber[changeBranch] &&
+        change.status === ChangeStatuses.prepared
     );
     const isFirstLineOfModification = modification && modification.start === line;
     const isFirstActualLineOfModification = modification && modification.first(branch) === line;
@@ -718,7 +742,8 @@ class BranchCode extends React.PureComponent {
 
   onCaretUpdate = (e, line) => {
     if (e && line) {
-      const {branch} = this.props;
+      const {branch, file} = this.props;
+      file.finishCurrentInputOperation();
       const {characterSize = 0} = this.state;
       let offset = 0;
       const branchCodeLine = findBranchCodeLine(e.currentTarget);
@@ -872,12 +897,14 @@ function renderLineNumberWithActions (line, props) {
   } = props;
   const index = line.lineNumber[branch];
   if (index >= 0) {
-    const wrapAction = action => e => {
+    const wrapAction = (modification, action, ...params) => e => {
       if (disabled) {
         return;
       }
       if (conflictedFile) {
-        conflictedFile.registerUndoOperation(action());
+        const apply = () => action.apply(modification, params);
+        const revert = apply();
+        conflictedFile.registerOperation({apply, revert});
       }
     };
     const actions = (
@@ -892,7 +919,7 @@ function renderLineNumberWithActions (line, props) {
             key="apply"
             type={rtl ? 'double-left' : 'double-right'}
             onMouseDown={e => e.stopPropagation()}
-            onClick={wrapAction(() => modification.apply(onRefresh))}
+            onClick={wrapAction(modification, modification.apply, onRefresh)}
             tabIndex={0}
           />
         ),
@@ -902,7 +929,7 @@ function renderLineNumberWithActions (line, props) {
             key="omit"
             type="close"
             onMouseDown={e => e.stopPropagation()}
-            onClick={wrapAction(() => modification.discard(onRefresh))}
+            onClick={wrapAction(modification, modification.discard, onRefresh)}
             tabIndex={0}
           />
         )

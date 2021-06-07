@@ -32,8 +32,10 @@ import styles from './header.css';
 @localization.localizedComponent
 @observer
 class VersionedStorageHeader extends localization.LocalizedReactComponent {
-  onRunClick = (event) => {
-    event && event.stopPropagation();
+  onRunClick = () => {
+    const {actions = {}} = this.props;
+    const {runVersionedStorage} = actions;
+    runVersionedStorage && runVersionedStorage();
   };
 
   onGenerateReportClick = (event) => {
@@ -99,7 +101,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
               textEditableField={pipeline.value.name}
               onSaveEditableField={this.onRenameStorage}
               editStyleEditableField={{flex: 1}}
-              icon="share-alt"
+              icon="inbox"
               iconClassName={styles.versionedStorageIcon}
               lock={pipeline.value.locked}
               subject={pipeline.value}
@@ -111,9 +113,10 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
                 roleModel.executeAllowed(pipeline.value) && (
                   <Button
                     size="small"
-                    onClick={(event) => this.onRunClick(event)}
+                    type="primary"
+                    onClick={this.onRunClick}
                     className={styles.controlBtn}
-                    disabled
+                    disabled={readOnly}
                   >
                     RUN
                   </Button>
@@ -162,7 +165,8 @@ VersionedStorageHeader.propTypes = {
   actions: PropTypes.shape({
     openHistoryPanel: PropTypes.func,
     closeHistoryPanel: PropTypes.func,
-    openEditStorageDialog: PropTypes.func
+    openEditStorageDialog: PropTypes.func,
+    runVersionedStorage: PropTypes.func
   }),
   readOnly: PropTypes.bool,
   issuesPanelOpen: PropTypes.bool,

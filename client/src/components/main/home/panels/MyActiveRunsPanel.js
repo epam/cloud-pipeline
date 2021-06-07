@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import {
@@ -31,7 +31,7 @@ import getRunActions from './components/getRunActions';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, message, Modal, Row} from 'antd';
-import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
+import {openReRunForm, runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
 import pipelineRunSSHCache from '../../../../models/pipelines/PipelineRunSSHCache';
@@ -40,6 +40,7 @@ import styles from './Panel.css';
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
+@inject('pipelines')
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -133,7 +134,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   };
 
   reRun = (run) => {
-    this.props.router.push(`/launch/${run.id}`);
+    return openReRunForm(run, this.props);
   };
 
   renderContent = () => {

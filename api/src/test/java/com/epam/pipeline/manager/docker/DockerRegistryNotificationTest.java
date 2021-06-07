@@ -29,7 +29,6 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
-import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -102,9 +101,6 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     @Autowired
     private DockerClientFactory mockDockerClientFactory;
 
-    @Autowired
-    private UserManager mockUserManager;
-
     @InjectMocks
     private final DockerRegistryManager registryManager = new DockerRegistryManager();
 
@@ -122,7 +118,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
 
     @Before
     public void setUp() {
-        mockUserContext();
+        mockUserContext(getUserContext(ID, SIMPLE_USER, ID, SIMPLE_USER_ROLE));
         MockitoAnnotations.initMocks(this);
     }
 
@@ -262,11 +258,6 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     private void mockToolCreation(final String image, final Long groupId, final Tool tool) {
         doReturn(Optional.empty()).when(mockToolManager).loadToolInGroup(eq(image), eq(groupId));
         doReturn(tool).when(mockToolManager).create(eq(tool), eq(false));
-    }
-
-    private void mockUserContext() {
-        doReturn(getUserContext(ID, SIMPLE_USER, ID, SIMPLE_USER_ROLE))
-                .when(mockUserManager).loadUserContext(eq(SIMPLE_USER));
     }
 
     private void mockToolGroupExistence() {

@@ -15,7 +15,7 @@
  */
 
 export {canCommitRun, canPauseRun, canStopRun, stopRun, terminateRun} from './stopRun';
-export {submitsRun, modifyPayloadForAllowedInstanceTypes, run, RunConfirmation} from './run';
+export {submitsRun, modifyPayloadForAllowedInstanceTypes, run, RunConfirmation, openReRunForm} from './run';
 export {default as runPipelineActions} from './runPipelineActions';
 export {
   SubmitButton,

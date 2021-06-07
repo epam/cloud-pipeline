@@ -33,21 +33,22 @@ class ConflictsSessionFile {
   @computed
   get resolved () {
     if (this._info) {
-      return !(this._info.changes || []).find(change => !change.resolved);
+      return this._info.resolved;
     }
     return false;
   }
 
-  constructor (runId, storage, mergeInProgress, file) {
+  constructor (runId, storage, mergeInProgress, file, info) {
     this.runId = runId;
     this.storage = storage;
     this.mergeInProgress = mergeInProgress;
     this.file = file;
+    this.info = info;
   }
 
   fetch () {
     return new Promise((resolve, reject) => {
-      analyzeConflicts(this.runId, this.storage, this.mergeInProgress, this.file)
+      analyzeConflicts(this.runId, this.storage, this.mergeInProgress, this.file, this.info)
         .then((info) => {
           this._info = info;
           this.error = undefined;
@@ -95,8 +96,16 @@ class ConflictsSession {
     return this.files.map(file => file.hash || 0).join('|');
   }
 
-  setFiles (runId, storage, mergeInProgress, files = []) {
-    this.files = files.map(file => new ConflictsSessionFile(runId, storage, mergeInProgress, file));
+  setFiles (runId, storage, mergeInProgress, files = [], filesInfo = []) {
+    this.files = files.map(file =>
+      new ConflictsSessionFile(
+        runId,
+        storage,
+        mergeInProgress,
+        file,
+        filesInfo.find(f => f.path === file)
+      )
+    );
   }
 
   getFile (file) {

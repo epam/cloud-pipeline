@@ -17,6 +17,7 @@
 import VSFileContentUpdate from './file-content-update';
 import VSResolveFile from './resolve-file';
 import VSTaskStatus from './status';
+import VSResolveFileAcceptBranch from './resolve-file-accept-branch';
 
 function wrapSendRequest (request) {
   return new Promise((resolve, reject) => {
@@ -38,10 +39,17 @@ function wrapFetchStatus (runId, task) {
 
 export default function resolveFileConflict (runId, storageId, file, contents) {
   return new Promise((resolve, reject) => {
-    const updateRequest = new VSFileContentUpdate(runId, storageId, file, contents);
-    updateRequest.fetch()
+    let updatePromise;
+    if (contents && contents.binary) {
+      const request = new VSResolveFileAcceptBranch(runId, storageId, file, contents.remote);
+      updatePromise = () => request.send();
+    } else {
+      const updateRequest = new VSFileContentUpdate(runId, storageId, file, contents);
+      updatePromise = () => updateRequest.fetch();
+    }
+    updatePromise()
       .then((updateResult) => {
-        const {task} = updateResult;
+        const {task} = updateResult || {};
         return wrapFetchStatus(runId, task);
       })
       .then(() => {

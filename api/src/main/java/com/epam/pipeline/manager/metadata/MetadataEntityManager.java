@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.manager.metadata.parser.MetadataEntityConverter;
@@ -160,6 +161,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
         } else {
             metadataEntity.setExternalId(UUID.randomUUID().toString());
         }
+        metadataEntity.setCreatedDate(DateUtils.now());
         metadataEntityDao.createMetadataEntity(metadataEntity);
         return metadataEntity;
     }

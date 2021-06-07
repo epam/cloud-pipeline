@@ -168,7 +168,9 @@ export default class IssueRenderer {
         let icon;
         switch (linkType) {
           case ItemTypes.pipeline: icon = <Icon type="fork" />; break;
-          case ItemTypes.versionedStorage: icon = <Icon type="share-alt" />; break;
+          case ItemTypes.versionedStorage:
+            icon = <Icon type="inbox" style={{color: '#2796dd'}} />;
+            break;
           case ItemTypes.configuration: icon = <Icon type="setting" />; break;
           case ItemTypes.storage: icon = <Icon type="hdd" />; break;
           case 'tool': icon = <Icon type="tool" />; break;

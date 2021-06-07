@@ -112,15 +112,6 @@ public class PipelineConfiguration {
     private Long cloudRegionId;
 
     @JsonIgnore
-    private String buckets = "";
-
-    @JsonIgnore
-    private String nfsMountOptions = "";
-
-    @JsonIgnore
-    private String mountPoints = "";
-
-    @JsonIgnore
     private Map<String, String> environmentParams = new LinkedHashMap<>();
 
     @JsonIgnore

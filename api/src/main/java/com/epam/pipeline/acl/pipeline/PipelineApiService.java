@@ -327,6 +327,12 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
+    public GitReaderObject lsTreeRepositoryObject(final Long id, final String version,
+                                                  final String path) {
+        return gitManager.lsTreeRepositoryObject(id, version, path);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
     public GitReaderEntryListing<GitReaderRepositoryLogEntry> logsTreeRepositoryContent(final Long id,
                                                                                         final String version,
                                                                                         final String path,

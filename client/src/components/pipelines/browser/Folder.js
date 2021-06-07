@@ -188,7 +188,7 @@ export default class Folder extends localization.LocalizedReactComponent {
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
-      case ItemTypes.versionedStorage: return <Icon type="share-alt" style={{color: '#2696dd'}} />;
+      case ItemTypes.versionedStorage: return <Icon type="inbox" style={{color: '#2696dd'}} />;
       case ItemTypes.folder:
         let icon = 'folder';
         if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&

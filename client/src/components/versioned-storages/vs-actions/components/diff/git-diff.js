@@ -48,7 +48,7 @@ function loadDiff (runId, storage, file, mergeInProgress) {
   return new Promise((resolve) => {
     const {path, status} = file || {};
     const request = /^conflicts$/i.test(status)
-      ? new VSConflictDiff(runId, storage, path, undefined, {raw: true, mergeInProgress})
+      ? new VSConflictDiff(runId, storage, path, {raw: true, mergeInProgress})
       : new VSDiff(runId, storage, path, true);
     request
       .fetch()
