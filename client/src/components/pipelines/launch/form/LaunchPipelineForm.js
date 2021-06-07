@@ -457,7 +457,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   get hyperThreadingDisabled () {
-    return this.state.disableHyperThreading;
+    return (this.state.runCapabilities || [])
+      .indexOf(RUN_CAPABILITIES.disableHyperThreading) >= 0;
   }
 
   @computed
