@@ -230,19 +230,15 @@ if __name__ == '__main__':
         _extract_archive(os.path.join(run_dir, 'cloud-data.zip'), run_dir)
 
         task_logger.info('Configuring Cloud-Data App on the node...')
+        escaped_run_dir = _escape_backslashes(run_dir)
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                          f'from scripts.configure_cloud_data_win import configure_cloud_data_win; '
-                         f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\','
+                         f'configure_cloud_data_win(\'{escaped_run_dir}\', \'{edge_url}\','
                          f'                         \'{owner}\', \'{api_token}\')\\"')
-
-        cloud_data_config_finalization_script_path = _escape_backslashes(
-            os.path.join(common_repo_dir, 'powershell\\FinalizeCloudDataConfig.ps1'))
-        cloud_data_config_tmp_path = os.path.join(run_dir, ".pipe-webdav-client")
+        task_logger.info('Scheduling Cloud-Data config finalization on logon...')
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                          f'from scripts.schedule_cloud_data_configuration_finalization_win import schedule; '
-                         f'schedule(\'{owner}\','
-                         f'         \'{_escape_backslashes(cloud_data_config_tmp_path)}\','
-                         f'         \'{cloud_data_config_finalization_script_path}\')\\"')
+                         f'schedule(\'{owner}\', \'{_escape_backslashes(escaped_run_dir)}\')\\"')
         task_logger.success('Cloud-Data installed and configured successfully!')
 
     logger.info('Configuring pipe on the node...')
@@ -269,7 +265,7 @@ if __name__ == '__main__':
                          f'\\"from scripts.configure_drive_mount_env_win import configure_drive_mount_env_win; '
                          f'   configure_drive_mount_env_win(\'{owner}\', \'{edge_host}\')\\"')
 
-        task_logger.info('Mapping network storage...')
+        task_logger.info('Scheduling drive mapping on logon...')
         mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                          f'from scripts.schedule_drive_mapping_win import schedule; '

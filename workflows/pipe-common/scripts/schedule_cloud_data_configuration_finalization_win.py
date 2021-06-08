@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-from pipeline.utils.scheduler import schedule_powershell_script_on_logon
+from pipeline.utils.scheduler import schedule_python_command_on_logon
 
 
-def schedule(username, cloud_data_config_dir, script):
-    user_default_home_folder = os.path.join('C:\\Users', username.lower())
-    replacement_dict = {
-        '<USER_DEFAULT_HOME>': user_default_home_folder,
-        '<CLOUD_DATA_CONFIG_DIR>': cloud_data_config_dir
-    }
-    schedule_powershell_script_on_logon(username, 'CloudDataInstallationFinalizer', script, replacement_dict)
+def schedule(username, cloud_data_config_parent_dir):
+    user_default_home_dir = 'C:\\\\Users\\\\{}'.format(username.lower())
+    command = f'from scripts.move_cloud_data_configuration_win import move_configuration;'\
+              f'move_configuration(\'{cloud_data_config_parent_dir}\', \'{user_default_home_dir}\')'
+    schedule_python_command_on_logon(username, 'CloudDataInstallationFinalizer', command)

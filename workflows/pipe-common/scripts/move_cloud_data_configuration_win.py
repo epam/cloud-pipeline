@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if ([string]::IsNullOrEmpty("$HOME")) {
-    $UserHomeFolder="<USER_DEFAULT_HOME>"
-} else {
-    $UserHomeFolder = "$HOME"
-}
-Write-Host Finalizing Cloud-Data configuration...
-cp -r <CLOUD_DATA_CONFIG_DIR> $UserHomeFolder
+import os
+from distutils.dir_util import copy_tree
+
+_PIPE_WEB_DAV_CONFIG_DIR = '.pipe-webdav-client'
+
+
+def move_configuration(cloud_data_config_parent_dir, user_default_home_dir):
+    user_home_dir = os.getenv('HOME', user_default_home_dir)
+    web_dav_config_dir = os.path.join(user_home_dir, _PIPE_WEB_DAV_CONFIG_DIR)
+    cloud_data_config_dir = os.path.join(cloud_data_config_parent_dir, _PIPE_WEB_DAV_CONFIG_DIR)
+    copy_tree(cloud_data_config_dir, web_dav_config_dir)
