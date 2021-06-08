@@ -40,9 +40,18 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -129,12 +138,8 @@ public class VersionStorageReportTemplateManager {
         results.add(Pair.of(SUMMARY + NAME_SEPARATOR + pipeline.getName() + NAME_SEPARATOR +
                 ReportDataExtractor.DATE_FORMAT.format(DateUtils.now()) + DOCX, report));
         if (reportFilters.isArchive()) {
-            results.addAll(
-                    prepareDiffsForReportDoc(
-                        pipeline, gitDiff,
-                        reportFilters.toBuilder().archive(false).build()
-                    )
-            );
+            results.addAll(prepareDiffsForReportDoc(
+                    pipeline, gitDiff, reportFilters.toBuilder().archive(false).build()));
         }
         return results;
     }
@@ -152,14 +157,13 @@ public class VersionStorageReportTemplateManager {
         return diffGrouping.entrySet()
                 .stream()
                 .map(entry -> {
-                    final Pair<String, GitParsedDiff> toReport = Pair.of(
-                            entry.getKey(),
-                            GitParsedDiff.builder().entries(entry.getValue()).filters(gitDiff.getFilters()).build()
-                    );
+                    final String reportId = entry.getKey();
+                    final GitParsedDiff parsedDiff = GitParsedDiff.builder()
+                            .entries(entry.getValue()).filters(gitDiff.getFilters()).build();
                     try {
                         final XWPFDocument report = prepareGroupReportTemplate(getVersionStorageTemplatePath());
-                        fillTemplate(report, loaded, toReport.getSecond(), reportFilters);
-                        return Pair.of(resolveGroupReportFileName(reportFilters, toReport), report);
+                        fillTemplate(report, loaded, parsedDiff, reportFilters);
+                        return Pair.of(resolveGroupReportFileName(reportFilters, reportId), report);
                     } catch (IOException e) {
                         log.error(e.getMessage(), e);
                         return null;
@@ -206,13 +210,7 @@ public class VersionStorageReportTemplateManager {
      */
     private void changeBodyElements(final List<IBodyElement> getBodyElements, final Pipeline storage,
                                     final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
-        int size = getBodyElements.size();
-        for (int i = 0; i < size; i++) {
-            this.changeBodyElement(getBodyElements.get(i), storage, diff, reportFilter);
-            // we need to check size every time because after replacing some placeholder
-            // with a value there could be more elements then before
-            size = getBodyElements.size();
-        }
+        getBodyElements.forEach(e -> changeBodyElement(e, storage, diff, reportFilter));
     }
 
     private void changeBodyElement(final IBodyElement element, final Pipeline storage, final GitParsedDiff diff,
@@ -270,10 +268,9 @@ public class VersionStorageReportTemplateManager {
         return versionStorageTemplatePath;
     }
 
-    private String resolveGroupReportFileName(GitDiffReportFilter reportFilters, Pair<String, GitParsedDiff> p) {
-        return (
-            getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : ""
-        ) + p.getFirst().replace("/", NAME_SEPARATOR) + DOCX;
+    private String resolveGroupReportFileName(final GitDiffReportFilter reportFilters, final String id) {
+        return (getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : "")
+                + id.replace("/", NAME_SEPARATOR) + DOCX;
     }
 
     private XWPFDocument prepareGroupReportTemplate(String reportTemplatePath) throws IOException {
@@ -284,7 +281,7 @@ public class VersionStorageReportTemplateManager {
         while (currentElementIndex < report.getBodyElements().size() - 1) {
             final IBodyElement element = report.getBodyElements().get(currentElementIndex);
             if (paragraphContainsTemplate(element, VSReportTemplates.COMMIT_DIFFS.template)) {
-                currentElementIndex =+ 1;
+                currentElementIndex++;
                 continue;
             }
             report.removeBodyElement(currentElementIndex);

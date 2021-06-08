@@ -34,7 +34,6 @@ import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.apache.xmlbeans.XmlCursor;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTJc;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblBorders;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblWidth;
@@ -96,18 +95,19 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
 
             final String fontFamily = runTemplate.getFontFamily();
             final int fontSize = runTemplate.getFontSize();
-            XWPFParagraph lastP = paragraph;
-            lastP.setPageBreak(true);
+            XWPFParagraph lastParagraph = paragraph;
+            lastParagraph.setPageBreak(true);
             for (Map.Entry<String, List<GitParsedDiffEntry>> entry : diffsGrouping.getDiffGrouping().entrySet()) {
                 final String diffGroupKey = entry.getKey();
                 final List<GitParsedDiffEntry> diffEntries = entry.getValue().stream()
                         .sorted(Comparator.comparing(d -> d.getCommit().getAuthorDate()))
                         .collect(Collectors.toList());
 
-                addHeader(lastP, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
+                addHeader(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
                 for (GitParsedDiffEntry diffEntry : diffEntries) {
-                    lastP.setPageBreak(true);
-                    lastP = addDescription(lastP, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
+                    lastParagraph.setPageBreak(true);
+                    lastParagraph = addDescription(
+                            lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
                 }
             }
         }
@@ -256,18 +256,20 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     }
 
     private String getLineColor(final Line line) {
-        if (line.getLineType().equals(Line.LineType.TO)) {
-            return COLOR_GREEN;
-        } else if (line.getLineType().equals(Line.LineType.FROM)) {
-            return COLOR_RED;
+        switch (line.getLineType()) {
+            case TO:
+                return COLOR_GREEN;
+            case FROM:
+                return COLOR_RED;
+            default:
+                return COLOR_WHITE;
         }
-        return COLOR_WHITE;
     }
 
     private void configureColumnWidth(final XWPFTableRow xwpfTableRow, final int colIndex,
                                       final XWPFTableCell xwpfTableCell) {
-        CTTcPr ctTcPr = xwpfTableCell.getCTTc().addNewTcPr();
-        CTTblWidth cellWidth = ctTcPr.addNewTcW();
+        final CTTcPr ctTcPr = xwpfTableCell.getCTTc().addNewTcPr();
+        final CTTblWidth cellWidth = ctTcPr.addNewTcW();
         cellWidth.setType(xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getTcW().getType());
         cellWidth.setW(BigInteger.valueOf(4L));
         if (xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getGridSpan() != null) {
@@ -319,10 +321,10 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
 
     private XWPFParagraph createNewParagraph(final XWPFParagraph paragraph, final XmlCursor lastPosition) {
         moveCursorToTheEndOfTheToken(lastPosition);
-        XWPFParagraph nextP = paragraph.getDocument().insertNewParagraph(lastPosition);
-        copyParagraphProperties(paragraph, nextP);
-        nextP.setPageBreak(false);
-        return nextP;
+        final XWPFParagraph nextParagraph = paragraph.getDocument().insertNewParagraph(lastPosition);
+        copyParagraphProperties(paragraph, nextParagraph);
+        nextParagraph.setPageBreak(false);
+        return nextParagraph;
     }
 
     private void moveCursorToTheEndOfTheToken(final XmlCursor xmlCursor) {
@@ -334,8 +336,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     }
 
     private void copyParagraphProperties(final XWPFParagraph original, final XWPFParagraph copy) {
-        CTPPr pPr = copy.getCTP().isSetPPr() ? copy.getCTP().getPPr() : copy.getCTP().addNewPPr();
-        pPr.set(original.getCTP().getPPr());
+        (copy.getCTP().isSetPPr() ? copy.getCTP().getPPr() : copy.getCTP().addNewPPr()).set(original.getCTP().getPPr());
     }
 
 }

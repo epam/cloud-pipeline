@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.git.report.GitDiffGrouping;
 import com.epam.pipeline.entity.git.report.GitDiffGroupType;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,6 +46,7 @@ public class CommitDiffExtractor implements ReportDataExtractor {
                                                                         final GitDiffGroupType groupType) {
         return groupType == GitDiffGroupType.BY_COMMIT
             ? diff.getEntries().stream()
+                .sorted(Comparator.comparing(e -> e.getCommit().getCommitterDate()))
                 .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
             : diff.getEntries().stream()
                 .collect(

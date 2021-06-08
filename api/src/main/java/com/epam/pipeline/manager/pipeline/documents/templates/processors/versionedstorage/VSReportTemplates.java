@@ -16,10 +16,14 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
 
-import com.amazonaws.util.CollectionUtils;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.*;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplateDiffProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplatePageBreakProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplateProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplateTableProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.VSReportTemplateTextProcessor;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -28,58 +32,55 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public enum VSReportTemplates {
     VERSIONED_STORAGE("versioned_storage",
-            () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> storage.getName())),
+        () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> storage.getName())),
     PAGE_BREAK("page_break",
-            () -> new VSReportTemplatePageBreakProcessor((paragraph, storage, diff, reportFilter) -> "")),
+        () -> new VSReportTemplatePageBreakProcessor((paragraph, storage, diff, reportFilter) -> Constants.EMPTY)),
     REPORT_DATE("report_date",
-            () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) ->
+        () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) ->
                 DateUtils.nowUTC().format(Constants.DATE_TIME_FORMATTER))),
     FILTER_AUTHORS("filter_authors",
         () -> new VSReportTemplateTextProcessor(
-            (paragraph, storage, diff, reportFilter) -> {
-                if (CollectionUtils.isNullOrEmpty(diff.getFilters().getAuthors())) {
-                    return "All Authors";
-                }
-                return diff.getFilters().getAuthors();
-            }
-        )
+            (paragraph, storage, diff, reportFilter) ->
+                Optional.ofNullable(diff.getFilters().getExtensions())
+                        .filter(CollectionUtils::isNotEmpty)
+                        .map(Object::toString)
+                        .orElse(Constants.ALL_AUTHORS))
     ),
     FILTER_FROM("filter_from",
         () -> new VSReportTemplateTextProcessor(
             (paragraph, storage, diff, reportFilter) ->
-                Optional.ofNullable(
-                        diff.getFilters().getDateFrom()
-                ).map(d -> d.format(Constants.DATE_TIME_FORMATTER)
-                ).orElse("-"))
+                Optional.ofNullable(diff.getFilters().getDateFrom())
+                        .map(d -> d.format(Constants.DATE_TIME_FORMATTER))
+                        .orElse("-"))
     ),
     FILTER_TO("filter_to",
         () -> new VSReportTemplateTextProcessor(
             (paragraph, storage, diff, reportFilter) ->
-                Optional.ofNullable(
-                        diff.getFilters().getDateTo()
-                ).map(d -> d.format(Constants.DATE_TIME_FORMATTER)
-                ).orElse("-"))
+                Optional.ofNullable(diff.getFilters().getDateTo())
+                        .map(d -> d.format(Constants.DATE_TIME_FORMATTER))
+                        .orElse("-"))
     ),
     FILTER_TYPES("filter_types",
         () -> new VSReportTemplateTextProcessor(
-            (paragraph, storage, diff, reportFilter) -> {
-                if (CollectionUtils.isNullOrEmpty(diff.getFilters().getExtensions())) {
-                    return "All Files";
-                }
-                return diff.getFilters().getExtensions();
-            }
-        )
+            (paragraph, storage, diff, reportFilter) ->
+                Optional.ofNullable(diff.getFilters().getExtensions())
+                        .filter(CollectionUtils::isNotEmpty)
+                        .map(Object::toString)
+                        .orElse(Constants.ALL_FILES))
     ),
     FILE_LIST_TABLE("\"file_list_table\".*",
-            () -> new VSReportTemplateTableProcessor(new FileListTableExtractor())),
+        () -> new VSReportTemplateTableProcessor(new FileListTableExtractor())),
     REVISION_HISTORY_TABLE("\"revision_history_table\".*",
-            () -> new VSReportTemplateTableProcessor(new RevisionListTableExtractor())),
+        () -> new VSReportTemplateTableProcessor(new RevisionListTableExtractor())),
     COMMIT_DIFFS("commit_diffs", () -> new VSReportTemplateDiffProcessor(new CommitDiffExtractor()));
 
     public final String template;
     public final Supplier<VSReportTemplateProcessor> templateResolver;
 
     private static class Constants {
+        public static final String EMPTY = "";
         public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        public static final String ALL_FILES = "All Files";
+        public static final String ALL_AUTHORS = "All Authors";
     }
 }

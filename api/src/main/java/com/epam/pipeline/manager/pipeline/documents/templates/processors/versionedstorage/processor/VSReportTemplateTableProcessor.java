@@ -35,12 +35,15 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProcessor {
+
+    public static final String EMPTY = "";
 
     public VSReportTemplateTableProcessor(final ReportDataExtractor dataProducer) {
         super(dataProducer);
@@ -170,17 +173,16 @@ public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProc
                         setCellData(runTemplate, headerRow, true, () -> table.getColumns().get(colIndex).getName())
                 );
             }
-            IntStream.range(1, table.getRows().size() - 1).forEach(rowIndex -> {
-                final XWPFTableRow row = xwpfTable.insertNewTableRow(rowIndex);
+            IntStream.range(0, table.getRows().size() - 1).forEach(rowIndex -> {
+                final XWPFTableRow row = xwpfTable.insertNewTableRow(rowIndex + 1);
                 IntStream.range(
                         0, table.getColumns().size() - 1
                 ).forEach(colIndex ->
                         setCellData(
                             runTemplate, row, false,
-                            () -> {
-                                final Object cellData = table.getData(rowIndex, colIndex);
-                                return cellData != null ? cellData.toString() : "";
-                            }
+                            () -> Optional.ofNullable(table.getData(rowIndex, colIndex))
+                                    .map(Object::toString)
+                                    .orElse(EMPTY)
                         )
                 );
             });
