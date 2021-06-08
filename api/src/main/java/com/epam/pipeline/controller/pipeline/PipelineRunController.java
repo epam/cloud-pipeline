@@ -73,6 +73,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @Api(value = "Pipeline runs")
@@ -327,9 +328,8 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<String> buildSshUrl(@PathVariable(value = RUN_ID) final Long runId,
-                                      @RequestParam(required = false) final String region) {
-        return Result.success(runApiService.buildSshUrl(runId, region));
+    public Result<Map<String, String>> buildSshUrl(@PathVariable(value = RUN_ID) final Long runId) {
+        return Result.success(runApiService.buildSshUrl(runId));
     }
 
     @GetMapping(value = "/run/{runId}/fsbrowser")
@@ -341,9 +341,8 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<String> buildFSBrowserUrl(@PathVariable(value = RUN_ID) final Long runId,
-                                            @RequestParam(required = false) final String region) {
-        return Result.success(runApiService.buildFSBrowserUrl(runId, region));
+    public Result<Map<String, String>> buildFSBrowserUrl(@PathVariable(value = RUN_ID) final Long runId) {
+        return Result.success(runApiService.buildFSBrowserUrl(runId));
     }
 
     @RequestMapping(value = "/run/filter", method = RequestMethod.POST)

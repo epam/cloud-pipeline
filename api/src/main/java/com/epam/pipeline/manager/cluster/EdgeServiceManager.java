@@ -82,8 +82,8 @@ public class EdgeServiceManager {
         this.edgeLabel = edgeLabel;
     }
 
-    public String buildSshUrl(final Long runId, final String region) {
-        return buildServiceUrl(runId, region, SSH_URL_TEMPLATE);
+    public Map<String, String> buildSshUrl(final Long runId) {
+        return buildServiceUrl(runId, SSH_URL_TEMPLATE);
     }
 
     public String getEdgeDomainNameOrIP() {
@@ -96,9 +96,9 @@ public class EdgeServiceManager {
                 .orElseGet(this::logServiceNotFoundAndReturnNull);
     }
 
-    public String buildFSBrowserUrl(final Long runId, final String region) {
+    public Map<String, String> buildFSBrowserUrl(final Long runId) {
         if (isFSBrowserEnabled() && runIsNotSensitive(runId)) {
-            return buildServiceUrl(runId, region, FSBROWSER_URL_TEMPLATE);
+            return buildServiceUrl(runId, FSBROWSER_URL_TEMPLATE);
         } else {
             throw new IllegalArgumentException("Storage fsbrowser is not enabled.");
         }
@@ -193,13 +193,11 @@ public class EdgeServiceManager {
         return labels;
     }
 
-    private String buildServiceUrl(final Long runId, final String region, final String template) {
-        final Map<String, String> labels = buildRegionsLabels(getEdgeRegion(region));
-        // TODO: shall we warn or fail if several services found
-        return kubernetesManager.getServicesByLabels(labels, edgeLabel).stream()
-                .findFirst()
-                .map(edgeService -> buildUrl(getServiceDescription(edgeService), template, runId))
-                .orElseGet(this::logServiceNotFoundAndReturnNull);
+    private Map<String, String> buildServiceUrl(final Long runId, final String template) {
+        return kubernetesManager.getServicesByLabel(edgeLabel).stream()
+                .map(this::getServiceDescription)
+                .collect(Collectors.toMap(ServiceDescription::getRegion, serviceDescription ->
+                        buildUrl(serviceDescription, template, runId)));
     }
 
     private String getEdgeRegion(final String region) {

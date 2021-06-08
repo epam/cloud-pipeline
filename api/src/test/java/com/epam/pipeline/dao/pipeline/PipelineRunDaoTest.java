@@ -327,6 +327,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setActualDockerImage(ACTUAL_DOCKER_IMAGE);
 
         pipelineRunDao.createPipelineRun(run);
+        createPipelineRunServiceUrl(run.getId());
         
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(loadedRun.getDockerImage(), DOCKER_IMAGE);
@@ -936,6 +937,19 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final List<PipelineRun> loaded = pipelineRunDao.loadRunsByNodeName(NODE_NAME);
         assertThat(loaded.size(), equalTo(1));
         assertThat(loaded.get(0).getId(), equalTo(run.getId()));
+    }
+
+    @Test
+    public void shouldLoadServiceUrls() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        pipelineRunDao.createPipelineRun(run);
+        createPipelineRunServiceUrl(run.getId());
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        final Map<String, String> loadedServiceUrls = loadedRun.getServiceUrl();
+        assertThat(loadedServiceUrls.size(), equalTo(1));
+        assertTrue(loadedRun.getServiceUrl().containsKey(TEST_REGION));
+        assertTrue(loadedRun.getServiceUrl().containsValue(TEST_SERVICE_URL));
     }
 
     private PipelineRun createTestPipelineRun() {

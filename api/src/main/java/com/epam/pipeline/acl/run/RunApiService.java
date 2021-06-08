@@ -63,9 +63,11 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_OWNER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
@@ -236,13 +238,13 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_SSH)
-    public String buildSshUrl(final Long runId, final String region) {
-        return edgeServiceManager.buildSshUrl(runId, region);
+    public Map<String, String> buildSshUrl(final Long runId) {
+        return edgeServiceManager.buildSshUrl(runId);
     }
 
     @PreAuthorize(RUN_ID_SSH)
-    public String buildFSBrowserUrl(final Long runId, final String region) {
-        return edgeServiceManager.buildFSBrowserUrl(runId, region);
+    public Map<String, String> buildFSBrowserUrl(final Long runId) {
+        return edgeServiceManager.buildFSBrowserUrl(runId);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
@@ -331,6 +333,7 @@ public class RunApiService {
         return pipelineRunKubernetesManager.getKubernetesService(runId);
     }
 
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<ServiceDescription> loadEdgeServices() {
         return edgeServiceManager.getEdgeServices();
     }

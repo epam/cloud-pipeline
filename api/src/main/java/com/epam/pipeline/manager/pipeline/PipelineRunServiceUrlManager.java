@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.pipeline;
 
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -39,7 +38,6 @@ import java.util.stream.StreamSupport;
 @RequiredArgsConstructor
 public class PipelineRunServiceUrlManager {
 
-    private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
 
