@@ -61,6 +61,7 @@ public class VersionStorageReportTemplateManager {
     public static final String NAME_SEPARATOR = "_";
     public static final String REVISION = "revision";
     public static final String SUMMARY = "summary";
+    public static final int BUFFER_SIZE = 1024;
 
     private final PipelineManager pipelineManager;
     private final GitManager gitManager;
@@ -279,17 +280,26 @@ public class VersionStorageReportTemplateManager {
         // Here we clean up report template in order to leave only one template for commit diff
         // because here we generate report file only with diff information without any common info
         final XWPFDocument report = new XWPFDocument(new FileInputStream(reportTemplatePath));
-        int toDelete = 0;
-        while (report.getBodyElements().size() != 1) {
-            IBodyElement element = report.getBodyElements().get(toDelete);
-            if (element.getElementType() == BodyElementType.PARAGRAPH &&
-                    ((XWPFParagraph) element).getText()
-                            .contains(VSReportTemplates.COMMIT_DIFFS.template)) {
-                toDelete += 1;
+        int currentElementIndex = 0;
+        boolean documentIsCleanedUp = false;
+        while (!documentIsCleanedUp) {
+            final IBodyElement element = report.getBodyElements().get(currentElementIndex);
+            if (paragraphContainsTemplate(element, VSReportTemplates.COMMIT_DIFFS.template)) {
+                if (currentElementIndex == report.getBodyElements().size() - 1) {
+                    documentIsCleanedUp = true;
+                } else {
+                    currentElementIndex =+ 1;
+                }
+                continue;
             }
-            report.removeBodyElement(toDelete);
+            report.removeBodyElement(currentElementIndex);
         }
         return report;
+    }
+
+    private boolean paragraphContainsTemplate(IBodyElement element, String template) {
+        return element.getElementType() == BodyElementType.PARAGRAPH &&
+                ((XWPFParagraph) element).getText().contains(template);
     }
 
     private void writeToZipStream(final OutputStream outputStream,
@@ -300,7 +310,7 @@ public class VersionStorageReportTemplateManager {
             diffReportFile.getSecond().write(dos);
             final InputStream bais = new ByteArrayInputStream(dos.toByteArray());
             zipOut.putNextEntry(new ZipEntry(diffReportFile.getFirst()));
-            byte[] bytes = new byte[1024];
+            byte[] bytes = new byte[BUFFER_SIZE];
             int length;
             while ((length = bais.read(bytes)) >= 0) {
                 zipOut.write(bytes, 0, length);

@@ -33,7 +33,14 @@ import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.apache.xmlbeans.XmlCursor;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTJc;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblBorders;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblWidth;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
 import java.math.BigInteger;
 import java.util.Comparator;
@@ -50,10 +57,14 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     private static final String EMPTY = "";
     private static final String ADDITION_SIGN = "+";
     private static final String DELETION_SIGN = "-";
-    public static final int SMALL_COLUMN_SIZE = 512;
-    public static final int CONTENT_COLUMN_SIZE = 8960;
-    public static final int HEADER_FONT_DELTA = 4;
-    public static final int REPORT_DIFF_TABLE_COL_SIZE = 4;
+    private static final int SMALL_COLUMN_SIZE = 512;
+    private static final int CONTENT_COLUMN_SIZE = 8960;
+    private static final int HEADER_FONT_DELTA = 4;
+    private static final int REPORT_DIFF_TABLE_COL_SIZE = 4;
+    private static final int FILE_FROM_LINE_INDEX_COLUMN = 0;
+    private static final int FILE_TO_LINE_INDEX_COLUMN = 1;
+    private static final int CHANGES_TYPE_COLUMN = 2;
+    private static final int CONTENT_COLUMN = 3;
 
     public VSReportTemplateDiffProcessor(final ReportDataExtractor dataProducer) {
         super(dataProducer);
@@ -205,32 +216,30 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
             final Line line = lines.get(i);
             final XWPFTableRow xwpfTableRow = xwpfTable.insertNewTableRow(i);
 
-            for (int colIndex = 0; colIndex < REPORT_DIFF_TABLE_COL_SIZE; colIndex++) {
+            for (int colIndex = FILE_FROM_LINE_INDEX_COLUMN; colIndex < REPORT_DIFF_TABLE_COL_SIZE; colIndex++) {
                 final XWPFTableCell xwpfTableCell = xwpfTableRow.addNewTableCell();
                 final XWPFRun xwpfRun = createCellRun(fontFamily, fontSize, xwpfTableCell);
 
                 String cellData = EMPTY;
-                if (colIndex == 0 && (line.getLineType().equals(Line.LineType.FROM)
-                        || line.getLineType().equals(Line.LineType.NEUTRAL))) {
+                if (colIndex == FILE_FROM_LINE_INDEX_COLUMN && lineExistsInFile(line, Line.LineType.FROM)) {
                     cellData = String.valueOf(fromFileCurrentLine);
                     fromFileCurrentLine++;
-                } else if (colIndex == 1 && (line.getLineType().equals(Line.LineType.TO)
-                        || line.getLineType().equals(Line.LineType.NEUTRAL))) {
+                } else if (colIndex == FILE_TO_LINE_INDEX_COLUMN && lineExistsInFile(line, Line.LineType.TO)) {
                     cellData = String.valueOf(toFileCurrentLine);
                     toFileCurrentLine++;
-                } else if (colIndex == 2) {
+                } else if (colIndex == CHANGES_TYPE_COLUMN) {
                     if (line.getLineType().equals(Line.LineType.TO)) {
                         cellData = ADDITION_SIGN;
                     } else if (line.getLineType().equals(Line.LineType.FROM)) {
                         cellData = DELETION_SIGN;
                     }
-                } else if (colIndex == 3) {
+                } else if (colIndex == CONTENT_COLUMN) {
                     cellData = line.getContent();
                 }
 
                 // We set size for all columns except last one to constantly small to provide
                 // more space for content column
-                if (colIndex < 3) {
+                if (colIndex < CONTENT_COLUMN) {
                     configureColumnWidth(xwpfTableRow, colIndex, xwpfTableCell);
                 }
 
@@ -241,7 +250,12 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
         }
     }
 
-    private String getLineColor(Line line) {
+    private boolean lineExistsInFile(final Line line, final Line.LineType lineType) {
+        return line.getLineType().equals(lineType)
+                || line.getLineType().equals(Line.LineType.NEUTRAL);
+    }
+
+    private String getLineColor(final Line line) {
         if (line.getLineType().equals(Line.LineType.TO)) {
             return COLOR_GREEN;
         } else if (line.getLineType().equals(Line.LineType.FROM)) {
@@ -250,7 +264,8 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
         return COLOR_WHITE;
     }
 
-    private void configureColumnWidth(XWPFTableRow xwpfTableRow, int colIndex, XWPFTableCell xwpfTableCell) {
+    private void configureColumnWidth(final XWPFTableRow xwpfTableRow, final int colIndex,
+                                      final XWPFTableCell xwpfTableCell) {
         CTTcPr ctTcPr = xwpfTableCell.getCTTc().addNewTcPr();
         CTTblWidth cellWidth = ctTcPr.addNewTcW();
         cellWidth.setType(xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getTcW().getType());
@@ -260,7 +275,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
         }
     }
 
-    private XWPFRun createCellRun(String fontFamily, int fontSize, XWPFTableCell xwpfTableCell) {
+    private XWPFRun createCellRun(final String fontFamily, final int fontSize, final XWPFTableCell xwpfTableCell) {
         while (!xwpfTableCell.getParagraphs().isEmpty()) {
             xwpfTableCell.removeParagraph(0);
         }
