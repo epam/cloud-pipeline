@@ -27,16 +27,23 @@ import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 public enum VSReportTemplates {
-    VERSIONED_STORAGE("versioned_storage", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> storage.getName())),
-    PAGE_BREAK("page_break", () -> new VSReportTemplatePageBreakProcessor((paragraph, storage, diff, reportFilter) -> "")),
-    REPORT_DATE("report_date", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) ->
-            DateUtils.nowUTC().format(Constants.DATE_TIME_FORMATTER))),
-    FILTER_AUTHORS("filter_authors", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
-        if (CollectionUtils.isNullOrEmpty(diff.getFilters().getAuthors())) {
-            return "All Authors";
-        }
-        return diff.getFilters().getAuthors();
-    })),
+    VERSIONED_STORAGE("versioned_storage",
+            () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> storage.getName())),
+    PAGE_BREAK("page_break",
+            () -> new VSReportTemplatePageBreakProcessor((paragraph, storage, diff, reportFilter) -> "")),
+    REPORT_DATE("report_date",
+            () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) ->
+                DateUtils.nowUTC().format(Constants.DATE_TIME_FORMATTER))),
+    FILTER_AUTHORS("filter_authors",
+        () -> new VSReportTemplateTextProcessor(
+            (paragraph, storage, diff, reportFilter) -> {
+                if (CollectionUtils.isNullOrEmpty(diff.getFilters().getAuthors())) {
+                    return "All Authors";
+                }
+                return diff.getFilters().getAuthors();
+            }
+        )
+    ),
     FILTER_FROM("filter_from",
         () -> new VSReportTemplateTextProcessor(
             (paragraph, storage, diff, reportFilter) ->

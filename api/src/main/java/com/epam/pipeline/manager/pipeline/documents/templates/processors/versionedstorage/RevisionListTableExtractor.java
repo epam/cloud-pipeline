@@ -63,8 +63,8 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
                 }).forEachOrdered(fileAndCommit -> {
                     TableRow row = result.addRow(fileAndCommit.getKey() + fileAndCommit.getValue().getCommit());
                     tableColumns.forEach(
-                            (e, v) -> result.setData(row.getName(), v,
-                                    e.dataExtractor.apply(fileAndCommit.getKey(), fileAndCommit.getValue()))
+                        (e, v) -> result.setData(row.getName(), v,
+                                e.dataExtractor.apply(fileAndCommit.getKey(), fileAndCommit.getValue()))
                     );
                 });
         return result;

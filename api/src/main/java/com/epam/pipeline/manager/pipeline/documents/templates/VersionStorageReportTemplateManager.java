@@ -272,7 +272,7 @@ public class VersionStorageReportTemplateManager {
 
     private String resolveGroupReportFileName(GitDiffReportFilter reportFilters, Pair<String, GitParsedDiff> p) {
         return (
-                getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : ""
+            getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : ""
         ) + p.getFirst().replace("/", NAME_SEPARATOR) + DOCX;
     }
 

@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class DiffUtils {
+public final class DiffUtils {
 
     private static final Pattern HEADER_PATTERN = Pattern.compile("diff --git a/(.*) b/(.*)");
     private static final Pattern BINARY_PATTERN = Pattern.compile("Binary files (.*) and (.*) differ");

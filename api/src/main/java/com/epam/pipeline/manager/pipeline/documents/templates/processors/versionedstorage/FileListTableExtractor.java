@@ -59,7 +59,7 @@ public class FileListTableExtractor implements ReportDataExtractor {
                 .forEach((file, commit) -> {
                     TableRow row = result.addRow(file);
                     tableColumns.forEach(
-                            (e, v) -> result.setData(row.getName(), v, e.dataExtractor.apply(file, commit))
+                        (e, v) -> result.setData(row.getName(), v, e.dataExtractor.apply(file, commit))
                     );
                 });
         return result;
