@@ -281,15 +281,10 @@ public class VersionStorageReportTemplateManager {
         // because here we generate report file only with diff information without any common info
         final XWPFDocument report = new XWPFDocument(new FileInputStream(reportTemplatePath));
         int currentElementIndex = 0;
-        boolean documentIsCleanedUp = false;
-        while (!documentIsCleanedUp) {
+        while (currentElementIndex < report.getBodyElements().size() - 1) {
             final IBodyElement element = report.getBodyElements().get(currentElementIndex);
             if (paragraphContainsTemplate(element, VSReportTemplates.COMMIT_DIFFS.template)) {
-                if (currentElementIndex == report.getBodyElements().size() - 1) {
-                    documentIsCleanedUp = true;
-                } else {
-                    currentElementIndex =+ 1;
-                }
+                currentElementIndex =+ 1;
                 continue;
             }
             report.removeBodyElement(currentElementIndex);
