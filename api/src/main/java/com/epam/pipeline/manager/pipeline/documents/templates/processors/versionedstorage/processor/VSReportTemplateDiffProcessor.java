@@ -17,10 +17,8 @@
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
 
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
-import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
-import com.epam.pipeline.entity.git.report.GitDiffGrouping;
-import com.epam.pipeline.entity.git.report.GitDiffGroupType;
+import com.epam.pipeline.entity.git.report.*;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
 import io.reflectoring.diffparser.api.model.Range;
@@ -42,13 +40,15 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProcessor {
+public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor {
 
     private static final String COLOR_WHITE = "ffffff";
     private static final String COLOR_GREEN = "9ef08e";
@@ -65,11 +65,8 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     private static final int CHANGES_TYPE_COLUMN = 2;
     private static final int CONTENT_COLUMN = 3;
 
-    public VSReportTemplateDiffProcessor(final ReportDataExtractor dataProducer) {
-        super(dataProducer);
-    }
-
-    void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Object data) {
+    public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
+                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         if (StringUtils.isBlank(paragraph.getText()) || !paragraph.getText().contains(template)) {
             return;
         }
@@ -83,34 +80,86 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
         for (int pos = 0; pos < paragraph.getRuns().get(0).getCTR().sizeOfTArray(); pos++) {
             paragraph.getRuns().get(0).setText("", pos);
         }
-        insertData(paragraph, paragraph.getRuns().get(0), data);
+        insertData(paragraph, paragraph.getRuns().get(0), retrieveData(diff, reportFilter));
     }
 
-    void insertData(final XWPFParagraph paragraph, final XWPFRun runTemplate, final Object data) {
-        if (data instanceof GitDiffGrouping) {
-            final GitDiffGrouping diffsGrouping = (GitDiffGrouping)data;
-            if (!diffsGrouping.isIncludeDiff() || diffsGrouping.isArchive()) {
-                return;
-            }
+    void insertData(final XWPFParagraph paragraph, final XWPFRun runTemplate, final GitDiffGrouping diffsGrouping) {
+        if (!diffsGrouping.isIncludeDiff() || diffsGrouping.isArchive()) {
+            return;
+        }
 
-            final String fontFamily = runTemplate.getFontFamily();
-            final int fontSize = runTemplate.getFontSize();
-            XWPFParagraph lastParagraph = paragraph;
-            lastParagraph.setPageBreak(true);
-            for (Map.Entry<String, List<GitParsedDiffEntry>> entry : diffsGrouping.getDiffGrouping().entrySet()) {
-                final String diffGroupKey = entry.getKey();
-                final List<GitParsedDiffEntry> diffEntries = entry.getValue().stream()
-                        .sorted(Comparator.comparing(d -> d.getCommit().getAuthorDate()))
-                        .collect(Collectors.toList());
+        final String fontFamily = runTemplate.getFontFamily();
+        final int fontSize = runTemplate.getFontSize();
+        XWPFParagraph lastParagraph = paragraph;
+        lastParagraph.setPageBreak(true);
+        for (Map.Entry<String, List<GitParsedDiffEntry>> entry : getSortedDiffGroups(diffsGrouping)) {
+            final String diffGroupKey = entry.getKey();
+            final List<GitParsedDiffEntry> diffEntries = entry.getValue().stream()
+                    .sorted(resolveDiffGroupComparator(diffsGrouping))
+                    .collect(Collectors.toList());
 
-                addHeader(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
-                for (GitParsedDiffEntry diffEntry : diffEntries) {
-                    lastParagraph.setPageBreak(true);
-                    lastParagraph = addDescription(
-                            lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
-                }
+            addHeader(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
+            for (GitParsedDiffEntry diffEntry : diffEntries) {
+                lastParagraph.setPageBreak(true);
+                lastParagraph = addDescription(
+                        lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
             }
         }
+    }
+
+    private GitDiffGrouping retrieveData(final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+        final GitDiffGroupType groupType = getGroupType(reportFilter);
+        return GitDiffGrouping.builder()
+                .type(groupType)
+                .includeDiff(reportFilter.isIncludeDiff())
+                .diffGrouping(reportFilter.isIncludeDiff() ? constructDiffGrouping(diff, groupType) : null)
+                .archive(reportFilter.isArchive()).build();
+    }
+
+    private Map<String, List<GitParsedDiffEntry>> constructDiffGrouping(final GitParsedDiff diff,
+                                                                        final GitDiffGroupType groupType) {
+        return groupType == GitDiffGroupType.BY_COMMIT
+                ? diff.getEntries().stream()
+                .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
+                : diff.getEntries().stream()
+                .collect(
+                        Collectors.groupingBy(
+                                e -> e.getDiff().getFromFileName().contains("/dev/null")
+                                        ? e.getDiff().getToFileName()
+                                        : e.getDiff().getFromFileName()
+                        )
+                );
+    }
+
+    private GitDiffGroupType getGroupType(GitDiffReportFilter reportFilter) {
+        if (reportFilter.getGroupType() == null) {
+            return GitDiffGroupType.BY_COMMIT;
+        }
+        return reportFilter.getGroupType();
+    }
+
+    private List<Map.Entry<String, List<GitParsedDiffEntry>>> getSortedDiffGroups(
+            final GitDiffGrouping diffsGrouping) {
+        return diffsGrouping.getDiffGrouping().entrySet()
+                .stream()
+                .sorted(diffsGrouping.getType() == GitDiffGroupType.BY_FILE
+                        ? Map.Entry.comparingByKey()
+                        : Comparator.comparing(this::retrieveDateOfDiffGroup)
+                ).collect(Collectors.toList());
+    }
+
+    private Date retrieveDateOfDiffGroup(final Map.Entry<String, List<GitParsedDiffEntry>> diffGroup) {
+        return Optional.ofNullable(diffGroup.getValue())
+                .map(e -> e.get(0))
+                .map(GitParsedDiffEntry::getCommit)
+                .map(GitReaderRepositoryCommit::getAuthorDate)
+                .orElse(Date.from(Instant.EPOCH));
+    }
+
+    private Comparator<GitParsedDiffEntry> resolveDiffGroupComparator(final GitDiffGrouping diffsGrouping) {
+        return diffsGrouping.getType() == GitDiffGroupType.BY_COMMIT
+                ? Comparator.comparing(d -> d.getDiff().getToFileName())
+                : Comparator.comparing(d -> d.getCommit().getAuthorDate());
     }
 
     private void addHeader(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
@@ -136,7 +185,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
             insertTextData(paragraph,
                     diffEntries.stream().findFirst()
                         .map(GitParsedDiffEntry::getCommit)
-                        .map(c -> ReportDataExtractor.DATE_FORMAT.format(c.getAuthorDate())).orElse(""),
+                        .map(c -> DATE_FORMAT.format(c.getAuthorDate())).orElse(""),
                     false, fontFamily, fontSize + HEADER_FONT_DELTA, false
             );
         } else {
@@ -167,7 +216,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
             insertTextData(paragraph, " at ", false, fontFamily, fontSize, false);
 
             insertTextData(paragraph,
-                    ReportDataExtractor.DATE_FORMAT.format(diffEntry.getCommit().getAuthorDate()),
+                    DATE_FORMAT.format(diffEntry.getCommit().getAuthorDate()),
                     true, fontFamily, fontSize, true
             );
         }

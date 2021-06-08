@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor.ReportDataExtractor;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.VSReportTemplates;
 import com.epam.pipeline.entity.git.report.GitDiffGroupType;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -111,13 +111,13 @@ public class VersionStorageReportTemplateManager {
 
     private String resolveReportName(final Pipeline loaded,
                                      final List<Pair<String, XWPFDocument>> diffReportFiles) {
-        if (diffReportFiles.size() == 1) {
             return HISTORY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR
-                            + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now()) + DOCX;
-        } else {
-            return HISTORY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR
-                            + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now()) + ZIP;
-        }
+                    + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now())
+                    + resolveFileExtension(diffReportFiles);
+    }
+
+    private String resolveFileExtension(List<Pair<String, XWPFDocument>> diffReportFiles) {
+        return diffReportFiles.size() > 1 ? ZIP : DOCX;
     }
 
     protected GitParsedDiff fetchAndNormalizeDiffs(final Long pipelineId, final GitDiffReportFilter reportFilters) {
@@ -175,21 +175,21 @@ public class VersionStorageReportTemplateManager {
 
     public void fillTemplate(final XWPFDocument docxTemplate, final Pipeline storage,
                              final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
-        this.changeHeadersAndFooters(docxTemplate, storage, diff, reportFilter);
-        this.changeBodyElements(docxTemplate.getBodyElements(), storage, diff, reportFilter);
+        changeHeadersAndFooters(docxTemplate, storage, diff, reportFilter);
+        changeBodyElements(docxTemplate.getBodyElements(), storage, diff, reportFilter);
     }
 
     private void changeHeadersAndFooters(final XWPFDocument document, final Pipeline storage,
                                          final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         XWPFHeaderFooterPolicy policy = document.getHeaderFooterPolicy();
-        this.changeHeaderFooter(policy.getDefaultHeader(), storage, diff, reportFilter);
-        this.changeHeaderFooter(policy.getDefaultFooter(), storage, diff, reportFilter);
-        this.changeHeaderFooter(policy.getEvenPageHeader(), storage, diff, reportFilter);
-        this.changeHeaderFooter(policy.getEvenPageFooter(), storage, diff, reportFilter);
-        this.changeHeaderFooter(policy.getOddPageHeader(), storage, diff, reportFilter);
-        this.changeHeaderFooter(policy.getOddPageFooter(), storage, diff, reportFilter);
+        changeHeaderFooter(policy.getDefaultHeader(), storage, diff, reportFilter);
+        changeHeaderFooter(policy.getDefaultFooter(), storage, diff, reportFilter);
+        changeHeaderFooter(policy.getEvenPageHeader(), storage, diff, reportFilter);
+        changeHeaderFooter(policy.getEvenPageFooter(), storage, diff, reportFilter);
+        changeHeaderFooter(policy.getOddPageHeader(), storage, diff, reportFilter);
+        changeHeaderFooter(policy.getOddPageFooter(), storage, diff, reportFilter);
         for (XWPFHeader header : document.getHeaderList()) {
-            this.changeHeaderFooter(header, storage, diff, reportFilter);
+            changeHeaderFooter(header, storage, diff, reportFilter);
         }
     }
 
@@ -198,7 +198,7 @@ public class VersionStorageReportTemplateManager {
         if (headerFooter == null) {
             return;
         }
-        this.changeBodyElements(headerFooter.getBodyElements(), storage, diff, reportFilter);
+        changeBodyElements(headerFooter.getBodyElements(), storage, diff, reportFilter);
     }
 
     /**
@@ -210,17 +210,25 @@ public class VersionStorageReportTemplateManager {
      */
     private void changeBodyElements(final List<IBodyElement> getBodyElements, final Pipeline storage,
                                     final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
-        getBodyElements.forEach(e -> changeBodyElement(e, storage, diff, reportFilter));
+        int currentElement = 0;
+        // we need to check size every time because after replacing some placeholder
+        // with a value there could be more elements then before(inserting of several paragraphs),
+        // because apache poi gives you modifiable list of body elements,
+        // and if documents is changed that list also could be changed
+        while (currentElement < getBodyElements.size()) {
+            changeBodyElement(getBodyElements.get(currentElement), storage, diff, reportFilter);
+            currentElement += 1;
+        }
     }
 
     private void changeBodyElement(final IBodyElement element, final Pipeline storage, final GitParsedDiff diff,
                                    final GitDiffReportFilter reportFilter) {
         switch (element.getElementType()) {
             case TABLE:
-                this.changeTable((XWPFTable) element, storage, diff, reportFilter);
+                changeTable((XWPFTable) element, storage, diff, reportFilter);
                 break;
             case PARAGRAPH:
-                this.changeParagraph((XWPFParagraph) element, storage, diff, reportFilter);
+                changeParagraph((XWPFParagraph) element, storage, diff, reportFilter);
                 break;
             default:
                 break;

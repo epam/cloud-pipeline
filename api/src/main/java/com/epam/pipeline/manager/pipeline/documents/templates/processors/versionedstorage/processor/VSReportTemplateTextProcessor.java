@@ -16,21 +16,26 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
 
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor.ReportDataExtractor;
+import lombok.RequiredArgsConstructor;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor
+public class VSReportTemplateTextProcessor implements VSReportTemplateProcessor {
 
-public class VSReportTemplateTextProcessor extends AbstractVSReportTemplateProcessor {
+    public static final String EMPTY = "";
+    final ReportDataExtractor<String> dataProducer;
 
-    public VSReportTemplateTextProcessor(final ReportDataExtractor dataProducer) {
-        super(dataProducer);
-    }
-
-    void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Object data) {
+    public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
+                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
 
         final String replaceRegex = "(?i)\\{" + template + "}";
         final Pattern pattern = Pattern.compile(replaceRegex, Pattern.CASE_INSENSITIVE);
@@ -59,8 +64,10 @@ public class VSReportTemplateTextProcessor extends AbstractVSReportTemplateProce
                     // as we on appropriate position and save state of in in dataInserted
                     if (replaceTo - replaceFrom > 0 && !dataInserted) {
                         runText = runText.substring(0, replaceFrom)
-                                .concat(data == null ? "" : data.toString())
-                                .concat(runText.substring(replaceTo));
+                                .concat(
+                                        Optional.ofNullable(dataProducer.extract(paragraph, storage, diff))
+                                                .orElse(EMPTY)
+                                ).concat(runText.substring(replaceTo));
                         dataInserted = true;
                     } else {
                         runText = runText.substring(0, replaceFrom).concat(runText.substring(replaceTo));

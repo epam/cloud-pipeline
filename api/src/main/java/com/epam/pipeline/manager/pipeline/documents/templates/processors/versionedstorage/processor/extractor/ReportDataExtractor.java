@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
+package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor;
 
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
-import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 import java.text.SimpleDateFormat;
 
-public interface ReportDataExtractor {
+public interface ReportDataExtractor<T> {
 
     SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
-    Object apply(XWPFParagraph xwpfParagraph, Pipeline storage, GitParsedDiff diff, GitDiffReportFilter reportFilter);
+    T extract(XWPFParagraph xwpfParagraph, Pipeline storage, GitParsedDiff diff);
 
 }

@@ -21,7 +21,28 @@ import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
+import java.text.SimpleDateFormat;
+
 public interface VSReportTemplateProcessor {
-    void process(XWPFParagraph paragraph, String template, Pipeline storage, GitParsedDiff diff,
-                 GitDiffReportFilter reportFilter);
+
+    SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+    default void process(final XWPFParagraph paragraph, final String template, final Pipeline storage,
+                         final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+        if (paragraph == null) {
+            return;
+        }
+        while (paragraph.getText().matches(getPlaceholderRegexp(template))) {
+            replacePlaceholderWithData(paragraph, template, storage, diff, reportFilter);
+        }
+    }
+
+    default String getPlaceholderRegexp(final String template) {
+        return ".*(?i)\\{" + template + "}.*";
+    }
+
+    void replacePlaceholderWithData(XWPFParagraph paragraph, String template, Pipeline storage,
+                                    GitParsedDiff diff, GitDiffReportFilter reportFilter);
+
+
 }

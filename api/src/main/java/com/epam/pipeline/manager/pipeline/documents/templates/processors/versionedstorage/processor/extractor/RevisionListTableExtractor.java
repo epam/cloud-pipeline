@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
+package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor;
 
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
-import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
@@ -39,14 +38,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class RevisionListTableExtractor implements ReportDataExtractor {
+public class RevisionListTableExtractor implements ReportDataExtractor<Table> {
 
     private static final Pattern PATTERN = Pattern.compile("\\{\"revision_history_table\":?(.*)}");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
-    public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage,
-                        final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+    public Table extract(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitParsedDiff diff) {
         final Map<RevisionHistoryTableColumn, String> tableColumns = getTableColumns(xwpfParagraph);
         final Table result = new Table();
         result.setContainsHeaderRow(true);

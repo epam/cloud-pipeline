@@ -16,8 +16,12 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
 
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor.ReportDataExtractor;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
+import lombok.RequiredArgsConstructor;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.TextAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -41,15 +45,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
-public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProcessor {
+@RequiredArgsConstructor
+public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor {
 
     public static final String EMPTY = "";
 
-    public VSReportTemplateTableProcessor(final ReportDataExtractor dataProducer) {
-        super(dataProducer);
-    }
+    final ReportDataExtractor<Table> dataProducer;
 
-    void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Object data) {
+    public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
+                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         if (paragraph == null) {
             return;
         }
@@ -92,7 +96,8 @@ public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProc
                     // as we on appropriate position and save state of in in dataInserted
                     if (replaceTo - replaceFrom > 0 && !dataInserted) {
                         currentParagraph = replacePlaceholderAndSplitRun(
-                                paragraph, data, xmlCursor, run, pos, runText, replaceFrom, replaceTo
+                                paragraph, dataProducer.extract(paragraph, storage, diff),
+                                xmlCursor, run, pos, runText, replaceFrom, replaceTo
                         );
                         if (currentParagraph == null) {
                             break outer;
@@ -118,7 +123,7 @@ public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProc
     }
 
     private XWPFParagraph replacePlaceholderAndSplitRun(final XWPFParagraph paragraph,
-                                                        final Object data,
+                                                        final Table data,
                                                         final XmlCursor xmlCursor,
                                                         final XWPFRun run,
                                                         final int pos,
@@ -144,50 +149,50 @@ public class VSReportTemplateTableProcessor extends AbstractVSReportTemplateProc
     }
 
     private void insertData(final XWPFParagraph splittedParagraph, final XWPFRun runTemplate,
-                    final XmlCursor cursor, final Object data) {
-        if (data instanceof Table) {
-            Table table = (Table)data;
-            final XWPFTable xwpfTable = splittedParagraph.getDocument().insertNewTbl(cursor);
-            xwpfTable.removeRow(0);
-            CTTblPr properties = xwpfTable.getCTTbl().getTblPr();
-            if (properties == null) {
-                properties = xwpfTable.getCTTbl().addNewTblPr();
-            }
-            final CTJc jc = (properties.isSetJc() ? properties.getJc() : properties.addNewJc());
-            jc.setVal(STJc.CENTER);
-
-            final CTTblBorders borders = properties.addNewTblBorders();
-            borders.addNewBottom().setVal(STBorder.SINGLE);
-            borders.addNewLeft().setVal(STBorder.SINGLE);
-            borders.addNewRight().setVal(STBorder.SINGLE);
-            borders.addNewTop().setVal(STBorder.SINGLE);
-
-            borders.addNewInsideH().setVal(STBorder.SINGLE);
-            borders.addNewInsideV().setVal(STBorder.SINGLE);
-
-            if (table.isContainsHeaderRow()) {
-                final XWPFTableRow headerRow = xwpfTable.insertNewTableRow(0);
-                IntStream.range(
-                        0, table.getColumns().size() - 1
-                ).forEach(colIndex ->
-                        setCellData(runTemplate, headerRow, true, () -> table.getColumns().get(colIndex).getName())
-                );
-            }
-            IntStream.range(0, table.getRows().size() - 1).forEach(rowIndex -> {
-                final XWPFTableRow row = xwpfTable.insertNewTableRow(rowIndex + 1);
-                IntStream.range(
-                        0, table.getColumns().size() - 1
-                ).forEach(colIndex ->
-                        setCellData(
-                            runTemplate, row, false,
-                            () -> Optional.ofNullable(table.getData(rowIndex, colIndex))
-                                    .map(Object::toString)
-                                    .orElse(EMPTY)
-                        )
-                );
-            });
-            cursor.toNextSibling();
+                    final XmlCursor cursor, final Table table) {
+        if (table.getRows().isEmpty()) {
+            return;
         }
+        final XWPFTable xwpfTable = splittedParagraph.getDocument().insertNewTbl(cursor);
+        xwpfTable.removeRow(0);
+        CTTblPr properties = xwpfTable.getCTTbl().getTblPr();
+        if (properties == null) {
+            properties = xwpfTable.getCTTbl().addNewTblPr();
+        }
+        final CTJc jc = (properties.isSetJc() ? properties.getJc() : properties.addNewJc());
+        jc.setVal(STJc.CENTER);
+
+        final CTTblBorders borders = properties.addNewTblBorders();
+        borders.addNewBottom().setVal(STBorder.SINGLE);
+        borders.addNewLeft().setVal(STBorder.SINGLE);
+        borders.addNewRight().setVal(STBorder.SINGLE);
+        borders.addNewTop().setVal(STBorder.SINGLE);
+
+        borders.addNewInsideH().setVal(STBorder.SINGLE);
+        borders.addNewInsideV().setVal(STBorder.SINGLE);
+
+        if (table.isContainsHeaderRow()) {
+            final XWPFTableRow headerRow = xwpfTable.insertNewTableRow(0);
+            IntStream.range(
+                    0, table.getColumns().size()
+            ).forEach(colIndex ->
+                    setCellData(runTemplate, headerRow, true, () -> table.getColumns().get(colIndex).getName())
+            );
+        }
+        IntStream.range(0, table.getRows().size()).forEach(rowIndex -> {
+            final XWPFTableRow row = xwpfTable.insertNewTableRow(rowIndex + 1);
+            IntStream.range(
+                    0, table.getColumns().size()
+            ).forEach(colIndex ->
+                    setCellData(
+                        runTemplate, row, false,
+                        () -> Optional.ofNullable(table.getData(rowIndex, colIndex))
+                                .map(Object::toString)
+                                .orElse(EMPTY)
+                    )
+            );
+        });
+        cursor.toNextSibling();
     }
 
     private void setCellData(final XWPFRun runTemplate, final XWPFTableRow headerRow,
