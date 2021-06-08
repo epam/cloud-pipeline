@@ -1,4 +1,4 @@
-package com.epam.pipeline.manager.pipeline.documents.templates;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.git.GitCommitsFilter;

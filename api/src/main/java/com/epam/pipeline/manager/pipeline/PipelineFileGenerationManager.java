@@ -23,7 +23,7 @@ import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTe
 import com.epam.pipeline.manager.pipeline.documents.templates.PipelineDocumentTemplateManager;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
-import com.epam.pipeline.manager.pipeline.documents.templates.VersionStorageReportTemplateManager;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.VersionStorageReportTemplateManager;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

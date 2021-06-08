@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor;
 
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor.ReportDataExtractor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor.ReportDataExtractor;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -65,7 +65,8 @@ public class VSReportTemplateTextProcessor implements VSReportTemplateProcessor 
                     if (replaceTo - replaceFrom > 0 && !dataInserted) {
                         runText = runText.substring(0, replaceFrom)
                                 .concat(
-                                        Optional.ofNullable(dataProducer.extract(paragraph, storage, diff))
+                                        Optional.ofNullable(
+                                                dataProducer.extract(paragraph, storage, diff, reportFilter))
                                                 .orElse(EMPTY)
                                 ).concat(runText.substring(replaceTo));
                         dataInserted = true;

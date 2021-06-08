@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage;
 
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
@@ -26,8 +26,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor.ReportDataExtractor;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.VSReportTemplates;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor.ReportDataExtractor;
 import com.epam.pipeline.entity.git.report.GitDiffGroupType;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -111,9 +110,10 @@ public class VersionStorageReportTemplateManager {
 
     private String resolveReportName(final Pipeline loaded,
                                      final List<Pair<String, XWPFDocument>> diffReportFiles) {
-            return HISTORY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR
-                    + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now())
-                    + resolveFileExtension(diffReportFiles);
+        return HISTORY + NAME_SEPARATOR + loaded.getName()
+                + NAME_SEPARATOR
+                + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now())
+                + resolveFileExtension(diffReportFiles);
     }
 
     private String resolveFileExtension(List<Pair<String, XWPFDocument>> diffReportFiles) {

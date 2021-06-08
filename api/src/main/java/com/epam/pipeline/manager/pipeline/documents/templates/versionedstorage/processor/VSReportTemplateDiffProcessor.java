@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor;
 
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
-import com.epam.pipeline.entity.git.report.*;
+import com.epam.pipeline.entity.git.report.GitDiffGroupType;
+import com.epam.pipeline.entity.git.report.GitDiffGrouping;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor.ReportDataExtractor;
 import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
 import io.reflectoring.diffparser.api.model.Range;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.xwpf.usermodel.BreakType;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
@@ -48,6 +54,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor {
 
     private static final String COLOR_WHITE = "ffffff";
@@ -65,6 +72,8 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     private static final int CHANGES_TYPE_COLUMN = 2;
     private static final int CONTENT_COLUMN = 3;
 
+    final ReportDataExtractor<GitDiffGrouping> dataProducer;
+
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
                                            final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         if (StringUtils.isBlank(paragraph.getText()) || !paragraph.getText().contains(template)) {
@@ -80,7 +89,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         for (int pos = 0; pos < paragraph.getRuns().get(0).getCTR().sizeOfTArray(); pos++) {
             paragraph.getRuns().get(0).setText("", pos);
         }
-        insertData(paragraph, paragraph.getRuns().get(0), retrieveData(diff, reportFilter));
+        insertData(paragraph, paragraph.getRuns().get(0), dataProducer.extract(paragraph, storage, diff, reportFilter));
     }
 
     void insertData(final XWPFParagraph paragraph, final XWPFRun runTemplate, final GitDiffGrouping diffsGrouping) {
@@ -105,37 +114,6 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                         lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
             }
         }
-    }
-
-    private GitDiffGrouping retrieveData(final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
-        final GitDiffGroupType groupType = getGroupType(reportFilter);
-        return GitDiffGrouping.builder()
-                .type(groupType)
-                .includeDiff(reportFilter.isIncludeDiff())
-                .diffGrouping(reportFilter.isIncludeDiff() ? constructDiffGrouping(diff, groupType) : null)
-                .archive(reportFilter.isArchive()).build();
-    }
-
-    private Map<String, List<GitParsedDiffEntry>> constructDiffGrouping(final GitParsedDiff diff,
-                                                                        final GitDiffGroupType groupType) {
-        return groupType == GitDiffGroupType.BY_COMMIT
-                ? diff.getEntries().stream()
-                .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
-                : diff.getEntries().stream()
-                .collect(
-                        Collectors.groupingBy(
-                                e -> e.getDiff().getFromFileName().contains("/dev/null")
-                                        ? e.getDiff().getToFileName()
-                                        : e.getDiff().getFromFileName()
-                        )
-                );
-    }
-
-    private GitDiffGroupType getGroupType(GitDiffReportFilter reportFilter) {
-        if (reportFilter.getGroupType() == null) {
-            return GitDiffGroupType.BY_COMMIT;
-        }
-        return reportFilter.getGroupType();
     }
 
     private List<Map.Entry<String, List<GitParsedDiffEntry>>> getSortedDiffGroups(

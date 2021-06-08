@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor;
 
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor.ReportDataExtractor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor.ReportDataExtractor;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
@@ -96,7 +96,7 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
                     // as we on appropriate position and save state of in in dataInserted
                     if (replaceTo - replaceFrom > 0 && !dataInserted) {
                         currentParagraph = replacePlaceholderAndSplitRun(
-                                paragraph, dataProducer.extract(paragraph, storage, diff),
+                                paragraph, dataProducer.extract(paragraph, storage, diff, reportFilter),
                                 xmlCursor, run, pos, runText, replaceFrom, replaceTo
                         );
                         if (currentParagraph == null) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor;
 
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
@@ -23,26 +23,10 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 import java.text.SimpleDateFormat;
 
-public interface VSReportTemplateProcessor {
+public interface ReportDataExtractor<T> {
 
     SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
-    default void process(final XWPFParagraph paragraph, final String template, final Pipeline storage,
-                         final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
-        if (paragraph == null) {
-            return;
-        }
-        while (paragraph.getText().matches(getPlaceholderRegexp(template))) {
-            replacePlaceholderWithData(paragraph, template, storage, diff, reportFilter);
-        }
-    }
-
-    default String getPlaceholderRegexp(final String template) {
-        return ".*(?i)\\{" + template + "}.*";
-    }
-
-    void replacePlaceholderWithData(XWPFParagraph paragraph, String template, Pipeline storage,
-                                    GitParsedDiff diff, GitDiffReportFilter reportFilter);
-
+    T extract(XWPFParagraph xwpfParagraph, Pipeline storage, GitParsedDiff diff, GitDiffReportFilter reportFilter);
 
 }

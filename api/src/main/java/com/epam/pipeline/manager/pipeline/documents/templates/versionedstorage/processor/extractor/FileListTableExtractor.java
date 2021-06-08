@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor;
 
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
@@ -25,8 +27,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.math3.util.Pair;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 import java.io.IOException;
@@ -38,89 +40,93 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class RevisionListTableExtractor implements ReportDataExtractor<Table> {
+public class FileListTableExtractor implements ReportDataExtractor<Table> {
 
-    private static final Pattern PATTERN = Pattern.compile("\\{\"revision_history_table\":?(.*)}");
+    private static final Pattern PATTERN = Pattern.compile("\\{\"file_list_table\":?(.*)}");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
-    public Table extract(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitParsedDiff diff) {
-        final Map<RevisionHistoryTableColumn, String> tableColumns = getTableColumns(xwpfParagraph);
+    public Table extract(final XWPFParagraph xwpfParagraph, final Pipeline storage,
+                         final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+        final Map<FileListTableColumn, String> tableColumns = getTableColumns(xwpfParagraph);
         final Table result = new Table();
         result.setContainsHeaderRow(true);
         for (String value : tableColumns.values()) {
             result.addColumn(value);
         }
-
         diff.getEntries().stream()
-                .map(gitDiffEntry -> {
-                    final String file = gitDiffEntry.getDiff().getFromFileName().equals("/dev/null")
-                            ? gitDiffEntry.getDiff().getToFileName()
-                            : gitDiffEntry.getDiff().getFromFileName();
-                    return new Pair<>(file, gitDiffEntry.getCommit());
-                }).forEachOrdered(fileAndCommit -> {
-                    TableRow row = result.addRow(fileAndCommit.getKey() + fileAndCommit.getValue().getCommit());
+                .collect(Collectors.toMap(this::getChangedFileName, GitParsedDiffEntry::getCommit, (c1, c2) -> c1))
+                .forEach((file, commit) -> {
+                    TableRow row = result.addRow(file);
                     tableColumns.forEach(
-                        (e, v) -> result.setData(row.getName(), v,
-                                e.dataExtractor.apply(fileAndCommit.getKey(), fileAndCommit.getValue()))
+                        (e, v) -> result.setData(row.getName(), v, e.dataExtractor.apply(file, commit))
                     );
                 });
         return result;
     }
 
-    private Map<RevisionHistoryTableColumn, String> getTableColumns(final XWPFParagraph xwpfParagraph) {
+    private Map<FileListTableColumn, String> getTableColumns(final XWPFParagraph xwpfParagraph) {
         final Matcher matcher = PATTERN.matcher(xwpfParagraph.getText());
-        final Map<RevisionHistoryTableColumn, String> tableColumns;
+        final Map<FileListTableColumn, String> tableColumns;
         if(matcher.matches()) {
             final String tableStructure = matcher.group(1);
             tableColumns = parseTableStructure(tableStructure);
         } else {
-            tableColumns = Arrays.stream(RevisionHistoryTableColumn.values())
+            tableColumns = Arrays.stream(FileListTableColumn.values())
                     .collect(Collectors.toMap(c -> c, c -> c.defaultColumn));
         }
         return tableColumns;
     }
 
-    private Map<RevisionHistoryTableColumn, String> parseTableStructure(final String tableStructureString) {
+    private String getChangedFileName(GitParsedDiffEntry gitDiffEntry) {
+        return gitDiffEntry.getDiff().getToFileName().equals("/dev/null")
+                ? gitDiffEntry.getDiff().getFromFileName()
+                : gitDiffEntry.getDiff().getToFileName();
+    }
+
+    private Map<FileListTableColumn, String> parseTableStructure(final String tableStructureString) {
         if (StringUtils.isBlank(tableStructureString)) {
-            return RevisionHistoryTableColumn.DEFAULT;
+            return FileListTableColumn.DEFAULT;
         }
         try {
             return OBJECT_MAPPER.readValue(
                     tableStructureString,
-                    new TypeReference<LinkedHashMap<RevisionHistoryTableColumn, String>>() {}
+                    new TypeReference<LinkedHashMap<FileListTableColumn, String>>() {}
             );
         } catch (IOException e) {
             throw new IllegalArgumentException("Report template is invalid. Possible columns: " +
-                    Arrays.stream(RevisionHistoryTableColumn.values())
+                    Arrays.stream(FileListTableColumn.values())
                             .map(c -> c.value).collect(Collectors.joining(", ")));
         }
     }
 
     @RequiredArgsConstructor
-    public enum RevisionHistoryTableColumn {
+    public enum FileListTableColumn {
+
+        @JsonProperty("name")
+        NAME("name", "Name", (file, commit) -> FilenameUtils.getName(file)),
 
         @JsonProperty("path")
         PATH("path", "Path", (file, commit) -> file),
 
-        @JsonProperty("author")
-        AUTHOR("author", "Author", (file, commit) -> commit.getAuthor()),
+        @JsonProperty("revision")
+        REVISION("revision", "Revision", (file, commit) -> commit.getCommit().substring(0, 9)),
 
         @JsonProperty("date_changed")
         DATE_CHANGED("date_changed", "Date changed",
             (file, commit) -> DATE_FORMAT.format(commit.getAuthorDate())
         ),
 
-        @JsonProperty("revision")
-        REVISION("revision", "Revision", (file, commit) -> commit.getCommit().substring(0, 9)),
+        @JsonProperty("author")
+        AUTHOR("author", "Author", (file, commit) -> commit.getAuthor()),
 
         @JsonProperty("message")
         MESSAGE("message", "Message", (file, commit) -> commit.getCommitMessage());
 
-        private static final Map<RevisionHistoryTableColumn, String> DEFAULT = new LinkedHashMap<>();
+        private static final Map<FileListTableColumn, String> DEFAULT = new LinkedHashMap<>();
 
         static {
-            for (RevisionHistoryTableColumn value : RevisionHistoryTableColumn.values()) {
+            for (FileListTableColumn value : FileListTableColumn.values()) {
                 DEFAULT.put(value, value.defaultColumn);
             }
         }

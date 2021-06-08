@@ -29,8 +29,6 @@ import java.util.List;
 @Data
 @Builder
 public class GitParsedDiff {
-
     private List<GitParsedDiffEntry> entries;
-
     private GitCommitsFilter filters;
 }

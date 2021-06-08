@@ -28,8 +28,6 @@ import lombok.Data;
 @Data
 @Builder
 public class GitParsedDiffEntry {
-
     private GitReaderRepositoryCommit commit;
     private Diff diff;
-
 }

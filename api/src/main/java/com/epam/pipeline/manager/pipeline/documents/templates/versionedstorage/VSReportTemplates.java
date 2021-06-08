@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage;
 
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.*;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor.FileListTableExtractor;
-import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor.extractor.RevisionListTableExtractor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.VSReportTemplateDiffProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.VSReportTemplatePageBreakProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.VSReportTemplateProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.VSReportTemplateTableProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.VSReportTemplateTextProcessor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor.CommitDiffExtractor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor.FileListTableExtractor;
+import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor.RevisionListTableExtractor;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -30,47 +35,43 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public enum VSReportTemplates {
     VERSIONED_STORAGE("versioned_storage",
-        () -> new VSReportTemplateTextProcessor((paragraph, storage, diff) -> storage.getName())),
+        () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> storage.getName())),
     PAGE_BREAK("page_break",
             VSReportTemplatePageBreakProcessor::new),
     REPORT_DATE("report_date",
-        () -> new VSReportTemplateTextProcessor((paragraph, storage, diff) ->
+        () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) ->
                 DateUtils.nowUTC().format(Constants.DATE_TIME_FORMATTER))),
     FILTER_AUTHORS("filter_authors",
         () -> new VSReportTemplateTextProcessor(
-            (paragraph, storage, diff) ->
+            (paragraph, storage, diff, reportFilter) ->
                 Optional.ofNullable(diff.getFilters().getAuthors())
                         .filter(CollectionUtils::isNotEmpty)
                         .map(lst -> String.join(", ", lst))
-                        .orElse(Constants.ALL_AUTHORS))
-    ),
+                        .orElse(Constants.ALL_AUTHORS))),
     FILTER_FROM("filter_from",
         () -> new VSReportTemplateTextProcessor(
-            (paragraph, storage, diff) ->
+            (paragraph, storage, diff, reportFilter) ->
                 Optional.ofNullable(diff.getFilters().getDateFrom())
                         .map(d -> d.format(Constants.DATE_TIME_FORMATTER))
-                        .orElse("-"))
-    ),
+                        .orElse("-"))),
     FILTER_TO("filter_to",
         () -> new VSReportTemplateTextProcessor(
-            (paragraph, storage, diff) ->
+            (paragraph, storage, diff, reportFilter) ->
                 Optional.ofNullable(diff.getFilters().getDateTo())
                         .map(d -> d.format(Constants.DATE_TIME_FORMATTER))
-                        .orElse("-"))
-    ),
+                        .orElse("-"))),
     FILTER_TYPES("filter_types",
         () -> new VSReportTemplateTextProcessor(
-            (paragraph, storage, diff) ->
+            (paragraph, storage, diff, reportFilter) ->
                 Optional.ofNullable(diff.getFilters().getExtensions())
                         .filter(CollectionUtils::isNotEmpty)
                         .map(lst -> String.join(", ", lst))
-                        .orElse(Constants.ALL_FILES))
-    ),
+                        .orElse(Constants.ALL_FILES))),
     FILE_LIST_TABLE("\"file_list_table\".*",
         () -> new VSReportTemplateTableProcessor(new FileListTableExtractor())),
     REVISION_HISTORY_TABLE("\"revision_history_table\".*",
         () -> new VSReportTemplateTableProcessor(new RevisionListTableExtractor())),
-    COMMIT_DIFFS("commit_diffs", VSReportTemplateDiffProcessor::new);
+    COMMIT_DIFFS("commit_diffs", () -> new VSReportTemplateDiffProcessor(new CommitDiffExtractor()));
 
     public final String template;
     public final Supplier<VSReportTemplateProcessor> templateResolver;
