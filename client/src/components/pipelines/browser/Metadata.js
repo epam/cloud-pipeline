@@ -378,13 +378,6 @@ export default class Metadata extends React.Component {
       } else {
         if (this.metadataRequest.value) {
           this._totalCount = this.metadataRequest.value.totalCount;
-          // if (!this.state.filterModel.searchQueries.length) {
-          //   const parentFolderId = this.props.folderId;
-          //   if (this._totalCount <= 0) {
-          //     this.props.router.push(`/folder/${parentFolderId}`);
-          //     return;
-          //   }
-          // }
           if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
             this._classEntity = {
               id: this.metadataRequest.value.elements[0].classEntity.id,
