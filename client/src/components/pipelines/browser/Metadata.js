@@ -287,9 +287,10 @@ export default class Metadata extends React.Component {
     } = range || {};
     filterModel.startDateFrom = from;
     filterModel.endDateTo = to;
-    await this.setState({filterModel});
-    this.loadData(this.state.filterModel);
-    this.forceUpdate();
+    this.setState(
+      {filterModel},
+      () => this.loadData()
+    );
   };
 
   closeAddInstanceForm = () => {
@@ -318,7 +319,7 @@ export default class Metadata extends React.Component {
       } else {
         await this.props.entityFields.fetch();
         await this.loadColumns(this.props.folderId, this.props.metadataClass);
-        await this.loadData(this.state.filterModel);
+        await this.loadData();
         await this.props.folder.fetch();
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this.props.folder.value.parentId);
@@ -344,14 +345,17 @@ export default class Metadata extends React.Component {
     } else {
       filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
     }
-    await this.setState({filterModel});
-    this.paginationOnChange(FIRST_PAGE);
-    this.loadData(this.state.filterModel);
+    filterModel.page = FIRST_PAGE;
+    this.setState(
+      {filterModel},
+      () => this.loadData()
+    );
   }
 
-  loadData = async (filterModel) => {
+  loadData = async () => {
     this.setState({loading: true});
     this.metadataRequest = new MetadataEntityFilter();
+    const {filterModel, selectedItemsAreShowing, selectedItems} = this.state;
     let orderBy, filters;
     let currentMetadata = [];
     if (filterModel) {
@@ -360,7 +364,7 @@ export default class Metadata extends React.Component {
       filters = (filterModel.filters || [])
         .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
-    if (!this.state.selectedItemsAreShowing) {
+    if (!selectedItemsAreShowing) {
       await this.metadataRequest.send(
         {
           ...filterModel,
@@ -374,13 +378,13 @@ export default class Metadata extends React.Component {
       } else {
         if (this.metadataRequest.value) {
           this._totalCount = this.metadataRequest.value.totalCount;
-          //           if (!this.state.filterModel.searchQueries.length) {
-          //             const parentFolderId = this.props.folderId;
-          //             if (this._totalCount <= 0) {
-          //               this.props.router.push(`/folder/${parentFolderId}`);
-          //               return;
-          //             }
-          //           }
+          // if (!this.state.filterModel.searchQueries.length) {
+          //   const parentFolderId = this.props.folderId;
+          //   if (this._totalCount <= 0) {
+          //     this.props.router.push(`/folder/${parentFolderId}`);
+          //     return;
+          //   }
+          // }
           if (this.metadataRequest.value.elements && this.metadataRequest.value.elements.length) {
             this._classEntity = {
               id: this.metadataRequest.value.elements[0].classEntity.id,
@@ -406,8 +410,7 @@ export default class Metadata extends React.Component {
         }
       }
     } else {
-      const {page, pageSize} = this.state.filterModel;
-      const selectedItems = [...this.state.selectedItems];
+      const {page, pageSize} = filterModel;
       this._totalCount = selectedItems.length;
 
       const firstRow = Math.max((page - 1) * pageSize, 0);
@@ -530,7 +533,7 @@ export default class Metadata extends React.Component {
         message.error(request.error, 5);
       }
       this.setState({selectedItems: [], selectedItem: null, metadata: false});
-      await this.loadData(this.state.filterModel);
+      await this.loadData();
       await this.props.folder.fetch();
       if (this.props.onReloadTree) {
         this.props.onReloadTree(true);
@@ -620,7 +623,7 @@ export default class Metadata extends React.Component {
         value: metadataEntityLoadExternalRequest.value.createdDate,
         type: 'date'
       };
-      this.setState({metadata: true, selectedItem: selectedItem});
+      this.setState({metadata: true, selectedItem});
     }
   };
 
@@ -649,12 +652,12 @@ export default class Metadata extends React.Component {
     this.setState({
       filterModel: newFilterModel,
       selectedItemsAreShowing: false
-    }, () => this.loadData(newFilterModel));
+    }, () => this.loadData());
   };
 
   onOrderByChanged = async (key, value) => {
     if (key) {
-      const filterModel = this.state.filterModel;
+      const {filterModel} = this.state;
       const [currentOrderBy] = filterModel.orderBy.filter(f => f.field === key);
       if (currentOrderBy) {
         const index = filterModel.orderBy.indexOf(currentOrderBy);
@@ -663,7 +666,7 @@ export default class Metadata extends React.Component {
       if (value) {
         filterModel.orderBy = [{field: key, desc: value === DESCEND}];
       }
-      await this.loadData(this.state.filterModel);
+      await this.loadData();
     }
   };
 
@@ -720,7 +723,7 @@ export default class Metadata extends React.Component {
     if (this.state.selectedItem && this.state.selectedItem.rowKey === selectedItem.rowKey) {
       this.setState({selectedItem: null, metadata: false});
     } else {
-      this.setState({selectedItem: selectedItem, metadata: true});
+      this.setState({selectedItem, metadata: true});
     }
   };
   onClearFilters = () => {
@@ -735,7 +738,7 @@ export default class Metadata extends React.Component {
         filterModel,
         searchQuery: undefined
       },
-      () => this.paginationOnChange(FIRST_PAGE)
+      () => this.loadData()
     );
   };
   onClearSelectionItems = () => {
@@ -754,7 +757,7 @@ export default class Metadata extends React.Component {
       copyEntitiesDialogVisible: false
     }, () => {
       if (destinationFolder) {
-        this.loadData(this.state.filterModel);
+        this.loadData();
       }
       this.props.folders.invalidateFolder(this.props.folderId);
       this.props.folders.invalidateFolder(destinationFolder);
@@ -1027,7 +1030,7 @@ export default class Metadata extends React.Component {
             onUpdateMetadata={async () => {
               await this.props.entityFields.fetch();
               await this.loadColumns(this.props.folderId, this.props.metadataClass);
-              await this.loadData(this.state.filterModel);
+              await this.loadData();
               const [selectedItem] =
                 this.state.currentMetadata
                   .filter(metadata => metadata.rowKey.value === currentItem.id);
@@ -1037,7 +1040,7 @@ export default class Metadata extends React.Component {
                 });
                 this.setState({selectedItems: [...selectedItems]});
               }
-              this.setState({selectedItem: selectedItem});
+              this.setState({selectedItem});
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);
@@ -1551,8 +1554,10 @@ export default class Metadata extends React.Component {
   paginationOnChange = async (page) => {
     const {filterModel} = this.state;
     filterModel.page = page;
-    await this.loadData(filterModel);
-    this.setState({filterModel});
+    this.setState(
+      {filterModel},
+      () => this.loadData()
+    );
   }
 
   render () {
@@ -1659,7 +1664,7 @@ export default class Metadata extends React.Component {
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
       this.setState({selectedColumns: [...this.columns]});
-      await this.loadData(this.state.filterModel);
+      await this.loadData();
       await this.loadCurrentProject();
     })();
   };
@@ -1731,7 +1736,7 @@ export default class Metadata extends React.Component {
       await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
       this.setState({selectedColumns: [...this.columns]});
-      await this.loadData(this.state.filterModel);
+      await this.loadData();
     }
     if (nextProps.folderId !== this.props.folderId) {
       await this.loadCurrentProject();
