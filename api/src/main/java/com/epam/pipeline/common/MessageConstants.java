@@ -400,6 +400,7 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_SECURITY_POLICY_VIOLATION = "error.tool.security.policy.violation";
     public static final String INFO_TOOL_SCAN_ALREADY_SCANNED = "info.tool.scan.already.scanned";
     public static final String INFO_TOOL_SCAN_NEW_LAYERS = "info.tool.scan.new.layers";
+    public static final String INFO_WIN_TOOL_SCAN_DISABLED = "info.tool.scan.win.disabled";
 
 
     //Issues

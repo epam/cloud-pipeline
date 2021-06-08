@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -105,6 +105,11 @@ class ToolScanSchedulerCore {
         try {
             List<String> versions = toolManager.loadTags(tool.getId());
             for (String version : versions) {
+                if (toolScanManager.isWindowsBased(tool, version)) {
+                    log.info(messageHelper.getMessage(MessageConstants.INFO_WIN_TOOL_SCAN_DISABLED,
+                                                      tool.getId(), version));
+                    continue;
+                }
                 try {
                     ToolVersionScanResult result = toolScanManager.scanTool(tool, version, false);
                     toolManager.updateToolVulnerabilities(result.getVulnerabilities(), tool.getId(), version);
@@ -136,6 +141,8 @@ class ToolScanSchedulerCore {
         Tool tool = toolManager.loadTool(registry, id);
         Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
+        Assert.isTrue(!toolScanManager.isWindowsBased(tool, version),
+                      messageHelper.getMessage(MessageConstants.INFO_WIN_TOOL_SCAN_DISABLED, tool.getId(), version));
         Optional<ToolVersionScanResult> toolVersionScanResult = toolManager.loadToolVersionScan(
                 tool.getId(), version);
         ToolScanStatus curentStatus = toolVersionScanResult
