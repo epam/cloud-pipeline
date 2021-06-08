@@ -136,8 +136,6 @@ export default class Metadata extends React.Component {
     readOnly: PropTypes.bool
   };
 
-  _totalCount = 0;
-
   @observable keys;
 
   metadataRequest = {};
@@ -155,6 +153,7 @@ export default class Metadata extends React.Component {
     selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
     columns: [],
+    totalCount: 0,
     filterModel: {
       startDateFrom: undefined,
       endDateTo: undefined,
@@ -378,14 +377,7 @@ export default class Metadata extends React.Component {
       } else {
         const {value} = this.metadataRequest;
         if (value) {
-          this._totalCount = value.totalCount;
-          //           if (!this.state.filterModel.searchQueries.length) {
-          //             const parentFolderId = this.props.folderId;
-          //             if (this._totalCount <= 0) {
-          //               this.props.router.push(`/folder/${parentFolderId}`);
-          //               return;
-          //             }
-          //           }
+          this.setState({totalCount: value.totalCount});
           if (value.elements && value.elements.length) {
             this._classEntity = {
               id: value.elements[0].classEntity.id,
@@ -412,7 +404,7 @@ export default class Metadata extends React.Component {
       }
     } else {
       const {page, pageSize} = filterModel;
-      this._totalCount = selectedItems.length;
+      this.setState({totalCount: selectedItems.length});
 
       const firstRow = Math.max((page - 1) * pageSize, 0);
       const lastRow = Math.min(page * pageSize, selectedItems.length);
@@ -926,7 +918,7 @@ export default class Metadata extends React.Component {
             size="small"
             pageSize={PAGE_SIZE}
             current={this.state.filterModel.page}
-            total={this._totalCount}
+            total={this.state.totalCount}
             onChange={async (page) => this.paginationOnChange(page)} />
         </Row>
       ];
@@ -1725,7 +1717,7 @@ export default class Metadata extends React.Component {
       if (nextProps.onSelectItems) {
         nextProps.onSelectItems(this.state.selectedItems);
       }
-      this._totalCount = 0;
+      this.setState({totalCount: 0});
       await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
       await this.loadData();
