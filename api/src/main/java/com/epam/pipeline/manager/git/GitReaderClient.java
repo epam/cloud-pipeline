@@ -159,7 +159,7 @@ public class GitReaderClient {
                 .build();
     }
 
-    static private List<String> getPathMasks(final GitCommitsFilter filter) {
+    private static List<String> getPathMasks(final GitCommitsFilter filter) {
         if (StringUtils.isBlank(filter.getPath()) && CollectionUtils.isEmpty(filter.getExtensions())) {
             return null;
         } else if (CollectionUtils.isEmpty(filter.getExtensions())) {
@@ -170,7 +170,7 @@ public class GitReaderClient {
                 .collect(Collectors.toList());
     }
 
-    static private String getPathMask(final String path, final String ext) {
+    private static String getPathMask(final String path, final String ext) {
         if (path == null) {
             return "*." + ext;
         }else if (!path.endsWith("/") && StringUtils.isNotBlank(path)){

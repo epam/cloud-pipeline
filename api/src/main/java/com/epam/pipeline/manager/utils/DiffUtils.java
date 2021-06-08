@@ -1,7 +1,7 @@
 package com.epam.pipeline.manager.utils;
 
-import com.epam.pipeline.entity.git.GitDiff;
-import com.epam.pipeline.entity.git.GitDiffEntry;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
@@ -25,6 +25,10 @@ public class DiffUtils {
     public static final String DELETION_MARK = "---";
     public static final String ADDITION_MARK = "+++";
     public static final String EMPTY = "";
+
+    private DiffUtils() {
+
+    }
 
     public static Diff normalizeDiff(final Diff diff) {
         final Diff result = new Diff();
@@ -81,9 +85,9 @@ public class DiffUtils {
         return !diff.getFromFileName().equals(DEV_NULL) && diff.getToFileName().equals(DEV_NULL);
     }
 
-    public static GitDiff reduceDiffByFile(GitReaderDiff gitReaderDiff) {
+    public static GitParsedDiff reduceDiffByFile(GitReaderDiff gitReaderDiff) {
         final DiffParser diffParser = new UnifiedDiffParser();
-        return GitDiff.builder()
+        return GitParsedDiff.builder()
                 .entries(
                         gitReaderDiff.getEntries().stream().flatMap(diff -> {
                             final String[] diffsByFile = diff.getDiff().split(DIFF_GIT_PREFIX);
@@ -94,13 +98,13 @@ public class DiffUtils {
                                             final Diff parsed = diffParser.parse(
                                                     (DIFF_GIT_PREFIX + fileDiff).getBytes(StandardCharsets.UTF_8)
                                             ).stream().findFirst().orElseThrow(IllegalArgumentException::new);
-                                            return GitDiffEntry.builder()
+                                            return GitParsedDiffEntry.builder()
                                                     .commit(diff.getCommit())
                                                     .diff(DiffUtils.normalizeDiff(parsed)).build();
                                         } catch (IllegalArgumentException | IllegalStateException e) {
                                             // If we fail to parse diff with diffParser lets
                                             // try to parse it as binary diffs
-                                            return GitDiffEntry.builder()
+                                            return GitParsedDiffEntry.builder()
                                                     .commit(diff.getCommit())
                                                     .diff(DiffUtils.parseBinaryDiff(DIFF_GIT_PREFIX + fileDiff))
                                                     .build();

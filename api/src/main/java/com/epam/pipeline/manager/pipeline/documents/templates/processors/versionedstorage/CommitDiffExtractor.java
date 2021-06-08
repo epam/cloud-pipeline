@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
 
-import com.epam.pipeline.entity.git.GitDiff;
-import com.epam.pipeline.entity.git.GitDiffEntry;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.git.report.GitDiffGrouping;
@@ -32,7 +32,7 @@ public class CommitDiffExtractor implements ReportDataExtractor {
 
     @Override
     public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage,
-                        final GitDiff diff, final GitDiffReportFilter reportFilter) {
+                        final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         final GitDiffGroupType groupType = getGroupType(reportFilter);
         return GitDiffGrouping.builder()
                 .type(groupType)
@@ -41,18 +41,19 @@ public class CommitDiffExtractor implements ReportDataExtractor {
                 .archive(reportFilter.isArchive()).build();
     }
 
-    private Map<String, List<GitDiffEntry>> constructDiffGrouping(final GitDiff diff, final GitDiffGroupType groupType) {
+    private Map<String, List<GitParsedDiffEntry>> constructDiffGrouping(final GitParsedDiff diff,
+                                                                        final GitDiffGroupType groupType) {
         return groupType == GitDiffGroupType.BY_COMMIT
-                ? diff.getEntries().stream()
-                    .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
-                : diff.getEntries().stream()
-                    .collect(
-                            Collectors.groupingBy(
-                                    e -> e.getDiff().getFromFileName().contains("/dev/null")
-                                            ? e.getDiff().getToFileName()
-                                            : e.getDiff().getFromFileName()
-                            )
-                );
+            ? diff.getEntries().stream()
+                .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
+            : diff.getEntries().stream()
+                .collect(
+                    Collectors.groupingBy(
+                        e -> e.getDiff().getFromFileName().contains("/dev/null")
+                                ? e.getDiff().getToFileName()
+                                : e.getDiff().getFromFileName()
+                    )
+            );
     }
 
     private GitDiffGroupType getGroupType(GitDiffReportFilter reportFilter) {

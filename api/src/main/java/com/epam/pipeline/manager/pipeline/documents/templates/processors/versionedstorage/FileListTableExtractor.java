@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
 
-import com.epam.pipeline.entity.git.GitDiff;
-import com.epam.pipeline.entity.git.GitDiffEntry;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -40,12 +40,12 @@ import java.util.stream.Collectors;
 
 public class FileListTableExtractor implements ReportDataExtractor {
 
-    private final static Pattern PATTERN = Pattern.compile("\\{\"file_list_table\":?(.*)}");
-    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Pattern PATTERN = Pattern.compile("\\{\"file_list_table\":?(.*)}");
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
     public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage,
-                        final GitDiff diff, GitDiffReportFilter reportFilter) {
+                        final GitParsedDiff diff, GitDiffReportFilter reportFilter) {
         final Map<FileListTableColumn, String> tableColumns = getTableColumns(xwpfParagraph);
         final Table result = new Table();
         result.setContainsHeaderRow(true);
@@ -53,7 +53,7 @@ public class FileListTableExtractor implements ReportDataExtractor {
             result.addColumn(value);
         }
         diff.getEntries().stream()
-                .collect(Collectors.toMap(this::getChangedFileName, GitDiffEntry::getCommit, (c1, c2) -> c1))
+                .collect(Collectors.toMap(this::getChangedFileName, GitParsedDiffEntry::getCommit, (c1, c2) -> c1))
                 .forEach((file, commit) -> {
                     TableRow row = result.addRow(file);
                     tableColumns.forEach(
@@ -76,7 +76,7 @@ public class FileListTableExtractor implements ReportDataExtractor {
         return tableColumns;
     }
 
-    private String getChangedFileName(GitDiffEntry gitDiffEntry) {
+    private String getChangedFileName(GitParsedDiffEntry gitDiffEntry) {
         return gitDiffEntry.getDiff().getToFileName().equals("/dev/null")
                 ? gitDiffEntry.getDiff().getFromFileName()
                 : gitDiffEntry.getDiff().getToFileName();
@@ -112,7 +112,8 @@ public class FileListTableExtractor implements ReportDataExtractor {
 
         @JsonProperty("date_changed")
         DATE_CHANGED("date_changed", "Date changed",
-                (file, commit) -> DATE_FORMAT.format(commit.getAuthorDate())),
+            (file, commit) -> DATE_FORMAT.format(commit.getAuthorDate())
+        ),
 
         @JsonProperty("author")
         AUTHOR("author", "Author", (file, commit) -> commit.getAuthor()),

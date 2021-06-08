@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git;
+package com.epam.pipeline.entity.git.report;
 
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import io.reflectoring.diffparser.api.model.Diff;
@@ -27,7 +27,7 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class GitDiffEntry {
+public class GitParsedDiffEntry {
 
     private GitReaderRepositoryCommit commit;
     private Diff diff;

@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
 
-import com.epam.pipeline.entity.git.GitDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
+import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
 import com.epam.pipeline.entity.git.report.GitDiffGrouping;
 import com.epam.pipeline.entity.git.report.GitDiffGroupType;
@@ -87,14 +87,14 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
             final int fontSize = runTemplate.getFontSize();
             XWPFParagraph lastP = paragraph;
             lastP.setPageBreak(true);
-            for (Map.Entry<String, List<GitDiffEntry>> entry : diffsGrouping.getDiffGrouping().entrySet()) {
+            for (Map.Entry<String, List<GitParsedDiffEntry>> entry : diffsGrouping.getDiffGrouping().entrySet()) {
                 final String diffGroupKey = entry.getKey();
-                final List<GitDiffEntry> diffEntries = entry.getValue().stream()
+                final List<GitParsedDiffEntry> diffEntries = entry.getValue().stream()
                         .sorted(Comparator.comparing(d -> d.getCommit().getAuthorDate()))
                         .collect(Collectors.toList());
 
                 addHeader(lastP, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
-                for (GitDiffEntry diffEntry : diffEntries) {
+                for (GitParsedDiffEntry diffEntry : diffEntries) {
                     lastP.setPageBreak(true);
                     lastP = addDescription(lastP, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
                 }
@@ -104,7 +104,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
 
     private void addHeader(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
                            final GitDiffGroupType type, final String groupingKey,
-                           final List<GitDiffEntry> diffEntries) {
+                           final List<GitParsedDiffEntry> diffEntries) {
 
         if (type.equals(GitDiffGroupType.BY_COMMIT)) {
             insertTextData(paragraph, "In revision ", false, fontFamily,
@@ -115,7 +115,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
 
             insertTextData(paragraph,
                     diffEntries.stream().findFirst()
-                        .map(GitDiffEntry::getCommit)
+                        .map(GitParsedDiffEntry::getCommit)
                         .map(GitReaderRepositoryCommit::getAuthor).orElse(""),
                     true, fontFamily, fontSize + HEADER_FONT_DELTA,
                     false);
@@ -124,7 +124,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
 
             insertTextData(paragraph,
                     diffEntries.stream().findFirst()
-                        .map(GitDiffEntry::getCommit)
+                        .map(GitParsedDiffEntry::getCommit)
                         .map(c -> ReportDataExtractor.DATE_FORMAT.format(c.getAuthorDate())).orElse(""),
                     false, fontFamily, fontSize + HEADER_FONT_DELTA, false
             );
@@ -138,7 +138,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     }
 
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
-                                         final GitDiffGroupType type, final GitDiffEntry diffEntry) {
+                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry) {
         if (type.equals(GitDiffGroupType.BY_COMMIT)) {
             final String file = diffEntry.getDiff().getFromFileName().contains("/dev/null")
                     ? diffEntry.getDiff().getToFileName()
@@ -170,7 +170,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
     }
 
     private XWPFParagraph generateDiffTable(final XWPFParagraph paragraph, final String fontFamily,
-                                            int fontSize, final GitDiffEntry diffEntry) {
+                                            int fontSize, final GitParsedDiffEntry diffEntry) {
         if (diffEntry.getDiff().getHunks().isEmpty()) {
             return createNewParagraph(paragraph, paragraph.getCTP().newCursor());
         }
@@ -212,8 +212,8 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
                 String cellData = EMPTY;
                 if (colIndex == 0 && (line.getLineType().equals(Line.LineType.FROM)
                         || line.getLineType().equals(Line.LineType.NEUTRAL))) {
-                     cellData = String.valueOf(fromFileCurrentLine);
-                     fromFileCurrentLine++;
+                    cellData = String.valueOf(fromFileCurrentLine);
+                    fromFileCurrentLine++;
                 } else if (colIndex == 1 && (line.getLineType().equals(Line.LineType.TO)
                         || line.getLineType().equals(Line.LineType.NEUTRAL))) {
                     cellData = String.valueOf(toFileCurrentLine);
@@ -243,7 +243,7 @@ public class VSReportTemplateDiffProcessor extends AbstractVSReportTemplateProce
 
     private String getLineColor(Line line) {
         if (line.getLineType().equals(Line.LineType.TO)) {
-           return COLOR_GREEN;
+            return COLOR_GREEN;
         } else if (line.getLineType().equals(Line.LineType.FROM)) {
             return COLOR_RED;
         }

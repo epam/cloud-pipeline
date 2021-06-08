@@ -17,8 +17,8 @@
 package com.epam.pipeline.manager.pipeline.documents.templates;
 
 import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitDiff;
-import com.epam.pipeline.entity.git.GitDiffEntry;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
@@ -69,7 +69,7 @@ public class VersionStorageReportTemplateManager {
     public VersionStorageReportFile generateReport(final Long pipelineId,
                                                    final GitDiffReportFilter reportFilters) {
         final Pipeline pipeline = pipelineManager.load(pipelineId);
-        final GitDiff gitDiff = fetchAndNormalizeDiffs(pipeline.getId(), reportFilters);
+        final GitParsedDiff gitDiff = fetchAndNormalizeDiffs(pipeline.getId(), reportFilters);
         try {
             final List<Pair<String, XWPFDocument>> diffReportFiles = prepareReportDocs(
                     pipeline, gitDiff, reportFilters
@@ -102,7 +102,7 @@ public class VersionStorageReportTemplateManager {
     private String resolveReportName(final Pipeline loaded,
                                      final List<Pair<String, XWPFDocument>> diffReportFiles) {
         if (diffReportFiles.size() == 1) {
-           return HISTORY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR
+            return HISTORY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR
                             + REPORT_FILE_NAME_DATE_FORMAT.format(DateUtils.now()) + DOCX;
         } else {
             return HISTORY + NAME_SEPARATOR + loaded.getName() + NAME_SEPARATOR
@@ -110,7 +110,7 @@ public class VersionStorageReportTemplateManager {
         }
     }
 
-    protected GitDiff fetchAndNormalizeDiffs(final Long pipelineId, final GitDiffReportFilter reportFilters) {
+    protected GitParsedDiff fetchAndNormalizeDiffs(final Long pipelineId, final GitDiffReportFilter reportFilters) {
         final GitReaderDiff gitReaderDiff = gitManager.logRepositoryCommitDiffs(
                 pipelineId, true, Optional.ofNullable(reportFilters.getCommitsFilter())
                         .orElse(GitCommitsFilter.builder().build())
@@ -119,7 +119,7 @@ public class VersionStorageReportTemplateManager {
     }
 
     private List<Pair<String, XWPFDocument>> prepareReportDocs(final Pipeline pipeline,
-                                                               final GitDiff gitDiff,
+                                                               final GitParsedDiff gitDiff,
                                                                final GitDiffReportFilter reportFilters)
             throws IOException {
         final List<Pair<String, XWPFDocument>> results = new ArrayList<>();
@@ -138,9 +138,10 @@ public class VersionStorageReportTemplateManager {
         return results;
     }
 
-    private List<Pair<String, XWPFDocument>> prepareDiffsForReportDoc(final Pipeline loaded, final GitDiff gitDiff,
+    private List<Pair<String, XWPFDocument>> prepareDiffsForReportDoc(final Pipeline loaded,
+                                                                      final GitParsedDiff gitDiff,
                                                                       final GitDiffReportFilter reportFilters) {
-        final Map<String, List<GitDiffEntry>> diffGrouping =
+        final Map<String, List<GitParsedDiffEntry>> diffGrouping =
                 getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT
                         ? gitDiff.getEntries().stream().collect(
                                 Collectors.groupingBy(e -> e.getCommit().getCommit()))
@@ -150,9 +151,9 @@ public class VersionStorageReportTemplateManager {
         return diffGrouping.entrySet()
                 .stream()
                 .map(entry -> {
-                    final Pair<String, GitDiff> toReport = Pair.of(
+                    final Pair<String, GitParsedDiff> toReport = Pair.of(
                             entry.getKey(),
-                            GitDiff.builder().entries(entry.getValue()).filters(gitDiff.getFilters()).build()
+                            GitParsedDiff.builder().entries(entry.getValue()).filters(gitDiff.getFilters()).build()
                     );
                     try {
                         final XWPFDocument report = prepareGroupReportTemplate(getVersionStorageTemplatePath());
@@ -168,13 +169,13 @@ public class VersionStorageReportTemplateManager {
     }
 
     public void fillTemplate(final XWPFDocument docxTemplate, final Pipeline storage,
-                             final GitDiff diff, final GitDiffReportFilter reportFilter) {
+                             final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         this.changeHeadersAndFooters(docxTemplate, storage, diff, reportFilter);
         this.changeBodyElements(docxTemplate.getBodyElements(), storage, diff, reportFilter);
     }
 
     private void changeHeadersAndFooters(final XWPFDocument document, final Pipeline storage,
-                                         final GitDiff diff, final GitDiffReportFilter reportFilter) {
+                                         final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         XWPFHeaderFooterPolicy policy = document.getHeaderFooterPolicy();
         this.changeHeaderFooter(policy.getDefaultHeader(), storage, diff, reportFilter);
         this.changeHeaderFooter(policy.getDefaultFooter(), storage, diff, reportFilter);
@@ -188,7 +189,7 @@ public class VersionStorageReportTemplateManager {
     }
 
     private void changeHeaderFooter(final XWPFHeaderFooter headerFooter, final Pipeline storage,
-                                    final GitDiff diff, final GitDiffReportFilter reportFilter) {
+                                    final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         if (headerFooter == null) {
             return;
         }
@@ -203,7 +204,7 @@ public class VersionStorageReportTemplateManager {
      * @param reportFilter - Filter object with date, commit information etc, to generate a report
      */
     private void changeBodyElements(final List<IBodyElement> getBodyElements, final Pipeline storage,
-                                    final GitDiff diff, final GitDiffReportFilter reportFilter) {
+                                    final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         int size = getBodyElements.size();
         for (int i = 0; i < size; i++) {
             this.changeBodyElement(getBodyElements.get(i), storage, diff, reportFilter);
@@ -213,7 +214,7 @@ public class VersionStorageReportTemplateManager {
         }
     }
 
-    private void changeBodyElement(final IBodyElement element, final Pipeline storage, final GitDiff diff,
+    private void changeBodyElement(final IBodyElement element, final Pipeline storage, final GitParsedDiff diff,
                                    final GitDiffReportFilter reportFilter) {
         switch (element.getElementType()) {
             case TABLE:
@@ -234,7 +235,7 @@ public class VersionStorageReportTemplateManager {
      * @param diff - Git diff object to be retrieved for the data
      */
     private void changeParagraph(final XWPFParagraph paragraph, final Pipeline storage,
-                                 final GitDiff diff, final GitDiffReportFilter reportFilter) {
+                                 final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         for (VSReportTemplates template : VSReportTemplates.values()) {
             template.templateResolver.get().process(paragraph, template.template, storage, diff, reportFilter);
         }
@@ -247,7 +248,7 @@ public class VersionStorageReportTemplateManager {
      * @param diff - Git diff object to be retrieved for the data
      */
     private void changeTable(final XWPFTable table, final Pipeline storage,
-                             final GitDiff diff, final GitDiffReportFilter reportFilter) {
+                             final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         Optional.ofNullable(table).map(Stream::of).orElseGet(Stream::empty)
                 .map(XWPFTable::getRows).flatMap(List::stream)
                 .map(XWPFTableRow::getTableCells).flatMap(List::stream)
@@ -268,9 +269,9 @@ public class VersionStorageReportTemplateManager {
         return versionStorageTemplatePath;
     }
 
-    private String resolveGroupReportFileName(GitDiffReportFilter reportFilters, Pair<String, GitDiff> p) {
-        return (getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT
-                ? REVISION + NAME_SEPARATOR : ""
+    private String resolveGroupReportFileName(GitDiffReportFilter reportFilters, Pair<String, GitParsedDiff> p) {
+        return (
+                getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : ""
         ) + p.getFirst().replace("/", NAME_SEPARATOR) + DOCX;
     }
 

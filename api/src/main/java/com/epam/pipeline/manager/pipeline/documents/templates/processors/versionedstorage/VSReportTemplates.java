@@ -37,24 +37,32 @@ public enum VSReportTemplates {
         }
         return diff.getFilters().getAuthors();
     })),
-    FILTER_FROM("filter_from", () -> new VSReportTemplateTextProcessor(
+    FILTER_FROM("filter_from",
+        () -> new VSReportTemplateTextProcessor(
             (paragraph, storage, diff, reportFilter) ->
-                    Optional.ofNullable(
-                            diff.getFilters().getDateFrom()
-                    ).map(d -> d.format(Constants.DATE_TIME_FORMATTER)
-                    ).orElse("-"))),
-    FILTER_TO("filter_to", () -> new VSReportTemplateTextProcessor(
+                Optional.ofNullable(
+                        diff.getFilters().getDateFrom()
+                ).map(d -> d.format(Constants.DATE_TIME_FORMATTER)
+                ).orElse("-"))
+    ),
+    FILTER_TO("filter_to",
+        () -> new VSReportTemplateTextProcessor(
             (paragraph, storage, diff, reportFilter) ->
-                    Optional.ofNullable(
-                            diff.getFilters().getDateTo()
-                    ).map(d -> d.format(Constants.DATE_TIME_FORMATTER)
-                    ).orElse("-"))),
-    FILTER_TYPES("filter_types", () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) -> {
-        if (CollectionUtils.isNullOrEmpty(diff.getFilters().getExtensions())) {
-            return "All Files";
-        }
-        return diff.getFilters().getExtensions();
-    })),
+                Optional.ofNullable(
+                        diff.getFilters().getDateTo()
+                ).map(d -> d.format(Constants.DATE_TIME_FORMATTER)
+                ).orElse("-"))
+    ),
+    FILTER_TYPES("filter_types",
+        () -> new VSReportTemplateTextProcessor(
+            (paragraph, storage, diff, reportFilter) -> {
+                if (CollectionUtils.isNullOrEmpty(diff.getFilters().getExtensions())) {
+                    return "All Files";
+                }
+                return diff.getFilters().getExtensions();
+            }
+        )
+    ),
     FILE_LIST_TABLE("\"file_list_table\".*",
             () -> new VSReportTemplateTableProcessor(new FileListTableExtractor())),
     REVISION_HISTORY_TABLE("\"revision_history_table\".*",

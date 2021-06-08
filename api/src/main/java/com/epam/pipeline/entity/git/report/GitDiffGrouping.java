@@ -1,6 +1,5 @@
 package com.epam.pipeline.entity.git.report;
 
-import com.epam.pipeline.entity.git.GitDiffEntry;
 import lombok.Builder;
 import lombok.Value;
 
@@ -14,6 +13,6 @@ public class GitDiffGrouping {
     GitDiffGroupType type;
     boolean archive;
     boolean includeDiff;
-    Map<String, List<GitDiffEntry>> diffGrouping;
+    Map<String, List<GitParsedDiffEntry>> diffGrouping;
 
 }

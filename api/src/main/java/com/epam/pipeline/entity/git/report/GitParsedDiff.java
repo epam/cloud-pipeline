@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git;
+package com.epam.pipeline.entity.git.report;
 
+import com.epam.pipeline.entity.git.GitCommitsFilter;
 import lombok.Builder;
 import lombok.Data;
 
@@ -23,13 +24,13 @@ import java.util.List;
 
 
 /**
- * Represents Git diff that is split by commits
+ * Represents Git diff object that is split by commits, each entry in entries is related to separate file
  */
 @Data
 @Builder
-public class GitDiff {
+public class GitParsedDiff {
 
-    private List<GitDiffEntry> entries;
+    private List<GitParsedDiffEntry> entries;
 
     private GitCommitsFilter filters;
 }

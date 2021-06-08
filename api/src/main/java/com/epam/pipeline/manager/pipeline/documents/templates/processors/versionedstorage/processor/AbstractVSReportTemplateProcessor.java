@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.processor;
 
-import com.epam.pipeline.entity.git.GitDiff;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage.ReportDataExtractor;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +28,11 @@ public abstract class AbstractVSReportTemplateProcessor implements VSReportTempl
 
     protected final ReportDataExtractor dataProducer;
 
+    abstract void replacePlaceholderWithData(XWPFParagraph paragraph, String template, Object data);
+
     @Override
     public void process(final XWPFParagraph paragraph, final String template, final Pipeline storage,
-                        final GitDiff diff, final GitDiffReportFilter reportFilter) {
+                        final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         if (paragraph == null) {
             return;
         }
@@ -40,8 +42,6 @@ public abstract class AbstractVSReportTemplateProcessor implements VSReportTempl
             );
         }
     }
-
-    abstract void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Object data);
 
     private String getPlaceholderRegexp(final String template) {
         return ".*(?i)\\{" + template + "}.*";

@@ -2,8 +2,8 @@ package com.epam.pipeline.manager.pipeline.documents.templates;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitDiff;
-import com.epam.pipeline.entity.git.GitDiffEntry;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -131,11 +131,11 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
 
     @Test
     public void fetchAndNormalizeDiffWorksWithBinaryAndText() {
-        final GitDiff gitDiff = reportTemplateManager.fetchAndNormalizeDiffs(1L, GIT_COMMITS_FILTER);
+        final GitParsedDiff gitDiff = reportTemplateManager.fetchAndNormalizeDiffs(1L, GIT_COMMITS_FILTER);
         Assert.assertEquals(2, gitDiff.getEntries().size());
 
-        GitDiffEntry first = gitDiff.getEntries().get(0);
-        GitDiffEntry second = gitDiff.getEntries().get(1);
+        GitParsedDiffEntry first = gitDiff.getEntries().get(0);
+        GitParsedDiffEntry second = gitDiff.getEntries().get(1);
 
         Assert.assertEquals("/dev/null", first.getDiff().getFromFileName());
         Assert.assertEquals("test.csv", first.getDiff().getToFileName());
@@ -152,10 +152,10 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
 
     @Test
     public void fetchAndNormalizeDiffWorksWithText() {
-        final GitDiff gitDiff = reportTemplateManager.fetchAndNormalizeDiffs(1L, GIT_COMMITS_FILTER_2);
+        final GitParsedDiff gitDiff = reportTemplateManager.fetchAndNormalizeDiffs(1L, GIT_COMMITS_FILTER_2);
         Assert.assertEquals(1, gitDiff.getEntries().size());
 
-        GitDiffEntry first = gitDiff.getEntries().get(0);
+        GitParsedDiffEntry first = gitDiff.getEntries().get(0);
 
         Assert.assertEquals("/dev/null", first.getDiff().getFromFileName());
         Assert.assertEquals("test.csv", first.getDiff().getToFileName());

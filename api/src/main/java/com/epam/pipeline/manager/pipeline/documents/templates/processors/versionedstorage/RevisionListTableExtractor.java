@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.processors.versionedstorage;
 
-import com.epam.pipeline.entity.git.GitDiff;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -41,11 +41,12 @@ import java.util.stream.Collectors;
 
 public class RevisionListTableExtractor implements ReportDataExtractor {
 
-    private final static Pattern PATTERN = Pattern.compile("\\{\"revision_history_table\":?(.*)}");
-    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Pattern PATTERN = Pattern.compile("\\{\"revision_history_table\":?(.*)}");
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
-    public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage, final GitDiff diff, GitDiffReportFilter reportFilter) {
+    public Object apply(final XWPFParagraph xwpfParagraph, final Pipeline storage,
+                        final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         final Map<RevisionHistoryTableColumn, String> tableColumns = getTableColumns(xwpfParagraph);
         final Table result = new Table();
         result.setContainsHeaderRow(true);
@@ -82,7 +83,7 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
         return tableColumns;
     }
 
-    private Map<RevisionHistoryTableColumn, String> parseTableStructure(String tableStructureString) {
+    private Map<RevisionHistoryTableColumn, String> parseTableStructure(final String tableStructureString) {
         if (StringUtils.isBlank(tableStructureString)) {
             return RevisionHistoryTableColumn.DEFAULT;
         }
@@ -109,7 +110,8 @@ public class RevisionListTableExtractor implements ReportDataExtractor {
 
         @JsonProperty("date_changed")
         DATE_CHANGED("date_changed", "Date changed",
-                (file, commit) -> DATE_FORMAT.format(commit.getAuthorDate())),
+            (file, commit) -> DATE_FORMAT.format(commit.getAuthorDate())
+        ),
 
         @JsonProperty("revision")
         REVISION("revision", "Revision", (file, commit) -> commit.getCommit().substring(0, 9)),
