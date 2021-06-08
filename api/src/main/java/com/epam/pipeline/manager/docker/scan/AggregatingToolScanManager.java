@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.scan.Vulnerability;
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -60,6 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -185,6 +187,8 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
     public ToolVersionScanResult scanTool(Tool tool, String tag, Boolean rescan)
             throws ToolScanExternalServiceException {
+        Assert.isTrue(!isWindowsBased(tool, tag),
+                      messageHelper.getMessage(MessageConstants.INFO_WIN_TOOL_SCAN_DISABLED, tool.getId(), tag));
         DockerRegistry registry = dockerRegistryManager.load(tool.getRegistryId());
         Optional<ToolVersionScanResult> actualScan = rescan ? Optional.empty() : getActualScan(tool, tag, registry);
         return actualScan.isPresent() ? actualScan.get() : doScan(tool, tag, registry);
@@ -296,6 +300,12 @@ public class AggregatingToolScanManager implements ToolScanManager {
     String getLayerName(String image, String tag) throws UnsupportedEncodingException {
         return URLEncoder.encode(image, "UTF-8") + ":" + URLEncoder.encode(tag, "UTF-8")
                 + ":" + UUID.randomUUID();
+    }
+
+    @Override
+    public boolean isWindowsBased(final Tool tool, final String version) {
+        final ToolVersion toolVersion = toolVersionManager.loadToolVersion(tool.getId(), version);
+        return KubernetesConstants.WINDOWS.equals(toolVersion.getPlatform());
     }
 
     private ToolVersionScanResult doScan(Tool tool, String tag, DockerRegistry registry)

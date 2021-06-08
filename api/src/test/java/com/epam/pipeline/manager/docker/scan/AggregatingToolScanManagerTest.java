@@ -81,9 +81,10 @@ public class AggregatingToolScanManagerTest {
     private static final String ACTUAL_SCANNED_VERSION = "actual";
     private static final String TEST_VULNERABILITY_NAME = "testVulnerability";
     private static final String TEST_VULNERABILITY_DESCRIPTION = "testDescription";
-    public static final String DIGEST_1 = "digest1";
-    public static final String DIGEST_2 = "digest2";
-    public static final String DIGEST_3 = "digest3";
+    private static final String DIGEST_1 = "digest1";
+    private static final String DIGEST_2 = "digest2";
+    private static final String DIGEST_3 = "digest3";
+    private static final String WINDOWS = "windows";
 
     @InjectMocks
     private AggregatingToolScanManager aggregatingToolScanManager = new AggregatingToolScanManager();
@@ -408,6 +409,14 @@ public class AggregatingToolScanManagerTest {
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, ACTUAL_SCANNED_VERSION, false);
         //check that code just get result and don't call scan process
         Assert.assertEquals(actual.getScanDate(), result.getScanDate());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testForbidWindowsScanning() throws ToolScanExternalServiceException {
+        final ToolVersion windowsVersion = new ToolVersion();
+        windowsVersion.setPlatform(WINDOWS);
+        when(toolVersionManager.loadToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(windowsVersion);
+        aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
     }
 
     @Test
