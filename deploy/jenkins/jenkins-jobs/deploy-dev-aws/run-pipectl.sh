@@ -16,15 +16,7 @@
 _SERVICES_TO_INSTALL="$CP_SERVICES_LIST"
 _ERASE_DATA="$CP_ERASE_DATA"
 
-# Simple check for kube and pods availablility
-# If kube is not installed yet or DB pod is not available - treat this as a fresh installation
-if ! kubectl version &> /dev/null || ! kubectl get po 2>/dev/null | grep -q cp-api-db; then
-    echo "kubectl is not installed or API DB pod is not running - full installation will be performed"
-    unset _SERVICES_TO_INSTALL
-    unset _ERASE_DATA
-fi
-
-#Export docker registry where all containers are stored
+# Export docker registry where all containers are stored
 export CP_DOCKER_DIST_SRV=${CP_DOCKER_DIST_SRV}
 
 sudo chmod +x $DEPLOY_DIR/pipectl && \

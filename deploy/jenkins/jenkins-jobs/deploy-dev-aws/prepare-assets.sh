@@ -30,7 +30,10 @@ fi
 
 echo "Deploying using $PIPECTL_DIST_URL to $AWS_HOST"
 
+set -o allexport
 source "${JENKINS_ENV}"
+set +o allexport
+
 export DEPLOY_DIR="$WORKSPACE/assets"
 rm -rf "$DEPLOY_DIR"
 mkdir -p "$DEPLOY_DIR"
