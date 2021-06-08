@@ -74,7 +74,8 @@ export default function parseSearchQuery (input) {
     searchQueries: [],
     filters: []
   };
-  let exec = validSearchCriteria.exec((input || '').trim());
+  input = (input || '').trim();
+  let exec = validSearchCriteria.exec(input);
   while (exec && exec.length > 1) {
     const {
       filters = {},
