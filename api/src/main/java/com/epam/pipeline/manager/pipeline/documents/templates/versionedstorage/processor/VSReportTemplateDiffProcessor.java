@@ -71,6 +71,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     private static final int FILE_TO_LINE_INDEX_COLUMN = 1;
     private static final int CHANGES_TYPE_COLUMN = 2;
     private static final int CONTENT_COLUMN = 3;
+    public static final String DEV_NULL = "/dev/null";
 
     private final ReportDataExtractor<GitDiffGrouping> dataProducer;
 
@@ -177,7 +178,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
                                          final GitDiffGroupType type, final GitParsedDiffEntry diffEntry) {
         if (type.equals(GitDiffGroupType.BY_COMMIT)) {
-            final String file = diffEntry.getDiff().getFromFileName().contains("/dev/null")
+            final String file = diffEntry.getDiff().getFromFileName().contains(DEV_NULL)
                     ? diffEntry.getDiff().getToFileName()
                     : diffEntry.getDiff().getFromFileName();
             insertTextData(paragraph, file, true, fontFamily, fontSize, false);

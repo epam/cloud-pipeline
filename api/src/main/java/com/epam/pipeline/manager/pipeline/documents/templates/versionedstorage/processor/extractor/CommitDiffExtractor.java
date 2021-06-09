@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.git.report.GitDiffGrouping;
 import com.epam.pipeline.entity.git.report.GitDiffGroupType;
+import com.epam.pipeline.manager.utils.DiffUtils;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 import java.util.Comparator;
@@ -48,11 +49,9 @@ public class CommitDiffExtractor implements ReportDataExtractor<GitDiffGrouping>
             ? diff.getEntries().stream()
                 .sorted(Comparator.comparing(e -> e.getCommit().getCommitterDate()))
                 .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
-            : diff.getEntries().stream()
-                .collect(Collectors.groupingBy(
-                    e -> e.getDiff().getFromFileName().contains("/dev/null")
-                        ? e.getDiff().getToFileName()
-                        : e.getDiff().getFromFileName()));
+            : diff.getEntries()
+                .stream()
+                .collect(Collectors.groupingBy(e -> DiffUtils.getChangedFileName(e.getDiff())));
     }
 
     private GitDiffGroupType getGroupType(GitDiffReportFilter reportFilter) {

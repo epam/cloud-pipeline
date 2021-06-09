@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.TableRow;
+import com.epam.pipeline.manager.utils.DiffUtils;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,14 +55,17 @@ public class FileListTableExtractor implements ReportDataExtractor<Table> {
         for (String value : tableColumns.values()) {
             result.addColumn(value);
         }
-        diff.getEntries().stream()
-                .collect(Collectors.toMap(this::getChangedFileName, GitParsedDiffEntry::getCommit, (c1, c2) -> c1))
-                .forEach((file, commit) -> {
-                    TableRow row = result.addRow(file);
-                    tableColumns.forEach(
-                        (e, v) -> result.setData(row.getName(), v, e.dataExtractor.apply(file, commit))
-                    );
-                });
+        diff.getEntries()
+            .stream()
+            .collect(Collectors.toMap(
+                e -> DiffUtils.getChangedFileName(e.getDiff()),
+                GitParsedDiffEntry::getCommit, (c1, c2) -> c1)
+            ).forEach((file, commit) -> {
+                TableRow row = result.addRow(file);
+                tableColumns.forEach(
+                    (e, v) -> result.setData(row.getName(), v, e.dataExtractor.apply(file, commit))
+                );
+            });
         return result;
     }
 
@@ -76,12 +80,6 @@ public class FileListTableExtractor implements ReportDataExtractor<Table> {
                     .collect(Collectors.toMap(c -> c, c -> c.defaultColumn));
         }
         return tableColumns;
-    }
-
-    private String getChangedFileName(final GitParsedDiffEntry gitDiffEntry) {
-        return gitDiffEntry.getDiff().getToFileName().equals("/dev/null")
-                ? gitDiffEntry.getDiff().getFromFileName()
-                : gitDiffEntry.getDiff().getToFileName();
     }
 
     private Map<FileListTableColumn, String> parseTableStructure(final String tableStructureString) {

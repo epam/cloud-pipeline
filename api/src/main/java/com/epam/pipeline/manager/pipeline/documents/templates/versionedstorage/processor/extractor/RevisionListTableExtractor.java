@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.Table;
 import com.epam.pipeline.manager.pipeline.documents.templates.structure.TableRow;
+import com.epam.pipeline.manager.utils.DiffUtils;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,12 +58,10 @@ public class RevisionListTableExtractor implements ReportDataExtractor<Table> {
 
         diff.getEntries().stream()
                 .sorted(Comparator.comparing(d -> d.getCommit().getAuthorDate()))
-                .map(gitDiffEntry -> {
-                    final String file = gitDiffEntry.getDiff().getFromFileName().equals("/dev/null")
-                            ? gitDiffEntry.getDiff().getToFileName()
-                            : gitDiffEntry.getDiff().getFromFileName();
-                    return new Pair<>(file, gitDiffEntry.getCommit());
-                }).forEachOrdered(fileAndCommit -> {
+                .map(gitDiffEntry -> new Pair<>(
+                        DiffUtils.getChangedFileName(gitDiffEntry.getDiff()),
+                        gitDiffEntry.getCommit()))
+                .forEachOrdered(fileAndCommit -> {
                     TableRow row = result.addRow(fileAndCommit.getKey() + fileAndCommit.getValue().getCommit());
                     tableColumns.forEach(
                         (e, v) -> result.setData(row.getName(), v,
