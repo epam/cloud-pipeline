@@ -400,21 +400,47 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     if (this.props.pipeline && this.props.pipeline.error) {
       return <Alert type="warning" message={this.props.pipeline.error} />;
     }
-    const errors = [];
+    const pipelineType = this.props.pipeline?.value?.pipelineType || '';
+    const isVersioned = pipelineType.toLowerCase() === 'versioned_storage';
+    const alerts = [];
     if (this.props.configurations && this.props.configurations.error) {
-      errors.push(this.props.configurations.error);
+      alerts.push({
+        message: this.props.configurations.error,
+        type: 'warning'
+      });
     }
     if (this.props.run && this.props.run.error) {
-      errors.push(this.props.run.error);
+      alerts.push({
+        message: this.props.run.error,
+        type: 'warning'
+      });
     }
     if (this.props.tool && this.props.tool.error) {
-      errors.push(this.props.tool.error);
+      alerts.push({
+        message: this.props.tool.error,
+        type: 'warning'
+      });
     }
     if (this.props.toolSettings && this.props.toolSettings.error) {
-      errors.push(this.props.toolSettings.error);
+      alerts.push({
+        message: this.props.toolSettings.error,
+        type: 'warning'
+      });
     }
     if (this.versionedStoragesLaunchPayload && this.versionedStoragesLaunchPayload.error) {
-      errors.push(this.versionedStoragesLaunchPayload.error);
+      alerts.push({
+        message: this.versionedStoragesLaunchPayload.error,
+        type: 'warning'
+      });
+    }
+    if (isVersioned) {
+      alerts.push({
+        message: [
+          'You are going to launch a versioned storage.',
+          'The latest revision of the VS will be cloned.'
+        ].join(' '),
+        type: 'info'
+      });
     }
     const parameters = this.getParameters();
     return (
@@ -434,7 +460,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           version={this.props.version}
           parameters={parameters}
           configurations={this.getConfigurations()}
-          errors={errors}
+          alerts={alerts}
           onConfigurationChanged={this.onConfigurationChanged}
           onLaunch={this.launch}
           isDetachedConfiguration={false} />

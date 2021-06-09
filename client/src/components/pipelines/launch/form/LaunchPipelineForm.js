@@ -199,7 +199,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     parameters: PropTypes.shape(),
     configurations: PropTypes.array,
     onLaunch: PropTypes.func,
-    errors: PropTypes.array,
+    alerts: PropTypes.arrayOf(PropTypes.shape({
+      message: PropTypes.string,
+      type: PropTypes.string
+    })),
     editConfigurationMode: PropTypes.bool,
     onConfigurationChanged: PropTypes.func,
     currentConfigurationName: PropTypes.string,
@@ -4624,6 +4627,41 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   };
 
+  renderAlerts = () => {
+    const {alerts} = this.props;
+    if (!alerts || !alerts.length) {
+      return null;
+    }
+    const defaultType = 'warning';
+    const groupedAlerts = alerts.reduce((result, alert) => {
+      const {type = defaultType} = alert;
+      (result[type] = result[type] || []).push(alert);
+      return result;
+    }, {});
+    const getMessagesList = (messages) => {
+      return (
+        <ul style={{listStyle: 'none'}}>
+          {messages.map((alert, index) => (
+            <li key={`error_${index}`}>{alert.message}</li>
+          ))}
+        </ul>
+      );
+    };
+    return (
+      <Row style={{marginBottom: '10px'}}>
+        {Object.entries(groupedAlerts).map(([type, messages]) => {
+          return messages && messages.length ? (
+            <Alert
+              key={type}
+              type={type}
+              style={{marginBottom: '4px'}}
+              message={getMessagesList(messages)}
+            />) : null;
+        })}
+      </Row>
+    );
+  };
+
   render () {
     const renderSubmitButton = () => {
       if (this.props.editConfigurationMode) {
@@ -4845,24 +4883,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               </tr>
             </tbody>
           </table>
-          {
-            this.props.errors && this.props.errors.length > 0
-              ? (
-                <Row>
-                  <Alert
-                    type="warning"
-                    message={
-                      <ul style={{listStyle: 'disc'}}>
-                        {
-                          this.props.errors.map(
-                            (error, index) => <li key={`error_${index}`}>{error}</li>)
-                        }
-                      </ul>
-                    } />
-                  <br />
-                </Row>)
-              : undefined
-          }
+          {this.renderAlerts()}
           {
             this.props.pipeline &&
             !roleModel.executeAllowed(this.props.pipeline) &&
