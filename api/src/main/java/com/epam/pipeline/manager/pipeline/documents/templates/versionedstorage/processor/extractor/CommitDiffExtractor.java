@@ -50,9 +50,9 @@ public class CommitDiffExtractor implements ReportDataExtractor<GitDiffGrouping>
                 .collect(Collectors.groupingBy(e -> e.getCommit().getCommit()))
             : diff.getEntries().stream()
                 .collect(Collectors.groupingBy(
-                        e -> e.getDiff().getFromFileName().contains("/dev/null")
-                            ? e.getDiff().getToFileName()
-                            : e.getDiff().getFromFileName()));
+                    e -> e.getDiff().getFromFileName().contains("/dev/null")
+                        ? e.getDiff().getToFileName()
+                        : e.getDiff().getFromFileName()));
     }
 
     private GitDiffGroupType getGroupType(GitDiffReportFilter reportFilter) {
