@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
@@ -24,21 +23,31 @@ import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
+import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.entity.git.report.GitDiffGroupType;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Collections;
 
-public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest {
+public class VersionStorageReportTemplateManagerTest extends AbstractManagerTest {
 
     public static final GitDiffReportFilter GIT_COMMITS_FILTER = GitDiffReportFilter
             .builder()
@@ -66,11 +75,15 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
     @MockBean
     private GitManager gitManager;
 
+    @SpyBean
+    private PreferenceManager preferenceManager;
+
     @Autowired
+    @InjectMocks
     private VersionStorageReportTemplateManager reportTemplateManager;
 
     @Before
-    public void setup() {
+    public void setup() throws IOException {
         Pipeline mockPipeline = new Pipeline();
         mockPipeline.setName("pipeline");
         mockPipeline.setId(1L);
@@ -78,6 +91,10 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
         Mockito.when(
                 pipelineManager.load(1L)
         ).thenReturn(mockPipeline);
+
+        Mockito.when(
+                preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_REPORT_TEMPLATE)
+        ).thenReturn(getTestFile("vs_report_template.docx").getPath());
 
         Mockito.when(
                 gitManager.logRepositoryCommitDiffs(
@@ -146,6 +163,17 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
     }
 
     @Test
+    public void generationOfReportsWorksCorrectlyTest() throws IOException {
+        final VersionStorageReportFile report = reportTemplateManager.generateReport(1L, GIT_COMMITS_FILTER);
+        //check that Apache poi could read such report -> this docx file is valid
+        XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(report.getContent()));
+        Assert.assertFalse(document.getBodyElements().isEmpty());
+        document.getParagraphs().stream().map(XWPFParagraph::getText).forEach(
+            text -> Assert.assertFalse(text.matches(".*\\{.*}.*"))
+        );
+    }
+
+    @Test
     public void fetchAndNormalizeDiffWorksWithBinaryAndText() {
         final GitParsedDiff gitDiff = reportTemplateManager.fetchAndNormalizeDiffs(1L, GIT_COMMITS_FILTER);
         Assert.assertEquals(2, gitDiff.getEntries().size());
@@ -163,7 +191,10 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
         Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getDateTo(), gitDiff.getFilters().getDateTo());
         Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getPath(), gitDiff.getFilters().getPath());
         Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getRef(), gitDiff.getFilters().getRef());
-        Assert.assertArrayEquals(GIT_COMMITS_FILTER.getCommitsFilter().getAuthors().toArray(), gitDiff.getFilters().getAuthors().toArray());
+        Assert.assertArrayEquals(
+            GIT_COMMITS_FILTER.getCommitsFilter().getAuthors().toArray(),
+            gitDiff.getFilters().getAuthors().toArray()
+        );
     }
 
     @Test
@@ -181,7 +212,10 @@ public class VersionStorageReportTemplateManagerTest extends AbstractSpringTest 
         Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getDateTo(), gitDiff.getFilters().getDateTo());
         Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getPath(), gitDiff.getFilters().getPath());
         Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getRef(), gitDiff.getFilters().getRef());
-        Assert.assertArrayEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getAuthors().toArray(), gitDiff.getFilters().getAuthors().toArray());
+        Assert.assertArrayEquals(
+            GIT_COMMITS_FILTER_2.getCommitsFilter().getAuthors().toArray(),
+            gitDiff.getFilters().getAuthors().toArray()
+        );
     }
 
 }
