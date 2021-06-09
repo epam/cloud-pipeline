@@ -78,7 +78,7 @@ public class FileListTableExtractor implements ReportDataExtractor<Table> {
         return tableColumns;
     }
 
-    private String getChangedFileName(GitParsedDiffEntry gitDiffEntry) {
+    private String getChangedFileName(final GitParsedDiffEntry gitDiffEntry) {
         return gitDiffEntry.getDiff().getToFileName().equals("/dev/null")
                 ? gitDiffEntry.getDiff().getFromFileName()
                 : gitDiffEntry.getDiff().getToFileName();

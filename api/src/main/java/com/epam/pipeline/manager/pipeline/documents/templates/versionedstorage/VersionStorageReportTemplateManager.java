@@ -98,7 +98,7 @@ public class VersionStorageReportTemplateManager {
         }
     }
 
-    private byte[] writeReport(List<Pair<String, XWPFDocument>> diffReportFiles) throws IOException {
+    private byte[] writeReport(final List<Pair<String, XWPFDocument>> diffReportFiles) throws IOException {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         if (diffReportFiles.size() == 1) {
             diffReportFiles.get(0).getSecond().write(outputStream);
@@ -116,7 +116,7 @@ public class VersionStorageReportTemplateManager {
                 + resolveFileExtension(diffReportFiles);
     }
 
-    private String resolveFileExtension(List<Pair<String, XWPFDocument>> diffReportFiles) {
+    private String resolveFileExtension(final List<Pair<String, XWPFDocument>> diffReportFiles) {
         return diffReportFiles.size() > 1 ? ZIP : DOCX;
     }
 
@@ -221,8 +221,8 @@ public class VersionStorageReportTemplateManager {
         }
     }
 
-    private void changeBodyElement(final IBodyElement element, final Pipeline storage, final GitParsedDiff diff,
-                                   final GitDiffReportFilter reportFilter) {
+    private void changeBodyElement(final IBodyElement element, final Pipeline storage,
+                                   final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         switch (element.getElementType()) {
             case TABLE:
                 changeTable((XWPFTable) element, storage, diff, reportFilter);
@@ -281,7 +281,7 @@ public class VersionStorageReportTemplateManager {
                 + id.replace("/", NAME_SEPARATOR) + DOCX;
     }
 
-    private XWPFDocument prepareGroupReportTemplate(String reportTemplatePath) throws IOException {
+    private XWPFDocument prepareGroupReportTemplate(final String reportTemplatePath) throws IOException {
         // Here we clean up report template in order to leave only one template for commit diff
         // because here we generate report file only with diff information without any common info
         final XWPFDocument report = new XWPFDocument(new FileInputStream(reportTemplatePath));
@@ -297,7 +297,7 @@ public class VersionStorageReportTemplateManager {
         return report;
     }
 
-    private boolean paragraphContainsTemplate(IBodyElement element, String template) {
+    private boolean paragraphContainsTemplate(final IBodyElement element, final String template) {
         return element.getElementType() == BodyElementType.PARAGRAPH &&
                 ((XWPFParagraph) element).getText().contains(template);
     }

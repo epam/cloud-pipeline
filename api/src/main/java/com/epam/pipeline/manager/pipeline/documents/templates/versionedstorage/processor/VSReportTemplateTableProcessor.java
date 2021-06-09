@@ -50,7 +50,7 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
 
     public static final String EMPTY = "";
 
-    final ReportDataExtractor<Table> dataProducer;
+    private final ReportDataExtractor<Table> dataProducer;
 
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
                                            final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
@@ -71,7 +71,7 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
             final List<XWPFRun> runs = paragraph.getRuns();
             final XmlCursor xmlCursor = paragraph.getCTP().newCursor();
             xmlCursor.toNextSibling();
-            outer: for (XWPFRun run : runs) {
+            for (XWPFRun run : runs) {
                 for (int pos = 0; pos < run.getCTR().sizeOfTArray(); pos++) {
                     if (!shouldMoveRun) {
                         runToRemoveIndex++;
@@ -85,7 +85,7 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
                         globalStartIndex = globalEndIndex;
                         if (shouldMoveRun && currentParagraph != null) {
                             XWPFRun newRun = currentParagraph.createRun();
-                            this.copyRunProperties(run, newRun, true);
+                            copyRunProperties(run, newRun, true);
                         }
                         continue;
                     }
@@ -99,9 +99,6 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
                                 paragraph, dataProducer.extract(paragraph, storage, diff, reportFilter),
                                 xmlCursor, run, pos, runText, replaceFrom, replaceTo
                         );
-                        if (currentParagraph == null) {
-                            break outer;
-                        }
                         shouldMoveRun = true;
                         dataInserted = true;
                     } else {
@@ -109,7 +106,7 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
                         run.setText(runText, pos);
                         if (shouldMoveRun && currentParagraph != null) {
                             XWPFRun newRun = currentParagraph.createRun();
-                            this.copyRunProperties(run, newRun, true);
+                            copyRunProperties(run, newRun, true);
                         }
                     }
                     globalStartIndex = globalEndIndex;
@@ -133,17 +130,15 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
         final String beforePlaceholderText = runText.substring(0, replaceFrom);
         run.setText(beforePlaceholderText, pos);
 
-        this.insertData(paragraph, run, xmlCursor, data);
-        if (!xmlCursor.isStart()) {
-            return null;
-        }
+        insertData(paragraph, run, xmlCursor, data);
+        xmlCursor.toNextToken();
 
         final XWPFParagraph newParagraph = paragraph.getDocument().insertNewParagraph(xmlCursor);
-        this.copyParagraphProperties(paragraph, newParagraph);
+        copyParagraphProperties(paragraph, newParagraph);
 
         final String afterPlaceholderText = runText.substring(replaceTo);
         XWPFRun newRun = newParagraph.createRun();
-        this.copyRunProperties(run, newRun);
+        copyRunProperties(run, newRun);
         newRun.setText(afterPlaceholderText, pos);
         return newParagraph;
     }
@@ -214,7 +209,7 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
     }
 
     private void copyRunProperties(final XWPFRun original, final XWPFRun copy) {
-        this.copyRunProperties(original, copy, false);
+        copyRunProperties(original, copy, false);
     }
 
     private void copyRunProperties(final XWPFRun original, final XWPFRun copy, final boolean copyText) {

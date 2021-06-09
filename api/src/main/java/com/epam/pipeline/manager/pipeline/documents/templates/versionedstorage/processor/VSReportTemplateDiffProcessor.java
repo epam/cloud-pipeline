@@ -72,7 +72,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     private static final int CHANGES_TYPE_COLUMN = 2;
     private static final int CONTENT_COLUMN = 3;
 
-    final ReportDataExtractor<GitDiffGrouping> dataProducer;
+    private final ReportDataExtractor<GitDiffGrouping> dataProducer;
 
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
                                            final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
@@ -102,6 +102,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         XWPFParagraph lastParagraph = paragraph;
         lastParagraph.setPageBreak(true);
         for (Map.Entry<String, List<GitParsedDiffEntry>> entry : getSortedDiffGroups(diffsGrouping)) {
+            lastParagraph.setPageBreak(true);
             final String diffGroupKey = entry.getKey();
             final List<GitParsedDiffEntry> diffEntries = entry.getValue().stream()
                     .sorted(resolveDiffGroupComparator(diffsGrouping))
@@ -109,7 +110,6 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
 
             addHeader(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
             for (GitParsedDiffEntry diffEntry : diffEntries) {
-                lastParagraph.setPageBreak(true);
                 lastParagraph = addDescription(
                         lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
             }
@@ -164,8 +164,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                     diffEntries.stream().findFirst()
                         .map(GitParsedDiffEntry::getCommit)
                         .map(c -> DATE_FORMAT.format(c.getAuthorDate())).orElse(""),
-                    false, fontFamily, fontSize + HEADER_FONT_DELTA, false
-            );
+                    false, fontFamily, fontSize + HEADER_FONT_DELTA, false);
         } else {
             insertTextData(paragraph, "Changes of file ", false, fontFamily,
                     fontSize + HEADER_FONT_DELTA, false);
@@ -209,16 +208,21 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
 
     private XWPFParagraph generateDiffTable(final XWPFParagraph paragraph, final String fontFamily,
                                             int fontSize, final GitParsedDiffEntry diffEntry) {
-        if (diffEntry.getDiff().getHunks().isEmpty()) {
-            return createNewParagraph(paragraph, paragraph.getCTP().newCursor());
+        XmlCursor cursor = paragraph.getCTP().newCursor();
+
+        if (!diffEntry.getDiff().getHunks().isEmpty()) {
+            final XWPFTable xwpfTable = createTable(paragraph);
+            for (final Hunk hunk : diffEntry.getDiff().getHunks()) {
+                fillTableWithDiffHunk(fontFamily, fontSize, xwpfTable, hunk);
+            }
+            cursor = xwpfTable.getCTTbl().newCursor();
         }
 
-        final XWPFTable xwpfTable = createTable(paragraph);
-
-        for (final Hunk hunk : diffEntry.getDiff().getHunks()) {
-            fillTableWithDiffHunk(fontFamily, fontSize, xwpfTable, hunk);
-        }
-        return createNewParagraph(paragraph, xwpfTable.getCTTbl().newCursor());
+        final XWPFParagraph newParagraph = createNewParagraph(paragraph, cursor);
+        final XWPFRun run = newParagraph.createRun();
+        run.addBreak(BreakType.TEXT_WRAPPING);
+        run.addBreak(BreakType.TEXT_WRAPPING);
+        return newParagraph;
     }
 
     private void insertTextData(final XWPFParagraph paragraph, final String text, final boolean bold,

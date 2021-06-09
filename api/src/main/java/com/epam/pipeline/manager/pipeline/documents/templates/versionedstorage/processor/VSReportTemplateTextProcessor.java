@@ -31,8 +31,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class VSReportTemplateTextProcessor implements VSReportTemplateProcessor {
 
-    public static final String EMPTY = "";
-    final ReportDataExtractor<String> dataProducer;
+    private static final String EMPTY = "";
+
+    private final ReportDataExtractor<String> dataProducer;
 
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
                                            final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {

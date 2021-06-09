@@ -819,7 +819,7 @@ public class PipelineController extends AbstractRestController {
         return Result.success(pipelineApiService.getRepositoryCommitDiff(id, commit, path));
     }
 
-    @RequestMapping(value = "/pipeline/{id}/report/generate", method = RequestMethod.POST)
+    @RequestMapping(value = "/pipeline/{id}/report", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
             value = "Generate Version Storage Report",
