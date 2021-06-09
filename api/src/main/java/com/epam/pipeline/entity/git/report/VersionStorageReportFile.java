@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git.gitreader;
+package com.epam.pipeline.entity.git.report;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 
-
-/**
- * Represents Git Diff and its commit
- */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class GitReaderDiffEntry {
-    private GitReaderRepositoryCommit commit;
-    private String diff;
+@Value
+@Builder
+public class VersionStorageReportFile {
+    String name;
+    byte[] content;
 }

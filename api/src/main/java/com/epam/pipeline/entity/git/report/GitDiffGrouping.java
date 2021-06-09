@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git.gitreader;
+package com.epam.pipeline.entity.git.report;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 
+import java.util.List;
+import java.util.Map;
 
-/**
- * Represents Git Diff and its commit
- */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class GitReaderDiffEntry {
-    private GitReaderRepositoryCommit commit;
-    private String diff;
+@Value
+@Builder
+public class GitDiffGrouping {
+
+    GitDiffGroupType type;
+    boolean archive;
+    boolean includeDiff;
+    Map<String, List<GitParsedDiffEntry>> diffGrouping;
+
 }

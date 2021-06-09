@@ -81,6 +81,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLes
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -145,6 +146,9 @@ public class SystemPreferences {
                                isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
     public static final IntPreference DATA_STORAGE_OPERATIONS_BULK_SIZE = new IntPreference(
             "storage.operations.bulk.size", 1000, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final StringPreference VERSION_STORAGE_REPORT_TEMPLATE = new StringPreference(
+            "storage.version.storage.report.template", null, DATA_STORAGE_GROUP, isNullOrValidLocalPath());
+
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'

@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.git.gitreader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.Date;
@@ -26,6 +27,7 @@ import java.util.List;
  * Represents Gitlab repository commit
  */
 @Data
+@Builder
 public class GitReaderRepositoryCommit {
 
     @JsonProperty("commit")

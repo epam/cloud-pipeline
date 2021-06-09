@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git.gitreader;
+package com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
+import com.epam.pipeline.entity.git.report.GitParsedDiff;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
+import java.text.SimpleDateFormat;
 
-/**
- * Represents Git Diff and its commit
- */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class GitReaderDiffEntry {
-    private GitReaderRepositoryCommit commit;
-    private String diff;
+public interface ReportDataExtractor<T> {
+
+    SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+    T extract(XWPFParagraph xwpfParagraph, Pipeline storage, GitParsedDiff diff, GitDiffReportFilter reportFilter);
+
 }
