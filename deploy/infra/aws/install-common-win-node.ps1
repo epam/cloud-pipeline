@@ -259,6 +259,11 @@ InstallKubeUsingSigWindowsToolsIfRequired -KubeDir "$kubeDir"
 Write-Host "Removing temporary SSH keys..."
 Remove-Item -Recurse -Force "$homeDir\.ssh"
 
+# todo: Remove once kubelet pulling issue is resolved.
+#  See https://github.com/epam/cloud-pipeline/issues/1832#issuecomment-832841950
+Write-Host "Prepulling Windows tool base docker image..."
+docker pull python:3.8.9-windowsservercore
+
 Write-Host "Scheduling instance initialization on next launch..."
 C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeInstance.ps1 -Schedule
 
