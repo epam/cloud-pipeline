@@ -77,8 +77,12 @@ function checkForBlobErrors (blob) {
   return new Promise(resolve => {
     const fr = new FileReader();
     fr.onload = function () {
-      const status = JSON.parse(this.result)?.status?.toLowerCase();
-      resolve(status === 'error');
+      try {
+        const status = JSON.parse(this.result)?.status?.toLowerCase();
+        resolve(status === 'error');
+      } catch (___) {
+        resolve(true);
+      }
     };
     fr.readAsText(blob);
   });
@@ -780,7 +784,10 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   generateReport = async (settings = {}) => {
-    const {pipeline} = this.props;
+    const {
+      pipeline,
+      pipelineId
+    } = this.props;
     const {
       authors,
       extensions,
@@ -790,7 +797,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       groupDiffsBy,
       downloadAsArchive
     } = settings;
-    const {pipelineId} = this.props;
     const hide = message.loading(`Generating report...`, 0);
     const request = new PipelineGenerateReport(pipelineId);
     await request.send({
