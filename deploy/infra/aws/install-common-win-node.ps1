@@ -46,6 +46,20 @@ function InstallNoMachineIfRequired {
     return $restartRequired
 }
 
+function InstallOpenSshServerIfRequired {
+    $restartRequired=$false
+    $openSshServerInstalled = Get-WindowsCapability -Online `
+        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
+        | ForEach-Object { $_.State -eq "Installed" }
+    if (-not($openSshServerInstalled)) {
+        Write-Host "Installing OpenSSH server..."
+        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
+        $restartRequired=$false
+    }
+    return $restartRequired
+}
+
 function InstallWebDAVIfRequired {
     $restartRequired=$false
     $webDAVInstalled = Get-WindowsFeature `
@@ -106,19 +120,6 @@ function InstallChromeIfRequired {
         Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile $workingDir\ChromeSetup.exe
         & $workingDir\ChromeSetup.exe /silent /install
         WaitForProcess -ProcessName "ChromeSetup"
-    }
-}
-
-function InstallOpenSshServerIfRequired {
-    $openSshServerInstalled = Get-WindowsCapability -Online `
-        | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
-        | ForEach-Object { $_.State -eq "Installed" }
-    if (-not($openSshServerInstalled)) {
-        Write-Host "Installing OpenSSH server..."
-        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-        Start-Service sshd
-        Set-Service -Name sshd -StartupType 'Automatic'
-        New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
     }
 }
 
@@ -197,6 +198,16 @@ function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
     }
 }
 
+function ConfigureInstanceInitialization {
+    $Ec2UtilityConfigFile = 'C:\ProgramData\Amazon\EC2-Windows\Launch\Config\LaunchConfig.json'
+    $Ec2UtilityConfig = Get-Content $Ec2UtilityConfigFile | ConvertFrom-Json
+    $Ec2UtilityConfig.setWallpaper = $False
+    $Ec2UtilityConfig | ConvertTo-Json | Out-File $Ec2UtilityConfigFile
+}
+
+$interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
+
+$homeDir = "$env:USERPROFILE"
 $workingDir="c:\init"
 $kubeDir="c:\ProgramData\Kubernetes"
 $pythonDir = "c:\python"
@@ -221,6 +232,9 @@ Set-Location -Path "$workingDir"
 Write-Host "Installing nomachine if required..."
 InstallNoMachineIfRequired
 
+Write-Host "Installing OpenSSH server if required..."
+InstallOpenSshServerIfRequired
+
 Write-Host "Installing WebDAV if required..."
 InstallWebDAVIfRequired
 
@@ -237,9 +251,6 @@ Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
 OpenPortIfRequired -Port 8888
 
-Write-Host "Installing OpenSSH server if required..."
-InstallOpenSshServerIfRequired
-
 Write-Host "Generating temporary SSH keys..."
 GenerateSshKeys -Path $homeDir
 
@@ -247,13 +258,21 @@ Write-Host "Downloading Sig Windows Tools if required..."
 DownloadSigWindowsToolsIfRequired
 
 Write-Host "Generating Sig Windows Tools dummy config file..."
-InitSigWindowsToolsConfigFile -KubeHost "default" -KubeToken "default" -KubeCertHash "default" -KubeDir "$kubeDir" -Interface "Ethernet 3"
+InitSigWindowsToolsConfigFile -KubeHost "default" -KubeToken "default" -KubeCertHash "default" -KubeDir "$kubeDir" -Interface "$interface"
 
 Write-Host "Installing kubernetes using Sig Windows Tools if required..."
 InstallKubeUsingSigWindowsToolsIfRequired -KubeDir "$kubeDir"
 
 Write-Host "Removing temporary SSH keys..."
 Remove-Item -Recurse -Force "$homeDir\.ssh"
+
+# todo: Remove once kubelet pulling issue is resolved.
+#  See https://github.com/epam/cloud-pipeline/issues/1832#issuecomment-832841950
+Write-Host "Prepulling Windows tool base docker image..."
+docker pull python:3.8.9-windowsservercore
+
+Write-Host "Configuring instance initialization..."
+ConfigureInstanceInitialization
 
 Write-Host "Scheduling instance initialization on next launch..."
 C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeInstance.ps1 -Schedule
