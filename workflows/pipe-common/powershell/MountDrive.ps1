@@ -69,6 +69,10 @@ for ($RetryNum = 1; $RetryNum -le $MaxRetries; $RetryNum++) {
         $MountExitCode = MountOutput
     }
     if ($MountExitCode -eq 0) {
+        $WshShell = New-Object -comObject WScript.Shell
+        $Shortcut = $WshShell.CreateShortcut("$HOME\Desktop\$UserName WebDAV.lnk")
+        $Shortcut.TargetPath = "Z:\"
+        $Shortcut.Save()
         $SuccessMsg = "Storage available for '$UserName' are mounted into Z:\"
         Write-Host $SuccessMsg
         Show-PopUp "$SuccessMsg" "StorageMapping"

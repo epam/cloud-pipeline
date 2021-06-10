@@ -273,6 +273,13 @@ if __name__ == '__main__':
                          f'         \'{mounting_script_path}\')\\"')
         task_logger.success('Drive mapping performed successfully!')
 
+    logger.info('Configuring desktop environment')
+    windows_layout_path = _escape_backslashes(os.path.join(common_repo_dir, 'config\\default_layout_win.xml'))
+    node_ssh.execute(f'ImportDesktopLayout -LayoutPath \\"{windows_layout_path}\\";'
+                     f'{python_dir}\\python.exe -c \\"'
+                     f'from scripts.configure_default_desktop_win import configure_default_desktop_win;'
+                     f'configure_default_desktop_win(\'{owner}\')\\"')
+
     run_logger.success('Environment initialization finished', task='InitializeEnvironment')
 
     logger.info('Executing task...')

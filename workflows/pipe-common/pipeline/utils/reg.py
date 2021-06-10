@@ -26,6 +26,11 @@ def set_value(root, path, type, name, value):
         winreg.SetValueEx(key, name, 0, type, value)
 
 
+def get_value(root, path, name):
+    with winreg.OpenKey(root, path) as key:
+        return winreg.QueryValueEx(key, name)
+
+
 def set_local_machine_str_value(path, name, value):
     set_value(winreg.HKEY_LOCAL_MACHINE, path, winreg.REG_SZ, name, value)
 
@@ -40,3 +45,14 @@ def set_local_machine_dword_value(path, name, value):
 
 def set_user_dword_value(path, name, value, sid):
     set_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), winreg.REG_DWORD, name, value)
+
+
+def set_user_string_value(path, name, value, sid):
+    set_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), winreg.REG_SZ, name, value)
+
+
+def get_user_string_value(sid, path, name):
+    value, value_type = get_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), name)
+    if value_type != winreg.REG_SZ:
+        raise RuntimeError('Requested value `HKEY_USERS\\{}:{}` type is not string!'.format(path, name))
+    return value

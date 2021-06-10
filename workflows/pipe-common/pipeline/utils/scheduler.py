@@ -25,6 +25,7 @@ _TASK_ACTION_EXEC = 0
 _TASK_LOGON_NONE = 0
 _TASK_CREATE_OR_UPDATE = 6
 _TASK_TRIGGER_LOGON = 9
+_TASK_RUNLEVEL_HIGHEST = 1
 _POWERSHELL_EXECUTABLE = 'powershell.exe'
 _POWERSHELL_EXECUTE_SCRIPT_ARGS_TEMPLATE = '{} -File "{}"'
 _POWERSHELL_WINDOW_STYLE_HIDDEN_FLAG = '-windowstyle hidden'
@@ -40,14 +41,14 @@ def _replace_placeholder_in_file(file_path, placeholder, replacement):
         f.write(file_content)
 
 
-def _schedule_command_on_user_logon(user, task_name, executable, arguments):
+def _schedule_command_on_user_logon(logon_user, task_name, executable, arguments):
     scheduler = win32com.client.Dispatch(_WIN_SCHEDULE_SERVICE)
     scheduler.Connect()
     root_folder = scheduler.GetFolder('\\')
     task_def = scheduler.NewTask(0)
 
     logon_trigger = task_def.Triggers.Create(_TASK_TRIGGER_LOGON)
-    logon_trigger.UserId = user
+    logon_trigger.UserId = logon_user
 
     action = task_def.Actions.Create(_TASK_ACTION_EXEC)
     action.Path = executable
@@ -55,7 +56,8 @@ def _schedule_command_on_user_logon(user, task_name, executable, arguments):
 
     task_def.RegistrationInfo.Description = task_name
     task_def.Settings.Enabled = True
-    task_def.Principal.UserId = user
+    task_def.Principal.UserId = logon_user
+    task_def.Principal.RunLevel = _TASK_RUNLEVEL_HIGHEST
 
     root_folder.RegisterTaskDefinition(task_name, task_def, _TASK_CREATE_OR_UPDATE, '', '', _TASK_LOGON_NONE)
 
@@ -70,4 +72,4 @@ def schedule_powershell_script_on_logon(user, task_name, script_path, placeholde
         _replace_placeholder_in_file(script_path, key, placeholders[key])
     command = _POWERSHELL_EXECUTE_SCRIPT_ARGS_TEMPLATE.format(
         _POWERSHELL_WINDOW_STYLE_HIDDEN_FLAG if is_hidden else '', script_path)
-    _schedule_command_on_user_logon(user, task_name, _POWERSHELL_EXECUTABLE,command)
+    _schedule_command_on_user_logon(user, task_name, _POWERSHELL_EXECUTABLE, command)

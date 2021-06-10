@@ -29,6 +29,7 @@ function InstallNoMachineIfRequired {
         cmd /c "nomachine.exe /verysilent"
         $restartRequired=$true
     }
+    Remove-Item 'C:\Users\Public\Desktop\NoMachine.lnk'
     return $restartRequired
 }
 
