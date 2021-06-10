@@ -212,7 +212,7 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
     },
     "Kubernetes" : {
         "Source" : {
-            "Release" : "1.15.5",
+            "Release" : "1.15.4",
             "Url" : "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/kubernetes-node-windows-amd64.tar.gz"
         },
         "ControlPlane" : {
