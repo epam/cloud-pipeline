@@ -1115,12 +1115,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           onOk={this.generateReport}
           idPrefix={ID_PREFIX}
         />
-        <GenerateReportDialog
-          visible={generateReportDialog}
-          onCancel={this.closeGenerateReportDialog}
-          onOk={this.generateReport}
-          idPrefix={ID_PREFIX}
-        />
         {this.renderEditItemForm()}
         <LaunchVSForm
           visible={launchVSFormVisible}
