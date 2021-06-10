@@ -15,7 +15,6 @@
 import os
 import shutil
 import glob
-import win32security
 from pipeline.utils.reg import set_user_string_value
 
 
@@ -25,13 +24,9 @@ _desktop_settings = 'Control Panel\\Desktop'
 _excess_shortcut_suffixes = ['EC2*']
 _this_pc_shortcut_path = 'AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\System Tools\\computer.lnk'
 
-def get_user_sid(username):
-    desc = win32security.LookupAccountName(None, username)
-    return win32security.ConvertSidToStringSid(desc[0])
 
 def _set_default_wallpaper(username):
-    user_sid = get_user_sid(username)
-    set_user_string_value(_desktop_settings, 'WallPaper', _default_win_wallpaper, user_sid)
+    set_user_string_value(username, _desktop_settings, 'WallPaper', _default_win_wallpaper)
 
 
 def _remove_excess_shortcuts(desktop_folder):

@@ -48,10 +48,6 @@ def _add_to_batch_profile(path, profile_path):
                     'set PATH=%PATH%;{path}\n'.format(path=path))
 
 
-def escape_backslashes(string):
-    return string.replace('\\', '\\\\')
-
-
 def add_to_path(path,
                 powershell_profile_path='c:\\windows\\system32\\windowspowershell\\v1.0\\profile.ps1',
                 batch_profile_path='c:\\init\\profile.cmd'):

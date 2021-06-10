@@ -21,14 +21,15 @@ if platform.system() != 'Windows':
 import winreg
 
 
+def _get_user_sid(username):
+    import win32security
+    desc = win32security.LookupAccountName(None, username)
+    return win32security.ConvertSidToStringSid(desc[0])
+
+
 def set_value(root, path, type, name, value):
     with winreg.CreateKey(root, path) as key:
         winreg.SetValueEx(key, name, 0, type, value)
-
-
-def get_value(root, path, name):
-    with winreg.OpenKey(root, path) as key:
-        return winreg.QueryValueEx(key, name)
 
 
 def set_local_machine_str_value(path, name, value):
@@ -43,16 +44,9 @@ def set_local_machine_dword_value(path, name, value):
     set_value(winreg.HKEY_LOCAL_MACHINE, path, winreg.REG_DWORD, name, value)
 
 
-def set_user_dword_value(path, name, value, sid):
-    set_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), winreg.REG_DWORD, name, value)
+def set_user_dword_value(username, path, name, value):
+    set_value(winreg.HKEY_USERS, '{}\\{}'.format(_get_user_sid(username), path), winreg.REG_DWORD, name, value)
 
 
-def set_user_string_value(path, name, value, sid):
-    set_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), winreg.REG_SZ, name, value)
-
-
-def get_user_string_value(sid, path, name):
-    value, value_type = get_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), name)
-    if value_type != winreg.REG_SZ:
-        raise RuntimeError('Requested value `HKEY_USERS\\{}:{}` type is not string!'.format(path, name))
-    return value
+def set_user_string_value(username, path, name, value):
+    set_value(winreg.HKEY_USERS, '{}\\{}'.format(_get_user_sid(username), path), winreg.REG_SZ, name, value)
