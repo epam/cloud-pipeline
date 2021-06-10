@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import win32serviceutil
-import win32security
 
 from pipeline.utils.reg import set_user_dword_value, set_local_machine_dword_value
 
@@ -24,16 +23,10 @@ _internet_explorer_main_settings = _microsoft_settings + '\\Internet Explorer\\M
 _windows_webdav_client_parameters = 'SYSTEM\\CurrentControlSet\\Services\\WebClient\\Parameters'
 
 
-def get_user_sid(username):
-    desc = win32security.LookupAccountName(None, username)
-    return win32security.ConvertSidToStringSid(desc[0])
-
-
 def configure_drive_mount_env_win(username, edge_host):
-    user_sid = get_user_sid(username)
-    set_user_dword_value(_internet_trusted_sources + '\\{}'.format(edge_host), 'https', 2, sid=user_sid)
-    set_user_dword_value(_internet_trusted_sources + '\\internet', 'about', 2, sid=user_sid)
-    set_user_dword_value(_internet_explorer_main_settings, 'DisableFirstRunCustomize', 1, sid=user_sid)
-    set_user_dword_value(_internet_settings, 'WarnonZoneCrossing', 0, sid=user_sid)
+    set_user_dword_value(username, _internet_trusted_sources + '\\{}'.format(edge_host), 'https', 2)
+    set_user_dword_value(username, _internet_trusted_sources + '\\internet', 'about', 2)
+    set_user_dword_value(username, _internet_explorer_main_settings, 'DisableFirstRunCustomize', 1)
+    set_user_dword_value(username, _internet_settings, 'WarnonZoneCrossing', 0)
     set_local_machine_dword_value(_windows_webdav_client_parameters, 'FileSizeLimitInBytes', 0xFFFFFFFF)
     win32serviceutil.RestartService('WebClient')
