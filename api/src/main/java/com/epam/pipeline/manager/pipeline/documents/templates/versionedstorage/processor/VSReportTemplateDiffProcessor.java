@@ -173,7 +173,8 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     }
 
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
-                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry, boolean indent) {
+                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry,
+                                         final boolean indent) {
         if (type.equals(GitDiffGroupType.BY_COMMIT)) {
             final String file = diffEntry.getDiff().getFromFileName().contains(DEV_NULL)
                     ? diffEntry.getDiff().getToFileName()
