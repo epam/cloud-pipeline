@@ -30,10 +30,11 @@ async function measureUrlLatency (url) {
     xhr.onload = () => {
       if (performance !== undefined) {
         const resources = performance.getEntriesByType('resource');
-        const latency = resources.filter(
+        const resourceTiming = resources.filter(
           resource => resource.initiatorType === 'xmlhttprequest' && resource.name === url
-        )[0].duration;
-        if (latency) {
+        );
+        if (resourceTiming) {
+          const latency = resourceTiming.length ? resourceTiming[0].duration : null;
           resolve({url, latency});
         } else {
           reject(new Error(`Can't get latency for ${url}`));
