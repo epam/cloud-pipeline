@@ -45,10 +45,11 @@ EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
 RUN_ID = 'runid'
-API_UPDATE_SVC = 'run/{run_id}/serviceUrl'
+API_UPDATE_SVC = 'run/{run_id}/serviceUrl?region={region}'
 API_GET_RUNS_LIST_DETAILS = 'runs?runIds={run_ids}'
 API_POST_DNS_RECORD = 'cluster/dnsrecord'
 API_GET_HOSTED_ZONE_BASE_PREF = 'preferences/instance.dns.hosted.zone.base'
+API_GET_DEFAULT_EDGE_REGION_PREF = 'preferences/default.edge.region'
 NUMBER_OF_RETRIES = 10
 SECS_TO_WAIT_BEFORE_RETRY = 15
 
@@ -56,6 +57,7 @@ EDGE_SVC_ROLE_LABEL = 'cloud-pipeline/role'
 EDGE_SVC_ROLE_LABEL_VALUE = 'EDGE'
 EDGE_SVC_HOST_LABEL = 'cloud-pipeline/external-host'
 EDGE_SVC_PORT_LABEL = 'cloud-pipeline/external-port'
+EDGE_SVC_REGION_LABEL = 'cloud-pipeline/region'
 
 nginx_custom_domain_config_ext = '.srv.conf'
 nginx_custom_domain_loc_suffix = 'CP_EDGE_CUSTOM_DOMAIN'
@@ -659,7 +661,7 @@ def update_svc_url_for_run(run_id):
         if run_id in service_url_dict:
                 # make array of json objects
                 service_urls_json = '[' + service_url_dict[run_id] + ']'
-                update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id))
+                update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id, region=edge_region))
                 do_log('Assigning service url ({}) to RunID: {}'.format(service_urls_json, run_id))
                 data = json.dumps({'serviceUrl': service_urls_json})
                 response_data = call_api(update_svc_method, data=data)
@@ -671,14 +673,29 @@ def update_svc_url_for_run(run_id):
                 do_log('Asking for service url update for the run {}, but service_url_dict is empty for this run'.format(run_id))
 
 
+def find_preference(api_preference_query, preference_name):
+        load_method = os.path.join(api_url, api_preference_query)
+        response = call_api(load_method)
+        if response and "payload" in response and "name" in response["payload"] \
+                and response["payload"]["name"] == preference_name and "value" in response["payload"]:
+                return response["payload"]["value"]
+        return None
+
+
 do_log('============ Started iteration ============')
 
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False
 
-edge_kube_service = Service.objects(kube_api).filter(selector={EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE})
+edge_region = os.environ.get('CP_EDGE_REGION')
+if not edge_region:
+        edge_region = find_preference(API_GET_DEFAULT_EDGE_REGION_PREF, 'default.edge.region')
+
+edge_kube_service = Service.objects(kube_api).filter(selector={
+        EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE, EDGE_SVC_REGION_LABEL: edge_region})
 if len(edge_kube_service.response['items']) == 0:
-        do_log('EDGE service is not found by label: cloud-pipeline/role=EDGE')
+        do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
+               % (EDGE_SVC_REGION_LABEL, edge_region))
         exit(1)
 else:
         edge_kube_service_object = edge_kube_service.response['items'][0]
@@ -698,12 +715,7 @@ else:
         do_log('EDGE service ip: ' + edge_service_external_ip)
 
 
-hosted_zone_base_value = None
-load_hosted_zone_method = os.path.join(api_url, API_GET_HOSTED_ZONE_BASE_PREF)
-hosted_zone_response = call_api(load_hosted_zone_method)
-if hosted_zone_response and "payload" in hosted_zone_response and "name" in hosted_zone_response["payload"] \
-        and hosted_zone_response["payload"]["name"] == "instance.dns.hosted.zone.base" and "value" in hosted_zone_response["payload"]:
-        hosted_zone_base_value = hosted_zone_response["payload"]["value"]
+hosted_zone_base_value = find_preference(API_GET_HOSTED_ZONE_BASE_PREF, "instance.dns.hosted.zone.base")
 
 pods_with_endpoints = load_pods_for_runs_with_endpoints()
 runs_with_endpoints = get_active_runs(pods_with_endpoints)
