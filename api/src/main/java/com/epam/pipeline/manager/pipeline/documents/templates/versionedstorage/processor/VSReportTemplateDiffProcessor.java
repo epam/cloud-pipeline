@@ -80,16 +80,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         if (StringUtils.isBlank(paragraph.getText()) || !paragraph.getText().contains(template)) {
             return;
         }
-        // We clean up all runs except one
-        while (paragraph.getRuns().size() != 1) {
-            paragraph.removeRun(0);
-        }
-
-        // Remove all text from this run, we can just remove whole run and create clean one
-        // but we want to save run properties
-        for (int pos = 0; pos < paragraph.getRuns().get(0).getCTR().sizeOfTArray(); pos++) {
-            paragraph.getRuns().get(0).setText("", pos);
-        }
+        cleanUpParagraph(paragraph);
         insertData(paragraph, paragraph.getRuns().get(0), dataProducer.extract(paragraph, storage, diff, reportFilter));
     }
 
@@ -110,11 +101,17 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                     .collect(Collectors.toList());
 
             addHeader(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
-            for (GitParsedDiffEntry diffEntry : diffEntries) {
+            for (int i = 0; i < diffEntries.size(); i++) {
+                GitParsedDiffEntry diffEntry = diffEntries.get(i);
                 lastParagraph = addDescription(
-                        lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
+                        lastParagraph, fontFamily, fontSize, diffsGrouping.getType(),
+                        diffEntry, !isLastEntryInGroup(diffEntries.size(), i));
             }
         }
+    }
+
+    private boolean isLastEntryInGroup(final int entriesSize, final int index) {
+        return entriesSize - 1 <= index;
     }
 
     private List<Map.Entry<String, List<GitParsedDiffEntry>>> getSortedDiffGroups(
@@ -176,7 +173,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     }
 
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
-                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry) {
+                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry, boolean indent) {
         if (type.equals(GitDiffGroupType.BY_COMMIT)) {
             final String file = diffEntry.getDiff().getFromFileName().contains(DEV_NULL)
                     ? diffEntry.getDiff().getToFileName()
@@ -204,7 +201,18 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
             }
         }
 
-        return generateDiffTable(paragraph, fontFamily, fontSize, diffEntry);
+        final XWPFParagraph lastParagraph = generateDiffTable(paragraph, fontFamily, fontSize, diffEntry);
+        if (indent) {
+            addIndent(lastParagraph);
+        }
+        return lastParagraph;
+    }
+
+    private void addIndent(final XWPFParagraph lastParagraph) {
+        final XWPFRun run = lastParagraph.createRun();
+        run.addBreak(BreakType.TEXT_WRAPPING);
+        run.addBreak(BreakType.TEXT_WRAPPING);
+        run.addBreak(BreakType.TEXT_WRAPPING);
     }
 
     private XWPFParagraph generateDiffTable(final XWPFParagraph paragraph, final String fontFamily,
@@ -219,11 +227,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
             cursor = xwpfTable.getCTTbl().newCursor();
         }
 
-        final XWPFParagraph newParagraph = createNewParagraph(paragraph, cursor);
-        final XWPFRun run = newParagraph.createRun();
-        run.addBreak(BreakType.TEXT_WRAPPING);
-        run.addBreak(BreakType.TEXT_WRAPPING);
-        return newParagraph;
+        return createNewParagraph(paragraph, cursor);
     }
 
     private void insertTextData(final XWPFParagraph paragraph, final String text, final boolean bold,
