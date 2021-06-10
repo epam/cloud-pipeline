@@ -198,6 +198,13 @@ function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
     }
 }
 
+function ConfigureInstanceInitialization {
+    $Ec2UtilityConfigFile = 'C:\ProgramData\Amazon\EC2-Windows\Launch\Config\LaunchConfig.json'
+    $Ec2UtilityConfig = Get-Content $Ec2UtilityConfigFile | ConvertFrom-Json
+    $Ec2UtilityConfig.setWallpaper = $False
+    $Ec2UtilityConfig | ConvertTo-Json | Out-File $Ec2UtilityConfigFile
+}
+
 $interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
 
 $homeDir = "$env:USERPROFILE"
@@ -263,6 +270,9 @@ Remove-Item -Recurse -Force "$homeDir\.ssh"
 #  See https://github.com/epam/cloud-pipeline/issues/1832#issuecomment-832841950
 Write-Host "Prepulling Windows tool base docker image..."
 docker pull python:3.8.9-windowsservercore
+
+Write-Host "Configuring instance initialization..."
+ConfigureInstanceInitialization
 
 Write-Host "Scheduling instance initialization on next launch..."
 C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeInstance.ps1 -Schedule
