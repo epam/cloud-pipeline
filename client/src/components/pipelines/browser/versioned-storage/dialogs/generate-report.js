@@ -155,7 +155,7 @@ class GenerateReportDialog extends localization.LocalizedReactComponent {
 
   onSplitDiffsChange = (event) => {
     const {value} = event.target;
-    if (SPLIT_DIFFS_BY[value]) {
+    if (value) {
       this.setState({splitDiffsBy: value});
     }
   };

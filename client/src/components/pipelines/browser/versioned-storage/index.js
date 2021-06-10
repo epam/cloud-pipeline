@@ -794,7 +794,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       dateFrom,
       dateTo,
       includeDiff,
-      groupDiffsBy,
+      splitDiffsBy,
       downloadAsArchive
     } = settings;
     const hide = message.loading(`Generating report...`, 0);
@@ -807,7 +807,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         dateTo
       },
       includeDiff,
-      groupType: groupDiffsBy,
+      groupType: splitDiffsBy,
       archive: downloadAsArchive
     });
     hide();
