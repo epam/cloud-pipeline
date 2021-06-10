@@ -25,6 +25,8 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -58,12 +60,8 @@ public class DNSRecordRunCleaner implements RunCleaner {
 
     @Override
     public void cleanResources(final PipelineRun run) {
-        final String defaultEdgeRegion = preferenceManager.getPreference(SystemPreferences.DEFAULT_EDGE_REGION);
-        if (StringUtils.isEmpty(defaultEdgeRegion)) {
-            return;
-        }
-        final String serviceUrls = pipelineRunServiceUrlManager.loadByRunIdAndRegion(run.getId(), defaultEdgeRegion);
-        if (StringUtils.isEmpty(serviceUrls)) {
+        final Map<String, String> serviceUrls = pipelineRunServiceUrlManager.loadByRunId(run.getId());
+        if (MapUtils.isEmpty(serviceUrls)) {
             return;
         }
 
@@ -74,21 +72,13 @@ public class DNSRecordRunCleaner implements RunCleaner {
             return;
         }
 
-        final List<Map<String, String>> serviceUrlsList = JsonMapper.parseData(
-                serviceUrls,
-                new TypeReference<List<Map<String, String>>>(){}
-        );
+        final Map<String, String> edgeDomainNameOrIP = edgeServiceManager.getEdgeDomainNameOrIP();
 
-        serviceUrlsList.forEach(serviceUrl -> {
-            final String url = serviceUrl.get("url");
-            if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
-                Assert.isTrue(
-                        !StringUtils.isEmpty(hostZoneId) && !StringUtils.isEmpty(hostZoneUrlBase),
-                        "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
-                );
-                cloudFacade.removeDNSRecord(run.getInstance().getCloudRegionId(),
-                        new InstanceDNSRecord(unify(url), edgeServiceManager.getEdgeDomainNameOrIP(), null));
-            }
+        serviceUrls.forEach((region, serviceUrlsRawString) -> {
+            final String nameOrIP = edgeDomainNameOrIP.get(region);
+            ListUtils.emptyIfNull(parseServiceUrl(serviceUrlsRawString))
+                    .forEach(serviceUrl ->
+                            removeDnsRecord(nameOrIP, serviceUrl, hostZoneUrlBase, hostZoneId, run, region));
         });
     }
 
@@ -105,4 +95,28 @@ public class DNSRecordRunCleaner implements RunCleaner {
                 .split(PORT_DELIMITER)[0];
     }
 
+    private List<Map<String, String>> parseServiceUrl(final String serviceUrlString) {
+        return JsonMapper.parseData(serviceUrlString, new TypeReference<List<Map<String, String>>>(){});
+    }
+
+    private void removeDnsRecord(final String nameOrIP, final Map<String, String> serviceUrlObject,
+                                 final String hostZoneUrlBase, final String hostZoneId, final PipelineRun run,
+                                 final String region) {
+        if (StringUtils.isEmpty(nameOrIP)) {
+            log.warn("Cannot find edge service for requested region '{}'", region);
+            return;
+        }
+        final String url = serviceUrlObject.get("url");
+        if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
+            validateHostZone(hostZoneUrlBase, hostZoneId);
+            cloudFacade.removeDNSRecord(run.getInstance().getCloudRegionId(),
+                    new InstanceDNSRecord(unify(url), nameOrIP, null));
+        }
+    }
+
+    private void validateHostZone(final String hostZoneUrlBase, final String hostZoneId) {
+        Assert.isTrue(!StringUtils.isEmpty(hostZoneId) && !StringUtils.isEmpty(hostZoneUrlBase),
+                "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
+        );
+    }
 }
