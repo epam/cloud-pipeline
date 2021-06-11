@@ -239,8 +239,8 @@ if __name__ == '__main__':
                          f'                         \'{owner}\', \'{api_token}\')\\"')
         task_logger.info('Scheduling Cloud-Data config finalization on logon...')
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
-                         f'from scripts.schedule_cloud_data_configuration_finalization_win import schedule; '
-                         f'schedule(\'{owner}\', \'{_escape_backslashes(escaped_run_dir)}\')\\"')
+                         f'from scripts.configure_cloud_data_win import schedule_finalization; '
+                         f'schedule_finalization(\'{owner}\', \'{_escape_backslashes(escaped_run_dir)}\')\\"')
         task_logger.success('Cloud-Data installed and configured successfully!')
 
     logger.info('Configuring pipe on the node...')
