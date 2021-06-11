@@ -260,18 +260,18 @@ if __name__ == '__main__':
         from urllib.parse import urlparse
         edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
         task_ssh.execute(f'{python_dir}\\python.exe -c '
-                         f'\\"from scripts.add_root_certificate_win import add_root_cert_to_trusted_root_win;'
-                         f'   add_root_cert_to_trusted_root_win(\'{edge_host}\', {edge_port})\\"')
+                         f'\\"from scripts.configure_drive_mount_win import add_root_cert_to_trusted_root;'
+                         f'   add_root_cert_to_trusted_root(\'{edge_host}\', {edge_port})\\"')
         task_logger.info('Configuring environment for storage mapping...')
         task_ssh.execute(f'{python_dir}\\python.exe -c '
-                         f'\\"from scripts.configure_drive_mount_env_win import configure_drive_mount_env_win; '
-                         f'   configure_drive_mount_env_win(\'{owner}\', \'{edge_host}\')\\"')
+                         f'\\"from scripts.configure_drive_mount_win import configure_environment; '
+                         f'   configure_environment(\'{owner}\', \'{edge_host}\')\\"')
 
         task_logger.info('Scheduling drive mapping on logon...')
         mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
-                         f'from scripts.schedule_drive_mapping_win import schedule; '
-                         f'schedule(\'{owner}\', \'{edge_host}\', \'{edge_port}\', \'{api_token}\','
+                         f'from scripts.configure_drive_mount_win import schedule_mapping; '
+                         f'schedule_mapping(\'{owner}\', \'{edge_host}\', \'{edge_port}\', \'{api_token}\','
                          f'         \'{mounting_script_path}\')\\"')
         task_logger.success('Drive mapping performed successfully!')
 
