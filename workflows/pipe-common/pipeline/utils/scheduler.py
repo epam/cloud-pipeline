@@ -27,18 +27,11 @@ _TASK_CREATE_OR_UPDATE = 6
 _TASK_TRIGGER_LOGON = 9
 _TASK_RUNLEVEL_HIGHEST = 1
 _POWERSHELL_EXECUTABLE = 'powershell.exe'
-_POWERSHELL_EXECUTE_SCRIPT_ARGS_TEMPLATE = '{} -File "{}"'
+_POWERSHELL_EXECUTE_SCRIPT_ARGS_TEMPLATE = '{} -File "{}" '
 _POWERSHELL_WINDOW_STYLE_HIDDEN_FLAG = '-windowstyle hidden'
 _PYTHON_EXECUTABLE = 'python.exe'
 _PYTHON_EXECUTE_COMMAND_TEMPLATE = '-c "{}"'
 _WIN_SCHEDULE_SERVICE = 'Schedule.Service'
-
-
-def _replace_placeholder_in_file(file_path, placeholder, replacement):
-    with open(file_path, 'r') as f:
-        file_content = f.read().replace(placeholder, replacement)
-    with open(file_path, 'w') as f:
-        f.write(file_content)
 
 
 def _schedule_command_on_user_logon(logon_user, task_name, executable, arguments):
@@ -67,9 +60,9 @@ def schedule_python_command_on_logon(user, task_name, python_command):
     _schedule_command_on_user_logon(user, task_name, _PYTHON_EXECUTABLE, command)
 
 
-def schedule_powershell_script_on_logon(user, task_name, script_path, placeholders={}, is_hidden=False):
-    for key in placeholders:
-        _replace_placeholder_in_file(script_path, key, placeholders[key])
+def schedule_powershell_script_on_logon(user, task_name, script_path, is_hidden=False, arguments=None):
     command = _POWERSHELL_EXECUTE_SCRIPT_ARGS_TEMPLATE.format(
         _POWERSHELL_WINDOW_STYLE_HIDDEN_FLAG if is_hidden else '', script_path)
+    if arguments:
+        command += arguments
     _schedule_command_on_user_logon(user, task_name, _POWERSHELL_EXECUTABLE, command)

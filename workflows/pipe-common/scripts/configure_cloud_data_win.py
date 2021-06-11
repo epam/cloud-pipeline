@@ -70,5 +70,3 @@ def schedule_finalization(username, cloud_data_config_parent_dir):
     command = f'from scripts.configure_cloud_data_win import move_configuration;'\
               f'move_configuration(\'{cloud_data_config_parent_dir}\', \'{user_default_home_dir}\')'
     schedule_python_command_on_logon(username, 'CloudDataInstallationFinalizer', command)
-
-

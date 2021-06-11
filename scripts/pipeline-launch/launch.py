@@ -128,6 +128,7 @@ if __name__ == '__main__':
     requires_drive_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_DRIVE')
     desktop_layout_url = _extract_parameter('CP_CLOUD_DATA_WIN_DESKTOP_LAYOUT_URL',
                                             default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/default_layout.xml')
+    requires_popup_notifications = _extract_boolean_parameter('CP_CAP_WIN_CONFIGURATION_NOTIFICATIONS')
 
     logging.basicConfig(level=logging_level, format=logging_format)
 
@@ -277,7 +278,7 @@ if __name__ == '__main__':
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                          f'from scripts.configure_drive_mount_win import schedule_mapping; '
                          f'schedule_mapping(\'{owner}\', \'{edge_host}\', \'{edge_port}\', \'{api_token}\','
-                         f'         \'{mounting_script_path}\')\\"')
+                         f'                 \'{mounting_script_path}\')\\"')
         task_logger.success('Drive mapping performed successfully!')
 
     logger.info('Configuring desktop environment')

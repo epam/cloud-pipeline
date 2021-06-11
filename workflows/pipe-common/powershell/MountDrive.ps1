@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+param (
+    $DavURL,
+    [switch] $ShowNotifications
+)
+
 $UserName="<USER_NAME>"
 $BearerToken="<USER_TOKEN>"
+$TargetDrive = "Z:"
 
-function Try-MountDrive {
-    param (
-        $UserName,
-        $BearerToken
-    )
+function Try-MountDrive($DavURL, $UserName, $BearerToken) {
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" -Name WarnonZoneCrossing -Value 0
-    $DavURL = "https://<EDGE_HOST>:<EDGE_PORT>/webdav"
     $InternetExplorer = New-Object -ComObject internetexplorer.application
     $AuthHeader = "Authorization:$BearerToken"
     $DavSsoUrl = "$DavURL/auth-sso/"
@@ -34,7 +35,7 @@ function Try-MountDrive {
     }
     Start-Sleep -Seconds 2
     taskkill /F /T /IM iexplore.exe
-    $MountResult = $(net use Z: "$DavURL/$UserName/" 2>&1 )
+    $MountResult = $(net use "$TargetDrive" "$DavURL/$UserName/" 2>&1 )
     $MountExitCode = $LASTEXITCODE
     if ($MountExitCode -ne 0) {
         if ($MountResult.length -gt 0) {
@@ -50,38 +51,40 @@ function Try-MountDrive {
     return $MountExitCode
 }
 
-function Show-PopUp {
-    param(
-        $Message,
-        $Header
-    )
-
+function Show-PopUp($Message, $Header) {
     $infoPopup = New-Object -ComObject Wscript.Shell
     $infoPopup.Popup($Message, 0, $Header, 0x0)
 }
 
 $MaxRetries = 30
 for ($RetryNum = 1; $RetryNum -le $MaxRetries; $RetryNum++) {
-    $MountOutput = Try-MountDrive "$UserName" "$BearerToken"
+    $MountOutput = Try-MountDrive "$DavURL" "$UserName" "$BearerToken"
     if ("Object[]".equals($MountOutput.gettype().name)) {
         $MountExitCode = $MountOutput[$MountOutput.length-1]
     } else {
         $MountExitCode = MountOutput
     }
     if ($MountExitCode -eq 0) {
+        while (!(Test-Path -Path $TargetDrive)) {
+            Start-Sleep -Seconds 5
+        }
         $WshShell = New-Object -comObject WScript.Shell
         $Shortcut = $WshShell.CreateShortcut("$HOME\Desktop\$UserName WebDAV.lnk")
-        $Shortcut.TargetPath = "Z:\"
+        $Shortcut.TargetPath = "$TargetDrive\"
         $Shortcut.Save()
-        $SuccessMsg = "Storage available for '$UserName' are mounted into Z:\"
+        $SuccessMsg = "Storage available for '$UserName' are mounted into $TargetDrive\"
         Write-Host $SuccessMsg
-        Show-PopUp "$SuccessMsg" "StorageMapping"
+        if ($ShowNotifications) {
+            Show-PopUp "$SuccessMsg" "StorageMapping"
+        }
         exit 0
     }
     if ($MountExitCode -eq 85) {
-        $WarnInUseMsg ="WebDAV mapping: Device Z:\ is already in use"
+        $WarnInUseMsg ="WebDAV mapping: Device $TargetDrive\ is already in use"
         Write-Host $WarnInUseMsg
-        Show-PopUp "$WarnInUseMsg" "StorageMapping"
+        if ($ShowNotifications) {
+            Show-PopUp "$WarnInUseMsg" "StorageMapping"
+        }
         exit 0
     }
     Write-Host "Retrying in 10 seconds..."

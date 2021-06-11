@@ -16,6 +16,7 @@
 import win32crypt
 import win32cryptcon
 import win32serviceutil
+from pipeline.common.utils import replace_placeholder_in_file
 from pipeline.utils.pki import load_root_certificate
 from pipeline.utils.reg import set_user_dword_value, set_local_machine_dword_value
 from pipeline.utils.scheduler import schedule_powershell_script_on_logon
@@ -25,6 +26,7 @@ _internet_settings = _microsoft_settings + '\\Windows\\CurrentVersion\\Internet 
 _internet_trusted_sources = _internet_settings + '\\ZoneMap\\EscDomains'
 _internet_explorer_main_settings = _microsoft_settings + '\\Internet Explorer\\Main'
 _windows_webdav_client_parameters = 'SYSTEM\\CurrentControlSet\\Services\\WebClient\\Parameters'
+_enable_popup_notifications_flag = '-ShowNotifications'
 
 
 def add_root_cert_to_trusted_root(host, port):
@@ -50,11 +52,15 @@ def configure_environment(username, edge_host):
     win32serviceutil.RestartService('WebClient')
 
 
-def schedule_mapping(username, edge_host, edge_port, token, script):
-    replacement_dict = {
+def schedule_mapping(username, edge_host, edge_port, token, script, verbose=False):
+    placeholders = {
         '<USER_NAME>': username,
-        '<USER_TOKEN>': token,
-        '<EDGE_HOST>': edge_host,
-        '<EDGE_PORT>': edge_port
+        '<USER_TOKEN>': token
     }
-    schedule_powershell_script_on_logon(username, 'CloudPipelineDriveMapping', script, replacement_dict, True)
+    for key in placeholders:
+        replace_placeholder_in_file(script, key, placeholders[key])
+    dav_url = 'https://{}:{}/webdav'.format(edge_host, edge_port)
+    arguments = ' -DavURL \"{}\" '.format(dav_url)
+    if verbose:
+        arguments += _enable_popup_notifications_flag
+    schedule_powershell_script_on_logon(username, 'CloudPipelineDriveMapping', script, True, arguments)
