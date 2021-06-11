@@ -118,6 +118,8 @@ if __name__ == '__main__':
     cloud_data_distribution_url = _extract_parameter('CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
                                                      default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/cloud-data-win-x64.zip')
     requires_drive_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_DRIVE')
+    desktop_layout_url = _extract_parameter('CP_CLOUD_DATA_WIN_DESKTOP_LAYOUT_URL',
+                                            default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/default_layout.xml')
 
     logging.basicConfig(level=logging_level, format=logging_format)
 
@@ -274,8 +276,9 @@ if __name__ == '__main__':
         task_logger.success('Drive mapping performed successfully!')
 
     logger.info('Configuring desktop environment')
-    windows_layout_path = _escape_backslashes(os.path.join(common_repo_dir, 'config\\default_layout_win.xml'))
-    node_ssh.execute(f'ImportDesktopLayout -LayoutPath \\"{windows_layout_path}\\";'
+    desktop_layout_path = _escape_backslashes(os.path.join(resources_dir, 'desktop_layout.xml'))
+    _download_file(desktop_layout_url, desktop_layout_path)
+    node_ssh.execute(f'ImportDesktopLayout -LayoutPath \\"{desktop_layout_path}\\";'
                      f'{python_dir}\\python.exe -c \\"'
                      f'from scripts.configure_default_desktop_win import configure_default_desktop_win;'
                      f'configure_default_desktop_win(\'{owner}\')\\"')
