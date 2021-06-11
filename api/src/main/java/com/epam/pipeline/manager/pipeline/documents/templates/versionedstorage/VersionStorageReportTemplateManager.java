@@ -152,7 +152,7 @@ public class VersionStorageReportTemplateManager {
                         ? gitDiff.getEntries().stream().collect(
                                 Collectors.groupingBy(e -> e.getCommit().getCommit()))
                         : gitDiff.getEntries().stream().collect(
-                                Collectors.groupingBy(e -> e.getDiff().getToFileName()));
+                                Collectors.groupingBy(e -> DiffUtils.getChangedFileName(e.getDiff())));
 
         return diffGrouping.entrySet()
                 .stream()

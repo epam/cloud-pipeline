@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.documents.templates.versionedstorage.processor.extractor.ReportDataExtractor;
+import com.epam.pipeline.manager.utils.DiffUtils;
 import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
 import io.reflectoring.diffparser.api.model.Range;
@@ -102,10 +103,11 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
 
             addHeader(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
             for (int i = 0; i < diffEntries.size(); i++) {
-                GitParsedDiffEntry diffEntry = diffEntries.get(i);
-                lastParagraph = addDescription(
-                        lastParagraph, fontFamily, fontSize, diffsGrouping.getType(),
-                        diffEntry, !isLastEntryInGroup(diffEntries.size(), i));
+                final GitParsedDiffEntry diffEntry = diffEntries.get(i);
+                lastParagraph = addDescription(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
+                if (!isLastEntryInGroup(diffEntries.size(), i)) {
+                    addIndent(lastParagraph);
+                }
             }
         }
     }
@@ -134,7 +136,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
 
     private Comparator<GitParsedDiffEntry> resolveDiffGroupComparator(final GitDiffGrouping diffsGrouping) {
         return diffsGrouping.getType() == GitDiffGroupType.BY_COMMIT
-                ? Comparator.comparing(d -> d.getDiff().getToFileName())
+                ? Comparator.comparing(d -> DiffUtils.getChangedFileName(d.getDiff()))
                 : Comparator.comparing(d -> d.getCommit().getAuthorDate());
     }
 
@@ -173,12 +175,9 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     }
 
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
-                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry,
-                                         final boolean indent) {
+                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry) {
         if (type.equals(GitDiffGroupType.BY_COMMIT)) {
-            final String file = diffEntry.getDiff().getFromFileName().contains(DEV_NULL)
-                    ? diffEntry.getDiff().getToFileName()
-                    : diffEntry.getDiff().getFromFileName();
+            final String file = DiffUtils.getChangedFileName(diffEntry.getDiff());
             insertTextData(paragraph, file, true, fontFamily, fontSize, false);
             insertTextData(paragraph, " file changes:", false, fontFamily, fontSize, true);
         } else {
@@ -202,11 +201,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
             }
         }
 
-        final XWPFParagraph lastParagraph = generateDiffTable(paragraph, fontFamily, fontSize, diffEntry);
-        if (indent) {
-            addIndent(lastParagraph);
-        }
-        return lastParagraph;
+        return generateDiffTable(paragraph, fontFamily, fontSize, diffEntry);
     }
 
     private void addIndent(final XWPFParagraph lastParagraph) {
