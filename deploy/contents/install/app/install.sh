@@ -540,6 +540,9 @@ if is_service_requested cp-api-srv; then
         print_info "-> Registering Email templates (Email notification service itself will be installed afterwards)"
         api_register_email_templates
 
+        print_info "-> Registering default Version Storage report template"
+        api_register_vs_report_templates
+
         # if -env CP_CUSTOM_USERS_SPEC= is specified - it will be used, otherwise default one will be tried ($OTHER_PACKAGES_PATH/prerequisites/users.json)
         print_info "-> Registering custom users in IdP and API services"
         api_register_custom_users "$CP_CUSTOM_USERS_SPEC"

@@ -113,6 +113,9 @@ ADD folder-templates /opt/api/folder-templates
 # Install error-pages templates
 ADD error-pages /opt/api/static/error
 
+# Install error-pages templates
+ADD report-templates /opt/api/report-templates
+
 # Add initialization scripts (api jar and git-sync)
 ADD init-api /init-api
 ADD init-git-sync /init-git-sync
