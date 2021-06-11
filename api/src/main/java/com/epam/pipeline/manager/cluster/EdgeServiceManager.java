@@ -86,10 +86,14 @@ public class EdgeServiceManager {
         return buildServiceUrl(runId, SSH_URL_TEMPLATE);
     }
 
-    public Map<String, String> getEdgeDomainNameOrIP() {
-        return kubernetesManager.getServicesByLabel(edgeLabel).stream()
+    public String getEdgeDomainNameOrIP() {
+        final String defaultEdgeRegion = preferenceManager.getPreference(SystemPreferences.DEFAULT_EDGE_REGION);
+        final Map<String, String> labels = buildRegionsLabels(defaultEdgeRegion);
+        return kubernetesManager.getServicesByLabels(labels, edgeLabel).stream()
+                .findFirst()
                 .map(this::getServiceDescription)
-                .collect(Collectors.toMap(ServiceDescription::getRegion, ServiceDescription::getIp));
+                .map(ServiceDescription::getIp)
+                .orElseGet(this::logServiceNotFoundAndReturnNull);
     }
 
     public Map<String, String> buildFSBrowserUrl(final Long runId) {

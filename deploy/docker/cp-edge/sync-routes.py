@@ -687,9 +687,8 @@ do_log('============ Started iteration ============')
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False
 
-edge_region = os.environ.get('CP_EDGE_REGION')
-if not edge_region:
-        edge_region = find_preference(API_GET_DEFAULT_EDGE_REGION_PREF, 'default.edge.region')
+default_edge_region = find_preference(API_GET_DEFAULT_EDGE_REGION_PREF, 'default.edge.region')
+edge_region = os.environ.get('CP_EDGE_REGION') or default_edge_region
 
 edge_kube_service = Service.objects(kube_api).filter(selector={
         EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE, EDGE_SVC_REGION_LABEL: edge_region})
@@ -823,7 +822,8 @@ dns_route_results = []
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
-        if service_spec["create_dns_record"] and not service_spec["custom_domain"]:
+        if service_spec["create_dns_record"] and not service_spec["custom_domain"] \
+                and default_edge_region == edge_region:
                 runs_with_custom_dns.add(service_spec["run_id"])
                 dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record, (service_spec, added_route)))
         else:
