@@ -106,6 +106,7 @@ function getColumnTitle (key) {
   folders,
   pipelinesLibrary
 })
+@roleModel.authenticationInfo
 @inject('preferences', 'dataStorages')
 @HiddenObjects.checkMetadataFolders(p => (p.params || p).id)
 @HiddenObjects.checkMetadataClassesWithParent(p => (p.params || p).id, p => (p.params || p).class)
@@ -176,7 +177,8 @@ export default class Metadata extends React.Component {
     currentMetadataEntityForCurrentProject: [],
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false,
-    currentMetadata: []
+    currentMetadata: [],
+    defaultColumnsFetched: false
   };
 
   uploadButton;
@@ -1654,7 +1656,8 @@ export default class Metadata extends React.Component {
     const {route, router} = this.props;
     if (route && router) {
       router.setRouteLeaveHook(route, this.leavePageWithSelectedItems.bind(this));
-    };
+    }
+    this.fetchDefaultColumns();
     (async () => {
       await this.loadColumns(this.props.folderId, this.props.metadataClass);
       this.setState({selectedColumns: [...this.columns]});
@@ -1662,6 +1665,38 @@ export default class Metadata extends React.Component {
       await this.loadCurrentProject();
     })();
   };
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.folderId !== this.props.folderId) {
+      this.requestDefaultColumnsFetch();
+    }
+    this.fetchDefaultColumns();
+  }
+
+  requestDefaultColumnsFetch () {
+    this.setState({
+      defaultColumnsFetched: false
+    });
+  }
+
+  fetchDefaultColumns () {
+    const {defaultColumnsFetched} = this.state;
+    const {
+      authenticatedUserInfo,
+      folderId
+    } = this.props;
+    if (authenticatedUserInfo.loaded && !defaultColumnsFetched) {
+      this.setState({
+        defaultColumnsFetched: true
+      }, () => {
+        // todo: check 'MetadataColumns' attribute for:
+        // a) folder
+        // b) authenticatedUser
+        // c) authenticatedUser roles/groups
+        console.log(authenticatedUserInfo.value, folderId);
+      });
+    }
+  }
 
   leavePageWithSelectedItems (nextLocation) {
     const {router} = this.props;
