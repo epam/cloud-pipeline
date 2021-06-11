@@ -1375,6 +1375,7 @@ class Logs extends localization.LocalizedReactComponent {
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
             <th style={{verticalAlign: 'middle'}}>{urls.length > 1 ? 'Endpoints: ' : 'Endpoint: '}</th>
+            <th style={{verticalAlign: 'top'}}>{urls.length > 1 ? 'Endpoints: ' : 'Endpoint: '}</th>
             <td>
               <ul>
                 {
@@ -1877,6 +1878,26 @@ class Logs extends localization.LocalizedReactComponent {
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {CommitStatusButton}
+            </Row>
+            <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
+              <RegionsDropdown
+                defaultRegion={this.region}
+                regions={this.regions}
+                title={this.titles[0]}
+                onSelect={this.setRegion}
+              />
+              <RegionsDropdown
+                defaultRegion={this.region}
+                regions={this.regions}
+                title={this.titles[1]}
+                onSelect={this.setRegion}
+              />
+              <RegionsDropdown
+                defaultRegion={this.region}
+                regions={this.regions}
+                title={this.titles[2]}
+                onSelect={this.setRegion}
+              />
             </Row>
             <br />
             {!this.props.run.value.sensitive ? (
