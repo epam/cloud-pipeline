@@ -23,6 +23,7 @@ _default_win_wallpaper = 'C:\\Windows\\Web\\Wallpaper\\Windows\\img0.jpg'
 _desktop_settings = 'Control Panel\\Desktop'
 _excess_shortcut_suffixes = ['EC2*']
 _this_pc_shortcut_path = 'AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\System Tools\\computer.lnk'
+_no_machine_shortcut = 'C:\\Users\\Public\\Desktop\\NoMachine.lnk'
 
 
 def _set_default_wallpaper(username):
@@ -30,6 +31,7 @@ def _set_default_wallpaper(username):
 
 
 def _remove_excess_shortcuts(desktop_folder):
+    os.remove(_no_machine_shortcut)
     for suffix in _excess_shortcut_suffixes:
         matching_shortcuts = glob.glob(os.path.join(desktop_folder, suffix))
         for shortcut_to_remove in matching_shortcuts:
