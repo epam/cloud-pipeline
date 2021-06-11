@@ -20,6 +20,10 @@ import traceback
 import zipfile
 import sys
 import tarfile
+from urllib.parse import urlparse
+
+_default_edge_host = 'cp-edge.default.svc.cluster.local'
+_default_edge_port = 31081
 
 
 class LaunchError(RuntimeError):
@@ -72,6 +76,8 @@ def _extract_boolean_parameter(name, default='false'):
 
 
 def _parse_host_and_port(url, default_host, default_port):
+    if not url:
+        return default_host, default_port
     parsed_url = urlparse(url)
     host_and_port = parsed_url.netloc if parsed_url.netloc else parsed_url.path
     host_and_port = host_and_port.split(':')
@@ -98,7 +104,9 @@ if __name__ == '__main__':
     api_url = _extract_parameter('API', default='https://cp-api-srv.default.svc.cluster.local:31080/pipeline/restapi/')
     api_token = _extract_parameter('API_TOKEN')
     node_owner = _extract_parameter('CP_NODE_OWNER', default='Administrator')
-    edge_url = _extract_parameter('EDGE', default='https://cp-edge.default.svc.cluster.local:31081')
+    edge_url = _extract_parameter('EDGE', default='https://{}:{}'.format(_default_edge_host, _default_edge_port))
+    edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
+    edge_host, edge_port = _parse_host_and_port(edge_url, _default_edge_host, _default_edge_port)
     node_private_key_path = _extract_parameter('CP_NODE_PRIVATE_KEY', default=os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = _extract_parameter('OWNER', 'USER')
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
@@ -256,9 +264,6 @@ if __name__ == '__main__':
         task_logger = TaskLogger(task='NetworkStorageMapping', inner=run_logger)
         task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
         task_logger.info('Adding EDGE root certificate to trusted...')
-        edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
-        from urllib.parse import urlparse
-        edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
         task_ssh.execute(f'{python_dir}\\python.exe -c '
                          f'\\"from scripts.configure_drive_mount_win import add_root_cert_to_trusted_root;'
                          f'   add_root_cert_to_trusted_root(\'{edge_host}\', {edge_port})\\"')
@@ -268,7 +273,7 @@ if __name__ == '__main__':
                          f'   configure_environment(\'{owner}\', \'{edge_host}\')\\"')
 
         task_logger.info('Scheduling drive mapping on logon...')
-        mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
+        mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell', 'MountDrive.ps1'))
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                          f'from scripts.configure_drive_mount_win import schedule_mapping; '
                          f'schedule_mapping(\'{owner}\', \'{edge_host}\', \'{edge_port}\', \'{api_token}\','
