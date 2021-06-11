@@ -41,6 +41,21 @@ public interface VSReportTemplateProcessor {
         return ".*(?i)\\{" + template + "}.*";
     }
 
+    default void cleanUpParagraph(final XWPFParagraph paragraph) {
+        // We clean up all runs except one
+        while (paragraph.getRuns().size() != 1) {
+            paragraph.removeRun(0);
+        }
+
+        // Remove all text from this run, we can just remove whole run and create clean one
+        // but we want to save run properties
+        paragraph.getRuns().forEach(run -> {
+            for (int pos = 0; pos < run.getCTR().sizeOfTArray(); pos++) {
+                run.setText("", pos);
+            }
+        });
+    }
+
     void replacePlaceholderWithData(XWPFParagraph paragraph, String template, Pipeline storage,
                                     GitParsedDiff diff, GitDiffReportFilter reportFilter);
 

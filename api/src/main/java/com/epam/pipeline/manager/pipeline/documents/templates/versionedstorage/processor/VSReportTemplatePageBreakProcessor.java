@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFRun;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,38 +33,7 @@ public class VSReportTemplatePageBreakProcessor implements VSReportTemplateProce
         final Pattern pattern = Pattern.compile(replaceRegex, Pattern.CASE_INSENSITIVE);
         final Matcher matcher = pattern.matcher(paragraph.getText().replace("\t", ""));
         if (matcher.find()) {
-            int start = matcher.start();
-            int end = matcher.end();
-            int globalStartIndex = 0;
-            boolean dataInserted = false;
-            for (XWPFRun run : paragraph.getRuns()) {
-                for (int pos = 0; pos < run.getCTR().sizeOfTArray(); pos++) {
-                    String runText = run.getText(pos);
-                    if (runText == null) {
-                        continue;
-                    }
-                    int globalEndIndex = globalStartIndex + runText.length();
-                    if (globalStartIndex > end || globalEndIndex < start) {
-                        globalStartIndex = globalEndIndex;
-                        continue;
-                    }
-                    int replaceFrom = Math.max(globalStartIndex, start) - globalStartIndex;
-                    int replaceTo = Math.min(globalEndIndex, end) - globalStartIndex;
-                    // Since it is possible that placeholder text can be split on several runs inside a paragraph
-                    // we need to replace part of placeholder with data only once, so lets replace it as soon
-                    // as we on appropriate position and save state of in in dataInserted
-                    if (replaceTo - replaceFrom > 0 && !dataInserted) {
-                        runText = runText.substring(0, replaceFrom)
-                                .concat("")
-                                .concat(runText.substring(replaceTo));
-                        dataInserted = true;
-                    } else {
-                        runText = runText.substring(0, replaceFrom).concat(runText.substring(replaceTo));
-                    }
-                    run.setText(runText, pos);
-                    globalStartIndex = globalEndIndex;
-                }
-            }
+            cleanUpParagraph(paragraph);
             paragraph.setPageBreak(true);
         }
     }
