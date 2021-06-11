@@ -92,6 +92,7 @@ import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command'
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import VSActions from '../../versioned-storages/vs-actions';
+import {RegionsDropdown} from './RegionsDropdown';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -139,7 +140,11 @@ class Logs extends localization.LocalizedReactComponent {
 
   @observable language = null;
   @observable _pipelineLanguage = null;
-
+  @observable regions = new Map(Object.entries({'eu-west-1': 'url', 'eu-west-2': 'url2', 'eu-west-3': 'url3'}));
+  // @observable titles = new Map(Object.entries({'eu-west-1': 'SSH', 'eu-west-2': 'BROWSE', 'eu-west-3': 'RStudio'}));
+  titles = ['SSH', 'BROWSE', 'RStudio'];
+  @observable region = {'eu-west-1': 'url'};
+  // @observable title = this.region ? this.titles.get(Object.keys(this.region)[0]) : '';
   state = {
     timings: false,
     commitRun: false,
@@ -247,6 +252,9 @@ class Logs extends localization.LocalizedReactComponent {
     return false;
   }
 
+  setRegion = (region) => {
+    console.log(region);
+  };
   exportLog = async () => {
     const {runId} = this.props.params;
 
@@ -1373,7 +1381,7 @@ class Logs extends localization.LocalizedReactComponent {
         // console.log(regionedUrls, regionedUrls.map(url => this.props.multiZone.getDefaultURLRegion(url.url)));
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
-            <th style={{verticalAlign: 'top'}}>{urls.length > 1 ? 'Endpoints: ': 'Endpoint: '}</th>
+            <th style={{verticalAlign: 'top'}}>{urls.length > 1 ? 'Endpoints: ' : 'Endpoint: '}</th>
             <td>
               <ul>
                 {
@@ -1876,6 +1884,26 @@ class Logs extends localization.LocalizedReactComponent {
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {CommitStatusButton}
+            </Row>
+            <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
+              <RegionsDropdown
+                defaultRegion={this.region}
+                regions={this.regions}
+                title={this.titles[0]}
+                onSelect={this.setRegion}
+              />
+              <RegionsDropdown
+                defaultRegion={this.region}
+                regions={this.regions}
+                title={this.titles[1]}
+                onSelect={this.setRegion}
+              />
+              <RegionsDropdown
+                defaultRegion={this.region}
+                regions={this.regions}
+                title={this.titles[2]}
+                onSelect={this.setRegion}
+              />
             </Row>
             <br />
             {!this.props.run.value.sensitive ? (
