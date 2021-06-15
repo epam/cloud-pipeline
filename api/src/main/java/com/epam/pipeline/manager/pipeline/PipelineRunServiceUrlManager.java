@@ -45,9 +45,13 @@ public class PipelineRunServiceUrlManager {
     public PipelineRunServiceUrl update(final Long runId, final String region,
                                         final PipelineRunServiceUrlVO serviceUrl) {
         final String edgeRegion = getRegion(region);
-        pipelineRunServiceUrlRepository.findByPipelineRunIdAndRegion(runId, edgeRegion)
-                .ifPresent(pipelineRunServiceUrlRepository::delete);
-        final PipelineRunServiceUrl pipelineRunServiceUrl = convertPipelineRunServiceUrl(runId, edgeRegion, serviceUrl);
+        final PipelineRunServiceUrl pipelineRunServiceUrl = pipelineRunServiceUrlRepository
+                .findByPipelineRunIdAndRegion(runId, edgeRegion)
+                .map(existingServiceUrl -> {
+                    existingServiceUrl.setServiceUrl(serviceUrl.getServiceUrl());
+                    return existingServiceUrl;
+                })
+                .orElse(convertPipelineRunServiceUrl(runId, edgeRegion, serviceUrl));
         pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl);
         return pipelineRunServiceUrl;
     }
