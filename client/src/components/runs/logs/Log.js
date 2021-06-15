@@ -1879,26 +1879,6 @@ class Logs extends localization.LocalizedReactComponent {
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {CommitStatusButton}
             </Row>
-            <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              <RegionsDropdown
-                defaultRegion={this.region}
-                regions={this.regions}
-                title={this.titles[0]}
-                onSelect={this.setRegion}
-              />
-              <RegionsDropdown
-                defaultRegion={this.region}
-                regions={this.regions}
-                title={this.titles[1]}
-                onSelect={this.setRegion}
-              />
-              <RegionsDropdown
-                defaultRegion={this.region}
-                regions={this.regions}
-                title={this.titles[2]}
-                onSelect={this.setRegion}
-              />
-            </Row>
             <br />
             {!this.props.run.value.sensitive ? (
               <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
