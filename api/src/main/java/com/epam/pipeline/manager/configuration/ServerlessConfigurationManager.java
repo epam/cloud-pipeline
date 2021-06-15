@@ -221,7 +221,6 @@ public class ServerlessConfigurationManager {
                 .getElements());
     }
 
-    // TODO: is it correct?
     private String getEndpointUrl(final AbstractRunConfigurationEntry configurationEntry,
                                   final PipelineRun pipelineRun) {
         final String endpointName = configurationEntry.getEndpointName();
