@@ -150,8 +150,8 @@ def get_conn_info(run_id):
                          sensitive=run_model.sensitive)
 
 
-def get_custom_conn_info(host_id):
-    proxy_url = Cluster.get_edge_external_url()
+def get_custom_conn_info(host_id, region=None):
+    proxy_url = Cluster.get_edge_external_url(region)
     if not proxy_url:
         raise RuntimeError('Cannot retrieve EDGE service external url')
     proxy_url_parts = urlparse(proxy_url)
@@ -313,7 +313,7 @@ def parse_scp_location(location):
 
 def create_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
-                  timeout, foreground, retries):
+                  timeout, foreground, retries, region=None):
     run_id = parse_run_identifier(host_id)
     if run_id:
         create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
@@ -324,7 +324,7 @@ def create_tunnel(host_id, local_port, remote_port, connection_timeout,
             raise RuntimeError('Passwordless SSH tunnel connections are allowed to runs only.')
         create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
                               log_file, log_level,
-                              timeout, foreground, retries)
+                              timeout, foreground, retries, region)
 
 
 def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
@@ -347,9 +347,9 @@ def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
 
 def create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
                           log_file, log_level,
-                          timeout, foreground, retries):
+                          timeout, foreground, retries, region=None):
     if foreground:
-        conn_info = get_custom_conn_info(host_id)
+        conn_info = get_custom_conn_info(host_id, region)
         create_foreground_tunnel(host_id, local_port, remote_port, connection_timeout, conn_info,
                                  host_id, log_level, retries)
     else:
