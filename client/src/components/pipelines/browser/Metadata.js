@@ -71,6 +71,7 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
+import getObjectMetadataAttribute from './metadata-controls/metadataAttribute';
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -1688,12 +1689,16 @@ export default class Metadata extends React.Component {
     if (authenticatedUserInfo.loaded && !defaultColumnsFetched) {
       this.setState({
         defaultColumnsFetched: true
-      }, () => {
-        // todo: check 'MetadataColumns' attribute for:
-        // a) folder
-        // b) authenticatedUser
-        // c) authenticatedUser roles/groups
-        console.log(authenticatedUserInfo.value, folderId);
+      }, async () => {
+        const attributeName = 'MetadataColumns';
+        const attributeValue = await getObjectMetadataAttribute(folderId, authenticatedUserInfo.value, attributeName);
+        if (attributeValue && attributeValue.length) {
+          if (attributeValue.length > 20) {
+            this.setState({selectedColumns: [...attributeValue.slice(0, 20)]});
+          } else {
+            this.setState({selectedColumns: [...attributeValue]});
+          }
+        }
       });
     }
   }
