@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,16 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
+import io.fabric8.kubernetes.api.model.Affinity;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HostPathVolumeSource;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.NodeAffinity;
+import io.fabric8.kubernetes.api.model.NodeSelector;
+import io.fabric8.kubernetes.api.model.NodeSelectorRequirement;
+import io.fabric8.kubernetes.api.model.NodeSelectorTerm;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodDNSConfig;
@@ -173,7 +178,12 @@ public class PipelineExecutor {
         spec.setRestartPolicy("Never");
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
         spec.setDnsPolicy("ClusterFirst");
-        spec.setNodeSelector(nodeSelector);
+        if (KubernetesConstants.WINDOWS.equalsIgnoreCase(run.getPlatform())
+            && nodeSelector.containsKey(KubernetesConstants.RUN_ID_LABEL)) {
+            spec.setAffinity(buildNodeSelectorAffinity(nodeSelector.get(KubernetesConstants.RUN_ID_LABEL)));
+        } else {
+            spec.setNodeSelector(nodeSelector);
+        }
         if (preferenceManager.getPreference(SystemPreferences.KUBE_POD_DOMAINS_ENABLED)) {
             configurePodDns(run, spec);
         }
@@ -184,7 +194,7 @@ public class PipelineExecutor {
                 KubernetesConstants.CP_CAP_DIND_NATIVE);
         boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
-        if ("windows".equals(run.getPlatform())) {
+        if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
             spec.setVolumes(getWindowsVolumes());
         } else {
             spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
@@ -198,6 +208,20 @@ public class PipelineExecutor {
                 envVars, dockerImage, command, imagePullPolicy,
                 isDockerInDockerEnabled, isSystemdEnabled, isParentPod)));
         return spec;
+    }
+
+    private Affinity buildNodeSelectorAffinity(final String runId) {
+        final NodeSelectorRequirement selectorRequirement =
+            new NodeSelectorRequirement(KubernetesConstants.RUN_ID_LABEL,
+                                        KubernetesConstants.POD_NODE_SELECTOR_OPERATOR_IN,
+                                        Collections.singletonList(runId));
+        final NodeSelectorTerm nodeSelectorTerm = new NodeSelectorTerm(Collections.singletonList(selectorRequirement));
+        final NodeSelector nodeSelector = new NodeSelector(Collections.singletonList(nodeSelectorTerm));
+        final NodeAffinity nodeAffinity = new NodeAffinity();
+        nodeAffinity.setRequiredDuringSchedulingIgnoredDuringExecution(nodeSelector);
+        final Affinity affinity = new Affinity();
+        affinity.setNodeAffinity(nodeAffinity);
+        return affinity;
     }
 
     private void configurePodDns(final PipelineRun run, final PodSpec spec) {
@@ -230,7 +254,7 @@ public class PipelineExecutor {
         container.setSecurityContext(securityContext);
         container.setEnv(envVars);
         container.setImage(dockerImage);
-        if ("windows".equals(run.getPlatform())) {
+        if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
             container.setCommand(Collections.singletonList("powershell"));
             if (!StringUtils.isEmpty(command)) {
                 container.setArgs(Arrays.asList("-command", command));
