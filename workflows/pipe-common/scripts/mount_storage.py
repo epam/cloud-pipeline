@@ -121,7 +121,10 @@ class MountStorageTask:
                 return
             Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
-            sensitive_policy = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)['value']
+            sensitive_policy = None
+            sensitive_policy_preference = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)
+            if sensitive_policy_preference and 'value' in sensitive_policy_preference:
+                sensitive_policy = sensitive_policy_preference['value']
             for mounter in [mounter for mounter in self.mounters.values()]:
                 storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
                 if storage_count_by_type > 0:
