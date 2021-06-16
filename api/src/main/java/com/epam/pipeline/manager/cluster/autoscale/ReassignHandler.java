@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceF
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.utils.CommonUtils;
@@ -84,7 +85,8 @@ public class ReassignHandler {
                     (map, id) -> map.put(id, autoscalerService.getPreviousRunInstance(id, client)),
                     HashMap::putAll);
 
-        freeInstances.values().removeIf(entry -> "windows".equals(entry.getInstance().getNodePlatform()));
+        freeInstances.values()
+            .removeIf(entry -> KubernetesConstants.WINDOWS.equals(entry.getInstance().getNodePlatform()));
         if (MapUtils.isEmpty(freeInstances)) {
             log.debug("Available nodes are not suitable for the reassign.");
             return false;
@@ -189,7 +191,7 @@ public class ReassignHandler {
 
     private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
         final boolean isWindowsRun = pipelineRun
-            .filter(run -> "windows".equals(run.getPlatform()))
+            .filter(run -> KubernetesConstants.WINDOWS.equals(run.getPlatform()))
             .isPresent();
         final boolean requiresNewNode = pipelineRun
             .flatMap(run -> run.getPipelineRunParameters().stream()

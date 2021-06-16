@@ -149,6 +149,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
         TOOL_RAM,
         TOOL_DESCRIPTION,
         TOOL_SHORT_DESCRIPTION,
+        TOOL_PLATFORM,
         TOOL_LABELS,
         TOOL_ENDPOINTS,
         TOOL_DEFAULT_COMMAND,
@@ -252,6 +253,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             tool.setRegistry(registry.getPath());
             tool.setDescription(rs.getString(TOOL_DESCRIPTION.name()));
             tool.setShortDescription(rs.getString(TOOL_SHORT_DESCRIPTION.name()));
+            tool.setPlatform(rs.getString(TOOL_PLATFORM.name()));
             tool.setAllowSensitive(rs.getBoolean(TOOL_ALLOW_SENSITIVE.name()));
             long toolLink = rs.getLong(TOOL_LINK.name());
             if (!rs.wasNull()) {
