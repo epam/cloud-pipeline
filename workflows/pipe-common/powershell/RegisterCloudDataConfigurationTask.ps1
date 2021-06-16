@@ -14,15 +14,13 @@
 
 param (
     $UserName,
-    $BearerToken,
-    $EdgeHost,
-    $EdgePort,
-    $MountingScript
+    $CloudDataConfigFolder,
+    $FinalizingScript
 )
+$UserNameLowercase = $UserName.ToLower()
+$UserDefaultHomeFolder = "C:\\Users\\$UserNameLowercase"
 
-SetPlaceholderInFile -Placeholder "<USER_NAME>" -Replacement $UserName -TargetFile $MountingScript
-SetPlaceholderInFile -Placeholder "<USER_TOKEN>" -Replacement $BearerToken -TargetFile $MountingScript
-SetPlaceholderInFile -Placeholder "<EDGE_HOST>" -Replacement $EdgeHost -TargetFile $MountingScript
-SetPlaceholderInFile -Placeholder "<EDGE_PORT>" -Replacement $EdgePort -TargetFile $MountingScript
-SCHTASKS /CREATE /RU "$UserName" /SC ONLOGON /TN "MountCloudPipileneDav" /TR "powershell.exe -windowstyle hidden $MountingScript"
-exit $LASTEXITCODE
+SetPlaceholderInFile -Placeholder "<USER_DEFAULT_HOME>" -Replacement $UserDefaultHomeFolder -TargetFile $FinalizingScript
+SetPlaceholderInFile -Placeholder "<CLOUD_DATA_CONFIG_DIR>" -Replacement $CloudDataConfigFolder -TargetFile $FinalizingScript
+
+SCHTASKS /CREATE /RU "$UserName" /SC ONLOGON /TN "MoveCloudDataConfig" /TR "powershell.exe $FinalizingScript"

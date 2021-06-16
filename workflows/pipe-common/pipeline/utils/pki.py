@@ -17,7 +17,7 @@ import OpenSSL
 import socket
 
 
-def _generate_cert_chain(hostname, port):
+def generate_cert_chain(hostname, port):
     context = OpenSSL.SSL.Context(method=OpenSSL.SSL.TLSv1_2_METHOD)
     context.set_verify(OpenSSL.SSL.VERIFY_NONE)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,12 +32,10 @@ def _generate_cert_chain(hostname, port):
     sock.close()
 
 
-def save_root_cert(host, port, target_file):
-    full_cert_chain = list(_generate_cert_chain(host, port))
-    if len(full_cert_chain) > 0:
-        root_cert = full_cert_chain[len(full_cert_chain) - 1]
-        cert_content = root_cert.public_bytes(cryptography.hazmat.primitives.serialization.Encoding.PEM)
-        with open(target_file, 'wb') as outfile:
-            outfile.write(cert_content)
+def load_root_certificate(host, port):
+    full_cert_chain = list(generate_cert_chain(host, port))
+    if full_cert_chain:
+        root_cert = full_cert_chain[-1]
+        return root_cert.public_bytes(cryptography.hazmat.primitives.serialization.Encoding.PEM)
     else:
         raise RuntimeError("Failed to load certificate chain for '{}:{}'".format(host, port))
