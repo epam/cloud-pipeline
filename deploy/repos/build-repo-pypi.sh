@@ -115,6 +115,10 @@ botocore==1.13.50
 awscli==1.16.314"
 download_list "$pypi_packages" /srv/pypi/web/
 
+wget "https://files.pythonhosted.org/packages/26/ef/461e9eec56fba7fa66692c4af00cbd6547b788a7ca818d9b8b5f1951f228/psutil-5.8.0-cp27-cp27mu-manylinux2010_x86_64.whl" -O /srv/pypi/web/psutil-5.8.0-cp27-cp27mu-manylinux2010_x86_64.whl
+wget "https://files.pythonhosted.org/packages/8e/5c/c4b32c2024daeac35e126b90a1ff7a0209ef8b32675d1d50e55d58e78c81/psutil-5.8.0-cp38-cp38-win_amd64.whl" -O /srv/pypi/web/psutil-5.8.0-cp38-cp38-win_amd64.whl
+wget "https://files.pythonhosted.org/packages/a3/ca/d4011eb7f4cb4948e9b0c369d2922ffc75035a78ba190206e3e8bd294839/pywin32-300-cp38-cp38-win_amd64.whl" -O /srv/pypi/web/pywin32-300-cp38-cp38-win_amd64.whl
+
 piprepo build /srv/pypi/web/
 
 # Upload to S3 (bucket shall have "Static sites hosting" enabled to serve index.html)

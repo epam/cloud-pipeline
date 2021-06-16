@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline;
+package com.epam.pipeline.entity.cluster;
 
-import java.util.regex.Pattern;
+import lombok.Builder;
+import lombok.Getter;
 
-public interface ToolUtils {
-    Pattern REPOSITORY_AND_IMAGE = Pattern.compile("^(.*)\\/(.*\\/.*)$");
-    String TAG_DELIMITER = ":";
+@Builder
+@Getter
+public class InstanceImage {
 
-    static String getImageWithoutTag(final String imageWithTag) {
-        return imageWithTag.split(TAG_DELIMITER)[0];
-    }
+    public static final InstanceImage EMPTY = InstanceImage.builder().build();
 
-    static String getImageTag(final String imageWithTag) {
-        return imageWithTag.split(TAG_DELIMITER)[1];
-    }
+    private final String imageId;
+    private final String name;
+    private final String platform;
 }

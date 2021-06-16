@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.preference.Preference;
@@ -252,6 +253,7 @@ public class AggregatingToolScanManagerTest {
         when(toolVersionManager.loadToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(old);
 
         when(toolManager.getTagFromImageName(Mockito.anyString())).thenReturn(LATEST_VERSION);
+        when(toolVersionManager.findToolVersion(Mockito.anyLong(), Mockito.anyString())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -262,6 +264,8 @@ public class AggregatingToolScanManagerTest {
         when(compScanService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(
                 new DockerComponentScanResult("test", Arrays.asList(layerScanResult, layerScanResult))));
         when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(new ClairScanResult()));
+        when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
+            .thenReturn(new ToolVersionAttributes());
 
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
 
@@ -272,6 +276,8 @@ public class AggregatingToolScanManagerTest {
 
     @Test
     public void testScanTool() throws ToolScanExternalServiceException {
+        when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
+            .thenReturn(new ToolVersionAttributes());
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
 
         Assert.assertFalse(result.getVulnerabilities().isEmpty());
@@ -431,6 +437,16 @@ public class AggregatingToolScanManagerTest {
         preferenceManager.update(Arrays.asList(toolScanEnabled, clairRootUrl));
         service = (ClairService) Whitebox.getInternalState(toolScanManager, "clairService");
         Assert.assertNotNull(service);
+    }
+
+    @Test
+    public void testAllowWindows() {
+        final Optional<ToolVersion> windowsToolVersion = Optional.of(ToolVersion.builder()
+                                                                         .platform("windows")
+                                                                         .build());
+        when(toolVersionManager.findToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(windowsToolVersion);
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        Mockito.verifyZeroInteractions(preferenceManager);
     }
 
     private final class MockCall<T> implements Call<T> {
