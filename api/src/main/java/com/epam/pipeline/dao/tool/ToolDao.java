@@ -242,6 +242,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         ENDPOINTS,
         DESCRIPTION,
         SHORT_DESCRIPTION,
+        PLATFORM,
         DEFAULT_COMMAND,
         LABELS_TO_SEARCH,
         OWNER,
@@ -322,6 +323,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         tool.setSecretName(rs.getString(ToolParameters.SECRET_NAME.name()));
         tool.setDescription(rs.getString(ToolParameters.DESCRIPTION.name()));
         tool.setShortDescription(rs.getString(ToolParameters.SHORT_DESCRIPTION.name()));
+        tool.setPlatform(rs.getString(ToolParameters.PLATFORM.name()));
         tool.setDefaultCommand(rs.getString(ToolParameters.DEFAULT_COMMAND.name()));
         tool.setOwner(rs.getString(ToolParameters.OWNER.name()));
         tool.setDisk(rs.getInt(ToolParameters.DISK.name()));
