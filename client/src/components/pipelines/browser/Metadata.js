@@ -154,6 +154,7 @@ export default class Metadata extends React.Component {
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
+    defaultColumns: [],
     columns: [],
     totalCount: 0,
     filterModel: {
@@ -1683,16 +1684,25 @@ export default class Metadata extends React.Component {
         defaultColumnsFetched: true
       }, async () => {
         const attributeName = 'MetadataColumns';
-        const attributeValue = await getObjectMetadataAttribute(folderId, authenticatedUserInfo.value, attributeName);
+        let attributeValue = await getObjectMetadataAttribute(folderId, authenticatedUserInfo.value, attributeName);
         if (attributeValue && attributeValue.length) {
           if (attributeValue.length > 20) {
-            this.setState({selectedColumns: [...attributeValue.slice(0, 20)]});
-          } else {
-            this.setState({selectedColumns: [...attributeValue]});
+            attributeValue = [...attributeValue.slice(0, 20)];
           }
+          this.setState({defaultColumns: [...attributeValue]}, () => this.setDefaultColumns());
         }
       });
     }
+  }
+
+  setDefaultColumns () {
+    const defaultColumns = [...this.state.defaultColumns];
+    let currentColumns = this.state.columns.map(column => Object.assign({}, column));
+    currentColumns.map(column => {
+      column.selected = defaultColumns.includes(column.key);
+      return column;
+    });
+    this.setState({columns: currentColumns});
   }
 
   leavePageWithSelectedItems (nextLocation) {
