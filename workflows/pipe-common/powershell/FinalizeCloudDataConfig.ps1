@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-param (
-    $UserName,
-    $UserPassword
-)
-
-$SecuredUserPassword = ConvertTo-SecureString -String $UserPassword -AsPlainText -Force
-New-LocalUser -Name $UserName -Password $SecuredUserPassword -AccountNeverExpires
-Add-LocalGroupMember -Group "Administrators" -Member "$UserName"
+if ([string]::IsNullOrEmpty("$HOME")) {
+    $UserHomeFolder="<USER_DEFAULT_HOME>"
+} else {
+    $UserHomeFolder = "$HOME"
+}
+Write-Host Finalizing Cloud-Data configuration...
+cp -r <CLOUD_DATA_CONFIG_DIR> $UserHomeFolder

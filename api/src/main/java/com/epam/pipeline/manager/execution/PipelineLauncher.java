@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -138,7 +139,7 @@ public class PipelineLauncher {
         if (!useLaunch) {
             rootPodCommand = pipelineCommand;
         } else {
-            if ("windows".equals(run.getPlatform())) {
+            if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
                 rootPodCommand = String.format(
                         preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS), 
                         windowsLaunchScriptUrl, pipelineCommand);

@@ -36,6 +36,7 @@ import com.epam.pipeline.exception.ToolScanExternalServiceException;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.clair.ClairScanRequest;
 import com.epam.pipeline.manager.docker.scan.clair.ClairScanResult;
 import com.epam.pipeline.manager.docker.scan.clair.ClairService;
@@ -112,6 +113,9 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
     @Autowired
     private ToolScanInfoManager toolScanInfoManager;
+
+    @Autowired
+    private ToolVersionManager toolVersionManager;
 
     private ClairService clairService;
     private DockerComponentScanService dockerComponentService;
@@ -204,6 +208,15 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
     private ToolExecutionCheckStatus checkStatus(final Tool tool, final String tag,
                                                  final Optional<ToolVersionScanResult> versionScanOp) {
+        final boolean isWindowsTool = toolVersionManager.findToolVersion(tool.getId(), tag)
+            .map(ToolVersion::getPlatform)
+            .filter(WINDOWS_PLATFORM::equalsIgnoreCase)
+            .isPresent();
+        if (isWindowsTool) {
+            LOGGER.debug("Tool [id={}, version={}] is Windows-based, proceed with running.", tool.getId(), tag);
+            return ToolExecutionCheckStatus.success();
+        }
+
         int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
 
         boolean isGracePeriodOrWhiteList = versionScanOp.isPresent() &&
