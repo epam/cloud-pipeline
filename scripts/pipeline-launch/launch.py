@@ -233,7 +233,14 @@ if __name__ == '__main__':
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                          f'from scripts.configure_cloud_data_win import configure_cloud_data_win; '
                          f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\','
-                         f'                         \'{owner}\', \'{owner}\', \'{api_token}\')\\"')
+                         f'                         \'{owner}\', \'{api_token}\')\\"')
+
+        cloud_data_config_finalization_script_path = _escape_backslashes(
+            os.path.join(common_repo_dir, 'powershell\\FinalizeCloudDataConfig.ps1'))
+        cloud_data_config_tmp_path = os.path.join(run_dir, ".pipe-webdav-client")
+        task_ssh.execute(f'RegisterCloudDataConfigurationTask -UserName \\"{owner}\\"'
+                         f' -CloudDataConfigFolder \\"{_escape_backslashes(cloud_data_config_tmp_path)}\\"'
+                         f' -FinalizingScript \\"{cloud_data_config_finalization_script_path}\\" | Out-Null')
         task_logger.success('Cloud-Data installed and configured successfully!')
 
     logger.info('Configuring pipe on the node...')
@@ -252,12 +259,13 @@ if __name__ == '__main__':
         edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
         from urllib.parse import urlparse
         edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
-        task_ssh.execute(f'{python_dir}\\python.exe -c \\"from pipeline.utils.pki import save_root_cert;'
-                         f' save_root_cert(\'{edge_host}\', {edge_port}, \'{edge_root_cert_path}\')\\"')
-        task_ssh.execute(f'ImportCertificate -FilePath "\'{edge_root_cert_path}\'"'
-                         f' -CertStoreLocation Cert:\\\\LocalMachine\\\\Root')
-        task_logger.info('Preparing environment for storage mapping...')
-        task_ssh.execute(f'InitializeEnvironmentToMountDrive | Out-Null')
+        task_ssh.execute(f'{python_dir}\\python.exe -c '
+                         f'\\"from scripts.add_root_certificate_win import add_root_cert_to_trusted_root_win;'
+                         f'   add_root_cert_to_trusted_root_win(\'{edge_host}\', {edge_port})\\"')
+        task_logger.info('Configuring environment for storage mapping...')
+        task_ssh.execute(f'{python_dir}\\python.exe -c '
+                         f'\\"from scripts.configure_drive_mount_env_win import configure_drive_mount_env_win; '
+                         f'   configure_drive_mount_env_win(\'{owner}\', \'{edge_host}\')\\"')
 
         task_logger.info('Mapping network storage...')
         mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
