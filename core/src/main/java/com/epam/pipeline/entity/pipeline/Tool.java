@@ -36,6 +36,7 @@ public class Tool extends AbstractSecuredEntity {
     private String ram;
     private String instanceType;
     private Integer disk;
+    private String platform;
 
     private Long registryId;
     private String registry;

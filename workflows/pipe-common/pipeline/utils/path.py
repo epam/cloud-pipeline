@@ -35,9 +35,8 @@ def _add_to_powershell_profile(path, profile_path):
 
 
 def _add_to_batch_profile(path, profile_path):
-    import winreg
-    with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Command Processor') as key:
-        winreg.SetValueEx(key, 'AutoRun', 0, winreg.REG_SZ, profile_path)
+    from .reg import set_local_machine_str_value
+    set_local_machine_str_value('Software\\Microsoft\\Command Processor', 'AutoRun', profile_path)
     profile_dir_path = os.path.dirname(profile_path)
     _mkdir(profile_dir_path)
     if os.path.exists(profile_path):

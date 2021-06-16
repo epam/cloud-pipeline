@@ -59,20 +59,24 @@ if not api_endpoint then
 end
 local api_uri = api_endpoint .. "/route?url=" .. req_uri .. "&type=FORM"
 
--- Get list of POST params, if a request from API is received
-ngx.req.read_body()
-local args, err = ngx.req.get_post_args()
-if not args then
-    -- If no attributes found - consider it an initial request and send to API
-    ngx.redirect(api_uri)
-    return
-end
+-- Try to extract token from the `Authorization` header
+token = ngx.var.http_authorization
+if not token then
+    -- Get list of POST params, if a request from API is received
+    ngx.req.read_body()
+    local args, err = ngx.req.get_post_args()
+    if not args then
+        -- If no attributes found - consider it an initial request and send to API
+        ngx.redirect(api_uri)
+        return
+    end
 
--- Search for "bearer" value in POST params
-for key, val in pairs(args) do
-    if key == "bearer" then
-        token = val
-        break
+    -- Search for "bearer" value in POST params
+    for key, val in pairs(args) do
+        if key == "bearer" then
+            token = val
+            break
+        end
     end
 end
 
