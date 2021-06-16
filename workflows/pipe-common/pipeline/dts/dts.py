@@ -16,7 +16,7 @@ import json
 import requests
 import time
 from pipeline import Logger
-from paths import LocalToS3, S3ToLocal, LocalToAzure, AzureToLocal, Path
+from .paths import LocalToS3, S3ToLocal, LocalToAzure, AzureToLocal, Path
 
 
 class _TransferStatus:

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,6 +83,7 @@ function build_ami {
     local user_data_script="${10}"
     local output_path="${11}"
     local make_public="${12}"
+    local platform="${13}"
 
     if [ -z "$output_path" ]; then
         echo "Output path is not set"
@@ -95,8 +96,16 @@ function build_ami {
 
     if [ "$cloud_provider" == "$CP_AWS" ]; then
         if [ "$base_ami" == "NA" ]; then
-            base_ami=$(aws ec2 describe-images --region $region --owners amazon --filters 'Name=name,Values=amzn2-ami-hvm-2.0.????????-x86_64-gp2' 'Name=state,Values=available' --output json | jq -r '.Images | sort_by(.CreationDate) | last(.[]).ImageId')
-            echo "Amazon Linux 2 AMI will be used by default ($base_ami), as other value was not specified"
+            if [ "$platform" == "LINUX" ]; then
+                base_ami=$(aws ec2 describe-images --region $region --owners amazon --filters 'Name=name,Values=amzn2-ami-hvm-2.0.????????-x86_64-gp2' 'Name=state,Values=available' --output json | jq -r '.Images | sort_by(.CreationDate) | last(.[]).ImageId')
+                echo "Amazon Linux 2 AMI will be used by default ($base_ami), as other value was not specified"
+            elif [ "$platform" == "WINDOWS" ]; then
+                base_ami=$(aws ec2 describe-images --region $region --owners amazon --filters 'Name=name,Values=Windows_Server-2019-English-Full-ContainersLatest-??????????' 'Name=state,Values=available' --output json | jq -r '.Images | sort_by(.CreationDate) | last(.[]).ImageId')
+                echo "Windows Server 2019 AMI will be used by default ($base_ami), as other value was not specified"
+            else
+                echo "Cannot find default base image for $platform platform."
+                return 1
+            fi
         fi
         if [ "$base_ami_disk" == "NA" ]; then
             base_ami_disk="10"
@@ -471,6 +480,11 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    -bwc|--base-win-common-image)
+    export CP_BASE_WIN_COMMON_IMAGE_ID="$2"
+    shift # past argument
+    shift # past value
+    ;;
     -d|--default-disk)
     export CP_DEFAULT_DISK="$2"
     shift # past argument
@@ -661,7 +675,8 @@ for region_item in "${regions_arr[@]}"; do
                 "${CP_IMAGE_PREFIX}-Common" \
                 "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-common-node.sh" \
                 "$CP_OUTPUT" \
-                "${CP_MAKE_IMAGES_PUBLIC:-true}"
+                "${CP_MAKE_IMAGES_PUBLIC:-true}" \
+                "LINUX"
 
     if [ $? -ne 0 ]; then
         echo "ERROR: Common image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
@@ -681,10 +696,32 @@ for region_item in "${regions_arr[@]}"; do
                 "${CP_IMAGE_PREFIX}-GPU" \
                 "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-gpu-node.sh" \
                 "$CP_OUTPUT" \
-                "${CP_MAKE_IMAGES_PUBLIC:-true}"
+                "${CP_MAKE_IMAGES_PUBLIC:-true}" \
+                "LINUX"
 
     if [ $? -ne 0 ]; then
         echo "ERROR: GPU image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
+    fi
+
+    echo
+
+    echo "-> Windows Common image"
+    build_ami   "${CP_CLOUD_PROVIDER}" \
+                "${region_item}" \
+                "${CP_BASE_WIN_COMMON_IMAGE_ID:-NA}" \
+                "${CP_DEFAULT_DISK:-NA}" \
+                "${CP_DEFAULT_COMMON_SIZE:-NA}" \
+                "${CP_AWS_SSH_KEY_NAME:-NA}" \
+                "${CP_SECURITY_GROUPS:-NA}" \
+                "${CP_SUBNET:-NA}" \
+                "${CP_IMAGE_PREFIX}-Windows-Common" \
+                "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-common-win-node.ps1" \
+                "$CP_OUTPUT" \
+                "${CP_MAKE_IMAGES_PUBLIC:-true}" \
+                "WINDOWS"
+
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Windows Common image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
     fi
 
     echo

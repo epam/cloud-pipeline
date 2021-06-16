@@ -36,5 +36,6 @@ public class ToolVersion {
     private String digest;
     private Long size;
     private Date modificationDate;
+    private String platform;
     private List<ConfigurationEntry> settings;
 }

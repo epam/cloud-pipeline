@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -301,6 +302,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         } else {
             return NO_OP_INSTANCE_DNS_RECORD;
         }
+    }
+
+    @Override
+    public InstanceImage getInstanceImageDescription(final AwsRegion region, final String imageName) {
+        return ec2Helper.getInstanceImageDescription(region.getRegionCode(), imageName);
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

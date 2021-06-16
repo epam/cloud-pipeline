@@ -29,12 +29,15 @@ def main():
     parser.add_argument("--ins_type", type=str, required=True)
     parser.add_argument("--ins_hdd", type=int, default=30)
     parser.add_argument("--ins_img", type=str, required=True)
+    parser.add_argument("--ins_platform", type=str, default='linux')
     parser.add_argument("--num_rep", type=int, default=250) # 250 x 3s = 12.5m
     parser.add_argument("--time_rep", type=int, default=3)
     parser.add_argument("--is_spot", type=bool, default=False)
     parser.add_argument("--bid_price", type=float, default=1.0)
     parser.add_argument("--kube_ip", type=str, required=True)
     parser.add_argument("--kubeadm_token", type=str, required=True)
+    parser.add_argument("--kubeadm_cert_hash", type=str, required=True)
+    parser.add_argument("--kube_node_token", type=str, required=True)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--cloud", type=str, default=None)
@@ -47,6 +50,7 @@ def main():
     ins_type = args.ins_type
     ins_hdd = args.ins_hdd
     ins_img = args.ins_img
+    ins_platform = args.ins_platform
     num_rep = args.num_rep
     time_rep = args.time_rep
     is_spot = args.is_spot
@@ -55,6 +59,8 @@ def main():
     cluster_role = args.cluster_role
     kube_ip = args.kube_ip
     kubeadm_token = args.kubeadm_token
+    kubeadm_cert_hash = args.kubeadm_cert_hash
+    kube_node_token = args.kube_node_token
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     cloud = args.cloud
@@ -72,12 +78,14 @@ def main():
                    '- Type: {}\n'
                    '- Disk: {}\n'
                    '- Image: {}\n'
+                   '- Platform: {}\n'
                    '- IsSpot: {}\n'
                    '- BidPrice: {}\n-'.format(region_id,
                                               run_id,
                                               ins_type,
                                               ins_hdd,
                                               ins_img,
+                                              ins_platform,
                                               str(is_spot),
                                               str(bid_price)))
 
@@ -86,7 +94,7 @@ def main():
     try:
         if not ins_img or ins_img == 'null':
             # Redefine default instance image if cloud metadata has specific rules for instance type
-            allowed_instance = utils.get_allowed_instance_image(region_id, ins_type, ins_img)
+            allowed_instance = utils.get_allowed_instance_image(region_id, ins_type, ins_platform, ins_img)
             if allowed_instance and allowed_instance["instance_mask"]:
                 utils.pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}\n'
                                'Image {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
@@ -99,8 +107,9 @@ def main():
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id,
-                                                         kms_encyr_key_id, num_rep, time_rep, kube_ip, kubeadm_token,
+            ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id,
+                                                         kms_encyr_key_id, num_rep, time_rep, kube_ip,
+                                                         kubeadm_token, kubeadm_cert_hash, kube_node_token,
                                                          pre_pull_images)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)

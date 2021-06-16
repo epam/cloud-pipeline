@@ -34,6 +34,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -56,6 +58,15 @@ public final class DockerParsingUtils {
 
     public static Date getLatestDate(final RawImageDescription rawImage) {
         return getMinElement(getDateStream(rawImage), Comparator.reverseOrder());
+    }
+
+    public static Optional<String> getPlatform(final RawImageDescription rawImage) {
+        return getHistoryEntryStream(rawImage)
+                .map(HistoryEntryV1::getOs)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(StringUtils::trim)
+                .map(StringUtils::lowerCase);
     }
 
     public static List<String> getBuildHistory(final RawImageDescription rawImage) {
