@@ -49,6 +49,7 @@ import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
+import PlatformIcon from '../../../tools/platform-icon';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -288,7 +289,7 @@ export default class PersonalToolsPanel extends React.Component {
     } else {
       const toolValue = toolRequest.value;
       const versions = (toolTagsInfo.value.versions || [])
-        .map(v => ({[v.version]: v.scanResult}))
+        .map(v => ({[v.version]: v}))
         .reduce((r, c) => ({...r, ...c}), {});
 
       let defaultTag;
@@ -525,10 +526,14 @@ export default class PersonalToolsPanel extends React.Component {
         [group, name] = imageParts;
       }
       return [
-        <Row key="name">
+        <Row key="name" type="flex" align="middle">
           <span type="main" style={{fontSize: 'larger', fontWeight: 'bold'}}>
             {highlightText(name, search)}
           </span>
+          <PlatformIcon
+            platform={tool.platform}
+            style={{marginLeft: 5}}
+          />
         </Row>,
         <Row key="description">
           <span style={{fontSize: 'smaller'}}>

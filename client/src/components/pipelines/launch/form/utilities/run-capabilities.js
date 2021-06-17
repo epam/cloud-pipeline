@@ -7,7 +7,8 @@ import {
   CP_CAP_SYSTEMD_CONTAINER,
   CP_CAP_SINGULARITY,
   CP_CAP_DESKTOP_NM,
-  CP_CAP_MODULES, CP_DISABLE_HYPER_THREADING
+  CP_CAP_MODULES,
+  CP_DISABLE_HYPER_THREADING
 } from './parameters';
 
 export const RUN_CAPABILITIES = {
@@ -19,10 +20,39 @@ export const RUN_CAPABILITIES = {
   disableHyperThreading: 'Disable Hyper-Threading'
 };
 
+export const RUN_CAPABILITIES_PARAMETERS = {
+  [RUN_CAPABILITIES.dinD]: CP_CAP_DIND_CONTAINER,
+  [RUN_CAPABILITIES.singularity]: CP_CAP_SINGULARITY,
+  [RUN_CAPABILITIES.systemD]: CP_CAP_SYSTEMD_CONTAINER,
+  [RUN_CAPABILITIES.noMachine]: CP_CAP_DESKTOP_NM,
+  [RUN_CAPABILITIES.module]: CP_CAP_MODULES,
+  [RUN_CAPABILITIES.disableHyperThreading]: CP_DISABLE_HYPER_THREADING
+};
+
+const OS_SPECIFIC_CAPABILITIES = {
+  default: [
+    RUN_CAPABILITIES.dinD,
+    RUN_CAPABILITIES.singularity,
+    RUN_CAPABILITIES.systemD,
+    RUN_CAPABILITIES.noMachine,
+    RUN_CAPABILITIES.module,
+    RUN_CAPABILITIES.disableHyperThreading
+  ],
+  windows: []
+};
+
+function getPlatformSpecificCapabilities (platform) {
+  if (OS_SPECIFIC_CAPABILITIES.hasOwnProperty(platform)) {
+    return OS_SPECIFIC_CAPABILITIES[platform];
+  }
+  return OS_SPECIFIC_CAPABILITIES.default;
+}
+
 export default class RunCapabilities extends React.Component {
   static propTypes = {
     disabled: PropTypes.bool,
     values: PropTypes.arrayOf(PropTypes.string),
+    platform: PropTypes.string,
     onChange: PropTypes.func
   };
 
@@ -38,8 +68,9 @@ export default class RunCapabilities extends React.Component {
   };
 
   render () {
-    const {disabled, values} = this.props;
-
+    const {disabled, values, platform} = this.props;
+    const capabilities = getPlatformSpecificCapabilities(platform);
+    const filteredValues = (values || []).filter(value => capabilities.indexOf(value) >= 0);
     return (
       <Select
         allowClear
@@ -48,47 +79,78 @@ export default class RunCapabilities extends React.Component {
         onChange={this.onSelectionChanged}
         placeholder="None selected"
         size="large"
-        value={values || []}
+        value={filteredValues || []}
         filterOption={
           (input, option) => option.props.children.toLowerCase().includes(input.toLowerCase())
         }
       >
-        {Object.values(RUN_CAPABILITIES).map(o => (<Select.Option key={o}>{o}</Select.Option>))}
+        {capabilities.map(o => (<Select.Option key={o}>{o}</Select.Option>))}
       </Select>
     );
   }
 }
 
 export function getRunCapabilitiesSkippedParameters () {
-  return [
-    CP_CAP_DIND_CONTAINER,
-    CP_CAP_SINGULARITY,
-    CP_CAP_SYSTEMD_CONTAINER,
-    CP_CAP_DESKTOP_NM,
-    CP_CAP_MODULES
-  ];
+  return Object.values(RUN_CAPABILITIES_PARAMETERS);
 }
 
-export function dinDEnabled (parameters) {
-  return booleanParameterIsSetToValue(parameters, CP_CAP_DIND_CONTAINER);
+export function capabilityEnabled (parameters, capability) {
+  return booleanParameterIsSetToValue(parameters, RUN_CAPABILITIES_PARAMETERS[capability]);
 }
 
-export function singularityEnabled (parameters) {
-  return booleanParameterIsSetToValue(parameters, CP_CAP_SINGULARITY);
+export function getEnabledCapabilities (parameters) {
+  const result = [];
+  Object.keys(RUN_CAPABILITIES_PARAMETERS)
+    .forEach(capability => {
+      if (capabilityEnabled(parameters, capability)) {
+        result.push(capability);
+      }
+    });
+  return result;
 }
 
-export function systemDEnabled (parameters) {
-  return booleanParameterIsSetToValue(parameters, CP_CAP_SYSTEMD_CONTAINER);
+export function addCapability (capabilities, ...capability) {
+  const result = (capabilities || []).slice();
+  capability.forEach(c => {
+    if (!result.includes(capability)) {
+      result.push(capability);
+    }
+  });
+  return result;
 }
 
-export function noMachineEnabled (parameters) {
-  return booleanParameterIsSetToValue(parameters, CP_CAP_DESKTOP_NM);
+export function applyCapabilities (platform, parameters, capabilities = []) {
+  if (!parameters) {
+    parameters = {};
+  }
+  const platformSpecificCapabilities = getPlatformSpecificCapabilities(platform);
+  capabilities
+    .filter(capability => platformSpecificCapabilities.indexOf(capability) >= 0)
+    .forEach(capability => {
+      const parameterName = RUN_CAPABILITIES_PARAMETERS[capability];
+      parameters[parameterName] = {
+        type: 'boolean',
+        value: true
+      };
+    });
+  return parameters;
 }
 
-export function moduleEnabled (parameters) {
-  return booleanParameterIsSetToValue(parameters, CP_CAP_MODULES);
+export function hasPlatformSpecificCapabilities (platform) {
+  return getPlatformSpecificCapabilities(platform).length > 0;
 }
 
-export function disableHyperThreadingEnabled (parameters) {
-  return booleanParameterIsSetToValue(parameters, CP_DISABLE_HYPER_THREADING);
+export function checkRunCapabilitiesModified (capabilities1, capabilities2) {
+  const sorted = array => [...(new Set((array || []).sort()))];
+  const sorted1 = sorted(capabilities1 || []);
+  const sorted2 = sorted(capabilities2 || []);
+  if (sorted1.length !== sorted2.length) {
+    return true;
+  }
+  for (let i = 0; i < sorted1.length; i++) {
+    if (sorted1[i] !== sorted2[i]) {
+      return true;
+    }
+  }
+  return false;
 }

@@ -24,7 +24,6 @@ import {
   Card,
   Col,
   Collapse,
-  Dropdown,
   Icon,
   Menu,
   message,
@@ -52,11 +51,13 @@ import Roles from '../../../models/user/Roles';
 import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
+  canCommitRun,
   canPauseRun,
   canStopRun,
   runPipelineActions,
   terminateRun,
-  openReRunForm
+  openReRunForm,
+  runIsCommittable
 } from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
@@ -1151,9 +1152,13 @@ class Logs extends localization.LocalizedReactComponent {
     ) {
       const {
         status,
+        platform,
         podIP,
         pipelineRunParameters = []
       } = this.props.run.value;
+      if (/^windows$/i.test(platform)) {
+        return false;
+      }
       const cpFSBrowserEnabled = pipelineRunParameters
         .find(p => /^CP_FSBROWSER_ENABLED$/i.test(p.name));
       if (cpFSBrowserEnabled && `${cpFSBrowserEnabled.value}` === 'false') {
@@ -1722,22 +1727,29 @@ class Logs extends localization.LocalizedReactComponent {
         FSBrowserButton = (<a href={this.props.runFSBrowser.value} target="_blank">BROWSE</a>);
       }
 
-      if (!(this.props.run.value.nodeCount > 0) &&
-        !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) && podIP) {
-        if (status.toLowerCase() === 'running' &&
-          (commitStatus || '').toLowerCase() !== 'committing' &&
-          roleModel.executeAllowed(this.props.run.value)) {
+      if (runIsCommittable(this.props.run.value)) {
+        if (canCommitRun(this.props.run.value) && roleModel.executeAllowed(this.props.run.value)) {
           let previousStatus;
           const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
-            case 'committing': previousStatus = <span><Icon type="loading" /> COMMITTING...</span>; break;
+            case 'committing':
+              previousStatus = (
+                <span>
+                  <Icon type="loading" /> COMMITTING...
+                </span>
+              );
+              break;
             case 'failure': previousStatus = <span>COMMIT FAILURE ({commitDate})</span>; break;
             case 'success': previousStatus = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
           if (previousStatus) {
-            CommitStatusButton = (<Row>{previousStatus}. <a onClick={this.openCommitRunForm}>COMMIT</a></Row>);
+            CommitStatusButton = (
+              <Row>
+                {previousStatus}. <a onClick={this.openCommitRunForm}>COMMIT</a>
+              </Row>
+            );
           } else {
             CommitStatusButton = (<a onClick={this.openCommitRunForm}>COMMIT</a>);
           }

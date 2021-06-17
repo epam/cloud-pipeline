@@ -25,6 +25,7 @@ import AWSRegionTag from '../../../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../../../special/job-estimated-price-info';
 import styles from './CardsPanel.css';
 import RunTags from '../../../../runs/run-tags';
+import PlatformIcon from '../../../../tools/platform-icon';
 
 function renderTitle (run) {
   const podId = run.podId;
@@ -160,7 +161,12 @@ export default function renderRunCard (run) {
     <Row key="commit status">
       {renderCommitStatus(run)}
     </Row>,
-    renderRegion(run),
+    <Row key="region and platform" type="flex" align="middle">
+      {renderRegion(run)}
+      <PlatformIcon
+        platform={run.platform}
+      />
+    </Row>,
     <RunTags
       key="run-tags"
       run={run}
