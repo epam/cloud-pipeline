@@ -7,9 +7,9 @@ export default async function getObjectMetadataAttribute (folderId, userInfo, at
 
   for (let key in entityClasses) {
     if (attributeValue.length === 0) {
-      const entityId = key === 0 ? folderId : userInfo.id;
-      const metadataRequest = new MetadataLoad(entityId, entityClasses[key]);
       try {
+        const entityId = key === 0 ? folderId : userInfo.id;
+        const metadataRequest = new MetadataLoad(entityId, entityClasses[key]);
         await metadataRequest.fetch();
         if (
           metadataRequest.value &&
