@@ -154,7 +154,7 @@ export default class Metadata extends React.Component {
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
-    defaultColumns: [],
+    defaultColumnsNames: [],
     columns: [],
     totalCount: 0,
     filterModel: {
@@ -1684,22 +1684,19 @@ export default class Metadata extends React.Component {
         defaultColumnsFetched: true
       }, async () => {
         const attributeName = 'MetadataColumns';
-        let attributeValue = await getObjectMetadataAttribute(folderId, authenticatedUserInfo.value, attributeName);
+        const attributeValue = await getObjectMetadataAttribute(folderId, authenticatedUserInfo.value, attributeName);
         if (attributeValue && attributeValue.length) {
-          if (attributeValue.length > 20) {
-            attributeValue = [...attributeValue.slice(0, 20)];
-          }
-          this.setState({defaultColumns: [...attributeValue]}, () => this.setDefaultColumns());
+          this.setState({defaultColumnsNames: [...attributeValue]}, () => this.setDefaultColumns());
         }
       });
     }
   }
 
   setDefaultColumns () {
-    const defaultColumns = [...this.state.defaultColumns];
+    const defaultColumnsNames = [...this.state.defaultColumnsNames];
     let currentColumns = this.state.columns.map(column => Object.assign({}, column));
     currentColumns.map(column => {
-      column.selected = defaultColumns.includes(column.key);
+      column.selected = defaultColumnsNames.includes(column.key);
       return column;
     });
     this.setState({columns: currentColumns});

@@ -7,19 +7,29 @@ export default async function getObjectMetadataAttribute (folderId, userInfo, at
 
   for (let key in entityClasses) {
     if (attributeValue.length === 0) {
-      const entityId = key === 'FOLDER' ? folderId : userInfo.id;
+      const entityId = key === 0 ? folderId : userInfo.id;
       const metadataRequest = new MetadataLoad(entityId, entityClasses[key]);
-      await metadataRequest.fetch();
-      if (metadataRequest.value && metadataRequest.value.length && metadataRequest.value[0].data) {
-        if (attributeName in metadataRequest.value[0].data) {
+      try {
+        await metadataRequest.fetch();
+        if (
+          metadataRequest.value &&
+          metadataRequest.value.length &&
+          metadataRequest.value[0].data &&
+          metadataRequest.value[0].data[attributeName] &&
+          metadataRequest.value[0].data[attributeName].value
+        ) {
           attributeValue = metadataRequest.value[0].data[attributeName].value
             .split(',')
+            .filter(item => item)
             .map(item => item.trim());
+          if (attributeValue.length) {
+            return attributeValue;
+          }
         }
+      } catch (e) {
+        return [];
       }
-    } else {
-      return attributeValue;
     }
   }
-  return attributeValue;
+  return [];
 }
