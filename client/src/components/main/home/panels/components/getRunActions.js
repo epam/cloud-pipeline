@@ -76,22 +76,24 @@ export default function (callbacks) {
             icon: 'code-o',
             action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
           });
-          actions.push({
-            title: (
-              <VSActions
-                run={run}
-                trigger={['click']}
-                getPopupContainer={() => document.getElementById('root')}
-                onDropDownVisibleChange={callbacks && callbacks.vsActionsMenu
-                  ? (v) => callbacks.vsActionsMenu(run, v)
-                  : undefined
-                }
-              >
-                VSC
-              </VSActions>
-            ),
-            icon: 'fork'
-          });
+          if (!run.sensitive) {
+            actions.push({
+              title: (
+                <VSActions
+                  run={run}
+                  trigger={['click']}
+                  getPopupContainer={() => document.getElementById('root')}
+                  onDropDownVisibleChange={callbacks && callbacks.vsActionsMenu
+                    ? (v) => callbacks.vsActionsMenu(run, v)
+                    : undefined
+                  }
+                >
+                  VSC
+                </VSActions>
+              ),
+              icon: 'fork'
+            });
+          }
         }
         if (canPauseRun(run)) {
           actions.push({

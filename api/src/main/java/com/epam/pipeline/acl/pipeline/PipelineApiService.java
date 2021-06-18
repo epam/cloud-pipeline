@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
@@ -39,6 +40,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderLogsPathFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
+import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -366,5 +368,11 @@ public class PipelineApiService {
     @PreAuthorize(PIPELINE_ID_READ)
     public GitReaderDiffEntry getRepositoryCommitDiff(final Long id, final String commit, final String path) {
         return gitManager.getRepositoryCommitDiff(id, commit, path);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public VersionStorageReportFile generateReportForVersionedStorage(final Long id,
+                                                                      final GitDiffReportFilter reportFilters) {
+        return fileGenerationManager.generateVersionStorageReport(id, reportFilters);
     }
 }

@@ -30,6 +30,8 @@ spec:
           name: share-pki
         - mountPath: /opt/gitlab/pki
           name: git-pki
+        - mountPath: /opt/common/pki
+          name: common-pki
       readinessProbe:
         httpGet:
           path: /metadata
@@ -50,6 +52,9 @@ spec:
     - name: share-pki
       hostPath:
         path: /opt/share-srv/pki
+    - name: common-pki
+      hostPath:
+        path: /opt/common/pki
   imagePullSecrets:
     - name: cp-distr-docker-registry-secret
   

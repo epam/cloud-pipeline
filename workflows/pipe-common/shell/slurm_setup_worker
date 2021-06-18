@@ -86,6 +86,9 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     apt install -y munge slurm-wlm
     mkdir -p /var/run/munge
     chown munge: /var/run/munge
+    mkdir -p /run/munge
+    chown munge: /run/munge
+    chmod +t /run/munge
     export _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     export _SLURM_CONFIG_LOCATION=/etc/slurm/

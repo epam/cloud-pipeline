@@ -49,6 +49,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
@@ -407,6 +408,7 @@ public class PipelineRunManagerLaunchTest {
     private void mock(final Tool tool) {
         doReturn(tool).when(toolManager).loadByNameOrId(eq(IMAGE));
         doReturn(tool).when(toolManager).resolveSymlinks(eq(IMAGE));
+        doReturn(Optional.empty()).when(toolManager).findToolVersion(eq(tool));
     }
 
     private Map<Long, List<RunStatus>> getStatusMap() {

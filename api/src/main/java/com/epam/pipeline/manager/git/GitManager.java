@@ -321,8 +321,13 @@ public class GitManager {
         return this.getGitlabClientForPipeline(pipeline).getCommits(getRevisionName(versionName), since);
     }
 
-    private boolean folderExists(Pipeline pipeline, String folder) throws GitClientException {
-        return this.fileExists(pipeline, Paths.get(folder, GIT_FOLDER_TOKEN_FILE).toString());
+    private boolean folderExists(Pipeline pipeline, String folder) {
+        try {
+            return !getGitlabClientForPipeline(pipeline)
+                    .getRepositoryContents(folder, null, false).isEmpty();
+        } catch (GitClientException e) {
+            return false;
+        }
     }
 
     private boolean fileExists(Pipeline pipeline, String filePath) throws GitClientException {
@@ -360,25 +365,31 @@ public class GitManager {
         }
     }
 
-    private GitCommitEntry createFolder(Pipeline pipeline,
-                                       String folder,
-                                       String lastCommitId,
-                                       String commitMessage) throws GitClientException {
+    private GitCommitEntry createFolder(final Pipeline pipeline,
+                                        final String folder,
+                                        final String lastCommitId,
+                                        String commitMessage) throws GitClientException {
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         Assert.isTrue(!folderExists(pipeline, folder),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, folder));
+
         if (commitMessage == null) {
             commitMessage = String.format("Creating folder %s", folder);
         }
-        List<String> filesToCreate = new ArrayList<>();
+        final List<String> filesToCreate = new ArrayList<>();
+        final List<String> foldersToCheck = new ArrayList<>();
         Path folderToCreate = Paths.get(folder);
         while (folderToCreate != null && !StringUtils.isNullOrEmpty(folderToCreate.toString())) {
             if (!this.folderExists(pipeline, folderToCreate.toString())) {
                 filesToCreate.add(Paths.get(folderToCreate.toString(), GIT_FOLDER_TOKEN_FILE).toString());
+                foldersToCheck.add(folderToCreate.toString());
             }
             folderToCreate = folderToCreate.getParent();
         }
+
+        checkFolderHierarchyIfFileExists(pipeline, foldersToCheck);
+
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(commitMessage);
         for (String file : filesToCreate) {
@@ -389,6 +400,16 @@ public class GitManager {
             gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
         }
         return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
+    }
+
+    private void checkFolderHierarchyIfFileExists(final Pipeline pipeline, final List<String> folders)
+            throws GitClientException {
+        for (String folder : folders) {
+            if (!this.folderExists(pipeline, folder)) {
+                Assert.isTrue(!fileExists(pipeline, folder),
+                        messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, folder));
+            }
+        }
     }
 
     private GitCommitEntry renameFolder(Pipeline pipeline,
@@ -495,16 +516,9 @@ public class GitManager {
                             filePath));
         }
         GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
-        boolean fileExists = false;
-        try {
-            fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (UnexpectedResponseStatusException exception) {
-            LOGGER.debug(exception.getMessage(), exception);
-        }
-
         GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
         String message =
-                getCommitMessage(commitMessage, filePath, fileExists, gitPushCommitActionEntry);
+                getCommitMessage(commitMessage, filePath, fileExists(pipeline, filePath), gitPushCommitActionEntry);
         gitPushCommitActionEntry.setFilePath(filePath);
         gitPushCommitActionEntry.setContent(fileContent);
 
@@ -540,13 +554,7 @@ public class GitManager {
             if (!StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
                 action = ACTION_MOVE;
             } else {
-                boolean fileExists = false;
-                try {
-                    fileExists = gitlabClient.getFileContents(sourcePath, GIT_MASTER_REPOSITORY) != null;
-                } catch (UnexpectedResponseStatusException exception) {
-                    LOGGER.debug(exception.getMessage(), exception);
-                }
-                if (fileExists) {
+                if (fileExists(pipeline, sourcePath)) {
                     action = "update";
                 } else {
                     action = "create";
@@ -578,14 +586,7 @@ public class GitManager {
             commitMessage = String.format("Renaming %s to %s", filePreviousPath, filePath);
         }
 
-        boolean fileExists = false;
-        try {
-            fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (UnexpectedResponseStatusException exception) {
-            LOGGER.debug(exception.getMessage(), exception);
-        }
-
-        Assert.isTrue(!fileExists,
+        Assert.isTrue(!fileExists(pipeline, filePath),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, filePath));
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
@@ -627,15 +628,9 @@ public class GitManager {
                     Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                             messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, filePath)));
 
-            boolean fileExists = false;
-            try {
-                fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-            } catch (UnexpectedResponseStatusException exception) {
-                LOGGER.debug(exception.getMessage(), exception);
-            }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
             commitMessage =
-                    getCommitMessage(commitMessage, filePath, fileExists, gitPushCommitActionEntry);
+                    getCommitMessage(commitMessage, filePath, fileExists(pipeline, filePath), gitPushCommitActionEntry);
             gitPushCommitActionEntry.setFilePath(filePath);
             gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(file.getBytes()));
             gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);

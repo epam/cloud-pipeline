@@ -81,6 +81,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLes
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -145,6 +146,9 @@ public class SystemPreferences {
                                isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
     public static final IntPreference DATA_STORAGE_OPERATIONS_BULK_SIZE = new IntPreference(
             "storage.operations.bulk.size", 1000, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final StringPreference VERSION_STORAGE_REPORT_TEMPLATE = new StringPreference(
+            "storage.version.storage.report.template", null, DATA_STORAGE_GROUP, isNullOrValidLocalPath());
+
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -415,6 +419,32 @@ public class SystemPreferences {
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
                                                             "sleep infinity", LAUNCH_GROUP, pass);
+    public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_LINUX = new StringPreference(
+            "launch.pod.cmd.template.linux", "set -o pipefail; "
+            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
+            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
+            + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'",
+            LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_WINDOWS = new StringPreference(
+            "launch.pod.cmd.template.windows", "Add-Type @\"\n" +
+            "using System.Net;\n" +
+            "using System.Security.Cryptography.X509Certificates;\n" +
+            "public class TrustAllCertsPolicy : ICertificatePolicy {\n" +
+            "    public bool CheckValidationResult(\n" +
+            "        ServicePoint srvPoint, X509Certificate certificate,\n" +
+            "        WebRequest request, int certificateProblem) {\n" +
+            "            return true;\n" +
+            "        }\n" +
+            " }\n" +
+            "\"@\n" +
+            "[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy\n" +
+            "Invoke-WebRequest %s -Outfile .\\launch.py\n" +
+            "@\"\n" +
+            "%s\n" +
+            "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
+            "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
+            "python .\\launch.py",
+            LAUNCH_GROUP, PreferenceValidators.isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
         "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(

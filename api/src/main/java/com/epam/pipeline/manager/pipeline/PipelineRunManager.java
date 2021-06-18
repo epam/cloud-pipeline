@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -342,6 +343,7 @@ public class PipelineRunManager {
             Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids) {
         Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
         Tool tool = getToolForRun(configuration);
+        Optional<ToolVersion> toolVersion = toolManager.findToolVersion(tool);
         PipelineConfiguration toolConfiguration = configurationManager.getConfigurationForTool(tool, configuration);
         AbstractCloudRegion region = resolveCloudRegion(parentRun.orElse(null), configuration, toolConfiguration);
         validateCloudRegion(toolConfiguration, region);
@@ -362,8 +364,8 @@ public class PipelineRunManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null),
-                entityIds, configurationId, sensitive);
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region, 
+                parentRun.orElse(null), entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
         }
@@ -772,8 +774,9 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun createPipelineRun(String version, PipelineConfiguration configuration, Pipeline pipeline,
-                                         Tool tool, AbstractCloudRegion region, PipelineRun parentRun, 
-                                         List<Long> entityIds, Long configurationId, boolean sensitive) {
+                                         Tool tool, ToolVersion toolVersion, AbstractCloudRegion region, 
+                                         PipelineRun parentRun, List<Long> entityIds, Long configurationId, 
+                                         boolean sensitive) {
         validateRunParameters(configuration, pipeline);
 
         RunInstance instance = configureRunInstance(configuration, region);
@@ -801,6 +804,8 @@ public class PipelineRunManager {
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
         run.setActualDockerImage(Optional.ofNullable(tool).map(Tool::getImage).orElse(configuration.getDockerImage()));
+        run.setPlatform(Optional.ofNullable(toolVersion).map(ToolVersion::getPlatform).orElse("linux"));
+        instance.setNodePlatform(run.getPlatform());
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
         run.setNodeCount(configuration.getNodeCount());
         setRunPrice(instance, run);
@@ -1398,6 +1403,7 @@ public class PipelineRunManager {
         restartedRun.setTimeout(run.getTimeout());
         restartedRun.setDockerImage(run.getDockerImage());
         restartedRun.setActualDockerImage(run.getActualDockerImage());
+        restartedRun.setPlatform(run.getPlatform());
         restartedRun.setCmdTemplate(run.getCmdTemplate());
         restartedRun.setNodeCount(run.getNodeCount());
         RunInstance instance = copyInstance(run.getInstance());
@@ -1430,6 +1436,7 @@ public class PipelineRunManager {
             runInstance.setNodeType(i.getNodeType());
             runInstance.setSpot(i.getSpot());
             runInstance.setCloudProvider(i.getCloudProvider());
+            runInstance.setNodePlatform(i.getNodePlatform());
             return runInstance;
         }).orElse(new RunInstance());
     }

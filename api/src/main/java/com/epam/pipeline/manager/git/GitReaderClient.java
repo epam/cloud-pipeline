@@ -57,7 +57,7 @@ public class GitReaderClient {
     private GitReaderApi gitReaderApi;
     private JwtRawToken userJwtToken;
 
-    GitReaderClient(final String gitReaderUrlRoot, JwtRawToken userJwtToken) {
+    GitReaderClient(final String gitReaderUrlRoot, final JwtRawToken userJwtToken) {
         this.userJwtToken = userJwtToken;
         if (StringUtils.isBlank(gitReaderUrlRoot)) {
             throw new IllegalArgumentException("Cannot get GitReader Service URL.");
@@ -136,16 +136,6 @@ public class GitReaderClient {
         return result;
     }
 
-    private GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter) {
-        return GitReaderLogRequestFilter.builder()
-                .authors(filter.getAuthors())
-                .dateFrom(filter.getDateFrom())
-                .dateTo(filter.getDateTo())
-                .ref(filter.getRef())
-                .pathMasks(getPathMasks(filter))
-                .build();
-    }
-
     private String getRepositoryPath(final GitRepositoryUrl gitRepositoryUrl) {
         final String namespace = gitRepositoryUrl.getNamespace()
                 .orElseThrow(() -> new IllegalArgumentException("Invalid repository URL format"));
@@ -159,7 +149,17 @@ public class GitReaderClient {
                 userJwtToken.toHeader(), DATA_FORMAT).build();
     }
 
-    private List<String> getPathMasks(final GitCommitsFilter filter) {
+    static GitReaderLogRequestFilter toGitReaderRequestFilter(final GitCommitsFilter filter) {
+        return GitReaderLogRequestFilter.builder()
+                .authors(filter.getAuthors())
+                .dateFrom(filter.getDateFrom())
+                .dateTo(filter.getDateTo())
+                .ref(filter.getRef())
+                .pathMasks(getPathMasks(filter))
+                .build();
+    }
+
+    private static List<String> getPathMasks(final GitCommitsFilter filter) {
         if (StringUtils.isBlank(filter.getPath()) && CollectionUtils.isEmpty(filter.getExtensions())) {
             return null;
         } else if (CollectionUtils.isEmpty(filter.getExtensions())) {
@@ -170,7 +170,7 @@ public class GitReaderClient {
                 .collect(Collectors.toList());
     }
 
-    private String getPathMask(final String path, final String ext) {
+    private static String getPathMask(final String path, final String ext) {
         if (path == null) {
             return "*." + ext;
         }else if (!path.endsWith("/") && StringUtils.isNotBlank(path)){

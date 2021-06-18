@@ -16,13 +16,17 @@
 
 package com.epam.pipeline.entity.git.gitreader;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 /**
  * Represents Git Diff and its commit
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class GitReaderDiffEntry {
     private GitReaderRepositoryCommit commit;
     private String diff;

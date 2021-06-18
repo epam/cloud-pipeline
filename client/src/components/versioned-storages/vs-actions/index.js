@@ -38,6 +38,8 @@ import VSFetch from '../../../models/versioned-storage/fetch';
 import VSTaskStatus from '../../../models/versioned-storage/status';
 import VSConflictError from '../../../models/versioned-storage/conflict-error';
 import resolveFileConflict from '../../../models/versioned-storage/resolve-file-conflict';
+import VSResolveRepoAfterRefresh from
+  '../../../models/versioned-storage/resolve-repo-after-refresh';
 import {
   CheckoutDialog,
   GitCommitDialog,
@@ -117,6 +119,22 @@ class VSActions extends React.Component {
     }
   }
 
+  fetchRepositoryStatus = (repository) => new Promise((resolve) => {
+    const request = new VSCurrentState(this.props.run?.id, repository.id);
+    request
+      .fetch()
+      .then(() => {
+        if (request.loaded) {
+          resolve({
+            [repository.id]: request.value
+          });
+        } else {
+          resolve({});
+        }
+      })
+      .catch(() => resolve({}));
+  });
+
   fetchVersionedStoragesStatus = () => {
     if (this.vsList && this.vsList.loaded && this.props.run) {
       this.setState({
@@ -128,22 +146,7 @@ class VSActions extends React.Component {
           }
         }), {})
       }, () => {
-        const wrapFetchRepositoryStatusFn = repository => new Promise((resolve) => {
-          const request = new VSCurrentState(this.props.run?.id, repository.id);
-          request
-            .fetch()
-            .then(() => {
-              if (request.loaded) {
-                resolve({
-                  [repository.id]: request.value
-                });
-              } else {
-                resolve({});
-              }
-            })
-            .catch(() => resolve({}));
-        });
-        Promise.all(this.repositories.map(wrapFetchRepositoryStatusFn))
+        Promise.all(this.repositories.map(this.fetchRepositoryStatus))
           .then(payloads => {
             const storagesStatuses = payloads
               .reduce((acc, cur) => ({
@@ -386,13 +389,27 @@ class VSActions extends React.Component {
   };
 
   onConflictsDetected = (conflicts, storage, mergeInProgress) => {
-    this.setState({
-      conflicts: {
-        files: conflicts,
-        storage,
-        mergeInProgress
-      }
-    });
+    this.fetchRepositoryStatus(storage)
+      .catch(() => {})
+      .then((status) => {
+        let {storagesStatuses} = this.state;
+        if (status && status.hasOwnProperty(storage.id)) {
+          storagesStatuses = {...(storagesStatuses || {}), ...status};
+        }
+        let filesInfo = [];
+        if (storagesStatuses && storagesStatuses.hasOwnProperty(storage.id)) {
+          filesInfo = (storagesStatuses[storage.id].files || []).slice();
+        }
+        this.setState({
+          storagesStatuses,
+          conflicts: {
+            files: conflicts,
+            filesInfo,
+            storage,
+            mergeInProgress
+          }
+        });
+      });
   };
 
   onCloseConflictsDialog = () => {
@@ -462,6 +479,9 @@ class VSActions extends React.Component {
           if (mergeInProgress) {
             const filesDescription = Object.keys(files).join(', ');
             return this.doCommit(storage, `Resolving conflicted files: ${filesDescription}`);
+          } else {
+            const resolveRepo = new VSResolveRepoAfterRefresh(run?.id, storage?.id);
+            return resolveRepo.send();
           }
         })
         .catch((e) => {
@@ -714,6 +734,13 @@ class VSActions extends React.Component {
               disabled={!saveEnabled}
             >
               <Icon type="save" /> Save
+              {
+                storage.detached && (
+                  <span style={{marginLeft: 5}}>
+                    (current revision is not the latest)
+                  </span>
+                )
+              }
             </Menu.Item>
             <Menu.Item
               key={`refresh-${storage.id}`}
@@ -856,6 +883,7 @@ class VSActions extends React.Component {
             visible={!!conflicts}
             disabled={conflicts?.pending}
             conflicts={conflicts?.files}
+            conflictsInfo={conflicts?.filesInfo}
             onAbort={this.onAbortChanges}
             onClose={this.onCloseConflictsDialog}
             onResolve={this.onResolveConflicts}

@@ -50,7 +50,6 @@ function toLocalMomentDate (string) {
 @observer
 class HistoryFilter extends localization.LocalizedReactComponent {
   state = {
-    temporaryFilters: undefined,
     authors: [],
     extensions: undefined,
     dateFrom: undefined,
@@ -87,7 +86,12 @@ class HistoryFilter extends localization.LocalizedReactComponent {
     } = this.state;
     const parsedExtensions = (extensions.trim())
       .split(',')
-      .map(ext => ext.trim())
+      .map(extension => {
+        const trimmedExtension = extension.trim();
+        return trimmedExtension.startsWith('.')
+          ? trimmedExtension.substring(1)
+          : trimmedExtension;
+      })
       .filter(Boolean);
     return {
       authors,
@@ -288,6 +292,7 @@ class HistoryFilter extends localization.LocalizedReactComponent {
 }
 
 HistoryFilter.PropTypes = {
+  visible: PropTypes.bool,
   filters: PropTypes.shape({
     authors: PropTypes.array,
     dateFrom: PropTypes.string,

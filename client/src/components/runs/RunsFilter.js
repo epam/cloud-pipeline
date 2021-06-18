@@ -31,6 +31,7 @@ import PipelineRunSearchKeywords from '../../models/pipelines/PipelineRunSearchK
 import pipelines from '../../models/pipelines/Pipelines';
 import FilterInput from '../../utils/filter/inputControl/FilterInput';
 import SaveFilterForm from './SaveFilterForm';
+import {openReRunForm} from './actions';
 
 const pageSize = 20;
 
@@ -305,16 +306,8 @@ class RunsFilter extends React.Component {
     return undefined;
   };
 
-  launchPipeline = ({pipelineId, version, id, configName}) => {
-    if (pipelineId && version && id) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-    } else if (pipelineId && version && configName) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-    } else if (pipelineId && version) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-    } else if (id) {
-      this.props.router.push(`/launch/${id}`);
-    }
+  launchPipeline = (run) => {
+    return openReRunForm(run, this.props);
   };
 
   onSelectRun = ({id}) => {

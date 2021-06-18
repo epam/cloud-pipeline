@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -64,10 +65,6 @@ public class PipelineLauncher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineLauncher.class);
 
-    public static final String LAUNCH_TEMPLATE = "set -o pipefail; "
-            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
-            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
-            + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'";
     private static final String EMPTY_PARAMETER = "";
     private static final String DEFAULT_CLUSTER_NAME = "CLOUD_PIPELINE";
     private static final String ENV_DELIMITER = ",";
@@ -88,8 +85,11 @@ public class PipelineLauncher {
     @Value("${kube.namespace}")
     private String kubeNamespace;
 
-    @Value("${launch.script.url}")
-    private String launchScriptUrl;
+    @Value("${launch.script.url.linux}")
+    private String linuxLaunchScriptUrl;
+
+    @Value("${launch.script.url.windows}")
+    private String windowsLaunchScriptUrl;
 
     @Autowired
     private AuthManager authManager;
@@ -135,9 +135,21 @@ public class PipelineLauncher {
         String pipelineCommand = commandBuilder.build(configuration, systemParams);
         String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
                 .orElse(run.getRepository());
-        String rootPodCommand = useLaunch ? String.format(LAUNCH_TEMPLATE, launchScriptUrl,
-                launchScriptUrl, gitCloneUrl, run.getRevisionName(), pipelineCommand)
-                : pipelineCommand;
+        String rootPodCommand;
+        if (!useLaunch) {
+            rootPodCommand = pipelineCommand;
+        } else {
+            if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
+                rootPodCommand = String.format(
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS), 
+                        windowsLaunchScriptUrl, pipelineCommand);
+            } else {
+                rootPodCommand = String.format(
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX), 
+                        linuxLaunchScriptUrl, linuxLaunchScriptUrl, gitCloneUrl,
+                        run.getRevisionName(), pipelineCommand);
+            }
+        }
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars,
                 endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, imagePullPolicy);

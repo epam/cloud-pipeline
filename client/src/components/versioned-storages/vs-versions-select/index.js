@@ -153,6 +153,16 @@ class VSVersions extends React.Component {
     this.setState({visible});
   };
 
+  getSelectTitle = (version) => {
+    if (version && Object.keys(version).length) {
+      const userName = (version.author || '').toLowerCase();
+      const date = displayDate(version.committer_date, 'MMM D, YYYY, HH:mm');
+      const message = version.commit_message || '';
+      return `${userName}, ${date}: ${message}`;
+    }
+    return '';
+  }
+
   render () {
     const {
       className,
@@ -193,6 +203,7 @@ class VSVersions extends React.Component {
             <Select.Option
               className={rowClassName}
               key={version.commit}
+              title={this.getSelectTitle(version)}
               value={version.commit}
               searchValue={[
                 (version.commit || '').toLowerCase(),

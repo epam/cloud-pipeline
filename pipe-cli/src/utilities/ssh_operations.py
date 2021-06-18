@@ -88,6 +88,27 @@ def setup_paramiko_logging():
         paramiko.util.log_to_file(paramiko_log_file, paramiko_log_level)
 
 
+def direct_connect(target, timeout=None, retries=None):
+    timeout = timeout or None
+    retries = retries or 0
+    sock = None
+    try:
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect(target)
+        return sock
+    except KeyboardInterrupt:
+        raise
+    except:
+        if retries >= 1:
+            if sock:
+                sock.close()
+            return direct_connect(target, timeout=timeout, retries=retries - 1)
+        else:
+            raise
+
+
 def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
     timeout = timeout or None
     retries = retries or 0
@@ -312,23 +333,23 @@ def parse_scp_location(location):
 
 
 def create_tunnel(host_id, local_port, remote_port, connection_timeout,
-                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                   timeout, foreground, retries, region=None):
     run_id = parse_run_identifier(host_id)
     if run_id:
         create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
-                             ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                             ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                              timeout, foreground, retries)
     else:
         if ssh:
             raise RuntimeError('Passwordless SSH tunnel connections are allowed to runs only.')
         create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
-                              log_file, log_level,
+                              direct, log_file, log_level,
                               timeout, foreground, retries, region)
 
 
 def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
-                         ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                         ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
                          timeout, foreground, retries):
     conn_info = get_conn_info(run_id)
     if conn_info.sensitive:
@@ -337,21 +358,21 @@ def create_tunnel_to_run(run_id, local_port, remote_port, connection_timeout,
     if foreground:
         if ssh:
             create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                              ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
+                                              ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries)
         else:
             create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                     remote_host, log_level, retries)
+                                     remote_host, direct, log_level, retries)
     else:
         create_background_tunnel(local_port, remote_port, remote_host, log_file, log_level, timeout)
 
 
 def create_tunnel_to_host(host_id, local_port, remote_port, connection_timeout,
-                          log_file, log_level,
+                          direct, log_file, log_level,
                           timeout, foreground, retries, region=None):
     if foreground:
         conn_info = get_custom_conn_info(host_id, region)
         create_foreground_tunnel(host_id, local_port, remote_port, connection_timeout, conn_info,
-                                 host_id, log_level, retries)
+                                 host_id, direct, log_level, retries)
     else:
         create_background_tunnel(local_port, remote_port, host_id, log_file, log_level, timeout)
 
@@ -381,7 +402,9 @@ def create_background_tunnel(local_port, remote_port, remote_host, log_file, log
 
 def wait_for_background_tunnel(tunnel_proc, local_port, timeout, polling_delay=1):
     attempts = int(timeout / polling_delay)
-    is_tunnel_ready = is_tunnel_ready_on_mac if is_mac() else is_tunnel_ready_on_lin_and_win
+    is_tunnel_ready = is_tunnel_ready_on_lin
+    is_tunnel_ready = is_tunnel_ready_on_mac if is_mac() else is_tunnel_ready
+    is_tunnel_ready = is_tunnel_ready_on_win if is_windows() else is_tunnel_ready
     while attempts > 0:
         time.sleep(polling_delay)
         if tunnel_proc.poll() is not None:
@@ -399,18 +422,6 @@ def wait_for_background_tunnel(tunnel_proc, local_port, timeout, polling_delay=1
                        .format(timeout))
 
 
-def is_tunnel_ready_on_lin_and_win(tunnel_pid, local_port):
-    import psutil
-    for net_connection in psutil.net_connections():
-        if net_connection.laddr \
-                and net_connection.laddr.port == local_port \
-                and net_connection.pid == tunnel_pid:
-            return True
-    return False
-
-def clean_tunnel_pid(pid):
-    return pid.strip() if pid and pid.strip().isdigit() else ''
-
 def is_tunnel_ready_on_mac(tunnel_pid, local_port):
     # psutil.net_connections() is not allowed to a regular user on mac
     listening_pid = clean_tunnel_pid(perform_command(['lsof', '-t', '-i', 'TCP:' + str(local_port), '-s', 'TCP:LISTEN'],
@@ -426,19 +437,50 @@ def is_tunnel_ready_on_mac(tunnel_pid, local_port):
            (int(listening_pid) == tunnel_pid or int(listening_parent_pid) == tunnel_pid)
 
 
+def clean_tunnel_pid(pid):
+    return pid.strip() if pid and pid.strip().isdigit() else ''
+
+
+def is_tunnel_ready_on_lin(tunnel_pid, local_port):
+    listening_pid = get_listening_pid_on_lin_and_win(local_port)
+    listening_parent_pid = get_parent_pid_on_lin_and_win(listening_pid)
+    logging.debug('Waiting for tunnel PID {}, got PID {} listening on port {} with parent PID {}'
+                  .format(tunnel_pid, listening_pid, local_port, listening_parent_pid))
+    return listening_pid and \
+           listening_parent_pid and \
+           (listening_pid == tunnel_pid or listening_parent_pid == tunnel_pid)
+
+
+def get_listening_pid_on_lin_and_win(local_port):
+    import psutil
+    for net_connection in psutil.net_connections():
+        if net_connection.laddr and net_connection.laddr.port == local_port:
+            return net_connection.pid
+    return 0
+
+
+def get_parent_pid_on_lin_and_win(pid):
+    import psutil
+    return psutil.Process(pid).ppid() if pid else 0
+
+
+def is_tunnel_ready_on_win(tunnel_pid, local_port):
+    return get_listening_pid_on_lin_and_win(local_port) == tunnel_pid
+
+
 def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                      ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
+                                      ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if is_windows():
         create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                     ssh_keep, remote_host, log_level, retries)
+                                                     ssh_keep, remote_host, direct, log_level, retries)
     else:
         create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                   ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
+                                                   ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries)
 
 
 def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                                 ssh_keep, remote_host, log_level, retries):
+                                                 ssh_keep, remote_host, direct, log_level, retries):
     logging.info('Configuring putty and openssh passwordless ssh...')
     passwordless_config = PasswordlessSSHConfig(run_id, conn_info)
     if not os.path.exists(passwordless_config.local_openssh_path):
@@ -454,7 +496,7 @@ def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                 remote_host, log_level, retries)
+                                 remote_host, direct, log_level, retries)
     except:
         logging.exception('Error occurred while trying set up tunnel')
         raise
@@ -472,7 +514,7 @@ def create_foreground_tunnel_with_ssh_on_windows(run_id, local_port, remote_port
 
 
 def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                               ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
+                                               ssh_path, ssh_keep, remote_host, direct, log_file, log_level, retries):
     logging.info('Configuring openssh passwordless ssh...')
     passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_path)
     if not os.path.exists(passwordless_config.local_openssh_path):
@@ -486,7 +528,7 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                                 remote_host, log_level, retries)
+                                 remote_host, direct, log_level, retries)
     except:
         logging.exception('Error occurred while trying set up tunnel')
         raise
@@ -501,7 +543,7 @@ def create_foreground_tunnel_with_ssh_on_linux(run_id, local_port, remote_port, 
 
 
 def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout, conn_info,
-                             remote_host, log_level, retries,
+                             remote_host, direct, log_level, retries,
                              chunk_size=4096, server_delay=0.0001):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
@@ -535,9 +577,14 @@ def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout
                         break
                     try:
                         logging.info('Initializing tunnel connection...')
-                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
-                                                                  timeout=connection_timeout,
-                                                                  retries=retries)
+                        if direct:
+                            tunnel_socket = direct_connect(target_endpoint,
+                                                           timeout=connection_timeout,
+                                                           retries=retries)
+                        else:
+                            tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
+                                                                      timeout=connection_timeout,
+                                                                      retries=retries)
                     except KeyboardInterrupt:
                         raise
                     except:

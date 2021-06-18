@@ -71,6 +71,7 @@ class Conflicts extends React.Component {
   updateFromProps = () => {
     const {
       conflicts,
+      conflictsInfo,
       run,
       storage,
       mergeInProgress
@@ -79,7 +80,8 @@ class Conflicts extends React.Component {
       run,
       storage,
       mergeInProgress,
-      conflicts
+      conflicts,
+      conflictsInfo
     );
     this.setState({
       current: (conflicts || [])[0]
@@ -259,6 +261,7 @@ class Conflicts extends React.Component {
 
 Conflicts.propTypes = {
   conflicts: PropTypes.arrayOf(PropTypes.string),
+  conflictsInfo: PropTypes.array,
   disabled: PropTypes.bool,
   onSessionStateChanged: PropTypes.func,
   mergeInProgress: PropTypes.bool,

@@ -83,6 +83,76 @@ export function run (parent, callback) {
   };
 }
 
+export function openReRunForm (run, props) {
+  const {
+    router,
+    pipelines
+  } = props;
+  if (!run || !router) {
+    return Promise.resolve();
+  }
+  const wrapPipelineInfoPromise = (pipelineRequest, callback) => new Promise((resolve, reject) => {
+    pipelineRequest
+      .fetch()
+      .then(() => {
+        if (pipelineRequest.error || !pipelineRequest.loaded) {
+          throw new Error();
+        }
+        resolve(pipelineRequest.value);
+      })
+      .catch(reject)
+      .then(() => callback && callback());
+  });
+  return new Promise((resolve) => {
+    const {
+      pipelineId,
+      version,
+      id,
+      configName,
+      dockerImage
+    } = run;
+    Promise.resolve()
+      .then(() => {
+        if (pipelines && pipelineId) {
+          const hide = message.loading('Fetching pipeline info...', 0);
+          return wrapPipelineInfoPromise(
+            pipelines.getPipeline(pipelineId),
+            hide
+          );
+        } else {
+          return Promise.resolve();
+        }
+      })
+      .then((pipelineInfo) => {
+        if (pipelineInfo) {
+          return Promise.resolve({
+            versionedStorage: /^versioned_storage$/i.test(pipelineInfo.pipelineType)
+          });
+        }
+        return Promise.resolve();
+      })
+      .catch(() => Promise.resolve())
+      .then((options) => {
+        const {versionedStorage = false} = options || {};
+        let link;
+        const query = versionedStorage ? `?vs=true` : '';
+        if (pipelineId && version && id) {
+          link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}${query}`;
+        } else if (pipelineId && version && configName) {
+          link = `/launch/${pipelineId}/${version}/${configName}${query}`;
+        } else if (pipelineId && version) {
+          link = `/launch/${pipelineId}/${version}/default${query}`;
+        } else if (id) {
+          link = `/launch/${id}${query}`;
+        }
+        if (link) {
+          router.push(link);
+        }
+        resolve(link);
+      });
+  });
+}
+
 export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTypesRequest) {
   if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
     let availableInstanceTypes = [];

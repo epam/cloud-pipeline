@@ -128,6 +128,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String TEST_PIPELINE_NAME = "Test";
     private static final String TEST_NEW_PIPELINE_NAME = "AnotherName";
     private static final String NODE_NAME = "node-12323";
+    private static final String TEST_PLATFORM = "linux";
     private static final String TEST_REGION = "region";
 
     @Autowired
@@ -304,6 +305,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setPodId(TEST_POD_ID);
         run.setParams(TEST_PARAMS);
         run.setOwner(USER);
+        run.setPlatform(TEST_PLATFORM);
         setRunInstance(run);
 
         String cmdTemplate = "cmdTemplate";
@@ -328,7 +330,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
 
         pipelineRunDao.createPipelineRun(run);
         createPipelineRunServiceUrl(run.getId());
-        
+
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(loadedRun.getDockerImage(), DOCKER_IMAGE);
         assertEquals(loadedRun.getActualDockerImage(), ACTUAL_DOCKER_IMAGE);
@@ -418,6 +420,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         stopped.setOwner(USER);
         stopped.setConfigurationId(CONFIGURATION_ID_1);
         stopped.setEntitiesIds(Stream.of(ENTITY_ID_1, ENTITY_ID_2).collect(Collectors.toList()));
+        stopped.setPlatform(TEST_PLATFORM);
         setRunInstance(stopped);
         pipelineRunDao.createPipelineRun(stopped);
 
@@ -435,6 +438,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         failed.setOwner(USER);
         failed.setConfigurationId(CONFIGURATION_ID_2);
         failed.setEntitiesIds(Stream.of(ENTITY_ID_2, ENTITY_ID_3).collect(Collectors.toList()));
+        failed.setPlatform(TEST_PLATFORM);
         setRunInstance(failed);
         pipelineRunDao.createPipelineRun(failed);
 
@@ -452,6 +456,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         running.setOwner(USER);
         running.setConfigurationId(CONFIGURATION_ID_3);
         running.setEntitiesIds(Stream.of(ENTITY_ID_1, ENTITY_ID_3).collect(Collectors.toList()));
+        running.setPlatform(TEST_PLATFORM);
         setRunInstance(running);
         pipelineRunDao.createPipelineRun(running);
 
@@ -980,6 +985,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setPodId(TEST_POD_ID);
         run.setParams(TEST_PARAMS);
         run.setOwner(USER);
+        run.setPlatform(TEST_PLATFORM);
 
         Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
         PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();
@@ -993,6 +999,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         RunInstance runInstance = new RunInstance();
         runInstance.setCloudProvider(CloudProvider.AWS);
         runInstance.setCloudRegionId(cloudRegion.getId());
+        runInstance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(runInstance);
     }
 
@@ -1063,12 +1070,14 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setOwner(USER);
         run.setParentRunId(parentRunId);
         run.setRunSids(runSids);
+        run.setPlatform(TEST_PLATFORM);
 
         RunInstance instance = new RunInstance();
         instance.setCloudRegionId(cloudRegion.getId());
         instance.setCloudProvider(CloudProvider.AWS);
         instance.setSpot(isSpot);
         instance.setNodeId("1");
+        instance.setNodePlatform(TEST_PLATFORM);
         run.setInstance(instance);
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);

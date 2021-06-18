@@ -78,6 +78,7 @@ import InstanceTypesManagementForm
 import deleteToolConfirmModal from './tool-deletion-warning';
 import ToolLink from './elements/ToolLink';
 import CreateLinkForm from './forms/CreateLinkForm';
+import PlatformIcon from './platform-icon';
 import HiddenObjects from '../../utils/hidden-objects';
 
 const MarkdownRenderer = new Remarkable('full', {
@@ -176,6 +177,16 @@ export default class Tool extends localization.LocalizedReactComponent {
       };
     }
     return null;
+  }
+
+  @computed
+  get defaultVersionPlatform () {
+    if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
+      if ((this.defaultVersionSettings.value || []).length > 0) {
+        return this.defaultVersionSettings.value[0].platform;
+      }
+    }
+    return undefined;
   }
 
   @computed
@@ -682,6 +693,9 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   getVersionScanningInfo = (item) => {
+    if (/^windows$/i.test(item.platform)) {
+      return null;
+    }
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && item.status) {
       let scanningInfo;
       switch (item.status.toUpperCase()) {
@@ -765,6 +779,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           key: keyIndex,
           name: currentVersion.version,
           digest: versionAttributes && versionAttributes.digest ? versionAttributes.digest : '',
+          platform: versionAttributes ? versionAttributes.platform : undefined,
           digestAliases,
           fromWhiteList: scanResult.fromWhiteList,
           size: versionAttributes && versionAttributes.size ? versionAttributes.size : '',
@@ -860,7 +875,9 @@ export default class Tool extends localization.LocalizedReactComponent {
           <table className={styles.versionNameTable}>
             <tbody>
               <tr>
-                <th className={styles.versionName}>{name}</th>
+                <th className={styles.versionName}>
+                  {name}
+                </th>
                 <td className={styles.versionScanningInfoGraph}>
                   {
                     this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
@@ -886,7 +903,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       key: 'tool os version',
       title: 'OS',
       className: styles.osColumn,
-      render: (toolOSVersion) => {
+      render: (toolOSVersion, item) => {
         if (toolOSVersion) {
           const {distribution, version} = toolOSVersion;
           if (distribution) {
@@ -935,6 +952,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         return (
           <Row type="flex" justify="end" className={styles.toolVersionActions}>
             {
+              !/^windows$/i.test(version.platform) &&
               this.isAdmin() &&
               !this.link &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
@@ -947,6 +965,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               )
             }
             {
+              !/^windows$/i.test(version.platform) &&
               this.isAdmin() &&
               !this.link &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
@@ -1098,6 +1117,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           onInitialized={this.onToolSettingsFormInitialized}
           readOnly={!roleModel.writeAllowed(this.props.tool.value) || this.link}
           configuration={this.defaultVersionSettingsConfiguration}
+          platform={this.defaultVersionPlatform}
           tool={this.props.tool.value}
           toolId={this.props.toolId}
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
@@ -1429,7 +1449,7 @@ export default class Tool extends localization.LocalizedReactComponent {
   get versionsScanResObject () {
     const versions = {};
     this.props.versions.value.versions.forEach(version => {
-      versions[version.version] = version.scanResult;
+      versions[version.version] = version;
     });
     return versions;
   };
@@ -1859,6 +1879,10 @@ export default class Tool extends localization.LocalizedReactComponent {
                 </Button>
                 <ToolLink link={this.link} style={{marginLeft: 5}} />
                 <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>
+                <PlatformIcon
+                  platform={this.defaultVersionPlatform}
+                  style={{verticalAlign: 'middle', marginLeft: 5}}
+                />
                 <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
               </td>
               <td style={{width: '33%', verticalAlign: 'bottom'}}>

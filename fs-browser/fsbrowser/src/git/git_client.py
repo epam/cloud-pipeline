@@ -220,9 +220,15 @@ class GitClient:
         self.find_conflicted_file_by_path(self.status(repo_path), file_path)
 
         if self._is_merge_in_progress(repo):
-            ref_name = 'MERGE_HEAD' if remote_flag else 'HEAD'
+            if remote_flag:
+                ref_name = 'MERGE_HEAD'
+            else:
+                return
         else:
-            ref_name = 'HEAD' if remote_flag else 'refs/stash'
+            if remote_flag:
+                return
+            else:
+                ref_name = 'refs/stash'
         repo.checkout(ref_name, paths=[file_path], strategy=pygit2.GIT_CHECKOUT_FORCE)
 
     def merge_abort(self, repo_path, branch=GitHelper.DEFAULT_BRANCH_NAME):
@@ -250,9 +256,11 @@ class GitClient:
         if repo.index.conflicts:
             conflict_paths = []
             for conflict in repo.index.conflicts:
-                conflict_paths.append(conflict[0].path)
+                conflict_objects = [c for c in conflict if c]
+                if conflict_objects:
+                    conflict_paths.append(conflict_objects[0].path)
             self.logger.log("Conflicts were found in paths: [%s]" % ", ".join(conflict_paths))
-            return repo.index.conflicts
+            return conflict_paths
 
         if commit_allowed:
             user = self._get_author(repo)
