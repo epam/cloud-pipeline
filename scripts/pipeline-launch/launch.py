@@ -80,6 +80,14 @@ def _parse_host_and_port(url, default_host, default_port):
     return host, port
 
 
+def _load_owner_groups(pipeline_api, target_run_id):
+    tool = pipeline_api.load_tool_for_run(target_run_id)
+    if 'id' in tool and tool['id']:
+        return pipeline_api.load_contextual_preference('TOOL', tool['id'], ['launch.win.user.groups'])
+    else:
+        raise RuntimeError('No id presented in tool details for runId=%s!' % str(target_run_id))
+
+
 if __name__ == '__main__':
     logging_format = _extract_parameter('CP_LOGGING_FORMAT', default='%(asctime)s:%(levelname)s: %(message)s')
     logging_level = _extract_parameter('CP_LOGGING_LEVEL', default='INFO')
@@ -102,7 +110,6 @@ if __name__ == '__main__':
     node_private_key_path = _extract_parameter('CP_NODE_PRIVATE_KEY', default=os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = _extract_parameter('OWNER', 'USER')
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
-    owner_groups = _extract_parameter('OWNER_GROUPS', default='Administrators')
     logon_title = _extract_parameter('CP_LOGON_TITLE', default='Login as ' + owner)
     logon_image_url = _extract_parameter('CP_LOGON_IMAGE_URL',
                                          default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/logon.bmp')
@@ -161,6 +168,8 @@ if __name__ == '__main__':
     api = PipelineAPI(api_url=api_url, log_dir=log_dir)
     logger = LocalLogger()
     run_logger = RunLogger(api=api, run_id=run_id, inner=logger)
+
+    owner_groups = _load_owner_groups(api, run_id)
 
     logger.info('Configuring PATH...')
     add_to_path(os.path.join(common_repo_dir, 'powershell'))
