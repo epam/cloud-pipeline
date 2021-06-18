@@ -72,6 +72,7 @@ import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
 import getObjectMetadataAttribute from './metadata-controls/metadataAttribute';
+import { name } from 'file-loader';
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -1693,13 +1694,31 @@ export default class Metadata extends React.Component {
   }
 
   setDefaultColumns () {
-    const defaultColumnsNames = [...this.state.defaultColumnsNames];
-    let currentColumns = this.state.columns.map(column => Object.assign({}, column));
-    currentColumns.map(column => {
-      column.selected = defaultColumnsNames.includes(column.key);
-      return column;
-    });
-    this.setState({columns: currentColumns});
+    const defaultColumnsNames = this.state.defaultColumnsNames;
+    if (defaultColumnsNames.length) {
+      const currentColumnsNames = this.state.columns.map(column => getColumnTitle(column.key));
+      const defaultColumns = [];
+      defaultColumnsNames.forEach(column => {
+        if (currentColumnsNames.includes(column)) {
+          defaultColumns.push({
+            key: column,
+            selected: true
+          });
+        }
+      });
+      if (defaultColumns.length && currentColumnsNames.length > defaultColumns.length) {
+        currentColumnsNames.forEach(column => {
+          if (!defaultColumnsNames.includes(column)) {
+            defaultColumns.push({
+              key: column,
+              selected: false
+            });
+          }
+        });
+        console.log(defaultColumns);
+        // this.setState({columns: defaultColumns});
+      }
+    }
   }
 
   leavePageWithSelectedItems (nextLocation) {

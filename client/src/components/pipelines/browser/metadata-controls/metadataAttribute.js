@@ -1,35 +1,48 @@
-import MetadataLoad from '../../../../models/metadata/MetadataLoad';
+import MetadataMultiLoad from '../../../../models/metadata/MetadataMultiLoad';
 
 export default async function getObjectMetadataAttribute (folderId, userInfo, attributeName) {
 
-  const entityClasses = ['FOLDER', 'PIPELINE_USER', 'ROLE'];
-  let attributeValue = [];
+  const requestBody = [
+    {
+      entityClass: 'FOLDER',
+      entityId: folderId
+    }, {
+      entityClass: 'PIPELINE_USER',
+      entityId: userInfo.id
+    },
+    ...userInfo.roles.map(role => ({
+      entityClass: 'ROLE',
+      entityId: role.id
+    }))
+  ];
 
-  for (let key in entityClasses) {
-    if (attributeValue.length === 0) {
-      try {
-        const entityId = key === 0 ? folderId : userInfo.id;
-        const metadataRequest = new MetadataLoad(entityId, entityClasses[key]);
-        await metadataRequest.fetch();
-        if (
-          metadataRequest.value &&
-          metadataRequest.value.length &&
-          metadataRequest.value[0].data &&
-          metadataRequest.value[0].data[attributeName] &&
-          metadataRequest.value[0].data[attributeName].value
-        ) {
-          attributeValue = metadataRequest.value[0].data[attributeName].value
-            .split(',')
-            .filter(item => item)
-            .map(item => item.trim());
-          if (attributeValue.length) {
-            return attributeValue;
+  try {
+    const metadataRequest = new MetadataMultiLoad(requestBody);
+    await metadataRequest.fetch();
+    if (metadataRequest.value && metadataRequest.value.length) {
+      const entityClasses = ['FOLDER', 'PIPELINE_USER', 'ROLE'];
+      let attributeValue = [];
+      for (let key in entityClasses) {
+        if (attributeValue.length === 0) {
+          const metadataRequestValue = metadataRequest.value
+            .filter(item => item &&
+              item.entity.entityClass === entityClasses[key] &&
+              item.data[attributeName]
+            )[0];
+          if (metadataRequestValue && metadataRequestValue.data) {
+            attributeValue = metadataRequestValue.data[attributeName].value
+              .split(',')
+              .filter(item => item)
+              .map(item => item.trim());
+            if (attributeValue.length) {
+              return attributeValue;
+            }
           }
         }
-      } catch (e) {
-        return [];
       }
     }
+  } catch (e) {
+    return [];
   }
   return [];
 }
