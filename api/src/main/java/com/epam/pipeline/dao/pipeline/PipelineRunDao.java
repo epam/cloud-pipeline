@@ -1029,8 +1029,26 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     private List<PipelineRun> addServiceUrls(final List<PipelineRun> loadedRuns) {
-        ListUtils.emptyIfNull(loadedRuns).forEach(run -> loadServiceUrlByRunId(run.getId()));
+        if (CollectionUtils.isEmpty(loadedRuns)) {
+            return loadedRuns;
+        }
+        final List<Long> runIds = ListUtils.emptyIfNull(loadedRuns).stream()
+                .map(PipelineRun::getId)
+                .collect(Collectors.toList());
+        final Map<Long, List<PipelineRunServiceUrl>> serviceUrlByRunId = StreamSupport.stream(
+                pipelineRunServiceUrlRepository.findByPipelineRunIdIn(runIds).spliterator(), false)
+                .collect(Collectors.groupingBy(PipelineRunServiceUrl::getPipelineRunId));
+        ListUtils.emptyIfNull(loadedRuns).forEach(run -> serviceUrlByRunId
+                .computeIfPresent(run.getId(), (runId, serviceUrls) -> addServiceUrlsToRun(run, serviceUrls)));
         return loadedRuns;
+    }
+
+    private List<PipelineRunServiceUrl> addServiceUrlsToRun(final PipelineRun run,
+                                                            final List<PipelineRunServiceUrl> loadedServiceUrls) {
+        run.setServiceUrl(ListUtils.emptyIfNull(loadedServiceUrls).stream()
+                .collect(Collectors.toMap(PipelineRunServiceUrl::getRegion,
+                        PipelineRunServiceUrl::getServiceUrl)));
+        return loadedServiceUrls;
     }
 
     private Optional<PipelineRun> buildRunWithServiceUrls(final PipelineRun run) {

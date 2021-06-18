@@ -19,6 +19,7 @@ package com.epam.pipeline.repository.run;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PipelineRunServiceUrlRepository extends CrudRepository<PipelineRunServiceUrl, Long> {
@@ -26,4 +27,6 @@ public interface PipelineRunServiceUrlRepository extends CrudRepository<Pipeline
     Iterable<PipelineRunServiceUrl> findByPipelineRunId(Long pipelineRunId);
 
     Optional<PipelineRunServiceUrl> findByPipelineRunIdAndRegion(Long pipelineRunId, String region);
+
+    Iterable<PipelineRunServiceUrl> findByPipelineRunIdIn(List<Long> pipelineRunIds);
 }
