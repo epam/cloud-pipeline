@@ -321,7 +321,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     systemD: false,
     noMachine: false,
     module: false,
-    disableHyperThreading: false
+    disableHyperThreading: false,
+    useResolvedParameters: false
   };
 
   formItemLayout = {
@@ -1835,6 +1836,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`
           );
           let value;
+          let resolvedValue;
           let type = 'string';
           let required = false;
           let readOnly = false;
@@ -1857,6 +1859,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               }
             }
             value = prevValue && !parameter.value ? prevValue : parameter.value;
+            resolvedValue = parameter.resolvedValue;
             type = parameter.type || 'string';
             enumeration = parameter.enum;
             description = parameter.description;
@@ -1867,29 +1870,35 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             enumeration = parameterUtilities.parseEnumeration({enumeration});
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
+              resolvedValue = resolvedValue !== undefined
+                ? getBooleanValue(resolvedValue)
+                : resolvedValue;
             }
             required = parameter.required;
-            readOnly = this.props.isDetachedConfiguration && this.props.detached && !!value && noOverride;
+            readOnly = this.props.isDetachedConfiguration &&
+              this.props.detached &&
+              !!value && noOverride;
           } else {
             value = parameter;
           }
-
-          parameters
-            .params[`param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`] = {
-              name: key,
-              key: `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`,
-              type: type,
-              enumeration,
-              initialEnumeration,
-              visible,
-              validation,
-              description,
-              value: value,
-              required: required,
-              readOnly: readOnly,
-              system: system,
-              noOverride
-            };
+          const paramKey = `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`;
+          parameters.params[paramKey] = {
+            name: key,
+            key: `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`,
+            type: type,
+            enumeration,
+            initialEnumeration,
+            visible,
+            validation,
+            description,
+            value,
+            resolvedValue,
+            hasResolvedValue: resolvedValue !== undefined && resolvedValue !== value,
+            required: required,
+            readOnly: readOnly,
+            system: system,
+            noOverride
+          };
         }
       }
     }
@@ -2838,6 +2847,42 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         </FormItem>
       );
     };
+
+    const renderUseResolvedParameters = () => {
+      const resolvedParameters = Object.values(parameters?.params || {})
+        .filter(parameter => parameter.hasResolvedValue);
+      if (!resolvedParameters.length) {
+        return null;
+      }
+      return (
+        <Row
+          type="flex"
+          style={{
+            marginBottom: '10px'
+          }}
+          key="use-resolved-parameters_row"
+        >
+          <Col
+            span={isSystemParametersSection ? 16 : 15}
+            offset={isSystemParametersSection ? 4 : 6}
+            style={{
+              textAlign: 'right'
+            }}
+          >
+            <Checkbox
+              checked={this.state.useResolvedParameters}
+              onChange={this.toggleResolvedParameters}
+              style={{
+                userSelect: 'none'
+              }}
+            >
+              Use resolved values
+            </Checkbox>
+          </Col>
+        </Row>
+      );
+    };
+
     const renderCurrentParameters = (isSystem = false) => {
       if (this.props.isDetachedConfiguration && this.props.selectedPipelineParametersIsLoading) {
         return [];
@@ -2848,6 +2893,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.addedParameters[key];
           let name = parameter ? parameter.name : '';
           let value = parameter ? parameter.value : '';
+          const resolvedValue = parameter ? parameter.resolvedValue : '';
+          const hasResolvedValue = parameter ? parameter.hasResolvedValue : false;
           let type = parameter ? parameter.type : 'string';
           let readOnly = parameter ? parameter.readOnly : false;
           const noOverride = parameter ? parameter.noOverride : false;
@@ -3003,6 +3050,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <FormItem className={styles.hiddenItem}>
                 {
                   this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.resolvedValue`,
+                    {initialValue: resolvedValue}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.hasResolvedValue`,
+                    {initialValue: hasResolvedValue}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.description`,
                     {initialValue: description}
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
@@ -3098,6 +3161,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       : renderCurrentParameters(isSystemParametersSection);
 
     return [
+      renderUseResolvedParameters(),
       this.props.isDetachedConfiguration && !isSystemParametersSection && renderRootEntity(),
       isSystemParametersSection && currentParameters.length > 0 &&
       this.renderSeparator('System parameters', 0, 'header', {marginTop: 20, marginBottom: 10}),
@@ -4147,7 +4211,33 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.cmdTemplateValue = undefined;
     }
     this.resetState(keepPipeline);
-  }
+  };
+
+  toggleResolvedParameters = () => {
+    const {parameters, form} = this.props;
+    this.setState(prevState => ({
+      useResolvedParameters: !prevState.useResolvedParameters
+    }), () => {
+      const {useResolvedParameters} = this.state;
+      const formItems = form.getFieldValue(PARAMETERS);
+      formItems.keys.forEach((key) => {
+        const formItem = formItems.params[key];
+        const parameter = parameters.parameters[formItem.name];
+        if (
+          parameter &&
+          parameter.value !== parameter.resolvedValue &&
+          parameter.resolvedValue !== undefined
+        ) {
+          formItem.value = useResolvedParameters
+            ? parameter.resolvedValue
+            : parameter.value;
+          form.setFieldsValue({
+            [PARAMETERS]: formItems
+          });
+        }
+      });
+    });
+  };
 
   renderRunButton = () => {
     if (!this.props.detached || !this.props.canExecute) {
@@ -4881,7 +4971,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               id="launch-pipeline-parameters-panel"
               key={PARAMETERS}
               className={styles.section}
-              header={this.getPanelHeader(PARAMETERS)}>
+              header={this.getPanelHeader(PARAMETERS)}
+            >
               {this.renderParameters(false)}
               {this.isFireCloudSelected && this.renderFireCloudConfigConnectionsList()}
             </Collapse.Panel>
