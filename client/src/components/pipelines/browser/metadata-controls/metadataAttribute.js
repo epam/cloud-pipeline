@@ -1,17 +1,37 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 import MetadataMultiLoad from '../../../../models/metadata/MetadataMultiLoad';
+
+const FOLDER = 'FOLDER';
+const USER = 'PIPELINE_USER';
+const ROLE = 'ROLE';
 
 export default async function getObjectMetadataAttribute (folderId, userInfo, attributeName) {
 
   const requestBody = [
     {
-      entityClass: 'FOLDER',
+      entityClass: FOLDER,
       entityId: folderId
     }, {
-      entityClass: 'PIPELINE_USER',
+      entityClass: USER,
       entityId: userInfo.id
     },
     ...userInfo.roles.map(role => ({
-      entityClass: 'ROLE',
+      entityClass: ROLE,
       entityId: role.id
     }))
   ];
@@ -20,7 +40,7 @@ export default async function getObjectMetadataAttribute (folderId, userInfo, at
     const metadataRequest = new MetadataMultiLoad(requestBody);
     await metadataRequest.fetch();
     if (metadataRequest.value && metadataRequest.value.length) {
-      const entityClasses = ['FOLDER', 'PIPELINE_USER', 'ROLE'];
+      const entityClasses = [FOLDER, USER, ROLE];
       let attributeValue = [];
       for (let key in entityClasses) {
         if (attributeValue.length === 0) {
