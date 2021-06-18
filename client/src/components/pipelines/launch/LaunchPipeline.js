@@ -243,6 +243,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
               ? parameterInfo.required : false;
             parameters.parameters[param.name] = {
               value: param.value,
+              resolvedValue: param.resolvedValue,
               type,
               required,
               enum: param.enum
