@@ -544,6 +544,7 @@ export default class Metadata extends React.Component {
     }
     return <span title={data.value}>{data.value}</span>;
   };
+
   onDeleteSelectedItems = () => {
     const removeConfiguration = async () => {
       const selectedIds = this.state.selectedItems.map(item => item.rowKey.value);
@@ -834,6 +835,7 @@ export default class Metadata extends React.Component {
       this.setState({selectedItem, metadata: true});
     }
   };
+
   onClearFilters = () => {
     const {filterModel} = this.state;
     filterModel.filters = [];
@@ -849,17 +851,20 @@ export default class Metadata extends React.Component {
       () => this.loadData()
     );
   };
+
   onClearSelectionItems = () => {
     this.setState({
       selectedItems: [],
       selectedItemsAreShowing: false
     }, () => this.paginationOnChange(FIRST_PAGE));
   };
+
   onCopySelectionItems = () => {
     this.setState({
       copyEntitiesDialogVisible: true
     });
   };
+
   onCloseCopySelectionItemsDialog = (destinationFolder) => {
     this.setState({
       copyEntitiesDialogVisible: false
@@ -874,12 +879,14 @@ export default class Metadata extends React.Component {
       }
     });
   };
+
   onSelectConfigurationConfirm = async (selectedConfiguration, expansionExpression) => {
     this.selectedConfiguration = selectedConfiguration;
     this.expansionExpression = expansionExpression;
 
     await this.runConfiguration(false);
   };
+
   onCloseConfigurationBrowser = () => {
     this.selectedConfiguration = null;
     this.expansionExpression = '';
@@ -979,6 +986,7 @@ export default class Metadata extends React.Component {
       }
     }
   };
+
   runConfiguration = async (isCluster) => {
     const hide = message.loading('Launching...', 0);
     const request = new ConfigurationRun(this.expansionExpression);
@@ -998,9 +1006,14 @@ export default class Metadata extends React.Component {
     if (request.error) {
       message.error(request.error);
     } else {
-      SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      this.setState({
+        selectedItemsCanBeSkipped: true
+      }, () => {
+        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      });
     }
   };
+
   renderContent = () => {
     const renderTable = () => {
       return [
