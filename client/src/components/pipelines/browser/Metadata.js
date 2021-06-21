@@ -1363,21 +1363,23 @@ export default class Metadata extends React.Component {
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       let icon, orderNumber;
       if (orderBy) {
+        let iconStyle = {fontSize: 10, marginRight: 5};
         if (this.state.filterModel.orderBy.length > 1) {
-          orderNumber = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
+          const number = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
+          iconStyle = {fontSize: 10, marginRight: 0};
+          orderNumber = <sup style={{marginRight: 5}}>{number}</sup>
         }
         if (orderBy.desc) {
-          icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-down" />;
+          icon = <Icon style={iconStyle} type="caret-down" />;
         } else {
-          icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-up" />;
+          icon = <Icon style={iconStyle} type="caret-up" />;
         }
       }
       return (
         <span
           onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
-          <sup>{orderNumber}</sup>
-          {icon}{getColumnTitle(key)}
+          {icon}{orderNumber}{getColumnTitle(key)}
           {this.renderFilterButton(key)}
         </span>
       );
