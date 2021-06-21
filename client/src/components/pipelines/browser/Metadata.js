@@ -767,16 +767,24 @@ export default class Metadata extends React.Component {
 
   onOrderByChanged = async (key, value) => {
     if (key) {
-      const {filterModel} = this.state;
+      const filterModel = {...this.state.filterModel};
       const [currentOrderBy] = filterModel.orderBy.filter(f => f.field === key);
       if (currentOrderBy) {
         const index = filterModel.orderBy.indexOf(currentOrderBy);
-        filterModel.orderBy.splice(index, 1);
+        const desc = currentOrderBy.desc;
+        if (desc) {
+          const updatedcurrentOrderBy = {field: key, desc: !desc};
+          filterModel.orderBy.splice(index, 1, updatedcurrentOrderBy);
+        } else {
+          filterModel.orderBy.splice(index, 1);
+        }
       }
-      if (value) {
-        filterModel.orderBy = [{field: key, desc: value === DESCEND}];
+      if (!currentOrderBy && value) {
+        filterModel.orderBy.push({field: key, desc: value === DESCEND});
       }
-      await this.loadData();
+      this.setState({filterModel}, () => {
+        this.loadData();
+      });
     }
   };
 
@@ -1353,8 +1361,11 @@ export default class Metadata extends React.Component {
     };
     const renderTitle = (key) => {
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
-      let icon;
+      let icon, orderNumber;
       if (orderBy) {
+        if (this.state.filterModel.orderBy.length > 1) {
+          orderNumber = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
+        }
         if (orderBy.desc) {
           icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-down" />;
         } else {
@@ -1365,6 +1376,7 @@ export default class Metadata extends React.Component {
         <span
           onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
+          <sup>{orderNumber}</sup>
           {icon}{getColumnTitle(key)}
           {this.renderFilterButton(key)}
         </span>
