@@ -892,227 +892,115 @@ export default class Metadata extends React.Component {
   isNowSelectedCell = (rIdx, cIdx) => {
     return this.state.selectedCells.find((cell) => cell.colIdx === cIdx && cell.rowIdx === rIdx);
   }
-  handleShowSelector = (opts) => {
-    const {e, rowInfo, column} = opts;
-    const {selectionStart} = this.state;
-    if (e.target.className === 'selector') {
-      if (!selectionStart) {
-      e.target.style.backgroundColor = '#108ee9';
-      e.currentTarget.style.boxShadow = '0px 0px 0px 3px #108ee9 inset';
-      } else if (this.isNowSelectedCell(rowInfo.index, column.index)) {
-        e.target.style.backgroundColor = '#108ee9';
-    } else {
-      e.target.style.backgroundColor = 'transparent';
-    }
-  }
-  }
-  handleHideSelector = (opts) => {
-    const {e} = opts;
-    if (e.target.className === 'selector') {
-      e.target.style.backgroundColor = 'transparent';
-      e.currentTarget.style.boxShadow = 'none';
-    }
-  }
+  // handleShowSelector = (opts) => {
+  //   const {e, rowInfo, column} = opts;
+  //   const {selectionStart} = this.state;
+  //   if (e.target.className === 'selector') {
+  //     if (!selectionStart) {
+  //     e.target.style.backgroundColor = '#108ee9';
+  //     e.currentTarget.style.boxShadow = '0px 0px 0px 3px #108ee9 inset';
+  //     } else if (this.isNowSelectedCell(rowInfo.index, column.index)) {
+  //       e.target.style.backgroundColor = '#108ee9';
+  //   } else {
+  //     e.target.style.backgroundColor = 'transparent';
+  //   }
+  // }
+  // }
+  // handleHideSelector = (opts) => {
+  //   const {e} = opts;
+  //   if (e.target.className === 'selector') {
+  //     e.target.style.backgroundColor = 'transparent';
+  //     e.currentTarget.style.boxShadow = 'none';
+  //   }
+  // }
   handleStartSelection = (opts) => {
     const {e, rowInfo, column} = opts;
     const cell = e ? e.currentTarget : null;
-    if (e.target.className === 'selector') {
-      this.setState({selectionStart: {
-        cells: [cell],
-        colIdx: column.index,
-        rowIdx: rowInfo.index,
-        value: cell ? cell.innerText : ''
-      }});
-      cell.style.boxShadow = '0px 3px 0px #108ee9 inset, 0px -3px 0px #108ee9 inset';
-      cell.style.borderInline = '3px solid #108ee9';
-      cell.style.backgroundColor = 'rgba(16, 142, 233, 0.1)';
-    }
+    this.setState({selectionStart: {
+      cells: [cell],
+      colIdx: column.index,
+      rowIdx: rowInfo.index,
+      value: cell ? cell.innerText : ''
+    }});
   }
   handleApplySpreadSelection = () => {
     console.log('mouseup', this.state.selectedCells);
-    // this.state.selectedCells.forEach(({cell}) => {
-    //   cell.style.boxShadow = 'none';
-    // });
-    this.setState({
-      selectionStart: null,
-      selectionDirection: '',
-      selectedCells: []
-    });
   }
-  handleSpreadSelection = (opts) => {
+  isLeftSideCell = (column) => {
+    const {selectedCells} = this.state;
+    if (selectedCells.length) {
+      const leftColumnIndex = this.state.selectedCells.reduce((min, c, index) => {
+        if (index === 0) {
+          min = c.colIdx;
+        } else {
+          min = Math.min(min, c.colIdx);
+        }
+        return min;
+      }, 0);
+      console.log('leftColumnIndex', leftColumnIndex);
+      return leftColumnIndex === column.index;
+    }
+  }
+  isRightSideCell = (column) => {
+    const {selectedCells} = this.state;
+    if (selectedCells.length) {
+      const rightColumnIndex = this.state.selectedCells.reduce((max, c, index) => {
+        if (index === 0) {
+          max = c.colIdx;
+        } else {
+          max = Math.max(max, c.colIdx);
+        }
+        return max;
+      }, 0);
+      console.log('rightColumnIndex', rightColumnIndex);
+      return rightColumnIndex === column.index;
+    }
+  }
+  isTopSideCell = (column, row) => {
+    const {selectedCells} = this.state;
+    if (selectedCells.length) {
+      const topRowIndex = selectedCells.reduce((min, c, index) => {
+        if (index === 0) {
+          min = c.rowIdx;
+        } else {
+          min = Math.min(min, c.rowIdx);
+        }
+        return min;
+      }, 0);
+      return topRowIndex === row.index;
+    }
+  }
+  isBottomSideCell = (column, row) => {
+    const {selectedCells} = this.state;
+    if (selectedCells.length) {
+      const bottomColumnIndex = this.state.selectedCells.reduce((max, c, index) => {
+        if (index === 0) {
+          max = c.rowIdx;
+        } else {
+          max = Math.max(max, c.rowIdx);
+        }
+        return max;
+      }, 0);
+      return bottomColumnIndex === row.index;
+    }
+  }
+  handleCellSelection = (opts) => {
     const {e, rowInfo, column} = opts;
-    const selector = e.currentTarget.childNodes[0].firstChild;
     const cell = e.currentTarget;
-    const {selectionStart, selectionDirection} = this.state;
-    const currentRow = rowInfo.index;
-    const currentCol = column.index;
-    if (selectionStart) {
-      if (!selectionDirection &&
-      (selectionStart.colIdx !== currentCol ||
-      selectionStart.rowIdx !== rowInfo.index)
-      ) {
-        const deltaX = Math.abs(selectionStart.colIdx - column.index);
-        const deltaY = Math.abs(selectionStart.rowIdx - rowInfo.index);
+    const rowIndex = rowInfo.index;
+    const columnIndex = column.index;
+    if (this.state.selectionStart) {
+      if (!this.isNowSelectedCell(rowIndex, columnIndex)) {
         this.setState({
-          selectionDirection: deltaX > deltaY ? 'hor' : 'vert',
           selectedCells: [...this.state.selectedCells, {
-            cell,
-            colIdx: currentCol,
-            rowIdx: currentRow
+            rowIdx: rowIndex,
+            colIdx: columnIndex
           }]
         });
-        if (deltaX > deltaY) {
-          cell.style.boxShadow = '0px 3px 0px #108ee9 inset, 0px -3px 0px #108ee9 inset';
-          cell.style.borderInlineEnd = '3px solid #108ee9';
-        } else {
-          cell.style.boxShadow = '0px -3px 0px #108ee9 inset';
-          cell.style.borderInline = '3px solid #108ee9';
-        }
-        selector.style.backgroundColor = '#108ee9';
-      }
-      if (selectionDirection && !this.isNowSelectedCell(currentRow, currentCol)) {
-        if (selectionDirection === 'vert' && selectionStart.colIdx === currentCol) {
-          selector.style.backgroundColor = '#108ee9';
-          this.setState({
-            selectedCells: [...this.state.selectedCells, {
-              cell,
-              colIdx: selectionStart.colIdx,
-              rowIdx: currentRow
-            }]
-          });
-          cell.style.boxShadow = '0px -3px 0px #108ee9 inset';
-          cell.style.borderInline = '3px solid #108ee9';
-        } else if (selectionDirection === 'hor' && selectionStart.rowIdx === currentRow) {
-          selector.style.backgroundColor = '#108ee9';
-          this.setState({
-            selectedCells: [...this.state.selectedCells, {
-              cell,
-              colIdx: currentCol,
-              rowIdx: selectionStart.rowIdx
-            }]
-          });
-          cell.style.boxShadow = '0px 3px 0px #108ee9 inset, 0px -3px 0px #108ee9 inset';
-          cell.style.borderInlineEnd = '3px solid #108ee9';
-        }
-        // } else if (this.isNowSelectedCell(currentRow, currentCol)) {
-        //   if (selectionDirection === 'vert' && selectionStart.colIdx === currentCol) {
-        //     this.setState({
-        //       selectedCells: this.state.selectedCells.filter(({cell, rowIdx}) => {
-        //         if (rowIdx >= currentRow) {
-        //           cell.style.boxShadow = 'none';
-        //           cell.style.borderInline = 'none';
-        //           return false;
-        //         } else {
-        //           return true;
-        //         }
-        //       })
-        //     });
-        //   } else if (selectionDirection === 'hor' && selectionStart.rowIdx === currentRow) {
-        //     this.setState({
-        //       selectedCells: this.state.selectedCells.filter(({cell, colIdx}) => {
-        //         if (colIdx >= currentCol) {
-        //           cell.style.boxShadow = 'none';
-        //           cell.style.borderInline = 'none';
-        //           cell.style.borderInlineEnd = 'none';
-        //           return false;
-        //         } else {
-        //           return true;
-        //         }
-        //       })
-        //     });
-        //   }
-        // }
+        cell.style.backgroundColor = 'rgba(16, 142, 233, 0.1)';
       }
     }
   }
-  handleDrawSelection = (opts) => {
-    const {e, rowInfo, column} = opts;
-    const cell = e.currentTarget;
-    const {selectionStart, selectionDirection} = this.state;
-    const selector = e.currentTarget.childNodes[0].firstChild;
-    const currentRow = rowInfo.index;
-    const currentCol = column.index;
-    if (!selectionStart) {
-      this.handleHideSelector(opts);
-    } else {
-      selector.style.backgroundColor = 'initial';
-      const startCell = selectionStart.cells[0];
-      if (selectionDirection === 'vert' &&
-          currentCol === selectionStart.colIdx
-      ) {
-        startCell.style.boxShadow = '0px 3px 0px #108ee9 inset';
-        startCell.style.borderInline = '3px solid #108ee9';
-        if (selectionStart.rowIdx !== currentRow) {
-          cell.style.boxShadow = 'none';
-          cell.style.borderInline = this.isNowSelectedCell(currentRow, currentCol) ? '3px solid #108ee9' : 'none';
-        }
-      }
-      if (selectionDirection === 'hor' &&
-          currentRow === selectionStart.rowIdx
-      ) {
-        startCell.style.boxShadow = '0px 3px 0px #108ee9 inset, 0px -3px 0px #108ee9 inset';
-        startCell.style.borderInlineEnd = 'none';
-        if (selectionStart.colIdx !== currentCol) {
-          cell.style.borderInlineEnd = 'none';
-          cell.style.borderInlineStart = 'none';
-          cell.style.borderInline = 'none';
-          cell.style.boxShadow = '0px 3px 0px #108ee9 inset, 0px -3px 0px #108ee9 inset';
-        }
-      }
-    }
-  }
-  // isLastHorizCell = (opts) => {
-  //   const {rowInfo, column} = opts;
-  //   const {selectionDirection, selectionStart, selectedCells} = this.state;
-  //   const selectionIndex = selectedCells.findIndex(({rowIdx, colIdx}) => rowIdx === rowInfo.index && colIdx === column.index);
-
-  //   if (selectionStart &&
-  //     selectionDirection === 'hor') {
-  //     return (selectionStart.rowIdx === rowInfo.index);
-  //   } else {
-  //     return false;
-  //   }
-  // }
-  // isVerticalCell = (opts) => {
-  //   const {rowInfo, column} = opts;
-  //   const {selectionDirection, selectionStart, selectedCells} = this.state;
-  //   const selectionIndex = selectedCells.findIndex(({rowIdx, colIdx}) => rowIdx === rowInfo.index && colIdx === column.index);
-  //   return selectionStart &&
-  //   selectionDirection === 'vert' &&
-  //   column.index === selectionStart.colIdx &&
-  //   selectionIndex > -1;
-  // }
-  // getShadowConfig = (opts) => {
-  //   const {rowInfo, column} = opts;
-  //   const {selectionDirection, selectionStart} = this.state;
-  //   if (selectionStart &&
-  //     !selectionDirection &&
-  //     (selectionStart.colIdx !== column.index || selectionStart.rowIdx !== rowInfo.index)
-  //   ) {
-  //     const [cell] = selectionStart.cells.filter(cell => cell.colIdx === column.index && cell.rowIdx === rowInfo.index);
-  //     if (cell) {
-  //       return '0px 3px 0px #108ee9 inset, 0px -3px 0px #108ee9 inset';
-  //     }
-  //   }
-
-  //   if (selectionStart && selectionDirection &&
-  //     !this.isNowSelectedCell(rowInfo.index, column.index)) {
-  //     if (selectionDirection === 'hor' && selectionStart.rowIdx === rowInfo.index) {
-  //       return '0px 3px 0px #108ee9 inset, 0px -3px 0px #108ee9 inset';
-  //     }
-  //     if (selectionDirection === 'vert' && selectionStart.colIdx === column.index) {
-  //       return '0px -3px 0px #108ee9 inset';
-  //     }
-  //     return 'none';
-  //   }
-  //   return 'none';
-  // }
-  // isSelectedValue = (opts) => {
-  //   const {rowInfo, column} = opts;
-  //   const {selectionStart} = this.state;
-  //   return selectionStart && selectionStart.rowIdx === rowInfo.index && selectionStart.colIdx === column.index;
-  // }
-
   renderContent = () => {
     const renderTable = () => {
       return [
@@ -1128,9 +1016,7 @@ export default class Metadata extends React.Component {
           getTdProps={(state, rowInfo, column, instance) => ({
             onMouseDown: (e) => this.handleStartSelection({e, rowInfo, column}),
             onMouseUp: () => this.handleApplySpreadSelection(),
-            onMouseOver: (e) => this.handleSpreadSelection({e, rowInfo, column}),
-            onMouseOut: (e) => this.handleDrawSelection({e, rowInfo, column}),
-            onMouseMove: (e) => this.handleShowSelector({e, rowInfo, column}),
+            onMouseMove: (e) => this.handleCellSelection({e, rowInfo, column}),
             onClick: (e) => {
               if (e) {
                 e.stopPropagation();
@@ -1144,18 +1030,15 @@ export default class Metadata extends React.Component {
                 selectionStart: null,
                 selectedCells: []
               });
-              this.state.selectedCells.forEach(({cell}) => {
-                cell.style.boxShadow = 'none';
-              });
             },
             style: {
-              borderRight: 'none',
-              position: 'relative'
-              // borderInlineEnd: this.isLastHorizCell({rowInfo, column}) ? '3px solid #108ee9' : 'none',
-              // borderInlineStart: 'none',
-              // borderInline: this.isVerticalCell({rowInfo, column}) ? '3px solid #108ee9' : 'none',
-              // // boxShadow: this.getShadowConfig({rowInfo, column}),
-              // backgroundColor: this.isSelectedValue({rowInfo, column}) ? 'rgba(16, 142, 233, 0.1)' : 'initial'
+              border: '0.5px solid rgba(0,0,0,0.1)',
+              position: 'relative',
+              borderTopColor: this.isTopSideCell(column, rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderBottomColor: this.isBottomSideCell(column, rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderLeftColor: this.isLeftSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderRightColor: this.isRightSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              backgroundColor: this.isNowSelectedCell(rowInfo.index, column.index) ? 'rgba(16, 142, 233, 0.1)' : 'initial'
             }
           })}
           getResizerProps={() => ({style: {width: '6px', right: '-3px'}})}
