@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import platform
+from pipeline.utils.platform import assert_windows
 
-
-if platform.system() != 'Windows':
-    raise RuntimeError('Task scheduling is not supported on {platform} platform.'
-                       .format(platform=platform.system()))
+assert_windows('Task scheduling')
 
 import win32com.client
 

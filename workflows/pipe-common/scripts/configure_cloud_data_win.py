@@ -15,8 +15,8 @@
 import json
 import pathlib
 import os
-import platform
 from distutils.dir_util import copy_tree
+from pipeline.utils.platform import assert_windows
 from pipeline.utils.scheduler import schedule_python_command_on_logon
 from win32com.client import Dispatch
 
@@ -49,13 +49,9 @@ def _create_cloud_data_config(cloud_data_parent_dir, edge_url, username, token):
 
 
 def configure_cloud_data_win(cloud_data_parent_dir, edge_url, dav_user, token):
-    current_platform = platform.system()
-    if current_platform == 'Windows':
-        _create_cloud_data_config(cloud_data_parent_dir, edge_url, dav_user, token)
-        _create_cloud_data_shortcut(cloud_data_parent_dir)
-    else:
-        raise RuntimeError('Cloud-Data installation is not supported on {platform} platform.'
-                           .format(platform=current_platform))
+    assert_windows('Cloud-Data installation')
+    _create_cloud_data_config(cloud_data_parent_dir, edge_url, dav_user, token)
+    _create_cloud_data_shortcut(cloud_data_parent_dir)
 
 
 def move_configuration(cloud_data_config_parent_dir, user_default_home_dir):
