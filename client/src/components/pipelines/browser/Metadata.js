@@ -450,33 +450,29 @@ export default class Metadata extends React.Component {
   sortSelectedItems = () => {
     let selectedItems = [...this.state.selectedItems];
     const orderBy = [...this.state.filterModel.orderBy];
-    console.log(orderBy)
 
     selectedItems.sort((a, b) => {
-      const item1 = orderBy.map(order => a[order.field].value);
-      const item2 = orderBy.map(order => b[order.field].value);
-
-      const result = item1.map((value1, index) => {
-        const desc = orderBy[index].desc;
-        const value2 = item2[index];
-        if (value1 === value2) {
-          return 0;
-        } else if (value1 < value2) {
-          return desc ? 1 : -1;
-        } else if (value1 > value2) {
-          return desc ? -1 : 1;
+      function valuesAreEqual (item1, item2) {
+        if (!item1 && !item2) {
+          return true;
         }
-      });
+        return item1 === item2;
+      }
 
-      let i = 0;
-      while (i < result.length) {
-        if (result[i] === 0) {
-          i += 1;
-        } else {
-          return result[i];
+      for (let i in orderBy) {
+        const [field, desc] = Object.values(orderBy[i]);
+        const item1 = a[field] ? a[field].value : null;
+        const item2 = b[field] ? b[field].value : null;
+        if (!valuesAreEqual(item1, item2)) {
+          if (item1 < item2 || item2 === null) {
+            return desc ? 1 : -1;
+          }
+          if (item1 > item2 || item1 === null) {
+            return desc ? -1 : 1;
+          }
         }
       }
-      return 1;
+      return 0;
     });
 
     return selectedItems;
