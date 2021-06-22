@@ -437,22 +437,50 @@ export default class Metadata extends React.Component {
       const lastRow = Math.min(page * pageSize, selectedItems.length);
 
       if (orderBy && orderBy.length) {
-        const field = orderBy[0].field === 'externalId' ? 'ID' : orderBy[0].field;
-        const desc = orderBy[0].desc;
-        selectedItems.sort((a, b) => {
-          if (!desc) {
-            return a[field].value >= b[field].value ? 1 : -1;
-          } else {
-            return a[field].value < b[field].value ? 1 : -1;
-          }
-        });
-        currentMetadata = selectedItems.slice(firstRow, lastRow);
+        const sortedSelectedItems = this.sortSelectedItems();
+
+        currentMetadata = sortedSelectedItems.slice(firstRow, lastRow);
       } else {
         currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
     this.setState({loading: false, currentMetadata});
   };
+
+  sortSelectedItems = () => {
+    let selectedItems = [...this.state.selectedItems];
+    const orderBy = [...this.state.filterModel.orderBy];
+    console.log(orderBy)
+
+    selectedItems.sort((a, b) => {
+      const item1 = orderBy.map(order => a[order.field].value);
+      const item2 = orderBy.map(order => b[order.field].value);
+
+      const result = item1.map((value1, index) => {
+        const desc = orderBy[index].desc;
+        const value2 = item2[index];
+        if (value1 === value2) {
+          return 0;
+        } else if (value1 < value2) {
+          return desc ? 1 : -1;
+        } else if (value1 > value2) {
+          return desc ? -1 : 1;
+        }
+      });
+
+      let i = 0;
+      while (i < result.length) {
+        if (result[i] === 0) {
+          i += 1;
+        } else {
+          return result[i];
+        }
+      }
+      return 1;
+    });
+
+    return selectedItems;
+  }
 
   filterApplied = (key) => {
     const {filters, startDateFrom, endDateTo} = this.state.filterModel;
