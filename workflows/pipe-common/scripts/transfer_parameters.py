@@ -510,7 +510,7 @@ class InputDataTask:
         if self.match_cloud_path(source):
             cloud_paths = S3Bucket().pipe_ls(get_path_with_trailing_delimiter(source),
                                           TRANSFER_ATTEMPTS, recursive=True, all=True, show_info=True)
-            cloud_paths = filter(lambda x: x[0] == 'File', cloud_paths)
+            cloud_paths = filter(lambda x: x[0] == 'File' and not x[1].endswith('/'), cloud_paths)
             files = [File(self.get_path_without_folder(source, path[1]), int(path[2])) for path in cloud_paths]
         else:
             files = []
