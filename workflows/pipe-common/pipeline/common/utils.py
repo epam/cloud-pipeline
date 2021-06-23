@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,3 +49,12 @@ def get_path_with_trailing_delimiter(path):
 
 def get_path_without_trailing_delimiter(path):
     return path if not path.endswith('/') else path[:-1]
+
+
+def replace_placeholder_in_file(file_path, placeholder, replacement):
+    if not os.path.exists(file_path):
+        raise RuntimeError('No such file `{}` exists!'.format(file_path))
+    with open(file_path, 'r') as f:
+        file_content = f.read().replace(placeholder, replacement)
+    with open(file_path, 'w') as f:
+        f.write(file_content)

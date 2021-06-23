@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if ([string]::IsNullOrEmpty("$HOME")) {
-    $UserHomeFolder="<USER_DEFAULT_HOME>"
-} else {
-    $UserHomeFolder = "$HOME"
-}
-Write-Host Finalizing Cloud-Data configuration...
-cp -r <CLOUD_DATA_CONFIG_DIR> $UserHomeFolder
+import platform
+
+
+def assert_windows(err_msg_prefix):
+    current_platform = platform.system()
+    if current_platform != 'Windows':
+        raise RuntimeError('{prefix} is not supported on {platform} platform.'.format(prefix=err_msg_prefix,
+                                                                                      platform=current_platform))

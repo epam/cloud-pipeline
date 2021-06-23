@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import platform
+from pipeline.utils.platform import assert_windows
 
-if platform.system() != 'Windows':
-    raise RuntimeError('Registry package is not supported on {platform} platform.'
-                       .format(platform=platform.system()))
+assert_windows('Registry package')
 
 import winreg
+
+
+def _get_user_sid(username):
+    import win32security
+    desc = win32security.LookupAccountName(None, username)
+    return win32security.ConvertSidToStringSid(desc[0])
 
 
 def set_value(root, path, type, name, value):
@@ -38,5 +42,9 @@ def set_local_machine_dword_value(path, name, value):
     set_value(winreg.HKEY_LOCAL_MACHINE, path, winreg.REG_DWORD, name, value)
 
 
-def set_user_dword_value(path, name, value, sid):
-    set_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), winreg.REG_DWORD, name, value)
+def set_user_dword_value(username, path, name, value):
+    set_value(winreg.HKEY_USERS, '{}\\{}'.format(_get_user_sid(username), path), winreg.REG_DWORD, name, value)
+
+
+def set_user_string_value(username, path, name, value):
+    set_value(winreg.HKEY_USERS, '{}\\{}'.format(_get_user_sid(username), path), winreg.REG_SZ, name, value)

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import platform
+from pipeline.utils.platform import assert_windows
 
 
 def _create_win_user(username, password):
@@ -34,11 +35,7 @@ def _add_win_user_to_group(username, domain, group):
 
 
 def create_user(username, password, groups):
-    current_platform = platform.system()
-    if current_platform == 'Windows':
-        _create_win_user(username, password)
-        for group in groups.split(','):
-            _add_win_user_to_group(username, platform.node(), group)
-    else:
-        raise RuntimeError('Creating user is not supported on {platform} platform.'
-                           .format(platform=current_platform))
+    assert_windows('Creating user')
+    _create_win_user(username, password)
+    for group in groups.split(','):
+        _add_win_user_to_group(username, platform.node(), group)

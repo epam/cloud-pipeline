@@ -20,6 +20,10 @@ import traceback
 import zipfile
 import sys
 import tarfile
+from urllib.parse import urlparse
+
+_default_edge_host = 'cp-edge.default.svc.cluster.local'
+_default_edge_port = 31081
 
 
 class LaunchError(RuntimeError):
@@ -72,6 +76,8 @@ def _extract_boolean_parameter(name, default='false'):
 
 
 def _parse_host_and_port(url, default_host, default_port):
+    if not url:
+        return default_host, default_port
     parsed_url = urlparse(url)
     host_and_port = parsed_url.netloc if parsed_url.netloc else parsed_url.path
     host_and_port = host_and_port.split(':')
@@ -98,7 +104,9 @@ if __name__ == '__main__':
     api_url = _extract_parameter('API', default='https://cp-api-srv.default.svc.cluster.local:31080/pipeline/restapi/')
     api_token = _extract_parameter('API_TOKEN')
     node_owner = _extract_parameter('CP_NODE_OWNER', default='Administrator')
-    edge_url = _extract_parameter('EDGE', default='https://cp-edge.default.svc.cluster.local:31081')
+    edge_url = _extract_parameter('EDGE', default='https://{}:{}'.format(_default_edge_host, _default_edge_port))
+    edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
+    edge_host, edge_port = _parse_host_and_port(edge_url, _default_edge_host, _default_edge_port)
     node_private_key_path = _extract_parameter('CP_NODE_PRIVATE_KEY', default=os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = _extract_parameter('OWNER', 'USER')
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
@@ -118,6 +126,9 @@ if __name__ == '__main__':
     cloud_data_distribution_url = _extract_parameter('CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
                                                      default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/cloud-data-win-x64.zip')
     requires_drive_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_DRIVE')
+    desktop_layout_url = _extract_parameter('CP_CLOUD_DATA_WIN_DESKTOP_LAYOUT_URL',
+                                            default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/default_layout.xml')
+    requires_popup_notifications = _extract_boolean_parameter('CP_CAP_WIN_CONFIGURATION_NOTIFICATIONS')
 
     logging.basicConfig(level=logging_level, format=logging_format)
 
@@ -230,17 +241,15 @@ if __name__ == '__main__':
         _extract_archive(os.path.join(run_dir, 'cloud-data.zip'), run_dir)
 
         task_logger.info('Configuring Cloud-Data App on the node...')
+        escaped_run_dir = _escape_backslashes(run_dir)
         task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                          f'from scripts.configure_cloud_data_win import configure_cloud_data_win; '
-                         f'configure_cloud_data_win(\'{_escape_backslashes(run_dir)}\', \'{edge_url}\','
+                         f'configure_cloud_data_win(\'{escaped_run_dir}\', \'{edge_url}\','
                          f'                         \'{owner}\', \'{api_token}\')\\"')
-
-        cloud_data_config_finalization_script_path = _escape_backslashes(
-            os.path.join(common_repo_dir, 'powershell\\FinalizeCloudDataConfig.ps1'))
-        cloud_data_config_tmp_path = os.path.join(run_dir, ".pipe-webdav-client")
-        task_ssh.execute(f'RegisterCloudDataConfigurationTask -UserName \\"{owner}\\"'
-                         f' -CloudDataConfigFolder \\"{_escape_backslashes(cloud_data_config_tmp_path)}\\"'
-                         f' -FinalizingScript \\"{cloud_data_config_finalization_script_path}\\" | Out-Null')
+        task_logger.info('Scheduling Cloud-Data config finalization on logon...')
+        task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                         f'from scripts.configure_cloud_data_win import schedule_finalization; '
+                         f'schedule_finalization(\'{owner}\', \'{_escape_backslashes(escaped_run_dir)}\')\\"')
         task_logger.success('Cloud-Data installed and configured successfully!')
 
     logger.info('Configuring pipe on the node...')
@@ -256,26 +265,29 @@ if __name__ == '__main__':
         task_logger = TaskLogger(task='NetworkStorageMapping', inner=run_logger)
         task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
         task_logger.info('Adding EDGE root certificate to trusted...')
-        edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
-        from urllib.parse import urlparse
-        edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
         task_ssh.execute(f'{python_dir}\\python.exe -c '
-                         f'\\"from scripts.add_root_certificate_win import add_root_cert_to_trusted_root_win;'
-                         f'   add_root_cert_to_trusted_root_win(\'{edge_host}\', {edge_port})\\"')
+                         f'\\"from scripts.configure_drive_mount_win import add_root_cert_to_trusted_root;'
+                         f'   add_root_cert_to_trusted_root(\'{edge_host}\', {edge_port})\\"')
         task_logger.info('Configuring environment for storage mapping...')
         task_ssh.execute(f'{python_dir}\\python.exe -c '
-                         f'\\"from scripts.configure_drive_mount_env_win import configure_drive_mount_env_win; '
-                         f'   configure_drive_mount_env_win(\'{owner}\', \'{edge_host}\')\\"')
+                         f'\\"from scripts.configure_drive_mount_win import configure_environment; '
+                         f'   configure_environment(\'{owner}\', \'{edge_host}\')\\"')
 
-        task_logger.info('Mapping network storage...')
-        mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell\\MountDrive.ps1'))
-        task_ssh.execute(f'RegisterMountingTask -UserName \\"{owner}\\"'
-                         f' -BearerToken \\"{api_token}\\"'
-                         f' -EdgeHost \\"{edge_host}\\"'
-                         f' -EdgePort \\"{edge_port}\\"'
-                         f' -MountingScript \\"{mounting_script_path}\\"'
-                         f' | Out-Null')
+        task_logger.info('Scheduling drive mapping on logon...')
+        mounting_script_path = _escape_backslashes(os.path.join(common_repo_dir, 'powershell', 'MountDrive.ps1'))
+        task_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                         f'from scripts.configure_drive_mount_win import schedule_mapping; '
+                         f'schedule_mapping(\'{owner}\', \'{edge_host}\', \'{edge_port}\', \'{api_token}\','
+                         f'                 \'{mounting_script_path}\')\\"')
         task_logger.success('Drive mapping performed successfully!')
+
+    logger.info('Configuring desktop environment')
+    desktop_layout_path = _escape_backslashes(os.path.join(resources_dir, 'desktop_layout.xml'))
+    _download_file(desktop_layout_url, desktop_layout_path)
+    node_ssh.execute(f'ImportDesktopLayout -LayoutPath \\"{desktop_layout_path}\\";'
+                     f'{python_dir}\\python.exe -c \\"'
+                     f'from scripts.configure_default_desktop_win import configure_default_desktop_win;'
+                     f'configure_default_desktop_win(\'{owner}\')\\"')
 
     run_logger.success('Environment initialization finished', task='InitializeEnvironment')
 

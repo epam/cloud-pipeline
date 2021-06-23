@@ -13,8 +13,7 @@
 # limitations under the License.
 
 param(
-    $Placeholder,
-    $Replacement,
-    $TargetFile
+    $LayoutPath
 )
-((Get-Content -path $TargetFile -Raw) -replace "$Placeholder", "$Replacement") | Set-Content -Path $TargetFile
+
+Import-StartLayout -LayoutPath "$LayoutPath" -MountPath "$Env:SystemDrive\"
