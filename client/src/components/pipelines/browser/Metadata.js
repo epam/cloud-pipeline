@@ -437,22 +437,46 @@ export default class Metadata extends React.Component {
       const lastRow = Math.min(page * pageSize, selectedItems.length);
 
       if (orderBy && orderBy.length) {
-        const field = orderBy[0].field === 'externalId' ? 'ID' : orderBy[0].field;
-        const desc = orderBy[0].desc;
-        selectedItems.sort((a, b) => {
-          if (!desc) {
-            return a[field].value >= b[field].value ? 1 : -1;
-          } else {
-            return a[field].value < b[field].value ? 1 : -1;
-          }
-        });
-        currentMetadata = selectedItems.slice(firstRow, lastRow);
+        const sortedSelectedItems = this.sortSelectedItems();
+
+        currentMetadata = sortedSelectedItems.slice(firstRow, lastRow);
       } else {
         currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
     this.setState({loading: false, currentMetadata});
   };
+
+  sortSelectedItems = () => {
+    let selectedItems = [...this.state.selectedItems];
+    const orderBy = [...this.state.filterModel.orderBy];
+
+    selectedItems.sort((a, b) => {
+      function valuesAreEqual (item1, item2) {
+        if (!item1 && !item2) {
+          return true;
+        }
+        return item1 === item2;
+      }
+
+      for (let i in orderBy) {
+        const [field, desc] = Object.values(orderBy[i]);
+        const item1 = a[field] ? a[field].value : null;
+        const item2 = b[field] ? b[field].value : null;
+        if (!valuesAreEqual(item1, item2)) {
+          if (item1 < item2 || item2 === null) {
+            return desc ? 1 : -1;
+          }
+          if (item1 > item2 || item1 === null) {
+            return desc ? -1 : 1;
+          }
+        }
+      }
+      return 0;
+    });
+
+    return selectedItems;
+  }
 
   filterApplied = (key) => {
     const {filters, startDateFrom, endDateTo} = this.state.filterModel;
@@ -768,16 +792,24 @@ export default class Metadata extends React.Component {
 
   onOrderByChanged = async (key, value) => {
     if (key) {
-      const {filterModel} = this.state;
+      const filterModel = {...this.state.filterModel};
       const [currentOrderBy] = filterModel.orderBy.filter(f => f.field === key);
       if (currentOrderBy) {
         const index = filterModel.orderBy.indexOf(currentOrderBy);
-        filterModel.orderBy.splice(index, 1);
+        const desc = currentOrderBy.desc;
+        if (desc) {
+          const updatedcurrentOrderBy = {field: key, desc: !desc};
+          filterModel.orderBy.splice(index, 1, updatedcurrentOrderBy);
+        } else {
+          filterModel.orderBy.splice(index, 1);
+        }
       }
-      if (value) {
-        filterModel.orderBy = [{field: key, desc: value === DESCEND}];
+      if (!currentOrderBy && value) {
+        filterModel.orderBy.push({field: key, desc: value === DESCEND});
       }
-      await this.loadData();
+      this.setState({filterModel}, () => {
+        this.loadData();
+      });
     }
   };
 
@@ -1366,19 +1398,25 @@ export default class Metadata extends React.Component {
     };
     const renderTitle = (key) => {
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
-      let icon;
+      let icon, orderNumber;
       if (orderBy) {
+        let iconStyle = {fontSize: 10, marginRight: 5};
+        if (this.state.filterModel.orderBy.length > 1) {
+          const number = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
+          iconStyle = {fontSize: 10, marginRight: 0};
+          orderNumber = <sup style={{marginRight: 5}}>{number}</sup>
+        }
         if (orderBy.desc) {
-          icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-down" />;
+          icon = <Icon style={iconStyle} type="caret-down" />;
         } else {
-          icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-up" />;
+          icon = <Icon style={iconStyle} type="caret-up" />;
         }
       }
       return (
         <span
           onClick={(e) => onHeaderClicked(e, key)}
           className={styles.metadataColumnHeader}>
-          {icon}{getColumnTitle(key)}
+          {icon}{orderNumber}{getColumnTitle(key)}
           {this.renderFilterButton(key)}
         </span>
       );
