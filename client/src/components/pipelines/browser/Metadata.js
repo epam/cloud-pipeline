@@ -179,6 +179,7 @@ export default class Metadata extends React.Component {
     selectedColumns: [],
     selectionStart: null,
     selectionCurrentEnd: null,
+    hoveredCell: null,
     selectionDirection: '',
     defaultColumnsNames: [],
     columns: [],
@@ -1059,17 +1060,27 @@ export default class Metadata extends React.Component {
       return column.index === endX;
     }
   }
-  isTopSideCell = (column, row) => {
+  isTopSideCell = (row) => {
     if (this.state.selectionStart) {
       const {startY} = this.getCurrentSelection();
       return row.index === startY;
     }
   }
-  isBottomSideCell = (column, row) => {
+  isBottomSideCell = (row) => {
     if (this.state.selectionStart) {
       const {endY} = this.getCurrentSelection();
       return row.index === endY;
     }
+  }
+  isRightCornerCell = (row, column) => {
+    if (this.state.selectionStart) {
+      const {endY, endX} = this.getCurrentSelection();
+      return row === endY && column === endX;
+    }
+  }
+  isHoveredCell = (rowIdx, colIdx) => {
+    const {hoveredCell} = this.state;
+    return hoveredCell && hoveredCell.rowIdx === rowIdx && hoveredCell.colIdx === colIdx;
   }
   handleCellSelection = (opts) => {
     const {e, rowInfo, column} = opts;
@@ -1082,7 +1093,26 @@ export default class Metadata extends React.Component {
         selectionCurrentEnd: {
           rowIdx: rowIndex,
           colIdx: columnIndex
-        }
+        },
+        hoveredCell: null
+      });
+    } else if (e.target.className === 'selector') {
+      const {hoveredCell} = this.state;
+      if (
+        !hoveredCell ||
+        (hoveredCell.rowIdx !== rowIndex ||
+        hoveredCell.colIdx !== columnIndex)
+      ) {
+        this.setState({
+          hoveredCell: {
+            rowIdx: rowIndex,
+            colIdx: columnIndex
+          }
+        });
+      }
+    } else {
+      this.setState({
+        hoveredCell: null
       });
     }
   }
@@ -1118,10 +1148,10 @@ export default class Metadata extends React.Component {
             style: {
               border: '0.5px solid rgba(0,0,0,0.1)',
               position: 'relative',
-              borderTopColor: this.isTopSideCell(column, rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index) ? '#108ee9' : 'rgba(0,0,0,0.1)',
-              borderBottomColor: this.isBottomSideCell(column, rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index) ? '#108ee9' : 'rgba(0,0,0,0.1)',
-              borderLeftColor: this.isLeftSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index) ? '#108ee9' : 'rgba(0,0,0,0.1)',
-              borderRightColor: this.isRightSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderTopColor: this.isHoveredCell(rowInfo.index, column.index) || (this.isTopSideCell(rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderBottomColor: this.isHoveredCell(rowInfo.index, column.index) || (this.isBottomSideCell(rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderLeftColor: this.isHoveredCell(rowInfo.index, column.index) || (this.isLeftSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderRightColor: this.isHoveredCell(rowInfo.index, column.index) || (this.isRightSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
               backgroundColor: this.isNowSelectedCell(rowInfo.index, column.index) ? 'rgba(16, 142, 233, 0.1)' : 'initial'
             }
           })}
@@ -1490,7 +1520,14 @@ export default class Metadata extends React.Component {
       return (
         <div className={className} style={{overflow: 'hidden', textOverflow: 'ellipsis'}} >
           <div className="selector"
-            style={{position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, backgroundColor: 'transparent', zIndex: 100}} />
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 10,
+              height: 10,
+              backgroundColor: this.isRightCornerCell(index, column.index) || this.isHoveredCell(index, column.index) ? '#108ee9' : 'transparent'
+            }} />
           {reactElementFn()}
         </div>
       );
