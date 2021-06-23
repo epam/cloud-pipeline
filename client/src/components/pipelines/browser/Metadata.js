@@ -180,6 +180,7 @@ export default class Metadata extends React.Component {
     selectionStart: null,
     selectionCurrentEnd: null,
     hoveredCell: null,
+    selecting: false,
     selectionDirection: '',
     defaultColumnsNames: [],
     columns: [],
@@ -1033,25 +1034,31 @@ export default class Metadata extends React.Component {
     }
   }
   handleStartSelection = (opts) => {
-    const {e, rowInfo, column} = opts;
-    const cell = e ? e.currentTarget : null;
+    const {rowInfo, column} = opts;
     this.setState({selectionStart: {
-      // cells: [cell],
       colIdx: column.index,
       rowIdx: rowInfo.index
     },
     selectionCurrentEnd: {
       colIdx: column.index,
       rowIdx: rowInfo.index
-    }});
+    },
+    selecting: true
+    });
   }
   handleApplySpreadSelection = () => {
-    console.log('mouseup', this.state.selectedCells);
+    this.setState({selecting: false});
   }
   isLeftSideCell = (column) => {
     if (this.state.selectionStart) {
       const {startX} = this.getCurrentSelection();
       return column.index === startX;
+    }
+  }
+  isOneLineSelection = () => {
+    if (this.state.selectionStart) {
+      const {startX, startY, endX, endY} = this.getCurrentSelection();
+      return startX === endX || startY === endY;
     }
   }
   isRightSideCell = (column) => {
@@ -1084,10 +1091,10 @@ export default class Metadata extends React.Component {
   }
   handleCellSelection = (opts) => {
     const {e, rowInfo, column} = opts;
-    const {selectionStart} = this.state;
+    const {selectionStart, selecting} = this.state;
     const rowIndex = rowInfo.index;
     const columnIndex = column.index;
-    if (selectionStart) {
+    if (selectionStart && selecting) {
       this.setState({
         selectionDirection: (e.clientY - selectionStart.startY) > 0 ? 'down' : 'up',
         selectionCurrentEnd: {
@@ -1096,7 +1103,12 @@ export default class Metadata extends React.Component {
         },
         hoveredCell: null
       });
-    } else if (e.target.className === 'selector') {
+    }
+    if (
+      e.target.className === 'selector' &&
+      !selecting &&
+      !this.isNowSelectedCell(rowIndex, columnIndex)
+    ) {
       const {hoveredCell} = this.state;
       if (
         !hoveredCell ||
@@ -1116,22 +1128,34 @@ export default class Metadata extends React.Component {
       });
     }
   }
+  resetSelection = (e) => {
+    if (e.key === 'Escape') {
+      this.setState({
+        selectionStart: null,
+        selectionCurrentEnd: null
+      });
+    }
+  }
   renderContent = () => {
     const renderTable = () => {
       return [
         <ReactTable
+          contentEditable
           key="table"
           className={`${styles.metadataTable} -striped -highlight`}
           sortable={false}
           minRows={0}
           columns={this.tableColumns}
           data={this.state.currentMetadata}
-          getTableProps={() => ({style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse'}})}
+          getTableProps={() => ({
+            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse'}
+          })}
           getTrGroupProps={() => ({style: {borderBottom: 'none'}})}
           getTdProps={(state, rowInfo, column, instance) => ({
             onMouseDown: (e) => this.handleStartSelection({e, rowInfo, column}),
             onMouseUp: () => this.handleApplySpreadSelection(),
             onMouseMove: (e) => this.handleCellSelection({e, rowInfo, column}),
+            onKeyPress: (e) => this.resetSelection(e),
             onClick: (e) => {
               if (e) {
                 e.stopPropagation();
@@ -1148,10 +1172,14 @@ export default class Metadata extends React.Component {
             style: {
               border: '0.5px solid rgba(0,0,0,0.1)',
               position: 'relative',
-              borderTopColor: this.isHoveredCell(rowInfo.index, column.index) || (this.isTopSideCell(rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
-              borderBottomColor: this.isHoveredCell(rowInfo.index, column.index) || (this.isBottomSideCell(rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
-              borderLeftColor: this.isHoveredCell(rowInfo.index, column.index) || (this.isLeftSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
-              borderRightColor: this.isHoveredCell(rowInfo.index, column.index) || (this.isRightSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderTopColor: this.isHoveredCell(rowInfo.index, column.index) ||
+                (this.isTopSideCell(rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderBottomColor: this.isHoveredCell(rowInfo.index, column.index) ||
+                (this.isBottomSideCell(rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderLeftColor: this.isHoveredCell(rowInfo.index, column.index) ||
+                (this.isLeftSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderRightColor: this.isHoveredCell(rowInfo.index, column.index) ||
+                (this.isRightSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
               backgroundColor: this.isNowSelectedCell(rowInfo.index, column.index) ? 'rgba(16, 142, 233, 0.1)' : 'initial'
             }
           })}
@@ -1526,7 +1554,8 @@ export default class Metadata extends React.Component {
               right: 0,
               width: 10,
               height: 10,
-              backgroundColor: this.isRightCornerCell(index, column.index) || this.isHoveredCell(index, column.index) ? '#108ee9' : 'transparent'
+              backgroundColor: (this.isRightCornerCell(index, column.index) && this.isOneLineSelection()) ||
+              this.isHoveredCell(index, column.index) ? '#108ee9' : 'transparent'
             }} />
           {reactElementFn()}
         </div>
@@ -1918,6 +1947,7 @@ export default class Metadata extends React.Component {
     authenticatedUserInfo
       .fetchIfNeededOrWait()
       .then(() => this.fetchDefaultColumnsIfRequested());
+    document.addEventListener('keydown', this.resetSelection);
   };
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -2030,5 +2060,6 @@ export default class Metadata extends React.Component {
 
   componentWillUnmount () {
     this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
+    document.removeEventListener('keydown', this.resetSelection);
   }
 }
