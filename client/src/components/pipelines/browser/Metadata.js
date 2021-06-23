@@ -178,8 +178,8 @@ export default class Metadata extends React.Component {
     selectedItemsAreShowing: false,
     selectedColumns: [],
     selectionStart: null,
+    selectionCurrentEnd: null,
     selectionDirection: '',
-    selectedCells: [],
     defaultColumnsNames: [],
     columns: [],
     totalCount: 0,
@@ -1006,115 +1006,84 @@ export default class Metadata extends React.Component {
     }
   };
   isNowSelectedCell = (rIdx, cIdx) => {
-    return this.state.selectedCells.find((cell) => cell.colIdx === cIdx && cell.rowIdx === rIdx);
+    if (this.state.selectionStart) {
+      const {startX, startY, endX, endY} = this.getCurrentSelection();
+      return (
+        startX <= cIdx &&
+        startY <= rIdx &&
+        endX >= cIdx &&
+        endY >= rIdx
+      );
+    }
   }
-  // handleShowSelector = (opts) => {
-  //   const {e, rowInfo, column} = opts;
-  //   const {selectionStart} = this.state;
-  //   if (e.target.className === 'selector') {
-  //     if (!selectionStart) {
-  //     e.target.style.backgroundColor = '#108ee9';
-  //     e.currentTarget.style.boxShadow = '0px 0px 0px 3px #108ee9 inset';
-  //     } else if (this.isNowSelectedCell(rowInfo.index, column.index)) {
-  //       e.target.style.backgroundColor = '#108ee9';
-  //   } else {
-  //     e.target.style.backgroundColor = 'transparent';
-  //   }
-  // }
-  // }
-  // handleHideSelector = (opts) => {
-  //   const {e} = opts;
-  //   if (e.target.className === 'selector') {
-  //     e.target.style.backgroundColor = 'transparent';
-  //     e.currentTarget.style.boxShadow = 'none';
-  //   }
-  // }
+  getCurrentSelection = () => {
+    const {selectionStart, selectionCurrentEnd} = this.state;
+    if (selectionStart && selectionCurrentEnd) {
+      const startX = Math.min(selectionStart.colIdx, selectionCurrentEnd.colIdx);
+      const endX = Math.max(selectionStart.colIdx, selectionCurrentEnd.colIdx);
+      const startY = Math.min(selectionStart.rowIdx, selectionCurrentEnd.rowIdx);
+      const endY = Math.max(selectionStart.rowIdx, selectionCurrentEnd.rowIdx);
+      return {
+        startX,
+        startY,
+        endX,
+        endY
+      };
+    }
+  }
   handleStartSelection = (opts) => {
     const {e, rowInfo, column} = opts;
     const cell = e ? e.currentTarget : null;
     this.setState({selectionStart: {
-      cells: [cell],
+      // cells: [cell],
       colIdx: column.index,
-      rowIdx: rowInfo.index,
-      value: cell ? cell.innerText : ''
+      rowIdx: rowInfo.index
+    },
+    selectionCurrentEnd: {
+      colIdx: column.index,
+      rowIdx: rowInfo.index
     }});
   }
   handleApplySpreadSelection = () => {
     console.log('mouseup', this.state.selectedCells);
   }
   isLeftSideCell = (column) => {
-    const {selectedCells} = this.state;
-    if (selectedCells.length) {
-      const leftColumnIndex = this.state.selectedCells.reduce((min, c, index) => {
-        if (index === 0) {
-          min = c.colIdx;
-        } else {
-          min = Math.min(min, c.colIdx);
-        }
-        return min;
-      }, 0);
-      console.log('leftColumnIndex', leftColumnIndex);
-      return leftColumnIndex === column.index;
+    if (this.state.selectionStart) {
+      const {startX} = this.getCurrentSelection();
+      return column.index === startX;
     }
   }
   isRightSideCell = (column) => {
-    const {selectedCells} = this.state;
-    if (selectedCells.length) {
-      const rightColumnIndex = this.state.selectedCells.reduce((max, c, index) => {
-        if (index === 0) {
-          max = c.colIdx;
-        } else {
-          max = Math.max(max, c.colIdx);
-        }
-        return max;
-      }, 0);
-      console.log('rightColumnIndex', rightColumnIndex);
-      return rightColumnIndex === column.index;
+    if (this.state.selectionStart) {
+      const {endX} = this.getCurrentSelection();
+      return column.index === endX;
     }
   }
   isTopSideCell = (column, row) => {
-    const {selectedCells} = this.state;
-    if (selectedCells.length) {
-      const topRowIndex = selectedCells.reduce((min, c, index) => {
-        if (index === 0) {
-          min = c.rowIdx;
-        } else {
-          min = Math.min(min, c.rowIdx);
-        }
-        return min;
-      }, 0);
-      return topRowIndex === row.index;
+    if (this.state.selectionStart) {
+      const {startY} = this.getCurrentSelection();
+      return row.index === startY;
     }
   }
   isBottomSideCell = (column, row) => {
-    const {selectedCells} = this.state;
-    if (selectedCells.length) {
-      const bottomColumnIndex = this.state.selectedCells.reduce((max, c, index) => {
-        if (index === 0) {
-          max = c.rowIdx;
-        } else {
-          max = Math.max(max, c.rowIdx);
-        }
-        return max;
-      }, 0);
-      return bottomColumnIndex === row.index;
+    if (this.state.selectionStart) {
+      const {endY} = this.getCurrentSelection();
+      return row.index === endY;
     }
   }
   handleCellSelection = (opts) => {
     const {e, rowInfo, column} = opts;
-    const cell = e.currentTarget;
+    const {selectionStart} = this.state;
     const rowIndex = rowInfo.index;
     const columnIndex = column.index;
-    if (this.state.selectionStart) {
-      if (!this.isNowSelectedCell(rowIndex, columnIndex)) {
-        this.setState({
-          selectedCells: [...this.state.selectedCells, {
-            rowIdx: rowIndex,
-            colIdx: columnIndex
-          }]
-        });
-        cell.style.backgroundColor = 'rgba(16, 142, 233, 0.1)';
-      }
+    if (selectionStart) {
+      this.setState({
+        selectionDirection: (e.clientY - selectionStart.startY) > 0 ? 'down' : 'up',
+        selectionCurrentEnd: {
+          rowIdx: rowIndex,
+          colIdx: columnIndex
+        }
+      });
     }
   }
   renderContent = () => {
@@ -1143,8 +1112,7 @@ export default class Metadata extends React.Component {
                 this.onRowClick(rowInfo.row._original);
               }
               this.setState({
-                selectionStart: null,
-                selectedCells: []
+                selectionStart: null
               });
             },
             style: {
