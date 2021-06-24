@@ -73,9 +73,9 @@ class DataStorageOperations(object):
                 click.echo('-n (--threads) is not supported for Windows OS', err=True)
                 sys.exit(1)
             relative = os.path.basename(source) if source_wrapper.is_file() else None
-            if not force and not destination_wrapper.is_empty(relative=relative):
-                click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
-                sys.exit(1)
+            can_be_skipped = skip_existing or include or exclude
+            if not force and not destination_wrapper.is_empty(relative=relative) and not can_be_skipped:
+                cls._force_required()
 
             # append slashes to path to correctly determine file/folder type
             if not source_wrapper.is_file():
@@ -94,32 +94,14 @@ class DataStorageOperations(object):
             permission_to_check = os.R_OK if command == 'cp' else os.W_OK
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
+            items = cls.filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                     include, exclude, force, quiet, skip_existing)
             sorted_items = list()
             transfer_results = []
             for item in items:
                 full_path = item[1]
                 relative_path = item[2]
                 size = item[3]
-                # check that we have corresponding permission for the file before take action
-                if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
-                    continue
-                if not include and not exclude:
-                    if source_wrapper.is_file() and not source_wrapper.path == full_path:
-                        continue
-                    if not source_wrapper.is_file():
-                        possible_folder_name = source_wrapper.path_with_trailing_separator()
-                        if not full_path.startswith(possible_folder_name):
-                            continue
-                if not PatternMatcher.match_any(relative_path, include):
-                    if not quiet:
-                        click.echo("Skipping file {} since it doesn't match any of include patterns [{}]."
-                                   .format(full_path, ",".join(include)))
-                    continue
-                if PatternMatcher.match_any(relative_path, exclude, default=False):
-                    if not quiet:
-                        click.echo("Skipping file {} since it matches exclude patterns [{}]."
-                                   .format(full_path, ",".join(exclude)))
-                    continue
                 if threads:
                     sorted_items.append(item)
                 else:
@@ -140,6 +122,56 @@ class DataStorageOperations(object):
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)
+
+    @classmethod
+    def filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                     include, exclude, force, quiet, skip_existing):
+        filtered_items = []
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            size = item[3]
+            # check that we have corresponding permission for the file before take action
+            if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
+                continue
+            if not include and not exclude:
+                if source_wrapper.is_file() and not source_wrapper.path == full_path:
+                    continue
+                if not source_wrapper.is_file():
+                    possible_folder_name = source_wrapper.path_with_trailing_separator()
+                    if not full_path.startswith(possible_folder_name):
+                        continue
+            if not PatternMatcher.match_any(relative_path, include):
+                if not quiet:
+                    click.echo("Skipping file {} since it doesn't match any of include patterns [{}]."
+                               .format(full_path, ",".join(include)))
+                continue
+            if PatternMatcher.match_any(relative_path, exclude, default=False):
+                if not quiet:
+                    click.echo("Skipping file {} since it matches exclude patterns [{}]."
+                               .format(full_path, ",".join(exclude)))
+                continue
+
+            destination_key = manager.get_destination_key(destination_wrapper, relative_path)
+            destination_size = manager.get_destination_size(destination_wrapper, destination_key)
+            destination_is_empty = destination_size is None
+            if destination_is_empty:
+                filtered_items.append(item)
+                continue
+            if skip_existing:
+                source_key = manager.get_source_key(source_wrapper, full_path)
+                source_size = manager.get_source_size(source_wrapper, source_key, size)
+                need_to_overwrite = not manager.skip_existing(source_key, source_size, destination_key,
+                                                              destination_size, quiet)
+                if need_to_overwrite and not force:
+                    cls._force_required()
+                if need_to_overwrite:
+                    filtered_items.append(item)
+                continue
+            if not force:
+                cls._force_required()
+            filtered_items.append(item)
+        return filtered_items
 
     @classmethod
     def storage_remove_item(cls, path, yes, version, hard_delete, recursive, exclude, include):
@@ -646,3 +678,8 @@ class DataStorageOperations(object):
             for worker in workers:
                 worker.terminate()
                 worker.join()
+
+    @staticmethod
+    def _force_required():
+        click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
+        sys.exit(1)
