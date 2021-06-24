@@ -1039,15 +1039,11 @@ export default class Metadata extends React.Component {
       const endX = Math.max(selectionStart.colIdx, selectionCurrentEnd.colIdx);
       const startY = Math.min(selectionStart.rowIdx, selectionCurrentEnd.rowIdx);
       const endY = Math.max(selectionStart.rowIdx, selectionCurrentEnd.rowIdx);
-      const startXX = Math.min(startX, endX);
-      const endXX = Math.max(startX, endX);
-      const startYY = Math.min(startY, endY);
-      const endYY = Math.max(startY, endY);
       return {
-        startX: startXX,
-        startY: startYY,
-        endX: endXX,
-        endY: endYY
+        startX,
+        startY,
+        endX,
+        endY
       };
     }
   }
@@ -1106,11 +1102,17 @@ export default class Metadata extends React.Component {
     }
   }
   handleStartSelection = (opts) => {
-    const {rowInfo, column} = opts;
+    const {e, rowInfo, column} = opts;
     const {selectionStart, selectionCurrentEnd, selecting} = this.state;
     const row = rowInfo.index;
     const col = column.index;
-    if (!selectionStart) {
+    const pointerCell = (selectionStart && selectionCurrentEnd)
+      ? {
+        rowIdx: Math.max(selectionCurrentEnd.rowIdx, selectionStart.rowIdx),
+        colIdx: Math.max(selectionCurrentEnd.colIdx, selectionStart.colIdx)
+      } : null;
+    if (!selectionStart &&
+      e.target.className === 'selector') {
       this.setState({selectionStart: {
         colIdx: col,
         rowIdx: row
@@ -1122,10 +1124,11 @@ export default class Metadata extends React.Component {
       selecting: true
       });
     } else if (
-      selectionStart &&
+      pointerCell &&
       !selecting &&
-      selectionCurrentEnd.rowIdx === row &&
-      selectionCurrentEnd.colIdx === col
+      (pointerCell.rowIdx === row) &&
+      (pointerCell.colIdx === col) &&
+      e.target.className === 'selector'
     ) {
       this.setState({
         selecting: true,
@@ -1209,8 +1212,12 @@ export default class Metadata extends React.Component {
     if (selectionStart && selecting && applyAreaEnd) {
       if (!this.isNowSelectedCell(rowIndex, columnIndex)) {
         if (!selectionDirection) {
-          const deltaX = selectionCurrentEnd.colIdx - columnIndex;
-          const deltaY = selectionCurrentEnd.rowIdx - rowIndex;
+          const pointerCell = {
+            rowIdx: Math.max(selectionCurrentEnd.rowIdx, selectionStart.rowIdx),
+            colIdx: Math.max(selectionCurrentEnd.colIdx, selectionStart.colIdx)
+          };
+          const deltaX = pointerCell.colIdx - columnIndex;
+          const deltaY = pointerCell.rowIdx - rowIndex;
           this.setState({
             selectionDirection: Math.abs(deltaX) >= Math.abs(deltaY) ? 'X' : 'Y',
             deltaX,
