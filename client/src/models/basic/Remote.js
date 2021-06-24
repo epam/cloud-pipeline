@@ -43,28 +43,32 @@ class Remote {
   @observable _pending = true;
   @computed
   get pending () {
-    this._fetchIfNeeded();
+    const fetchIfNeeded = this._fetchIfNeeded.bind(this);
+    setTimeout(fetchIfNeeded, 0);
     return this._pending;
   }
 
   @observable _loaded = false;
   @computed
   get loaded () {
-    this._fetchIfNeeded();
+    const fetchIfNeeded = this._fetchIfNeeded.bind(this);
+    setTimeout(fetchIfNeeded, 0);
     return this._loaded;
   }
 
   @observable _value = this.constructor.defaultValue;
   @computed
   get value () {
-    this._fetchIfNeeded();
+    const fetchIfNeeded = this._fetchIfNeeded.bind(this);
+    setTimeout(fetchIfNeeded, 0);
     return this._value;
   }
 
   @observable _response = undefined;
   @computed
   get response () {
-    this._fetchIfNeeded();
+    const fetchIfNeeded = this._fetchIfNeeded.bind(this);
+    setTimeout(fetchIfNeeded, 0);
     return this._response;
   }
 
