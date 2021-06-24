@@ -148,7 +148,8 @@ function makeCurrentOrderSort (array) {
     onReloadTree: params.onReloadTree,
     authenticatedUserInfo,
     preferences,
-    dataStorages
+    dataStorages,
+    pipelinesLibrary
   };
 })
 @observer
@@ -1801,6 +1802,47 @@ export default class Metadata extends React.Component {
     );
   };
 
+  getParents = async () => {
+    const {folderId, pipelinesLibrary} = this.props;
+    const parents = [];
+    let pNumber = 0;
+
+    function checkFolder (folder) {
+      if (folder.id === Number(folderId)) {
+        pNumber = 1;
+        parents.push({
+          key: `p${pNumber}`,
+          value: folder.name
+        });
+        return true;
+      } else {
+        if (folder.childFolders) {
+          for (let subfolder of folder.childFolders) {
+            const targetFolder = checkFolder(subfolder);
+            if (targetFolder) {
+              if (folder.name) {
+                pNumber += 1;
+                parents.push({
+                  key: `p${pNumber}`,
+                  value: folder.name
+                });
+              }
+              return targetFolder;
+            }
+          }
+        }
+        return false;
+      }
+    }
+
+    await pipelinesLibrary.fetch();
+    const pipelinesLibraryValue = pipelinesLibrary.value;
+    if (pipelinesLibraryValue && pipelinesLibraryValue.childFolders) {
+      checkFolder(pipelinesLibraryValue);
+    }
+    return parents;
+  };
+
   componentDidMount () {
     const {
       authenticatedUserInfo,
@@ -1827,6 +1869,7 @@ export default class Metadata extends React.Component {
     if (prevProps.initialSelection !== this.props.initialSelection) {
       this.updateInitialSelection();
     }
+    this.getParents().then(result => console.log(result));
   }
 
   updateInitialSelection = () => {
