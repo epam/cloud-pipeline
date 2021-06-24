@@ -311,6 +311,13 @@ function ConfigureAwsRoutes($Addrs, $Interface) {
     w32tm /resync /rediscover /nowait
 }
 
+function ConfigureLoopbackRoute($Interface) {
+    $interfaceIndex = Get-NetAdapter $Interface | ForEach-Object { $_.ifIndex }
+    $interfaceIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $interfaceIndex | Select-Object -ExpandProperty IPAddress
+    $Addrs = @("$interfaceIp/32")
+    ConfigureAwsRoutes -Addrs $Addrs -Interface $Interface
+}
+
 function ListenForConnection($Port) {
     $endpoint = New-Object System.Net.IPEndPoint ([System.Net.IPAddress]::Any, $Port)
     $listener = New-Object System.Net.Sockets.TcpListener $endpoint
@@ -437,6 +444,9 @@ WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
 
 Write-Host "Configuring AWS routes..."
 ConfigureAwsRoutes -Addrs $awsAddrs -Interface $interfacePost
+
+Write-Host "Configuring loopback route..."
+ConfigureLoopbackRoute -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
 ListenForConnection -Port 8888
