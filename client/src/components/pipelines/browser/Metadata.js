@@ -73,6 +73,10 @@ import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
 import getDefaultColumns from './metadata-controls/get-default-columns';
 import getPathParameters from './metadata-controls/get-path-parameters';
+import * as autoFillEntities from './metadata-controls/auto-fill-entities';
+
+const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
+const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -178,6 +182,9 @@ export default class Metadata extends React.Component {
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
+    cellsActions: undefined,
+    cellsSelection: undefined,
+    hoveredCell: undefined,
     defaultColumnsNames: [],
     columns: [],
     totalCount: 0,
@@ -810,6 +817,7 @@ export default class Metadata extends React.Component {
         filterModel.orderBy.push({field: key, desc: value === DESCEND});
       }
       this.setState({filterModel}, () => {
+        this.clearSelection();
         this.loadData();
       });
     }
@@ -848,16 +856,16 @@ export default class Metadata extends React.Component {
     const isSelected = currentColumns.findIndex(obj => obj.key === item && obj.selected) > -1;
 
     currentColumns[index] = {key: item, selected: !isSelected};
-    this.setState({columns: currentColumns});
+    this.setState({columns: currentColumns}, this.clearSelection);
   };
 
   onResetColumns = () => {
     this.resetColumns(this.state.columns)
-      .then(columns => this.setState({columns}));
+      .then(columns => this.setState({columns}, this.clearSelection));
   };
 
   onSetOrder = (order) => {
-    this.setState({columns: order});
+    this.setState({columns: order}, this.clearSelection);
   };
 
   onRowClick = (item) => {
@@ -1062,8 +1070,384 @@ export default class Metadata extends React.Component {
       });
     }
   };
+  cellIsSpreading = (row, column) => {
+    const spreadSelection = this.getSpreadSelection();
+    if (spreadSelection) {
+      const {start, end} = spreadSelection;
+      return (
+        start.column <= column &&
+        start.row <= row &&
+        end.column >= column &&
+        end.row >= row
+      );
+    }
+  };
+  getCurrentSelection = () => {
+    const {cellsSelection} = this.state;
+    if (cellsSelection) {
+      const {
+        start,
+        end,
+        ...rest
+      } = cellsSelection;
+      return {
+        start: {
+          column: Math.min(start.column, end.column),
+          row: Math.min(start.row, end.row)
+        },
+        end: {
+          column: Math.max(start.column, end.column),
+          row: Math.max(start.row, end.row)
+        },
+        ...rest
+      };
+    }
+    return undefined;
+  }
+  getSpreadSelection = () => {
+    const selection = this.getCurrentSelection();
+    if (selection && selection.spread) {
+      const {
+        column: spreadColumn,
+        row: spreadRow
+      } = selection.spread;
+      const start = {
+        column: spreadColumn > selection.start.column ? selection.start.column : spreadColumn,
+        row: spreadRow > selection.start.row ? selection.start.row : spreadRow
+      };
+      const end = {
+        column: spreadColumn >= selection.start.column ? spreadColumn : selection.end.column,
+        row: spreadRow >= selection.start.row ? spreadRow : selection.end.row
+      };
+      return {
+        start,
+        end
+      };
+    }
+    return undefined;
+  }
+  handleStartSelection = (opts) => {
+    if (this.props.readOnly) {
+      return;
+    }
+    const {e, rowInfo, column: columnInfo} = opts;
+    if (columnInfo.index === undefined) {
+      // selection cell, ignore it
+      return;
+    }
+    e.stopPropagation();
+    const selection = this.getCurrentSelection();
+    const spreadSelection = this.getSpreadSelection();
+    const row = rowInfo.index;
+    const column = columnInfo.index;
+    const isSpreading = autoFillEntities.isAutoFillEntitiesMarker(e.target);
+    if (!isSpreading) {
+      this.setState({
+        cellsSelection: {
+          start: {column, row},
+          end: {column, row},
+          selecting: true,
+          spreading: false
+        },
+        cellsActions: []
+      });
+    } else if (
+      !selection ||
+      (
+        !autoFillEntities.cellIsSelected(spreadSelection, column, row) &&
+        !autoFillEntities.cellIsSelected(selection, column, row)
+      )
+    ) {
+      // spreading && no current selection
+      this.setState({
+        cellsSelection: {
+          start: {column, row},
+          end: {column, row},
+          spread: {
+            column,
+            row,
+            start: {
+              column,
+              row
+            }
+          },
+          selecting: false,
+          spreading: true
+        },
+        cellsActions: []
+      });
+    } else {
+      // spreading current selection
+      this.setState({
+        cellsSelection: {
+          start: {...selection.start},
+          end: {...selection.end},
+          spread: {
+            column,
+            row,
+            start: {
+              column,
+              row
+            }
+          },
+          selecting: false,
+          spreading: true
+        },
+        cellsActions: []
+      });
+    }
+  }
+
+  applySelectionAction = (action, revert = true) => {
+    const {loadingMessage, action: fn, revert: revertFn} = action;
+    const hide = message.loading(loadingMessage || 'Processing...', 0);
+    const revertToInitialValues = revert && revertFn
+      ? revertFn
+      : () => Promise.resolve();
+    revertToInitialValues()
+      .then(fn)
+      .then((result) => {
+        const {currentMetadata} = this.state;
+        result.forEach(item => {
+          const index = (currentMetadata || [])
+            .findIndex(o => o.rowKey && item.rowKey && o.rowKey.value === item.rowKey.value);
+          if (index >= 0) {
+            currentMetadata.splice(index, 1, item);
+          }
+        });
+        this.setState({currentMetadata});
+        return Promise.resolve();
+      })
+      .catch(e => message.error(e.message, 5))
+      .then(() => hide());
+  };
+
+  handleFinishSelection = () => {
+    const {cellsSelection} = this.state;
+    if (!cellsSelection) {
+      return;
+    }
+    const spreadSelection = this.getSpreadSelection();
+    const selection = this.getCurrentSelection();
+    if (
+      cellsSelection.spreading &&
+      cellsSelection.spread &&
+      cellsSelection.spread.apply &&
+      spreadSelection
+    ) {
+      const dataItemFrom = Math.min(
+        spreadSelection.start.row,
+        selection.start.row
+      );
+      const dataItemTo = Math.max(
+        spreadSelection.end.row,
+        selection.end.row
+      );
+      const {
+        currentMetadata,
+        columns: tableColumns
+      } = this.state;
+      const backup = (currentMetadata || [])
+        .slice(dataItemFrom, dataItemTo + 1);
+      const elements = backup.map((item, index) => ({
+        item,
+        row: index + dataItemFrom
+      }));
+      const columns = tableColumns
+        .filter(column => column.selected)
+        .map((column, index) => ({key: mapColumnName(column), column: index}));
+      const actions = autoFillEntities.buildAutoFillActions(
+        elements,
+        columns,
+        selection,
+        spreadSelection,
+        backup,
+        {
+          classId: this.currentMetadataClassId,
+          className: this.props.metadataClass,
+          parentId: this.props.folderId
+        }
+      );
+      if (actions && actions.length > 0) {
+        this.applySelectionAction(
+          actions[0],
+          false
+        );
+      }
+      this.setState({
+        cellsActions: actions,
+        cellsSelection: {
+          start: {...spreadSelection.start},
+          end: {...spreadSelection.end},
+          selecting: false,
+          spreading: false
+        }
+      });
+    } else if (cellsSelection.selecting) {
+      this.setState({
+        cellsSelection: {
+          ...cellsSelection,
+          selecting: false,
+          spreading: false
+        }
+      });
+    }
+  }
+  isHoveredCell = (row, column) => {
+    const {hoveredCell} = this.state;
+    return hoveredCell && hoveredCell.row === row && hoveredCell.column === column;
+  }
+  handleCellSelection = (opts) => {
+    if (this.props.readOnly) {
+      return;
+    }
+    const {e, rowInfo, column: columnInfo} = opts;
+    e.stopPropagation();
+    const {cellsSelection: selection, hoveredCell} = this.state;
+    const row = rowInfo.index;
+    const column = columnInfo.index;
+    if (!selection) {
+      if (
+        column !== undefined && (
+          !hoveredCell ||
+          hoveredCell.column !== column ||
+          hoveredCell.row !== row
+        )
+      ) {
+        this.setState({
+          hoveredCell: {column, row}
+        });
+      }
+      return;
+    }
+    if ((!selection.selecting && !selection.spreading)) {
+      const cellSelected = autoFillEntities.cellIsSelected(selection, column, row);
+      if (cellSelected && !!hoveredCell) {
+        this.setState({
+          hoveredCell: undefined
+        });
+      } else if (
+        !cellSelected &&
+        (
+          !hoveredCell ||
+          hoveredCell.column !== column ||
+          hoveredCell.row !== row
+        )
+      ) {
+        this.setState({
+          hoveredCell: {column, row}
+        });
+      }
+      return;
+    }
+    if (
+      selection.selecting &&
+      (
+        selection.end.row !== row || selection.end.column !== column
+      )
+    ) {
+      this.setState({
+        cellsSelection: {
+          ...selection,
+          end: {row, column}
+        },
+        hoveredCell: undefined
+      });
+      return;
+    }
+    if (!selection.selecting && selection.spreading) {
+      const {spread} = selection;
+      if (spread.column === column && spread.row === row) {
+        return;
+      }
+      const dy = Math.abs(row - spread.start.row);
+      const dx = Math.abs(column - spread.start.column);
+      if (dy > dx) {
+        this.setState({
+          cellsSelection: {
+            ...selection,
+            spread: {
+              row,
+              column: spread.start.column,
+              start: spread.start,
+              apply: true
+            }
+          },
+          hoveredCell: undefined
+        });
+      } else {
+        this.setState({
+          cellsSelection: {
+            ...selection,
+            spread: {
+              column,
+              row: spread.start.row,
+              start: spread.start,
+              apply: true
+            }
+          },
+          hoveredCell: undefined
+        });
+      }
+    }
+  }
+  resetSelection = (e) => {
+    if (e.key === 'Escape') {
+      this.setState({
+        cellsSelection: undefined,
+        selecting: false,
+        cellsActions: undefined
+      });
+    }
+  }
+  clearHovering = () => {
+    this.setState({hoveredCell: undefined});
+  }
+  clearSelection = () => {
+    this.setState({
+      cellsSelection: undefined,
+      cellsActions: undefined
+    });
+  };
 
   renderContent = () => {
+    const getCellStyle = (column, row) => {
+      const selectionArea = this.getCurrentSelection();
+      const spreadingArea = this.getSpreadSelection();
+      const selected = autoFillEntities.cellIsSelected(selectionArea, column, row);
+      const spreadSelected = autoFillEntities.cellIsSelected(spreadingArea, column, row);
+      const hovered = !selected && !spreadSelected && this.isHoveredCell(row, column);
+
+      const top = hovered ||
+        autoFillEntities.isTopSideCell(selectionArea, column, row) ||
+        autoFillEntities.isTopSideCell(spreadingArea, column, row);
+      const right = hovered ||
+        autoFillEntities.isRightSideCell(selectionArea, column, row) ||
+        autoFillEntities.isRightSideCell(spreadingArea, column, row);
+      const bottom = hovered ||
+        autoFillEntities.isBottomSideCell(selectionArea, column, row) ||
+        autoFillEntities.isBottomSideCell(spreadingArea, column, row);
+      const left = hovered ||
+        autoFillEntities.isLeftSideCell(selectionArea, column, row) ||
+        autoFillEntities.isLeftSideCell(spreadingArea, column, row);
+
+      let backgroundColor = 'initial';
+      if (spreadSelected) {
+        backgroundColor = 'rgba(16, 142, 233, 0.2)';
+      } else if (selected || hovered) {
+        backgroundColor = 'rgba(16, 142, 233, 0.1)';
+      }
+
+      return {
+        border: '1px solid transparent',
+        position: 'relative',
+        borderTopColor: top ? '#108ee9' : 'transparent',
+        borderBottomColor: bottom ? '#108ee9' : 'transparent',
+        borderLeftColor: left ? '#108ee9' : 'transparent',
+        borderRightColor: right ? '#108ee9' : 'rgba(0, 0, 0, 0.1)',
+        backgroundColor
+      };
+    };
     const renderTable = () => {
       return [
         <ReactTable
@@ -1073,9 +1457,19 @@ export default class Metadata extends React.Component {
           minRows={0}
           columns={this.tableColumns}
           data={this.state.currentMetadata}
-          getTableProps={() => ({style: {overflowY: 'hidden'}})}
+          getTableProps={() => ({
+            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse'},
+            onMouseOut: this.clearHovering
+          })}
+          getTrGroupProps={() => ({style: {borderBottom: 'none'}})}
           getTdProps={(state, rowInfo, column, instance) => ({
+            onMouseDown: (e) => this.handleStartSelection({e, rowInfo, column}),
+            onMouseMove: (e) => this.handleCellSelection({e, rowInfo, column}),
+            onKeyPress: (e) => this.resetSelection(e),
             onClick: (e) => {
+              if (autoFillEntities.isAutoFillEntitiesMarker(e.target)) {
+                return;
+              }
               if (e) {
                 e.stopPropagation();
               }
@@ -1084,7 +1478,9 @@ export default class Metadata extends React.Component {
               } else {
                 this.onRowClick(rowInfo.row._original);
               }
-            }
+              this.clearSelection();
+            },
+            style: getCellStyle(column.index, rowInfo.index)
           })}
           getResizerProps={() => ({style: {width: '6px', right: '-3px'}})}
           PadRowComponent={
@@ -1421,7 +1817,7 @@ export default class Metadata extends React.Component {
         if (this.state.filterModel.orderBy.length > 1) {
           const number = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
           iconStyle = {fontSize: 10, marginRight: 0};
-          orderNumber = <sup style={{marginRight: 5}}>{number}</sup>
+          orderNumber = <sup style={{marginRight: 5}}>{number}</sup>;
         }
         if (orderBy.desc) {
           icon = <Icon style={iconStyle} type="caret-down" />;
@@ -1450,12 +1846,45 @@ export default class Metadata extends React.Component {
       }
       return defaultClass;
     };
+    const selection = this.getCurrentSelection();
+    const spreadSelection = this.getSpreadSelection();
+    const isSpreadCell = (column, row) => (
+      !autoFillEntities.cellIsSelected(selection, column, row) &&
+      !autoFillEntities.cellIsSelected(spreadSelection, column, row) &&
+      this.isHoveredCell(row, column)
+    ) || (
+      selection &&
+      !selection.spreading &&
+      autoFillEntities.isRightCornerCell(selection, column, row)
+    );
+    const isActionsCell = (column, row) => this.state.cellsActions &&
+      this.state.cellsActions.length > 0 &&
+      selection &&
+      autoFillEntities.isRightCornerCell(selection, column, row);
     const cellWrapper = (props, reactElementFn) => {
+      const {column, index} = props;
       const item = props.original;
       const className = getCellClassName(item, styles.metadataColumnCell);
       return (
-        <div className={className} style={{overflow: 'hidden', textOverflow: 'ellipsis'}} >
-          {reactElementFn()}
+        <div
+          className={className}
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}
+        >
+          <AutoFillEntitiesMarker
+            visible={isSpreadCell(column.index, index)}
+          />
+          {
+            isActionsCell(column.index, index) && (
+              <AutoFillEntitiesActions
+                actions={this.state.cellsActions}
+                callback={this.applySelectionAction}
+              />
+            )
+          }
+          {reactElementFn() || '\u00A0'}
         </div>
       );
     };
@@ -1483,11 +1912,12 @@ export default class Metadata extends React.Component {
           );
         })
       },
-      ...this.state.columns.filter(c => c.selected).map(({key}) => {
+      ...this.state.columns.filter(c => c.selected).map(({key}, index) => {
         return {
           accessor: key,
+          index,
           style: {
-            cursor: 'pointer',
+            cursor: this.props.readOnly ? 'default' : 'cell',
             padding: 0,
             borderRight: '1px solid rgba(0, 0, 0, 0.1)'
           },
@@ -1885,6 +2315,8 @@ export default class Metadata extends React.Component {
     authenticatedUserInfo
       .fetchIfNeededOrWait()
       .then(() => this.fetchDefaultColumnsIfRequested());
+    document.addEventListener('keydown', this.resetSelection);
+    window.addEventListener('mouseup', this.handleFinishSelection);
   };
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -1997,5 +2429,7 @@ export default class Metadata extends React.Component {
 
   componentWillUnmount () {
     this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
+    document.removeEventListener('keydown', this.resetSelection);
+    window.removeEventListener('mouseup', this.handleFinishSelection);
   }
 }
