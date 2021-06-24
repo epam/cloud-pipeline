@@ -1132,10 +1132,10 @@ export default class Metadata extends React.Component {
     const applyArea = this.getApplyArea();
     const currentSelection = this.getCurrentSelection();
     if (applyArea && currentSelection) {
-      const startX = Math.min(applyArea.startX, currentSelection.startX);
-      const endX = Math.max(applyArea.endX, currentSelection.endX);
-      const startY = Math.min(applyArea.startY, currentSelection.startY);
-      const endY = Math.max(applyArea.endY, currentSelection.endY);
+      const startX = Math.min(applyArea.startX, currentSelection.startX, applyArea.endX, currentSelection.endX);
+      const endX = Math.max(applyArea.endX, currentSelection.endX, applyArea.startX, currentSelection.startX);
+      const startY = Math.min(applyArea.startY, currentSelection.startY, applyArea.endY, currentSelection.endY);
+      const endY = Math.max(applyArea.endY, currentSelection.endY, applyArea.startY, currentSelection.startY);
       return {
         startX,
         startY,
@@ -1196,10 +1196,17 @@ export default class Metadata extends React.Component {
     }
   }
   handleApplySpreadSelection = () => {
-    const {applyAreaEnd, selectionCurrentEnd} = this.state;
+    const selection = this.getWholeSelection();
     this.setState({
       selecting: false,
-      selectionCurrentEnd: applyAreaEnd || selectionCurrentEnd,
+      selectionStart: selection ? {
+        rowIdx: selection.startY,
+        colIdx: selection.startX
+      } : null,
+      selectionCurrentEnd: selection ? {
+        rowIdx: selection.endY,
+        colIdx: selection.endX
+      } : null,
       selectionDirection: ''
     });
   }
@@ -1703,7 +1710,7 @@ export default class Metadata extends React.Component {
         if (this.state.filterModel.orderBy.length > 1) {
           const number = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
           iconStyle = {fontSize: 10, marginRight: 0};
-          orderNumber = <sup style={{marginRight: 5}}>{number}</sup>
+          orderNumber = <sup style={{marginRight: 5}}>{number}</sup>;
         }
         if (orderBy.desc) {
           icon = <Icon style={iconStyle} type="caret-down" />;
