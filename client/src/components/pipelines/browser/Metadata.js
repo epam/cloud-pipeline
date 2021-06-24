@@ -1151,8 +1151,11 @@ export default class Metadata extends React.Component {
     }
   }
   handleApplySpreadSelection = () => {
+    const {applyAreaEnd, selectionCurrentEnd} = this.state;
     this.setState({
-      selecting: false
+      selecting: false,
+      selectionCurrentEnd: applyAreaEnd || selectionCurrentEnd,
+      selectionDirection: ''
     });
   }
   isLeftSideCell = (column) => {
