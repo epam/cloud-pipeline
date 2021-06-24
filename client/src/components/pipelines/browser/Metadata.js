@@ -176,6 +176,13 @@ export default class Metadata extends React.Component {
     selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
     selectedItemsCanBeSkipped: false,
     selectedItemsAreShowing: false,
+    selectedColumns: [],
+    selectionStart: null,
+    selectionCurrentEnd: null,
+    applyAreaEnd: null,
+    hoveredCell: null,
+    selecting: false,
+    selectionDirection: '',
     defaultColumnsNames: [],
     columns: [],
     totalCount: 0,
@@ -1046,6 +1053,274 @@ export default class Metadata extends React.Component {
     }
   };
 
+  isNowSelectedCell = (rIdx, cIdx) => {
+    const selection = this.getWholeSelection();
+    if (selection) {
+      const {startX, startY, endX, endY} = selection;
+      return (
+        startX <= cIdx &&
+        startY <= rIdx &&
+        endX >= cIdx &&
+        endY >= rIdx
+      );
+    }
+  }
+  isInsideApplyArea = (rIdx, cIdx) => {
+    const area = this.getApplyArea();
+    if (area) {
+      const {startX, startY, endX, endY} = area;
+      return (
+        startX <= cIdx &&
+        startY <= rIdx &&
+        endX >= cIdx &&
+        endY >= rIdx
+      );
+    }
+  }
+  getCurrentSelection = () => {
+    const {selectionStart, selectionCurrentEnd} = this.state;
+    if (selectionStart && selectionCurrentEnd) {
+      const startX = Math.min(selectionStart.colIdx, selectionCurrentEnd.colIdx);
+      const endX = Math.max(selectionStart.colIdx, selectionCurrentEnd.colIdx);
+      const startY = Math.min(selectionStart.rowIdx, selectionCurrentEnd.rowIdx);
+      const endY = Math.max(selectionStart.rowIdx, selectionCurrentEnd.rowIdx);
+      return {
+        startX,
+        startY,
+        endX,
+        endY
+      };
+    }
+  }
+  getApplyArea = () => {
+    const {
+      selectionStart,
+      selectionCurrentEnd,
+      applyAreaEnd,
+      selectionDirection,
+      deltaX,
+      deltaY
+    } = this.state;
+    if (
+      selectionStart &&
+      selectionCurrentEnd &&
+      applyAreaEnd &&
+      selectionDirection &&
+      applyAreaEnd.colIdx !== undefined &&
+      applyAreaEnd.rowIdx !== undefined
+    ) {
+      const isHorizontal = selectionDirection === 'X';
+      const selection = this.getCurrentSelection();
+      if (isHorizontal) {
+        return {
+          startX: deltaX < 0 ? selection.endX + 1 : applyAreaEnd.colIdx,
+          startY: selection.startY,
+          endX: deltaX < 0 ? applyAreaEnd.colIdx : selection.startX - 1,
+          endY: selection.endY
+        };
+      } else {
+        return {
+          startX: selection.startX,
+          startY: deltaY < 0 ? selection.endY + 1 : applyAreaEnd.rowIdx,
+          endX: selection.endX,
+          endY: deltaY < 0 ? applyAreaEnd.rowIdx : selection.startY - 1
+        };
+      }
+    }
+  }
+  getWholeSelection = () => {
+    const applyArea = this.getApplyArea();
+    const currentSelection = this.getCurrentSelection();
+    if (applyArea && currentSelection) {
+      const startX = Math.min(applyArea.startX, currentSelection.startX);
+      const endX = Math.max(applyArea.endX, currentSelection.endX);
+      const startY = Math.min(applyArea.startY, currentSelection.startY);
+      const endY = Math.max(applyArea.endY, currentSelection.endY);
+      return {
+        startX,
+        startY,
+        endX,
+        endY
+      };
+    } else if (currentSelection) {
+      return currentSelection;
+    }
+  }
+  handleStartSelection = (opts) => {
+    const {e, rowInfo, column} = opts;
+    const {selectionStart, selectionCurrentEnd, selecting} = this.state;
+    const row = rowInfo.index;
+    const col = column.index;
+    const pointerCell = (selectionStart && selectionCurrentEnd)
+      ? {
+        rowIdx: Math.max(selectionCurrentEnd.rowIdx, selectionStart.rowIdx),
+        colIdx: Math.max(selectionCurrentEnd.colIdx, selectionStart.colIdx)
+      } : null;
+    if (!selectionStart &&
+      e.target.className === 'selector') {
+      this.setState({selectionStart: {
+        colIdx: col,
+        rowIdx: row
+      },
+      selectionCurrentEnd: {
+        colIdx: col,
+        rowIdx: row
+      },
+      selecting: true
+      });
+    } else if (
+      pointerCell &&
+      !selecting &&
+      (pointerCell.rowIdx === row) &&
+      (pointerCell.colIdx === col) &&
+      e.target.className === 'selector'
+    ) {
+      this.setState({
+        selecting: true,
+        applyAreaEnd: {}
+      });
+    } else {
+      this.setState({
+        selectionStart: {
+          colIdx: col,
+          rowIdx: row
+        },
+        selectionCurrentEnd: {
+          colIdx: col,
+          rowIdx: row
+        },
+        applyAreaEnd: null,
+        selectionDirection: '',
+        selecting: true
+      });
+    }
+  }
+  handleApplySpreadSelection = () => {
+    const {applyAreaEnd, selectionCurrentEnd} = this.state;
+    this.setState({
+      selecting: false,
+      selectionCurrentEnd: applyAreaEnd || selectionCurrentEnd,
+      selectionDirection: ''
+    });
+  }
+  isLeftSideCell = (column) => {
+    const selection = this.getWholeSelection();
+    return selection ? column.index === selection.startX : false;
+  }
+  isOneLineSelection = () => {
+    const selection = this.getWholeSelection();
+    if (selection) {
+      const {startX, startY, endX, endY} = selection;
+      return startX === endX || startY === endY;
+    }
+  }
+  isRightSideCell = (column) => {
+    const selection = this.getWholeSelection();
+    return selection ? column.index === selection.endX : false;
+  }
+  isTopSideCell = (row) => {
+    const selection = this.getWholeSelection();
+    return selection ? row.index === selection.startY : false;
+  }
+  isBottomSideCell = (row) => {
+    const selection = this.getWholeSelection();
+    return selection ? row.index === selection.endY : false;
+  }
+  isRightCornerCell = (row, column) => {
+    const selection = this.getWholeSelection();
+    if (selection) {
+      const {endY, endX} = selection;
+      return row === endY && column === endX;
+    }
+  }
+  isHoveredCell = (rowIdx, colIdx) => {
+    const {hoveredCell} = this.state;
+    return hoveredCell && hoveredCell.rowIdx === rowIdx && hoveredCell.colIdx === colIdx;
+  }
+  handleCellSelection = (opts) => {
+    const {rowInfo, column} = opts;
+    const {
+      selectionStart,
+      selectionCurrentEnd,
+      selectionDirection,
+      selecting,
+      applyAreaEnd
+    } = this.state;
+    const rowIndex = rowInfo.index;
+    const columnIndex = column.index;
+    if (selectionStart && selecting && !applyAreaEnd) {
+      this.setState({
+        selectionCurrentEnd: {
+          rowIdx: rowIndex,
+          colIdx: columnIndex
+        },
+        hoveredCell: null
+      });
+    }
+    if (selectionStart && selecting && applyAreaEnd) {
+      if (!this.isNowSelectedCell(rowIndex, columnIndex)) {
+        if (!selectionDirection) {
+          const pointerCell = {
+            rowIdx: Math.max(selectionCurrentEnd.rowIdx, selectionStart.rowIdx),
+            colIdx: Math.max(selectionCurrentEnd.colIdx, selectionStart.colIdx)
+          };
+          const deltaX = pointerCell.colIdx - columnIndex;
+          const deltaY = pointerCell.rowIdx - rowIndex;
+          this.setState({
+            selectionDirection: Math.abs(deltaX) >= Math.abs(deltaY) ? 'X' : 'Y',
+            deltaX,
+            deltaY,
+            applyAreaEnd: {
+              rowIdx: rowIndex,
+              colIdx: columnIndex
+            }
+          });
+        } else {
+          this.setState({
+            applyAreaEnd: {
+              rowIdx: rowIndex,
+              colIdx: columnIndex
+            },
+            hoveredCell: null
+          });
+        }
+      }
+    }
+    if (!selecting && !this.isNowSelectedCell(rowIndex, columnIndex)) {
+      const {hoveredCell} = this.state;
+      if (
+        !hoveredCell ||
+        (hoveredCell.rowIdx !== rowIndex ||
+        hoveredCell.colIdx !== columnIndex)
+      ) {
+        this.setState({
+          hoveredCell: {
+            rowIdx: rowIndex,
+            colIdx: columnIndex
+          }
+        });
+      }
+    } else {
+      this.setState({
+        hoveredCell: null
+      });
+    }
+  }
+  resetSelection = (e) => {
+    if (e.key === 'Escape') {
+      this.setState({
+        selectionStart: null,
+        selectionCurrentEnd: null,
+        applyAreaEnd: null,
+        selectionDirection: '',
+        selecting: false
+      });
+    }
+  }
+  clearHovering = () => {
+    this.setState({hoveredCell: null});
+  }
+
   renderContent = () => {
     const renderTable = () => {
       return [
@@ -1056,8 +1331,16 @@ export default class Metadata extends React.Component {
           minRows={0}
           columns={this.tableColumns}
           data={this.state.currentMetadata}
-          getTableProps={() => ({style: {overflowY: 'hidden'}})}
+          getTableProps={() => ({
+            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse'},
+            onMouseOut: this.clearHovering
+          })}
+          getTrGroupProps={() => ({style: {borderBottom: 'none'}})}
           getTdProps={(state, rowInfo, column, instance) => ({
+            onMouseDown: (e) => this.handleStartSelection({e, rowInfo, column}),
+            onMouseUp: (e) => this.handleApplySpreadSelection({e, rowInfo, column}),
+            onMouseMove: (e) => this.handleCellSelection({e, rowInfo, column}),
+            onKeyPress: (e) => this.resetSelection(e),
             onClick: (e) => {
               if (e) {
                 e.stopPropagation();
@@ -1067,6 +1350,22 @@ export default class Metadata extends React.Component {
               } else {
                 this.onRowClick(rowInfo.row._original);
               }
+              this.setState({
+                selectionStart: null
+              });
+            },
+            style: {
+              border: '0.5px solid rgba(0,0,0,0.1)',
+              position: 'relative',
+              borderTopColor: this.isHoveredCell(rowInfo.index, column.index) ||
+                (this.isTopSideCell(rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderBottomColor: this.isHoveredCell(rowInfo.index, column.index) ||
+                (this.isBottomSideCell(rowInfo) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderLeftColor: this.isHoveredCell(rowInfo.index, column.index) ||
+                (this.isLeftSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              borderRightColor: this.isHoveredCell(rowInfo.index, column.index) ||
+                (this.isRightSideCell(column) && this.isNowSelectedCell(rowInfo.index, column.index)) ? '#108ee9' : 'rgba(0,0,0,0.1)',
+              backgroundColor: this.isInsideApplyArea(rowInfo.index, column.index) && this.state.selecting ? 'rgba(12, 255, 135, 0.1)' : this.isNowSelectedCell(rowInfo.index, column.index) ? 'rgba(16, 142, 233, 0.1)' : 'initial'
             }
           })}
           getResizerProps={() => ({style: {width: '6px', right: '-3px'}})}
@@ -1434,10 +1733,21 @@ export default class Metadata extends React.Component {
       return defaultClass;
     };
     const cellWrapper = (props, reactElementFn) => {
+      const {column, index} = props;
       const item = props.original;
       const className = getCellClassName(item, styles.metadataColumnCell);
       return (
         <div className={className} style={{overflow: 'hidden', textOverflow: 'ellipsis'}} >
+          <div className="selector"
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 10,
+              height: 10,
+              backgroundColor: (this.isRightCornerCell(index, column.index) && this.isOneLineSelection()) ||
+              this.isHoveredCell(index, column.index) ? '#108ee9' : 'transparent'
+            }} />
           {reactElementFn()}
         </div>
       );
@@ -1466,9 +1776,10 @@ export default class Metadata extends React.Component {
           );
         })
       },
-      ...this.state.columns.filter(c => c.selected).map(({key}) => {
+      ...this.state.columns.filter(c => c.selected).map(({key}, index) => {
         return {
           accessor: key,
+          index,
           style: {
             cursor: 'pointer',
             padding: 0,
@@ -1827,6 +2138,7 @@ export default class Metadata extends React.Component {
     authenticatedUserInfo
       .fetchIfNeededOrWait()
       .then(() => this.fetchDefaultColumnsIfRequested());
+    document.addEventListener('keydown', this.resetSelection);
   };
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -1939,5 +2251,6 @@ export default class Metadata extends React.Component {
 
   componentWillUnmount () {
     this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
+    document.removeEventListener('keydown', this.resetSelection);
   }
 }
