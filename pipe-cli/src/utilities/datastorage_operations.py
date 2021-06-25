@@ -73,9 +73,6 @@ class DataStorageOperations(object):
                 click.echo('-n (--threads) is not supported for Windows OS', err=True)
                 sys.exit(1)
             relative = os.path.basename(source) if source_wrapper.is_file() else None
-            can_be_skipped = skip_existing or include or exclude
-            if not force and not destination_wrapper.is_empty(relative=relative) and not can_be_skipped:
-                cls._force_required()
 
             # append slashes to path to correctly determine file/folder type
             if not source_wrapper.is_file():
@@ -150,6 +147,10 @@ class DataStorageOperations(object):
                 if not quiet:
                     click.echo("Skipping file {} since it matches exclude patterns [{}]."
                                .format(full_path, ",".join(exclude)))
+                continue
+
+            if force and not skip_existing:
+                filtered_items.append(item)
                 continue
 
             destination_key = manager.get_destination_key(destination_wrapper, relative_path)
