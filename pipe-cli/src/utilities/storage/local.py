@@ -14,7 +14,7 @@
 
 import os
 
-from src.utilities.storage.common import AbstractTransferManager
+from src.utilities.storage.common import AbstractTransferManager, StorageOperations
 
 try:
     from urllib.request import urlopen  # Python 3
@@ -27,11 +27,26 @@ from .s3 import StorageItemManager
 from src.utilities.progress_bar import ProgressPercentage
 
 
-class TransferFromHttpOrFtpToLocal(object):
+class TransferFromHttpOrFtpToLocal(AbstractTransferManager):
     CHUNK_SIZE = 16 * 1024
 
     def __init__(self):
         pass
+
+    def get_destination_key(self, destination_wrapper, relative_path):
+        if destination_wrapper.path.endswith(os.path.sep):
+            return os.path.join(destination_wrapper.path, relative_path)
+        else:
+            return destination_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_size(destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path or source_wrapper.path
+
+    def get_source_size(self, source_wrapper, source_key, source_size):
+        return source_size
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
                  quiet=False, size=None, tags=(), skip_existing=False, lock=None):
@@ -54,21 +69,8 @@ class TransferFromHttpOrFtpToLocal(object):
         if clean:
             raise AttributeError("Cannot perform 'mv' operation due to deletion remote files "
                                  "is not supported for ftp/http sources.")
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
-        if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
-        else:
-            destination_key = destination_wrapper.path
-        if skip_existing:
-            remote_size = size
-            local_size = StorageItemManager.get_local_file_size(destination_key)
-            if local_size is not None and remote_size == local_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
         AbstractTransferManager.create_local_folder(destination_key, lock)
         file_stream = urlopen(source_key)
         if StorageItemManager.show_progress(quiet, size, lock):
