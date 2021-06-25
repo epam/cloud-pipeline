@@ -236,7 +236,7 @@ class AbstractTransferManager:
 
     @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 quiet=False, size=None, tags=(), lock=None):
         """
         Transfers data from the source storage to the destination storage.
 
@@ -251,7 +251,6 @@ class AbstractTransferManager:
         :param size: Size of the transfer source object.
         :param tags: Additional tags that will be included to the transferring object.
         Tags CP_SOURCE and CP_OWNER will be included by default.
-        :param skip_existing: Skips transfer objects that already exist in the destination storage.
         :param lock: The lock object if multithreaded transfer is requested
         :type lock: multiprocessing.Lock
         """

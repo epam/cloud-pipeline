@@ -91,8 +91,8 @@ class DataStorageOperations(object):
             permission_to_check = os.R_OK if command == 'cp' else os.W_OK
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
-            items = cls.filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                     include, exclude, force, quiet, skip_existing)
+            items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                      include, exclude, force, quiet, skip_existing)
             sorted_items = list()
             transfer_results = []
             for item in items:
@@ -104,14 +104,14 @@ class DataStorageOperations(object):
                 else:
                     transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
                                                        relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                                       tags=tags, skip_existing=skip_existing)
+                                                       tags=tags)
                     if not destination_wrapper.is_local() and transfer_result:
                         transfer_results.append(transfer_result)
                         transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                        transfer_results, clean=clean)
             if threads:
                 cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                                 clean, quiet, tags, skip_existing)
+                                                 clean, quiet, tags)
             else:
                 if not destination_wrapper.is_local():
                     cls._flush_transfer_results(source_wrapper, destination_wrapper,
@@ -121,8 +121,8 @@ class DataStorageOperations(object):
             sys.exit(1)
 
     @classmethod
-    def filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                     include, exclude, force, quiet, skip_existing):
+    def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                      include, exclude, force, quiet, skip_existing):
         filtered_items = []
         for item in items:
             full_path = item[1]
@@ -589,7 +589,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
-                                     quiet, tags, skip_existing):
+                                     quiet, tags):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -605,23 +605,21 @@ class DataStorageOperations(object):
                                                     clean,
                                                     quiet,
                                                     tags,
-                                                    skip_existing,
                                                     lock))
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, skip_existing,
-                        lock):
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, lock):
         transfer_results = []
         for item in items:
             full_path = item[1]
             relative_path = item[2]
             size = item[3]
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                                relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                                tags=tags, skip_existing=skip_existing, lock=lock)
+                                               relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                               tags=tags, lock=lock)
             if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,

@@ -49,7 +49,7 @@ class TransferFromHttpOrFtpToLocal(AbstractTransferManager):
         return source_size
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 quiet=False, size=None, tags=(), lock=None):
         """
         Transfers data from remote resource (only ftp(s) or http(s) protocols supported) to local file system.
         :param source_wrapper: wrapper for ftp or http resource
@@ -62,7 +62,7 @@ class TransferFromHttpOrFtpToLocal(AbstractTransferManager):
         :param quiet: True if quite mode specified
         :param size: the size of the source file
         :param tags: not needed for this kind of transfer
-        :param skip_existing: indicates --skip_existing option
+
         :param lock: The lock object if multithreaded transfer is requested
         :type lock: multiprocessing.Lock
         """

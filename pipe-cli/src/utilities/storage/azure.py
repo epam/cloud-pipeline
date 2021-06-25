@@ -218,9 +218,9 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         return source_wrapper.get_list_manager().get_file_size(source_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 quiet=False, size=None, tags=(), lock=None):
         full_path = path
-        destination_path = StorageOperations.normalize_path(destination_wrapper, relative_path)
+        destination_path = self.get_destination_key(destination_wrapper, relative_path)
 
         source_service = AzureBucketOperations.get_blob_service(source_wrapper.bucket, read=True, write=clean)
         source_credentials = source_service.credentials
@@ -278,15 +278,10 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
         return source_wrapper.get_list_manager().get_file_size(source_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
-        if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
-        else:
-            destination_key = destination_wrapper.path
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         self.create_local_folder(destination_key, lock)
         progress_callback = AzureProgressPercentage.callback(source_key, size, quiet, lock)
         self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, destination_key,
@@ -313,12 +308,10 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
         return StorageOperations.get_local_file_size(source_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=None):
-        if path:
-            source_key = os.path.join(source_wrapper.path, path)
-        else:
-            source_key = source_wrapper.path
-        destination_key = StorageOperations.normalize_path(destination_wrapper, relative_path)
+                 size=None, tags=(), lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, source_key,
@@ -358,18 +351,14 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         return source_size
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=None):
+                 size=None, tags=(), lock=None):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
-        if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
-        else:
-            destination_key = destination_wrapper.path
+
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
