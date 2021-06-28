@@ -1380,6 +1380,23 @@ export default class Metadata extends React.Component {
       cellsActions: undefined
     });
   };
+  clearSelectedCells = (e) => {
+    const {
+      cellsSelection,
+      cellsActions
+    } = this.state;
+    if (!cellsSelection) {
+      return;
+    }
+    const canClearCellsAndBackspaceKeyDown = (e.keyCode === 8 || e.keyCode === 46) &&
+    (cellsActions && cellsActions.length > 0);
+    if (canClearCellsAndBackspaceKeyDown) {
+      this.applySelectionAction(
+        cellsActions.find(a => a.title === 'Clear cells'),
+        false
+      );
+    }
+  }
 
   renderContent = () => {
     const getCellStyle = (column, row) => {
@@ -2246,6 +2263,7 @@ export default class Metadata extends React.Component {
       .fetchIfNeededOrWait()
       .then(() => this.fetchDefaultColumnsIfRequested());
     document.addEventListener('keydown', this.resetSelection);
+    document.addEventListener('keydown', this.clearSelectedCells);
     window.addEventListener('mouseup', this.handleFinishSelection);
   };
 
@@ -2360,6 +2378,7 @@ export default class Metadata extends React.Component {
   componentWillUnmount () {
     this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
     document.removeEventListener('keydown', this.resetSelection);
+    document.removeEventListener('keydown', this.clearSelectedCells);
     window.removeEventListener('mouseup', this.handleFinishSelection);
   }
 }

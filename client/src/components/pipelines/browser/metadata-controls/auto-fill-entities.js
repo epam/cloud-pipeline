@@ -316,6 +316,34 @@ function buildAutoFillAction (options) {
   // }
   return undefined;
 }
+function buildClearCellValueAction (options) {
+  const {
+    targetItems,
+    targetColumns
+  } = options;
+
+  const processItem = (item) => {
+    const payload = {...item.item};
+    for (let c = 0; c < targetColumns.length; c++) {
+      const column = targetColumns[c].key;
+      if (payload.hasOwnProperty(column)) {
+        payload[column].value = '';
+      }
+    }
+    return mapItemSaveOperation(payload, options);
+  };
+  return {
+    title: 'Clear cells',
+    loadingMessage: 'Clearing cells...',
+    action: () => new Promise((resolve, reject) => {
+      Promise
+        .all(targetItems.map(processItem))
+        .then(resolve)
+        .catch(reject);
+    })
+  };
+}
+
 function buildAutoFillActions (elements, columns, source, target, backup, options) {
   if (!elements || !columns || !source || !target) {
     return undefined;
@@ -356,7 +384,8 @@ function buildAutoFillActions (elements, columns, source, target, backup, option
   const actions = [
     buildClearPropertiesAction(actionOptions),
     buildCopyAction(actionOptions),
-    buildAutoFillAction(actionOptions)
+    buildAutoFillAction(actionOptions),
+    buildClearCellValueAction(actionOptions)
   ]
     .filter(Boolean);
   if (actions.length > 0) {
