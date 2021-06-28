@@ -35,6 +35,7 @@ from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
 ALL_ERRORS = Exception
+FOLDER_MARKER = '.DS_Store'
 
 
 class DataStorageOperations(object):
@@ -128,6 +129,11 @@ class DataStorageOperations(object):
             full_path = item[1]
             relative_path = item[2]
             size = item[3]
+
+            if relative_path.endswith(FOLDER_MARKER):
+                filtered_items.append(item)
+                continue
+
             # check that we have corresponding permission for the file before take action
             if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
                 continue
