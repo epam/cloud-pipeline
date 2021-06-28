@@ -148,7 +148,8 @@ function makeCurrentOrderSort (array) {
     onReloadTree: params.onReloadTree,
     authenticatedUserInfo,
     preferences,
-    dataStorages
+    dataStorages,
+    pipelinesLibrary
   };
 })
 @observer
@@ -1021,6 +1022,31 @@ export default class Metadata extends React.Component {
 
   runConfiguration = async (isCluster) => {
     const hide = message.loading('Launching...', 0);
+
+    const parameters = {};
+    await this.getParents()
+      .then(parents => {
+        if (parents && parents.length) {
+          parents.forEach(parent => {
+            parameters[parent.key] = {
+              type: 'string',
+              value: parent.value,
+              required: false
+            };
+          });
+        }
+      });
+
+    if (
+      parameters &&
+      Object.keys(parameters).length !== 0 &&
+      this.selectedConfiguration
+    ) {
+      this.selectedConfiguration.entries.forEach(entry => {
+        entry.configuration.parameters = {...parameters};
+      });
+    }
+
     const request = new ConfigurationRun(this.expansionExpression);
     await request.send({
       id: this.selectedConfiguration ? this.selectedConfiguration.id : null,
@@ -1812,6 +1838,47 @@ export default class Metadata extends React.Component {
         />
       </div>
     );
+  };
+
+  getParents = async () => {
+    const {folderId, pipelinesLibrary} = this.props;
+    const parents = [];
+    let pNumber = 0;
+
+    function checkFolder (folder) {
+      if (folder.id === Number(folderId)) {
+        pNumber = 1;
+        parents.push({
+          key: `p${pNumber}`,
+          value: folder.name
+        });
+        return true;
+      } else {
+        if (folder.childFolders) {
+          for (let subfolder of folder.childFolders) {
+            const targetFolder = checkFolder(subfolder);
+            if (targetFolder) {
+              if (folder.name) {
+                pNumber += 1;
+                parents.push({
+                  key: `p${pNumber}`,
+                  value: folder.name
+                });
+              }
+              return targetFolder;
+            }
+          }
+        }
+        return false;
+      }
+    }
+
+    await pipelinesLibrary.fetch();
+    const pipelinesLibraryValue = pipelinesLibrary.value;
+    if (pipelinesLibraryValue && pipelinesLibraryValue.childFolders) {
+      checkFolder(pipelinesLibraryValue);
+    }
+    return parents;
   };
 
   componentDidMount () {
