@@ -72,6 +72,7 @@ import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
 import getDefaultColumns from './metadata-controls/get-default-columns';
+import getPathParameters from './metadata-controls/get-path-parameters';
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -148,7 +149,8 @@ function makeCurrentOrderSort (array) {
     onReloadTree: params.onReloadTree,
     authenticatedUserInfo,
     preferences,
-    dataStorages
+    dataStorages,
+    pipelinesLibrary
   };
 })
 @observer
@@ -1021,12 +1023,27 @@ export default class Metadata extends React.Component {
 
   runConfiguration = async (isCluster) => {
     const hide = message.loading('Launching...', 0);
+
+    const parameters = await getPathParameters(this.props.pipelinesLibrary, this.props.folderId);
+    const mapParameters = (entry) => ({
+      ...entry,
+      configuration: {
+        ...(entry.configuration || {}),
+        parameters: {
+          ...parameters,
+          ...((entry.configuration || {}).parameters || {})
+        }
+      }
+    });
+
     const request = new ConfigurationRun(this.expansionExpression);
     await request.send({
       id: this.selectedConfiguration ? this.selectedConfiguration.id : null,
       entries: isCluster
-        ? this.selectedConfiguration.entries
-        : this.selectedConfiguration.entries.filter(entry => entry.default),
+        ? (this.selectedConfiguration.entries || []).map(mapParameters)
+        : (this.selectedConfiguration.entries || []).slice()
+          .filter(entry => entry.default)
+          .map(mapParameters),
       entitiesIds: this.state.selectedItems.map(item => item.rowKey.value),
       metadataClass: this.props.metadataClass,
       folderId: parseInt(this.props.folderId)
@@ -1812,6 +1829,47 @@ export default class Metadata extends React.Component {
         />
       </div>
     );
+  };
+
+  getParents = async () => {
+    const {folderId, pipelinesLibrary} = this.props;
+    const parents = [];
+    let pNumber = 0;
+
+    function checkFolder (folder) {
+      if (folder.id === Number(folderId)) {
+        pNumber = 1;
+        parents.push({
+          key: `p${pNumber}`,
+          value: folder.name
+        });
+        return true;
+      } else {
+        if (folder.childFolders) {
+          for (let subfolder of folder.childFolders) {
+            const targetFolder = checkFolder(subfolder);
+            if (targetFolder) {
+              if (folder.name) {
+                pNumber += 1;
+                parents.push({
+                  key: `p${pNumber}`,
+                  value: folder.name
+                });
+              }
+              return targetFolder;
+            }
+          }
+        }
+        return false;
+      }
+    }
+
+    await pipelinesLibrary.fetch();
+    const pipelinesLibraryValue = pipelinesLibrary.value;
+    if (pipelinesLibraryValue && pipelinesLibraryValue.childFolders) {
+      checkFolder(pipelinesLibraryValue);
+    }
+    return parents;
   };
 
   componentDidMount () {
