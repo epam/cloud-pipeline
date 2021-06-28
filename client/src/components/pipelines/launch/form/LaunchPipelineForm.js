@@ -216,6 +216,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     canRemove: PropTypes.bool,
     detached: PropTypes.bool,
     runConfiguration: PropTypes.func,
+    runConfigurationId: PropTypes.string,
     runConfigurationCluster: PropTypes.func,
     onSelectPipeline: PropTypes.func,
     defaultPriceTypeIsSpot: PropTypes.bool,
@@ -4683,6 +4684,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           </td>
         );
       } else if (!this.props.pipeline || roleModel.executeAllowed(this.props.pipeline)) {
+        const KEYS = {
+          selectMetadata: 'select metadata'
+        };
+        const onDropDownClick = ({key}) => {
+          if (key === KEYS.selectMetadata) {
+            this.run({key: RUN_SELECTED_KEY});
+          }
+        };
+        const dropdownRenderer = () => (
+          <Menu onClick={onDropDownClick} selectedKeys={[]}>
+            <Menu.Item key={KEYS.selectMetadata}>
+              Select metadata entries and launch
+            </Menu.Item>
+          </Menu>
+        );
         return (
           <td style={{textAlign: 'right'}}>
             <FormItem style={{margin: 0, marginRight: 10}}>
@@ -4690,7 +4706,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 !this.props.detached && !this.props.editConfigurationMode && (
                   <Button
                     disabled={!this.launchCommandPayload}
-                    style={{verticalAlign: 'middle', marginRight: 5}}
+                    style={{marginRight: 5}}
                     onClick={this.showLaunchCommands}
                   >
                     <Icon type="code" />
@@ -4704,7 +4720,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 dockerImage={this.dockerImage}
                 type="primary"
                 htmlType="submit"
-                style={{verticalAlign: 'middle'}}>
+                dropdown={!!this.props.runConfigurationId}
+                dropdownRenderer={dropdownRenderer}
+                dropdownId="launch-metadata"
+              >
                 Launch
               </SubmitButton>
             </FormItem>

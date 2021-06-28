@@ -3,6 +3,24 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Popover, Button, Icon, Select} from 'antd';
 
+function tagsAreEqual (tagsA, tagsB) {
+  if (!tagsA && !tagsB) {
+    return true;
+  }
+  if (!tagsA || !tagsB) {
+    return false;
+  }
+  if (tagsA.length !== tagsB.length) {
+    return false;
+  }
+  for (let i = 0; i < tagsA.length; i++) {
+    if (tagsA[i] !== tagsB[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 @observer
 class FilterControl extends React.PureComponent {
   state = {
@@ -13,23 +31,12 @@ class FilterControl extends React.PureComponent {
     columnName: PropTypes.string,
     onSearch: PropTypes.func,
     children: PropTypes.node,
-    value: PropTypes.arrayOf(PropTypes.string)
+    value: PropTypes.arrayOf(PropTypes.string),
+    visibilityChanged: PropTypes.func
   }
 
   get modified () {
-    const {value = []} = this.props;
-    const {selectedTags = []} = this.state;
-    const props = [...value].sort();
-    const state = [...selectedTags].sort();
-    if (props.length !== state.length) {
-      return true;
-    }
-    for (let i = 0; i < props.length; i++) {
-      if (props[i] !== state[i]) {
-        return true;
-      }
-    }
-    return false;
+    return !tagsAreEqual(this.props.value || [], this.state.selectedTags || []);
   }
 
   componentDidMount () {
@@ -37,7 +44,7 @@ class FilterControl extends React.PureComponent {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.value !== this.props.value) {
+    if (!tagsAreEqual(prevProps.value || [], this.props.value || [])) {
       this.updateStateFromProps();
     }
   }
@@ -73,8 +80,11 @@ class FilterControl extends React.PureComponent {
     this.handlePopoverVisibleChange(false);
   }
   handlePopoverVisibleChange = (visible) => {
+    const {visibilityChanged} = this.props;
     this.setState({
       popoverVisible: visible
+    }, () => {
+      visibilityChanged && visibilityChanged(visible);
     });
   }
   render () {
