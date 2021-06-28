@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -85,6 +86,10 @@ public class LogManager {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final String DEFAULT_SEVERITY = "INFO";
+    private static final String CLASS_NAME = "loggerName";
+    private static final String THREAD_NAME = "thread";
+    private static final String THROWN = "thrown";
+    private static final String STACK_TRACE = "extendedStackTrace";
     public static final String ID = "event_id";
     public static final String SERVICE_ACCOUNT = "service_account";
     public static final String KEYWORD = ".keyword";
@@ -92,7 +97,7 @@ public class LogManager {
     private final GlobalSearchElasticHelper elasticHelper;
     private final MessageHelper messageHelper;
 
-    @Value("${log.security.elastic.index.prefix}")
+    @Value("${log.application.elastic.index.prefix}")
     private String indexTemplate;
 
     /**
@@ -180,6 +185,15 @@ public class LogManager {
         if (!StringUtils.isEmpty(logFilter.getMessage())) {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
+        if (!CollectionUtils.isEmpty(logFilter.getClassNames())) {
+            boolQuery.filter(QueryBuilders.termsQuery(CLASS_NAME, logFilter.getClassNames()));
+        }
+        if (!CollectionUtils.isEmpty(logFilter.getThreadNames())) {
+            boolQuery.filter(QueryBuilders.termsQuery(THREAD_NAME + KEYWORD, logFilter.getThreadNames()));
+        }
+        if (!CollectionUtils.isEmpty(logFilter.getSeverities())) {
+            boolQuery.filter(QueryBuilders.termsQuery(SEVERITY + KEYWORD, logFilter.getSeverities()));
+        }
 
         addRageFilter(boolQuery, logFilter.getMessageTimestampFrom(),
                 logFilter.getMessageTimestampTo());
@@ -221,8 +235,8 @@ public class LogManager {
         return logsResponse;
     }
 
-    private LogEntry mapHitToLogEntry(SearchHit searchHit) {
-        Map<String, Object> hit = searchHit.getSourceAsMap();
+    private LogEntry mapHitToLogEntry(final SearchHit searchHit) {
+        final Map<String, Object> hit = searchHit.getSourceAsMap();
         return LogEntry.builder()
                 .eventId((Long) hit.get(ID))
                 .messageTimestamp(LocalDateTime.parse((String) hit.get(MESSAGE_TIMESTAMP), DATE_TIME_FORMATTER))
@@ -232,7 +246,17 @@ public class LogManager {
                 .user((String) hit.get(USER))
                 .message((String) hit.get(MESSAGE))
                 .severity((String) hit.getOrDefault(SEVERITY, DEFAULT_SEVERITY))
+                .className((String) hit.get(CLASS_NAME))
+                .threadName((String) hit.get(THREAD_NAME))
+                .stacktrace(parseStackTrace(hit.get(THROWN)))
                 .build();
+    }
+
+    private String parseStackTrace(final Object thrownHit) {
+        if (Objects.isNull(thrownHit)) {
+            return null;
+        }
+        return (String) ((Map<String, Object>) thrownHit).get(STACK_TRACE);
     }
 
     private SearchResponse executeRequest(final SearchRequest searchRequest) {
@@ -255,6 +279,9 @@ public class LogManager {
                                         .aggregation(AggregationBuilders.terms(SERVICE_NAME)
                                                 .field(SERVICE_NAME + KEYWORD))
                                         .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD))
+                                        .aggregation(AggregationBuilders.terms(THREAD_NAME)
+                                                .field(THREAD_NAME + KEYWORD))
+                                        .aggregation(AggregationBuilders.terms(SEVERITY).field(SEVERITY + KEYWORD))
                         ).indicesOptions(INDICES_OPTIONS)
                 )
         ).getAggregations()
@@ -273,10 +300,12 @@ public class LogManager {
                         result.setServiceNames(values);
                     } else if (TYPE.equals(terms.getName())) {
                         result.setTypes(values);
+                    } else if (THREAD_NAME.equals(terms.getName())) {
+                        result.setThreadNames(values);
+                    } else if (SEVERITY.equals(terms.getName())) {
+                        result.setSeverities(values);
                     }
                 });
-
-
         return result;
     }
 }
