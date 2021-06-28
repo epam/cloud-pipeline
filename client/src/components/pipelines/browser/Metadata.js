@@ -72,6 +72,7 @@ import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
 import getDefaultColumns from './metadata-controls/get-default-columns';
+import getPathParameters from './metadata-controls/get-path-parameters';
 
 const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
@@ -1023,36 +1024,26 @@ export default class Metadata extends React.Component {
   runConfiguration = async (isCluster) => {
     const hide = message.loading('Launching...', 0);
 
-    const parameters = {};
-    await this.getParents()
-      .then(parents => {
-        if (parents && parents.length) {
-          parents.forEach(parent => {
-            parameters[parent.key] = {
-              type: 'string',
-              value: parent.value,
-              required: false
-            };
-          });
+    const parameters = await getPathParameters(this.props.pipelinesLibrary, this.props.folderId);
+    const mapParameters = (entry) => ({
+      ...entry,
+      configuration: {
+        ...(entry.configuration || {}),
+        parameters: {
+          ...parameters,
+          ...((entry.configuration || {}).parameters || {})
         }
-      });
-
-    if (
-      parameters &&
-      Object.keys(parameters).length !== 0 &&
-      this.selectedConfiguration
-    ) {
-      this.selectedConfiguration.entries.forEach(entry => {
-        entry.configuration.parameters = {...parameters};
-      });
-    }
+      }
+    });
 
     const request = new ConfigurationRun(this.expansionExpression);
     await request.send({
       id: this.selectedConfiguration ? this.selectedConfiguration.id : null,
       entries: isCluster
-        ? this.selectedConfiguration.entries
-        : this.selectedConfiguration.entries.filter(entry => entry.default),
+        ? (this.selectedConfiguration.entries || []).map(mapParameters)
+        : (this.selectedConfiguration.entries || []).slice()
+          .filter(entry => entry.default)
+          .map(mapParameters),
       entitiesIds: this.state.selectedItems.map(item => item.rowKey.value),
       metadataClass: this.props.metadataClass,
       folderId: parseInt(this.props.folderId)
