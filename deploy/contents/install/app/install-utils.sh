@@ -201,6 +201,9 @@ function init_cloud_config {
                 if [[ "$cloud_image_name" == *"GPU" ]]; then
                     export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU="$cloud_image_id"
                 fi
+                if [[ "$cloud_image_name" == *"Common_Win" ]]; then
+                    export CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN="$cloud_image_id"
+                fi
             fi
         done < $CP_CLOUD_IMAGES_MANIFEST_FILE
 
@@ -210,6 +213,10 @@ function init_cloud_config {
 
         if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU" ]; then
             print_warn "GPU image is not defined in the manifest: $CP_CLOUD_IMAGES_MANIFEST_FILE"
+        fi
+
+        if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN" ]; then
+            print_warn "Common Windows image is not defined in the manifest: $CP_CLOUD_IMAGES_MANIFEST_FILE"
         fi
     else
         print_warn "Cloud images manifest file not found at $CP_CLOUD_IMAGES_MANIFEST_FILE"
@@ -223,6 +230,7 @@ function init_cloud_config {
     echo    "External host address: $CP_CLOUD_EXTERNAL_HOST"
     echo    "Common image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE"
     echo    "GPU image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU"
+    echo    "Common Windows image ID: $CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN"
 
 }
 
@@ -369,6 +377,10 @@ EOF
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU" ]; then
         print_warn "Default GPU cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=\" option"
         export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=$CP_PREF_CLUSTER_INSTANCE_IMAGE
+    fi
+    if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN" ]; then
+        print_warn "Default Windows cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN=\" option"
+        export CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN=$CP_PREF_CLUSTER_INSTANCE_IMAGE
     fi
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS" ]; then
         if [ "$CP_CLOUD_PLATFORM" != "$CP_GOOGLE" ]; then
