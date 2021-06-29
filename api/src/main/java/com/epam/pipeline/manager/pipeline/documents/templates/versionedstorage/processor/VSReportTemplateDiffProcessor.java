@@ -72,7 +72,6 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     private static final int FILE_TO_LINE_INDEX_COLUMN = 1;
     private static final int CHANGES_TYPE_COLUMN = 2;
     private static final int CONTENT_COLUMN = 3;
-    public static final String DEV_NULL = "/dev/null";
 
     private final ReportDataExtractor<GitDiffGrouping> dataProducer;
 
@@ -171,7 +170,8 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
             insertTextData(paragraph, groupingKey, true, fontFamily, fontSize + HEADER_FONT_DELTA, false);
             insertTextData(paragraph, ":", false, fontFamily, fontSize + HEADER_FONT_DELTA, false);
         }
-        paragraph.createRun().addBreak(BreakType.TEXT_WRAPPING);
+        addIndent(paragraph);
+
     }
 
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
@@ -186,6 +186,12 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                     paragraph,
                     diffEntry.getCommit().getCommit().substring(0, 9),
                     true, fontFamily, fontSize,
+                    false);
+
+            insertTextData(paragraph, " by ", false, fontFamily, fontSize + HEADER_FONT_DELTA, false);
+            insertTextData(paragraph,
+                    diffEntry.getCommit().getAuthor(),
+                    true, fontFamily, fontSize + HEADER_FONT_DELTA,
                     false);
 
             insertTextData(paragraph, " at ", false, fontFamily, fontSize, false);
@@ -204,9 +210,8 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         return generateDiffTable(paragraph, fontFamily, fontSize, diffEntry);
     }
 
-    private void addIndent(final XWPFParagraph lastParagraph) {
-        final XWPFRun run = lastParagraph.createRun();
-        run.addBreak(BreakType.TEXT_WRAPPING);
+    private void addIndent(final XWPFParagraph paragraph) {
+        final XWPFRun run = paragraph.createRun();
         run.addBreak(BreakType.TEXT_WRAPPING);
         run.addBreak(BreakType.TEXT_WRAPPING);
     }
@@ -217,6 +222,10 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
 
         if (!diffEntry.getDiff().getHunks().isEmpty()) {
             final XWPFTable xwpfTable = createTable(paragraph);
+            // since hunks could be not sort by line number - sort by ourself
+            diffEntry.getDiff().getHunks()
+                    .sort((h1, h2) -> Math.max(h2.getFromFileRange().getLineStart(), h2.getToFileRange().getLineStart())
+                            - Math.max(h1.getFromFileRange().getLineStart(), h1.getToFileRange().getLineStart()));
             for (final Hunk hunk : diffEntry.getDiff().getHunks()) {
                 fillTableWithDiffHunk(fontFamily, fontSize, xwpfTable, hunk);
             }

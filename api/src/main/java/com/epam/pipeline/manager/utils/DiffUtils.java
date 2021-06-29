@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.utils;
 
+import com.epam.pipeline.entity.git.GitCommitsFilter;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
@@ -25,7 +27,10 @@ import io.reflectoring.diffparser.api.model.Diff;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -101,33 +106,62 @@ public final class DiffUtils {
         return !diff.getFromFileName().equals(DEV_NULL) && diff.getToFileName().equals(DEV_NULL);
     }
 
-    public static GitParsedDiff reduceDiffByFile(GitReaderDiff gitReaderDiff) {
+    public static GitParsedDiff reduceDiffByFile(GitReaderDiff gitReaderDiff, GitDiffReportFilter reportFilters) {
         final DiffParser diffParser = new UnifiedDiffParser();
         return GitParsedDiff.builder()
                 .entries(
-                        gitReaderDiff.getEntries().stream().flatMap(diff -> {
-                            final String[] diffsByFile = diff.getDiff().split(DIFF_GIT_PREFIX);
-                            return Arrays.stream(diffsByFile)
-                                    .filter(org.apache.commons.lang.StringUtils::isNotBlank)
-                                    .map(fileDiff -> {
-                                        try {
-                                            final Diff parsed = diffParser.parse(
-                                                    (DIFF_GIT_PREFIX + fileDiff).getBytes(StandardCharsets.UTF_8)
-                                            ).stream().findFirst().orElseThrow(IllegalArgumentException::new);
-                                            return GitParsedDiffEntry.builder()
-                                                    .commit(diff.getCommit())
-                                                    .diff(DiffUtils.normalizeDiff(parsed)).build();
-                                        } catch (IllegalArgumentException | IllegalStateException e) {
-                                            // If we fail to parse diff with diffParser lets
-                                            // try to parse it as binary diffs
-                                            return GitParsedDiffEntry.builder()
-                                                    .commit(diff.getCommit())
-                                                    .diff(DiffUtils.parseBinaryDiff(DIFF_GIT_PREFIX + fileDiff))
-                                                    .build();
-                                        }
-                                    });
-                        }).collect(Collectors.toList())
-                ).filters(gitReaderDiff.getFilters()).build();
+                    gitReaderDiff.getEntries().stream().flatMap(diff -> {
+                        final String[] diffsByFile = diff.getDiff().split(DIFF_GIT_PREFIX);
+                        return Arrays.stream(diffsByFile)
+                                .filter(org.apache.commons.lang.StringUtils::isNotBlank)
+                                .map(fileDiff -> {
+                                    final GitParsedDiffEntry.GitParsedDiffEntryBuilder fileDiffBuilder =
+                                            GitParsedDiffEntry.builder().commit(
+                                                    diff.getCommit().toBuilder()
+                                                            .authorDate(
+                                                                new Date(diff.getCommit().getAuthorDate().toInstant()
+                                                                .plus(reportFilters.getUserTimeOffsetInMin(),
+                                                                        ChronoUnit.MINUTES).toEpochMilli()))
+                                                            .committerDate(
+                                                                new Date(diff.getCommit().getCommitterDate().toInstant()
+                                                                .plus(reportFilters.getUserTimeOffsetInMin(),
+                                                                        ChronoUnit.MINUTES).toEpochMilli())
+                                                    ).build());
+                                    try {
+                                        final Diff parsed = diffParser.parse(
+                                                (DIFF_GIT_PREFIX + fileDiff).getBytes(StandardCharsets.UTF_8)
+                                        ).stream().findFirst().orElseThrow(IllegalArgumentException::new);
+                                        return fileDiffBuilder.diff(DiffUtils.normalizeDiff(parsed)).build();
+                                    } catch (IllegalArgumentException | IllegalStateException e) {
+                                        // If we fail to parse diff with diffParser lets
+                                        // try to parse it as binary diffs
+                                        return fileDiffBuilder.diff(
+                                                DiffUtils.parseBinaryDiff(DIFF_GIT_PREFIX + fileDiff))
+                                                .build();
+                                    }
+                                });
+                    }).collect(Collectors.toList())
+                ).filters(convertFiltersToUserTimeZone(gitReaderDiff, reportFilters)).build();
+    }
+
+    private static GitCommitsFilter convertFiltersToUserTimeZone(final GitReaderDiff gitReaderDiff,
+                                                                 final GitDiffReportFilter reportFilters) {
+        if (gitReaderDiff.getFilters() == null) {
+            return null;
+        }
+
+        final GitCommitsFilter.GitCommitsFilterBuilder gitCommitsFilterBuilder = gitReaderDiff.getFilters().toBuilder();
+        if (Optional.ofNullable(reportFilters.getCommitsFilter()).map(GitCommitsFilter::getDateFrom).isPresent()) {
+            gitCommitsFilterBuilder
+                    .dateFrom(reportFilters.getCommitsFilter().getDateFrom()
+                            .plus(reportFilters.getUserTimeOffsetInMin(), ChronoUnit.MINUTES));
+        }
+        if (Optional.ofNullable(reportFilters.getCommitsFilter()).map(GitCommitsFilter::getDateTo).isPresent()) {
+            gitCommitsFilterBuilder
+                    .dateTo(reportFilters.getCommitsFilter().getDateTo()
+                            .plus(reportFilters.getUserTimeOffsetInMin(), ChronoUnit.MINUTES));
+        }
+        return gitCommitsFilterBuilder.build();
     }
 
     public static String getChangedFileName(Diff diff) {

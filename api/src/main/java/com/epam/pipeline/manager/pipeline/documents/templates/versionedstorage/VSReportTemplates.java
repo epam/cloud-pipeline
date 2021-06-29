@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -40,7 +41,9 @@ public enum VSReportTemplates {
             VSReportTemplatePageBreakProcessor::new),
     REPORT_DATE("report_date",
         () -> new VSReportTemplateTextProcessor((paragraph, storage, diff, reportFilter) ->
-                DateUtils.nowUTC().format(Constants.DATE_TIME_FORMATTER))),
+                DateUtils.nowUTC()
+                        .plus(reportFilter.getUserTimeOffsetInMin(), ChronoUnit.MINUTES)
+                        .format(Constants.REPORT_TIME_FORMATTER))),
     FILTER_AUTHORS("filter_authors",
         () -> new VSReportTemplateTextProcessor(
             (paragraph, storage, diff, reportFilter) ->
@@ -78,7 +81,8 @@ public enum VSReportTemplates {
 
     private static class Constants {
         public static final String EMPTY = "";
-        public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        public static final DateTimeFormatter REPORT_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         public static final String ALL_FILES = "All Files";
         public static final String ALL_AUTHORS = "All Authors";
     }

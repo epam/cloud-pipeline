@@ -127,7 +127,7 @@ public class VersionStorageReportTemplateManager {
                 pipelineId, true, Optional.ofNullable(reportFilters.getCommitsFilter())
                         .orElse(GitCommitsFilter.builder().build())
         );
-        return DiffUtils.reduceDiffByFile(gitReaderDiff);
+        return DiffUtils.reduceDiffByFile(gitReaderDiff, reportFilters);
     }
 
     private List<Pair<String, XWPFDocument>> prepareReportDocs(final Pipeline pipeline,
