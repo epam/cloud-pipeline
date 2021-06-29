@@ -172,9 +172,6 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_local_file_size(destination_key)
 
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        return self.get_s3_file_size(source_wrapper.bucket.path, source_key)
-
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
@@ -205,9 +202,6 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             return os.path.join(source_wrapper.path, source_path)
         else:
             return source_wrapper.path
-
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        return self.get_local_file_size(source_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
                  clean=False, quiet=False, size=None, tags=(), lock=None):
@@ -251,9 +245,6 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        return source_size
-
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
                  clean=False, quiet=False, size=None, tags=(), lock=None):
         if clean:
@@ -296,9 +287,6 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path
-
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        return self.get_s3_file_size(source_wrapper.bucket.path, source_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
                  quiet=False, size=None, tags=(), lock=None):

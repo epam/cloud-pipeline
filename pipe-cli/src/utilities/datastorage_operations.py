@@ -128,7 +128,7 @@ class DataStorageOperations(object):
         for item in items:
             full_path = item[1]
             relative_path = item[2]
-            size = item[3]
+            source_size = item[3]
 
             if relative_path.endswith(FOLDER_MARKER):
                 filtered_items.append(item)
@@ -167,7 +167,6 @@ class DataStorageOperations(object):
                 continue
             if skip_existing:
                 source_key = manager.get_source_key(source_wrapper, full_path)
-                source_size = manager.get_source_size(source_wrapper, source_key, size)
                 need_to_overwrite = not manager.skip_existing(source_key, source_size, destination_key,
                                                               destination_size, quiet)
                 if need_to_overwrite and not force:

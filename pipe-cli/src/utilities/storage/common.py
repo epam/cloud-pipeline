@@ -231,10 +231,6 @@ class AbstractTransferManager:
         pass
 
     @abstractmethod
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        pass
-
-    @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
                  quiet=False, size=None, tags=(), lock=None):
         """

@@ -710,9 +710,6 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
     def get_source_key(self, source_wrapper, source_path):
         return source_path
 
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        return source_wrapper.get_list_manager().get_file_size(source_key)
-
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
                  size=None, tags=(), lock=None):
         full_path = path
@@ -774,9 +771,6 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
-
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        return source_wrapper.get_list_manager().get_file_size(source_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
                  size=None, tags=(), lock=None):
@@ -856,9 +850,6 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             return os.path.join(source_wrapper.path, source_path)
         else:
             return source_wrapper.path
-
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        return StorageOperations.get_local_file_size(source_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
                  size=None, tags=(), lock=None):
@@ -941,9 +932,6 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
-
-    def get_source_size(self, source_wrapper, source_key, source_size):
-        return source_size
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
                  size=None, tags=(), lock=None):
