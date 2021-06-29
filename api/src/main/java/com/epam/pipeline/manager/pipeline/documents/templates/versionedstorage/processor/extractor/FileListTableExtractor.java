@@ -34,6 +34,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -57,9 +58,14 @@ public class FileListTableExtractor implements ReportDataExtractor<Table> {
         }
         diff.getEntries()
             .stream()
-            .collect(Collectors.toMap(
-                e -> DiffUtils.getChangedFileName(e.getDiff()),
-                GitParsedDiffEntry::getCommit, (c1, c2) -> c1)
+            .sorted(Comparator.comparing(d -> DiffUtils.getChangedFileName(d.getDiff())))
+            .collect(
+                Collectors.toMap(
+                    e -> DiffUtils.getChangedFileName(e.getDiff()),
+                    GitParsedDiffEntry::getCommit,
+                    (c1, c2) -> c1,
+                    LinkedHashMap::new
+                )
             ).forEach((file, commit) -> {
                 TableRow row = result.addRow(file);
                 tableColumns.forEach(

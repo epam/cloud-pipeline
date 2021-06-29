@@ -38,6 +38,7 @@ import org.apache.poi.xwpf.usermodel.*;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -45,6 +46,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -270,9 +272,11 @@ public class VersionStorageReportTemplateManager {
     private String getVersionStorageTemplatePath() {
         final String versionStorageTemplatePath = preferenceManager.getPreference(
                 SystemPreferences.VERSION_STORAGE_REPORT_TEMPLATE);
-        Assert.notNull(versionStorageTemplatePath,
+        Assert.isTrue(!StringUtils.isEmpty(versionStorageTemplatePath),
                 "Version Storage Report Template not configured, please specify "
                         + SystemPreferences.VERSION_STORAGE_REPORT_TEMPLATE.getKey());
+        Assert.isTrue(Paths.get(versionStorageTemplatePath).toFile().isFile(),
+                "Version Storage Report Template path doesn't exists " + versionStorageTemplatePath);
         return versionStorageTemplatePath;
     }
 

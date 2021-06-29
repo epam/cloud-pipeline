@@ -60,9 +60,10 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
         final Pattern pattern = Pattern.compile(replaceRegex, Pattern.CASE_INSENSITIVE);
         final Matcher matcher = pattern.matcher(paragraph.getText().replace("\t", ""));
         if (matcher.find()) {
+            Table data = dataProducer.extract(paragraph, storage, diff, reportFilter);
             cleanUpParagraph(paragraph);
             replacePlaceholderWithTable(
-                paragraph, dataProducer.extract(paragraph, storage, diff, reportFilter),
+                paragraph, data,
                 paragraph.getCTP().newCursor(), paragraph.getRuns().get(0)
             );
         }
