@@ -29,14 +29,16 @@
                         schedulable,
                         created_date,
                         url,
-                        prefixes)
+                        prefixes,
+                        preferences)
                     VALUES (
                         :ID,
                         :NAME,
                         :SCHEDULABLE,
                         :CREATED_DATE,
                         :URL,
-                        :PREFIXES)
+                        :PREFIXES,
+                        to_jsonb(:PREFERENCES::jsonb))
                 ]]>
             </value>
         </property>
@@ -49,7 +51,8 @@
                         r.schedulable,
                         r.created_date,
                         r.url,
-                        r.prefixes
+                        r.prefixes,
+                        r.preferences
                     FROM
                         pipeline.dts_registry r
                     WHERE r.id = ?
@@ -65,7 +68,8 @@
                         r.schedulable,
                         r.created_date,
                         r.url,
-                        r.prefixes
+                        r.prefixes,
+                        r.preferences
                     FROM
                         pipeline.dts_registry r
                     ORDER BY

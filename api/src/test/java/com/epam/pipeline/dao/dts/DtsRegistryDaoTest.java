@@ -22,7 +22,9 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,6 +36,7 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
     private static final String TEST_PREFIX_1 = "prefix_1";
     private static final String TEST_PREFIX_2 = "prefix_2";
     private static final String DTS = "DTS";
+    private static final String DTS_PREFERENCE_1 = "dts.preference";
 
     @Autowired
     private DtsRegistryDao dtsRegistryDao;
@@ -41,7 +44,8 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
     @Test
     public void testCRUD() {
         DtsRegistry dtsRegistry = getDtsRegistry(TEST_URL,
-                Stream.of(TEST_PREFIX_1).collect(Collectors.toList()));
+                                                 Stream.of(TEST_PREFIX_1).collect(Collectors.toList()),
+                                                 Collections.singletonMap(DTS_PREFERENCE_1, DTS));
         dtsRegistryDao.create(dtsRegistry);
         DtsRegistry loaded = dtsRegistryDao.loadById(dtsRegistry.getId()).orElse(null);
         assertEquals(dtsRegistry, loaded);
@@ -54,11 +58,13 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
         assertEquals(0, dtsRegistryDao.loadAll().size());
     }
 
-    private DtsRegistry getDtsRegistry(String url, List<String> prefixes) {
+    private DtsRegistry getDtsRegistry(final String url, final List<String> prefixes,
+                                       final Map<String, String> preferences) {
         DtsRegistry dtsRegistry = new DtsRegistry();
         dtsRegistry.setName(DTS);
         dtsRegistry.setUrl(url);
         dtsRegistry.setPrefixes(prefixes);
+        dtsRegistry.setPreferences(preferences);
         return dtsRegistry;
     }
 }
