@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.dts;
 
 import com.epam.pipeline.entity.BaseEntity;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -29,6 +30,7 @@ import java.util.Map;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class DtsRegistry extends BaseEntity {
     private String url;
     private List<String> prefixes;

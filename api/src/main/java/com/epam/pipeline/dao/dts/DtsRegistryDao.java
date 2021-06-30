@@ -21,7 +21,9 @@ import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
@@ -37,10 +39,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.dao.DaoHelper.mapListToSqlArray;
 
 public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
+
+    private static final String JSON_KEY_TEMPLATE = "'{%s}'";
+    private static final String JSON_KEY_REMOVE_OPERATOR = " #- ";
+    private static final String PREFERENCE_KEYS_PLACEHOLDER = "@PREFERENCE_KEYS_EXPRESSION@";
+
     @Autowired
     private DaoHelper daoHelper;
 
@@ -50,6 +58,8 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
     private String createDtsRegistryQuery;
     private String updateDtsRegistryQuery;
     private String deleteDtsRegistryQuery;
+    private String upsertDtsRegistryPreferencesQuery;
+    private String deleteDtsRegistryPreferencesQuery;
 
     public List<DtsRegistry> loadAll() {
         return getJdbcTemplate().query(loadAllDtsRegistriesQuery, DtsRegistryParameters.getRowMapper());
@@ -85,6 +95,19 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteDtsRegistryQuery, registryId);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void upsertPreferences(final Long registryId, final Map<String, String> preferences) {
+        getNamedParameterJdbcTemplate().update(upsertDtsRegistryPreferencesQuery,
+                                               DtsRegistryParameters.getPreferencesParameters(registryId, preferences));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deletePreferences(final Long registryId, final List<String> preferencesKeys) {
+        getNamedParameterJdbcTemplate()
+            .update(buildDeletePreferencesQuery(preferencesKeys),
+                    DtsRegistryParameters.getRemovingPreferencesParameters(registryId));
+    }
+
     @Required
     public void setDtsRegistrySequence(String dtsRegistrySequence) {
         this.dtsRegistrySequence = dtsRegistrySequence;
@@ -115,6 +138,16 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
         this.deleteDtsRegistryQuery = deleteDtsRegistryQuery;
     }
 
+    @Required
+    public void setUpsertDtsRegistryPreferencesQuery(final String upsertDtsRegistryPreferencesQuery) {
+        this.upsertDtsRegistryPreferencesQuery = upsertDtsRegistryPreferencesQuery;
+    }
+
+    @Required
+    public void setDeleteDtsRegistryPreferencesQuery(final String deleteDtsRegistryPreferencesQuery) {
+        this.deleteDtsRegistryPreferencesQuery = deleteDtsRegistryPreferencesQuery;
+    }
+
     enum DtsRegistryParameters {
         ID,
         NAME,
@@ -122,7 +155,8 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
         CREATED_DATE,
         URL,
         PREFIXES,
-        PREFERENCES;
+        PREFERENCES,
+        PREFERENCES_KEYS;
 
         static MapSqlParameterSource getParameters(final DtsRegistry dtsRegistry, final Connection connection) {
             return getParameters(dtsRegistry, connection, false);
@@ -142,6 +176,21 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
                 params.addValue(PREFERENCES.name(), JsonMapper
                     .convertDataToJsonStringForQuery(MapUtils.emptyIfNull(dtsRegistry.getPreferences())));
             }
+            return params;
+        }
+
+        static MapSqlParameterSource getPreferencesParameters(final Long dtsRegistryId,
+                                                              final Map<String, String> preferences) {
+            final MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue(ID.name(), dtsRegistryId);
+            params.addValue(PREFERENCES.name(),
+                            JsonMapper.convertDataToJsonStringForQuery(MapUtils.emptyIfNull(preferences)));
+            return params;
+        }
+
+        static MapSqlParameterSource getRemovingPreferencesParameters(final Long registryId) {
+            final MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue(ID.name(), registryId);
             return params;
         }
 
@@ -165,5 +214,14 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
             return (rs, rowNum) -> JsonMapper.parseData(rs.getString(PREFERENCES.name()),
                                                         new TypeReference<Map<String, String>>() {});
         }
+    }
+
+    private String buildDeletePreferencesQuery(final List<String> preferencesKeys) {
+        final String keysRemovingExpression = CollectionUtils.isEmpty(preferencesKeys)
+                                              ? String.format(JSON_KEY_TEMPLATE, StringUtils.EMPTY)
+                                              : preferencesKeys.stream()
+                                                  .map(preferenceKey -> String.format(JSON_KEY_TEMPLATE, preferenceKey))
+                                                  .collect(Collectors.joining(JSON_KEY_REMOVE_OPERATOR));
+        return deleteDtsRegistryPreferencesQuery.replaceFirst(PREFERENCE_KEYS_PLACEHOLDER, keysRemovingExpression);
     }
 }
