@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.alive.policy.NodeExpirationService;
 import com.epam.pipeline.manager.execution.SystemParams;
@@ -87,7 +88,9 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public RunInstance scaleUpNode(final Long runId, final RunInstance instance) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
-        return getInstanceService(region).scaleUpNode(region, runId, instance);
+        final RunInstance scaledUpInstance = getInstanceService(region).scaleUpNode(region, runId, instance);
+        scaleUpNodeServices(scaledUpInstance);
+        return scaledUpInstance;
     }
 
     @Override
@@ -99,6 +102,9 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public void scaleDownNode(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
+        final PipelineRun run = runCRUDService.loadRunById(runId);
+        final RunInstance instance = run.getInstance();
+        scaleDownNodeServices(instance);
         getInstanceService(region).scaleDownNode(region, runId);
     }
 
@@ -110,6 +116,10 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public void terminateNode(final AbstractCloudRegion region, final String internalIp, final String nodeName) {
+        runCRUDService.loadRunsForNodeName(nodeName).stream()
+                .map(PipelineRun::getInstance)
+                .findFirst()
+                .ifPresent(this::scaleDownNodeServices);
         getInstanceService(region).terminateNode(region, internalIp, nodeName);
     }
 
@@ -288,6 +298,31 @@ public class CloudFacadeImpl implements CloudFacade {
             log.debug("RunID {} was not found. Trying to get instance details from Node", runId);
             return loadRegionFromNodeLabels(String.valueOf(runId));
         }
+    }
+
+    private void scaleUpNodeServices(final RunInstance instance) {
+        if (KubernetesConstants.WINDOWS.equals(instance.getNodePlatform())) {
+            final Integer port = preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_WINDOWS_SERVICE_PORT);
+            if (port == null) {
+                log.debug("Kubernetes Windows service port is not specified. No service will be created.");
+                return;
+            }
+            final String serviceName = resolveWindowsNodeServiceName(instance.getNodeIP());
+            kubernetesManager.createService(serviceName, port, port);
+            kubernetesManager.createEndpoints(serviceName, instance.getNodeIP(), port);
+        }
+    }
+
+    private void scaleDownNodeServices(final RunInstance instance) {
+        if (KubernetesConstants.WINDOWS.equals(instance.getNodePlatform())) {
+            final String serviceName = resolveWindowsNodeServiceName(instance.getNodeIP());
+            kubernetesManager.deleteServiceIfExists(serviceName);
+            kubernetesManager.deleteEndpointsIfExists(serviceName);
+        }
+    }
+
+    private String resolveWindowsNodeServiceName(final String ip) {
+        return "ip-" + ip.replace(".", "-");
     }
 
     private AbstractCloudRegion loadRegionFromNodeLabels(final String nodeLabel) {
