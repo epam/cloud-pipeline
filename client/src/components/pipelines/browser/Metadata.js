@@ -1110,6 +1110,9 @@ export default class Metadata extends React.Component {
     return undefined;
   }
   handleStartSelection = (opts) => {
+    if (this.props.readOnly) {
+      return;
+    }
     const {e, rowInfo, column: columnInfo} = opts;
     if (columnInfo.index === undefined) {
       // selection cell, ignore it
@@ -1278,6 +1281,9 @@ export default class Metadata extends React.Component {
     return hoveredCell && hoveredCell.row === row && hoveredCell.column === column;
   }
   handleCellSelection = (opts) => {
+    if (this.props.readOnly) {
+      return;
+    }
     const {e, rowInfo, column: columnInfo} = opts;
     e.stopPropagation();
     const {cellsSelection: selection, hoveredCell} = this.state;
@@ -1894,7 +1900,7 @@ export default class Metadata extends React.Component {
           accessor: key,
           index,
           style: {
-            cursor: 'cell',
+            cursor: this.props.readOnly ? 'default' : 'cell',
             padding: 0,
             borderRight: '1px solid rgba(0, 0, 0, 0.1)'
           },

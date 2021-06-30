@@ -281,7 +281,7 @@ function buildAutoFillAction (options) {
       return undefined;
     }
     if (values.length === 1) {
-      return Math.sign(values[0].value);
+      return Math.sign(values[0].number);
     }
     const diff = values[1].number - values[0].number;
     for (let i = 2; i < values.length; i++) {
