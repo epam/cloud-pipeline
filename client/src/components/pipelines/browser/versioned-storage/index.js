@@ -78,11 +78,18 @@ function checkForBlobErrors (blob) {
     const fr = new FileReader();
     fr.onload = function () {
       try {
-        const status = JSON.parse(this.result)?.status?.toLowerCase();
-        resolve(status === 'error');
-      } catch (___) {
-        resolve(true);
-      }
+        const json = JSON.parse(this.result);
+        console.log(json);
+        const {
+          status,
+          message
+        } = json || {};
+        if (/^error$/i.test(status)) {
+          resolve(message || `Error downloading file`);
+          return;
+        }
+      } catch (e) {}
+      resolve(false);
     };
     fr.readAsText(blob);
   });
@@ -749,7 +756,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     if (res.type?.includes('application/json') && res instanceof Blob) {
       checkForBlobErrors(res)
         .then(error => error
-          ? message.error('Error downloading file', 5)
+          ? message.error(error, 5)
           : FileSaver.saveAs(res, document.name)
         );
     } else if (res) {
@@ -812,14 +819,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     });
     hide();
     if (request.error) {
-      message.error('Error downloading file', 5);
+      message.error(request.error || 'Error downloading file', 5);
     } else if (request.value instanceof Blob) {
       const fileName = `${pipeline.value.name}-report`;
       const extension = downloadAsArchive ? 'zip' : 'docx';
       if (request.value.type?.includes('application/json')) {
         checkForBlobErrors(request.value)
           .then(error => error
-            ? message.error('Error downloading file', 5)
+            ? message.error(error, 5)
             : FileSaver.saveAs(request.value, `${fileName}.${extension}`)
           );
       } else {
