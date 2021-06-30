@@ -72,6 +72,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     private static final int FILE_TO_LINE_INDEX_COLUMN = 1;
     private static final int CHANGES_TYPE_COLUMN = 2;
     private static final int CONTENT_COLUMN = 3;
+    public static final String END_OF_FILE = "No newline at end of file";
 
     private final ReportDataExtractor<GitDiffGrouping> dataProducer;
 
@@ -253,9 +254,12 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         int fromFileCurrentLine = Optional.ofNullable(hunk.getFromFileRange()).map(Range::getLineStart).orElse(0);
         int toFileCurrentLine = Optional.ofNullable(hunk.getToFileRange()).map(Range::getLineStart).orElse(0);
 
-        for (int i = 0; i < lines.size(); i++) {
-            final Line line = lines.get(i);
-            final XWPFTableRow xwpfTableRow = xwpfTable.insertNewTableRow(i);
+        int rowCount = 0;
+        for (Line line : lines) {
+            if (line.getContent().contains(END_OF_FILE)) {
+                continue;
+            }
+            final XWPFTableRow xwpfTableRow = xwpfTable.insertNewTableRow(rowCount++);
 
             for (int colIndex = FILE_FROM_LINE_INDEX_COLUMN; colIndex < REPORT_DIFF_TABLE_COL_SIZE; colIndex++) {
                 final XWPFTableCell xwpfTableCell = xwpfTableRow.addNewTableCell();
