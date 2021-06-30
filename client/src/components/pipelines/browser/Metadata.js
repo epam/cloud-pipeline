@@ -1111,6 +1111,10 @@ export default class Metadata extends React.Component {
   }
   handleStartSelection = (opts) => {
     const {e, rowInfo, column: columnInfo} = opts;
+    if (columnInfo.index === undefined) {
+      // selection cell, ignore it
+      return;
+    }
     e.stopPropagation();
     const selection = this.getCurrentSelection();
     const spreadSelection = this.getSpreadSelection();
@@ -1187,7 +1191,7 @@ export default class Metadata extends React.Component {
         result.forEach(item => {
           const index = (currentMetadata || [])
             .findIndex(o => o.rowKey && item.rowKey && o.rowKey.value === item.rowKey.value);
-          if (index) {
+          if (index >= 0) {
             currentMetadata.splice(index, 1, item);
           }
         });
@@ -1281,9 +1285,11 @@ export default class Metadata extends React.Component {
     const column = columnInfo.index;
     if (!selection) {
       if (
-        !hoveredCell ||
-        hoveredCell.column !== column ||
-        hoveredCell.row !== row
+        column !== undefined && (
+          !hoveredCell ||
+          hoveredCell.column !== column ||
+          hoveredCell.row !== row
+        )
       ) {
         this.setState({
           hoveredCell: {column, row}
