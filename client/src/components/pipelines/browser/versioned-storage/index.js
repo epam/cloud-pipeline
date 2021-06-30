@@ -815,7 +815,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       },
       includeDiff,
       groupType: splitDiffsBy,
-      archive: downloadAsArchive
+      archive: downloadAsArchive,
+      userTimeOffsetInMin: -(new Date()).getTimezoneOffset()
     });
     hide();
     if (request.error) {
