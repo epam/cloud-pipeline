@@ -132,16 +132,14 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
         switch (autoCreateUsers) {
             case EXPLICIT:
-                return throwUserNotExplicitlyRegistered(userName);
+                return allowAnonymous ? createAnonymousUser(userName, groups) :
+                        throwUserNotExplicitlyRegistered(userName);
             case EXPLICIT_GROUP:
                 if (permissionManager.isGroupRegistered(groups)) {
                     return createUser(userName, groups, attributes);
                 } else {
-                    if (allowAnonymous) {
-                        return createAnonymousUser(userName, groups);
-                    } else {
-                        return throwGroupNotExplicitlyRegistered(userName, groups);
-                    }
+                    return allowAnonymous ? createAnonymousUser(userName, groups) :
+                            throwGroupNotExplicitlyRegistered(userName, groups);
                 }
             default:
                 return createUser(userName, groups, attributes);
