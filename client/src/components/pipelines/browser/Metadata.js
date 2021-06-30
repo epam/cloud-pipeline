@@ -199,6 +199,7 @@ export default class Metadata extends React.Component {
       pageSize: PAGE_SIZE,
       searchQueries: []
     },
+    filterComponentVisible: false,
     addInstanceFormVisible: false,
     operationInProgress: false,
     configurationBrowserVisible: false,
@@ -324,7 +325,10 @@ export default class Metadata extends React.Component {
     filterModel.endDateTo = to;
     this.setState(
       {filterModel},
-      () => this.loadData()
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
     );
   };
 
@@ -352,6 +356,7 @@ export default class Metadata extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       } else {
+        this.clearSelection();
         await this.props.entityFields.fetch();
         await this.loadColumns({append: true});
         await this.loadData();
@@ -383,7 +388,10 @@ export default class Metadata extends React.Component {
     filterModel.page = FIRST_PAGE;
     this.setState(
       {filterModel},
-      () => this.loadData()
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
     );
   }
 
@@ -501,6 +509,11 @@ export default class Metadata extends React.Component {
     if (this.state.selectedItemsAreShowing) {
       return null;
     }
+    const handleControlVisibility = (visible) => {
+      this.setState({
+        filterComponentVisible: visible
+      });
+    };
     const {filterModel = {}} = this.state;
     const {
       filters = [],
@@ -531,6 +544,7 @@ export default class Metadata extends React.Component {
           from={startDateFrom}
           to={endDateTo}
           onChange={(e) => this.onDateRangeChanged(e, key)}
+          visibilityChanged={handleControlVisibility}
         >
           {button}
         </RangeDatePicker>
@@ -541,6 +555,7 @@ export default class Metadata extends React.Component {
         columnName={key}
         onSearch={(tags) => this.handleFilterApplied(key, tags)}
         value={values}
+        visibilityChanged={handleControlVisibility}
       >
         {button}
       </FilterControl>
@@ -586,7 +601,9 @@ export default class Metadata extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       }
-      this.setState({selectedItems: [], selectedItem: null, metadata: false});
+      this.setState({selectedItems: [], selectedItem: null, metadata: false}, () => {
+        this.clearSelection();
+      });
       await this.loadData();
       await this.props.folder.fetch();
       if (this.props.onReloadTree) {
@@ -796,7 +813,10 @@ export default class Metadata extends React.Component {
     this.setState({
       filterModel: newFilterModel,
       selectedItemsAreShowing: false
-    }, () => this.loadData());
+    }, () => {
+      this.clearSelection();
+      this.loadData();
+    });
   };
 
   onOrderByChanged = async (key, value) => {
@@ -890,7 +910,10 @@ export default class Metadata extends React.Component {
         filterModel,
         searchQuery: undefined
       },
-      () => this.loadData()
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
     );
   };
 
@@ -1127,7 +1150,7 @@ export default class Metadata extends React.Component {
     return undefined;
   }
   handleStartSelection = (opts) => {
-    if (this.props.readOnly) {
+    if (this.props.readOnly || this.state.filterComponentVisible) {
       return;
     }
     const {e, rowInfo, column: columnInfo} = opts;
@@ -1298,7 +1321,7 @@ export default class Metadata extends React.Component {
     return hoveredCell && hoveredCell.row === row && hoveredCell.column === column;
   }
   handleCellSelection = (opts) => {
-    if (this.props.readOnly) {
+    if (this.props.readOnly || this.state.filterComponentVisible) {
       return;
     }
     const {e, rowInfo, column: columnInfo} = opts;
@@ -1606,7 +1629,7 @@ export default class Metadata extends React.Component {
                 });
                 this.setState({selectedItems: [...selectedItems]});
               }
-              this.setState({selectedItem});
+              this.setState({selectedItem}, () => this.clearSelection());
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);
@@ -2162,7 +2185,10 @@ export default class Metadata extends React.Component {
     filterModel.page = page;
     this.setState(
       {filterModel},
-      () => this.loadData()
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
     );
   }
 
@@ -2363,14 +2389,17 @@ export default class Metadata extends React.Component {
       newState.defaultColumnsFetching = false;
       newState.defaultColumnsNames = [];
     }
-    this.setState(newState, () => Promise.all([
-      folderChanged
-        ? this.fetchDefaultColumnsIfRequested()
-        : this.loadColumns({reset: true}),
-      folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
-      this.loadData(),
-      this.loadCurrentProject()
-    ]));
+    this.setState(newState, () => {
+      this.clearSelection();
+      return Promise.all([
+        folderChanged
+          ? this.fetchDefaultColumnsIfRequested()
+          : this.loadColumns({reset: true}),
+        folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
+        this.loadData(),
+        this.loadCurrentProject()
+      ]);
+    });
   };
 
   fetchDefaultColumnsIfRequested = () => {
