@@ -48,6 +48,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -77,15 +78,18 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     private final ReportDataExtractor<GitDiffGrouping> dataProducer;
 
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
-                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter,
+                                           final List<String> customBinaryExtension) {
         if (StringUtils.isBlank(paragraph.getText()) || !paragraph.getText().contains(template)) {
             return;
         }
         cleanUpParagraph(paragraph);
-        insertData(paragraph, paragraph.getRuns().get(0), dataProducer.extract(paragraph, storage, diff, reportFilter));
+        insertData(paragraph, paragraph.getRuns().get(0),
+                dataProducer.extract(paragraph, storage, diff, reportFilter), customBinaryExtension);
     }
 
-    void insertData(final XWPFParagraph paragraph, final XWPFRun runTemplate, final GitDiffGrouping diffsGrouping) {
+    void insertData(final XWPFParagraph paragraph, final XWPFRun runTemplate, final GitDiffGrouping diffsGrouping,
+                    final List<String> customBinaryExtension) {
         if (!diffsGrouping.isIncludeDiff() || diffsGrouping.isArchive()) {
             return;
         }
@@ -104,7 +108,8 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
             addHeader(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffGroupKey, diffEntries);
             for (int i = 0; i < diffEntries.size(); i++) {
                 final GitParsedDiffEntry diffEntry = diffEntries.get(i);
-                lastParagraph = addDescription(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(), diffEntry);
+                lastParagraph = addDescription(lastParagraph, fontFamily, fontSize, diffsGrouping.getType(),
+                        diffEntry, customBinaryExtension);
                 if (!isLastEntryInGroup(diffEntries.size(), i)) {
                     addIndent(lastParagraph);
                 }
@@ -176,23 +181,31 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     }
 
     private XWPFParagraph addDescription(final XWPFParagraph paragraph, final String fontFamily, final int fontSize,
-                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry) {
+                                         final GitDiffGroupType type, final GitParsedDiffEntry diffEntry,
+                                         final List<String> customBinaryExtension) {
+        DiffUtils.DiffType diffType = DiffUtils.defineDiffType(diffEntry.getDiff());
         if (type.equals(GitDiffGroupType.BY_COMMIT)) {
             final String file = DiffUtils.getChangedFileName(diffEntry.getDiff());
+            insertTextData(paragraph, "File ", false, fontFamily, fontSize, false);
             insertTextData(paragraph, file, true, fontFamily, fontSize, false);
-            insertTextData(paragraph, " file changes:", false, fontFamily, fontSize, true);
+            insertTextData(paragraph, " was ", false, fontFamily, fontSize, false);
+            insertTextData(paragraph, diffType.name(),
+                    true, fontFamily, fontSize, true);
         } else {
-            insertTextData(paragraph, "Changes in revision: ", false, fontFamily, fontSize, false);
+            insertTextData(paragraph, "File was ", false, fontFamily, fontSize, false);
+            insertTextData(paragraph, diffType.name(),
+                    true, fontFamily, fontSize, false);
+            insertTextData(paragraph, " in revision: ", false, fontFamily, fontSize, false);
             insertTextData(
                     paragraph,
                     diffEntry.getCommit().getCommit().substring(0, 9),
                     true, fontFamily, fontSize,
                     false);
 
-            insertTextData(paragraph, " by ", false, fontFamily, fontSize + HEADER_FONT_DELTA, false);
+            insertTextData(paragraph, " by ", false, fontFamily, fontSize, false);
             insertTextData(paragraph,
                     diffEntry.getCommit().getAuthor(),
-                    true, fontFamily, fontSize + HEADER_FONT_DELTA,
+                    true, fontFamily, fontSize,
                     false);
 
             insertTextData(paragraph, " at ", false, fontFamily, fontSize, false);
@@ -202,13 +215,9 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                     true, fontFamily, fontSize, true
             );
         }
-        for (String headerLine : diffEntry.getDiff().getHeaderLines()) {
-            if (StringUtils.isNotBlank(headerLine)) {
-                insertTextData(paragraph, headerLine, false, fontFamily, fontSize, true);
-            }
-        }
 
-        return generateDiffTable(paragraph, fontFamily, fontSize, diffEntry);
+        addDiffChangeTypeInformation(paragraph, fontFamily, fontSize, diffEntry, diffType);
+        return generateDiffTable(paragraph, fontFamily, fontSize, diffEntry, customBinaryExtension);
     }
 
     private void addIndent(final XWPFParagraph paragraph) {
@@ -217,11 +226,57 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         run.addBreak(BreakType.TEXT_WRAPPING);
     }
 
+    private void addDiffChangeTypeInformation(final XWPFParagraph paragraph, final String fontFamily,
+                                              final int fontSize, final GitParsedDiffEntry diffEntry,
+                                              final DiffUtils.DiffType diffType) {
+        if (DiffUtils.isBinary(diffEntry.getDiff(), Collections.singletonList("pdf"))) {
+            switch (diffType) {
+                case CREATED:
+                case DELETED:
+                case MODIFIED:
+                    insertTextData(paragraph, "Binary file was " + diffType,
+                            false, fontFamily, fontSize, true);
+                    break;
+                case RENAMED:
+                    insertTextData(paragraph, "Binary file was " + diffType +
+                                    " from " + diffEntry.getDiff().getFromFileName() +
+                                    " to " + diffEntry.getDiff().getToFileName(),
+                            false, fontFamily, fontSize, true);
+                    break;
+            }
+        } else {
+            switch (diffType) {
+                case CREATED:
+                case DELETED:
+                case MODIFIED:
+                    insertTextData(paragraph,
+                            String.format("Shown %d lines of the previous file version" +
+                                            " and %d lines of the current file version",
+                                    diffEntry.getDiff().getHunks().stream()
+                                            .map(hunk -> hunk.getFromFileRange().getLineCount())
+                                            .mapToInt(i -> i).sum(),
+                                    diffEntry.getDiff().getHunks().stream()
+                                            .map(hunk -> hunk.getToFileRange().getLineCount())
+                                            .mapToInt(i -> i).sum()
+                            ), false, fontFamily, fontSize, true);
+                    break;
+                case RENAMED:
+                    insertTextData(paragraph, "File was " + diffType +
+                                    " from " + diffEntry.getDiff().getFromFileName() +
+                                    " to " + diffEntry.getDiff().getToFileName(),
+                            false, fontFamily, fontSize, true);
+                    break;
+            }
+
+        }
+    }
+
     private XWPFParagraph generateDiffTable(final XWPFParagraph paragraph, final String fontFamily,
-                                            int fontSize, final GitParsedDiffEntry diffEntry) {
+                                            final int fontSize, final GitParsedDiffEntry diffEntry,
+                                            final List<String> customBinaryExtension) {
         XmlCursor cursor = paragraph.getCTP().newCursor();
 
-        if (!diffEntry.getDiff().getHunks().isEmpty()) {
+        if (!DiffUtils.isBinary(diffEntry.getDiff(), customBinaryExtension)) {
             final XWPFTable xwpfTable = createTable(paragraph);
             // since hunks could be not sort by line number - sort by ourself
             diffEntry.getDiff().getHunks()

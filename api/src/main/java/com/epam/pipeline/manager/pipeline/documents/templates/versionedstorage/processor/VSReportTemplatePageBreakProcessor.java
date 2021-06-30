@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,7 +29,7 @@ import java.util.regex.Pattern;
 public class VSReportTemplatePageBreakProcessor implements VSReportTemplateProcessor {
 
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
-                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter, List<String> customBinaryExtension) {
         final String replaceRegex = "(?i)\\{" + template + "}";
         final Pattern pattern = Pattern.compile(replaceRegex, Pattern.CASE_INSENSITIVE);
         final Matcher matcher = pattern.matcher(paragraph.getText().replace("\t", ""));

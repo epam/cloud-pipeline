@@ -24,12 +24,14 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,12 +100,16 @@ public final class DiffUtils {
         return result;
     }
 
-    public static boolean isFileCreated(final Diff diff) {
-        return diff.getFromFileName().equals(DEV_NULL) && !diff.getToFileName().equals(DEV_NULL);
-    }
-
-    public static boolean isFileDeleted(final Diff diff) {
-        return !diff.getFromFileName().equals(DEV_NULL) && diff.getToFileName().equals(DEV_NULL);
+    public static DiffType defineDiffType(final Diff diff) {
+        if (diff.getFromFileName().equals(DEV_NULL) && !diff.getToFileName().equals(DEV_NULL)) {
+            return DiffType.CREATED;
+        } else if (!diff.getFromFileName().equals(DEV_NULL) && diff.getToFileName().equals(DEV_NULL)) {
+            return DiffType.DELETED;
+        } else if (!diff.getFromFileName().equals(diff.getToFileName())) {
+            return DiffType.RENAMED;
+        } else {
+            return DiffType.MODIFIED;
+        }
     }
 
     public static GitParsedDiff reduceDiffByFile(GitReaderDiff gitReaderDiff, GitDiffReportFilter reportFilters) {
@@ -164,9 +170,19 @@ public final class DiffUtils {
         return gitCommitsFilterBuilder.build();
     }
 
-    public static String getChangedFileName(Diff diff) {
+    public static String getChangedFileName(final Diff diff) {
         return diff.getFromFileName().equals(DEV_NULL)
                 ? diff.getToFileName()
                 : diff.getFromFileName();
+    }
+
+    public static boolean isBinary(final Diff diff, final List<String> binaryExts) {
+        return ListUtils.emptyIfNull(diff.getHunks()).isEmpty() ||
+                binaryExts.stream()
+                        .anyMatch(ext -> diff.getToFileName().endsWith(ext) || diff.getFromFileName().endsWith(ext));
+    }
+
+    public enum DiffType {
+        CREATED, DELETED, MODIFIED, RENAMED
     }
 }

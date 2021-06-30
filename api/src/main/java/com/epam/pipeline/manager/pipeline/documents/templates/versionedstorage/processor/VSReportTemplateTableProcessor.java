@@ -38,6 +38,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -52,7 +53,7 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
     private final ReportDataExtractor<Table> dataProducer;
 
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
-                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter, List<String> customBinaryExtension) {
         if (paragraph == null) {
             return;
         }

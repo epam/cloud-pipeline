@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,7 +37,7 @@ public class VSReportTemplateTextProcessor implements VSReportTemplateProcessor 
     private final ReportDataExtractor<String> dataProducer;
 
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
-                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter, List<String> customBinaryExtension) {
 
         final String replaceRegex = "(?i)\\{" + template + "}";
         final Pattern pattern = Pattern.compile(replaceRegex, Pattern.CASE_INSENSITIVE);
