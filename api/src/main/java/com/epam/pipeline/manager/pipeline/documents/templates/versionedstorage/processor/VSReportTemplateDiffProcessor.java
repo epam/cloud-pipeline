@@ -74,6 +74,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
     private static final int CHANGES_TYPE_COLUMN = 2;
     private static final int CONTENT_COLUMN = 3;
     public static final String END_OF_FILE = "No newline at end of file";
+    public static final int DEFAULT_FONT_SIZE = 12;
 
     private final ReportDataExtractor<GitDiffGrouping> dataProducer;
 
@@ -95,7 +96,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         }
 
         final String fontFamily = runTemplate.getFontFamily();
-        final int fontSize = runTemplate.getFontSize();
+        final int fontSize = getFontSize(runTemplate);
         XWPFParagraph lastParagraph = paragraph;
         lastParagraph.setPageBreak(true);
         for (Map.Entry<String, List<GitParsedDiffEntry>> entry : getSortedDiffGroups(diffsGrouping)) {
@@ -115,6 +116,11 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                 }
             }
         }
+    }
+
+    private int getFontSize(XWPFRun runTemplate) {
+        int fontSize = runTemplate.getFontSize();
+        return fontSize > 0 ? fontSize : DEFAULT_FONT_SIZE;
     }
 
     private boolean isLastEntryInGroup(final int entriesSize, final int index) {
@@ -344,7 +350,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                 }
 
                 xwpfRun.setText(cellData, 0);
-                xwpfRun.setFontSize(xwpfRun.getFontSize() - 2);
+                xwpfRun.setFontSize(getFontSize(xwpfRun) - 2);
                 xwpfTableCell.setColor(getLineColor(line));
             }
         }
