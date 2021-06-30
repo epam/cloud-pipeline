@@ -62,6 +62,9 @@ spec:
             - mountPath: /root/.kube
               name: kube-config
               readOnly: true
+            - mountPath: /etc/kubernetes/pki
+              name: kube-pki
+              readOnly: true
       volumes:
         - name: vm-monitor-logs
           hostPath:
@@ -99,5 +102,8 @@ spec:
         - name: kube-config
           hostPath:
             path: /root/.kube
+        - name: kube-pki
+          hostPath:
+            path: /etc/kubernetes/pki
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
