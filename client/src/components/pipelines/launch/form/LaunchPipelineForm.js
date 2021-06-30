@@ -4738,9 +4738,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.run({key: RUN_SELECTED_KEY});
           }
         };
-        const dropDownMenu = (
+        const dropdownRenderer = () => (
           <Menu onClick={onDropDownClick} selectedKeys={[]}>
-            <Menu.Item key={KEYS.selectMetadata}>Select metadata entries</Menu.Item>
+            <Menu.Item key={KEYS.selectMetadata}>
+              Select metadata entries
+            </Menu.Item>
           </Menu>
         );
         return (
@@ -4758,51 +4760,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   </Button>
                 )
               }
-              {this.props.runConfigurationId ? (
-                <Button.Group>
-                  <SubmitButton
-                    id="launch-pipeline-button"
-                    type="primary"
-                    htmlType="submit"
-                    inputs={this.inputPaths}
-                    outputs={this.outputPaths}
-                    dockerImage={this.dockerImage}
-                  >
-                    Launch
-                  </SubmitButton>
-                  <Dropdown
-                    overlay={dropDownMenu}
-                    placement="bottomRight"
-                  >
-                    <Button
-                      id={`launch-metadata`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                      type="primary"
-                    >
-                      <Icon
-                        type="down"
-                        style={{
-                          lineHeight: 'inherit'
-                        }}
-                      />
-                    </Button>
-                  </Dropdown>
-                </Button.Group>
-              ) : (
-                <SubmitButton
-                  id="launch-pipeline-button"
-                  inputs={this.inputPaths}
-                  outputs={this.outputPaths}
-                  dockerImage={this.dockerImage}
-                  type="primary"
-                  htmlType="submit"
-                >
-                  Launch
-                </SubmitButton>
-              )}
+              <SubmitButton
+                id="launch-pipeline-button"
+                inputs={this.inputPaths}
+                outputs={this.outputPaths}
+                dockerImage={this.dockerImage}
+                type="primary"
+                htmlType="submit"
+                dropdown={!!this.props.runConfigurationId}
+                dropdownRenderer={dropdownRenderer}
+                dropdownId="launch-metadata"
+              >
+                Launch
+              </SubmitButton>
             </FormItem>
           </td>
         );

@@ -378,6 +378,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   prepareRunPayload = async (payload) => {
+    const hide = message.loading('Preparing run payload...', 0);
     const currentProject = await this.getCurrentProject();
     if (currentProject?.id) {
       const currentProjectId = currentProject.id;
@@ -389,6 +390,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         currentMetadataEntity: metadataEntity
       });
     }
+    hide();
   };
 
   selectMetadataConfirm = async (entitiesIds) => {
