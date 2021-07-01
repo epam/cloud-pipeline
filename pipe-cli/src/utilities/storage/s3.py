@@ -160,23 +160,23 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
     def __init__(self, session, bucket, region_name=None):
         super(DownloadManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
+    def get_destination_key(self, destination_wrapper, relative_path):
         if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
+            return os.path.join(destination_wrapper.path, relative_path)
         else:
-            destination_key = destination_wrapper.path
-        if skip_existing:
-            remote_size = self.get_s3_file_size(source_wrapper.bucket.path, source_key)
-            local_size = self.get_local_file_size(destination_key)
-            if local_size is not None and remote_size == local_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+            return destination_wrapper.path
+
+    def get_source_key(self, source_wrapper, path):
+        return path or source_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return self.get_local_file_size(destination_key)
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None,
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         self.create_local_folder(destination_key, lock)
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size))
@@ -191,20 +191,23 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
     def __init__(self, session, bucket, region_name=None):
         super(UploadManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
-        if path:
-            source_key = os.path.join(source_wrapper.path, path)
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        if source_path:
+            return os.path.join(source_wrapper.path, source_path)
         else:
-            source_key = source_wrapper.path
-        destination_key = S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
-        if skip_existing:
-            local_size = self.get_local_file_size(source_key)
-            remote_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
-            if remote_size is not None and local_size == remote_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+            return source_wrapper.path
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
+                 clean=False, quiet=False, size=None, tags=(), lock=None):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         tags += ("CP_SOURCE={}".format(source_key),)
         tags += ("CP_OWNER={}".format(self._get_user()),)
         extra_args = {
@@ -230,26 +233,26 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
     def __init__(self, session, bucket, region_name=None):
         super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, bucket=bucket, region_name=region_name)
 
+    def get_destination_key(self, destination_wrapper, relative_path):
+        if destination_wrapper.path.endswith(os.path.sep):
+            return os.path.join(destination_wrapper.path, relative_path)
+        else:
+            return destination_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path or source_wrapper.path
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 clean=False, quiet=False, size=None, tags=(), lock=None):
         if clean:
             raise AttributeError("Cannot perform 'mv' operation due to deletion remote files "
                                  "is not supported for ftp/http sources.")
-        if path:
-            source_key = path
-        else:
-            source_key = source_wrapper.path
-        if destination_wrapper.path.endswith(os.path.sep):
-            destination_key = os.path.join(destination_wrapper.path, relative_path)
-        else:
-            destination_key = destination_wrapper.path
-        if skip_existing:
-            remote_size = size
-            s3_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
-            if s3_size is not None and remote_size == s3_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-                return
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
         tags += ("CP_SOURCE={}".format(source_key),)
         tags += ("CP_OWNER={}".format(self._get_user()),)
         extra_args = {
@@ -276,25 +279,27 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket, region_name=region_name,
                                                             cross_region=cross_region)
 
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 quiet=False, size=None, tags=(), lock=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region
-        destination_key = S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
         copy_source = {
             'Bucket': source_bucket,
             'Key': path
         }
         source_client = self.build_source_client(source_region)
 
-        if skip_existing:
-            from_size = self.get_s3_file_size(source_bucket, path)
-            to_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
-            if to_size is not None and to_size == from_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (path, destination_key))
-                return
         extra_args = {
             'ACL': 'bucket-owner-full-control'
         }
