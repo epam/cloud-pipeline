@@ -110,7 +110,8 @@ if __name__ == '__main__':
     logon_image_path = _extract_parameter('CP_LOGON_IMAGE_PATH', default=os.path.join(resources_dir, 'logon.bmp'))
     task_path = _extract_parameter('CP_TASK_PATH', '.\\task.ps1')
     python_dir = _extract_parameter('CP_PYTHON_DIR', 'c:\\python')
-    requires_repo = _extract_boolean_parameter('CP_REPO_ENABLED')
+    # todo: Enable support for custom repo usage once launch with default parameters issue is fixed in GUI
+    requires_repo = False
     repo_pypi_base_url = _extract_parameter('CP_REPO_PYPI_BASE_URL_DEFAULT',
                                             default='http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple')
     repo_pypi_trusted_host = _extract_parameter('CP_REPO_PYPI_TRUSTED_HOST_DEFAULT',
