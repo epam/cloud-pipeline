@@ -22,18 +22,20 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 import java.text.SimpleDateFormat;
+import java.util.List;
 
 public interface VSReportTemplateProcessor {
 
     SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     default void process(final XWPFParagraph paragraph, final String template, final Pipeline storage,
-                         final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
+                         final GitParsedDiff diff, final GitDiffReportFilter reportFilter,
+                         final List<String> customBinaryExtension) {
         if (paragraph == null) {
             return;
         }
         while (paragraph.getText().matches(getPlaceholderRegexp(template))) {
-            replacePlaceholderWithData(paragraph, template, storage, diff, reportFilter);
+            replacePlaceholderWithData(paragraph, template, storage, diff, reportFilter, customBinaryExtension);
         }
     }
 
@@ -57,7 +59,8 @@ public interface VSReportTemplateProcessor {
     }
 
     void replacePlaceholderWithData(XWPFParagraph paragraph, String template, Pipeline storage,
-                                    GitParsedDiff diff, GitDiffReportFilter reportFilter);
+                                    GitParsedDiff diff, GitDiffReportFilter reportFilter,
+                                    List<String> customBinaryExtension);
 
 
 }

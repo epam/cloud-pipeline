@@ -148,6 +148,9 @@ public class SystemPreferences {
             "storage.operations.bulk.size", 1000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final StringPreference VERSION_STORAGE_REPORT_TEMPLATE = new StringPreference(
             "storage.version.storage.report.template", null, DATA_STORAGE_GROUP, isNullOrValidLocalPath());
+    public static final StringPreference VERSION_STORAGE_BINARY_FILE_EXTS = new StringPreference(
+            "storage.version.storage.report.binary.file.exts",
+            "pdf", DATA_STORAGE_GROUP, pass);
 
 
     /**

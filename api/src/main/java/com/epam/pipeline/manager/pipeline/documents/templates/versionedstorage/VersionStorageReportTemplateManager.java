@@ -49,6 +49,7 @@ import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -72,6 +73,8 @@ public class VersionStorageReportTemplateManager {
     public static final String REVISION = "revision";
     public static final String SUMMARY = "summary";
     public static final int BUFFER_SIZE = 1024;
+    public static final String EMPTY = "";
+    public static final String COMMA = ",";
 
     private final PipelineManager pipelineManager;
     private final GitManager gitManager;
@@ -246,7 +249,8 @@ public class VersionStorageReportTemplateManager {
     private void changeParagraph(final XWPFParagraph paragraph, final Pipeline storage,
                                  final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         for (VSReportTemplates template : VSReportTemplates.values()) {
-            template.templateResolver.get().process(paragraph, template.template, storage, diff, reportFilter);
+            template.templateResolver.get().process(paragraph, template.template, storage, diff, reportFilter,
+                    getCustomBinaryExtension());
         }
     }
 
@@ -280,8 +284,16 @@ public class VersionStorageReportTemplateManager {
         return versionStorageTemplatePath;
     }
 
+    private List<String> getCustomBinaryExtension() {
+        return Arrays.stream(Optional.ofNullable(
+                preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_BINARY_FILE_EXTS))
+                .orElse(EMPTY)
+                .split(COMMA))
+                .map(String::trim).collect(Collectors.toList());
+    }
+
     private String resolveGroupReportFileName(final GitDiffReportFilter reportFilters, final String id) {
-        return (getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : "")
+        return (getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : EMPTY)
                 + id.replace("/", NAME_SEPARATOR) + DOCX;
     }
 
