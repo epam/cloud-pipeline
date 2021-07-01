@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.dts;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesRemovalVO;
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesUpdateVO;
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.dao.dts.DtsRegistryDao;
 import com.epam.pipeline.entity.dts.DtsRegistry;
@@ -31,6 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * {@link DtsRegistryManager} provides CRUD methods for Data Transfer Service registry.
@@ -101,6 +106,47 @@ public class DtsRegistryManager {
         validateDtsRegistryId(registryId);
         DtsRegistry dtsRegistry = loadOrThrow(registryId);
         dtsRegistryDao.delete(registryId);
+        return dtsRegistry;
+    }
+
+    /**
+     * Creates new or updates existing preferences in a {@link DtsRegistry} specified by ID.
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     * @param registryId a {@link DtsRegistry} ID to update
+     * @param preferencesVO preferences, that need to be set for a registry
+     * @return updated {@link DtsRegistry}
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public DtsRegistry upsertPreferences(final Long registryId, final DtsRegistryPreferencesUpdateVO preferencesVO) {
+        validateDtsRegistryId(registryId);
+        final DtsRegistry dtsRegistry = loadOrThrow(registryId);
+        final Map<String, String> preferencesToUpdate = preferencesVO.getPreferencesToUpdate();
+        dtsRegistryDao.upsertPreferences(registryId, preferencesToUpdate);
+        dtsRegistry.getPreferences().putAll(preferencesToUpdate);
+        return dtsRegistry;
+    }
+
+    /**
+     * Removes preferences in a {@link DtsRegistry} specified by ID.
+     * If required {@link DtsRegistry} does not exist an error will be thrown.
+     * If any key specified for removal, is not presented in a registry's preferences, an error will be thrown.
+     * @param registryId a {@link DtsRegistry} ID to update
+     * @param preferencesVO list of keys indicating which preferences need to be removed from a registry
+     * @return updated {@link DtsRegistry}
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public DtsRegistry deletePreferences(final Long registryId, final DtsRegistryPreferencesRemovalVO preferencesVO) {
+        validateDtsRegistryId(registryId);
+        final DtsRegistry dtsRegistry = loadOrThrow(registryId);
+        final Set<String> existingKeys = dtsRegistry.getPreferences().keySet();
+        final List<String> keysToRemove = preferencesVO.getPreferenceKeysToRemove();
+        final String listOfNonExistentPreferences = keysToRemove.stream()
+            .filter(preference -> !existingKeys.contains(preference))
+            .collect(Collectors.joining(","));
+        Assert.isTrue(StringUtils.isEmpty(listOfNonExistentPreferences), messageHelper
+            .getMessage(MessageConstants.ERROR_DTS_PREFERENCES_DOESNT_EXIST, registryId, listOfNonExistentPreferences));
+        dtsRegistryDao.deletePreferences(registryId, keysToRemove);
+        existingKeys.removeAll(keysToRemove);
         return dtsRegistry;
     }
 

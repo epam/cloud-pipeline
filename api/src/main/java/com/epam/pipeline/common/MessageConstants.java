@@ -456,6 +456,7 @@ public final class MessageConstants {
     public static final String ERROR_DTS_REGISTRY_ID_IS_EMPTY = "error.dts.registry.id.is.empty";
     public static final String ERROR_DTS_REGISTRY_NAME_IS_EMPTY = "error.dts.registry.name.is.empty";
     public static final String ERROR_DTS_NOT_SCHEDULABLE = "error.dts.registry.not.schedulable";
+    public static final String ERROR_DTS_PREFERENCES_DOESNT_EXIST = "error.dts.preferences.not.exist";
 
     //Cloud region
     public static final String ERROR_REGION_NOT_FOUND = "error.region.not.found";

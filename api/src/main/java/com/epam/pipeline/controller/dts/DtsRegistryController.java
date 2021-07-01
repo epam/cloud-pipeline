@@ -18,6 +18,8 @@ package com.epam.pipeline.controller.dts;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesRemovalVO;
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesUpdateVO;
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.acl.dts.DtsRegistryApiService;
@@ -112,5 +114,35 @@ public class DtsRegistryController extends AbstractRestController {
             })
     public Result<DtsRegistry> updateDtsRegistry(@PathVariable(value = REGISTRY_ID) Long registryId) {
         return Result.success(dtsRegistryApiService.delete(registryId));
+    }
+
+    @PutMapping(value = "/{registryId}/preferences")
+    @ResponseBody
+    @ApiOperation(
+        value = "Upserts preferences for a Data Transfer Service registry specified.",
+        notes = "Upserts certain preferences for a Data Transfer Service registry, which is specified by id.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<DtsRegistry> upsertDtsRegistryPreferences(final @PathVariable(value = REGISTRY_ID) Long registryId,
+                                                            final @RequestBody
+                                                                DtsRegistryPreferencesUpdateVO preferencesVO) {
+        return Result.success(dtsRegistryApiService.upsertPreferences(registryId, preferencesVO));
+    }
+
+    @DeleteMapping(value = "/{registryId}/preferences")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes preferences for a Data Transfer Service registry specified.",
+            notes = "Deletes certain preferences for a Data Transfer Service registry, which is specified by id.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<DtsRegistry> deleteDtsRegistryPreferences(final @PathVariable(value = REGISTRY_ID) Long registryId,
+                                                            final @RequestBody
+                                                                DtsRegistryPreferencesRemovalVO preferencesVO) {
+        return Result.success(dtsRegistryApiService.deletePreferences(registryId, preferencesVO));
     }
 }

@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.acl.dts;
 
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesRemovalVO;
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesUpdateVO;
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.manager.dts.DtsRegistryManager;
@@ -55,5 +57,15 @@ public class DtsRegistryApiService {
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsRegistry delete(Long registryId) {
         return dtsRegistryManager.delete(registryId);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public DtsRegistry upsertPreferences(final Long registryId, final DtsRegistryPreferencesUpdateVO preferencesVO) {
+        return dtsRegistryManager.upsertPreferences(registryId, preferencesVO);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public DtsRegistry deletePreferences(final Long registryId, final DtsRegistryPreferencesRemovalVO preferencesVO) {
+        return dtsRegistryManager.deletePreferences(registryId, preferencesVO);
     }
 }
