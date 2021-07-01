@@ -285,8 +285,11 @@ public class VersionStorageReportTemplateManager {
     }
 
     private List<String> getCustomBinaryExtension() {
-        return Arrays.asList(Optional.ofNullable(preferenceManager.getPreference(
-                SystemPreferences.VERSION_STORAGE_BINARY_FILE_EXTS)).orElse(EMPTY).split(COMMA));
+        return Arrays.stream(Optional.ofNullable(
+                preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_BINARY_FILE_EXTS))
+                .orElse(EMPTY)
+                .split(COMMA))
+                .map(String::trim).collect(Collectors.toList());
     }
 
     private String resolveGroupReportFileName(final GitDiffReportFilter reportFilters, final String id) {

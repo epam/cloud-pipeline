@@ -236,42 +236,32 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                                               final int fontSize, final GitParsedDiffEntry diffEntry,
                                               final DiffUtils.DiffType diffType) {
         if (DiffUtils.isBinary(diffEntry.getDiff(), Collections.singletonList("pdf"))) {
-            switch (diffType) {
-                case CREATED:
-                case DELETED:
-                case MODIFIED:
-                    insertTextData(paragraph, "Binary file was " + diffType,
-                            false, fontFamily, fontSize, true);
-                    break;
-                case RENAMED:
-                    insertTextData(paragraph, "Binary file was " + diffType +
-                                    " from " + diffEntry.getDiff().getFromFileName() +
-                                    " to " + diffEntry.getDiff().getToFileName(),
-                            false, fontFamily, fontSize, true);
-                    break;
+            if (diffType == DiffUtils.DiffType.RENAMED) {
+                insertTextData(paragraph, "Binary file was " + diffType +
+                                " from " + diffEntry.getDiff().getFromFileName() +
+                                " to " + diffEntry.getDiff().getToFileName(),
+                        false, fontFamily, fontSize, true);
+            } else {
+                insertTextData(paragraph, "Binary file was " + diffType,
+                        false, fontFamily, fontSize, true);
             }
         } else {
-            switch (diffType) {
-                case CREATED:
-                case DELETED:
-                case MODIFIED:
-                    insertTextData(paragraph,
-                            String.format("Shown %d lines of the previous file version" +
-                                            " and %d lines of the current file version",
-                                    diffEntry.getDiff().getHunks().stream()
-                                            .map(hunk -> hunk.getFromFileRange().getLineCount())
-                                            .mapToInt(i -> i).sum(),
-                                    diffEntry.getDiff().getHunks().stream()
-                                            .map(hunk -> hunk.getToFileRange().getLineCount())
-                                            .mapToInt(i -> i).sum()
-                            ), false, fontFamily, fontSize, true);
-                    break;
-                case RENAMED:
-                    insertTextData(paragraph, "File was " + diffType +
-                                    " from " + diffEntry.getDiff().getFromFileName() +
-                                    " to " + diffEntry.getDiff().getToFileName(),
-                            false, fontFamily, fontSize, true);
-                    break;
+            if (diffType == DiffUtils.DiffType.RENAMED) {
+                insertTextData(paragraph, "File was " + diffType +
+                                " from " + diffEntry.getDiff().getFromFileName() +
+                                " to " + diffEntry.getDiff().getToFileName(),
+                        false, fontFamily, fontSize, true);
+            } else {
+                insertTextData(paragraph,
+                        String.format("Shown %d lines of the previous file version" +
+                                        " and %d lines of the current file version",
+                                diffEntry.getDiff().getHunks().stream()
+                                        .map(hunk -> hunk.getFromFileRange().getLineCount())
+                                        .mapToInt(i -> i).sum(),
+                                diffEntry.getDiff().getHunks().stream()
+                                        .map(hunk -> hunk.getToFileRange().getLineCount())
+                                        .mapToInt(i -> i).sum()
+                        ), false, fontFamily, fontSize, true);
             }
 
         }

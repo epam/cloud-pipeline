@@ -53,7 +53,8 @@ public class VSReportTemplateTableProcessor implements VSReportTemplateProcessor
     private final ReportDataExtractor<Table> dataProducer;
 
     public void replacePlaceholderWithData(final XWPFParagraph paragraph, final String template, final Pipeline storage,
-                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter, List<String> customBinaryExtension) {
+                                           final GitParsedDiff diff, final GitDiffReportFilter reportFilter,
+                                           final List<String> customBinaryExtension) {
         if (paragraph == null) {
             return;
         }
