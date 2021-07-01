@@ -70,9 +70,9 @@ public enum VSReportTemplates {
                         .filter(CollectionUtils::isNotEmpty)
                         .map(lst -> String.join(", ", lst))
                         .orElse(Constants.ALL_FILES))),
-    FILE_LIST_TABLE("\"file_list_table\".*",
+    FILE_LIST_TABLE(".*file_list_table.*",
         () -> new VSReportTemplateTableProcessor(new FileListTableExtractor())),
-    REVISION_HISTORY_TABLE("\"revision_history_table\".*",
+    REVISION_HISTORY_TABLE(".*revision_history_table.*",
         () -> new VSReportTemplateTableProcessor(new RevisionListTableExtractor())),
     COMMIT_DIFFS("commit_diffs", () -> new VSReportTemplateDiffProcessor(new CommitDiffExtractor()));
 

@@ -94,7 +94,10 @@ public class FileListTableExtractor implements ReportDataExtractor<Table> {
         }
         try {
             return OBJECT_MAPPER.readValue(
-                    tableStructureString,
+                    tableStructureString
+                            // replacing word's quotas with the real one
+                            .replace("”", "\"")
+                            .replace("“", "\""),
                     new TypeReference<LinkedHashMap<FileListTableColumn, String>>() {}
             );
         } catch (IOException e) {

@@ -40,9 +40,8 @@ import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.apache.xmlbeans.XmlCursor;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTJc;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblBorders;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblGrid;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblPr;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblWidth;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc;
 
@@ -281,6 +280,10 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
             for (final Hunk hunk : diffEntry.getDiff().getHunks()) {
                 fillTableWithDiffHunk(fontFamily, fontSize, xwpfTable, hunk);
             }
+            // We set size for all columns except last one to constantly small to provide
+            // more space for content column
+            configureColumnWidth(xwpfTable, SMALL_COLUMN_SIZE, SMALL_COLUMN_SIZE,
+                    SMALL_COLUMN_SIZE, CONTENT_COLUMN_SIZE);
             cursor = xwpfTable.getCTTbl().newCursor();
         }
 
@@ -333,12 +336,6 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
                     cellData = line.getContent();
                 }
 
-                // We set size for all columns except last one to constantly small to provide
-                // more space for content column
-                if (colIndex < CONTENT_COLUMN) {
-                    configureColumnWidth(xwpfTableRow, colIndex, xwpfTableCell);
-                }
-
                 xwpfRun.setText(cellData, 0);
                 xwpfRun.setFontSize(getFontSize(xwpfRun) - 2);
                 xwpfTableCell.setColor(getLineColor(line));
@@ -362,14 +359,18 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         }
     }
 
-    private void configureColumnWidth(final XWPFTableRow xwpfTableRow, final int colIndex,
-                                      final XWPFTableCell xwpfTableCell) {
-        final CTTcPr ctTcPr = xwpfTableCell.getCTTc().addNewTcPr();
-        final CTTblWidth cellWidth = ctTcPr.addNewTcW();
-        cellWidth.setType(xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getTcW().getType());
-        cellWidth.setW(BigInteger.valueOf(4L));
-        if (xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getGridSpan() != null) {
-            ctTcPr.setGridSpan(xwpfTableRow.getCell(colIndex).getCTTc().getTcPr().getGridSpan());
+    private void configureColumnWidth(final XWPFTable table, long... widths) {
+        final CTTblGrid grid = table.getCTTbl().addNewTblGrid();
+        for (int i = 0; i < widths.length; i++) {
+            grid.addNewGridCol().setW(BigInteger.valueOf(widths[i]));
+            XWPFTableCell cell = table.getRow(0).getCell(i);
+            if (cell.getCTTc().getTcPr() == null) {
+                cell.getCTTc().addNewTcPr();
+            }
+            if (cell.getCTTc().getTcPr().getTcW() == null) {
+                cell.getCTTc().getTcPr().addNewTcW();
+            }
+            cell.getCTTc().getTcPr().getTcW().setW(BigInteger.valueOf(widths[i]));
         }
     }
 
@@ -399,6 +400,7 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
         final CTJc jc = (properties.isSetJc() ? properties.getJc() : properties.addNewJc());
         jc.setVal(STJc.CENTER);
 
+
         final CTTblBorders borders = properties.addNewTblBorders();
         borders.addNewBottom().setVal(STBorder.SINGLE);
         borders.addNewLeft().setVal(STBorder.SINGLE);
@@ -407,11 +409,6 @@ public class VSReportTemplateDiffProcessor implements VSReportTemplateProcessor 
 
         borders.addNewInsideH().setVal(STBorder.SINGLE);
         borders.addNewInsideV().setVal(STBorder.SINGLE);
-
-        xwpfTable.getCTTbl().addNewTblGrid().addNewGridCol().setW(BigInteger.valueOf(SMALL_COLUMN_SIZE));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(SMALL_COLUMN_SIZE));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(SMALL_COLUMN_SIZE));
-        xwpfTable.getCTTbl().getTblGrid().addNewGridCol().setW(BigInteger.valueOf(CONTENT_COLUMN_SIZE));
         return xwpfTable;
     }
 
