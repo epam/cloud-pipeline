@@ -101,6 +101,7 @@ if __name__ == '__main__':
     edge_url = _extract_parameter('EDGE', default='https://cp-edge.default.svc.cluster.local:31081')
     node_private_key_path = _extract_parameter('CP_NODE_PRIVATE_KEY', default=os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = _extract_parameter('OWNER', 'USER')
+    owner = owner.split('@')[0]
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
     owner_groups = _extract_parameter('OWNER_GROUPS', default='Administrators')
     logon_title = _extract_parameter('CP_LOGON_TITLE', default='Login as ' + owner)
