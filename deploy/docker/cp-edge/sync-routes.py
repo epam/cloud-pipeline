@@ -381,7 +381,7 @@ def get_active_runs(pods):
         get_runs_list_details_method = os.path.join(api_url, 
                                                     API_GET_RUNS_LIST_DETAILS.format(run_ids=','.join(pod_run_ids)))
         response_data = call_api(get_runs_list_details_method)
-        if not response_data:
+        if not response_data or 'payload' not in response_data:
                 do_log('Cannot get list of active runs from the API for the following IDs: {}'.format(pod_run_ids))
                 return []
         
