@@ -23,13 +23,19 @@ import com.epam.pipeline.entity.cluster.MasterPodInfo;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
+import io.fabric8.kubernetes.api.model.EndpointAddress;
+import io.fabric8.kubernetes.api.model.EndpointPort;
+import io.fabric8.kubernetes.api.model.EndpointSubset;
+import io.fabric8.kubernetes.api.model.Endpoints;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
@@ -739,23 +745,72 @@ public class KubernetesManager {
         return !isNodeAvailable(node);
     }
 
+    public void createNodeService(final RunInstance instance) {
+        if (KubernetesConstants.WINDOWS.equals(instance.getNodePlatform())) {
+            final Integer port = preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_WINDOWS_SERVICE_PORT);
+            if (port == null) {
+                log.debug("Kubernetes Windows service port is not specified. No service will be created.");
+                return;
+            }
+            final String serviceName = resolveNodeServiceName(instance.getNodeIP());
+            createServiceIfNotExists(serviceName, port, port);
+            createEndpointsIfNotExists(serviceName, instance.getNodeIP(), port);
+        }
+    }
+
+    public void deleteNodeService(final RunInstance instance) {
+        if (KubernetesConstants.WINDOWS.equals(instance.getNodePlatform())) {
+            final String serviceName = resolveNodeServiceName(instance.getNodeIP());
+            deleteServiceIfExists(serviceName);
+            deleteEndpointsIfExist(serviceName);
+        }
+    }
+
+    private String resolveNodeServiceName(final String ip) {
+        return "ip-" + ip.replace(".", "-");
+    }
+
+    private Service createServiceIfNotExists(final String name, final int port, final int targetPort) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Optional<Service> service = findServiceByName(client, name);
+            if (service.isPresent()) {
+                LOGGER.debug("Service with name '{}' already exists", name);
+                return service.get();
+            }
+            return createService(client, name, port, targetPort);
+        }
+    }
+
+    private Service createService(final KubernetesClient client, final String name, final int port, 
+                                  final int targetPort) {
+        final ServicePort servicePort = new ServicePort();
+        servicePort.setPort(port);
+        servicePort.setTargetPort(new IntOrString(targetPort));
+        return createService(client, name, Collections.emptyMap(), Collections.singletonList(servicePort));
+    }
+    
     public Service createService(final String serviceName, final Map<String, String> labels,
                                  final List<ServicePort> ports) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Service service = client.services().createNew()
-                    .withNewMetadata()
-                    .withName(serviceName)
-                    .withNamespace(kubeNamespace)
-                    .withLabels(labels)
-                    .endMetadata()
-                    .withNewSpec()
-                    .withPorts(ports)
-                    .withSelector(labels)
-                    .endSpec()
-                    .done();
-            Assert.notNull(service, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, serviceName));
-            return service;
+            return createService(client, serviceName, labels, ports);
         }
+    }
+
+    private Service createService(final KubernetesClient client, final String serviceName, 
+                                  final Map<String, String> labels, final List<ServicePort> ports) {
+        final Service service = client.services().createNew()
+                .withNewMetadata()
+                .withName(serviceName)
+                .withNamespace(kubeNamespace)
+                .withLabels(labels)
+                .endMetadata()
+                .withNewSpec()
+                .withPorts(ports)
+                .withSelector(labels)
+                .endSpec()
+                .done();
+        Assert.notNull(service, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, serviceName));
+        return service;
     }
 
     public Optional<Service> getService(final String labelName, final String labelValue) {
@@ -766,12 +821,27 @@ public class KubernetesManager {
 
     public boolean deleteService(final Service service) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Boolean deleted = client.services().delete(service);
-            if (Objects.isNull(deleted) || !deleted) {
-                LOGGER.debug("Failed to delete service '{}'", service.getMetadata().getName());
-            }
-            return deleted;
+            return deleteService(client, service);
         }
+    }
+
+    public void deleteServiceIfExists(final String name) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Optional<Service> service = findServiceByName(client, name);
+            if (!service.isPresent()) {
+                LOGGER.debug("Failed to find service with name '{}'", name);
+                return;
+            }
+            deleteService(client, service.get());
+        }
+    }
+
+    private boolean deleteService(final KubernetesClient client, final Service service) {
+        final boolean deleted = Optional.ofNullable(client.services().delete(service)).orElse(false);
+        if (!deleted) {
+            LOGGER.debug("Failed to delete service '{}'", service.getMetadata().getName());
+        }
+        return deleted;
     }
 
     private Optional<Service> findServiceByLabel(final KubernetesClient client, final String labelName,
@@ -790,9 +860,65 @@ public class KubernetesManager {
     }
 
     private Optional<Service> findServiceByName(final KubernetesClient client, final String name) {
-        final Service item = client.services()
+        return Optional.ofNullable(client.services()
+                .inNamespace(kubeNamespace)
                 .withName(name)
-                .get();
-        return Optional.ofNullable(item);
+                .get());
+    }
+
+    private Endpoints createEndpointsIfNotExists(final String name, final String ip, final Integer port) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Optional<Endpoints> endpoints = findEndpointsByName(client, name);
+            if (endpoints.isPresent()) {
+                LOGGER.debug("Endpoints with name '{}' already exist", name);
+                return endpoints.get();
+            }
+            return createEndpoints(client, name, ip, port);
+        }
+    }
+
+    private Endpoints createEndpoints(final KubernetesClient client, final String name, final String ip, 
+                                      final int port) {
+        final EndpointAddress endpointAddress = new EndpointAddress();
+        endpointAddress.setIp(ip);
+        final EndpointPort endpointPort = new EndpointPort();
+        endpointPort.setPort(port);
+        final EndpointSubset endpointSubset = new EndpointSubset(Collections.singletonList(endpointAddress), 
+                Collections.emptyList(), Collections.singletonList(endpointPort));
+        final Endpoints endpoints = client.endpoints().createNew()
+                .withNewMetadata()
+                .withName(name)
+                .withNamespace(kubeNamespace)
+                .endMetadata()
+                .withSubsets(endpointSubset)
+                .done();
+        Assert.notNull(endpoints, messageHelper.getMessage(MessageConstants.ERROR_KUBE_ENDPOINTS_CREATE, name));
+        return endpoints;
+    }
+
+    public void deleteEndpointsIfExist(final String name) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Optional<Endpoints> endpoints = findEndpointsByName(client, name);
+            if (!endpoints.isPresent()) {
+                LOGGER.debug("Failed to find endpoints with name '{}'", name);
+                return;
+            }
+            deleteEndpoints(client, endpoints.get());
+        }
+    }
+
+    private boolean deleteEndpoints(final KubernetesClient client, final Endpoints endpoints) {
+        final boolean deleted = Optional.ofNullable(client.endpoints().delete(endpoints)).orElse(false);
+        if (!deleted) {
+            LOGGER.debug("Failed to delete endpoints '{}'", endpoints.getMetadata().getName());
+        }
+        return deleted;
+    }
+
+    private Optional<Endpoints> findEndpointsByName(final KubernetesClient client, final String name) {
+        return Optional.ofNullable(client.endpoints()
+                .inNamespace(kubeNamespace)
+                .withName(name)
+                .get());
     }
 }
