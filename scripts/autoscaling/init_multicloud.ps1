@@ -457,14 +457,11 @@ WriteKubeConfig -KubeHost $kubeHost -KubePort $kubePort -KubeNodeToken $kubeNode
 Write-Host "Joining kubernetes cluster using Sig Windows Tools..."
 JoinKubeClusterUsingSigWindowsTools
 
-Write-Host "Waiting for dns to be accessible if required..."
-WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
-
 Write-Host "Configuring AWS routes..."
 ConfigureAwsRoutes -Addrs $awsAddrs -Interface $interfacePost
 
-Write-Host "Configuring loopback route..."
-ConfigureLoopbackRoute -Interface $interfacePost
+Write-Host "Waiting for dns to be accessible if required..."
+WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
 ListenForConnection -Port 8888
