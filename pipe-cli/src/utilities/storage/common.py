@@ -214,8 +214,20 @@ class AbstractTransferManager:
     __metaclass__ = ABCMeta
 
     @abstractmethod
+    def get_destination_key(self, destination_wrapper, relative_path):
+        pass
+
+    @abstractmethod
+    def get_source_key(self, source_wrapper, source_path):
+        pass
+
+    @abstractmethod
+    def get_destination_size(self, destination_wrapper, destination_key):
+        pass
+
+    @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
+                 quiet=False, size=None, tags=(), lock=None):
         """
         Transfers data from the source storage to the destination storage.
 
@@ -230,11 +242,18 @@ class AbstractTransferManager:
         :param size: Size of the transfer source object.
         :param tags: Additional tags that will be included to the transferring object.
         Tags CP_SOURCE and CP_OWNER will be included by default.
-        :param skip_existing: Skips transfer objects that already exist in the destination storage.
         :param lock: The lock object if multithreaded transfer is requested
         :type lock: multiprocessing.Lock
         """
         pass
+
+    @staticmethod
+    def skip_existing(source_key, source_size, destination_key, destination_size, quiet):
+        if destination_size is not None and destination_size == source_size:
+            if not quiet:
+                click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
+            return True
+        return False
 
     @staticmethod
     def create_local_folder(destination_key, lock):
