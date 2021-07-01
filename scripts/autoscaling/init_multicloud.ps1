@@ -80,6 +80,20 @@ function InstallPGinaIfRequired {
     return $restartRequired
 }
 
+function InstallDockerIfRequired {
+    $restartRequired=$false
+    $dockerInstalled = Get-Service -Name docker `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not ($dockerInstalled)) {
+        Get-PackageProvider -Name NuGet -ForceBootstrap
+        Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+        Install-Package -Name docker -ProviderName DockerMsftProvider -Force -RequiredVersion 19.03.14
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
 function StartOpenSSHServices {
     Set-Service -Name sshd -StartupType Automatic
     Start-Service sshd
@@ -382,6 +396,10 @@ Write-Host "Restart required: $restartRequired"
 
 Write-Host "Installing pGina if required..."
 $restartRequired = (InstallPGinaIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
+Write-Host "Installing docker if required..."
+$restartRequired = (InstallDockerIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Restarting computer if required..."

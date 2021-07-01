@@ -94,6 +94,20 @@ function InstallPGinaIfRequired {
     return $restartRequired
 }
 
+function InstallDockerIfRequired {
+    $restartRequired=$false
+    $dockerInstalled = Get-Service -Name docker `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not ($dockerInstalled)) {
+        Get-PackageProvider -Name NuGet -ForceBootstrap
+        Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+        Install-Package -Name docker -ProviderName DockerMsftProvider -Force -RequiredVersion 19.03.14
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
 function WaitForProcess($ProcessName) {
     while ($True) {
         $Process = Get-Process | Where-Object {$_.Name -contains $ProcessName}
@@ -233,6 +247,18 @@ InstallWebDAVIfRequired
 
 Write-Host "Installing pGina if required..."
 InstallPGinaIfRequired
+
+Write-Host "Installing docker if required..."
+$restartRequired = (InstallDockerIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
+Write-Host "Restarting computer if required..."
+if ($restartRequired) {
+    Write-Host "Restarting computer..."
+    Stop-Transcript
+    Restart-Computer -Force
+    Exit
+}
 
 Write-Host "Installing python if required..."
 InstallPythonIfRequired -PythonDir $pythonDir
