@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.MasterPodInfo;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -742,6 +743,31 @@ public class KubernetesManager {
 
     public boolean isNodeUnavailable(final Node node) {
         return !isNodeAvailable(node);
+    }
+
+    public void createNodeService(final RunInstance instance) {
+        if (KubernetesConstants.WINDOWS.equals(instance.getNodePlatform())) {
+            final Integer port = preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_WINDOWS_SERVICE_PORT);
+            if (port == null) {
+                log.debug("Kubernetes Windows service port is not specified. No service will be created.");
+                return;
+            }
+            final String serviceName = resolveNodeServiceName(instance.getNodeIP());
+            createService(serviceName, port, port);
+            createEndpoints(serviceName, instance.getNodeIP(), port);
+        }
+    }
+
+    public void deleteNodeService(final RunInstance instance) {
+        if (KubernetesConstants.WINDOWS.equals(instance.getNodePlatform())) {
+            final String serviceName = resolveNodeServiceName(instance.getNodeIP());
+            deleteServiceIfExists(serviceName);
+            deleteEndpointsIfExists(serviceName);
+        }
+    }
+
+    private String resolveNodeServiceName(final String ip) {
+        return "ip-" + ip.replace(".", "-");
     }
 
     public Service createService(final String serviceName, final Map<String, String> labels,
