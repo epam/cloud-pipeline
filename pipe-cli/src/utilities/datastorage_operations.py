@@ -41,7 +41,7 @@ FOLDER_MARKER = '.DS_Store'
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           clean=False, skip_existing=False):
+           clean=False, skip_existing=False, verify_destination=False):
         try:
             source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
             destination_wrapper = DataStorageWrapper.get_wrapper(destination)
@@ -74,6 +74,11 @@ class DataStorageOperations(object):
                 click.echo('-n (--threads) is not supported for Windows OS', err=True)
                 sys.exit(1)
             relative = os.path.basename(source) if source_wrapper.is_file() else None
+            if not force and not verify_destination and not destination_wrapper.is_empty(relative=relative):
+                click.echo('The destination already exists. Specify --force (-f) flag to overwrite data or '
+                           '--verify-destination (-vd) flag to enable existence check for each destination path.',
+                           err=True)
+                sys.exit(1)
 
             # append slashes to path to correctly determine file/folder type
             if not source_wrapper.is_file():
@@ -93,7 +98,7 @@ class DataStorageOperations(object):
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                      include, exclude, force, quiet, skip_existing)
+                                      include, exclude, force, quiet, skip_existing, verify_destination)
             sorted_items = list()
             transfer_results = []
             for item in items:
@@ -123,7 +128,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                      include, exclude, force, quiet, skip_existing):
+                      include, exclude, force, quiet, skip_existing, verify_destination):
         filtered_items = []
         for item in items:
             full_path = item[1]
@@ -155,7 +160,7 @@ class DataStorageOperations(object):
                                .format(full_path, ",".join(exclude)))
                 continue
 
-            if force and not skip_existing:
+            if not skip_existing and (force or not verify_destination):
                 filtered_items.append(item)
                 continue
 
