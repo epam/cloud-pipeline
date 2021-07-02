@@ -325,11 +325,37 @@ function ConfigureAwsRoutes($Addrs, $Interface) {
     w32tm /resync /rediscover /nowait
 }
 
-function ConfigureLoopbackRoute($Interface) {
-    $interfaceIndex = Get-NetAdapter $Interface | ForEach-Object { $_.ifIndex }
-    $interfaceIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $interfaceIndex | Select-Object -ExpandProperty IPAddress
-    $Addrs = @("$interfaceIp/32")
-    ConfigureAwsRoutes -Addrs $Addrs -Interface $Interface
+function ConfigureLoopbackRouteIfEnabled($Preferences, $Interface) {
+    $loopbackRouteEnabled = $Preferences `
+        | Where-Object { $_.Name -eq "cluster.windows.node.loopback.route" } `
+        | ForEach-Object { $_.Value -eq "true" }
+    if ($loopbackRouteEnabled) {
+        Write-Host "Configuring loopback route..."
+        $interfaceIndex = Get-NetAdapter $Interface | ForEach-Object { $_.ifIndex }
+        $interfaceIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $interfaceIndex | Select-Object -ExpandProperty IPAddress
+        $Addrs = @("$interfaceIp/32")
+        ConfigureAwsRoutes -Addrs $Addrs -Interface $Interface
+    }
+}
+
+function LoadPreferences($ApiUrl, $ApiToken) {
+    return RequestApi -ApiUrl $ApiUrl -ApiToken $ApiToken -HttpMethod "GET" -ApiMethod "preferences"
+}
+
+function RequestApi($ApiUrl, $ApiToken, $HttpMethod, $ApiMethod, $Body = $null) {
+    Write-Host "Requesting ${ApiUrl}${ApiMethod}..."
+    $Response = Invoke-RestMethod -Method $HttpMethod `
+                                  -Uri "${ApiUrl}${ApiMethod}" `
+                                  -Body $Body `
+                                  -Headers @{
+                                      "Authorization" = "Bearer $ApiToken"
+                                      "Content-Type" = "application/json"
+                                  }
+    if ($Response.status -ne "OK") {
+        Write-Error $Response.message
+        return $null
+    }
+    return $Response.payload
 }
 
 function ListenForConnection($Port) {
@@ -349,6 +375,8 @@ function ListenForConnection($Port) {
     $listener.Stop()
 }
 
+$apiUrl = "@API_URL@"
+$apiToken = "@API_TOKEN@"
 $kubeAddress = "@KUBE_IP@"
 $kubeHost, $kubePort = $kubeAddress.split(":",2)
 $kubeToken = "@KUBE_TOKEN@"
@@ -462,6 +490,12 @@ ConfigureAwsRoutes -Addrs $awsAddrs -Interface $interfacePost
 
 Write-Host "Waiting for dns to be accessible if required..."
 WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
+
+Write-Host "Loading preferences..."
+$preferences = LoadPreferences -ApiUrl $apiUrl -ApiToken $apiToken
+
+Write-Host "Configuring loopback route if it is enabled in preferences..."
+ConfigureLoopbackRouteIfEnabled -Preferences $preferences -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
 ListenForConnection -Port 8888

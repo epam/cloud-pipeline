@@ -410,6 +410,8 @@ public class SystemPreferences {
             new IntPreference("cluster.kube.master.port", 6443, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_KUBE_WINDOWS_SERVICE_PORT =
             new IntPreference("cluster.kube.windows.service.port", 22, CLUSTER_GROUP, isGreaterThan(0));
+    public static final BooleanPreference CLUSTER_WINDOWS_NODE_LOOPBACK_ROUTE =
+            new BooleanPreference("cluster.windows.node.loopback.route", false, CLUSTER_GROUP, pass);
     public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
             "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<Set<String>>() {}));
