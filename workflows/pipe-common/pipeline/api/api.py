@@ -217,6 +217,8 @@ class PipelineAPI:
     LOAD_PROFILE_CREDENTIALS = 'cloud/credentials/generate/%d'
     LOAD_PROFILES = 'cloud/credentials'
     LOAD_CURRENT_USER = 'whoami'
+    GET_TOOLS_FOR_RUNS = '/runs?runIds=%s'
+    CONTEXTUAL_PREFERENCE = '/contextual/preference'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -931,3 +933,29 @@ class PipelineAPI:
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
+
+    def load_tool_for_run(self, run_id):
+        try:
+            url = str(self.api_url) + self.GET_TOOLS_FOR_RUNS % str(run_id)
+            result = self.execute_request(url)
+            if result and 'tool' in result[0] and result[0]['tool']:
+                return result[0]['tool']
+            else:
+                raise RuntimeError("No tool details found for runId={} or such run doesn't exist!".format(str(run_id)))
+        except Exception as e:
+            raise RuntimeError("Failed to load a tool for run. Error message: {}".format(str(e.message)))
+
+    def load_contextual_preference(self, resource_level, resource_id, preferences):
+        try:
+            preference_request = {
+                'preferences': preferences,
+                'resource': {
+                    'level': resource_level,
+                    'resourceId': resource_id
+                }
+            }
+            url = str(self.api_url) + self.CONTEXTUAL_PREFERENCE
+            result = self.execute_request(url, method='post', data=json.dumps(preference_request))
+            return result['value']
+        except Exception as e:
+            raise RuntimeError("Failed to load contextual preferences. Error message: {}".format(str(e.message)))
