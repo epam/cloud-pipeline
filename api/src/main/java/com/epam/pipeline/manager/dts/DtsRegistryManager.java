@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.mapper.DtsRegistryMapper;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -119,8 +120,10 @@ public class DtsRegistryManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public DtsRegistry upsertPreferences(final Long registryId, final DtsRegistryPreferencesUpdateVO preferencesVO) {
         validateDtsRegistryId(registryId);
-        final DtsRegistry dtsRegistry = loadOrThrow(registryId);
         final Map<String, String> preferencesToUpdate = preferencesVO.getPreferencesToUpdate();
+        Assert.isTrue(MapUtils.isNotEmpty(preferencesToUpdate),
+                      messageHelper.getMessage(MessageConstants.ERROR_DTS_PREFERENCES_UPDATE_EMPTY));
+        final DtsRegistry dtsRegistry = loadOrThrow(registryId);
         dtsRegistryDao.upsertPreferences(registryId, preferencesToUpdate);
         dtsRegistry.getPreferences().putAll(preferencesToUpdate);
         return dtsRegistry;
@@ -137,9 +140,11 @@ public class DtsRegistryManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public DtsRegistry deletePreferences(final Long registryId, final DtsRegistryPreferencesRemovalVO preferencesVO) {
         validateDtsRegistryId(registryId);
+        final List<String> keysToRemove = preferencesVO.getPreferenceKeysToRemove();
+        Assert.isTrue(CollectionUtils.isNotEmpty(keysToRemove),
+                      messageHelper.getMessage(MessageConstants.ERROR_DTS_PREFERENCES_DELETE_EMPTY));
         final DtsRegistry dtsRegistry = loadOrThrow(registryId);
         final Set<String> existingKeys = dtsRegistry.getPreferences().keySet();
-        final List<String> keysToRemove = preferencesVO.getPreferenceKeysToRemove();
         final String listOfNonExistentPreferences = keysToRemove.stream()
             .filter(preference -> !existingKeys.contains(preference))
             .collect(Collectors.joining(","));
