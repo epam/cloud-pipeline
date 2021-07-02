@@ -232,13 +232,6 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         }
         source_client = self.build_source_client(source_region)
 
-        if skip_existing:
-            from_size = self.get_s3_file_size(source_bucket, path)
-            to_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
-            if to_size is not None and to_size == from_size:
-                if not quiet:
-                    click.echo('Skipping file %s since it exists in the destination %s' % (path, destination_key))
-                return
         object_tags = ObjectTaggingManager.get_object_tagging(
             ObjectTaggingManager(self.session, source_bucket, source_region), path)
         if not tags and object_tags:

@@ -99,6 +99,7 @@ class DataStorageOperations(object):
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                       include, exclude, force, quiet, skip_existing, verify_destination)
             sorted_items = list()
+            transfer_results = []
             for item in items:
                 full_path = item[1]
                 relative_path = item[2]
