@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,44 +27,44 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
+import static com.epam.pipeline.security.acl.AclExpressions.DTS_REGISTRY_PERMISSIONS;
 
 @Service
 @AllArgsConstructor
 public class DtsRegistryApiService {
     private DtsRegistryManager dtsRegistryManager;
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public List<DtsRegistry> loadAll() {
         return dtsRegistryManager.loadAll();
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public DtsRegistry load(Long registryId) {
         return dtsRegistryManager.load(registryId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public DtsRegistry create(DtsRegistryVO dtsRegistryVO) {
         return dtsRegistryManager.create(dtsRegistryVO);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public DtsRegistry update(Long registryId, DtsRegistryVO dtsRegistryVO) {
         return dtsRegistryManager.update(registryId, dtsRegistryVO);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public DtsRegistry delete(Long registryId) {
         return dtsRegistryManager.delete(registryId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public DtsRegistry upsertPreferences(final Long registryId, final DtsRegistryPreferencesUpdateVO preferencesVO) {
         return dtsRegistryManager.upsertPreferences(registryId, preferencesVO);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public DtsRegistry deletePreferences(final Long registryId, final DtsRegistryPreferencesRemovalVO preferencesVO) {
         return dtsRegistryManager.deletePreferences(registryId, preferencesVO);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@
 
 package com.epam.pipeline.controller.dts;
 
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesRemovalVO;
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesUpdateVO;
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.acl.dts.DtsRegistryApiService;
 import com.epam.pipeline.test.creator.dts.DtsCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -43,9 +46,13 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
 
     private static final String DTS_URL = SERVLET_PATH + "/dts";
     private static final String ID_URL = DTS_URL + "/%d";
+    private static final String DTS_PREFERENCES_URL = ID_URL + "/preferences";
+    private static final String ADMIN = "ADMIN";
 
     private final DtsRegistry dtsRegistry = DtsCreatorUtils.getDtsRegistry();
     private final DtsRegistryVO dtsRegistryVO = DtsCreatorUtils.getDtsRegistryVO();
+    private final DtsRegistryPreferencesUpdateVO updateVO = DtsCreatorUtils.getPreferenceUpdateVO();
+    private final DtsRegistryPreferencesRemovalVO removalVO = DtsCreatorUtils.getPreferenceRemovalVO();
 
     @Autowired
     private DtsRegistryApiService mockDtsRegistryApiService;
@@ -131,5 +138,39 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailDeleteDtsRegistry() {
         performUnauthorizedRequest(delete(String.format(ID_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN)
+    public void shouldUpdateDtsRegistryPreferences() throws JsonProcessingException {
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).upsertPreferences(ID, updateVO);
+
+        final String content = getObjectMapper().writeValueAsString(updateVO);
+        final MvcResult mvcResult = performRequest(put(String.format(DTS_PREFERENCES_URL, ID)).content(content));
+
+        verify(mockDtsRegistryApiService).upsertPreferences(ID, updateVO);
+        assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
+    }
+
+    @Test
+    public void shouldFailUpdateDtsRegistryPreferences() {
+        performUnauthorizedRequest(put(String.format(DTS_PREFERENCES_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN)
+    public void shouldDeleteDtsRegistryPreferences() throws JsonProcessingException {
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).deletePreferences(ID, removalVO);
+
+        final String content = getObjectMapper().writeValueAsString(removalVO);
+        final MvcResult mvcResult = performRequest(delete(String.format(DTS_PREFERENCES_URL, ID)).content(content));
+
+        verify(mockDtsRegistryApiService).deletePreferences(ID, removalVO);
+        assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
+    }
+
+    @Test
+    public void shouldFailDeleteDtsRegistryPreferences() {
+        performUnauthorizedRequest(delete(String.format(DTS_PREFERENCES_URL, ID)));
     }
 }
