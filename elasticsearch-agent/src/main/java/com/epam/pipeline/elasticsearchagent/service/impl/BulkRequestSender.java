@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -100,9 +101,14 @@ public class BulkRequestSender {
                             final List<DocWriteRequest> documentRequests,
                             final List<PipelineEvent.ObjectType> objectTypes,
                             final LocalDateTime syncStart) {
-        log.debug("Inserting {} documents for {}", documentRequests.size(), objectTypes);
+        final List<DocWriteRequest> docs = ListUtils.emptyIfNull(documentRequests).stream().filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (docs.isEmpty()) {
+            return;
+        }
+        log.debug("Inserting {} documents for {}", docs.size(), objectTypes);
         final BulkResponse response = elasticsearchClient
-                .sendRequests(indexName, documentRequests);
+                .sendRequests(indexName, docs);
 
         if (ObjectUtils.isEmpty(response)) {
             log.error("Elasticsearch documents for {} were not created.", objectTypes);
