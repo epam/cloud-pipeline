@@ -48,6 +48,8 @@ public final class DiffUtils {
     public static final String DELETION_MARK = "---";
     public static final String ADDITION_MARK = "+++";
     public static final String EMPTY = "";
+    public static final String NEW_FILE_HEADER_MESSAGE = "new file mode";
+    public static final String DELETED_FILE_HEADER_MESSAGE = "deleted file mode";
 
     private DiffUtils() {
 
@@ -101,15 +103,27 @@ public final class DiffUtils {
     }
 
     public static DiffType defineDiffType(final Diff diff) {
-        if (diff.getFromFileName().equals(DEV_NULL) && !diff.getToFileName().equals(DEV_NULL)) {
-            return DiffType.CREATED;
-        } else if (!diff.getFromFileName().equals(DEV_NULL) && diff.getToFileName().equals(DEV_NULL)) {
+        if (isFileWasCreated(diff)) {
+            return DiffType.ADDED;
+        } else if (isFileWasDeleted(diff)) {
             return DiffType.DELETED;
         } else if (!diff.getFromFileName().equals(diff.getToFileName())) {
             return DiffType.RENAMED;
         } else {
-            return DiffType.MODIFIED;
+            return DiffType.CHANGED;
         }
+    }
+
+    private static boolean isFileWasDeleted(Diff diff) {
+        return !diff.getFromFileName().equals(DEV_NULL) && diff.getToFileName().equals(DEV_NULL)
+                || ListUtils.emptyIfNull(diff.getHeaderLines()).stream()
+                        .anyMatch(h -> h.contains(DELETED_FILE_HEADER_MESSAGE));
+    }
+
+    private static boolean isFileWasCreated(Diff diff) {
+        return diff.getFromFileName().equals(DEV_NULL) && !diff.getToFileName().equals(DEV_NULL)
+                || ListUtils.emptyIfNull(diff.getHeaderLines()).stream()
+                        .anyMatch(h -> h.contains(NEW_FILE_HEADER_MESSAGE));
     }
 
     public static GitParsedDiff reduceDiffByFile(GitReaderDiff gitReaderDiff, GitDiffReportFilter reportFilters) {
@@ -183,6 +197,6 @@ public final class DiffUtils {
     }
 
     public enum DiffType {
-        CREATED, DELETED, MODIFIED, RENAMED
+        ADDED, DELETED, CHANGED, RENAMED
     }
 }
