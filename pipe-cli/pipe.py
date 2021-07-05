@@ -1746,14 +1746,14 @@ def create_dts(url, name, schedulable, prefix, preference, json_out):
 
 
 @dts.command(name='list')
-@click.argument('registry-id', required=False, type=int)
+@click.argument('registry-name-or-id', required=False, type=str)
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
 @Config.validate_access_token
-def list_dts(registry_id, json_out):
+def list_dts(registry_name_or_id, json_out):
     """
     Shows details of all DTS registries or the one for ID specified
     """
-    DtsOperationsManager().list(registry_id, json_out)
+    DtsOperationsManager().list(registry_name_or_id, json_out)
 
 
 @dts.group()
