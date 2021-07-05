@@ -42,7 +42,7 @@
                 ]]>
             </value>
         </property>
-        <property name="loadDtsRegistryQuery">
+        <property name="loadDtsRegistryByIdQuery">
             <value>
                 <![CDATA[
                     SELECT
@@ -56,6 +56,23 @@
                     FROM
                         pipeline.dts_registry r
                     WHERE r.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDtsRegistryByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id,
+                        r.name,
+                        r.schedulable,
+                        r.created_date,
+                        r.url,
+                        r.prefixes,
+                        r.preferences
+                    FROM
+                        pipeline.dts_registry r
+                    WHERE r.name = ?
                 ]]>
             </value>
         </property>

@@ -40,8 +40,8 @@ public class DtsRegistryApiService {
     }
 
     @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
-    public DtsRegistry load(Long registryId) {
-        return dtsRegistryManager.load(registryId);
+    public DtsRegistry loadByNameOrId(final String registryId) {
+        return dtsRegistryManager.loadByNameOrId(registryId);
     }
 
     @PreAuthorize(DTS_REGISTRY_PERMISSIONS)

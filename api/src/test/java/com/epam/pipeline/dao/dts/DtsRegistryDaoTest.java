@@ -52,6 +52,8 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
         dtsRegistryDao.create(dtsRegistry);
         DtsRegistry loaded = dtsRegistryDao.loadById(dtsRegistry.getId()).orElse(null);
         assertEquals(dtsRegistry, loaded);
+        DtsRegistry loadedByName = dtsRegistryDao.loadByName(DTS).orElse(null);
+        assertEquals(dtsRegistry, loadedByName);
         dtsRegistry.setPrefixes(Stream.of(TEST_PREFIX_1, TEST_PREFIX_2).collect(Collectors.toList()));
         dtsRegistryDao.update(dtsRegistry);
         loaded = dtsRegistryDao.loadById(dtsRegistry.getId()).orElse(null);

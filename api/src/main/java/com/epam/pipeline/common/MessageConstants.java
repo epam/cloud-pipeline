@@ -449,7 +449,8 @@ public final class MessageConstants {
     public static final String ERROR_FIRECLOUD_REQUEST_FAILED = "error.firecloud.request.failed";
 
     //DTS
-    public static final String ERROR_DTS_REGISTRY_DOES_NOT_EXIST = "error.dts.registry.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_ID_DOES_NOT_EXIST = "error.dts.registry.id.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_NAME_DOES_NOT_EXIST = "error.dts.registry.name.does.not.exist";
     public static final String ERROR_DTS_REGISTRY_IS_EMPTY = "error.dts.registry.is.empty";
     public static final String ERROR_DTS_REGISTRY_URL_IS_EMPTY = "error.dts.registry.url.is.empty";
     public static final String ERROR_DTS_REGISTRY_PREFIXES_ARE_EMPTY = "error.dts.registry.prefixes.are.empty";

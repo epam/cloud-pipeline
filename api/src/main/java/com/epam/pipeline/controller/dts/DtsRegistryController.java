@@ -66,14 +66,14 @@ public class DtsRegistryController extends AbstractRestController {
     @GetMapping(value = "/{registryId}")
     @ResponseBody
     @ApiOperation(
-            value = "Lists Data Transfer Service registry specified by ID.",
-            notes = "Lists Data Transfer Service registry specified by ID.",
+            value = "Lists Data Transfer Service registry specified by ID or name.",
+            notes = "Lists Data Transfer Service registry specified by ID or name.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<DtsRegistry> load(@PathVariable(value = REGISTRY_ID) Long registryId) {
-        return Result.success(dtsRegistryApiService.load(registryId));
+    public Result<DtsRegistry> load(@PathVariable(value = REGISTRY_ID) String registryId) {
+        return Result.success(dtsRegistryApiService.loadByNameOrId(registryId));
     }
 
     @PostMapping

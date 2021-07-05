@@ -28,6 +28,7 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,14 +57,35 @@ public class DtsRegistryManager {
         return dtsRegistryDao.loadAll();
     }
 
+    public DtsRegistry loadByNameOrId(String registryId) {
+        if (NumberUtils.isDigits(registryId)) {
+            return loadById(Long.parseLong(registryId));
+        } else {
+            return loadByName(registryId);
+        }
+    }
+
     /**
      * Loads {@link DtsRegistry} specified by ID.
      * @param registryId a {@link DtsRegistry} ID
      * @return existing {@link DtsRegistry} or error if required registry does not exist.
      */
-    public DtsRegistry load(Long registryId) {
+    public DtsRegistry loadById(Long registryId) {
         validateDtsRegistryId(registryId);
         return loadOrThrow(registryId);
+    }
+
+    /**
+     * Loads {@link DtsRegistry} specified by name.
+     * @param registryName a {@link DtsRegistry} name
+     * @return existing {@link DtsRegistry} or error if required registry does not exist.
+     */
+    public DtsRegistry loadByName(final String registryName) {
+        Assert.state(StringUtils.isNotBlank(registryName),
+                     messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_NAME_IS_EMPTY));
+        return dtsRegistryDao.loadByName(registryName)
+            .orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_NAME_DOES_NOT_EXIST, registryName)));
     }
 
     /**
@@ -158,7 +180,7 @@ public class DtsRegistryManager {
     private DtsRegistry loadOrThrow(Long registryId) {
         return dtsRegistryDao.loadById(registryId)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_DOES_NOT_EXIST, registryId)));
+                        messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_ID_DOES_NOT_EXIST, registryId)));
     }
 
     private void validateDtsRegistryVO(DtsRegistryVO dtsRegistryVO) {

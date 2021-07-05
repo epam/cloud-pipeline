@@ -86,35 +86,35 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldLoadDtsRegistryForAdmin() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).load(ID);
+    public void shouldLoadDtsRegistryByIdForAdmin() {
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(Long.toString(ID));
 
-        assertThat(dtsRegistryApiService.load(ID)).isEqualTo(dtsRegistry);
+        assertThat(dtsRegistryApiService.loadByNameOrId(Long.toString(ID))).isEqualTo(dtsRegistry);
     }
 
     @Test
     @WithMockUser(roles = DTS_MANAGER)
-    public void shouldLoadDtsRegistryForManager() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).load(ID);
+    public void shouldLoadDtsRegistryByIdForManager() {
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(Long.toString(ID));
 
-        assertThat(dtsRegistryApiService.load(ID)).isEqualTo(dtsRegistry);
+        assertThat(dtsRegistryApiService.loadByNameOrId(Long.toString(ID))).isEqualTo(dtsRegistry);
     }
 
 
     @Test
     @WithMockUser
-    public void shouldDenyDtsRegistryForUser() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).load(ID);
+    public void shouldDenyDtsRegistryByIdForUser() {
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(Long.toString(ID));
 
-        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.load(ID));
+        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.loadByNameOrId(Long.toString(ID)));
     }
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyLoadDtsRegistryWithoutUserRole() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).load(ID);
+    public void shouldDenyLoadDtsRegistryByIdWithoutUserRole() {
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(Long.toString(ID));
 
-        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.load(ID));
+        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.loadByNameOrId(Long.toString(ID)));
     }
 
     @Test

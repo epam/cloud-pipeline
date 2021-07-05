@@ -77,11 +77,11 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadDtsRegistry() {
-        doReturn(dtsRegistry).when(mockDtsRegistryApiService).load(ID);
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).loadByNameOrId(Long.toString(ID));
 
         final MvcResult mvcResult = performRequest(get(String.format(ID_URL, ID)));
 
-        verify(mockDtsRegistryApiService).load(ID);
+        verify(mockDtsRegistryApiService).loadByNameOrId(Long.toString(ID));
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 

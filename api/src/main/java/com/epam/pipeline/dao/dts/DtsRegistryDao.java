@@ -54,7 +54,8 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
 
     private String dtsRegistrySequence;
     private String loadAllDtsRegistriesQuery;
-    private String loadDtsRegistryQuery;
+    private String loadDtsRegistryByIdQuery;
+    private String loadDtsRegistryByNameQuery;
     private String createDtsRegistryQuery;
     private String updateDtsRegistryQuery;
     private String deleteDtsRegistryQuery;
@@ -66,7 +67,12 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
     }
 
     public Optional<DtsRegistry> loadById(Long registryId) {
-        return getJdbcTemplate().query(loadDtsRegistryQuery, DtsRegistryParameters.getRowMapper(), registryId)
+        return getJdbcTemplate().query(loadDtsRegistryByIdQuery, DtsRegistryParameters.getRowMapper(), registryId)
+                .stream().findFirst();
+    }
+
+    public Optional<DtsRegistry> loadByName(final String registryName) {
+        return getJdbcTemplate().query(loadDtsRegistryByNameQuery, DtsRegistryParameters.getRowMapper(), registryName)
                 .stream().findFirst();
     }
 
@@ -119,8 +125,13 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadDtsRegistryQuery(String loadDtsRegistryQuery) {
-        this.loadDtsRegistryQuery = loadDtsRegistryQuery;
+    public void setLoadDtsRegistryByIdQuery(String loadDtsRegistryByIdQuery) {
+        this.loadDtsRegistryByIdQuery = loadDtsRegistryByIdQuery;
+    }
+
+    @Required
+    public void setLoadDtsRegistryByNameQuery(String loadDtsRegistryByNameQuery) {
+        this.loadDtsRegistryByNameQuery = loadDtsRegistryByNameQuery;
     }
 
     @Required
