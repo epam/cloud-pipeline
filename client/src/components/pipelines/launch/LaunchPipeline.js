@@ -412,11 +412,31 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         },
         onOk: () => {
           launchFn();
-          this.clearRunPayload();
         }
       });
     }
     const launchFn = async () => {
+      const metadataControlParameter = (parameter = {}) => {
+        const {value} = parameter;
+        const controlPrefixes = ['this.', 'project.'];
+        if (value && typeof value === 'string') {
+          const normalizedValue = value.trim().toLowerCase();
+          return controlPrefixes.some(prefix => normalizedValue.startsWith(prefix));
+        }
+        return false;
+      };
+      const applyMetadataParamsOverRunParams = (runParams, configParams) => {
+        const mappedParams = {...runParams};
+        for (const key in mappedParams) {
+          if (
+            configParams.hasOwnProperty(key) &&
+            metadataControlParameter(configParams[key])
+          ) {
+            mappedParams[key] = configParams[key];
+          }
+        }
+        return mappedParams;
+      };
       if (configuration) {
         configuration.configName = configuration.name;
         configuration.pipelineId = null;
@@ -452,6 +472,9 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
             }
           }
         } else {
+          const runParams = runPayload.parameters || {};
+          const configParams = configuration.configuration?.parameters || {};
+          runPayload.parameters = applyMetadataParamsOverRunParams(runParams, configParams);
           configuration.configuration = runPayload;
         }
       }
@@ -466,6 +489,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       if (request.error) {
         message.error(request.error);
       } else {
+        this.clearRunPayload();
         SessionStorageWrapper.navigateToActiveRuns(this.props.router);
       }
     };
