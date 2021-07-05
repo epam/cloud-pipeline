@@ -18,6 +18,16 @@ function NewDirIfRequired($Path) {
     }
 }
 
+function InitializeDisks {
+    Get-Disk `
+        | Where-Object { $_.PartitionStyle -eq "raw" } `
+        | Initialize-Disk -PartitionStyle MBR -PassThru `
+        | New-Partition -AssignDriveLetter -UseMaximumSize `
+        | Format-Volume -FileSystem NTFS -Confirm:$false `
+        | ForEach-Object { $_.DriveLetter + ":" } `
+        | ForEach-Object { AllowRegularUsersAccess -Path $_ }
+}
+
 function InstallNoMachineIfRequired {
     $restartRequired=$false
     $nomachineInstalled = Get-Service -Name nxservice `
@@ -151,6 +161,13 @@ function AddPublicKeyToAuthorizedKeys($SourcePath, $DestinationPath) {
 function CopyPrivateKey($SourcePath, $DestinationPath) {
     Copy-Item -Path (Split-Path -Path $SourcePath) -Destination (Split-Path -Path $DestinationPath) -Recurse
     RestrictRegularUsersAccess -Path $DestinationPath
+}
+
+function AllowRegularUsersAccess($Path) {
+    $acl = Get-Acl $Path
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\Users", "Write", "ContainerInherit,ObjectInherit", "None", "Allow")
+    $acl.AddAccessRule($rule)
+    $acl | Set-Acl $Path
 }
 
 function RestrictRegularUsersAccess($Path) {
@@ -407,6 +424,9 @@ Start-Transcript -path $initLog -append
 
 Write-Host "Changing working directory..."
 Set-Location -Path "$workingDir"
+
+Write-Host "Initializing disks..."
+InitializeDisks
 
 $restartRequired = $false
 
