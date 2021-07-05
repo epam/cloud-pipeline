@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,6 +92,7 @@ public class C {
         SYNC_STORAGE_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.sync.storage.timeout.in.seconds"));
         SYNC_STORAGE_PERMISSION_NAME = conf.getProperty("e2e.ui.sync.storage.permission.name");
         SYNC_STORAGE_PERMISSIONS = conf.getProperty("e2e.ui.sync.storage.permissions");
+        ROLE_USER = conf.getProperty("e2e.ui.role.user");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -117,6 +118,7 @@ public class C {
     public static final String DEFAULT_REGISTRY_IP;
     public static final String DEFAULT_GROUP;
     public static final String ANOTHER_GROUP;
+    public static final String ROLE_USER;
 
     public static final String CLEAN_HISTORY_LOGIN;
     public static final String CLEAN_HISTORY_PASSWORD;

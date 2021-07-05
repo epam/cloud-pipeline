@@ -31,7 +31,6 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-
 public interface StorageHandling extends Navigation {
 
     default StorageContentAO createStorage(String storageName) {
