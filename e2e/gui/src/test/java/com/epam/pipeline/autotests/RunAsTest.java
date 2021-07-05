@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -28,7 +29,6 @@ import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navigation, Authorization {
 
@@ -71,9 +71,10 @@ public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navi
                 .firstVersion()
                 .runPipeline()
                 .launch(this)
-                .show(getRunId())
-                .sleep(1, SECONDS)
-                .ensureHasOwner(admin.login);
+                .viewAvailableActiveRuns()
+                .showLog(getRunId());
+        new RunsMenuAO()
+                .validatePipelineOwner(getRunId(), admin.login);
         logout();
         loginAs(admin);
         runsMenu()
