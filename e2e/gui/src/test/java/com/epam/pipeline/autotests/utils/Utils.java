@@ -229,6 +229,7 @@ public class Utils {
     }
 
     private static String findRunId(final By runRowQualifier) {
+        System.out.println(runRowQualifier);
         final SelenideElement element = $(runRowQualifier).should(exist).find(byClassName("run-table__run-row-name"));
         final String runName = element.text();
         return runNameToRunId(runName);

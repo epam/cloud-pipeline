@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
@@ -30,10 +31,24 @@ import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.lang.String.format;
 
-public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navigation, Authorization {
+public class RunAsTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation, Authorization {
 
     private final String pipeline = resourceName("run-as");
     private static final String CONFIG_JSON = "/runAsTemplate.json";
+
+    @AfterClass(alwaysRun = true)
+    public void cleanUp() {
+        loginAsAdminAndPerform(() -> {
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchUserEntry(admin.login.toUpperCase())
+                    .edit()
+                    .resetConfigureRunAs(user.login)
+                    .ok();
+        });
+    }
 
     @Test
     @TestCase(value = "")
@@ -70,15 +85,21 @@ public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navi
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
-                .launch(this)
-                .viewAvailableActiveRuns()
+                .launch();
+        runsMenu()
+                .activeRuns()
+                .viewAvailableActiveRuns();
+        this.setRunId(Utils.getPipelineRunId(pipeline));
+        RunsMenuAO runs = new RunsMenuAO();
+        runs
                 .showLog(getRunId());
-        new RunsMenuAO()
-                .validatePipelineOwner(getRunId(), admin.login);
+        runs
+                .ensureHasOwner(getUserNameByAccountLogin(admin.login));
         logout();
         loginAs(admin);
         runsMenu()
                 .showLog(getRunId())
+                .waitForSshLink()
                 .validateShareLink(user.login)
                 .validateShareLink(C.ROLE_USER);
     }
