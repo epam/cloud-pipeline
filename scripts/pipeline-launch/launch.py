@@ -197,6 +197,12 @@ if __name__ == '__main__':
                      f'add_to_path(\'{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\'); '
                      f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"')
 
+    logger.info('Configuring system settings on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from scripts.configure_system_settings_win import configure_system_settings_win; '
+                     f'configure_system_settings_win()\\"')
+    node_ssh.execute(f'ConfigureSystemSettings')
+
     logger.info('Configuring owner account on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                      f'from pipeline.utils.account import create_user; '
@@ -210,11 +216,6 @@ if __name__ == '__main__':
                      f'from scripts.configure_seamless_logon_win import configure_seamless_logon_win; '
                      f'configure_seamless_logon_win(\'{owner}\', \'{owner_password}\', \'{owner_groups}\', '
                      f'                             \'{logon_title}\', \'{_escape_backslashes(logon_image_path)}\')\\"')
-
-    logger.info('Configuring system settings on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
-                     f'from scripts.configure_system_settings_win import configure_system_settings_win; '
-                     f'configure_system_settings_win()\\"')
 
     logger.info('Restarting logon processes on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
