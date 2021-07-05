@@ -46,9 +46,9 @@ public class StorageSynchronizationTest extends AbstractBfxPipelineTest implemen
     @Test
     @TestCase(value = "")
     public void checkStorageSynchronization() {
-//        if ("false".equals(C.AUTH_TOKEN)) {
-//            return;
-//        }
+        if ("false".equals(C.AUTH_TOKEN)) {
+            return;
+        }
         navigationMenu().library();
         final String[] storagePath = syncStorage.split("/");
         Arrays.stream(storagePath).forEachOrdered(libraryContent()::cd);
