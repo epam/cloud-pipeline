@@ -4741,7 +4741,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         const dropdownRenderer = () => (
           <Menu onClick={onDropDownClick} selectedKeys={[]}>
             <Menu.Item key={KEYS.selectMetadata}>
-              Select metadata entries
+              Select metadata entries and launch
             </Menu.Item>
           </Menu>
         );
