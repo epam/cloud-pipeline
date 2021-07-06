@@ -60,12 +60,12 @@ public class DtsRegistryApiService {
     }
 
     @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
-    public DtsRegistry upsertPreferences(final Long registryId, final DtsRegistryPreferencesUpdateVO preferencesVO) {
+    public DtsRegistry upsertPreferences(final String registryId, final DtsRegistryPreferencesUpdateVO preferencesVO) {
         return dtsRegistryManager.upsertPreferences(registryId, preferencesVO);
     }
 
     @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
-    public DtsRegistry deletePreferences(final Long registryId, final DtsRegistryPreferencesRemovalVO preferencesVO) {
+    public DtsRegistry deletePreferences(final String registryId, final DtsRegistryPreferencesRemovalVO preferencesVO) {
         return dtsRegistryManager.deletePreferences(registryId, preferencesVO);
     }
 }

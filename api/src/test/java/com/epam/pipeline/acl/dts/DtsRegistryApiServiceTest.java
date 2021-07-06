@@ -39,6 +39,7 @@ import static org.mockito.Mockito.doReturn;
 public class DtsRegistryApiServiceTest extends AbstractAclTest {
 
     private static final String DTS_MANAGER = "DTS_MANAGER";
+    private static final String REGISTRY_ID_AS_STRING = Long.toString(ID);
 
     private final DtsRegistry dtsRegistry = DtsCreatorUtils.getDtsRegistry();
     private final List<DtsRegistry> dtsRegistries = Collections.singletonList(dtsRegistry);
@@ -87,34 +88,34 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadDtsRegistryByIdForAdmin() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(Long.toString(ID));
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(REGISTRY_ID_AS_STRING);
 
-        assertThat(dtsRegistryApiService.loadByNameOrId(Long.toString(ID))).isEqualTo(dtsRegistry);
+        assertThat(dtsRegistryApiService.loadByNameOrId(REGISTRY_ID_AS_STRING)).isEqualTo(dtsRegistry);
     }
 
     @Test
     @WithMockUser(roles = DTS_MANAGER)
     public void shouldLoadDtsRegistryByIdForManager() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(Long.toString(ID));
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(REGISTRY_ID_AS_STRING);
 
-        assertThat(dtsRegistryApiService.loadByNameOrId(Long.toString(ID))).isEqualTo(dtsRegistry);
+        assertThat(dtsRegistryApiService.loadByNameOrId(REGISTRY_ID_AS_STRING)).isEqualTo(dtsRegistry);
     }
 
 
     @Test
     @WithMockUser
     public void shouldDenyDtsRegistryByIdForUser() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(Long.toString(ID));
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(REGISTRY_ID_AS_STRING);
 
-        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.loadByNameOrId(Long.toString(ID)));
+        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.loadByNameOrId(REGISTRY_ID_AS_STRING));
     }
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
     public void shouldDenyLoadDtsRegistryByIdWithoutUserRole() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(Long.toString(ID));
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).loadByNameOrId(REGISTRY_ID_AS_STRING);
 
-        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.loadByNameOrId(Long.toString(ID)));
+        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.loadByNameOrId(REGISTRY_ID_AS_STRING));
     }
 
     @Test
@@ -216,65 +217,69 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateDtsRegistryPreferencesForAdmin() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).upsertPreferences(ID, updateVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).upsertPreferences(REGISTRY_ID_AS_STRING, updateVO);
 
-        assertThat(dtsRegistryApiService.upsertPreferences(ID, updateVO)).isEqualTo(dtsRegistry);
+        assertThat(dtsRegistryApiService.upsertPreferences(REGISTRY_ID_AS_STRING, updateVO)).isEqualTo(dtsRegistry);
     }
 
     @Test
     @WithMockUser(roles = DTS_MANAGER)
     public void shouldUpdateDtsRegistryPreferencesForManager() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).upsertPreferences(ID, updateVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).upsertPreferences(REGISTRY_ID_AS_STRING, updateVO);
 
-        assertThat(dtsRegistryApiService.upsertPreferences(ID, updateVO)).isEqualTo(dtsRegistry);
+        assertThat(dtsRegistryApiService.upsertPreferences(REGISTRY_ID_AS_STRING, updateVO)).isEqualTo(dtsRegistry);
     }
 
     @Test
     @WithMockUser
     public void shouldUpdateDeleteDtsRegistryPreferencesForUser() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).upsertPreferences(ID, updateVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).upsertPreferences(REGISTRY_ID_AS_STRING, updateVO);
 
-        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.upsertPreferences(ID, updateVO));
+        assertThrows(AccessDeniedException.class, () ->
+            dtsRegistryApiService.upsertPreferences(REGISTRY_ID_AS_STRING, updateVO));
     }
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
     public void shouldUpdateDeleteDtsRegistryPreferencesWithoutUserRole() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).upsertPreferences(ID, updateVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).upsertPreferences(REGISTRY_ID_AS_STRING, updateVO);
 
-        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.upsertPreferences(ID, updateVO));
+        assertThrows(AccessDeniedException.class, () ->
+            dtsRegistryApiService.upsertPreferences(REGISTRY_ID_AS_STRING, updateVO));
     }
 
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteDtsRegistryPreferencesForAdmin() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).deletePreferences(ID, removalVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).deletePreferences(REGISTRY_ID_AS_STRING, removalVO);
 
-        assertThat(dtsRegistryApiService.deletePreferences(ID, removalVO)).isEqualTo(dtsRegistry);
+        assertThat(dtsRegistryApiService.deletePreferences(REGISTRY_ID_AS_STRING, removalVO)).isEqualTo(dtsRegistry);
     }
 
     @Test
     @WithMockUser(roles = DTS_MANAGER)
     public void shouldDeleteDtsRegistryPreferencesForManager() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).deletePreferences(ID, removalVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).deletePreferences(REGISTRY_ID_AS_STRING, removalVO);
 
-        assertThat(dtsRegistryApiService.deletePreferences(ID, removalVO)).isEqualTo(dtsRegistry);
+        assertThat(dtsRegistryApiService.deletePreferences(REGISTRY_ID_AS_STRING, removalVO)).isEqualTo(dtsRegistry);
     }
 
     @Test
     @WithMockUser
     public void shouldDenyDeleteDtsRegistryPreferencesForUser() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).deletePreferences(ID, removalVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).deletePreferences(REGISTRY_ID_AS_STRING, removalVO);
 
-        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.deletePreferences(ID, removalVO));
+        assertThrows(AccessDeniedException.class, () ->
+            dtsRegistryApiService.deletePreferences(REGISTRY_ID_AS_STRING, removalVO));
     }
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
     public void shouldDenyDeleteDtsRegistryPreferencesWithoutUserRole() {
-        doReturn(dtsRegistry).when(mockDtsRegistryManager).deletePreferences(ID, removalVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryManager).deletePreferences(REGISTRY_ID_AS_STRING, removalVO);
 
-        assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.deletePreferences(ID, removalVO));
+        assertThrows(AccessDeniedException.class, () ->
+            dtsRegistryApiService.deletePreferences(REGISTRY_ID_AS_STRING, removalVO));
     }
 }

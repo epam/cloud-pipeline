@@ -48,6 +48,7 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
     private static final String ID_URL = DTS_URL + "/%d";
     private static final String DTS_PREFERENCES_URL = ID_URL + "/preferences";
     private static final String ADMIN = "ADMIN";
+    private static final String REGISTRY_ID_AS_STRING = Long.toString(ID);
 
     private final DtsRegistry dtsRegistry = DtsCreatorUtils.getDtsRegistry();
     private final DtsRegistryVO dtsRegistryVO = DtsCreatorUtils.getDtsRegistryVO();
@@ -77,11 +78,11 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadDtsRegistry() {
-        doReturn(dtsRegistry).when(mockDtsRegistryApiService).loadByNameOrId(Long.toString(ID));
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).loadByNameOrId(REGISTRY_ID_AS_STRING);
 
         final MvcResult mvcResult = performRequest(get(String.format(ID_URL, ID)));
 
-        verify(mockDtsRegistryApiService).loadByNameOrId(Long.toString(ID));
+        verify(mockDtsRegistryApiService).loadByNameOrId(REGISTRY_ID_AS_STRING);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 
@@ -143,12 +144,12 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser(roles = ADMIN)
     public void shouldUpdateDtsRegistryPreferences() throws JsonProcessingException {
-        doReturn(dtsRegistry).when(mockDtsRegistryApiService).upsertPreferences(ID, updateVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).upsertPreferences(REGISTRY_ID_AS_STRING, updateVO);
 
         final String content = getObjectMapper().writeValueAsString(updateVO);
         final MvcResult mvcResult = performRequest(put(String.format(DTS_PREFERENCES_URL, ID)).content(content));
 
-        verify(mockDtsRegistryApiService).upsertPreferences(ID, updateVO);
+        verify(mockDtsRegistryApiService).upsertPreferences(REGISTRY_ID_AS_STRING, updateVO);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 
@@ -160,12 +161,12 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser(roles = ADMIN)
     public void shouldDeleteDtsRegistryPreferences() throws JsonProcessingException {
-        doReturn(dtsRegistry).when(mockDtsRegistryApiService).deletePreferences(ID, removalVO);
+        doReturn(dtsRegistry).when(mockDtsRegistryApiService).deletePreferences(REGISTRY_ID_AS_STRING, removalVO);
 
         final String content = getObjectMapper().writeValueAsString(removalVO);
         final MvcResult mvcResult = performRequest(delete(String.format(DTS_PREFERENCES_URL, ID)).content(content));
 
-        verify(mockDtsRegistryApiService).deletePreferences(ID, removalVO);
+        verify(mockDtsRegistryApiService).deletePreferences(REGISTRY_ID_AS_STRING, removalVO);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 
