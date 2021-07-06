@@ -53,7 +53,7 @@ public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navi
     }
 
     @Test
-    @TestCase(value = "")
+    @TestCase(value = "EPMCMBIBPC-3233")
     public void checkRunAsForGeneralUser() {
         navigationMenu()
                 .settings()

@@ -44,7 +44,7 @@ public class StorageSynchronizationTest extends AbstractBfxPipelineTest implemen
     private final String syncStoragePermissions = C.SYNC_STORAGE_PERMISSIONS;
 
     @Test
-    @TestCase(value = "")
+    @TestCase(value = "EPMCMBIBPC-3232")
     public void checkStorageSynchronization() {
         if ("false".equals(C.AUTH_TOKEN)) {
             return;
