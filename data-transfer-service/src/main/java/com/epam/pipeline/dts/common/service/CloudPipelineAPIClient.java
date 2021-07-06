@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package com.epam.pipeline.dts.common.service;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
+import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
+import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -76,5 +78,9 @@ public class CloudPipelineAPIClient {
                 .map(MetadataEntry::getData)
                 .map(data -> data.get(key))
                 .map(PipeConfValue::getValue);
+    }
+
+    public DtsRegistry loadDtsRegistryByNameOrId(final String dtsId) {
+        return RetryingCloudPipelineApiExecutor.basic().execute(cloudPipelineAPI.loadDts(dtsId));
     }
 }
