@@ -187,8 +187,11 @@ public class DtsRegistryManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_URL_IS_EMPTY));
         Assert.state(CollectionUtils.isNotEmpty(dtsRegistryVO.getPrefixes()),
                 messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_PREFIXES_ARE_EMPTY));
-        Assert.state(StringUtils.isNotBlank(dtsRegistryVO.getName()),
-                messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_NAME_IS_EMPTY));
+        final String dtsName = dtsRegistryVO.getName();
+        Assert.state(StringUtils.isNotBlank(dtsName),
+                     messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_NAME_IS_EMPTY));
+        Assert.state(!NumberUtils.isDigits(dtsName),
+                     messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_NAME_CONSIST_OF_NUMBERS));
     }
 
     private void validateDtsRegistryId(Long registryId) {
