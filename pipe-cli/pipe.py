@@ -1764,27 +1764,27 @@ def preferences():
 
 
 @preferences.command(name='update')
-@click.argument('registry-id', required=True)
+@click.argument('registry-name-or-id', required=True, type=str)
 @click.option('--preference', '-p', multiple=True, type=str,
               help='String, describing preference''s key and value: key=value. Multiple options supported')
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
-def update_dts_preferences(registry_id, preference, json_out):
+def update_dts_preferences(registry_name_or_id, preference, json_out):
     """
     Updates preferences for the given DTS
     """
-    DtsOperationsManager().upsert_preferences(registry_id, preference, json_out)
+    DtsOperationsManager().upsert_preferences(registry_name_or_id, preference, json_out)
 
 
 @preferences.command(name='delete')
-@click.argument('registry-id', required=True)
+@click.argument('registry-name-or-id', required=True, type=str)
 @click.option('--key', '-k', multiple=True, type=str,
               help="Key of the preference, that should be removed. Multiple options supported")
 @click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
-def delete_dts_preferences(registry_id, key, json_out):
+def delete_dts_preferences(registry_name_or_id, key, json_out):
     """
     Removes preferences for specified keys from the given DTS
     """
-    DtsOperationsManager().delete_preferences(registry_id, key, json_out)
+    DtsOperationsManager().delete_preferences(registry_name_or_id, key, json_out)
 
 
 # Used to run a PyInstaller "freezed" version
