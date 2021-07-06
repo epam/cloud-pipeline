@@ -742,12 +742,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     public EditUserPopup resetConfigureRunAs(final String name) {
                         click(CONFIGURE);
-                        Utils.getPopupByTitle("Share with users and groups")
-                                .$(byXpath("//div[@class='ant-table-content']")).closest("tr")
-                                .find(byXpath(format("td/span[.='%s']", name))).parent()
+                        SelenideElement shareWithContext = Utils.getPopupByTitle("Share with users and groups");
+                        shareWithContext
+                                .$(byClassName("ant-table-tbody"))
+                                .find(byXpath(
+                                        format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]",
+                                                name)))
                                 .find(buttonByIconClass("anticon-delete"))
                                 .shouldBe(visible)
                                 .click();
+                        new LogAO.ShareWith().click(OK);
                         return this;
                     }
                 }

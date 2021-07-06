@@ -278,7 +278,6 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO validateShareLink(final String link) {
-        System.out.println(get(SHARE_WITH).text());
         get(SHARE_WITH).shouldHave(text(link));
         return this;
     }

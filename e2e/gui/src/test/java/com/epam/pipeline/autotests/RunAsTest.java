@@ -31,7 +31,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.lang.String.format;
 
-public class RunAsTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation, Authorization {
+public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navigation, Authorization {
 
     private final String pipeline = resourceName("run-as");
     private static final String CONFIG_JSON = "/runAsTemplate.json";
@@ -39,6 +39,8 @@ public class RunAsTest extends AbstractAutoRemovingPipelineRunningTest implement
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
         loginAsAdminAndPerform(() -> {
+            library()
+                    .removePipeline(pipeline);
             navigationMenu()
                     .settings()
                     .switchToUserManagement()
