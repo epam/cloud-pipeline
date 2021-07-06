@@ -23,6 +23,8 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Privilege;
 import com.epam.pipeline.autotests.utils.PrivilegeValue;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.annotations.Test;
 
@@ -43,6 +45,7 @@ public class StorageSynchronizationTest extends AbstractBfxPipelineTest implemen
     private final String syncStorage = C.SYNC_STORAGE_NAME;
     private final String syncStoragePermissions = C.SYNC_STORAGE_PERMISSIONS;
 
+    @CloudProviderOnly(values = {Cloud.AWS})
     @Test
     @TestCase(value = "EPMCMBIBPC-3232")
     public void checkStorageSynchronization() {

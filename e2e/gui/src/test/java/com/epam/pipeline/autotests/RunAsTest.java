@@ -22,6 +22,8 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -52,6 +54,7 @@ public class RunAsTest extends AbstractSinglePipelineRunningTest implements Navi
         });
     }
 
+    @CloudProviderOnly(values = {Cloud.AWS})
     @Test
     @TestCase(value = "EPMCMBIBPC-3233")
     public void checkRunAsForGeneralUser() {
