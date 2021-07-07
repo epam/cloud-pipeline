@@ -20,6 +20,7 @@
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
+- [Disable Hyper-Threading](#disable-hyper-threading)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -585,13 +586,33 @@ For more details and examples see [here](../../manual/14_CLI/14.10._SSH_tunnel.m
 
 ## Updates of Metadata object
 
-From the current version, for all Metadata entities the "**Created date**" fields are displayed. This column appears and filled in automatically when the Metadata is uploaded or created manually, e.g.:  
+In the current version, several enhancements were implemented for the Metadata objects displaying and working with:
+
+- controls placement was reorganized:
+    - several controls (for adding a new instance, upload and delete metadata, transfer to the cloud and showing attributes) were moved to **Additional parameters** control (gear icon):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_04.png)  
+    See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#additional-options).
+    - **Bulk operation panel** is hidden/disabled until at least one instance is selected in a table, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_05.png)  
+    To manage selected items, click the **V** button next to the "**Show only selected items**" control to open the corresponding menu:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_06.png)  
+    See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#bulk-operation-panel).
+- the ability is implemented to show separately only selected metadata instances. All unselected items will be hidden. For that: select items of interest (they can be at different pages too) and click the "**Show only selected items**" button at the **Bulk operation** panel, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_07.png)  
+    For shown selected items, all functionality as for the general table is available except filtering.
+- search over the metadata was improved:  
+    - users can search over any attribute values (not only over `ID` as previously)
+    - the metadata search field supports multiple terms search - in this case, multiple terms for the search should be specified space separated, e.g. `sample1 sample2`
+    - the metadata search field supports a `key:value` search, where `key` is an attribute name (column header) and `value` is a term that shall be searched in that attribute values, e.g. `ID:D703`  
+    See details [here](../../manual/05_Manage_Metadata/5._Manage_Metadata.md#search-field).
+- the ability is implemented to filter instances of an entity in a table. Now, user can click a special control in a header of the desired column and set one or several filters for the column values - to restrict the output table, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_08.png)  
+    See details [here](../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table.md#filter-instances).
+- for all Metadata entities the "**Created date**" fields are displayed. This column appears and filled in automatically when the Metadata is uploaded or created manually, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_01.png)
-
-In some cases, it could be convenient not to specify entity ID during import. Therefore, starting from **`v0.17`**, Metadata entities support IDs autogeneration (in the [`UUID4`](https://en.wikipedia.org/wiki/Universally_unique_identifier) format). This works and for the import Metadata operation (for empty ID fields), and for the manual instance creation, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_02.png)
-
-See after the creation:  
+- in some cases, it could be convenient not to specify entity ID during import. Therefore Metadata entities support IDs autogeneration (in the [`UUID4`](https://en.wikipedia.org/wiki/Universally_unique_identifier) format). This works and for the import Metadata operation (for empty ID fields), and for the manual instance creation, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_02.png)  
+    See after the creation:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
 
 > **_Note_**: IDs still should be unique
@@ -713,6 +734,30 @@ In the current version, the special option was implemented that allows/denies th
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_03.png)  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImmutableParameters_04.png)
 - if a pipeline parameter has no default value - `no_override` is ignored and the parameter field will be writable in the detached configuration that uses this pipeline
+
+## Disable Hyper-Threading
+
+**Hyper-Threading technology** makes a single physical processor appear as multiple logical processors. To do this, there is one copy of the architecture state for each logical processor, and the logical processors share a single set of physical execution resources.
+
+Hyper-Threading technology is enabled by default for all nodes in **Cloud Pipeline**.
+
+But not in all cases this technology is useful. In cases when threads are operating primarily on very close or relatively close instructions or data, the overall throughput occasionally decreases compared to non-interleaved, serial execution of the lines.  
+For example, at a high performance computing that relies heavily on floating point calculations, the two threads in each core share a single floating point unit (FPU) and are often blocked by one another. In such case Hyper-Threading technology only slows computations.
+
+In the current version, the ability to disable Hyper-Threading for a specific job was implemented.  
+So, this technology can be turned on or off, as is best for a particular application at the user's discretion.
+
+In Cloud Provider environment, each vCPU is a thread of a physical processor core. All cores of the instance has two threads. Disabling of Hyper-Threading disables the set of vCPUs that are relied to the second thread, set of first thread vCPUs stays enabled (see details for `AWS` [here](https://aws.amazon.com/blogs/compute/disabling-intel-hyper-threading-technology-on-amazon-linux/)).
+
+To disable Hyper-Threading technology for a job:
+
+- set the corresponding option in "**Run capabilities**" before the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DisableHT_1.png)
+- check that Hyper-Threading was disabled via the following command after the run is launched:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DisableHT_2.png)  
+    Here you can check that only 1 thread per core is set, virtual CPUs 4-7 are offline. Only one thread is enabled (set of CPUs 0-3).
+
+For more details see [here](../../manual/10_Manage_Tools/10.9._Run_capabilities.md#disable-hyper-threading).
 
 ## AWS: seamless authentication
 
