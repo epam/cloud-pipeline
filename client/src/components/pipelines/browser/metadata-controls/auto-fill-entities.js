@@ -251,18 +251,21 @@ function buildAutoFillAction (options) {
         value: undefined
       };
     }
+    let zeroPrefix;
     if (!Number.isNaN(Number(value))) {
+      zeroPrefix = /^0*/.exec(value);
       return {
         value,
         number: +value,
-        string: ''
+        string: zeroPrefix
       };
     }
     const exec = /^([^\d]*)([\d]+)$/.exec(`${value}`);
     if (exec && exec.length === 3) {
+      zeroPrefix = /^0*/.exec(exec[2]);
       return {
         value: exec[0],
-        string: exec[1],
+        string: zeroPrefix ? exec[1] + zeroPrefix : exec[1],
         number: +exec[2]
       };
     }
