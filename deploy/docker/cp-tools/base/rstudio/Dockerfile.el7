@@ -70,6 +70,8 @@ RUN R CMD javareconf -e && \
         wget -q $SHINY_SERVER_URL -O shiny-server.rpm && \
         yum install -y shiny-server.rpm && \
         rm -f shiny-server.rpm
+# Grant full access to the shiny apps diretory
+RUN chmod 777 /srv -R
 
 # Configure nginx
 RUN yum install -y nginx gettext

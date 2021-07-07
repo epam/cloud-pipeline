@@ -27,7 +27,7 @@ import java.util.List;
  * Represents Gitlab repository commit
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 public class GitReaderRepositoryCommit {
 
     @JsonProperty("commit")

@@ -115,7 +115,7 @@ function buildClearPropertiesAction (options) {
       return mapItemSaveOperation(payload, options);
     };
     return {
-      title: 'Clear',
+      title: 'Clear cells',
       loadingMessage: 'Clearing...',
       action: () => new Promise((resolve, reject) => {
         Promise
@@ -135,7 +135,7 @@ function buildClearPropertiesAction (options) {
       return mapItemSaveOperation(payload, options);
     };
     return {
-      title: 'Clear',
+      title: 'Clear cells',
       loadingMessage: 'Clearing...',
       action: () => new Promise((resolve, reject) => {
         Promise
@@ -185,7 +185,7 @@ function buildCopyAction (options) {
       return mapItemSaveOperation(payload, options);
     };
     return {
-      title: 'Copy',
+      title: 'Copy cells',
       loadingMessage: 'Copying...',
       action: () => new Promise((resolve, reject) => {
         Promise
@@ -219,7 +219,7 @@ function buildCopyAction (options) {
       return mapItemSaveOperation(payload, options);
     };
     return {
-      title: 'Copy',
+      title: 'Copy cells',
       loadingMessage: 'Copying...',
       action: () => new Promise((resolve, reject) => {
         Promise
@@ -245,105 +245,166 @@ function buildAutoFillAction (options) {
   if (removedItems.length > 0 || removedColumns.length > 0) {
     return undefined;
   }
-  // const valuesAreAutoIncremented = values => values.some(value => /[d]$/i.test(`${value}`));
-  // if (insertedItems.length > 0) {
-  //   const processItem = (item, index) => {
-  //     const source = sourceItems[index % sourceItems.length].item;
-  //     const payload = {...item.item};
-  //     for (let c = 0; c < targetColumns.length; c++) {
-  //       const column = targetColumns[c].key;
-  //       const value = source.hasOwnProperty(column)
-  //         ? source[column].value
-  //         : undefined;
-  //       const type = source.hasOwnProperty(column)
-  //         ? source[column].type
-  //         : undefined;
-  //       if (value === undefined) {
-  //         delete payload[column];
-  //       } else {
-  //         payload[column] = {
-  //           value,
-  //           type: type || 'string'
-  //         };
-  //       }
-  //     }
-  //     return mapItemSaveOperation(payload, options);
-  //   };
-  //   return {
-  //     title: 'Copy',
-  //     loadingMessage: 'Copying...',
-  //     action: () => new Promise((resolve, reject) => {
-  //       Promise
-  //         .all(insertedItems.map(processItem))
-  //         .then(resolve)
-  //         .catch(reject);
-  //     })
-  //   };
-  // }
-  // if (insertedColumns.length > 0) {
-  //   const processItem = (item) => {
-  //     const payload = {...item.item};
-  //     for (let c = 0; c < insertedColumns.length; c++) {
-  //       const sourceColumn = sourceColumns[c % sourceColumns.length].key;
-  //       const targetColumn = insertedColumns[c].key;
-  //       const value = payload.hasOwnProperty(sourceColumn)
-  //         ? payload[sourceColumn].value
-  //         : undefined;
-  //       const type = payload.hasOwnProperty(sourceColumn)
-  //         ? payload[sourceColumn].type
-  //         : undefined;
-  //       if (value === undefined) {
-  //         delete payload[targetColumn];
-  //       } else {
-  //         payload[targetColumn] = {
-  //           value,
-  //           type: type || 'string'
-  //         };
-  //       }
-  //     }
-  //     return mapItemSaveOperation(payload, options);
-  //   };
-  //   return {
-  //     title: 'Copy',
-  //     loadingMessage: 'Copying...',
-  //     action: () => new Promise((resolve, reject) => {
-  //       Promise
-  //         .all(targetItems.map(processItem))
-  //         .then(resolve)
-  //         .catch(reject);
-  //     })
-  //   };
-  // }
-  return undefined;
-}
-function buildClearCellValueAction (options) {
-  const {
-    targetItems,
-    targetColumns
-  } = options;
-
-  const processItem = (item) => {
-    const payload = {...item.item};
-    for (let c = 0; c < targetColumns.length; c++) {
-      const column = targetColumns[c].key;
-      if (payload.hasOwnProperty(column)) {
-        payload[column].value = '';
+  const splitValue = value => {
+    if (!value) {
+      return {
+        value: undefined
+      };
+    }
+    if (!Number.isNaN(Number(value))) {
+      return {
+        value,
+        number: +value,
+        string: ''
+      };
+    }
+    const exec = /^([^\d]*)([\d]+)$/.exec(`${value}`);
+    if (exec && exec.length === 3) {
+      return {
+        value: exec[0],
+        string: exec[1],
+        number: +exec[2]
+      };
+    }
+    return {
+      value
+    };
+  };
+  const getValuesDiff = values => {
+    if (values.length === 0) {
+      return undefined;
+    }
+    if (values.some(value => value.number === undefined)) {
+      return undefined;
+    }
+    if ((new Set(values.map(value => value.string))).size > 1) {
+      return undefined;
+    }
+    if (values.length === 1) {
+      return Math.sign(values[0].number);
+    }
+    const diff = values[1].number - values[0].number;
+    for (let i = 2; i < values.length; i++) {
+      if (values[i].number - values[i - 1].number !== diff) {
+        return undefined;
       }
     }
-    return mapItemSaveOperation(payload, options);
+    return diff;
   };
-  return {
-    title: 'Clear cells',
-    loadingMessage: 'Clearing cells...',
-    action: () => new Promise((resolve, reject) => {
-      Promise
-        .all(targetItems.map(processItem))
-        .then(resolve)
-        .catch(reject);
-    })
+  const valuesAreAutoIncrementable = values => !!getValuesDiff(values);
+  const values = [];
+  for (let sRow = 0; sRow < sourceItems.length; sRow++) {
+    const row = [];
+    for (let sColumn = 0; sColumn < sourceColumns.length; sColumn++) {
+      const source = sourceItems[sRow].item;
+      const column = sourceColumns[sColumn].key;
+      const value = source.hasOwnProperty(column)
+        ? source[column].value
+        : undefined;
+      row.push(splitValue(value));
+    }
+    values.push(row);
+  }
+  const rotatedValues = [];
+  for (let sColumn = 0; sColumn < sourceColumns.length; sColumn++) {
+    const row = [];
+    for (let sRow = 0; sRow < sourceItems.length; sRow++) {
+      const source = sourceItems[sRow].item;
+      const column = sourceColumns[sColumn].key;
+      const value = source.hasOwnProperty(column)
+        ? source[column].value
+        : undefined;
+      row.push(splitValue(value));
+    }
+    rotatedValues.push(row);
+  }
+  const getIncrementedValue = table => {
+    const diffs = table.map(getValuesDiff);
+    return (source, incrementRatio) => {
+      if (source < 0 || source >= table.length) {
+        return undefined;
+      }
+      const row = table[source];
+      if (row.length === 0) {
+        return undefined;
+      }
+      const last = row[row.length - 1];
+      const diff = diffs[source];
+      if (diff === undefined || last.number === undefined) {
+        return undefined;
+      }
+      const number = last.number + incrementRatio * diff;
+      return `${last.string || ''}${!last.string ? number : Math.abs(number)}`;
+    };
   };
+  if (insertedItems.length > 0 && rotatedValues.some(valuesAreAutoIncrementable)) {
+    const fn = getIncrementedValue(rotatedValues);
+    const processItem = (item, index) => {
+      const source = sourceItems[index % sourceItems.length].item;
+      const payload = {...item.item};
+      for (let c = 0; c < targetColumns.length; c++) {
+        const column = targetColumns[c].key;
+        const value = fn(c, index + 1);
+        const type = source.hasOwnProperty(column)
+          ? source[column].type
+          : undefined;
+        if (value === undefined) {
+          delete payload[column];
+        } else {
+          payload[column] = {
+            value,
+            type: type || 'string'
+          };
+        }
+      }
+      return mapItemSaveOperation(payload, options);
+    };
+    return {
+      title: 'Fill cells',
+      loadingMessage: 'Filling...',
+      action: () => new Promise((resolve, reject) => {
+        Promise
+          .all(insertedItems.map(processItem))
+          .then(resolve)
+          .catch(reject);
+      })
+    };
+  }
+  if (insertedColumns.length > 0 && values.some(valuesAreAutoIncrementable)) {
+    const fn = getIncrementedValue(values);
+    const processItem = (item, index) => {
+      const payload = {...item.item};
+      for (let c = 0; c < insertedColumns.length; c++) {
+        const sourceColumn = sourceColumns[c % sourceColumns.length].key;
+        const targetColumn = insertedColumns[c].key;
+        const value = fn(index, c + 1);
+        const type = payload.hasOwnProperty(sourceColumn)
+          ? payload[sourceColumn].type
+          : undefined;
+        if (value === undefined) {
+          delete payload[targetColumn];
+        } else {
+          payload[targetColumn] = {
+            value,
+            type: type || 'string'
+          };
+        }
+      }
+      return mapItemSaveOperation(payload, options);
+    };
+    return {
+      title: 'Fill cells',
+      loadingMessage: 'Filling...',
+      action: () => new Promise((resolve, reject) => {
+        Promise
+          .all(targetItems.map(processItem))
+          .then(resolve)
+          .catch(reject);
+      })
+    };
+  }
+  return undefined;
 }
-
 function buildAutoFillActions (elements, columns, source, target, backup, options) {
   if (!elements || !columns || !source || !target) {
     return undefined;
@@ -383,9 +444,8 @@ function buildAutoFillActions (elements, columns, source, target, backup, option
   };
   const actions = [
     buildClearPropertiesAction(actionOptions),
-    buildCopyAction(actionOptions),
     buildAutoFillAction(actionOptions),
-    buildClearCellValueAction(actionOptions)
+    buildCopyAction(actionOptions)
   ]
     .filter(Boolean);
   if (actions.length > 0) {

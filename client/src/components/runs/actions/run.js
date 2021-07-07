@@ -106,7 +106,7 @@ export function openReRunForm (run, props) {
   return new Promise((resolve) => {
     const {
       pipelineId,
-      version,
+      version: runVersion,
       id,
       configName,
       dockerImage
@@ -126,6 +126,7 @@ export function openReRunForm (run, props) {
       .then((pipelineInfo) => {
         if (pipelineInfo) {
           return Promise.resolve({
+            pipelineInfo,
             versionedStorage: /^versioned_storage$/i.test(pipelineInfo.pipelineType)
           });
         }
@@ -133,8 +134,14 @@ export function openReRunForm (run, props) {
       })
       .catch(() => Promise.resolve())
       .then((options) => {
-        const {versionedStorage = false} = options || {};
+        const {
+          versionedStorage = false,
+          pipelineInfo
+        } = options || {};
         let link;
+        const version = versionedStorage && pipelineInfo?.currentVersion?.name
+          ? pipelineInfo.currentVersion.name
+          : runVersion;
         const query = versionedStorage ? `?vs=true` : '';
         if (pipelineId && version && id) {
           link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}${query}`;

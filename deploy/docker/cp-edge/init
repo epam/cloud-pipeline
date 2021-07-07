@@ -76,7 +76,15 @@ export CP_EDGE_SSL_CIPHERS="EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
 if [ -z "$CP_API_SRV_EXTERNAL_HOST" ] || [ -z "$CP_API_SRV_EXTERNAL_PORT" ]; then
     export CP_EDGE_FSBROWSER_CORS="*"
 else
-    export CP_EDGE_FSBROWSER_CORS="https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}"
+    if [ "$CP_API_SRV_EXTERNAL_PORT" == "443" ]; then
+        _fsbrowser_cors_schema="https"
+    elif [ "$CP_API_SRV_EXTERNAL_PORT" == "80" ]; then
+        _fsbrowser_cors_schema="http"
+    else
+        _fsbrowser_cors_schema="https"
+        _fsbrowser_cors_port=":$CP_API_SRV_EXTERNAL_PORT"
+    fi
+    export CP_EDGE_FSBROWSER_CORS="${_fsbrowser_cors_schema}://${CP_API_SRV_EXTERNAL_HOST}${_fsbrowser_cors_port}"
 fi
 # FIXME: !!! WebDAV tips For Windows Drive Mapping: 
 #        !!! - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!

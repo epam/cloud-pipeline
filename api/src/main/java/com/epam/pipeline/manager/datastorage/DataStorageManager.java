@@ -239,12 +239,7 @@ public class DataStorageManager implements SecuredEntityManager {
             if (pathWithName.endsWith("/")) {
                 pathWithName = pathWithName.substring(0, pathWithName.length() - 1);
             }
-
-            dataStorage = loadDataStorageFromFolder(pathWithName);
-
-            if (dataStorage == null) {
-                dataStorage = dataStorageDao.loadDataStorageByNameOrPath(pathWithName, pathWithName);
-            }
+            dataStorage = dataStorageDao.loadDataStorageByNameOrPath(pathWithName, pathWithName);
         }
         Assert.notNull(dataStorage, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, identifier));
         dataStorage.setHasMetadata(metadataManager.hasMetadata(new EntityVO(dataStorage.getId(),
@@ -1072,28 +1067,6 @@ public class DataStorageManager implements SecuredEntityManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_USED_AS_DEFAULT, storageId,
                         values.stream().findFirst().map(v -> v.getClass().getSimpleName()).orElse("CLASS"),
                         values.stream().map(v -> String.valueOf(v.getId())).collect(Collectors.joining(","))));
-    }
-
-    private AbstractDataStorage loadDataStorageFromFolder(final String pathWithName) {
-        String[] pathParts = pathWithName.split("/");
-        String dataStorageName = pathParts[pathParts.length - 1];
-        Long parentFolderId = null;
-        if (pathParts.length > 1) {
-            try {
-                final Folder parentFolder = folderManager.loadByNameOrId(
-                                String.join("/", Arrays.asList(pathParts).subList(0, pathParts.length - 1)));
-                if (parentFolder != null) {
-                    parentFolderId = parentFolder.getId();
-                }
-            } catch (IllegalArgumentException e) {
-                LOGGER.error(e.getMessage());
-            }
-        }
-        if (parentFolderId != null) {
-            return dataStorageDao.loadDataStorageByNameAndParentId(dataStorageName, parentFolderId);
-        } else {
-            return dataStorageDao.loadDataStorageByNameOrPath(dataStorageName, dataStorageName);
-        }
     }
 
     private String replaceInTemplate(final String template, final String replacement) {

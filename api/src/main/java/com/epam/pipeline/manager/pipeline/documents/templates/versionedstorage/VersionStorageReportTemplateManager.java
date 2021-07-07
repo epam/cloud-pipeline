@@ -38,6 +38,7 @@ import org.apache.poi.xwpf.usermodel.*;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -45,8 +46,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -70,6 +73,8 @@ public class VersionStorageReportTemplateManager {
     public static final String REVISION = "revision";
     public static final String SUMMARY = "summary";
     public static final int BUFFER_SIZE = 1024;
+    public static final String EMPTY = "";
+    public static final String COMMA = ",";
 
     private final PipelineManager pipelineManager;
     private final GitManager gitManager;
@@ -125,7 +130,7 @@ public class VersionStorageReportTemplateManager {
                 pipelineId, true, Optional.ofNullable(reportFilters.getCommitsFilter())
                         .orElse(GitCommitsFilter.builder().build())
         );
-        return DiffUtils.reduceDiffByFile(gitReaderDiff);
+        return DiffUtils.reduceDiffByFile(gitReaderDiff, reportFilters);
     }
 
     private List<Pair<String, XWPFDocument>> prepareReportDocs(final Pipeline pipeline,
@@ -244,7 +249,8 @@ public class VersionStorageReportTemplateManager {
     private void changeParagraph(final XWPFParagraph paragraph, final Pipeline storage,
                                  final GitParsedDiff diff, final GitDiffReportFilter reportFilter) {
         for (VSReportTemplates template : VSReportTemplates.values()) {
-            template.templateResolver.get().process(paragraph, template.template, storage, diff, reportFilter);
+            template.templateResolver.get().process(paragraph, template.template, storage, diff, reportFilter,
+                    getCustomBinaryExtension());
         }
     }
 
@@ -270,14 +276,24 @@ public class VersionStorageReportTemplateManager {
     private String getVersionStorageTemplatePath() {
         final String versionStorageTemplatePath = preferenceManager.getPreference(
                 SystemPreferences.VERSION_STORAGE_REPORT_TEMPLATE);
-        Assert.notNull(versionStorageTemplatePath,
+        Assert.isTrue(!StringUtils.isEmpty(versionStorageTemplatePath),
                 "Version Storage Report Template not configured, please specify "
                         + SystemPreferences.VERSION_STORAGE_REPORT_TEMPLATE.getKey());
+        Assert.isTrue(Paths.get(versionStorageTemplatePath).toFile().isFile(),
+                "Version Storage Report Template path doesn't exists " + versionStorageTemplatePath);
         return versionStorageTemplatePath;
     }
 
+    private List<String> getCustomBinaryExtension() {
+        return Arrays.stream(Optional.ofNullable(
+                preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_BINARY_FILE_EXTS))
+                .orElse(EMPTY)
+                .split(COMMA))
+                .map(String::trim).collect(Collectors.toList());
+    }
+
     private String resolveGroupReportFileName(final GitDiffReportFilter reportFilters, final String id) {
-        return (getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : "")
+        return (getGroupType(reportFilters) == GitDiffGroupType.BY_COMMIT ? REVISION + NAME_SEPARATOR : EMPTY)
                 + id.replace("/", NAME_SEPARATOR) + DOCX;
     }
 

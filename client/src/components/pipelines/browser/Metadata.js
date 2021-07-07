@@ -72,6 +72,7 @@ import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
 import getDefaultColumns from './metadata-controls/get-default-columns';
+import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
@@ -152,7 +153,8 @@ function makeCurrentOrderSort (array) {
     onReloadTree: params.onReloadTree,
     authenticatedUserInfo,
     preferences,
-    dataStorages
+    dataStorages,
+    pipelinesLibrary
   };
 })
 @observer
@@ -197,6 +199,7 @@ export default class Metadata extends React.Component {
       pageSize: PAGE_SIZE,
       searchQueries: []
     },
+    filterComponentVisible: false,
     addInstanceFormVisible: false,
     operationInProgress: false,
     configurationBrowserVisible: false,
@@ -322,7 +325,10 @@ export default class Metadata extends React.Component {
     filterModel.endDateTo = to;
     this.setState(
       {filterModel},
-      () => this.loadData()
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
     );
   };
 
@@ -350,6 +356,7 @@ export default class Metadata extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       } else {
+        this.clearSelection();
         await this.props.entityFields.fetch();
         await this.loadColumns({append: true});
         await this.loadData();
@@ -381,7 +388,10 @@ export default class Metadata extends React.Component {
     filterModel.page = FIRST_PAGE;
     this.setState(
       {filterModel},
-      () => this.loadData()
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
     );
   }
 
@@ -499,6 +509,11 @@ export default class Metadata extends React.Component {
     if (this.state.selectedItemsAreShowing) {
       return null;
     }
+    const handleControlVisibility = (visible) => {
+      this.setState({
+        filterComponentVisible: visible
+      });
+    };
     const {filterModel = {}} = this.state;
     const {
       filters = [],
@@ -529,6 +544,7 @@ export default class Metadata extends React.Component {
           from={startDateFrom}
           to={endDateTo}
           onChange={(e) => this.onDateRangeChanged(e, key)}
+          visibilityChanged={handleControlVisibility}
         >
           {button}
         </RangeDatePicker>
@@ -539,6 +555,7 @@ export default class Metadata extends React.Component {
         columnName={key}
         onSearch={(tags) => this.handleFilterApplied(key, tags)}
         value={values}
+        visibilityChanged={handleControlVisibility}
       >
         {button}
       </FilterControl>
@@ -584,7 +601,9 @@ export default class Metadata extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       }
-      this.setState({selectedItems: [], selectedItem: null, metadata: false});
+      this.setState({selectedItems: [], selectedItem: null, metadata: false}, () => {
+        this.clearSelection();
+      });
       await this.loadData();
       await this.props.folder.fetch();
       if (this.props.onReloadTree) {
@@ -794,7 +813,10 @@ export default class Metadata extends React.Component {
     this.setState({
       filterModel: newFilterModel,
       selectedItemsAreShowing: false
-    }, () => this.loadData());
+    }, () => {
+      this.clearSelection();
+      this.loadData();
+    });
   };
 
   onOrderByChanged = async (key, value) => {
@@ -888,7 +910,10 @@ export default class Metadata extends React.Component {
         filterModel,
         searchQuery: undefined
       },
-      () => this.loadData()
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
     );
   };
 
@@ -1029,12 +1054,27 @@ export default class Metadata extends React.Component {
 
   runConfiguration = async (isCluster) => {
     const hide = message.loading('Launching...', 0);
+
+    const parameters = await getPathParameters(this.props.pipelinesLibrary, this.props.folderId);
+    const mapParameters = (entry) => ({
+      ...entry,
+      configuration: {
+        ...(entry.configuration || {}),
+        parameters: {
+          ...parameters,
+          ...((entry.configuration || {}).parameters || {})
+        }
+      }
+    });
+
     const request = new ConfigurationRun(this.expansionExpression);
     await request.send({
       id: this.selectedConfiguration ? this.selectedConfiguration.id : null,
       entries: isCluster
-        ? this.selectedConfiguration.entries
-        : this.selectedConfiguration.entries.filter(entry => entry.default),
+        ? (this.selectedConfiguration.entries || []).map(mapParameters)
+        : (this.selectedConfiguration.entries || []).slice()
+          .filter(entry => entry.default)
+          .map(mapParameters),
       entitiesIds: this.state.selectedItems.map(item => item.rowKey.value),
       metadataClass: this.props.metadataClass,
       folderId: parseInt(this.props.folderId)
@@ -1110,7 +1150,14 @@ export default class Metadata extends React.Component {
     return undefined;
   }
   handleStartSelection = (opts) => {
+    if (this.props.readOnly || this.state.filterComponentVisible) {
+      return;
+    }
     const {e, rowInfo, column: columnInfo} = opts;
+    if (columnInfo.index === undefined) {
+      // selection cell, ignore it
+      return;
+    }
     e.stopPropagation();
     const selection = this.getCurrentSelection();
     const spreadSelection = this.getSpreadSelection();
@@ -1187,7 +1234,7 @@ export default class Metadata extends React.Component {
         result.forEach(item => {
           const index = (currentMetadata || [])
             .findIndex(o => o.rowKey && item.rowKey && o.rowKey.value === item.rowKey.value);
-          if (index) {
+          if (index >= 0) {
             currentMetadata.splice(index, 1, item);
           }
         });
@@ -1274,6 +1321,9 @@ export default class Metadata extends React.Component {
     return hoveredCell && hoveredCell.row === row && hoveredCell.column === column;
   }
   handleCellSelection = (opts) => {
+    if (this.props.readOnly || this.state.filterComponentVisible) {
+      return;
+    }
     const {e, rowInfo, column: columnInfo} = opts;
     e.stopPropagation();
     const {cellsSelection: selection, hoveredCell} = this.state;
@@ -1281,9 +1331,11 @@ export default class Metadata extends React.Component {
     const column = columnInfo.index;
     if (!selection) {
       if (
-        !hoveredCell ||
-        hoveredCell.column !== column ||
-        hoveredCell.row !== row
+        column !== undefined && (
+          !hoveredCell ||
+          hoveredCell.column !== column ||
+          hoveredCell.row !== row
+        )
       ) {
         this.setState({
           hoveredCell: {column, row}
@@ -1380,23 +1432,6 @@ export default class Metadata extends React.Component {
       cellsActions: undefined
     });
   };
-  clearSelectedCells = (e) => {
-    const {
-      cellsSelection,
-      cellsActions
-    } = this.state;
-    if (!cellsSelection) {
-      return;
-    }
-    const canClearCellsAndBackspaceKeyDown = (e.keyCode === 8 || e.keyCode === 46) &&
-    (cellsActions && cellsActions.length > 0);
-    if (canClearCellsAndBackspaceKeyDown) {
-      this.applySelectionAction(
-        cellsActions.find(a => a.title === 'Clear cells'),
-        false
-      );
-    }
-  }
 
   renderContent = () => {
     const getCellStyle = (column, row) => {
@@ -1594,7 +1629,7 @@ export default class Metadata extends React.Component {
                 });
                 this.setState({selectedItems: [...selectedItems]});
               }
-              this.setState({selectedItem});
+              this.setState({selectedItem}, () => this.clearSelection());
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);
@@ -1905,7 +1940,7 @@ export default class Metadata extends React.Component {
           accessor: key,
           index,
           style: {
-            cursor: 'cell',
+            cursor: this.props.readOnly ? 'default' : 'cell',
             padding: 0,
             borderRight: '1px solid rgba(0, 0, 0, 0.1)'
           },
@@ -2150,7 +2185,10 @@ export default class Metadata extends React.Component {
     filterModel.page = page;
     this.setState(
       {filterModel},
-      () => this.loadData()
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
     );
   }
 
@@ -2249,6 +2287,47 @@ export default class Metadata extends React.Component {
     );
   };
 
+  getParents = async () => {
+    const {folderId, pipelinesLibrary} = this.props;
+    const parents = [];
+    let pNumber = 0;
+
+    function checkFolder (folder) {
+      if (folder.id === Number(folderId)) {
+        pNumber = 1;
+        parents.push({
+          key: `p${pNumber}`,
+          value: folder.name
+        });
+        return true;
+      } else {
+        if (folder.childFolders) {
+          for (let subfolder of folder.childFolders) {
+            const targetFolder = checkFolder(subfolder);
+            if (targetFolder) {
+              if (folder.name) {
+                pNumber += 1;
+                parents.push({
+                  key: `p${pNumber}`,
+                  value: folder.name
+                });
+              }
+              return targetFolder;
+            }
+          }
+        }
+        return false;
+      }
+    }
+
+    await pipelinesLibrary.fetch();
+    const pipelinesLibraryValue = pipelinesLibrary.value;
+    if (pipelinesLibraryValue && pipelinesLibraryValue.childFolders) {
+      checkFolder(pipelinesLibraryValue);
+    }
+    return parents;
+  };
+
   componentDidMount () {
     const {
       authenticatedUserInfo,
@@ -2263,7 +2342,6 @@ export default class Metadata extends React.Component {
       .fetchIfNeededOrWait()
       .then(() => this.fetchDefaultColumnsIfRequested());
     document.addEventListener('keydown', this.resetSelection);
-    document.addEventListener('keydown', this.clearSelectedCells);
     window.addEventListener('mouseup', this.handleFinishSelection);
   };
 
@@ -2311,14 +2389,17 @@ export default class Metadata extends React.Component {
       newState.defaultColumnsFetching = false;
       newState.defaultColumnsNames = [];
     }
-    this.setState(newState, () => Promise.all([
-      folderChanged
-        ? this.fetchDefaultColumnsIfRequested()
-        : this.loadColumns({reset: true}),
-      folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
-      this.loadData(),
-      this.loadCurrentProject()
-    ]));
+    this.setState(newState, () => {
+      this.clearSelection();
+      return Promise.all([
+        folderChanged
+          ? this.fetchDefaultColumnsIfRequested()
+          : this.loadColumns({reset: true}),
+        folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
+        this.loadData(),
+        this.loadCurrentProject()
+      ]);
+    });
   };
 
   fetchDefaultColumnsIfRequested = () => {
@@ -2378,7 +2459,6 @@ export default class Metadata extends React.Component {
   componentWillUnmount () {
     this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
     document.removeEventListener('keydown', this.resetSelection);
-    document.removeEventListener('keydown', this.clearSelectedCells);
     window.removeEventListener('mouseup', this.handleFinishSelection);
   }
 }

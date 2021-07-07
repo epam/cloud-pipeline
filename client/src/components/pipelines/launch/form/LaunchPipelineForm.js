@@ -199,7 +199,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     parameters: PropTypes.shape(),
     configurations: PropTypes.array,
     onLaunch: PropTypes.func,
-    errors: PropTypes.array,
+    alerts: PropTypes.arrayOf(PropTypes.shape({
+      message: PropTypes.string,
+      type: PropTypes.string
+    })),
     editConfigurationMode: PropTypes.bool,
     onConfigurationChanged: PropTypes.func,
     currentConfigurationName: PropTypes.string,
@@ -212,6 +215,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     canRemove: PropTypes.bool,
     detached: PropTypes.bool,
     runConfiguration: PropTypes.func,
+    runConfigurationId: PropTypes.string,
     runConfigurationCluster: PropTypes.func,
     onSelectPipeline: PropTypes.func,
     defaultPriceTypeIsSpot: PropTypes.bool,
@@ -4624,6 +4628,41 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   };
 
+  renderAlerts = () => {
+    const {alerts} = this.props;
+    if (!alerts || !alerts.length) {
+      return null;
+    }
+    const defaultType = 'warning';
+    const groupedAlerts = alerts.reduce((result, alert) => {
+      const {type = defaultType} = alert;
+      (result[type] = result[type] || []).push(alert);
+      return result;
+    }, {});
+    const getMessagesList = (messages) => {
+      return (
+        <ul style={{listStyle: 'none'}}>
+          {messages.map((alert, index) => (
+            <li key={`error_${index}`}>{alert.message}</li>
+          ))}
+        </ul>
+      );
+    };
+    return (
+      <Row style={{marginBottom: '10px'}}>
+        {Object.entries(groupedAlerts).map(([type, messages]) => {
+          return messages && messages.length ? (
+            <Alert
+              key={type}
+              type={type}
+              style={{marginBottom: '4px'}}
+              message={getMessagesList(messages)}
+            />) : null;
+        })}
+      </Row>
+    );
+  };
+
   render () {
     const renderSubmitButton = () => {
       if (this.props.editConfigurationMode) {
@@ -4691,6 +4730,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           </td>
         );
       } else if (!this.props.pipeline || roleModel.executeAllowed(this.props.pipeline)) {
+        const KEYS = {
+          selectMetadata: 'select metadata'
+        };
+        const onDropDownClick = ({key}) => {
+          if (key === KEYS.selectMetadata) {
+            this.run({key: RUN_SELECTED_KEY});
+          }
+        };
+        const dropdownRenderer = () => (
+          <Menu onClick={onDropDownClick} selectedKeys={[]}>
+            <Menu.Item key={KEYS.selectMetadata}>
+              Select metadata entries and launch
+            </Menu.Item>
+          </Menu>
+        );
         return (
           <td style={{textAlign: 'right'}}>
             <FormItem style={{margin: 0, marginRight: 10}}>
@@ -4699,7 +4753,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   <Button
                     id="launch-command-button"
                     disabled={!this.launchCommandPayload}
-                    style={{verticalAlign: 'middle', marginRight: 5}}
+                    style={{marginRight: 5}}
                     onClick={this.showLaunchCommands}
                   >
                     <Icon type="code" />
@@ -4713,7 +4767,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 dockerImage={this.dockerImage}
                 type="primary"
                 htmlType="submit"
-                style={{verticalAlign: 'middle'}}>
+                dropdown={!!this.props.runConfigurationId}
+                dropdownRenderer={dropdownRenderer}
+                dropdownId="launch-metadata"
+              >
                 Launch
               </SubmitButton>
             </FormItem>
@@ -4845,24 +4902,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               </tr>
             </tbody>
           </table>
-          {
-            this.props.errors && this.props.errors.length > 0
-              ? (
-                <Row>
-                  <Alert
-                    type="warning"
-                    message={
-                      <ul style={{listStyle: 'disc'}}>
-                        {
-                          this.props.errors.map(
-                            (error, index) => <li key={`error_${index}`}>{error}</li>)
-                        }
-                      </ul>
-                    } />
-                  <br />
-                </Row>)
-              : undefined
-          }
+          {this.renderAlerts()}
           {
             this.props.pipeline &&
             !roleModel.executeAllowed(this.props.pipeline) &&

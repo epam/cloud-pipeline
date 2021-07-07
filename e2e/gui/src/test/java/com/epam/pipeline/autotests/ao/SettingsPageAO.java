@@ -42,6 +42,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static java.lang.String.format;
@@ -634,7 +635,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
                             entry(DELETE, context().$(byId("delete-user-button"))),
                             entry(PRICE_TYPE, context().find(byXpath(
-                                    format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                                    format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                            entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -729,6 +731,27 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             type.click();
                             sleep(1, SECONDS);
                         }
+                        return this;
+                    }
+
+                    public EditUserPopup configureRunAs(final String name, final boolean sshConnection) {
+                        click(CONFIGURE);
+                        new LogAO.ShareWith().addUserToShare(name, sshConnection);
+                        return this;
+                    }
+
+                    public EditUserPopup resetConfigureRunAs(final String name) {
+                        click(CONFIGURE);
+                        SelenideElement shareWithContext = Utils.getPopupByTitle("Share with users and groups");
+                        shareWithContext
+                                .$(byClassName("ant-table-tbody"))
+                                .find(byXpath(
+                                        format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]",
+                                                name)))
+                                .find(buttonByIconClass("anticon-delete"))
+                                .shouldBe(visible)
+                                .click();
+                        new LogAO.ShareWith().click(OK);
                         return this;
                     }
                 }

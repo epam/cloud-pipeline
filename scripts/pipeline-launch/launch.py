@@ -101,6 +101,7 @@ if __name__ == '__main__':
     edge_url = _extract_parameter('EDGE', default='https://cp-edge.default.svc.cluster.local:31081')
     node_private_key_path = _extract_parameter('CP_NODE_PRIVATE_KEY', default=os.path.join(host_root, '.ssh', 'id_rsa'))
     owner = _extract_parameter('OWNER', 'USER')
+    owner = owner.split('@')[0]
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
     owner_groups = _extract_parameter('OWNER_GROUPS', default='Administrators')
     logon_title = _extract_parameter('CP_LOGON_TITLE', default='Login as ' + owner)
@@ -109,7 +110,8 @@ if __name__ == '__main__':
     logon_image_path = _extract_parameter('CP_LOGON_IMAGE_PATH', default=os.path.join(resources_dir, 'logon.bmp'))
     task_path = _extract_parameter('CP_TASK_PATH', '.\\task.ps1')
     python_dir = _extract_parameter('CP_PYTHON_DIR', 'c:\\python')
-    requires_repo = _extract_boolean_parameter('CP_REPO_ENABLED')
+    # todo: Enable support for custom repo usage once launch with default parameters issue is fixed in GUI
+    requires_repo = False
     repo_pypi_base_url = _extract_parameter('CP_REPO_PYPI_BASE_URL_DEFAULT',
                                             default='http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple')
     repo_pypi_trusted_host = _extract_parameter('CP_REPO_PYPI_TRUSTED_HOST_DEFAULT',
@@ -195,6 +197,12 @@ if __name__ == '__main__':
                      f'add_to_path(\'{_escape_backslashes(os.path.join(common_repo_dir, "powershell"))}\'); '
                      f'add_to_path(\'{_escape_backslashes(pipe_dir)}\')\\"')
 
+    logger.info('Configuring system settings on the node...')
+    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
+                     f'from scripts.configure_system_settings_win import configure_system_settings_win; '
+                     f'configure_system_settings_win()\\"')
+    node_ssh.execute(f'ConfigureSystemSettings')
+
     logger.info('Configuring owner account on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                      f'from pipeline.utils.account import create_user; '
@@ -208,11 +216,6 @@ if __name__ == '__main__':
                      f'from scripts.configure_seamless_logon_win import configure_seamless_logon_win; '
                      f'configure_seamless_logon_win(\'{owner}\', \'{owner_password}\', \'{owner_groups}\', '
                      f'                             \'{logon_title}\', \'{_escape_backslashes(logon_image_path)}\')\\"')
-
-    logger.info('Configuring system settings on the node...')
-    node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
-                     f'from scripts.configure_system_settings_win import configure_system_settings_win; '
-                     f'configure_system_settings_win()\\"')
 
     logger.info('Restarting logon processes on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
