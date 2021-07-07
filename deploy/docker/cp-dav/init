@@ -47,8 +47,8 @@ export DISTRIBUTION_URL="${DISTRIBUTION_URL:-https://${CP_API_SRV_INTERNAL_HOST}
 download_file "${DISTRIBUTION_URL}"
 
 if [ $? -eq 0 ]; then
-      echo "[ERROR] 'pipe' CLI download succeeded."
-      cp pipe.tar.gz /opt/ && \
+      echo "'pipe' CLI download succeeded."
+      mv pipe.tar.gz /opt/ && \
       cd /opt && \
       tar -zxf pipe.tar.gz && \
       rm -rf pipe.tar.gz && \

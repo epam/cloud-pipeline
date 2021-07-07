@@ -193,7 +193,7 @@ fi
 
 while IFS='|' read -r id name path type region_id; do
      echo
-     echo "[INFO] Staring processing: $mount_root (id: ${id}, name: ${name}, region: ${region_id} type: ${type}, path: ${path})"
+     echo "[INFO] Staring processing: $path (id: ${id}, name: ${name}, region: ${region_id} type: ${type}, path: ${path})"
 
      if [[ "${type}" == "AZ" ]]; then
          mount_root_srv_dir="${_MOUNT_ROOT}/AZ/${name}"
@@ -231,18 +231,32 @@ while IFS='|' read -r id name path type region_id; do
      elif [[ "${type}" == "S3" ]] || [[ "${type}" == "GCP" ]]; then
          pipe storage mount ${mount_root_srv_dir} -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_TIMEOUT:-500} -o allow_other -l /var/log/fuse_${id}.log
          mount_result=$?
+         # Even in the "pipe storage mount" is OK, it may take a second or two to fully initialized
+         # During this period the directory is considered as an empty "overlayfs"
+         # So here we wait, until the mountpoint becomes a fuse
+         mount_wait_attempts=0
+         unset mounted_fs_type
+         while [[ "$mounted_fs_type" != *"fuse"* ]]; do
+            mounted_fs_type=$(stat -f -c %T ${mount_root_srv_dir})
+            sleep 1
+            mount_wait_attempts=$(($mount_wait_attempts+1))
+            if (( "$mount_wait_attempts" >= "$_MOUNT_TIMEOUT_SEC" )); then
+                echo "[ERROR] $mount_root_srv_dir still $mounted_fs_type after $_MOUNT_TIMEOUT_SEC seconds. While expecting fuse"
+                mount_result=124
+                break
+            fi
+        done
      else
          echo "[ERROR] Storage with id: ${id} and path: ${path} is not a AZ/GCP/S3 storage, skipping."
          continue
      fi
 
 
-
      if [[ $mount_result -ne 0 ]]; then
-        echo "[ERROR] Unable to mount $mount_root to $mount_root_srv_dir (id: ${id}, type: ${type}), skipping"
+        echo "[ERROR] Unable to mount $path to $mount_root_srv_dir (id: ${id}, type: ${type}), skipping"
         continue
      fi
-     echo "[DONE] $mount_root is mounted to $mount_root_srv_dir (id: ${id}, type: ${type})"
+     echo "[DONE] $path is mounted to $mount_root_srv_dir (id: ${id}, type: ${type})"
      mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
 done <<< "$storages"
 echo
