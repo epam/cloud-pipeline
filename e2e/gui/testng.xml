@@ -447,4 +447,16 @@
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
         </classes>
     </test>
+
+    <test name="StorageSynchronizationTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.StorageSynchronizationTest"/>
+        </classes>
+    </test>
+
+    <test name="RunAsTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.RunAsTest"/>
+        </classes>
+    </test>
 </suite>

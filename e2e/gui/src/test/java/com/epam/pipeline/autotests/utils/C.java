@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,11 @@ public class C {
         DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
         TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
         ANOTHER_CLOUD_REGION = conf.getProperty("e2e.ui.another.cloud.region");
+        SYNC_STORAGE_NAME = conf.getProperty("e2e.ui.sync.storage.name");
+        SYNC_STORAGE_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.sync.storage.timeout.in.seconds"));
+        SYNC_STORAGE_PERMISSION_NAME = conf.getProperty("e2e.ui.sync.storage.permission.name");
+        SYNC_STORAGE_PERMISSIONS = conf.getProperty("e2e.ui.sync.storage.permissions");
+        ROLE_USER = conf.getProperty("e2e.ui.role.user");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -113,6 +118,7 @@ public class C {
     public static final String DEFAULT_REGISTRY_IP;
     public static final String DEFAULT_GROUP;
     public static final String ANOTHER_GROUP;
+    public static final String ROLE_USER;
 
     public static final String CLEAN_HISTORY_LOGIN;
     public static final String CLEAN_HISTORY_PASSWORD;
@@ -155,4 +161,10 @@ public class C {
     public static final String ANONYMOUS_NAME;
     public static final String ANONYMOUS_TOKEN;
     public static final String ANOTHER_ADMIN_TOKEN;
+
+    public static final String SYNC_STORAGE_NAME;
+    public static final int SYNC_STORAGE_TIMEOUT;
+    public static final String SYNC_STORAGE_PERMISSION_NAME;
+    public static final String SYNC_STORAGE_PERMISSIONS;
+
 }
