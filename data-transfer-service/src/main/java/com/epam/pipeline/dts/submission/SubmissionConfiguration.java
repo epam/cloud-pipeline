@@ -22,7 +22,6 @@ import com.epam.pipeline.dts.configuration.CommonConfiguration;
 import com.epam.pipeline.dts.security.JWTSecurityConfiguration;
 import com.epam.pipeline.dts.submission.configuration.SubmissionRestConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -46,7 +45,6 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = SubmissionRestConfiguration.class),
         @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
 @Import({JWTSecurityConfiguration.class, CommonConfiguration.class})
-@ConditionalOnProperty(value = "dts.local.mode", havingValue = "false", matchIfMissing = true)
 @EnableScheduling
 public class SubmissionConfiguration {
 
