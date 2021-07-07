@@ -65,8 +65,7 @@ public class DtsSynchronizationService {
 
     @Scheduled(fixedDelayString = "${dts.local.preferences.poll:60000}")
     public void synchronizePreferences() {
-        final CloudPipelineAPIClient apiClient = CloudPipelineAPIClient.from(credentials);
-        final DtsRegistry dtsRegistry = apiClient.loadDtsRegistryByNameOrId(dtsName);
+        final DtsRegistry dtsRegistry = getApiClient().loadDtsRegistryByNameOrId(dtsName);
         final Map<String, String> updatedPreferences = Optional.ofNullable(dtsRegistry.getPreferences())
             .orElse(Collections.emptyMap());
         if (shutdownRequired(updatedPreferences)) {
@@ -76,6 +75,10 @@ public class DtsSynchronizationService {
             preferences.clear();
             preferences.putAll(updatedPreferences);
         }
+    }
+
+    private CloudPipelineAPIClient getApiClient() {
+        return CloudPipelineAPIClient.from(credentials);
     }
 
     private String tryBuildDtsName(final String dtsNameFromProperties) {
@@ -108,6 +111,7 @@ public class DtsSynchronizationService {
 
     private void performShutdown() {
         log.info("Shutdown will be preformed as preference flag `{}` is `true`.", dtsLocalShutdownKey);
+        getApiClient().deleteDtsRegistryPreferences(dtsName, Collections.singletonList(dtsLocalShutdownKey));
         context.close();
     }
 }

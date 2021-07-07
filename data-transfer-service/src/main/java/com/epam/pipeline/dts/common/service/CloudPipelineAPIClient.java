@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.EntityVO;
+import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -82,5 +83,10 @@ public class CloudPipelineAPIClient {
 
     public DtsRegistry loadDtsRegistryByNameOrId(final String dtsId) {
         return RetryingCloudPipelineApiExecutor.basic().execute(cloudPipelineAPI.loadDts(dtsId));
+    }
+
+    public DtsRegistry deleteDtsRegistryPreferences(final String dtsId, final List<String> preferencesToRemove) {
+        return RetryingCloudPipelineApiExecutor.basic().execute(
+            cloudPipelineAPI.deleteDtsPreferences(dtsId, new DtsRegistryPreferencesRemovalVO(preferencesToRemove)));
     }
 }
