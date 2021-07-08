@@ -17,8 +17,11 @@
 package com.epam.pipeline.dts.transfer.service.impl;
 
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
+import com.epam.pipeline.dts.transfer.model.AutonomousSyncRule;
 import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +31,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,23 +46,30 @@ import java.util.concurrent.ConcurrentMap;
 @EnableScheduling
 public class DtsSynchronizationService {
 
+    private final AutonomousSynchronizationService synchronizationService;
     private final ConcurrentMap<String, String> preferences = new ConcurrentHashMap<>();
     private final PipelineCredentials credentials;
     private final ConfigurableApplicationContext context;
     private final String dtsName;
     private final String dtsLocalShutdownKey;
+    private final String dtsLocalSyncRulesKey;
 
     @Autowired
     public DtsSynchronizationService(final @Value("${dts.local.api.url}") String apiUrl,
                                      final @Value("${dts.local.name}") String dtsName,
                                      final @Value("${dts.local.api.token}") String apiToken,
+                                     final @Value("${dts.local.preference.sync.rules.key:dts.local.sync.rules}")
+                                             String dtsLocalSyncRulesKey,
                                      final @Value("${dts.local.preference.shutdown.key:dts.local.restart}")
                                              String dtsLocalShutdownKey,
-                                     final ConfigurableApplicationContext context) {
+                                     final ConfigurableApplicationContext context,
+                                     final AutonomousSynchronizationService synchronizationService) {
         this.credentials = new PipelineCredentials(apiUrl, apiToken);
         this.dtsLocalShutdownKey = dtsLocalShutdownKey;
+        this.dtsLocalSyncRulesKey = dtsLocalSyncRulesKey;
         this.context = context;
         this.dtsName = tryBuildDtsName(dtsName);
+        this.synchronizationService = synchronizationService;
         log.info("DTS sync is enabled for current host: `{}`.", this.dtsName);
     }
 
@@ -69,8 +81,25 @@ public class DtsSynchronizationService {
         if (shutdownRequired(updatedPreferences)) {
             performShutdown();
         }
+        updatePreferences(updatedPreferences);
+        sendSyncRules();
+    }
+
+
+    private void updatePreferences(final Map<String, String> updatedPreferences) {
         preferences.clear();
         preferences.putAll(updatedPreferences);
+    }
+
+    private void sendSyncRules() {
+        final String rulesAsString = preferences.getOrDefault(dtsLocalSyncRulesKey, "[]");
+        try {
+            final List<AutonomousSyncRule> rules = new ObjectMapper()
+                .readValue(rulesAsString, new TypeReference<List<AutonomousSyncRule>>() {});
+            synchronizationService.updateSyncRules(rules);
+        } catch (IOException e) {
+            log.warn("Error occurred during sync rules parsing: {}. Skipping sync config update...", e.getMessage());
+        }
     }
 
     private CloudPipelineAPIClient getApiClient() {
