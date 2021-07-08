@@ -344,8 +344,8 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         //sorting
         List<MetadataFilter.OrderBy> tagSortingAsc =
-                Arrays.asList(new MetadataFilter.OrderBy(DATA_KEY_1, false),
-                        new MetadataFilter.OrderBy("id", false));
+                Arrays.asList(new MetadataFilter.OrderBy(DATA_KEY_1, false, false),
+                        new MetadataFilter.OrderBy("id", false, true));
         MetadataFilter order = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(), Collections.emptyList(), tagSortingAsc, false);
         checkFilterRequest(order, expectedSamples21);
@@ -356,15 +356,16 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         MetadataFilter orderDesc = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(), Collections.emptyList(),
-                Arrays.asList(new MetadataFilter.OrderBy(DATA_KEY_1, true),
-                        new MetadataFilter.OrderBy("id", false)), false);
+                Arrays.asList(new MetadataFilter.OrderBy(DATA_KEY_1, true, false),
+                        new MetadataFilter.OrderBy("id", false, true)), false);
         checkFilterRequest(orderDesc, expectedSamples12);
 
         //filter by field
         MetadataFilter filterByField = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
                 Collections.singletonList(
-                        new MetadataFilter.FilterQuery("externalId", Collections.singletonList(EXTERNAL_ID_2))),
+                        new MetadataFilter.FilterQuery("externalId", Collections.singletonList(EXTERNAL_ID_2),
+                                true)),
                 Collections.emptyList(), false);
         checkFilterRequest(filterByField, Collections.singletonList(folder1Sample2));
 
@@ -372,35 +373,35 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataFilter filterByValue = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
                 Collections.singletonList(
-                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(DATA_VALUE_2))),
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(DATA_VALUE_2), false)),
                 Collections.emptyList(), false);
         checkFilterRequest(filterByValue, Collections.singletonList(folder1Sample2));
 
         MetadataFilter filterByValueRec = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
                 Collections.singletonList(
-                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(DATA_VALUE_1))),
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(DATA_VALUE_1), false)),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueRec, Collections.singletonList(folder1Sample1));
 
         MetadataFilter filterByValueWrongValue = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
                 Collections.singletonList(
-                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(TEST_USER))),
+                        new MetadataFilter.FilterQuery(DATA_KEY_1, Collections.singletonList(TEST_USER), false)),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueWrongValue, Collections.emptyList());
 
         MetadataFilter filterByValueWrongKey = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
                 Collections.singletonList(
-                        new MetadataFilter.FilterQuery(DATA_VALUE_2, Collections.singletonList(DATA_VALUE_2))),
+                        new MetadataFilter.FilterQuery(DATA_VALUE_2, Collections.singletonList(DATA_VALUE_2), false)),
                 Collections.emptyList(), true);
         checkFilterRequest(filterByValueWrongKey, Collections.emptyList());
 
         //search
         MetadataFilter searchBothMatch = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.singletonList("ner"), Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.OrderBy("id", false)),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false, true)),
                 true);
         checkFilterRequest(searchBothMatch, expectedSamples12);
 
@@ -415,7 +416,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         //search by external ID:
         MetadataFilter searchByExternalId = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(), Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.OrderBy("id", false)),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false, true)),
                 false, Collections.singletonList(EXTERNAL_ID_1), null, null);
         checkFilterRequest(searchByExternalId, Collections.singletonList(folder1Sample1));
     }
@@ -568,7 +569,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataFilter filterByMultipleValues = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
                 Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1,
-                        Arrays.asList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2), DATA_VALUE_1))),
+                        Arrays.asList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2), DATA_VALUE_1), false)),
                 Collections.emptyList(), false);
         checkFilterRequest(filterByMultipleValues, Arrays.asList(folder1Sample1, folder1Sample2));
     }
@@ -590,7 +591,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataFilter filterByValueSubstring = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.emptyList(),
                 Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1,
-                        Collections.singletonList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2)))),
+                        Collections.singletonList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2)), false)),
                 Collections.emptyList(), false);
         checkFilterRequest(filterByValueSubstring, Collections.singletonList(folder1Sample2));
     }
@@ -613,7 +614,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataFilter searchByExternalId = createFilter(folder1.getId(), metadataClass1.getName(),
                 Collections.singletonList(EXTERNAL_ID_2.substring(EXTERNAL_ID_2.length() / 2)),
                 Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false, true)), true);
         checkFilterRequest(searchByExternalId, Collections.singletonList(folder1Sample2));
     }
 
@@ -634,7 +635,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataFilter searchANDOperator = createFilter(folder1.getId(), metadataClass1.getName(),
                 Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
                         DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2)), Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false, true)), true);
         searchANDOperator.setLogicalSearchOperator(LogicalSearchOperator.AND);
         checkFilterRequest(searchANDOperator, Collections.emptyList());
     }
@@ -656,7 +657,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataFilter searchANDOperator = createFilter(folder1.getId(), metadataClass1.getName(),
                 Arrays.asList(DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2),
                         DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2)), Collections.emptyList(),
-                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false, true)), true);
         searchANDOperator.setLogicalSearchOperator(LogicalSearchOperator.OR);
         checkFilterRequest(searchANDOperator, Arrays.asList(folder1Sample1, folder1Sample2));
     }
@@ -683,8 +684,8 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 Arrays.asList(DATA_VALUE_2.substring(DATA_VALUE_2.length() / 2),
                         DATA_VALUE_1.substring(DATA_VALUE_1.length() / 2)),
                 Collections.singletonList(new MetadataFilter.FilterQuery(DATA_KEY_1,
-                        Collections.singletonList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2)))),
-                Collections.singletonList(new MetadataFilter.OrderBy("id", false)), true);
+                        Collections.singletonList(DATA_VALUE_2.substring(0, DATA_VALUE_2.length() / 2)), false)),
+                Collections.singletonList(new MetadataFilter.OrderBy("id", false, true)), true);
         checkFilterRequest(combineSearchAndFilter, Arrays.asList(folder1Sample1, folder1Sample2));
     }
 
