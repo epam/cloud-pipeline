@@ -177,43 +177,40 @@ export default class CardsPanel extends React.Component {
             type="actions-container-background"
             className={styles.actionsContainerBackground} />
           {
-            actions
-              .filter((action) => (action.title !== 'PAUSE' && action.icon !== 'fork') ||
-                child.platform !== 'windows')
-              .map((action, index, array) => {
-                return (
-                  <Row
-                    type="flex"
-                    justify="start"
-                    align="middle"
-                    key={index}
-                    className={styles.actionButton}
-                    onClick={e => this.onActionClicked(e, action, child)}
-                    style={{
-                      flex: 1.0 / array.length,
-                      minHeight: ACTION_MIN_HEIGHT
-                    }}>
-                    <Row type="flex" align="middle">
-                      {
-                        action.icon
-                          ? <Icon style={action.style} type={getIconType(action)} />
-                          : undefined
-                      }
-                      {
-                        action.overlay
-                          ? (
-                            <Popover
-                              onVisibleChange={onVisibleChange}
-                              content={action.overlay}>
-                              <span style={action.style}>{action.title}</span>
-                            </Popover>
-                          )
-                          : <span style={action.style}>{action.title}</span>
-                      }
-                    </Row>
+            actions.map((action, index, array) => {
+              return (
+                <Row
+                  type="flex"
+                  justify="start"
+                  align="middle"
+                  key={index}
+                  className={styles.actionButton}
+                  onClick={e => this.onActionClicked(e, action, child)}
+                  style={{
+                    flex: 1.0 / array.length,
+                    minHeight: ACTION_MIN_HEIGHT
+                  }}>
+                  <Row type="flex" align="middle">
+                    {
+                      action.icon
+                        ? <Icon style={action.style} type={getIconType(action)} />
+                        : undefined
+                    }
+                    {
+                      action.overlay
+                        ? (
+                          <Popover
+                            onVisibleChange={onVisibleChange}
+                            content={action.overlay}>
+                            <span style={action.style}>{action.title}</span>
+                          </Popover>
+                        )
+                        : <span style={action.style}>{action.title}</span>
+                    }
                   </Row>
-                );
-              })
+                </Row>
+              );
+            })
           }
         </div>
       );
