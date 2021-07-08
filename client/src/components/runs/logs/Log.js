@@ -136,7 +136,6 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @observer
 class Logs extends localization.LocalizedReactComponent {
-
   @observable language = null;
   @observable _pipelineLanguage = null;
 
@@ -1829,7 +1828,7 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {PauseResumeButton}
+              {this.props.run.value.platform !== 'windows' && PauseResumeButton}
               {ActionButton}
               {SSHButton}
               {FSBrowserButton}
@@ -1844,7 +1843,7 @@ class Logs extends localization.LocalizedReactComponent {
               {CommitStatusButton}
             </Row>
             <br />
-            {!this.props.run.value.sensitive ? (
+            {!this.props.run.value.sensitive && this.props.run.value.platform !== 'windows' ? (
               <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
                 <VSActions
                   run={this.props.run.value}
