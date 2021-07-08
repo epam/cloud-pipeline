@@ -112,6 +112,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
+    private static final String FACETED_FILTER_GROUP = "Faceted Filter";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -557,6 +558,11 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    // Facet Filters
+    public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
+            "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
+            FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
