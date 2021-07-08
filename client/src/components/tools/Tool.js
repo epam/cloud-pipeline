@@ -1395,12 +1395,14 @@ export default class Tool extends localization.LocalizedReactComponent {
       ? `Are you sure you want to launch tool (version ${version}) with default settings?`
       : 'Are you sure you want to launch tool with default settings?';
     const info = this.getVersionRunningInformation(version || this.defaultTag);
+    const platform = this.defaultVersionPlatform;
     if (await run(this)(
       payload,
       true,
       title,
       info.launchTooltip,
-      allowedInstanceTypesRequest
+      allowedInstanceTypesRequest,
+      platform
     )) {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     }

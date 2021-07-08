@@ -506,7 +506,8 @@ export default class PersonalToolsPanel extends React.Component {
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
               availablePriceTypes,
-              permissionErrors
+              permissionErrors,
+              platform: tool.platform
             }
           });
         } else {
@@ -798,6 +799,7 @@ export default class PersonalToolsPanel extends React.Component {
                 parameters={this.state.runToolInfo.payload.params}
                 permissionErrors={this.state.runToolInfo.permissionErrors}
                 preferences={this.props.preferences}
+                platform={this.state.runToolInfo.platform}
               />
           }
           {

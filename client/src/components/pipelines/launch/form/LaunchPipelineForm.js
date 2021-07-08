@@ -4058,6 +4058,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   limitMounts={currentValue}
                   preferences={this.props.preferences}
                   instance={instance}
+                  platform={this.toolPlatform}
                 />
               )
             }
