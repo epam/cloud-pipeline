@@ -69,6 +69,7 @@ public class MetadataFilter {
     public static class FilterQuery {
         private String key;
         private List<String> values;
+        private boolean predefined = false;
     }
 
     @Getter
@@ -78,5 +79,6 @@ public class MetadataFilter {
     public static class OrderBy {
         private String field;
         private boolean desc = false;
+        private boolean predefined = false;
     }
 }
