@@ -323,7 +323,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 } else {
                     clause.append(" ORDER BY ");
                 }
-                clause.append(getFieldName(orderBy.getField()));
+                clause.append(getFieldName(orderBy));
                 if (orderBy.isDesc()) {
                     clause.append(" DESC");
                 }
@@ -368,13 +368,19 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
         filters.forEach(filter -> {
             clause.append(AND);
-            MetadataField field = MetadataEntityParameters.getFieldNames().get(filter.getKey().toUpperCase());
-            if (field != null) {
-                clause.append(addFilterClause(filter, "%s::text ILIKE '%%%s%%'", field.getDbName()));
-            } else {
-                clause.append(addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey()));
-            }
+            final String filterClause = filter.isPredefined()
+                    ? addFilterClause(filter, "%s::text ILIKE '%%%s%%'", getDBName(filter.getKey()))
+                    : addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey());
+            clause.append(filterClause);
         });
+    }
+
+    private String getDBName(final String filterKey) {
+        MetadataField field = MetadataEntityParameters.getFieldNames().get(filterKey.toUpperCase());
+        if (field == null) {
+            throw new IllegalArgumentException(format("Predefined field name '%s' isn't supported!", filterKey));
+        }
+        return field.getDbName();
     }
 
     private String addFilterClause(MetadataFilter.FilterQuery filter, String template, String dbName) {
@@ -406,12 +412,10 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    private String getFieldName(String field) {
-        MetadataField fieldValue = MetadataEntityParameters.getFieldNames().get(field.toUpperCase());
-        if (fieldValue != null) {
-            return fieldValue.getDbName();
-        }
-        return format("e.data ->> '%s'", field);
+    private String getFieldName(MetadataFilter.OrderBy orderBy) {
+        return orderBy.isPredefined()
+                ? getDBName(orderBy.getField())
+                : format("e.data ->> '%s'", orderBy.getField());
     }
 
     private String applySearchClause(String query) {
