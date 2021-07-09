@@ -590,11 +590,13 @@ tr.table-row-selected {
   position: relative;
   color: rgba(0, 0, 0, 0.65);
   background-color: #fff;
+  text-decoration: none !important;
 }
 
-.download-button i {
+.download-button i,
+.download-button span {
   line-height: 1;
-  text-decoration: none;
+  text-decoration: none !important;
 }
 
 .download-button:hover {

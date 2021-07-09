@@ -33,6 +33,7 @@ import Papa from 'papaparse';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import VSIPreview from './vsi-preview';
 
 const MarkdownRenderer = new Remarkable('commonmark', {
   html: true,
@@ -333,6 +334,16 @@ export default class S3FilePreview extends React.Component {
     return null;
   };
 
+  renderVSIPreview = () => {
+    return (
+      <VSIPreview
+        className={styles.contentPreview}
+        file={this.props.item.id}
+        storageId={this.props.item.parentId}
+      />
+    );
+  };
+
   renderPDBPreview = () => {
     const onError = (message) => {
       this.setState({
@@ -374,7 +385,8 @@ export default class S3FilePreview extends React.Component {
       tiff: this.renderImagePreview,
       svg: this.renderImagePreview,
       pdf: this.renderImagePreview,
-      md: this.renderMDPreview
+      md: this.renderMDPreview,
+      vsi: this.renderVSIPreview
     };
     if (previewRenderers[extension]) {
       const preview = previewRenderers[extension]();

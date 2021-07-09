@@ -91,15 +91,31 @@
 .result-item-container .preview-btn {
   background-color: #fafafa;
   border: 1px solid #ddd;
-  border-right: none;
+  border-right-width: 0;
+  border-left-width: 0;
   margin-right: 0;
   padding: 10px;
   cursor: pointer;
-  border-radius: 5px 0 0 5px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
+}
+
+.result-item-container .preview-btn:first-child {
+  border-radius: 5px 0 0 5px;
+  border-left-width: 1px;
+}
+
+.result-item-container .action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-btn.action {
+  font-size: small;
 }
 
 .result-item {
@@ -170,7 +186,6 @@
 }
 
 .table-row .preview-btn {
-  margin-right: 0;
   padding: 5px;
   margin-right: 3px;
   cursor: pointer;
