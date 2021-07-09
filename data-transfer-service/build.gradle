@@ -177,5 +177,5 @@ task bundleWindows(type: Zip) {
         into('bin')
     }
     baseName = 'dts'
-    archiveName = 'autonomous-data-transfer-service-windows.zip'
+    archiveName = 'data-transfer-service-windows.zip'
 }
