@@ -71,10 +71,8 @@ public class DtsSynchronizationService {
         if (shutdownRequired(updatedPreferences)) {
             performShutdown();
         }
-        synchronized (preferences) {
-            preferences.clear();
-            preferences.putAll(updatedPreferences);
-        }
+        preferences.clear();
+        preferences.putAll(updatedPreferences);
     }
 
     private CloudPipelineAPIClient getApiClient() {
