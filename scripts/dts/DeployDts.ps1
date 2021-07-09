@@ -38,8 +38,8 @@ if ($Install) {
     Write-Host "Installing data transfer service..."
 
     Write-Host "Checking required environment variables..."
-    if (-not("$env:API" -and "$env:API_TOKEN" -and "$env:DISTRIBUTION_URL" -and "$env:DTS_NAME" -and "$env:DTS_DIR" -and "$env:CP_API_JWT_KEY_PUBLIC")) {
-        Write-Host "Please set all the required environment variables and restart the installation: API, API_TOKEN, DISTRIBUTION_URL, DTS_NAME, DTS_DIR and CP_API_JWT_KEY_PUBLIC."
+    if (-not("$env:API" -and "$env:API_TOKEN" -and "$env:DISTRIBUTION_URL" -and "$env:DTS_NAME" -and "$env:DTS_DIR" -and "$env:API_PUBLIC_KEY")) {
+        Write-Host "Please set all the required environment variables and restart the installation: API, API_TOKEN, DISTRIBUTION_URL, DTS_NAME, DTS_DIR and API_PUBLIC_KEY."
         Exit
     }
 
