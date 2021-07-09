@@ -69,10 +69,15 @@ public class AutonomousSynchronizationService {
         this.activeTransferTasks = new HashMap<>();
     }
 
-    @Scheduled(fixedDelayString = "${dts.local.preferences.poll:60000}")
+    @Scheduled(cron = "${dts.autonomous.sync.cron}")
     public void synchronizeFilesystem() {
         processActiveTasks();
         submitTasksForAwaitingRules();
+    }
+
+    public void updateSyncRules(final List<AutonomousSyncRule> newSyncRules) {
+        activeSyncRules.clear();
+        activeSyncRules.addAll(newSyncRules);
     }
 
     private void processActiveTasks() {
@@ -91,13 +96,8 @@ public class AutonomousSynchronizationService {
         activeTransferTasks.putAll(newSubmittedTasks);
     }
 
-    public boolean noMatchingActiveTransferTask(final AutonomousSyncRule rule) {
+    private boolean noMatchingActiveTransferTask(final AutonomousSyncRule rule) {
         return !activeTransferTasks.containsKey(rule);
-    }
-
-    public void updateSyncRules(final List<AutonomousSyncRule> newSyncRules) {
-        activeSyncRules.clear();
-        activeSyncRules.addAll(newSyncRules);
     }
 
     private TransferTask runTransferTask(final AutonomousSyncRule rule) {
@@ -117,7 +117,7 @@ public class AutonomousSynchronizationService {
         }
     }
 
-    public StorageType parseTypeFromPath(final String path) {
+    private StorageType parseTypeFromPath(final String path) {
         final String schema = path.split(SCHEMA_DELIMITER, 2)[0];
         return StorageType.valueOf(schema.toUpperCase());
     }
