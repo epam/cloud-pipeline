@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -101,25 +104,46 @@ public class AutonomousSynchronizationService {
     }
 
     private TransferTask runTransferTask(final AutonomousSyncRule rule) {
+        return buildTransferDestination(rule)
+            .map(transferDestination -> trySubmitTransferTask(buildTransferSource(rule), transferDestination))
+            .orElse(null);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private TransferTask trySubmitTransferTask(final StorageItem transferSource,
+                                               final StorageItem transferDestination) {
+        try {
+            transferDestination.setCredentials(getPipeCredentialsAsString());
+            return transferService.runTransferTask(transferSource, transferDestination, Collections.emptyList(), true);
+        } catch (JsonProcessingException e) {
+            log.warn("Error parsing PIPE credentials!");
+        } catch (Exception e) {
+            log.warn("Error during transfer submission from `{}` to `{}`: {}",
+                     transferSource, transferDestination, e.getMessage());
+        }
+        return null;
+    }
+
+    private Optional<StorageItem> buildTransferDestination(final AutonomousSyncRule rule) {
+        final String destinationPath = rule.getDestination();
+        return Optional.of(destinationPath)
+            .map(path -> path.split(SCHEMA_DELIMITER, 2)[0])
+            .map(StringUtils::upperCase)
+            .map(schema -> EnumUtils.getEnum(StorageType.class, schema))
+            .filter(Objects::nonNull)
+            .map(type -> {
+                final StorageItem destinationItem = new StorageItem();
+                destinationItem.setType(type);
+                destinationItem.setPath(destinationPath);
+                return destinationItem;
+            });
+    }
+
+    private StorageItem buildTransferSource(final AutonomousSyncRule rule) {
         final StorageItem sourceItem = new StorageItem();
         sourceItem.setPath(rule.getSource());
         sourceItem.setType(StorageType.LOCAL);
-        final StorageItem destinationItem = new StorageItem();
-        final String destinationPath = rule.getDestination();
-        destinationItem.setType(parseTypeFromPath(destinationPath));
-        destinationItem.setPath(destinationPath);
-        try {
-            destinationItem.setCredentials(getPipeCredentialsAsString());
-            return transferService.runTransferTask(sourceItem, destinationItem, Collections.emptyList(), true);
-        } catch (JsonProcessingException e) {
-            log.warn("Error parsing PIPE credentials");
-            return null;
-        }
-    }
-
-    private StorageType parseTypeFromPath(final String path) {
-        final String schema = path.split(SCHEMA_DELIMITER, 2)[0];
-        return StorageType.valueOf(schema.toUpperCase());
+        return sourceItem;
     }
 
     private String getPipeCredentialsAsString() throws JsonProcessingException {
