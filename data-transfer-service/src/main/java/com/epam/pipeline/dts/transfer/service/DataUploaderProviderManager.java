@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,17 @@ public class DataUploaderProviderManager {
     private final TaskService taskService;
 
     @Async("taskExecutor")
+    public void transferData(final TransferTask transferTask) {
+        executeTransfer(transferTask);
+    }
+
+    @Async("autonomousTransferExecutor")
+    public void transferLocalData(final TransferTask transferTask) {
+        executeTransfer(transferTask);
+    }
+
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    public void transferData(TransferTask transferTask) {
+    private void executeTransfer(final TransferTask transferTask) {
         try {
             dataUploaderProvider.getStorageUploader(transferTask).transfer(transferTask);
             log.info(String.format("File has been successfully transferred from %s to %s.",

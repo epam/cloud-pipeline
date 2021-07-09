@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,16 @@ import java.util.List;
 
 public interface TransferService {
 
+    default TransferTask runTransferTask(@NonNull StorageItem source,
+                                         @NonNull StorageItem destination,
+                                         List<String> included) {
+        return runTransferTask(source, destination, included, false);
+    }
+
     TransferTask runTransferTask(@NonNull StorageItem source,
                                  @NonNull StorageItem destination,
-                                 List<String> included);
+                                 List<String> included,
+                                 boolean isAutonomousTransfer);
     
     void failRunningTasks();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +42,15 @@ public class TransferServiceImpl implements TransferService {
     @Override
     public TransferTask runTransferTask(@NonNull StorageItem source,
                                         @NonNull StorageItem destination,
-                                        List<String> included) {
+                                        List<String> included,
+                                        boolean isAutonomousTransfer) {
         TransferTask transferTask = taskService.createTask(source, destination, included);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
-        dataUploaderProviderManager.transferData(transferTask);
+        if (isAutonomousTransfer) {
+            dataUploaderProviderManager.transferLocalData(transferTask);
+        } else {
+            dataUploaderProviderManager.transferData(transferTask);
+        }
         return transferTask;
     }
 

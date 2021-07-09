@@ -110,7 +110,7 @@ public class AutonomousSynchronizationService {
         destinationItem.setPath(destinationPath);
         try {
             destinationItem.setCredentials(getPipeCredentialsAsString());
-            return transferService.runTransferTask(sourceItem, destinationItem, Collections.emptyList());
+            return transferService.runTransferTask(sourceItem, destinationItem, Collections.emptyList(), true);
         } catch (JsonProcessingException e) {
             log.warn("Error parsing PIPE credentials");
             return null;
