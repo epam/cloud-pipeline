@@ -380,13 +380,13 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
 
 def get_active_runs(pods):
         pod_run_ids = [x['metadata']['labels']['runid'] for x in pods]
-        get_runs_list_details_method = os.path.join(api_url, 
+        get_runs_list_details_method = os.path.join(api_url,
                                                     API_GET_RUNS_LIST_DETAILS.format(run_ids=','.join(pod_run_ids)))
         response_data = call_api(get_runs_list_details_method)
         if not response_data:
                 do_log('Cannot get list of active runs from the API for the following IDs: {}'.format(pod_run_ids))
                 return []
-        
+
         return response_data["payload"]
 
 
@@ -822,10 +822,16 @@ dns_route_results = []
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
-        if service_spec["create_dns_record"] and not service_spec["custom_domain"] \
-                and default_edge_region == edge_region:
-                runs_with_custom_dns.add(service_spec["run_id"])
-                dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record, (service_spec, added_route)))
+        if service_spec["create_dns_record"] and not service_spec["custom_domain"]:
+                if default_edge_region == edge_region:
+                        runs_with_custom_dns.add(service_spec["run_id"])
+                        dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record,
+                                                                               (service_spec, added_route)))
+                elif not default_edge_region:
+                        log_task_event("CreateDNSRecord",
+                                       "Can not determine default edge region, will not create any DNS records",
+                                       service_spec["run_id"],
+                                       service_spec["pod_id"])
         else:
                 create_service_location(service_spec, added_route, service_url_dict)
 
