@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,7 +41,6 @@ import static com.epam.pipeline.dts.common.rest.controller.AbstractRestControlle
         })
 @RestController
 @RequiredArgsConstructor
-@ConditionalOnProperty(value = "dts.local.mode", havingValue = "false", matchIfMissing = true)
 public class ClusterController extends AbstractRestController {
 
     private final ClusterService clusterService;

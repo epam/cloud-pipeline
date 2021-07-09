@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import com.epam.pipeline.dts.submission.service.execution.SubmissionService;
 import com.epam.pipeline.dts.submission.service.sge.SGEService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -37,7 +36,6 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-@ConditionalOnProperty(value = "dts.local.mode", havingValue = "false", matchIfMissing = true)
 public class SubmissionServiceImpl implements SubmissionService {
 
     private final SubmissionRepository repository;
