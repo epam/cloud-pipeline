@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.exception.PipelineResponseApiException;
 import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
@@ -81,8 +82,12 @@ public class CloudPipelineAPIClient {
                 .map(PipeConfValue::getValue);
     }
 
-    public DtsRegistry loadDtsRegistryByNameOrId(final String dtsId) {
-        return RetryingCloudPipelineApiExecutor.basic().execute(cloudPipelineAPI.loadDts(dtsId));
+    public Optional<DtsRegistry> tryLoadDtsRegistryByNameOrId(final String dtsId) {
+        try {
+            return Optional.of(RetryingCloudPipelineApiExecutor.basic().execute(cloudPipelineAPI.loadDts(dtsId)));
+        } catch (PipelineResponseApiException e) {
+            return Optional.empty();
+        }
     }
 
     public DtsRegistry deleteDtsRegistryPreferences(final String dtsId, final List<String> preferencesToRemove) {

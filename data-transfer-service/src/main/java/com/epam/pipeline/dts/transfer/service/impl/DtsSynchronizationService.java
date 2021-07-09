@@ -65,8 +65,8 @@ public class DtsSynchronizationService {
 
     @Scheduled(fixedDelayString = "${dts.local.preferences.poll:60000}")
     public void synchronizePreferences() {
-        final DtsRegistry dtsRegistry = getApiClient().loadDtsRegistryByNameOrId(dtsName);
-        final Map<String, String> updatedPreferences = Optional.ofNullable(dtsRegistry.getPreferences())
+        final Map<String, String> updatedPreferences = getApiClient().tryLoadDtsRegistryByNameOrId(dtsName)
+            .map(DtsRegistry::getPreferences)
             .orElse(Collections.emptyMap());
         if (shutdownRequired(updatedPreferences)) {
             performShutdown();
