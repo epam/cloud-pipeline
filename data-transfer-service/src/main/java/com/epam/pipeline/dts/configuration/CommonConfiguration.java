@@ -46,10 +46,10 @@ public class CommonConfiguration {
 
     //for scheduled methods (SubmissionMonitor)
     @Bean
-    public TaskScheduler taskScheduler() {
+    public TaskScheduler taskScheduler(@Value("${task.scheduled.pool.size:2}") int scheduledTasksPoolSize) {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setRemoveOnCancelPolicy(true);
-        scheduler.setPoolSize(1);
+        scheduler.setPoolSize(scheduledTasksPoolSize);
         return scheduler;
     }
 
