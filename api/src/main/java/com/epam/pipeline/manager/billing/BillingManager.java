@@ -59,6 +59,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
+import org.elasticsearch.search.aggregations.bucket.histogram.ExtendedBounds;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogram;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
@@ -87,12 +88,14 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -179,7 +182,7 @@ public class BillingManager {
         this.validIntervals = Arrays.asList(DateHistogramInterval.DAY,
                                             DateHistogramInterval.MONTH,
                                             DateHistogramInterval.YEAR);
-        this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
+        this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD).missing(0L);
         this.runUsageAggregation = AggregationBuilders.sum(RUN_USAGE_AGG).field(RUN_USAGE_FIELD);
         this.storageUsageGroupingAggregation = AggregationBuilders
             .terms(STORAGE_GROUPING_AGG).field(STORAGE_ID_FIELD).size(Integer.MAX_VALUE)
@@ -201,16 +204,15 @@ public class BillingManager {
     }
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
-        verifyRequest(request);
+        final BillingChartRequest formattedRequest = verifyAndAdjustRequest(request);
         try (RestClient lowLevelEsClient = elasticHelper.buildLowLevelClient()) {
             final RestHighLevelClient elasticsearchClient = new RestHighLevelClient(lowLevelEsClient);
-            final LocalDate from = request.getFrom();
-            final LocalDate to = request.getTo();
-            final BillingGrouping grouping = request.getGrouping();
-            final DateHistogramInterval interval = request.getInterval();
-            final Map<String, List<String>> filters = MapUtils.isEmpty(request.getFilters())
-                                                      ? new HashMap<>()
-                                                      : request.getFilters();
+            final LocalDate from = formattedRequest.getFrom();
+            final LocalDate to = formattedRequest.getTo();
+            final BillingGrouping grouping = formattedRequest.getGrouping();
+            final DateHistogramInterval interval = formattedRequest.getInterval();
+            final Map<String, List<String>> filters = formattedRequest.getFilters();
+
             setAuthorizationFilters(filters);
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
@@ -244,7 +246,7 @@ public class BillingManager {
         }
     }
 
-    private void verifyRequest(final BillingChartRequest request) {
+    private BillingChartRequest verifyAndAdjustRequest(final BillingChartRequest request) {
         final DateHistogramInterval interval = request.getInterval();
         final BillingGrouping grouping = request.getGrouping();
         if (interval != null
@@ -258,6 +260,28 @@ public class BillingManager {
             throw new IllegalArgumentException(messageHelper
                                                    .getMessage(MessageConstants.ERROR_BILLING_DETAILS_NOT_SUPPORTED));
         }
+        final LocalDate currentDate = LocalDate.now();
+        final LocalDate from = request.getFrom();
+        final LocalDate to = request.getTo();
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException(messageHelper
+                                                   .getMessage(MessageConstants.ERROR_BILLING_FROM_DATE_AFTER_TO));
+        }
+        if (from.isAfter(currentDate)) {
+            throw new IllegalArgumentException(messageHelper
+                                                   .getMessage(MessageConstants.ERROR_BILLING_ONCOMING_FROM_DATE));
+        }
+        final BillingChartRequest.BillingChartRequestBuilder requestBuilder = request.toBuilder();
+        if (to.equals(currentDate)) {
+            requestBuilder.to(to.minusDays(1));
+        }
+        if (MapUtils.isEmpty(request.getFilters())) {
+            requestBuilder.filters(new HashMap<>());
+        }
+        if (to.isAfter(currentDate)) {
+            requestBuilder.to(currentDate.minusDays(1L));
+        }
+        return requestBuilder.build();
     }
 
     private void setAuthorizationFilters(final Map<String, List<String>> filters) {
@@ -289,6 +313,9 @@ public class BillingManager {
             HISTOGRAM_AGGREGATION_NAME)
             .field(BILLING_DATE_FIELD)
             .dateHistogramInterval(interval)
+            .extendedBounds(new ExtendedBounds(from.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli(),
+                                               to.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()))
+            .minDocCount(0L)
             .subAggregation(costAggregation)
             .subAggregation(PipelineAggregatorBuilders.cumulativeSum(ACCUMULATED_COST, COST_FIELD));
 
@@ -297,16 +324,21 @@ public class BillingManager {
         setFiltersAndPeriodForSearchRequest(from, to, filters, searchSource, searchRequest);
 
         try {
-            final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
-            return Optional.ofNullable(searchResponse.getAggregations())
-                .map(aggs -> aggs.get(HISTOGRAM_AGGREGATION_NAME))
-                .map(ParsedDateHistogram.class::cast)
+            return getBillingHistogram(elasticsearchClient, searchRequest)
                 .map(histogram -> parseHistogram(interval, histogram))
                 .orElse(Collections.emptyList());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
         }
+    }
+
+    Optional<ParsedDateHistogram> getBillingHistogram(final RestHighLevelClient elasticsearchClient,
+                                                      final SearchRequest searchRequest) throws IOException {
+        final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
+        return Optional.ofNullable(searchResponse.getAggregations())
+            .map(aggs -> aggs.get(HISTOGRAM_AGGREGATION_NAME))
+            .map(ParsedDateHistogram.class::cast);
     }
 
     private List<BillingChartInfo> getBillingStats(final RestClient elasticsearchLowLevelClient,
@@ -547,9 +579,19 @@ public class BillingManager {
 
     private List<BillingChartInfo> parseHistogram(final DateHistogramInterval interval,
                                                   final ParsedDateHistogram histogram) {
-        return histogram.getBuckets().stream()
+        final List<BillingChartInfo> parsedBilling = histogram.getBuckets().stream()
             .map(bucket -> getChartInfo(bucket, interval))
+            .sorted(Comparator.comparing(BillingChartInfo::getPeriodStart))
             .collect(Collectors.toList());
+        final boolean isEmptyBilling = Optional.of(parsedBilling)
+            .filter(CollectionUtils::isNotEmpty)
+            .map(billings -> billings.get(billings.size() - 1))
+            .map(BillingChartInfo::getAccumulatedCost)
+            .filter(totalCost -> totalCost.equals(0L))
+            .isPresent();
+        return isEmptyBilling
+               ? Collections.emptyList()
+               : parsedBilling;
     }
 
     private BillingChartInfo getChartInfo(final Histogram.Bucket bucket, final DateHistogramInterval interval) {

@@ -55,10 +55,16 @@ public class BillingControllerTest extends AbstractControllerTest {
                                                 "\"pageSize\":5," +
                                                 "\"pageNum\":1}";
     private final BillingChartInfo billingChartInfo = BillingChartInfo.builder().cost(COST).build();
-    private final BillingChartRequest billingChartRequest = new BillingChartRequest(
-            LocalDate.MIN, LocalDate.MAX, Collections.singletonMap("test", Collections.singletonList("test")),
-            DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER, true, 5L, 1L
-    );
+    private final BillingChartRequest billingChartRequest = BillingChartRequest.builder()
+        .from(LocalDate.MIN)
+        .to(LocalDate.MAX)
+        .filters(Collections.singletonMap("test", Collections.singletonList("test")))
+        .interval(DateHistogramInterval.DAY)
+        .grouping(BillingGrouping.BILLING_CENTER)
+        .loadDetails(true)
+        .pageSize(5L)
+        .pageNum(1L)
+        .build();
     private final List<BillingChartInfo> billingChartInfos = Collections.singletonList(billingChartInfo);
 
     @Autowired
