@@ -31,6 +31,9 @@ spec:
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
+            - name: cp-region-creds
+              mountPath: "/root/.cloud/regioncreds"
+              readOnly: true
       volumes:
         - name: billing-logs
           hostPath:
@@ -38,5 +41,8 @@ spec:
         - name: cp-cloud-credentials
           secret:
             secretName: cp-cloud-credentials
+        - name: cp-region-creds
+            secret:
+              secretName: cp-region-creds-secret
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

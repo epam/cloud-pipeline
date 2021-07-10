@@ -169,10 +169,11 @@ public class CommonSyncConfiguration {
     @ConditionalOnProperty(value = "sync.storage.gs.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer gsSynchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
-                                              final ElasticsearchServiceClient elasticsearchClient) {
+                                              final ElasticsearchServiceClient elasticsearchClient,
+                                              final CloudRegionLoader cloudRegionLoader) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new GcpStoragePriceListLoader());
+                new StoragePricingService(new GcpStoragePriceListLoader(cloudRegionLoader));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,

@@ -246,13 +246,10 @@ public class CloudRegionManager implements SecuredEntityManager {
         kubernetesManager.refreshSecret(CP_REGION_CREDS_SECRET,
                 loadAll()
                         .stream()
-                        .filter(region -> region.getProvider().equals(CloudProvider.AZURE))
-                        .map(region -> (AzureRegion) region)
-                        .collect(
-                            Collectors.toMap(azureRegion -> azureRegion.getId().toString(),
-                                azureRegion ->  ((AzureRegionHelper) helpers.get(CloudProvider.AZURE))
-                                        .serializeCredentials(azureRegion, loadCredentials(azureRegion))
-                            )
+                        .collect(Collectors.toMap(region -> region.getId().toString(),
+                                                  region -> helpers.get(region.getProvider())
+                                                      .serializeCredentials(region, loadCredentials(region))
+                                 )
                         )
         );
     }
