@@ -52,10 +52,10 @@ public class RunScheduler {
 
     @Autowired
     RunScheduler(final SchedulerFactoryBean schedulerFactoryBean) {
-        final Properties quartsProperties = new Properties();
-        quartsProperties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, JOB_EXECUTION_THREADS);
-        quartsProperties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, MAX_CONCURRENT_JOB_FIRING_AT_ONCE);
-        schedulerFactoryBean.setQuartzProperties(quartsProperties);
+        final Properties quartzProperties = new Properties();
+        quartzProperties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, JOB_EXECUTION_THREADS);
+        quartzProperties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, MAX_CONCURRENT_JOB_FIRING_AT_ONCE);
+        schedulerFactoryBean.setQuartzProperties(quartzProperties);
         this.quartzScheduler = schedulerFactoryBean.getScheduler();
     }
 
