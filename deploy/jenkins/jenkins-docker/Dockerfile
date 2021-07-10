@@ -40,8 +40,10 @@ RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | \
     apt-get update && \
     apt-get install azure-cli
 
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Djava.awt.headless=true -Dmail.smtp.starttls.enable=true"
 COPY init.groovy /usr/share/jenkins/ref/init.groovy.d/init.groovy
+COPY init_email_plugin.groovy /usr/share/jenkins/ref/init.groovy.d/init_email_plugin.groovy
+COPY mail-html.template /usr/share/jenkins/ref/email-templates/mail-html.template
 
 ADD checkout_url.sh /usr/local/bin/checkout_url
 RUN chmod +x /usr/local/bin/checkout_url

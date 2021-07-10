@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html>
+ <head>
+  <meta charset="utf-8">
+  <title>Тег STYLE</title>
+  <style type="text/css">
+   h1 {
+    font-size: 120%;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    color: #000000;
+   }
+  </style>
+ </head>
+ <body>
+
+   <H1>PROJECT: ${project.name}</H1>
+   <H1>DATE OF BUILD: ${it.timestampString}</H1>
+   <H1>BUILD DURATION: ${build.durationString}</H1>
+   <H1>STATUS: ${build.result}</H1>
+   <a>Check console output to view the results.</a>
+
+ </body>
+</html>
