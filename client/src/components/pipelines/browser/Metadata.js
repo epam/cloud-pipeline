@@ -871,12 +871,17 @@ export default class Metadata extends React.Component {
 
   onColumnSelect = (item) => {
     const currentColumns = [...this.state.columns];
+    const filterModel = {...this.state.filterModel};
+    filterModel.orderBy = this.state.filterModel.orderBy.filter(col => col.field !== item);
 
     const index = currentColumns.findIndex(obj => obj.key === item);
     const isSelected = currentColumns.findIndex(obj => obj.key === item && obj.selected) > -1;
 
     currentColumns[index] = {key: item, selected: !isSelected};
-    this.setState({columns: currentColumns}, this.clearSelection);
+    this.setState({
+      columns: currentColumns,
+      filterModel
+    }, this.clearSelection);
   };
 
   onResetColumns = () => {
