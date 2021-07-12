@@ -17,7 +17,6 @@
 package com.epam.pipeline.dts.transfer.service.impl;
 
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
-import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -42,19 +41,18 @@ import java.util.concurrent.ConcurrentMap;
 public class DtsSynchronizationService {
 
     private final ConcurrentMap<String, String> preferences = new ConcurrentHashMap<>();
-    private final PipelineCredentials credentials;
+    private final CloudPipelineAPIClient apiClient;
     private final ConfigurableApplicationContext context;
     private final String dtsName;
     private final String dtsLocalShutdownKey;
 
     @Autowired
-    public DtsSynchronizationService(final @Value("${dts.local.api.url}") String apiUrl,
-                                     final @Value("${dts.local.name}") String dtsName,
-                                     final @Value("${dts.local.api.token}") String apiToken,
+    public DtsSynchronizationService(final @Value("${dts.local.name}") String dtsName,
                                      final @Value("${dts.local.preference.shutdown.key:dts.local.restart}")
                                              String dtsLocalShutdownKey,
+                                     final CloudPipelineAPIClient apiClient,
                                      final ConfigurableApplicationContext context) {
-        this.credentials = new PipelineCredentials(apiUrl, apiToken);
+        this.apiClient = apiClient;
         this.dtsLocalShutdownKey = dtsLocalShutdownKey;
         this.context = context;
         this.dtsName = tryBuildDtsName(dtsName);
@@ -63,7 +61,7 @@ public class DtsSynchronizationService {
 
     @Scheduled(fixedDelayString = "${dts.local.preferences.poll:60000}")
     public void synchronizePreferences() {
-        final Map<String, String> updatedPreferences = getApiClient().tryLoadDtsRegistryByNameOrId(dtsName)
+        final Map<String, String> updatedPreferences = apiClient.findDtsRegistryByNameOrId(dtsName)
             .map(DtsRegistry::getPreferences)
             .orElse(Collections.emptyMap());
         if (shutdownRequired(updatedPreferences)) {
@@ -71,10 +69,6 @@ public class DtsSynchronizationService {
         }
         preferences.clear();
         preferences.putAll(updatedPreferences);
-    }
-
-    private CloudPipelineAPIClient getApiClient() {
-        return CloudPipelineAPIClient.from(credentials);
     }
 
     private String tryBuildDtsName(final String dtsNameFromProperties) {
@@ -107,7 +101,7 @@ public class DtsSynchronizationService {
 
     private void performShutdown() {
         log.info("Shutdown will be preformed as preference flag `{}` is `true`.", dtsLocalShutdownKey);
-        getApiClient().deleteDtsRegistryPreferences(dtsName, Collections.singletonList(dtsLocalShutdownKey));
+        apiClient.deleteDtsRegistryPreferences(dtsName, Collections.singletonList(dtsLocalShutdownKey));
         context.close();
     }
 }

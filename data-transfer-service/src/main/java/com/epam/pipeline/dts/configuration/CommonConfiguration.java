@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dts.configuration;
 
+import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.common.service.FileService;
 import com.epam.pipeline.dts.common.service.impl.FileServiceImpl;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +52,12 @@ public class CommonConfiguration {
         scheduler.setRemoveOnCancelPolicy(true);
         scheduler.setPoolSize(1);
         return scheduler;
+    }
+
+    @Bean
+    public CloudPipelineAPIClient apiClient(final @Value("${dts.local.api.url}") String apiUrl,
+                                            final @Value("${dts.local.api.token}") String apiToken) {
+        return CloudPipelineAPIClient.from(apiUrl, apiToken);
     }
 
     private Executor getThreadPoolTaskExecutor(String name, int taskPoolSize) {
