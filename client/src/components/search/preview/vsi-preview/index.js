@@ -20,14 +20,49 @@ import {inject, observer} from 'mobx-react';
 import {
   Tabs
 } from 'antd';
+import Leaflet from 'leaflet/dist/leaflet';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
+import {API_PATH, SERVER} from '../../../../config';
 import styles from '../preview.css';
+import 'leaflet/dist/leaflet.css';
+
+function generateTileSource (storageId, tilesFolder) {
+  // eslint-disable-next-line
+  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${tilesFolder}/{z}/{y}/{x}.jpg`;
+}
+
+function getFolderContents (storageId, folder) {
+  return new Promise((resolve) => {
+    const request = new DataStorageRequest(
+      storageId,
+      decodeURIComponent(folder),
+      false,
+      50
+    );
+    request
+      .fetchPage()
+      .then(() => {
+        if (request.loaded) {
+          const pathRegExp = new RegExp(`^${folder}\\/`, 'i');
+          const items = ((request.value || {}).results || [])
+            .filter(item => pathRegExp.test(item.path));
+          resolve(items);
+        } else {
+          resolve([]);
+        }
+      })
+      .catch(() => {
+        resolve([]);
+      });
+  });
+}
 
 @inject('dataStorageCache')
 @observer
 class VSIPreview extends React.Component {
   state = {
     items: [],
+    tiles: false,
     preview: undefined,
     active: undefined,
     pending: false
@@ -98,6 +133,7 @@ class VSIPreview extends React.Component {
     if (!file || !storageId || !dataStorageCache) {
       this.setState({
         items: [],
+        tiles: false,
         active: undefined,
         preview: undefined,
         pending: false
@@ -105,54 +141,47 @@ class VSIPreview extends React.Component {
     } else {
       this.setState({
         items: [],
+        tiles: false,
         active: undefined,
         preview: undefined,
         pending: true
       }, () => {
-        const e = /^(.*\/)?([^\\/]+)\.vsi$/i.exec(file);
-        if (e && e.length === 3) {
+        const e = /^(.*\/)?([^\\/]+)\.(vsi|mrxs)$/i.exec(file);
+        if (e && e.length === 4) {
+          const tilesFolder = `${e[1] || ''}${e[2]}.tiles`;
           const folder = `${e[1] || ''}${e[2]}`;
-          const request = new DataStorageRequest(
-            storageId,
-            decodeURIComponent(folder),
-            false,
-            50
-          );
-          request
-            .fetchPage()
-            .then(() => {
-              if (request.loaded) {
-                const pathRegExp = new RegExp(`^${folder}\\/`, 'i');
-                const items = ((request.value || {}).results || [])
-                  .filter(item => /^file$/i.test(item.type) &&
-                    pathRegExp.test(item.path)
-                  )
-                  .map(item => ({
-                    ...item,
-                    extension: (item.path || '').split('.').pop()
-                  }))
-                  .filter(item => /^(png|jpg|jpeg|tiff|gif|svg)$/i.test(item.extension))
-                  .map(item => ({
-                    ...item,
-                    preview: dataStorageCache.getDownloadUrl(
-                      storageId,
-                      item.path
-                    )
-                  }));
+          getFolderContents(storageId, tilesFolder)
+            .then(tiles => {
+              if (tiles.length > 0) {
                 this.setState({
-                  items,
-                  pending: false
-                }, () => this.onChangePreview(items.length > 0 ? items[0].path : undefined));
-              } else {
-                this.setState({
+                  items: [],
+                  tiles: tilesFolder,
                   pending: false
                 });
+              } else {
+                getFolderContents(storageId, folder)
+                  .then(items => {
+                    const files = items
+                      .filter(item => /^file$/i.test(item.type))
+                      .map(item => ({
+                        ...item,
+                        extension: (item.path || '').split('.').pop()
+                      }))
+                      .filter(item => /^(png|jpg|jpeg|tiff|gif|svg)$/i.test(item.extension))
+                      .map(item => ({
+                        ...item,
+                        preview: dataStorageCache.getDownloadUrl(
+                          storageId,
+                          item.path
+                        )
+                      }));
+                    this.setState({
+                      items: files,
+                      tiles: false,
+                      pending: false
+                    }, () => this.onChangePreview(items.length > 0 ? items[0].path : undefined));
+                  });
               }
-            })
-            .catch(() => {
-              this.setState({
-                pending: false
-              });
             });
         } else {
           this.setState({
@@ -166,8 +195,12 @@ class VSIPreview extends React.Component {
   renderSlides = () => {
     const {
       active,
-      items = []
+      items = [],
+      tiles
     } = this.state;
+    if (tiles) {
+      return null;
+    }
     if (items.length === 0) {
       return (
         <div>
@@ -210,9 +243,10 @@ class VSIPreview extends React.Component {
     const {
       active,
       preview,
-      items
+      items,
+      tiles
     } = this.state;
-    if (!preview || !items || !items.length) {
+    if (!preview || !items || !items.length || tiles) {
       return null;
     }
     const {
@@ -242,6 +276,42 @@ class VSIPreview extends React.Component {
     );
   };
 
+  renderTiles = () => {
+    const {
+      storageId
+    } = this.props;
+    const {
+      tiles
+    } = this.state;
+    if (!tiles || !storageId) {
+      return null;
+    }
+    const initializeTiles = (element) => {
+      const map = Leaflet.map(
+        element,
+        {
+          center: [0, 0],
+          zoom: 0
+        }
+      );
+      Leaflet.tileLayer(
+        generateTileSource(storageId, tiles),
+        {
+          noWrap: true
+        }
+      ).addTo(map);
+    };
+    return (
+      <div
+        className={styles.vsiContentPreview}
+        style={{height: '50vh'}}
+        ref={initializeTiles}
+      >
+        {'\u00A0'}
+      </div>
+    );
+  };
+
   render () {
     const {
       className
@@ -252,6 +322,7 @@ class VSIPreview extends React.Component {
       >
         {this.renderSlides()}
         {this.renderPreview()}
+        {this.renderTiles()}
       </div>
     );
   }

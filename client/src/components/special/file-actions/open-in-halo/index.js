@@ -55,7 +55,7 @@ const ButtonTitle = ({toolId, iconId, titleStyle}) => iconId && toolId
 @observer
 class OpenInHaloAction extends React.Component {
   static ActionAvailable (file) {
-    return /\.vsi$/i.test(file);
+    return /\.(vsi|mrxs)$/i.test(file);
   }
 
   pathElement;
