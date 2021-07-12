@@ -25,16 +25,12 @@ import com.epam.pipeline.dts.transfer.service.TransferService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
-@Service
-@ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "false")
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class TransferServiceImpl implements TransferService {
     private final TaskService taskService;
     private final DataUploaderProviderManager dataUploaderProviderManager;
@@ -42,15 +38,10 @@ public class TransferServiceImpl implements TransferService {
     @Override
     public TransferTask runTransferTask(@NonNull StorageItem source,
                                         @NonNull StorageItem destination,
-                                        List<String> included,
-                                        boolean isAutonomousTransfer) {
+                                        List<String> included) {
         TransferTask transferTask = taskService.createTask(source, destination, included);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
-        if (isAutonomousTransfer) {
-            dataUploaderProviderManager.transferLocalData(transferTask);
-        } else {
-            dataUploaderProviderManager.transferData(transferTask);
-        }
+        dataUploaderProviderManager.transferData(transferTask);
         return transferTask;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,18 +27,15 @@ import com.epam.pipeline.dts.transfer.service.DataUploaderProviderManager;
 import com.epam.pipeline.dts.transfer.service.TaskService;
 import com.epam.pipeline.dts.transfer.service.TransferService;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-@Service
-@ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
+@RequiredArgsConstructor
 @Slf4j
 public class ImpersonatingTransferServiceImpl implements TransferService {
     private final TaskService taskService;
@@ -46,30 +43,14 @@ public class ImpersonatingTransferServiceImpl implements TransferService {
     private final SecurityService securityService;
     private final String dtsNameMetadataKey;
 
-    public ImpersonatingTransferServiceImpl(final TaskService taskService,
-                                            final DataUploaderProviderManager dataUploaderProviderManager,
-                                            final SecurityService securityService,
-                                            @Value("${dts.impersonation.name.metadata.key}")
-                                            final String dtsNameMetadataKey) {
-        this.taskService = taskService;
-        this.dataUploaderProviderManager = dataUploaderProviderManager;
-        this.securityService = securityService;
-        this.dtsNameMetadataKey = dtsNameMetadataKey;
-    }
-
     @Override
     public TransferTask runTransferTask(@NonNull final StorageItem source,
                                         @NonNull final StorageItem destination,
-                                        final List<String> included,
-                                        final boolean isAutonomousTransfer) {
+                                        final List<String> included) {
         final String impersonatingUser = getImpersonatingUser(source, destination);
         final TransferTask transferTask = taskService.createTask(source, destination, included, impersonatingUser);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
-        if (isAutonomousTransfer) {
-            dataUploaderProviderManager.transferLocalData(transferTask);
-        } else {
-            dataUploaderProviderManager.transferData(transferTask);
-        }
+        dataUploaderProviderManager.transferData(transferTask);
         return transferTask;
     }
 

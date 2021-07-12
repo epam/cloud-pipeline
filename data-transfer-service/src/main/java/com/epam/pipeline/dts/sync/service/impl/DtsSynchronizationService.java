@@ -67,13 +67,13 @@ public class DtsSynchronizationService {
     @Autowired
     public DtsSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
                                      final @Value("${dts.api.token}") String pipeApiToken,
-                                     final TransferService transferService,
+                                     final TransferService autonomousTransferService,
                                      final TaskRepository taskRepository,
                                      final PreferenceService preferenceService,
                                      final ShutdownService shutdownService) {
         this.pipeCredentials = new PipelineCredentials(pipeApiUrl, pipeApiToken);
         this.taskRepository = taskRepository;
-        this.transferService = transferService;
+        this.transferService = autonomousTransferService;
         this.shutdownService = shutdownService;
         this.preferenceService = preferenceService;
         this.activeSyncRules = ConcurrentHashMap.newKeySet();
@@ -136,7 +136,7 @@ public class DtsSynchronizationService {
                                                final StorageItem transferDestination) {
         try {
             transferDestination.setCredentials(getPipeCredentialsAsString());
-            return transferService.runTransferTask(transferSource, transferDestination, Collections.emptyList(), true);
+            return transferService.runTransferTask(transferSource, transferDestination, Collections.emptyList());
         } catch (JsonProcessingException e) {
             log.warn("Error parsing PIPE credentials!");
         } catch (Exception e) {
