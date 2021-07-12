@@ -65,7 +65,10 @@ class Cluster(API):
         api.download(url_path, file_path)
 
     @classmethod
-    def get_edge_external_url(cls):
+    def get_edge_external_url(cls, region=None):
         api = cls.instance()
-        response_data = api.call('cluster/edge/externalUrl', data=None)
+        url_path = 'cluster/edge/externalUrl'
+        if region:
+            url_path += '?region%s' % region
+        response_data = api.call(url_path, data=None)
         return response_data.get('payload')

@@ -31,6 +31,7 @@ import com.epam.pipeline.controller.vo.RunStatusVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
+import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.KubernetesService;
 import com.epam.pipeline.entity.pipeline.KubernetesServicePort;
@@ -69,6 +70,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Api(value = "Pipeline runs")
@@ -269,9 +271,10 @@ public class PipelineRunController extends AbstractRestController {
             notes = "Updates pipeline run service url.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRun> updateRunServiceUrl(@PathVariable(value = RUN_ID) Long runId,
-                                               @RequestBody PipelineRunServiceUrlVO serviceUrlVO) {
-        return Result.success(runApiService.updateServiceUrl(runId, serviceUrlVO));
+    public Result<PipelineRun> updateRunServiceUrl(@PathVariable(value = RUN_ID) final Long runId,
+                                                   @RequestParam(required = false) final String region,
+                                                   @RequestBody final PipelineRunServiceUrlVO serviceUrlVO) {
+        return Result.success(runApiService.updateServiceUrl(runId, region, serviceUrlVO));
     }
 
     @PostMapping(value = "/run/{runId}/prettyUrl")
@@ -305,7 +308,7 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<String> buildSshUrl(@PathVariable(value = RUN_ID) Long runId) {
+    public Result<Map<String, String>> buildSshUrl(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.buildSshUrl(runId));
     }
 
@@ -317,7 +320,7 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<String> buildFSBrowserUrl(@PathVariable(value = RUN_ID) Long runId) {
+    public Result<Map<String, String>> buildFSBrowserUrl(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.buildFSBrowserUrl(runId));
     }
 
@@ -531,6 +534,16 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<KubernetesService> getKubernetesService(@PathVariable final Long runId) {
         return Result.success(runApiService.getKubernetesService(runId));
+    }
+
+    @GetMapping(value = "/edge/services")
+    @ApiOperation(
+            value = "Loads all edge services",
+            notes = "Loads all edge services",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<ServiceDescription>> loadEdgeServices() {
+        return Result.success(runApiService.loadEdgeServices());
     }
 
     @GetMapping("/run/pools/{id}")

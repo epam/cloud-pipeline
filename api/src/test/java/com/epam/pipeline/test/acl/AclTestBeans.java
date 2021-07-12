@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
@@ -510,6 +511,9 @@ public class AclTestBeans {
 
     @MockBean
     protected QuotaService mockQuotaService;
+
+    @MockBean
+    protected EdgeServiceManager mockEdgeServiceManager;
 
     @MockBean
     protected RunLimitsService runLimitsService;

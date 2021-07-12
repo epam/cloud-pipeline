@@ -256,8 +256,8 @@ def get_conn_info(run_id):
                          parameters={parameter.name: parameter.value for parameter in run_model.parameters})
 
 
-def get_custom_conn_info(host_id):
-    proxy_url = Cluster.get_edge_external_url()
+def get_custom_conn_info(host_id, region=None):
+    proxy_url = Cluster.get_edge_external_url(region)
     if not proxy_url:
         raise RuntimeError('Cannot retrieve EDGE service external url')
     proxy_url_parts = urlparse(proxy_url)
@@ -459,7 +459,7 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
-                  retries, parse_tunnel_args):
+                  retries, parse_tunnel_args, region=None):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if not local_ports_str and not remote_ports_str:
         raise RuntimeError('Either --lp/--local-port or --rp/--remote-port option should be specified.')
@@ -492,7 +492,7 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
     else:
         create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
                               direct, log_file, log_level,
-                              timeout, foreground, retries)
+                              timeout, foreground, retries, region)
 
 
 def parse_ports(port_str):
@@ -747,9 +747,9 @@ def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
 
 def create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
                           direct, log_file, log_level,
-                          timeout, foreground, retries):
+                          timeout, foreground, retries, region=None):
     if foreground:
-        conn_info = get_custom_conn_info(host_id)
+        conn_info = get_custom_conn_info(host_id, region)
         create_foreground_tunnel(host_id, local_ports, remote_ports, connection_timeout, conn_info,
                                  host_id, direct, log_level, retries)
     else:
