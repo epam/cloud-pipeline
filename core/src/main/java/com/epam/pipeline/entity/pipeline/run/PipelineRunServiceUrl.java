@@ -14,20 +14,36 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster;
+package com.epam.pipeline.entity.pipeline.run;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.stereotype.Service;
+import lombok.Setter;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Getter
-@Service
-@NoArgsConstructor
+@Setter
+@EqualsAndHashCode
 @AllArgsConstructor
-public class ServiceDescription {
-    private String scheme;
-    private String ip;
-    private Integer port;
+@NoArgsConstructor
+@Entity
+@Table(name = "pipeline_run_service_url", schema = "pipeline")
+public class PipelineRunServiceUrl {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long pipelineRunId;
+
     private String region;
+
+    private String serviceUrl;
 }

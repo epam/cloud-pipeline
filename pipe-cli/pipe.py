@@ -1419,10 +1419,12 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @Config.validate_access_token
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
-                 timeout, foreground, retries, trace):
+                 timeout, foreground, retries, trace, region):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1495,7 +1497,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
     try:
         create_tunnel(host_id, local_port, remote_port, connection_timeout,
                       ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
-                      timeout, foreground, retries)
+                      timeout, foreground, retries, region)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         if trace:

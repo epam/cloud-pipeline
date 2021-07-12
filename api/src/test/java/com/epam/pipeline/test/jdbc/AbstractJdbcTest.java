@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.test.jdbc;
 
+import com.epam.pipeline.test.repository.JpaTestConfiguration;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @JdbcTestConfiguration
+@JpaTestConfiguration
 public abstract class AbstractJdbcTest {
 
 }

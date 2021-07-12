@@ -201,6 +201,9 @@ public class PipelineRunManager {
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
 
+    @Autowired
+    private PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -713,12 +716,14 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateServiceUrl(Long runId, PipelineRunServiceUrlVO serviceUrl) {
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
-        pipelineRun.setServiceUrl(serviceUrl.getServiceUrl());
-        pipelineRunDao.updateServiceUrl(pipelineRun);
+    public PipelineRun updateServiceUrl(final Long runId, final String region,
+                                        final PipelineRunServiceUrlVO serviceUrl) {
+        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+
+        pipelineRunServiceUrlManager.update(runId, region, serviceUrl);
+        pipelineRun.setServiceUrl(pipelineRunServiceUrlManager.loadByRunId(runId));
+
         //TODO: check if we need it
         setParent(pipelineRun);
         return pipelineRun;
@@ -930,10 +935,6 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateRunsTags(final Collection<PipelineRun> runs) {
         pipelineRunDao.updateRunsTags(runs);
-    }
-
-    public List<PipelineRun> loadAllRunsByServiceURL(final String serviceUrl) {
-        return pipelineRunDao.loadAllRunsWithServiceURL(serviceUrl);
     }
 
     /**
