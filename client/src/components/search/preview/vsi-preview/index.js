@@ -287,19 +287,21 @@ class VSIPreview extends React.Component {
       return null;
     }
     const initializeTiles = (element) => {
-      const map = Leaflet.map(
-        element,
-        {
-          center: [0, 0],
-          zoom: 0
-        }
-      );
-      Leaflet.tileLayer(
-        generateTileSource(storageId, tiles),
-        {
-          noWrap: true
-        }
-      ).addTo(map);
+      if (element) {
+        const map = Leaflet.map(
+          element,
+          {
+            center: [0, 0],
+            zoom: 0
+          }
+        );
+        Leaflet.tileLayer(
+          generateTileSource(storageId, tiles),
+          {
+            noWrap: true
+          }
+        ).addTo(map);
+      }
     };
     return (
       <div
