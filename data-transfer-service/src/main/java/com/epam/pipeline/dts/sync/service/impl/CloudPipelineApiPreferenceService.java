@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.sync.impl;
+package com.epam.pipeline.dts.sync.service.impl;
 
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
-import com.epam.pipeline.dts.sync.PreferenceService;
+import com.epam.pipeline.dts.sync.service.PreferenceService;
 import com.epam.pipeline.dts.sync.model.AutonomousDtsDetails;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import org.springframework.beans.factory.annotation.Autowired;

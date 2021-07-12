@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.sync;
+package com.epam.pipeline.dts.sync.service;
 
 public interface PreferenceService {
 
