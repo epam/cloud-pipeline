@@ -18,15 +18,19 @@ package com.epam.pipeline.dts.sync.service.impl;
 
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.sync.service.PreferenceService;
-import com.epam.pipeline.dts.sync.model.AutonomousDtsDetails;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -37,12 +41,17 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     private final CloudPipelineAPIClient apiClient;
     private final ConcurrentMap<String, String> preferences;
     private final String dtsName;
+    private final String dtsLocalShutdownKey;
 
     @Autowired
-    public CloudPipelineApiPreferenceService(final AutonomousDtsDetails autonomousDtsDetails) {
-        this.apiClient = autonomousDtsDetails.getApiClient();
+    public CloudPipelineApiPreferenceService(final @Value("${dts.name}") String dtsName,
+                                             final @Value("${dts.preference.shutdown.key:dts.restart.force}")
+                                                 String dtsLocalShutdownKey,
+                                             final CloudPipelineAPIClient apiClient) {
+        this.apiClient = apiClient;
         this.preferences = new ConcurrentHashMap<>();
-        this.dtsName = autonomousDtsDetails.getDtsName();
+        this.dtsName = tryBuildDtsName(dtsName);
+        this.dtsLocalShutdownKey = dtsLocalShutdownKey;
     }
 
     @Scheduled(fixedDelayString = "${dts.sync.poll:60000}")
@@ -55,7 +64,35 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     }
 
     @Override
-    public String get(final String preferenceKey) {
-        return preferences.get(preferenceKey);
+    public boolean isShutdownRequired() {
+        return Boolean.TRUE.toString().equalsIgnoreCase(preferences.get(dtsLocalShutdownKey));
+    }
+
+    @Override
+    public void clearShutdownFlag() {
+        apiClient.deleteDtsRegistryPreferences(dtsName, Collections.singletonList(dtsLocalShutdownKey));
+    }
+
+    private String tryBuildDtsName(final String preconfiguredDtsName) {
+        final String dtsName = Optional.ofNullable(preconfiguredDtsName)
+            .filter(StringUtils::isNotBlank)
+            .orElseGet(this::tryExtractHostnameFromEnvironment);
+        if (StringUtils.isBlank(dtsName)) {
+            throw new IllegalStateException("Unable to build DTS name!");
+        }
+        return dtsName;
+    }
+
+    private String tryExtractHostnameFromEnvironment() {
+        try {
+            return Optional.ofNullable(InetAddress.getLocalHost())
+                .map(InetAddress::getCanonicalHostName)
+                .filter(StringUtils::isNotEmpty)
+                .map(StringUtils::strip)
+                .map(StringUtils::lowerCase)
+                .orElse(StringUtils.EMPTY);
+        } catch (UnknownHostException e) {
+            return StringUtils.EMPTY;
+        }
     }
 }

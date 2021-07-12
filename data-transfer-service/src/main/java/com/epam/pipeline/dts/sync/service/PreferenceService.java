@@ -18,5 +18,6 @@ package com.epam.pipeline.dts.sync.service;
 
 public interface PreferenceService {
 
-    String get(String preferenceKey);
+    boolean isShutdownRequired();
+    void clearShutdownFlag();
 }
