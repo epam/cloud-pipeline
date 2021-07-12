@@ -16,6 +16,10 @@ param (
   [switch] $Install = $false
 )
 
+function Log($Message) {
+    Write-Host "[$((Get-Date).ToString("u"))] $Message"
+}
+
 function CreateDirIfRequired($Path) {
     if (-not(Test-Path "$Path")) {
         New-Item -Path "$Path" -ItemType "Directory" -Force
@@ -35,18 +39,18 @@ function RemoveFileIfExists($Path) {
 }
 
 if ($Install) {
-    Write-Host "Installing data transfer service..."
+    Log "Installing data transfer service..."
 
-    Write-Host "Checking required environment variables..."
+    Log "Checking required environment variables..."
     if (-not("$env:API" -and "$env:API_TOKEN" -and "$env:DISTRIBUTION_URL" -and "$env:DTS_NAME" -and "$env:DTS_DIR" -and "$env:API_PUBLIC_KEY")) {
-        Write-Host "Please set all the required environment variables and restart the installation: API, API_TOKEN, DISTRIBUTION_URL, DTS_NAME, DTS_DIR and API_PUBLIC_KEY."
+        Log "Please set all the required environment variables and restart the installation: API, API_TOKEN, DISTRIBUTION_URL, DTS_NAME, DTS_DIR and API_PUBLIC_KEY."
         Exit
     }
 
-    Write-Host "Changing working directory..."
+    Log "Changing working directory..."
     Set-Location -Path "$env:DTS_DIR"
 
-    Write-Host "Persisting environment..."
+    Log "Persisting environment..."
     @"
 `$env:API = "$env:API"
 `$env:API_TOKEN = "$env:API_TOKEN"
@@ -71,15 +75,15 @@ if ($Install) {
 `$env:DTS_IMPERSONATION_ENABLED = "false"
 "@ | Out-File -FilePath Environment.ps1 -Encoding ascii -Force -ErrorAction Stop
 
-    Write-Host "Loading environment..."
+    Log "Loading environment..."
     . .\Environment.ps1
 
-    Write-Host "Creating scheduled task if it doesn't exist..."
+    Log "Creating scheduled task if it doesn't exist..."
     if (Get-ScheduledTask "CloudPipelineDTS" -ErrorAction SilentlyContinue) {
-        Write-Host "Scheduled task already exists."
+        Log "Scheduled task already exists."
     } else {
         try {
-            Write-Host "Creating scheduled task..."
+            Log "Creating scheduled task..."
             $action = New-ScheduledTaskAction -Execute "powershell.exe" `
                                               -Argument "-file `"$env:DTS_LAUNCHER_PATH`"" `
                                               -WorkingDirectory "$env:DTS_DIR"
@@ -92,21 +96,21 @@ if ($Install) {
                                       -Trigger $trigger `
                                       -Settings $settings
             Register-ScheduledTask -TaskName "CloudPipelineDTS" -InputObject $task -Force -ErrorAction Stop
-            Write-Host "Scheduled task was created successfully."
+            Log "Scheduled task was created successfully."
         } catch {
-            Write-Host "Scheduled task creation has failed: $_"
-            Write-Host "Please send all the logs above to Cloud Pipeline Support Team."
+            Log "Scheduled task creation has failed: $_"
+            Log "Please send all the logs above to Cloud Pipeline Support Team."
             Exit
         }
     }
 
-    Write-Host "Starting scheduled task..."
+    Log "Starting scheduled task..."
     try {
         Start-ScheduledTask -TaskName "CloudPipelineDTS" -ErrorAction Stop
-        Write-Host "Scheduled task started successfully."
+        Log "Scheduled task started successfully."
     } catch {
-        Write-Host "Scheduled task starting has failed: $_"
-        Write-Host "Please send all the logs above to Cloud Pipeline Support Team."
+        Log "Scheduled task starting has failed: $_"
+        Log "Please send all the logs above to Cloud Pipeline Support Team."
     }
 
     Exit
@@ -115,80 +119,80 @@ if ($Install) {
 CreateDirIfRequired -Path .\logs
 Start-Transcript -Path .\logs\launcher.log -Append
 
-Write-Host "Checking if environment script exists..."
+Log "Checking if environment script exists..."
 if (-not(Test-Path .\Environment.ps1)) {
-    Write-Host "Environment script doesn't exist. Exiting..."
+    Log "Environment script doesn't exist. Exiting..."
     Stop-Transcript
     Exit
 }
 
-Write-Host "Loading environment..."
+Log "Loading environment..."
 . .\Environment.ps1
 
-Write-Host "Creating system directories..."
+Log "Creating system directories..."
 CreateDirIfRequired -Path "$env:DTS_LOGS_DIR"
 
-Write-Host "Stopping startup logs capturing..."
+Log "Stopping startup logs capturing..."
 Stop-Transcript
 
-Write-Host "Starting logs capturing..."
+Log "Starting logs capturing..."
 Start-Transcript -Path "$env:DTS_LAUNCHER_LOG_PATH" -Append
 
-Write-Host "Importing libraries..."
+Log "Importing libraries..."
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 While ($True) {
     try {
-        Write-Host "Starting cycle at $((Get-Date).ToString("u"))..."
+        Log "Starting cycle..."
 
-        Write-Host "Stopping existing data transfer service processes..."
+        Log "Stopping existing data transfer service processes..."
         $processes = Get-WmiObject win32_process -Filter "name like '%java%'"
         foreach($process in $processes) {
             $processId = $process.ProcessId
             $processCommand = $process.CommandLine
             if ($processCommand -Match "data-transfer-service") {
-                Write-Host "Stopping existing data transfer service process #$processId..."
+                Log "Stopping existing data transfer service process #$processId..."
                 Stop-Process -Id $processId -Force -ErrorAction Stop
 
-                Write-Host "Waiting for $env:DTS_FINISH_DELAY_SECONDS seconds before proceeding..."
+                Log "Waiting for $env:DTS_FINISH_DELAY_SECONDS seconds before proceeding..."
                 Start-Sleep -Seconds "$env:DTS_FINISH_DELAY_SECONDS"
             }
         }
 
-        Write-Host "Removing existing data transfer service distribution..."
+        Log "Removing existing data transfer service distribution..."
         RemoveFileIfExists -Path "$env:DTS_DISTRIBUTION_PATH"
 
-        Write-Host "Removing existing data transfer service directory..."
+        Log "Removing existing data transfer service directory..."
         RemoveDirIfExists "$env:APP_HOME"
 
-        Write-Host "Downloading data transfer service distribution..."
+        Log "Downloading data transfer service distribution..."
         Invoke-WebRequest "$env:DTS_DISTRIBUTION_URL" -OutFile "$env:DTS_DISTRIBUTION_PATH" -ErrorAction Stop
 
-        Write-Host "Unpacking data transfer service distribution..."
+        Log "Unpacking data transfer service distribution..."
         [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:DTS_DISTRIBUTION_PATH", "$env:APP_HOME")
 
-        Write-Host "Removing existing pipe distribution..."
+        Log "Removing existing pipe distribution..."
         RemoveFileIfExists "$env:PIPE_DISTRIBUTION_PATH"
 
-        Write-Host "Removing existing pipe directory..."
+        Log "Removing existing pipe directory..."
         RemoveDirIfExists "$env:PIPE_DIR"
 
-        Write-Host "Downloading pipe distribution..."
+        Log "Downloading pipe distribution..."
         Invoke-WebRequest "$env:PIPE_DISTRIBUTION_URL" -OutFile "$env:PIPE_DISTRIBUTION_PATH" -ErrorAction Stop
 
-        Write-Host "Unpacking pipe distribution..."
+        Log "Unpacking pipe distribution..."
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:PIPE_DISTRIBUTION_PATH", "$env:PIPE_DIR")
 
-        Write-Host "Launching data transfer service..."
+        Log "Launching data transfer service..."
         & "$env:APP_HOME\bin\dts.bat" >$null 2>&1
-        Write-Host "Data transfer service has exited."
+        Log "Data transfer service has exited."
 
-        Write-Host "Finishing cycle at $((Get-Date).ToString("u"))..."
+        Log "Finishing cycle..."
     } catch {
-        Write-Host "Finishing cycle at $((Get-Date).ToString("u")) with error: $_"
+        Log "Finishing cycle with error: $_"
     }
 
-    Write-Host "Waiting for $env:DTS_RESTART_DELAY_SECONDS seconds before proceeding..."
+    Log "Waiting for $env:DTS_RESTART_DELAY_SECONDS seconds before proceeding..."
     Start-Sleep -Seconds "$env:DTS_RESTART_DELAY_SECONDS"
 }
