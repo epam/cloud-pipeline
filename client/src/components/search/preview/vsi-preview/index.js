@@ -18,8 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {
-  Tabs
+  Button,
+  Tabs,
+  Icon
 } from 'antd';
+import classNames from 'classnames';
 import Leaflet from 'leaflet/dist/leaflet';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import {API_PATH, SERVER} from '../../../../config';
@@ -65,8 +68,11 @@ class VSIPreview extends React.Component {
     tiles: false,
     preview: undefined,
     active: undefined,
-    pending: false
+    pending: false,
+    fullscreen: false
   };
+
+  map;
 
   componentDidMount () {
     this.fetchPreviewItems();
@@ -130,13 +136,18 @@ class VSIPreview extends React.Component {
 
   fetchPreviewItems = () => {
     const {file, storageId, dataStorageCache} = this.props;
+    if (this.map) {
+      this.map.remove();
+      this.map = undefined;
+    }
     if (!file || !storageId || !dataStorageCache) {
       this.setState({
         items: [],
         tiles: false,
         active: undefined,
         preview: undefined,
-        pending: false
+        pending: false,
+        fullscreen: false
       });
     } else {
       this.setState({
@@ -144,7 +155,8 @@ class VSIPreview extends React.Component {
         tiles: false,
         active: undefined,
         preview: undefined,
-        pending: true
+        pending: true,
+        fullscreen: false
       }, () => {
         const e = /^(.*\/)?([^\\/]+)\.(vsi|mrxs)$/i.exec(file);
         if (e && e.length === 4) {
@@ -281,14 +293,15 @@ class VSIPreview extends React.Component {
       storageId
     } = this.props;
     const {
-      tiles
+      tiles,
+      fullscreen
     } = this.state;
     if (!tiles || !storageId) {
       return null;
     }
     const initializeTiles = (element) => {
-      if (element) {
-        const map = Leaflet.map(
+      if (element && !this.map) {
+        this.map = Leaflet.map(
           element,
           {
             center: [0, 0],
@@ -300,16 +313,42 @@ class VSIPreview extends React.Component {
           {
             noWrap: true
           }
-        ).addTo(map);
+        ).addTo(this.map);
+      } else if (this.map) {
+        this.map.invalidateSize();
       }
+    };
+    const goFullScreen = () => {
+      this.setState({
+        fullscreen: !fullscreen
+      });
     };
     return (
       <div
-        className={styles.vsiContentPreview}
-        style={{height: '50vh'}}
-        ref={initializeTiles}
+        className={
+          classNames(
+            styles.vsiContentPreview,
+            styles.tiles,
+            {[styles.fullscreen]: fullscreen}
+          )
+        }
       >
-        {'\u00A0'}
+        <div
+          ref={initializeTiles}
+          style={{
+            width: '100%',
+            height: '100%'
+          }}
+        >
+          {'\u00A0'}
+        </div>
+        <Button
+          id="vsi-preview-fullscreen-button"
+          className={styles.leafletFullscreenButton}
+          onClick={goFullScreen}
+        >
+          <Icon type={fullscreen ? 'shrink' : 'arrows-alt'} />
+        </Button>
       </div>
     );
   };
