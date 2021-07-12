@@ -386,7 +386,8 @@ export default class S3FilePreview extends React.Component {
       svg: this.renderImagePreview,
       pdf: this.renderImagePreview,
       md: this.renderMDPreview,
-      vsi: this.renderVSIPreview
+      vsi: this.renderVSIPreview,
+      mrxs: this.renderVSIPreview
     };
     if (previewRenderers[extension]) {
       const preview = previewRenderers[extension]();

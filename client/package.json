@@ -18,6 +18,7 @@
     "history": "^3.3.0",
     "html2canvas": "^1.0.0-rc.5",
     "jquery.terminal": "1.10.1",
+    "leaflet": "^1.7.1",
     "less": "2.7.1",
     "less-loader": "4.1.0",
     "miew": "0.7.8",
