@@ -56,8 +56,9 @@ if ($Install) {
 `$env:JAVA_HOME = "$env:DTS_DIR\app\jre"
 `$env:PIPE_DIR = "$env:DTS_DIR\pipe"
 `$env:DTS_LOGS_DIR = "$env:DTS_DIR\logs"
-`$env:DTS_LAUNCHER_LOG_PATH = "$env:DTS_LOGS_DIR\launcher.log"
+`$env:DTS_LAUNCHER_LOG_PATH = "$env:DTS_DIR\logs\launcher.log"
 `$env:DTS_RESTART_DELAY_SECONDS = "10"
+`$env:DTS_FINISH_DELAY_SECONDS = "10"
 `$env:DTS_LAUNCHER_PATH = "$env:DTS_DIR\DeployDts.ps1"
 `$env:DTS_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/data-transfer-service-windows.zip"
 `$env:DTS_DISTRIBUTION_PATH = "$env:DTS_DIR\data-transfer-service-windows.zip"
@@ -67,6 +68,7 @@ if ($Install) {
 `$env:CP_API_JWT_TOKEN = "$env:API_TOKEN"
 `$env:CP_API_JWT_KEY_PUBLIC = "$env:API_PUBLIC_KEY"
 `$env:DTS_LOCAL_NAME = "$env:DTS_NAME"
+`$env:DTS_IMPERSONATION_ENABLED = "false"
 "@ | Out-File -FilePath Environment.ps1 -Encoding ascii -Force -ErrorAction Stop
 
     Write-Host "Loading environment..."
@@ -110,14 +112,24 @@ if ($Install) {
     Exit
 }
 
+CreateDirIfRequired -Path .\logs
+Start-Transcript -Path .\logs\launcher.log -Append
+
+Write-Host "Checking if environment script exists..."
+if (-not(Test-Path .\Environment.ps1)) {
+    Write-Host "Environment script doesn't exist. Exiting..."
+    Stop-Transcript
+    Exit
+}
+
 Write-Host "Loading environment..."
 . .\Environment.ps1
 
-Write-Host "Changing working directory..."
-Set-Location -Path "$env:DTS_DIR"
-
 Write-Host "Creating system directories..."
 CreateDirIfRequired -Path "$env:DTS_LOGS_DIR"
+
+Write-Host "Stopping startup logs capturing..."
+Stop-Transcript
 
 Write-Host "Starting logs capturing..."
 Start-Transcript -Path "$env:DTS_LAUNCHER_LOG_PATH" -Append
@@ -129,17 +141,17 @@ While ($True) {
     try {
         Write-Host "Starting cycle at $((Get-Date).ToString("u"))..."
 
-        Write-Host "Loading environment..."
-        . .\Environment.ps1
-
         Write-Host "Stopping existing data transfer service processes..."
         $processes = Get-WmiObject win32_process -Filter "name like '%java%'"
         foreach($process in $processes) {
             $processId = $process.ProcessId
             $processCommand = $process.CommandLine
-            if ("data-transfer-service" -in $processCommand) {
+            if ($processCommand -Match "data-transfer-service") {
                 Write-Host "Stopping existing data transfer service process #$processId..."
-                Stop-Process -Id $processId -Force
+                Stop-Process -Id $processId -Force -ErrorAction Stop
+
+                Write-Host "Waiting for $env:DTS_FINISH_DELAY_SECONDS seconds before proceeding..."
+                Start-Sleep -Seconds "$env:DTS_FINISH_DELAY_SECONDS"
             }
         }
 
