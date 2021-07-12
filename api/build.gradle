@@ -40,6 +40,11 @@ task copyFsAutoscalerScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/"
 }
 
+task copyLocalDtsStartupScripts(type: Copy) {
+    from "$rootDir/scripts/dts/RunLocalDts.ps1"
+    into "$rootDir/api/src/main/resources/static/"
+}
+
 jar {
     archiveName "pipeline.jar"
     manifest {
@@ -234,4 +239,5 @@ dependencies {
 }
 
 // >>>>> processes profiles
-processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts])
+processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts,
+                                   copyLocalDtsStartupScripts])

@@ -22,7 +22,11 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,6 +38,8 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
     private static final String TEST_PREFIX_1 = "prefix_1";
     private static final String TEST_PREFIX_2 = "prefix_2";
     private static final String DTS = "DTS";
+    private static final String DTS_PREFERENCE_1 = "dts.preference1";
+    private static final String DTS_PREFERENCE_2 = "dts.preference2";
 
     @Autowired
     private DtsRegistryDao dtsRegistryDao;
@@ -41,10 +47,13 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
     @Test
     public void testCRUD() {
         DtsRegistry dtsRegistry = getDtsRegistry(TEST_URL,
-                Stream.of(TEST_PREFIX_1).collect(Collectors.toList()));
+                                                 Stream.of(TEST_PREFIX_1).collect(Collectors.toList()),
+                                                 Collections.singletonMap(DTS_PREFERENCE_1, DTS));
         dtsRegistryDao.create(dtsRegistry);
         DtsRegistry loaded = dtsRegistryDao.loadById(dtsRegistry.getId()).orElse(null);
         assertEquals(dtsRegistry, loaded);
+        DtsRegistry loadedByName = dtsRegistryDao.loadByName(DTS).orElse(null);
+        assertEquals(dtsRegistry, loadedByName);
         dtsRegistry.setPrefixes(Stream.of(TEST_PREFIX_1, TEST_PREFIX_2).collect(Collectors.toList()));
         dtsRegistryDao.update(dtsRegistry);
         loaded = dtsRegistryDao.loadById(dtsRegistry.getId()).orElse(null);
@@ -54,11 +63,53 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
         assertEquals(0, dtsRegistryDao.loadAll().size());
     }
 
-    private DtsRegistry getDtsRegistry(String url, List<String> prefixes) {
+    @Test
+    public void testDtsPreferencesUpsert() {
+        final DtsRegistry dtsRegistry = getDtsRegistry(TEST_URL,
+                                                 Stream.of(TEST_PREFIX_1).collect(Collectors.toList()),
+                                                 null);
+        dtsRegistryDao.create(dtsRegistry);
+        dtsRegistry.setPreferences(new HashMap<>());
+        assertEqualsToEntityInDb(dtsRegistry);
+
+        upsertPreferencesAndAssertState(dtsRegistry, Collections.singletonMap(DTS_PREFERENCE_1, DTS));
+        upsertPreferencesAndAssertState(dtsRegistry, Collections.singletonMap(DTS_PREFERENCE_2, TEST_URL));
+        upsertPreferencesAndAssertState(dtsRegistry, Collections.singletonMap(DTS_PREFERENCE_1, TEST_URL));
+    }
+
+    @Test
+    public void testDtsPreferencesDelete() {
+        final HashMap<String, String> preferences = new HashMap<>();
+        preferences.put(DTS_PREFERENCE_1, TEST_PREFIX_1);
+        preferences.put(DTS_PREFERENCE_2, TEST_PREFIX_2);
+        final DtsRegistry dtsRegistry = getDtsRegistry(TEST_URL, Collections.emptyList(), preferences);
+        dtsRegistryDao.create(dtsRegistry);
+        assertEqualsToEntityInDb(dtsRegistry);
+
+        dtsRegistryDao.deletePreferences(dtsRegistry.getId(), Arrays.asList(DTS_PREFERENCE_1, DTS_PREFERENCE_2));
+        dtsRegistry.getPreferences().clear();
+        assertEqualsToEntityInDb(dtsRegistry);
+    }
+
+    private void assertEqualsToEntityInDb(final DtsRegistry dtsRegistry) {
+        final DtsRegistry loaded = dtsRegistryDao.loadById(dtsRegistry.getId()).orElse(null);
+        assertEquals(dtsRegistry, loaded);
+    }
+
+    private void upsertPreferencesAndAssertState(final DtsRegistry dtsRegistry,
+                                                 final Map<String, String> preferenceUpdate) {
+        dtsRegistryDao.upsertPreferences(dtsRegistry.getId(), preferenceUpdate);
+        dtsRegistry.getPreferences().putAll(preferenceUpdate);
+        assertEqualsToEntityInDb(dtsRegistry);
+    }
+
+    private DtsRegistry getDtsRegistry(final String url, final List<String> prefixes,
+                                       final Map<String, String> preferences) {
         DtsRegistry dtsRegistry = new DtsRegistry();
         dtsRegistry.setName(DTS);
         dtsRegistry.setUrl(url);
         dtsRegistry.setPrefixes(prefixes);
+        dtsRegistry.setPreferences(preferences);
         return dtsRegistry;
     }
 }

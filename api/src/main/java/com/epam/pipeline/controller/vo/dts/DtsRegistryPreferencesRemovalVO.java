@@ -21,15 +21,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DtsRegistryVO {
-    private String url;
-    private String name;
-    private boolean schedulable = false;
-    private List<String> prefixes;
-    private Map<String, String> preferences;
+public class DtsRegistryPreferencesRemovalVO {
+
+    private List<String> preferenceKeysToRemove;
 }

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -88,11 +88,17 @@ RUN pip install -I google-api-python-client
 # API distribution
 ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
+ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator|data-transfer-service"
+
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     rm -rf bin/pipe-templates/__SYSTEM && \
     mkdir -p $CP_API_HOME && \
+    ls -dp bin/* \
+        | grep '\.jar$' \
+        | grep -v -E "/($REQUIRED_JARS_REGEX)\.jar$" \
+        | xargs rm -f && \
     mv bin/* $CP_API_HOME/ && \
     rm -f cloud-pipeline.tgz && \
     rm -rf bin

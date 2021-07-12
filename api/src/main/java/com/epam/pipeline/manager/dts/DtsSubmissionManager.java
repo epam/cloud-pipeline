@@ -51,7 +51,7 @@ public class DtsSubmissionManager {
     }
 
     private DtsClient getDtsClient(Long dtsId) {
-        DtsRegistry dtsRegistry = dtsRegistryManager.load(dtsId);
+        DtsRegistry dtsRegistry = dtsRegistryManager.loadById(dtsId);
         return clientBuilder.createDtsClient(dtsRegistry.getUrl(),
                 authManager.issueTokenForCurrentUser().getToken());
     }
