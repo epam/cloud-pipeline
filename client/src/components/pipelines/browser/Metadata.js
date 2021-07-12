@@ -197,7 +197,8 @@ export default class Metadata extends React.Component {
       orderBy: [],
       page: 1,
       pageSize: PAGE_SIZE,
-      searchQueries: []
+      searchQueries: [],
+      externalIdQueries: []
     },
     filterComponentVisible: false,
     addInstanceFormVisible: false,
@@ -374,16 +375,24 @@ export default class Metadata extends React.Component {
   handleFilterApplied = (key, dataArray) => {
     const filterModel = {...this.state.filterModel};
     if (key && dataArray && dataArray.length) {
-      const filterObj = {key: unmapColumnName(key), values: dataArray};
-      const currentFilterIndex = filterModel.filters
-        .findIndex(filter => filter.key === unmapColumnName(key));
-      if (currentFilterIndex > -1) {
-        filterModel.filters[currentFilterIndex] = filterObj;
+      if (unmapColumnName(key) !== 'externalId') {
+        const filterObj = {key: unmapColumnName(key), values: dataArray};
+        const currentFilterIndex = filterModel.filters
+          .findIndex(filter => filter.key === unmapColumnName(key));
+        if (currentFilterIndex > -1) {
+          filterModel.filters[currentFilterIndex] = filterObj;
+        } else {
+          filterModel.filters.push(filterObj);
+        }
       } else {
-        filterModel.filters.push(filterObj);
+        filterModel.externalIdQueries = dataArray || [];
       }
     } else {
-      filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
+      if (unmapColumnName(key) !== 'externalId') {
+        filterModel.filters = filterModel.filters.filter(obj => obj.key !== unmapColumnName(key));
+      } else {
+        filterModel.externalIdQueries = [];
+      }
     }
     filterModel.page = FIRST_PAGE;
     this.setState(
@@ -496,12 +505,16 @@ export default class Metadata extends React.Component {
   }
 
   filterApplied = (key) => {
-    const {filters, startDateFrom, endDateTo} = this.state.filterModel;
-    if (key !== 'createdDate') {
-      return filters
-        .filter(filterObj => filterObj.key === unmapColumnName(key)).length;
-    } else {
-      return startDateFrom || endDateTo;
+    const {filters, startDateFrom, endDateTo, externalIdQueries} = this.state.filterModel;
+    const unmappedKey = unmapColumnName(key);
+    switch (unmappedKey) {
+      case 'createdDate':
+        return startDateFrom || endDateTo;
+      case 'externalId':
+        return externalIdQueries ? externalIdQueries.length : null;
+      default:
+        return !!filters
+          .filter(filterObj => filterObj.key === unmapColumnName(key)).length;
     }
   };
 
@@ -518,10 +531,15 @@ export default class Metadata extends React.Component {
     const {
       filters = [],
       startDateFrom,
-      endDateTo
+      endDateTo,
+      externalIdQueries
     } = filterModel;
-    const filter = filters.find(filter => filter.key === unmapColumnName(key));
-    const values = filter ? (filter.values || []) : [];
+    const unmappedKey = unmapColumnName(key);
+    const filter = filters.find(filter => filter.key === unmappedKey);
+    let values = filter ? (filter.values || []) : [];
+    if (unmappedKey === 'externalId') {
+      values = externalIdQueries;
+    }
     const button = (
       <Button
         shape="circle"
@@ -905,6 +923,7 @@ export default class Metadata extends React.Component {
     filterModel.endDateTo = undefined;
     filterModel.page = 1;
     filterModel.searchQueries = [];
+    filterModel.externalIdQueries = [];
     this.setState(
       {
         filterModel,
