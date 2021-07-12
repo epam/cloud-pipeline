@@ -16,11 +16,9 @@
 
 package com.epam.pipeline.dts.transfer.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
 
-@Data
-@NoArgsConstructor
+@Value
 public class AutonomousSyncRule {
 
     private String source;

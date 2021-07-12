@@ -18,24 +18,160 @@ package com.epam.pipeline.dts.sync.service.impl;
 
 import com.epam.pipeline.dts.sync.service.PreferenceService;
 import com.epam.pipeline.dts.sync.service.ShutdownService;
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.dts.transfer.model.AutonomousSyncRule;
+import com.epam.pipeline.dts.transfer.model.StorageItem;
+import com.epam.pipeline.dts.transfer.model.StorageType;
+import com.epam.pipeline.dts.transfer.model.TransferTask;
+import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
+import com.epam.pipeline.dts.transfer.repository.TaskRepository;
+import com.epam.pipeline.dts.transfer.service.TransferService;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 
 @Service
-@RequiredArgsConstructor
+@Slf4j
 @EnableScheduling
 public class DtsSynchronizationService {
 
+    private static final String SCHEMA_DELIMITER = "://";
+
+    private final TaskRepository taskRepository;
+    private final TransferService transferService;
     private final PreferenceService preferenceService;
     private final ShutdownService shutdownService;
+    private final PipelineCredentials pipeCredentials;
+    private final Set<AutonomousSyncRule> activeSyncRules;
+    private final Map<AutonomousSyncRule, TransferTask> activeTransferTasks;
+
+    @Autowired
+    public DtsSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
+                                     final @Value("${dts.api.token}") String pipeApiToken,
+                                     final TransferService transferService,
+                                     final TaskRepository taskRepository,
+                                     final PreferenceService preferenceService,
+                                     final ShutdownService shutdownService) {
+        this.pipeCredentials = new PipelineCredentials(pipeApiUrl, pipeApiToken);
+        this.taskRepository = taskRepository;
+        this.transferService = transferService;
+        this.shutdownService = shutdownService;
+        this.preferenceService = preferenceService;
+        this.activeSyncRules = ConcurrentHashMap.newKeySet();
+        this.activeTransferTasks = new HashMap<>();
+    }
 
     @Scheduled(fixedDelayString = "${dts.sync.poll:60000}")
-    public void synchronizeRestart() {
+    public void synchronizeDtsState() {
+        checkForShutdown();
+        updateSyncRules();
+    }
+
+    @Scheduled(cron = "${dts.autonomous.sync.cron}")
+    public void synchronizeFilesystem() {
+        processActiveTasks();
+        submitTasksForAwaitingRules();
+    }
+
+    private void checkForShutdown() {
         if (preferenceService.isShutdownRequired()) {
             shutdownService.shutdown();
         }
+    }
+
+    private void updateSyncRules() {
+        preferenceService.getSyncRules().ifPresent(newSyncRules -> {
+            activeSyncRules.clear();
+            activeSyncRules.addAll(newSyncRules);
+        });
+    }
+
+    private void processActiveTasks() {
+        activeTransferTasks.values()
+            .removeIf(task -> taskRepository.findById(task.getId())
+                .filter(loadedTask -> loadedTask.getStatus().isFinalStatus())
+                .isPresent());
+    }
+
+    private void submitTasksForAwaitingRules() {
+        final Map<AutonomousSyncRule, TransferTask> newSubmittedTasks = activeSyncRules.stream()
+            .filter(this::noMatchingActiveTransferTask)
+            .map(rule -> Pair.of(rule, runTransferTask(rule)))
+            .filter(entry -> Objects.nonNull(entry.getValue()))
+            .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        activeTransferTasks.putAll(newSubmittedTasks);
+    }
+
+    private boolean noMatchingActiveTransferTask(final AutonomousSyncRule rule) {
+        return !activeTransferTasks.containsKey(rule);
+    }
+
+    private TransferTask runTransferTask(final AutonomousSyncRule rule) {
+        return buildTransferDestination(rule)
+            .map(transferDestination -> trySubmitTransferTask(buildTransferSource(rule), transferDestination))
+            .orElse(null);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private TransferTask trySubmitTransferTask(final StorageItem transferSource,
+                                               final StorageItem transferDestination) {
+        try {
+            transferDestination.setCredentials(getPipeCredentialsAsString());
+            return transferService.runTransferTask(transferSource, transferDestination, Collections.emptyList(), true);
+        } catch (JsonProcessingException e) {
+            log.warn("Error parsing PIPE credentials!");
+        } catch (Exception e) {
+            log.warn("Error during transfer submission from `{}` to `{}`: {}",
+                     transferSource, transferDestination, e.getMessage());
+        }
+        return null;
+    }
+
+    private Optional<StorageItem> buildTransferDestination(final AutonomousSyncRule rule) {
+        final String destinationPath = rule.getDestination();
+        return Optional.of(destinationPath)
+            .map(path -> path.split(SCHEMA_DELIMITER, 2)[0])
+            .map(StringUtils::upperCase)
+            .map(schema -> EnumUtils.getEnum(StorageType.class, schema))
+            .filter(Objects::nonNull)
+            .map(type -> {
+                final StorageItem destinationItem = new StorageItem();
+                destinationItem.setType(type);
+                destinationItem.setPath(destinationPath);
+                return destinationItem;
+            });
+    }
+
+    private StorageItem buildTransferSource(final AutonomousSyncRule rule) {
+        final StorageItem sourceItem = new StorageItem();
+        sourceItem.setPath(rule.getSource());
+        sourceItem.setType(StorageType.LOCAL);
+        return sourceItem;
+    }
+
+    private String getPipeCredentialsAsString() throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        return mapper.writeValueAsString(pipeCredentials);
     }
 }

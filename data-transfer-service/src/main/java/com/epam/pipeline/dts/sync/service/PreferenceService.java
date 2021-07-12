@@ -16,8 +16,14 @@
 
 package com.epam.pipeline.dts.sync.service;
 
+import com.epam.pipeline.dts.transfer.model.AutonomousSyncRule;
+
+import java.util.List;
+import java.util.Optional;
+
 public interface PreferenceService {
 
+    Optional<List<AutonomousSyncRule>> getSyncRules();
     boolean isShutdownRequired();
     void clearShutdownFlag();
 }
