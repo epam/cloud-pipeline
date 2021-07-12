@@ -55,8 +55,8 @@ public class CommonConfiguration {
     }
 
     @Bean
-    public CloudPipelineAPIClient apiClient(final @Value("${dts.local.api.url}") String apiUrl,
-                                            final @Value("${dts.local.api.token}") String apiToken) {
+    public CloudPipelineAPIClient apiClient(final @Value("${dts.api.url}") String apiUrl,
+                                            final @Value("${dts.api.token}") String apiToken) {
         return CloudPipelineAPIClient.from(apiUrl, apiToken);
     }
 

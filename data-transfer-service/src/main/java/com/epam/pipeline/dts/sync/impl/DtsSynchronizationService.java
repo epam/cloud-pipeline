@@ -42,7 +42,7 @@ public class DtsSynchronizationService implements ShutdownService {
     private final String dtsName;
 
     @Autowired
-    public DtsSynchronizationService(final @Value("${dts.local.preference.shutdown.key:dts.local.restart}")
+    public DtsSynchronizationService(final @Value("${dts.preference.shutdown.key:dts.restart.force}")
                                              String dtsLocalShutdownKey,
                                      final ConfigurableApplicationContext context,
                                      final CloudPipelineApiPreferenceService preferenceService,
@@ -54,7 +54,7 @@ public class DtsSynchronizationService implements ShutdownService {
         this.dtsLocalShutdownKey = dtsLocalShutdownKey;
     }
 
-    @Scheduled(fixedDelayString = "${dts.local.preferences.poll:60000}")
+    @Scheduled(fixedDelayString = "${dts.sync.poll:60000}")
     public void synchronizePreferences() {
         if (shutdownRequired(preferenceService.get(dtsLocalShutdownKey))) {
             shutdown();

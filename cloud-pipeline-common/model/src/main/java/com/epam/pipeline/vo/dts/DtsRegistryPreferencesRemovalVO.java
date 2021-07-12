@@ -16,15 +16,12 @@
 
 package com.epam.pipeline.vo.dts;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import lombok.Value;
 
 import java.util.List;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Value
 public class DtsRegistryPreferencesRemovalVO {
 
     private List<String> preferenceKeysToRemove;

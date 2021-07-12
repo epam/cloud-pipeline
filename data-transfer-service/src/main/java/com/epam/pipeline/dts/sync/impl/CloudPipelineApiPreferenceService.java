@@ -45,7 +45,7 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         this.dtsName = autonomousDtsDetails.getDtsName();
     }
 
-    @Scheduled(fixedDelayString = "${dts.local.preferences.poll:60000}")
+    @Scheduled(fixedDelayString = "${dts.sync.poll:60000}")
     public void synchronizePreferences() {
         final Map<String, String> updatedPreferences = apiClient.findDtsRegistryByNameOrId(dtsName)
             .map(DtsRegistry::getPreferences)

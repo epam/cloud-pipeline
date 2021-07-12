@@ -36,7 +36,7 @@ import java.util.Optional;
 public class SyncConfiguration {
 
     @Bean
-    public AutonomousDtsDetails autonomousDtsDetails(final @Value("${dts.local.name}") String dtsName,
+    public AutonomousDtsDetails autonomousDtsDetails(final @Value("${dts.name}") String dtsName,
                                                      final CloudPipelineAPIClient apiClient) {
         final String resolvedDtsName = tryBuildDtsName(dtsName);
         return new AutonomousDtsDetails(resolvedDtsName, apiClient);
