@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.vo.dts;
+package com.epam.pipeline.dts.sync;
 
+import com.epam.pipeline.dts.configuration.CommonConfiguration;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Import;
 
-import lombok.Value;
+@SpringBootConfiguration
+@ComponentScan(basePackages = "com.epam.pipeline.dts.sync")
+@Import({CommonConfiguration.class})
+public class SyncConfiguration {
 
-import java.util.List;
-
-@Value
-public class DtsRegistryPreferencesRemovalVO {
-
-    private List<String> preferenceKeysToRemove;
 }

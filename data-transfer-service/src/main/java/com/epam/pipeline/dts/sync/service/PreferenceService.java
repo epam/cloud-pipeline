@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.vo.dts;
+package com.epam.pipeline.dts.sync.service;
 
+public interface PreferenceService {
 
-import lombok.Value;
-
-import java.util.List;
-
-@Value
-public class DtsRegistryPreferencesRemovalVO {
-
-    private List<String> preferenceKeysToRemove;
+    boolean isShutdownRequired();
+    void clearShutdownFlag();
 }

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.service.impl;
+package com.epam.pipeline.dts.sync.service.impl;
 
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
+import com.epam.pipeline.dts.sync.service.PreferenceService;
 import com.epam.pipeline.dts.transfer.model.AutonomousSyncRule;
-import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
+import com.epam.pipeline.dts.transfer.service.impl.AutonomousSynchronizationService;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -42,53 +42,54 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Service
-@Slf4j
 @EnableScheduling
-public class DtsSynchronizationService {
+@Slf4j
+public class CloudPipelineApiPreferenceService implements PreferenceService {
 
     private final AutonomousSynchronizationService synchronizationService;
-    private final ConcurrentMap<String, String> preferences = new ConcurrentHashMap<>();
-    private final PipelineCredentials credentials;
-    private final ConfigurableApplicationContext context;
+    private final CloudPipelineAPIClient apiClient;
+    private final ConcurrentMap<String, String> preferences;
     private final String dtsName;
     private final String dtsLocalShutdownKey;
     private final String dtsLocalSyncRulesKey;
 
     @Autowired
-    public DtsSynchronizationService(final @Value("${dts.local.api.url}") String apiUrl,
-                                     final @Value("${dts.local.name}") String dtsName,
-                                     final @Value("${dts.local.api.token}") String apiToken,
-                                     final @Value("${dts.local.preference.sync.rules.key:dts.local.sync.rules}")
-                                             String dtsLocalSyncRulesKey,
-                                     final @Value("${dts.local.preference.shutdown.key:dts.local.restart}")
-                                             String dtsLocalShutdownKey,
-                                     final ConfigurableApplicationContext context,
-                                     final AutonomousSynchronizationService synchronizationService) {
-        this.credentials = new PipelineCredentials(apiUrl, apiToken);
+    public CloudPipelineApiPreferenceService(final @Value("${dts.name}") String dtsName,
+                                             final @Value("${dts.preference.shutdown.key:dts.restart.force}")
+                                                 String dtsLocalShutdownKey,
+                                             final @Value("${dts.local.preference.sync.rules.key:dts.local.sync.rules}")
+                                                     String dtsLocalSyncRulesKey,
+                                             final CloudPipelineAPIClient apiClient,
+                                             final AutonomousSynchronizationService synchronizationService) {
+        this.apiClient = apiClient;
+        this.synchronizationService = synchronizationService;
+        this.preferences = new ConcurrentHashMap<>();
+        this.dtsName = tryBuildDtsName(dtsName);
         this.dtsLocalShutdownKey = dtsLocalShutdownKey;
         this.dtsLocalSyncRulesKey = dtsLocalSyncRulesKey;
-        this.context = context;
-        this.dtsName = tryBuildDtsName(dtsName);
-        this.synchronizationService = synchronizationService;
-        log.info("DTS sync is enabled for current host: `{}`.", this.dtsName);
+        log.info("Synchronizing preferences for current host: `{}`", this.dtsName);
     }
 
-    @Scheduled(fixedDelayString = "${dts.local.preferences.poll:60000}")
+    @Scheduled(fixedDelayString = "${dts.sync.poll:60000}")
     public void synchronizePreferences() {
-        final Map<String, String> updatedPreferences = getApiClient().tryLoadDtsRegistryByNameOrId(dtsName)
+        final Map<String, String> updatedPreferences = apiClient.findDtsRegistryByNameOrId(dtsName)
             .map(DtsRegistry::getPreferences)
             .orElse(Collections.emptyMap());
-        if (shutdownRequired(updatedPreferences)) {
-            performShutdown();
-        }
-        updatePreferences(updatedPreferences);
+        log.warn("Following preferences received during sync iteration: {}", updatedPreferences.toString());
+        preferences.clear();
+        preferences.putAll(updatedPreferences);
         sendSyncRules();
     }
 
+    @Override
+    public boolean isShutdownRequired() {
+        return Boolean.TRUE.toString().equalsIgnoreCase(preferences.get(dtsLocalShutdownKey));
+    }
 
-    private void updatePreferences(final Map<String, String> updatedPreferences) {
-        preferences.clear();
-        preferences.putAll(updatedPreferences);
+    @Override
+    public void clearShutdownFlag() {
+        log.info("Clear flag of remote shutdown `{}` for DTS registry `{}`", dtsLocalShutdownKey, dtsName);
+        apiClient.deleteDtsRegistryPreferences(dtsName, Collections.singletonList(dtsLocalShutdownKey));
     }
 
     private void sendSyncRules() {
@@ -102,12 +103,8 @@ public class DtsSynchronizationService {
         }
     }
 
-    private CloudPipelineAPIClient getApiClient() {
-        return CloudPipelineAPIClient.from(credentials);
-    }
-
-    private String tryBuildDtsName(final String dtsNameFromProperties) {
-        final String dtsName = Optional.ofNullable(dtsNameFromProperties)
+    private String tryBuildDtsName(final String preconfiguredDtsName) {
+        final String dtsName = Optional.ofNullable(preconfiguredDtsName)
             .filter(StringUtils::isNotBlank)
             .orElseGet(this::tryExtractHostnameFromEnvironment);
         if (StringUtils.isBlank(dtsName)) {
@@ -127,16 +124,5 @@ public class DtsSynchronizationService {
         } catch (UnknownHostException e) {
             return StringUtils.EMPTY;
         }
-    }
-
-    private boolean shutdownRequired(final Map<String, String> newPreferences) {
-        return Boolean.TRUE.toString()
-            .equalsIgnoreCase(newPreferences.getOrDefault(dtsLocalShutdownKey, Boolean.FALSE.toString()));
-    }
-
-    private void performShutdown() {
-        log.info("Shutdown will be preformed as preference flag `{}` is `true`.", dtsLocalShutdownKey);
-        getApiClient().deleteDtsRegistryPreferences(dtsName, Collections.singletonList(dtsLocalShutdownKey));
-        context.close();
     }
 }

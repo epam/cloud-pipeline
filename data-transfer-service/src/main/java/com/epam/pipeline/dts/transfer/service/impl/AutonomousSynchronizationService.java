@@ -61,8 +61,8 @@ public class AutonomousSynchronizationService {
     private final Map<AutonomousSyncRule, TransferTask> activeTransferTasks;
 
     @Autowired
-    public AutonomousSynchronizationService(final @Value("${dts.local.pipe.api.url}") String pipeApiUrl,
-                                            final @Value("${dts.local.pipe.api.token}") String pipeApiToken,
+    public AutonomousSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
+                                            final @Value("${dts.api.token}") String pipeApiToken,
                                             final TransferService transferService,
                                             final TaskRepository taskRepository) {
         this.pipeCredentials = new PipelineCredentials(pipeApiUrl, pipeApiToken);
