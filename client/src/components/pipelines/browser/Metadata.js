@@ -873,7 +873,7 @@ export default class Metadata extends React.Component {
     const currentColumns = [...this.state.columns];
     const filterModel = {...this.state.filterModel};
     filterModel.orderBy = this.state.filterModel.orderBy.filter(col => col.field !== item);
-
+    filterModel.filters = this.state.filterModel.filters.filter(filter => filter.key !== item);
     const index = currentColumns.findIndex(obj => obj.key === item);
     const isSelected = currentColumns.findIndex(obj => obj.key === item && obj.selected) > -1;
 
@@ -881,7 +881,10 @@ export default class Metadata extends React.Component {
     this.setState({
       columns: currentColumns,
       filterModel
-    }, this.clearSelection);
+    }, () => {
+      this.clearSelection();
+      this.loadData();
+    });
   };
 
   onResetColumns = () => {
