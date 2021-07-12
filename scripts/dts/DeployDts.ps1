@@ -118,6 +118,7 @@ if ($Install) {
 
 CreateDirIfRequired -Path .\logs
 Start-Transcript -Path .\logs\launcher.log -Append
+Log "Starting startup logs capturing..."
 
 Log "Checking if environment script exists..."
 if (-not(Test-Path .\Environment.ps1)) {
@@ -129,14 +130,17 @@ if (-not(Test-Path .\Environment.ps1)) {
 Log "Loading environment..."
 . .\Environment.ps1
 
+Write-Host "Changing working directory..."
+Set-Location -Path "$env:DTS_DIR"
+
 Log "Creating system directories..."
 CreateDirIfRequired -Path "$env:DTS_LOGS_DIR"
 
 Log "Stopping startup logs capturing..."
 Stop-Transcript
 
-Log "Starting logs capturing..."
 Start-Transcript -Path "$env:DTS_LAUNCHER_LOG_PATH" -Append
+Log "Starting logs capturing..."
 
 Log "Importing libraries..."
 Add-Type -AssemblyName System.IO.Compression.FileSystem
