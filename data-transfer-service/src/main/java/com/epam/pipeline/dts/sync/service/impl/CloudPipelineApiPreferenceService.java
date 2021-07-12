@@ -19,6 +19,7 @@ package com.epam.pipeline.dts.sync.service.impl;
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.sync.service.PreferenceService;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 
 @Service
 @EnableScheduling
+@Slf4j
 public class CloudPipelineApiPreferenceService implements PreferenceService {
 
     private final CloudPipelineAPIClient apiClient;
@@ -52,6 +54,7 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         this.preferences = new ConcurrentHashMap<>();
         this.dtsName = tryBuildDtsName(dtsName);
         this.dtsLocalShutdownKey = dtsLocalShutdownKey;
+        log.info("Synchronizing preferences for current host: `{}`", this.dtsName);
     }
 
     @Scheduled(fixedDelayString = "${dts.sync.poll:60000}")
@@ -59,6 +62,7 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         final Map<String, String> updatedPreferences = apiClient.findDtsRegistryByNameOrId(dtsName)
             .map(DtsRegistry::getPreferences)
             .orElse(Collections.emptyMap());
+        log.warn("Following preferences received during sync iteration: {}", updatedPreferences.toString());
         preferences.clear();
         preferences.putAll(updatedPreferences);
     }
@@ -70,6 +74,7 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
 
     @Override
     public void clearShutdownFlag() {
+        log.info("Clear flag of remote shutdown `{}` for DTS registry `{}`", dtsLocalShutdownKey, dtsName);
         apiClient.deleteDtsRegistryPreferences(dtsName, Collections.singletonList(dtsLocalShutdownKey));
     }
 

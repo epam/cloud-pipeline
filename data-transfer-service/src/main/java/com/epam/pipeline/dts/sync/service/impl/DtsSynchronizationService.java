@@ -19,7 +19,6 @@ package com.epam.pipeline.dts.sync.service.impl;
 import com.epam.pipeline.dts.sync.service.PreferenceService;
 import com.epam.pipeline.dts.sync.service.ShutdownService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @EnableScheduling
 public class DtsSynchronizationService {
 
@@ -35,7 +33,7 @@ public class DtsSynchronizationService {
     private final ShutdownService shutdownService;
 
     @Scheduled(fixedDelayString = "${dts.sync.poll:60000}")
-    public void synchronizePreferences() {
+    public void synchronizeRestart() {
         if (preferenceService.isShutdownRequired()) {
             shutdownService.shutdown();
         }

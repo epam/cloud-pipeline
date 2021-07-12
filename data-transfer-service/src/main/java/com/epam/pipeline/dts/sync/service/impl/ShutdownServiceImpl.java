@@ -35,6 +35,7 @@ public class ShutdownServiceImpl implements ShutdownService {
     public void shutdown() {
         log.info("Shutdown will be preformed.");
         preferenceService.clearShutdownFlag();
+        log.info("Closing context...");
         context.close();
     }
 }
