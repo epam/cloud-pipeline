@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.sync.service;
+package com.epam.pipeline.dts.sync.model;
 
-import com.epam.pipeline.dts.sync.model.AutonomousSyncRule;
+import lombok.Value;
+import org.thymeleaf.util.StringUtils;
 
-import java.util.List;
-import java.util.Optional;
 
-public interface PreferenceService {
+@Value
+public class AutonomousSyncRule {
 
-    Optional<List<AutonomousSyncRule>> getSyncRules();
-    boolean isShutdownRequired();
-    void clearShutdownFlag();
+    private String source;
+    private String destination;
+    private String cron;
+
+    public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {
+        return StringUtils.equals(source, anotherRule.getSource())
+               && StringUtils.equals(destination, anotherRule.getDestination());
+    }
 }

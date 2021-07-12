@@ -18,7 +18,7 @@ package com.epam.pipeline.dts.sync.service.impl;
 
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.sync.service.PreferenceService;
-import com.epam.pipeline.dts.transfer.model.AutonomousSyncRule;
+import com.epam.pipeline.dts.sync.model.AutonomousSyncRule;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -83,7 +83,6 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
             return Optional.of(new ObjectMapper()
                                    .readValue(rulesAsString, new TypeReference<List<AutonomousSyncRule>>() {}));
         } catch (IOException e) {
-            log.warn("Error occurred during sync rules parsing: {}. Skipping sync config update...", e.getMessage());
             return Optional.empty();
         }
     }

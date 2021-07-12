@@ -14,13 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.model;
+package com.epam.pipeline.dts.sync.model;
 
-import lombok.Value;
+import lombok.Getter;
+import org.springframework.scheduling.support.CronSequenceGenerator;
 
-@Value
-public class AutonomousSyncRule {
+import java.util.Date;
 
-    private String source;
-    private String destination;
+@Getter
+public class AutonomousSyncCronDetails {
+
+    private String expression;
+    private CronSequenceGenerator generator;
+    private Date lastExecution;
+
+    public AutonomousSyncCronDetails(final String expression, final Date lastExecution) {
+        this.expression = expression;
+        this.generator = new CronSequenceGenerator(expression);
+        this.lastExecution = lastExecution;
+    }
 }
