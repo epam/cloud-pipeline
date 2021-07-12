@@ -300,6 +300,22 @@
   justify-content: center;
 }
 
+.vsi-content-preview.tiles {
+  height: 50vh;
+  position: relative;
+}
+
+.vsi-content-preview.fullscreen {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  z-index: 1001;
+}
+
 .vsi-content-preview img {
   max-width: 100%;
   max-height: 100%;
@@ -308,4 +324,26 @@
 .container:not(.light) .tabs {
   color: #aaa;
   font-weight: normal;
+}
+
+.leaflet-fullscreen-button {
+  position: absolute;
+  right: 19px;
+  top: 9px;
+  z-index: 1002;
+  padding: 2px 8px;
+  transition: none;
+}
+
+.leaflet-fullscreen-button,
+.leaflet-fullscreen-button:hover,
+.leaflet-fullscreen-button:focus {
+  outline: none;
+  border-color: rgba(0, 0, 0, 0.3);
+  border-width: 2px;
+  color: #333;
+}
+
+.leaflet-fullscreen-button:hover {
+  background-color: #f4f4f4;
 }
