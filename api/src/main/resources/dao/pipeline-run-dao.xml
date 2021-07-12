@@ -46,7 +46,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         ssh_password,
                         commit_status,
@@ -96,7 +95,6 @@
                         :ACTUAL_CMD,
                         :TIMEOUT,
                         :OWNER,
-                        :SERVICE_URL,
                         :POD_IP,
                         :SSH_PASSWORD,
                         :COMMIT_STATUS,
@@ -152,7 +150,6 @@
                         r.actual_cmd,
                         r.timeout,
                         r.owner,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.last_change_commit_time,
@@ -245,7 +242,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -309,7 +305,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -373,7 +368,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -477,7 +471,6 @@
                         actual_cmd = :ACTUAL_CMD,
                         timeout = :TIMEOUT,
                         owner = :OWNER,
-                        service_url = :SERVICE_URL,
                         pod_ip = :POD_IP,
                         commit_status = :COMMIT_STATUS,
                         last_change_commit_time = :LAST_CHANGE_COMMIT_TIME,
@@ -503,16 +496,6 @@
                         sensitive = :SENSITIVE,
                         kube_service_enabled = :KUBE_SERVICE_ENABLED,
                         pipeline_name = :PIPELINE_NAME
-                    WHERE
-                        run_id = :RUN_ID
-                ]]>
-            </value>
-        </property>
-        <property name="updateServiceUrlQuery">
-            <value>
-                <![CDATA[
-                    UPDATE pipeline.pipeline_run SET
-                        service_url = :SERVICE_URL
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -586,7 +569,6 @@
                       r.actual_cmd,
                       r.timeout,
                       r.owner,
-                      r.service_url,
                       r.pod_ip,
                       r.commit_status,
                       r.last_change_commit_time,
@@ -652,7 +634,6 @@
                       r.actual_cmd,
                       r.timeout,
                       r.owner,
-                      r.service_url,
                       r.pod_ip,
                       r.commit_status,
                       r.last_change_commit_time,
@@ -717,7 +698,6 @@
                       r.actual_cmd,
                       r.timeout,
                       r.owner,
-                      r.service_url,
                       r.pod_ip,
                       r.commit_status,
                       r.last_change_commit_time,
@@ -743,9 +723,16 @@
                       r.tags,
                       r.sensitive,
                       r.kube_service_enabled,
-                      r.pipeline_name,
                       r.cluster_price,
-                      r.node_pool_id
+                      r.pipeline_name,
+                      r.node_pool_id,
+                      CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM pipeline.pipeline_run_service_url su
+                            WHERE su.pipeline_run_id = r.run_id)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS service_urls_enabled
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -774,7 +761,6 @@
                       active_run.actual_cmd,
                       active_run.timeout,
                       active_run.owner,
-                      active_run.service_url,
                       active_run.pod_ip,
                       active_run.commit_status,
                       active_run.last_change_commit_time,
@@ -802,7 +788,14 @@
                       active_run.kube_service_enabled,
                       active_run.pipeline_name,
                       active_run.cluster_price,
-                      active_run.node_pool_id
+                      active_run.node_pool_id,
+                      CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM pipeline.pipeline_run_service_url su
+                            WHERE su.pipeline_run_id = active_run.run_id)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS service_urls_enabled
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -811,7 +804,7 @@
                     ) AS u ON (active_run.run_id = u.run_id)
                     UNION
                         SELECT * FROM active_run
-                        WHERE active_run.owner = :NAME AND active_run.service_url IS NOT NULL
+                        WHERE active_run.owner = :NAME AND service_urls_enabled
                     ORDER BY run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
                 ]]>
@@ -844,7 +837,6 @@
                       r.actual_cmd,
                       r.timeout,
                       r.owner,
-                      r.service_url,
                       r.pod_ip,
                       r.commit_status,
                       r.last_change_commit_time,
@@ -870,7 +862,14 @@
                       r.tags,
                       r.sensitive,
                       r.pipeline_name,
-                      r.node_pool_id
+                      r.node_pool_id,
+                      CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM pipeline.pipeline_run_service_url su
+                            WHERE su.pipeline_run_id = r.run_id)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS service_urls_enabled
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -898,7 +897,6 @@
                       active_run.actual_cmd,
                       active_run.timeout,
                       active_run.owner,
-                      active_run.service_url,
                       active_run.pod_ip,
                       active_run.commit_status,
                       active_run.last_change_commit_time,
@@ -924,7 +922,14 @@
                       active_run.tags,
                       active_run.sensitive,
                       active_run.pipeline_name,
-                      active_run.node_pool_id
+                      active_run.node_pool_id,
+                      CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM pipeline.pipeline_run_service_url su
+                            WHERE su.pipeline_run_id = active_run.run_id)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS service_urls_enabled
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -933,7 +938,8 @@
                         ) AS u ON (active_run.run_id = u.run_id)
                     UNION
                         SELECT * FROM active_run
-                        WHERE active_run.owner = :NAME AND active_run.service_url IS NOT NULL) AS run_count
+                        WHERE active_run.owner = :NAME AND service_urls_enabled)
+                    AS run_count
                 ]]>
             </value>
         </property>
@@ -963,7 +969,6 @@
                         r.actual_cmd,
                         r.owner,
                         r.timeout,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.config_name,
@@ -1025,7 +1030,6 @@
                         r.actual_cmd,
                         r.owner,
                         r.timeout,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.config_name,
@@ -1087,7 +1091,6 @@
                         r.cmd_template,
                         r.actual_cmd,
                         r.owner,
-                        r.service_url,
                         r.pod_ip,
                         r.commit_status,
                         r.last_change_commit_time,
@@ -1176,7 +1179,6 @@
                         runs.actual_cmd,
                         runs.timeout,
                         runs.owner,
-                        runs.service_url,
                         runs.pod_ip,
                         runs.commit_status,
                         runs.last_change_commit_time,
@@ -1253,7 +1255,6 @@
                             p.actual_cmd,
                             p.timeout,
                             p.owner,
-                            p.service_url,
                             p.pod_ip,
                             p.commit_status,
                             p.last_change_commit_time,
@@ -1311,7 +1312,6 @@
                             c.actual_cmd,
                             c.timeout,
                             c.owner,
-                            c.service_url,
                             c.pod_ip,
                             c.commit_status,
                             c.last_change_commit_time,
@@ -1367,7 +1367,6 @@
                         runs.actual_cmd,
                         runs.timeout,
                         runs.owner,
-                        runs.service_url,
                         runs.pod_ip,
                         runs.commit_status,
                         runs.last_change_commit_time,
@@ -1491,66 +1490,6 @@
                 ]]>
             </value>
         </property>
-        <property name="loadAllRunsByServiceURL">
-            <value>
-                <![CDATA[
-                    SELECT
-                        run_id,
-                        pipeline_id,
-                        version,
-                        start_date,
-                        end_date,
-                        parameters,
-                        status,
-                        terminating,
-                        pod_id,
-                        node_type,
-                        node_disk,
-                        node_ip,
-                        node_id,
-                        node_name,
-                        node_image,
-                        node_cloud_region,
-                        docker_image,
-                        actual_docker_image,
-                        cmd_template,
-                        actual_cmd,
-                        timeout,
-                        owner,
-                        service_url,
-                        pod_ip,
-                        commit_status,
-                        last_change_commit_time,
-                        config_name,
-                        node_count,
-                        parent_id,
-                        entities_ids,
-                        is_spot,
-                        configuration_id,
-                        pod_status,
-                        prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        exec_preferences,
-                        pretty_url,
-                        price_per_hour,
-                        compute_price_per_hour,
-                        disk_price_per_hour,
-                        state_reason,
-                        non_pause,
-                        node_real_disk,
-                        node_cloud_provider,
-                        tags,
-                        sensitive
-                    FROM
-                        pipeline.pipeline_run
-                    WHERE
-                        service_url LIKE :SERVICE_URL
-                    ORDER BY
-                        start_date DESC
-                ]]>
-            </value>
-        </property>
         <property name="loadAllRunsPossiblyActiveInPeriodQuery">
             <value>
                 <![CDATA[
@@ -1577,7 +1516,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1655,7 +1593,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1719,7 +1656,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1783,7 +1719,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1847,7 +1782,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,

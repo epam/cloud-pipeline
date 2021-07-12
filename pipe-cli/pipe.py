@@ -1677,6 +1677,7 @@ def start_tunnel_arguments(start_tunnel_command):
     @click.option('--ignore-owner', required=False, is_flag=True, default=False,
                   help='Replaces existing tunnel processes owned by other users.')
     @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+    @click.option('-rg', '--region', required=False, help=EDGE_REGION_OPTION_DESCRIPTION)
     @functools.wraps(start_tunnel_command)
     def _start_tunnel_command_decorator(*args, **kwargs):
         return start_tunnel_command(*args, **kwargs)
@@ -1708,7 +1709,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                  timeout, timeout_stop, foreground,
                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
-                 retries):
+                 retries, region):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1791,7 +1792,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
-                  retries, parse_tunnel_args)
+                  retries, region, parse_tunnel_args)
 
 
 @tunnel.command(name='list')
