@@ -34,7 +34,10 @@ class HaloJobLink extends React.Component {
       const {serviceUrl} = jobInfo;
       if (serviceUrl) {
         const urls = parseRunServiceUrl(serviceUrl);
-        return urls.find(url => Boolean(url.isDefault)) || urls[0];
+        const defaultUrl = urls.find(url => Boolean(url.isDefault)) || urls[0];
+        if (defaultUrl) {
+          return defaultUrl.url;
+        }
       }
     }
     return undefined;
