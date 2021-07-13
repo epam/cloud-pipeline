@@ -17,24 +17,20 @@
 package com.epam.pipeline.dts.transfer.service.impl;
 
 import com.epam.pipeline.dts.transfer.model.TransferTask;
-import com.epam.pipeline.dts.transfer.service.DataUploaderProvider;
-import com.epam.pipeline.dts.transfer.service.TaskService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.epam.pipeline.dts.transfer.service.DataUploaderProviderManager;
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service("autonomousDataUploaderProviderManager")
-public class AutonomousAsyncDataUploaderProviderManager extends SyncDataUploaderProviderManager{
+@RequiredArgsConstructor
+public class AutonomousAsyncDataUploaderProviderManager implements DataUploaderProviderManager {
 
-    @Autowired
-    public AutonomousAsyncDataUploaderProviderManager(final DataUploaderProvider dataUploaderProvider,
-                                                      final TaskService taskService) {
-        super(dataUploaderProvider, taskService);
-    }
+    private final DataUploaderProviderManager syncDataUploaderProviderManager;
 
     @Async("autonomousTransferExecutor")
     @Override
     public void transferData(final TransferTask transferTask) {
-        super.transferData(transferTask);
+        syncDataUploaderProviderManager.transferData(transferTask);
     }
 }
