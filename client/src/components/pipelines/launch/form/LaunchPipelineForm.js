@@ -726,7 +726,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           payload = this.generateLaunchPayload(values);
         }
         if (this.props.onLaunch) {
-          const result = await this.props.onLaunch(payload, values[ADVANCED].hostedApplication);
+          const result = await this.props.onLaunch(
+            payload,
+            values[ADVANCED].hostedApplication,
+            this.toolPlatform
+          );
           if (result) {
             this.reset();
             this.prepare();
@@ -3350,19 +3354,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             .filter(i => i.image.toLowerCase() === `${group}/${image}`);
           if (im && im.id) {
             this.toolAllowSensitive = im.allowSensitive;
+            this.toolPlatform = im.platform;
             this._toolSettings = new LoadToolVersionSettings(im.id, version);
             await this._toolSettings.fetchIfNeededOrWait();
-
-            if (
-              this._toolSettings &&
-              this._toolSettings.loaded &&
-              this._toolSettings.value &&
-              this._toolSettings.value[0]
-            ) {
-              this.toolPlatform = this._toolSettings.value[0].platform;
-            } else {
-              this.toolPlatform = undefined;
-            }
 
             if (this._toolSettings && this._toolSettings.loaded && this._toolSettings.value &&
               this._toolSettings.value[0] && this._toolSettings.value[0].settings &&
@@ -4058,6 +4052,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   limitMounts={currentValue}
                   preferences={this.props.preferences}
                   instance={instance}
+                  platform={this.toolPlatform}
                 />
               )
             }

@@ -343,7 +343,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return metadataEntityFieldsRequest.value;
   };
 
-  launch = async (payload, hostedApplicationConfiguration) => {
+  launch = async (payload, hostedApplicationConfiguration, platform) => {
     payload.configurationName = this.currentConfiguration
       ? this.currentConfiguration.name
       : this.configurationName;
@@ -353,7 +353,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       undefined,
       undefined,
       undefined,
-      hostedApplicationConfiguration
+      hostedApplicationConfiguration,
+      platform
     )) {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     }
