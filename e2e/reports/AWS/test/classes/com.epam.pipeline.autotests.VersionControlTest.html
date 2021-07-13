@@ -23,7 +23,7 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">13</div>
+<div class="counter">14</div>
 <p>tests</p>
 </div>
 </td>
@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">8</div>
+<div class="counter">13</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3m27.42s</div>
+<div class="counter">1m25.22s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">80%</div>
+<div class="percent">0%</div>
 <p>successful</p>
 </div>
 </td>
@@ -70,31 +70,52 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="validateRestoreFile - EPMCMBIBPC-816"></a>
-<h3 class="failures">validateRestoreFile - EPMCMBIBPC-816</h3>
+<a name="createStorageAndUser"></a>
+<h3 class="failures">createStorageAndUser</h3>
 <span class="code">
-<pre>java.lang.AssertionError: expected [#000000] but found [#fff2ef]
-	at org.testng.Assert.fail(Assert.java:93)
-	at org.testng.Assert.failNotEquals(Assert.java:512)
-	at org.testng.Assert.assertEqualsImpl(Assert.java:134)
-	at org.testng.Assert.assertEquals(Assert.java:115)
-	at org.testng.Assert.assertEquals(Assert.java:189)
-	at org.testng.Assert.assertEquals(Assert.java:199)
-	at com.epam.pipeline.autotests.ao.StorageContentAO$FileAO.validateFileHasBackgroundColor(StorageContentAO.java:529)
-	at com.epam.pipeline.autotests.VersionControlTest.validateRestoreFile(VersionControlTest.java:157)
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'bucket-as-svn4606862185473565023')]]}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1626159591082.138.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1626159591082.138.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'bucket-as-svn4606862185473565023')]]
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:238)
+	at com.epam.pipeline.autotests.VersionControlTest.createStorageAndUser(VersionControlTest.java:85)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'bucket-as-svn4606862185473565023')]]
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '201d33d0f56c', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: driver.version: unknown
+	at org.openqa.selenium.By.findElement(By.java:162)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 23 more
 </pre>
 </span>
 </div>
@@ -115,9 +136,14 @@
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">deleteFileByNonAdminUser - EPMCMBIBPC-815</td>
-<td>1m16.15s</td>
-<td class="success">passed</td>
+<td class="failures">createStorageAndUser</td>
+<td>1m25.22s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="skipped">deleteFileByNonAdminUser</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="skipped">deleteFileThatHasDeleteMarker</td>
@@ -125,14 +151,14 @@
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">deleteOneOfSiblingsFiles - EPMCMBIBPC-1540</td>
-<td>50.889s</td>
-<td class="success">passed</td>
+<td class="skipped">deleteOneOfSiblingsFiles - EPMCMBIBPC-1540</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">deletingBucketAfterDisablingOfVersioning - EPMCMBIBPC-1502</td>
-<td>43.455s</td>
-<td class="success">passed</td>
+<td class="skipped">deletingBucketAfterDisablingOfVersioning - EPMCMBIBPC-1502</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="skipped">editPermissionTestForBucketWithVersions</td>
@@ -160,9 +186,9 @@
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="failures">validateRestoreFile - EPMCMBIBPC-816</td>
-<td>3.923s</td>
-<td class="failures">failed</td>
+<td class="skipped">validateRestoreFile</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="skipped">validateRestoreSpecifiedFileVersion</td>
@@ -170,9 +196,9 @@
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateShowFilesVersions - EPMCMBIBPC-813</td>
-<td>32.997s</td>
-<td class="success">passed</td>
+<td class="skipped">validateShowFilesVersions - EPMCMBIBPC-813</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
@@ -184,7 +210,7 @@
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 12, 2021 2:26:48 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 13, 2021 12:29:23 PM</p>
 </div>
 </div>
 </body>
