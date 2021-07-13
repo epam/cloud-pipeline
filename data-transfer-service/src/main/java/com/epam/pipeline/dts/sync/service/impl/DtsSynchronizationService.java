@@ -45,7 +45,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -83,8 +82,8 @@ public class DtsSynchronizationService {
         this.transferService = autonomousTransferService;
         this.shutdownService = shutdownService;
         this.preferenceService = preferenceService;
-        this.activeSyncRules = new ConcurrentHashMap();
-        this.activeTransferTasks = new HashMap<>();
+        this.activeSyncRules = new ConcurrentHashMap<>();
+        this.activeTransferTasks = new ConcurrentHashMap<>();
         this.defaultCronExpression = Optional.of(defaultCronExpression)
             .filter(CronSequenceGenerator::isValidExpression)
             .orElseThrow(() -> new IllegalStateException("Default FS sync cron is invalid!"));
