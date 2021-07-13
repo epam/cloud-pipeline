@@ -63,6 +63,7 @@ if ($Install) {
 `$env:DTS_LAUNCHER_LOG_PATH = "$env:DTS_DIR\logs\launcher.log"
 `$env:DTS_RESTART_DELAY_SECONDS = "10"
 `$env:DTS_FINISH_DELAY_SECONDS = "10"
+`$env:DTS_RESTART_INTERVAL = "PT1M"
 `$env:DTS_LAUNCHER_PATH = "$env:DTS_DIR\DeployDts.ps1"
 `$env:DTS_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/data-transfer-service-windows.zip"
 `$env:DTS_DISTRIBUTION_PATH = "$env:DTS_DIR\data-transfer-service-windows.zip"
@@ -87,7 +88,10 @@ if ($Install) {
             $action = New-ScheduledTaskAction -Execute "powershell.exe" `
                                               -Argument "-file `"$env:DTS_LAUNCHER_PATH`"" `
                                               -WorkingDirectory "$env:DTS_DIR"
-            $trigger = New-ScheduledTaskTrigger -AtStartup
+            $trigger = @(
+                (New-ScheduledTaskTrigger -AtStartup),
+                (New-ScheduledTaskTrigger -Once -At (Get-Date).Date)
+            )
             $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM"
             $settings = New-ScheduledTaskSettingsSet -Compatibility Win8
             $settings.ExecutionTimeLimit = "PT0S"
@@ -96,11 +100,14 @@ if ($Install) {
                                       -Trigger $trigger `
                                       -Settings $settings
             Register-ScheduledTask -TaskName "CloudPipelineDTS" -InputObject $task -Force -ErrorAction Stop
+            $task = Get-ScheduledTask "CloudPipelineDTS"
+            $task.Triggers[0].Repetition.Interval = "$env:DTS_RESTART_INTERVAL"
+            $task.Triggers[1].Repetition.Interval = "$env:DTS_RESTART_INTERVAL"
+            $task | Set-ScheduledTask -ErrorAction Stop
             Log "Scheduled task was created successfully."
         } catch {
             Log "Scheduled task creation has failed: $_"
             Log "Please send all the logs above to Cloud Pipeline Support Team."
-            Exit
         }
     }
 
