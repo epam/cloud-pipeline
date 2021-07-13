@@ -68,7 +68,8 @@ export function run (parent, callback) {
     title,
     warning,
     allowedInstanceTypesRequest,
-    hostedApplicationConfiguration
+    hostedApplicationConfiguration,
+    platform
   ) {
     return runFn(
       payload,
@@ -78,7 +79,8 @@ export function run (parent, callback) {
       parent.props,
       callback,
       allowedInstanceTypesRequest,
-      hostedApplicationConfiguration
+      hostedApplicationConfiguration,
+      platform
     );
   };
 }
@@ -227,7 +229,8 @@ function runFn (
   stores,
   callbackFn,
   allowedInstanceTypesRequest,
-  hostedApplicationConfiguration
+  hostedApplicationConfiguration,
+  platform
 ) {
   return new Promise(async (resolve) => {
     let launchName;
@@ -364,6 +367,7 @@ function runFn (
         content: (
           <RunSpotConfirmationWithPrice
             ref={ref}
+            platform={platform}
             warning={warning}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
@@ -462,6 +466,7 @@ export class RunConfirmation extends React.Component {
 
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     cloudRegions: PropTypes.array,
@@ -905,6 +910,7 @@ export class RunConfirmation extends React.Component {
           dataStorages={this.props.dataStorages}
           preferences={this.props.preferences}
           instance={this.currentInstanceType}
+          platform={this.props.platform}
         />
         {
           this.props.permissionErrors && this.props.permissionErrors.length > 0
@@ -967,6 +973,7 @@ export class RunConfirmation extends React.Component {
 export class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
     warning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,
     onDemandSelectionAvailable: PropTypes.bool,
@@ -1055,6 +1062,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
+            platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
             isCluster={this.props.isCluster}
