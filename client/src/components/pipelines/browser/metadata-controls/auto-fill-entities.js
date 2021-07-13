@@ -245,6 +245,25 @@ function buildAutoFillAction (options) {
   if (removedItems.length > 0 || removedColumns.length > 0) {
     return undefined;
   }
+  const getNumberShift = value => {
+    if (!value) {
+      return 0;
+    }
+    const exec = /^[\\-]?(0+[\d]+)$/.exec(`${value}`);
+    if (exec && exec.length === 2) {
+      return exec[1].length;
+    }
+    return 0;
+  };
+  const getShiftedNumber = (number, shift = 0) => {
+    const string = `${Math.abs(number)}`;
+    const sign = number < 0 ? '-' : '';
+    const appendZeroCount = Math.max(0, shift - string.length);
+    if (appendZeroCount > 0) {
+      return `${sign}${(new Array(appendZeroCount)).fill('0').join('')}${string}`;
+    }
+    return `${sign}${string}`;
+  };
   const splitValue = value => {
     if (!value) {
       return {
@@ -255,7 +274,8 @@ function buildAutoFillAction (options) {
       return {
         value,
         number: +value,
-        string: ''
+        string: '',
+        shift: getNumberShift(value)
       };
     }
     const exec = /^([^\d]*)([\d]+)$/.exec(`${value}`);
@@ -263,7 +283,8 @@ function buildAutoFillAction (options) {
       return {
         value: exec[0],
         string: exec[1],
-        number: +exec[2]
+        number: +exec[2],
+        shift: getNumberShift(exec[2])
       };
     }
     return {
@@ -290,6 +311,18 @@ function buildAutoFillAction (options) {
       }
     }
     return diff;
+  };
+  const getValuesShift = values => {
+    if (values.length === 0) {
+      return 0;
+    }
+    if (values.some(value => value.number === undefined)) {
+      return 0;
+    }
+    if ((new Set(values.map(value => value.string))).size > 1) {
+      return 0;
+    }
+    return Math.max(...values.map(value => value.shift || 0));
   };
   const valuesAreAutoIncrementable = values => !!getValuesDiff(values);
   const values = [];
@@ -320,6 +353,7 @@ function buildAutoFillAction (options) {
   }
   const getIncrementedValue = table => {
     const diffs = table.map(getValuesDiff);
+    const shifts = table.map(getValuesShift);
     return (source, incrementRatio) => {
       if (source < 0 || source >= table.length) {
         return undefined;
@@ -330,11 +364,18 @@ function buildAutoFillAction (options) {
       }
       const last = row[row.length - 1];
       const diff = diffs[source];
+      const shift = shifts[source] || 0;
       if (diff === undefined || last.number === undefined) {
         return undefined;
       }
       const number = last.number + incrementRatio * diff;
-      return `${last.string || ''}${!last.string ? number : Math.abs(number)}`;
+      const shiftedNumber = getShiftedNumber(
+        !last.string
+          ? number
+          : Math.abs(number),
+        shift
+      );
+      return `${last.string || ''}${shiftedNumber}`;
     };
   };
   if (insertedItems.length > 0 && rotatedValues.some(valuesAreAutoIncrementable)) {
@@ -415,6 +456,9 @@ function buildAutoFillActions (elements, columns, source, target, backup, option
     .filter(item => item.row >= target.start.row && item.row <= target.end.row);
   const insertedItems = targetItems
     .filter(item => sourceItems.indexOf(item) === -1);
+  if (target.start.row < source.start.row) {
+    insertedItems.reverse();
+  }
   const removedItems = sourceItems
     .filter(item => targetItems.indexOf(item) === -1);
   const sourceColumns = columns
@@ -425,6 +469,9 @@ function buildAutoFillActions (elements, columns, source, target, backup, option
     .filter(item => !/^(ID|createdDate)$/i.test(item.key));
   const insertedColumns = targetColumns
     .filter(item => sourceColumns.indexOf(item) === -1);
+  if (target.start.column < source.start.column) {
+    insertedColumns.reverse();
+  }
   const removedColumns = sourceColumns
     .filter(item => targetColumns.indexOf(item) === -1);
   if (sourceColumns.length === 0 || targetColumns.length === 0) {
