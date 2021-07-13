@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.service;
+package com.epam.pipeline.dts.sync.model;
 
-import com.epam.pipeline.dts.transfer.model.TransferTask;
+import lombok.Getter;
+import org.springframework.scheduling.support.CronSequenceGenerator;
 
-public interface DataUploaderProviderManager {
+import java.util.Date;
 
-    void transferData(TransferTask transferTask);
+@Getter
+public class AutonomousSyncCronDetails {
+
+    private String expression;
+    private CronSequenceGenerator generator;
+    private Date lastExecution;
+
+    public AutonomousSyncCronDetails(final String expression, final Date lastExecution) {
+        this.expression = expression;
+        this.generator = new CronSequenceGenerator(expression);
+        this.lastExecution = lastExecution;
+    }
 }
