@@ -84,7 +84,7 @@ const ASCEND = 'ascend';
 const DESCEND = 'descend';
 
 function filterColumns (column) {
-  return !column.predefined || ['externalId', 'createdDate'].indexOf(column.name) >= 0;
+  return !column.predefined || ['externalId', 'createdDate'].includes(column.name);
 }
 
 function mapColumnName (column) {
@@ -99,6 +99,10 @@ function unmapColumnName (name) {
     return 'externalId';
   }
   return name;
+}
+
+function isPredefined (name) {
+  return ['externalId', 'createdDate'].includes(name);
 }
 
 function getDefaultColumnName (displayName) {
@@ -403,9 +407,17 @@ export default class Metadata extends React.Component {
     let currentMetadata = [];
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
-        .map(o => ({...o, field: unmapColumnName(o.field)}));
+        .map(o => ({
+          ...o,
+          field: unmapColumnName(o.field),
+          predefined: isPredefined(unmapColumnName(o.field))
+        }));
       filters = (filterModel.filters || [])
-        .map(o => ({...o, field: unmapColumnName(o.field)}));
+        .map(o => ({
+          key: unmapColumnName(o.key),
+          values: o.values || [],
+          predefined: isPredefined(unmapColumnName(o.key))
+        }));
     }
     if (!selectedItemsAreShowing) {
       await this.metadataRequest.send(
