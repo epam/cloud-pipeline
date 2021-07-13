@@ -51,14 +51,15 @@ import evaluateRunDuration from '../../utils/evaluateRunDuration';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
-import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 import RunTags from './run-tags';
 import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
+import MultizoneUrl, {MultizoneUrlPopover} from '../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../utils/multizone';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
-@inject('routing', 'pipelines', 'localization', 'dockerRegistries')
+@inject('routing', 'pipelines', 'localization', 'dockerRegistries', 'multiZoneManager')
 @runPipelineActions
 @observer
 export default class RunTable extends localization.LocalizedReactComponent {
@@ -436,7 +437,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
                         </Checkbox>
                       </Row>
                     );
-                })
+                  })
               }
             </div>
           </Row>
@@ -822,13 +823,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
           <span>
             {moment.utc(item.endDate)
               .diff(moment.utc(item.startDate), 'minutes', true).toFixed(2)} min
-        </span>
+          </span>
         );
       } else {
         return (
           <span>
             Running for {moment.utc().diff(moment.utc(item.startDate), 'minutes', true).toFixed(2)} min
-        </span>
+          </span>
         );
       }
     };
@@ -915,7 +916,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       title: '',
       dataIndex: '',
       key: 'expandIcon',
-      className: styles.expandIconColumn,
+      className: styles.expandIconColumn
     };
     const runColumn = {
       title: <span>Run</span>,
@@ -929,7 +930,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const style = {
           display: 'inline-table',
-          marginLeft: run.parentRunId ? '10px' : 0,
+          marginLeft: run.parentRunId ? '10px' : 0
         };
         let instanceOrSensitiveFlag;
         if (run.instance || run.sensitive) {
@@ -965,35 +966,41 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const name = <b>{text}</b>;
         if (run.serviceUrl && run.initialized) {
-          const urls = parseRunServiceUrl(run.serviceUrl);
+          const renderMultiZoneServiceUrls = () => {
+            const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
+            return (
+              <div>
+                <ul>
+                  {
+                    regionedUrls.map(({name, url}, index) =>
+                      <li key={index} style={{margin: 4}}>
+                        <MultizoneUrl configuration={url}>
+                          {name}
+                        </MultizoneUrl>
+                      </li>
+                    )
+                  }
+                </ul>
+              </div>
+            );
+          };
           return (
             <div style={style}>
               <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
-              <Popover
-                mouseEnterDelay={1}
-                content={
-                  <div>
-                    <ul>
-                      {
-                        urls.map((url, index) =>
-                          <li key={index} style={{margin: 4}}>
-                            <a href={url.url} target="_blank">{url.name || url.url}</a>
-                          </li>
-                        )
-                      }
-                    </ul>
-                  </div>
-                }
-                trigger="hover">
+              <MultizoneUrlPopover
+                trigger={['hover']}
+                content={renderMultiZoneServiceUrls}
+                runServiceUrlConfiguration={run.serviceUrl}
+              >
                 {clusterIcon} <Icon type="export" /> {name}
                 {instanceOrSensitiveFlag && <br />}
                 {
                   instanceOrSensitiveFlag &&
                   <span style={{marginLeft: 18}}>
-                  {instanceOrSensitiveFlag}
-                </span>
+                    {instanceOrSensitiveFlag}
+                  </span>
                 }
-              </Popover>
+              </MultizoneUrlPopover>
             </div>
           );
         } else {
@@ -1270,7 +1277,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         size="small"
         indentSize={10}
         locale={{emptyText: 'No Data', filterConfirm: 'OK', filterReset: 'Clear'}}
-    />);
+      />);
   }
 
   componentDidMount () {

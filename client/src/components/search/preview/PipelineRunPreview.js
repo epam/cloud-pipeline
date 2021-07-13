@@ -31,10 +31,11 @@ import styles from './preview.css';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
 import moment from 'moment-timezone';
-import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import UserName from '../../special/UserName';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunTags from '../../runs/run-tags';
+import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
+import MultizoneUrl from '../../special/multizone-url';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -120,15 +121,25 @@ const icons = {
   [Statuses.stopped]: 'clock-circle-o'
 };
 
-@inject('dtsList', 'preferences')
-@inject(({}, params) => {
+function getTimingInfoString (from, to) {
+  if (from && to) {
+    const diff = moment.utc(to).diff(moment.utc(from), 'minutes', true);
+    return `${displayDate(to)} (${diff.toFixed(2)} min)`;
+  }
+  return '';
+}
+
+@inject('dtsList', 'preferences', 'multiZoneManager')
+@inject(({multiZoneManager}, params) => {
   return {
     runInfo: params.item && (params.item.id || params.item.elasticId)
       ? pipelineRun.run((params.item.id || params.item.elasticId), {refresh: false})
       : null,
     runTasks: params.item && (params.item.id || params.item.elasticId)
       ? pipelineRun.runTasks((params.item.id || params.item.elasticId))
-      : null
+      : null,
+    multiZone: multiZoneManager
+      .getMultiZoneConfiguration(`run-${params.item.id || params.item.elasticId}`)
   };
 })
 @observer
@@ -143,26 +154,44 @@ export default class PipelineRunPreview extends React.Component {
     lightMode: PropTypes.bool
   };
 
+  componentDidMount () {
+    this.updateMultiZone();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    this.updateMultiZone();
+  }
+
+  updateMultiZone () {
+    const {
+      multiZone,
+      runInfo
+    } = this.props;
+    if (runInfo) {
+      multiZone.checkRun(runInfo);
+    }
+  }
+
   @computed
   get runName () {
-    if (this.props.runInfo && this.props.runInfo.loaded) {
-      const {
-        dockerImage,
-        pipelineName,
-        version
-      } = this.props.runInfo.value;
-      if (pipelineName && version) {
-        return `Run #${this.props.item.id || this.props.item.elasticId} - ${pipelineName} (${version})`;
-      } else if (pipelineName) {
-        return `Run #${this.props.item.id || this.props.item.elasticId} - ${pipelineName}`;
-      } else if (dockerImage) {
-        const image = dockerImage.split('/').pop();
-        return `Run #${this.props.item.id || this.props.item.elasticId} - ${image}`;
-      }
-      return `Run #${this.props.item.id || this.props.item.elasticId}`;
-    }
     if (this.props.item) {
-      return `Run #${this.props.item.id || this.props.item.elasticId}`;
+      const runIdentifier = this.props.item.id || this.props.item.elasticId;
+      if (this.props.runInfo && this.props.runInfo.loaded) {
+        const {
+          dockerImage,
+          pipelineName,
+          version
+        } = this.props.runInfo.value;
+        if (pipelineName && version) {
+          return `Run #${runIdentifier} - ${pipelineName} (${version})`;
+        } else if (pipelineName) {
+          return `Run #${runIdentifier} - ${pipelineName}`;
+        } else if (dockerImage) {
+          const image = dockerImage.split('/').pop();
+          return `Run #${runIdentifier} - ${image}`;
+        }
+      }
+      return `Run #${runIdentifier}`;
     }
     return null;
   }
@@ -201,7 +230,7 @@ export default class PipelineRunPreview extends React.Component {
         const firstTask = this.props.runTasks.value[0];
         result.push({
           title: 'Started:',
-          value: `${displayDate(firstTask.started)} (${moment.utc(firstTask.started).diff(moment.utc(startDate), 'minutes', true).toFixed(2)} min)`
+          value: getTimingInfoString(startDate, firstTask.started)
         });
         if (status === 'RUNNING') {
           result.push({
@@ -212,13 +241,13 @@ export default class PipelineRunPreview extends React.Component {
           const firstTask = this.props.runTasks.value[0];
           result.push({
             title: 'Finished:',
-            value: `${displayDate(endDate)} (${moment.utc(endDate).diff(moment.utc(firstTask.started), 'minutes', true).toFixed(2)} min)`
+            value: getTimingInfoString(firstTask.startDate, endDate)
           });
         } else {
           const firstTask = this.props.runTasks.value[0];
           result.push({
             title: 'Stopped at:',
-            value: `${displayDate(endDate)} (${moment.utc(endDate).diff(moment.utc(firstTask.started), 'minutes', true).toFixed(2)} min)`
+            value: getTimingInfoString(firstTask.startDate, endDate)
           });
         }
       } else {
@@ -364,7 +393,15 @@ export default class PipelineRunPreview extends React.Component {
   renderInfo = () => {
     if (this.props.runInfo) {
       if (this.props.runInfo.pending) {
-        return <Row className={styles.contentPreview} type="flex" justify="center"><Icon type="loading" /></Row>;
+        return (
+          <Row
+            className={styles.contentPreview}
+            type="flex"
+            justify="center"
+          >
+            <Icon type="loading" />
+          </Row>
+        );
       }
       if (this.props.runInfo.error) {
         return (
@@ -374,11 +411,20 @@ export default class PipelineRunPreview extends React.Component {
         );
       }
       const endpointsAvailable = this.props.runInfo.value.initialized;
-      const urls = parseRunServiceUrl(this.props.runInfo.value.serviceUrl);
+      const regionedUrls = parseRunServiceUrlConfiguration(this.props.runInfo.value.serviceUrl);
       const {
         owner
       } = this.props.runInfo.value;
-      const headerStyle = {verticalAlign: 'top', paddingRight: 5, whiteSpace: 'nowrap'};
+      const headerStyle = {
+        verticalAlign: 'top',
+        paddingRight: 5,
+        whiteSpace: 'nowrap',
+        lineHeight: '20px'
+      };
+      const valueStyle = {
+        verticalAlign: 'top',
+        lineHeight: '20px'
+      };
       const adjustPrice = (value) => {
         let cents = Math.ceil(value * 100);
         if (cents < 1) {
@@ -391,33 +437,35 @@ export default class PipelineRunPreview extends React.Component {
           <table>
             <tbody>
               {
-                endpointsAvailable && urls.length > 0 &&
+                endpointsAvailable && regionedUrls.length > 0 &&
                 <tr>
                   <td style={headerStyle}>
                     Endpoints:
                   </td>
-                  <td>
+                  <td style={valueStyle}>
                     {
-                      urls.map((url, index) => {
-                        return (
-                          <div key={index}>
-                            <a href={url.url} target="_blank">{url.name || url.url}</a>
-                          </div>
-                        );
-                      })}
+                      regionedUrls.map(({name, url}, index) =>
+                        <MultizoneUrl
+                          key={index}
+                          configuration={url}
+                        >
+                          {name}
+                        </MultizoneUrl>
+                      )
+                    }
                   </td>
                 </tr>
               }
               <tr>
                 <td style={headerStyle}>Owner: </td>
-                <td><UserName userName={owner} /></td>
+                <td style={valueStyle}><UserName userName={owner} /></td>
               </tr>
               {
                 this.timings.map((t, index) => {
                   return (
                     <tr key={`timing-${index}`}>
                       <td style={headerStyle}>{t.title}</td>
-                      <td>{t.value}</td>
+                      <td style={valueStyle}>{t.value}</td>
                     </tr>
                   );
                 })
@@ -426,7 +474,7 @@ export default class PipelineRunPreview extends React.Component {
                 <td style={headerStyle}>
                   Estimated price:
                 </td>
-                <td>
+                <td style={valueStyle}>
                   <JobEstimatedPriceInfo>
                     {
                       adjustPrice(
@@ -448,7 +496,15 @@ export default class PipelineRunPreview extends React.Component {
   renderTasks = () => {
     if (this.props.runTasks) {
       if (this.props.runTasks.pending) {
-        return <Row className={styles.contentPreview} type="flex" justify="center"><Icon type="loading" /></Row>;
+        return (
+          <Row
+            className={styles.contentPreview}
+            type="flex"
+            justify="center"
+          >
+            <Icon type="loading" />
+          </Row>
+        );
       }
       if (this.props.runTasks.error) {
         return (
@@ -505,11 +561,19 @@ export default class PipelineRunPreview extends React.Component {
           <Row className={styles.title} style={{whiteSpace: 'initial'}}>
             {
               this.props.runInfo && this.props.runInfo.loaded
-                ? <StatusIcon
+                ? (
+                  <StatusIcon
                     run={this.props.runInfo.value}
                     additionalStyleByStatus={this.props.lightMode ? lightColors : colors}
-                    iconSet={icons} />
-                : <Icon type={PreviewIcons[this.props.item.type]} style={{fontSize: 'smaller'}} />
+                    iconSet={icons}
+                  />
+                )
+                : (
+                  <Icon
+                    type={PreviewIcons[this.props.item.type]}
+                    style={{fontSize: 'smaller'}}
+                  />
+                )
             }
             <span>{this.runName}</span>
           </Row>
@@ -526,5 +590,4 @@ export default class PipelineRunPreview extends React.Component {
       </div>
     );
   }
-
 }

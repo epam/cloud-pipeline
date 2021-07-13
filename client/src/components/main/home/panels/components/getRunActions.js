@@ -16,12 +16,12 @@
 
 import React from 'react';
 import {Link} from 'react-router';
-import {Row} from 'antd';
-import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import {canPauseRun} from '../../../../runs/actions';
 import VSActions from '../../../../versioned-storages/vs-actions';
+import MultizoneUrl from '../../../../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 
-export default function (callbacks) {
+export default function (multiZoneManager, callbacks) {
   return function (run) {
     const actions = [];
     switch (run.status.toUpperCase()) {
@@ -36,37 +36,45 @@ export default function (callbacks) {
         break;
       case 'RUNNING':
         if (run.initialized && run.serviceUrl) {
-          const urls = parseRunServiceUrl(run.serviceUrl);
-          if (urls.length === 1) {
+          const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
+          if (regionedUrls.length === 1) {
+            const regionedUrl = regionedUrls[0];
+            const defaultUrlRegion = multiZoneManager.getDefaultURLRegion(regionedUrl.url);
+            const url = regionedUrl.url[defaultUrlRegion];
             actions.push({
               title: 'OPEN',
               icon: 'export',
-              action: callbacks && callbacks.openUrl
-                ? () => callbacks.openUrl(urls[0].url)
+              multiZoneUrl: regionedUrl.url,
+              action: url && callbacks && callbacks.openUrl
+                ? () => callbacks.openUrl(url)
                 : undefined
             });
           } else {
-            const overlay = urls.map((url, index) => {
-              return (
-                <Row type="flex" key={index} style={{fontSize: 'larger'}}>
-                  <a href={url.url} target="_blank" style={`${url.isDefault}` === 'true' ? {fontWeight: 'bold'} : {}}>{url.name || url.url}</a>
-                </Row>
-              );
-            });
-            let defaultAction;
-            if (urls.filter(url => `${url.isDefault}` === 'true').length === 1) {
-              const [url] = urls.filter(url => `${url.isDefault}` === 'true');
-              if (url && url.url) {
-                defaultAction = callbacks && callbacks.openUrl
-                  ? () => callbacks.openUrl(url.url)
-                  : undefined;
-              }
-            }
+            const multizoneOverlay = {
+              content: () => {
+                return (
+                  <div>
+                    <ul>
+                      {
+                        regionedUrls.map(({name, url}, index) =>
+                          <li key={index} style={{margin: 4}}>
+                            <MultizoneUrl configuration={url}>
+                              {name}
+                            </MultizoneUrl>
+                          </li>
+                        )
+                      }
+                    </ul>
+                  </div>
+                );
+              },
+              runServiceUrlConfiguration: run.serviceUrl,
+              runId: run.id
+            };
             actions.push({
               title: 'OPEN',
               icon: 'export',
-              overlay,
-              action: defaultAction
+              multizoneOverlay
             });
           }
         }
@@ -74,7 +82,8 @@ export default function (callbacks) {
           actions.push({
             title: 'SSH',
             icon: 'code-o',
-            action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
+            runSSH: true,
+            runId: run.id
           });
           if (!run.sensitive && run.platform !== 'windows') {
             actions.push({
@@ -210,18 +219,18 @@ export default function (callbacks) {
         const overlay = (
           <table>
             <tbody>
-            {
-              inputParameters.length > 0
-                ? <tr><td colSpan={2}><b>Input:</b></td></tr>
-                : undefined
-            }
-            {inputParameters.map(renderRunParameter)}
-            {
-              outputParameters.length > 0
-                ? <tr><td colSpan={2}><b>Output:</b></td></tr>
-                : undefined
-            }
-            {outputParameters.map(renderRunParameter)}
+              {
+                inputParameters.length > 0
+                  ? <tr><td colSpan={2}><b>Input:</b></td></tr>
+                  : undefined
+              }
+              {inputParameters.map(renderRunParameter)}
+              {
+                outputParameters.length > 0
+                  ? <tr><td colSpan={2}><b>Output:</b></td></tr>
+                  : undefined
+              }
+              {outputParameters.map(renderRunParameter)}
             </tbody>
           </table>
         );

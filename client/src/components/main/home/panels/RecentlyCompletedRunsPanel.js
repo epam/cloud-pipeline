@@ -34,7 +34,7 @@ import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('pipelines')
+@inject('pipelines', 'multiZoneManager')
 @observer
 export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -125,24 +125,26 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
             onClick={this.navigateToRun}
             emptyMessage="There are no completed runs yet."
             actions={
-              getRunActions({
-                pause: run => this.confirm(
-                  `Are you sure you want to pause run ${run.podId}?`,
-                  'PAUSE',
-                  () => this.pauseRun(run)
-                ),
-                resume: run => this.confirm(
-                  `Are you sure you want to resume run ${run.podId}?`,
-                  'RESUME',
-                  () => this.resumeRun(run)
-                ),
-                stop: run => this.confirm(
-                  `Are you sure you want to stop run ${run.podId}?`,
-                  'STOP',
-                  () => this.stopRun(run)
-                ),
-                run: this.reRun
-              })
+              getRunActions(
+                this.props.multiZoneManager,
+                {
+                  pause: run => this.confirm(
+                    `Are you sure you want to pause run ${run.podId}?`,
+                    'PAUSE',
+                    () => this.pauseRun(run)
+                  ),
+                  resume: run => this.confirm(
+                    `Are you sure you want to resume run ${run.podId}?`,
+                    'RESUME',
+                    () => this.resumeRun(run)
+                  ),
+                  stop: run => this.confirm(
+                    `Are you sure you want to stop run ${run.podId}?`,
+                    'STOP',
+                    () => this.stopRun(run)
+                  ),
+                  run: this.reRun
+                })
             }
             childRenderer={renderRunCard}>
             {
