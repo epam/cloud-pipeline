@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,23 @@
  *  limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+import PipelineRunSSH from './PipelineRunSSH';
 
-class PreferenceLoad extends Remote {
-  constructor (name) {
-    super();
-    this.url = `/preferences/${name}`;
+class PipelineRunSSHCache {
+  static getCacheValue (cache, id) {
+    if (!cache.has(+id)) {
+      cache.set(+id, new PipelineRunSSH(id));
+    }
+    return cache.get(+id);
   }
+
+  cache = new Map();
+
+  getPipelineRunSSH = (id) => {
+    return this.constructor.getCacheValue(this.cache, id);
+  };
 }
 
-export default PreferenceLoad;
+const pipelineRunSSHCache = new PipelineRunSSHCache();
+
+export default pipelineRunSSHCache;

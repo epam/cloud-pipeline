@@ -15,13 +15,14 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Card, Icon, Input, Popover, Row} from 'antd';
 import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
 import {favouriteStorage} from '../../utils/favourites';
+import MultizoneUrl from '../../../../special/multizone-url';
+import RunSSHButton from './run-ssh-button';
 
 const ACTION = PropTypes.shape({
   title: PropTypes.string,
@@ -33,7 +34,6 @@ const ACTION = PropTypes.shape({
 const ACTION_MIN_HEIGHT = 18;
 
 @favouriteStorage
-@observer
 export default class CardsPanel extends React.Component {
   static propTypes = {
     search: PropTypes.shape({
@@ -190,8 +190,82 @@ export default class CardsPanel extends React.Component {
                 icon,
                 style,
                 className,
-                overlay
+                overlay,
+                multiZoneUrl,
+                runSSH,
+                runId
               } = action;
+              const containerStyle = {
+                flex: 1.0 / array.length,
+                minHeight: ACTION_MIN_HEIGHT,
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-start'
+              };
+              if (runSSH) {
+                return (
+                  <RunSSHButton
+                    key={index}
+                    runId={runId}
+                    visibilityChanged={onVisibleChange}
+                    className={
+                      classNames(
+                        styles.actionButton,
+                        {
+                          [styles.disabled]: disabled,
+                          'cp-disabled': disabled
+                        },
+                        'cp-card-action-button',
+                        className
+                      )
+                    }
+                    style={containerStyle}
+                    icon={icon}
+                  />
+                );
+              }
+              if (multiZoneUrl) {
+                return (
+                  <MultizoneUrl
+                    key={index}
+                    className={
+                      classNames(
+                        styles.actionButton,
+                        {
+                          [styles.disabled]: disabled,
+                          'cp-disabled': disabled
+                        },
+                        'cp-card-action-button',
+                        className
+                      )
+                    }
+                    visibilityChanged={onVisibleChange}
+                    style={containerStyle}
+                    configuration={multiZoneUrl}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        display: 'inline'
+                      }}
+                    >
+                      {
+                        icon
+                          ? (
+                            <Icon
+                              style={style}
+                              className={className}
+                              type={getIconType(action)}
+                            />
+                          )
+                          : undefined
+                      }
+                      <span>{title}</span>
+                    </div>
+                  </MultizoneUrl>
+                );
+              }
               return (
                 <Row
                   key={index}
@@ -238,9 +312,7 @@ export default class CardsPanel extends React.Component {
                     }
                   </Row>
                 </Row>);
-            })}
-        </div>
-      );
+            })}</div>);
     }
     return null;
   };

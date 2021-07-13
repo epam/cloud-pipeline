@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,24 @@
  *  limitations under the License.
  */
 
-import Remote from '../basic/Remote';
-
-class PreferenceLoad extends Remote {
-  constructor (name) {
-    super();
-    this.url = `/preferences/${name}`;
-  }
+.link {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
 }
 
-export default PreferenceLoad;
+.menu-link {
+  height: 100%;
+  width: 100%;
+  color: inherit;
+}
+
+.menu-link:hover {
+  color: inherit;
+}
+
+.expander {
+  cursor: pointer;
+  font-size: 12px;
+  transform: scale(0.83);
+}

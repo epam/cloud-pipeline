@@ -59,6 +59,7 @@ import HiddenObjects from '../../utils/hidden-objects';
 import impersonation from '../../models/user/impersonation';
 import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
 import CloudPipelineThemes from '../../themes';
+import multiZoneManager from '../../utils/multizone';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -147,7 +148,8 @@ const Root = () =>
       userMetadataKeys,
       cloudCredentialProfiles,
       [HiddenObjects.injectionName]: hiddenObjects,
-      themes
+      themes,
+      multiZoneManager
     }}>
     <AppRouter />
   </Provider>;

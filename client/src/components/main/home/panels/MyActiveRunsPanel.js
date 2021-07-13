@@ -34,13 +34,13 @@ import {Alert, message, Modal, Row} from 'antd';
 import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
-import PipelineRunSSH from '../../../../models/pipelines/PipelineRunSSH';
+import pipelineRunSSHCache from '../../../../models/pipelines/PipelineRunSSHCache';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences')
+@inject('multiZoneManager', 'preferences')
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -165,11 +165,11 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                   stop: stopRun(this, this.props.refresh),
                   terminate: terminateRun(this, this.props.refresh),
                   run: this.reRun,
-                  openUrl: url => {
-                    window.open(url, '_blank').focus();
+                  openUrl: (url, target = '_blank') => {
+                    window.open(url, target).focus();
                   },
                   ssh: async run => {
-                    const runSSH = new PipelineRunSSH(run.id);
+                    const runSSH = pipelineRunSSHCache.getPipelineRunSSH(run.id);
                     await runSSH.fetchIfNeededOrWait();
 
                     if (runSSH.loaded) {
@@ -179,8 +179,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                       message.error(runSSH.error);
                     }
                   }
-                }
-              )
+                })
             }
             cardClassName={run => classNames({
               'cp-card-service': run.initialized && run.serviceUrl
