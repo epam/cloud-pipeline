@@ -52,12 +52,13 @@ import evaluateRunDuration from '../../utils/evaluateRunDuration';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
-import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 import RunTags from './run-tags';
 import RunName from './run-name';
 import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
 import getMaintenanceDisabledButton from './controls/get-maintenance-mode-disabled-button';
+import MultizoneUrl from '../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../utils/multizone';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -1018,7 +1019,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
           </RunName>
         );
         if (run.serviceUrl && run.initialized) {
-          const urls = parseRunServiceUrl(run.serviceUrl);
+          const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
           return (
             <div style={style}>
               <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
@@ -1028,14 +1029,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
                   <div>
                     <ul>
                       {
-                        urls.map((url, index) =>
+                        regionedUrls.map(({name, url}, index) =>
                           <li key={index} style={{margin: 4}}>
-                            <a
-                              href={url.url}
-                              target="_blank"
-                            >
-                              {url.name || url.url}
-                            </a>
+                            <MultizoneUrl configuration={url}>
+                              {name}
+                            </MultizoneUrl>
                           </li>
                         )
                       }
@@ -1044,14 +1042,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 }
                 trigger={['hover']}
               >
-                {clusterIcon} <Icon type="export" />
-                {name}
+                {clusterIcon} <Icon type="export" /> {name}
                 {instanceOrSensitiveFlag && <br />}
                 {
                   instanceOrSensitiveFlag &&
                   <span style={{marginLeft: 18}}>
-                    {instanceOrSensitiveFlag}
-                  </span>
+                  {instanceOrSensitiveFlag}
+                </span>
                 }
               </Popover>
             </div>

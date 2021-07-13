@@ -33,7 +33,7 @@ import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('preferences')
+@inject('preferences', 'multiZoneManager')
 @observer
 export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
