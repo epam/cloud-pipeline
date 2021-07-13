@@ -43,7 +43,7 @@ import PausePipeline from '../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
-import PipelineRunSSH from '../../../models/pipelines/PipelineRunSSH';
+import pipelineRunSSHCache from '../../../models/pipelines/PipelineRunSSHCache';
 import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKubeServicesLoad';
 import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
@@ -64,7 +64,6 @@ import displayDate from '../../../utils/displayDate';
 import displayDuration from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
-import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import parseQueryParameters from '../../../utils/queryParameters';
 import styles from './Log.css';
 import AdaptedLink from '../../special/AdaptedLink';
@@ -92,6 +91,8 @@ import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command'
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import RunName from '../run-name';
+import MultizoneUrl from '../../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
@@ -106,8 +107,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'dockerRegistries')
-@inject(({pipelineRun, routing, pipelines}, {params}) => {
+@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries')
+@inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   let task = null;
   if (params.taskName) {
@@ -123,7 +124,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     taskName: params.taskName,
     run: pipelineRun.run(params.runId, {refresh: true}),
     nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
-    runSSH: new PipelineRunSSH(params.runId),
+    runSSH: pipelineRunSSHCache.getPipelineRunSSH(params.runId),
     runFSBrowser: new PipelineRunFSBrowser(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     runSchedule: new RunSchedules(params.runId),
@@ -131,7 +132,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     task,
     pipelines,
     roles: new Roles(),
-    routing
+    routing,
+    multiZone: multiZoneManager
   };
 })
 @observer
@@ -156,7 +158,6 @@ class Logs extends localization.LocalizedReactComponent {
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
-    this.checkCommitAllowed();
   }
 
   componentWillUnmount () {
@@ -1426,12 +1427,12 @@ class Logs extends localization.LocalizedReactComponent {
       let share;
       let kubeServices;
       if (this.endpointAvailable) {
-        const urls = parseRunServiceUrl(this.props.run.value.serviceUrl);
+        const regionedUrls = parseRunServiceUrlConfiguration(this.props.run.value.serviceUrl);
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
             <th style={{verticalAlign: 'middle'}}>
               {
-                urls.length > 1
+                regionedUrls.length > 1
                   ? 'Endpoints: '
                   : 'Endpoint: '
               }
@@ -1439,14 +1440,15 @@ class Logs extends localization.LocalizedReactComponent {
             <td>
               <ul>
                 {
-                  urls.map((url, index) =>
+                  regionedUrls.map(({name, url}, index) =>
                     <li key={index}>
-                      <a
-                        href={url.url}
-                        target="_blank"
+                      <MultizoneUrl
+                        configuration={url}
+                        style={{display: 'inline-flex'}}
+                        dropDownIconStyle={{marginTop: 5}}
                       >
-                        {url.name || url.url}
-                      </a>
+                        {name}
+                      </MultizoneUrl>
                     </li>
                   )
                 }
@@ -1856,22 +1858,28 @@ class Logs extends localization.LocalizedReactComponent {
 
       if (this.sshEnabled) {
         SSHButton = (
-          <a
-            href={this.props.runSSH.value}
-            target="_blank"
+          <MultizoneUrl
+            configuration={this.props.runSSH.value}
+            dropDownIconStyle={{
+              paddingLeft: 4,
+              marginLeft: -2
+            }}
           >
             SSH
-          </a>
+          </MultizoneUrl>
         );
       }
       if (this.fsBrowserEnabled) {
         FSBrowserButton = (
-          <a
-            href={this.props.runFSBrowser.value}
-            target="_blank"
+          <MultizoneUrl
+            configuration={this.props.runFSBrowser.value}
+            dropDownIconStyle={{
+              paddingLeft: 4,
+              marginLeft: -2
+            }}
           >
             BROWSE
-          </a>
+          </MultizoneUrl>
         );
       }
 
@@ -1993,7 +2001,12 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {this.buttonsWrapper(PauseResumeButton)}
+              {
+                this.buttonsWrapper(
+                  this.props.run.value.platform !== 'windows' &&
+                  PauseResumeButton
+                )
+              }
               {this.buttonsWrapper(ActionButton)}
               {this.buttonsWrapper(SSHButton)}
               {this.buttonsWrapper(FSBrowserButton)}
@@ -2057,20 +2070,6 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   componentDidUpdate () {
-    const {
-      commitAllowedCheckedForDockerImage
-    } = this.state;
-    const {
-      run
-    } = this.props;
-    if (
-      run &&
-      run.loaded &&
-      run.value &&
-      run.value.dockerImage !== commitAllowedCheckedForDockerImage
-    ) {
-      this.checkCommitAllowed();
-    }
     if (this.language === null && this.props.run.loaded) {
       if (this.props.run.value.pipelineId && this.props.run.value.version) {
         this.language = pipelines.getLanguage(
