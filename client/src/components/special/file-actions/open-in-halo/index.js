@@ -181,7 +181,7 @@ class OpenInHaloAction extends React.Component {
     if (!file || !this.storage) {
       return null;
     }
-    const filePath = `Z:\\\\${this.storage.name}\\${file.replace(/\//g, '\\')}`;
+    const filePath = `Z:\\${this.storage.name}\\${file.replace(/\//g, '\\')}`;
     const initializePathElement = element => {
       this.pathElement = element;
     };
