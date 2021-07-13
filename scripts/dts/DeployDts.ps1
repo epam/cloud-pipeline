@@ -130,7 +130,7 @@ if (-not(Test-Path .\Environment.ps1)) {
 Log "Loading environment..."
 . .\Environment.ps1
 
-Write-Host "Changing working directory..."
+Log "Changing working directory..."
 Set-Location -Path "$env:DTS_DIR"
 
 Log "Creating system directories..."
