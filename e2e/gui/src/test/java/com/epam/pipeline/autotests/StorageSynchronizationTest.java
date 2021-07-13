@@ -63,7 +63,7 @@ public class StorageSynchronizationTest extends AbstractBfxPipelineTest implemen
                 .clickDeleteStorageButton()
                 .clickUnregister()
                 .validateStorageIsNotPresent(storageName);
-        PermissionTabAO.UserPermissionsTableAO permissionsTableAO = waitUntilStorageAppears(storageName, C.SYNC_STORAGE_TIMEOUT * 1000L)
+        PermissionTabAO.UserPermissionsTableAO permissionsTableAO = waitUntilStorageAppears(storageName, C.SYNC_STORAGE_TIMEOUT)
                 .clickEditStorageButton()
                 .clickOnPermissionsTab()
                 .selectByName(C.SYNC_STORAGE_PERMISSION_NAME)
