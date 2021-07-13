@@ -37,6 +37,7 @@ ENV CFLAGS="-DBIG_SECURITY_HOLE -O2"
 COPY httpd/conf /tmp/
 COPY httpd/modules.shared ${APACHE_BUILD_DIR}/
 COPY httpd/modules.static ${APACHE_BUILD_DIR}/
+RUN rpm -Uvh https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm
 RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     modules_static="$(echo $(cat ${APACHE_BUILD_DIR}/modules.static))" && \
     mkdir -p ${APACHE_BUILD_DIR} && \
@@ -68,7 +69,7 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
 RUN yum install -y cronie \
                    nfs-utils \
                    cifs-utils \
-                   python
+                   python blobfuse fuse
 ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
 ARG LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"

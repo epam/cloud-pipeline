@@ -183,6 +183,84 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
 done <<< "$fs_mounts"
 echo
 
+storages="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/datastorage/loadAll |    \
+             jq -r '.payload[] |  select(.type!="NFS") | "\(.id)|\(.name)|\(.path)|\(.type)|\(.regionId)"')"
+
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Cannot get list of the storages, exiting"
+    exit 1
+fi
+
+while IFS='|' read -r id name path type region_id; do
+     echo
+     echo "[INFO] Staring processing: $path (id: ${id}, name: ${name}, region: ${region_id} type: ${type}, path: ${path})"
+
+     if [[ "${type}" == "AZ" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/AZ/${name}"
+     elif [[ "${type}" == "S3" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/S3/${name}"
+     elif [[ "${type}" == "GCP" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/GCP/${name}"
+     else
+         echo "[INFO] Storage with id: ${id} and path: ${path} is not a AZ/GCP/S3 storage, skipping."
+         continue
+     fi
+
+     if mountpoint -q "$mount_root_srv_dir"; then
+        echo "[DONE] $mount_root_srv_dir is already mounted, skipping"
+        mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
+        continue
+     fi
+
+     mkdir -p ${mount_root_srv_dir}
+
+     if [[ "${type}" == "AZ" ]]; then
+         CP_TMP_DIR_PATH="/mnt/blobfusetmp/${path}"
+         mkdir -p "$CP_TMP_DIR_PATH"
+         region_cred_file="/root/.cloud/regioncreds/${region_id}"
+         if [[ ! -f ${region_cred_file} ]]; then
+            echo "[ERROR] Cred file for Azure region ${region_id}, not found!"
+            continue
+         fi
+         storage_account=$(cat ${region_cred_file} | jq -r .storage_account)
+         storage_key=$(cat ${region_cred_file} | jq -r .storage_key)
+         export AZURE_STORAGE_ACCOUNT="${storage_account}"
+         export AZURE_STORAGE_ACCESS_KEY="${storage_key}"
+         blobfuse ${mount_root_srv_dir} --container-name=${path} --tmp-path=$CP_TMP_DIR_PATH
+         mount_result=$?
+     elif [[ "${type}" == "S3" ]] || [[ "${type}" == "GCP" ]]; then
+         pipe storage mount ${mount_root_srv_dir} -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_TIMEOUT:-500} -o allow_other -l /var/log/fuse_${id}.log
+         mount_result=$?
+         # Even in the "pipe storage mount" is OK, it may take a second or two to fully initialized
+         # During this period the directory is considered as an empty "overlayfs"
+         # So here we wait, until the mountpoint becomes a fuse
+         mount_wait_attempts=0
+         unset mounted_fs_type
+         while [[ "$mounted_fs_type" != *"fuse"* ]]; do
+            mounted_fs_type=$(stat -f -c %T ${mount_root_srv_dir})
+            sleep 1
+            mount_wait_attempts=$(($mount_wait_attempts+1))
+            if (( "$mount_wait_attempts" >= "$_MOUNT_TIMEOUT_SEC" )); then
+                echo "[ERROR] $mount_root_srv_dir still $mounted_fs_type after $_MOUNT_TIMEOUT_SEC seconds. While expecting fuse"
+                mount_result=124
+                break
+            fi
+        done
+     else
+         echo "[ERROR] Storage with id: ${id} and path: ${path} is not a AZ/GCP/S3 storage, skipping."
+         continue
+     fi
+
+
+     if [[ $mount_result -ne 0 ]]; then
+        echo "[ERROR] Unable to mount $path to $mount_root_srv_dir (id: ${id}, type: ${type}), skipping"
+        continue
+     fi
+     echo "[DONE] $path is mounted to $mount_root_srv_dir (id: ${id}, type: ${type})"
+     mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
+done <<< "$storages"
+echo
+
 echo "Cleaning outdated"
 clean_outdated "$_MOUNT_ROOT" "true"
 echo
