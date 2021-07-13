@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.dts.transfer.model.TransferTask;
 import java.time.LocalDateTime;
 import java.util.Collections;
 
+import com.epam.pipeline.dts.transfer.service.impl.SyncDataUploaderProviderManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,7 +36,7 @@ public class DataUploaderProviderManagerTest extends AbstractTransferTest {
     private final DataUploader dataUploader = mock(DataUploader.class);
     private final TaskService taskService = mock(TaskService.class);
     private final DataUploaderProviderManager manager =
-        new DataUploaderProviderManager(dataUploaderProvider, taskService);
+        new SyncDataUploaderProviderManager(dataUploaderProvider, taskService);
     private final TransferTask transferTask = getTransferTask();
     private final RuntimeException exception = new RuntimeException("error message");
 

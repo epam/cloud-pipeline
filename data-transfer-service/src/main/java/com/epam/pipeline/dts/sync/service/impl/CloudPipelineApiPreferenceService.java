@@ -18,7 +18,10 @@ package com.epam.pipeline.dts.sync.service.impl;
 
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.sync.service.PreferenceService;
+import com.epam.pipeline.dts.sync.model.AutonomousSyncRule;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +30,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,16 +49,20 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     private final ConcurrentMap<String, String> preferences;
     private final String dtsName;
     private final String dtsLocalShutdownKey;
+    private final String dtsLocalSyncRulesKey;
 
     @Autowired
     public CloudPipelineApiPreferenceService(final @Value("${dts.name}") String dtsName,
                                              final @Value("${dts.preference.shutdown.key:dts.restart.force}")
                                                  String dtsLocalShutdownKey,
+                                             final @Value("${dts.local.preference.sync.rules.key:dts.local.sync.rules}")
+                                                     String dtsLocalSyncRulesKey,
                                              final CloudPipelineAPIClient apiClient) {
         this.apiClient = apiClient;
         this.preferences = new ConcurrentHashMap<>();
         this.dtsName = tryBuildDtsName(dtsName);
         this.dtsLocalShutdownKey = dtsLocalShutdownKey;
+        this.dtsLocalSyncRulesKey = dtsLocalSyncRulesKey;
         log.info("Synchronizing preferences for current host: `{}`", this.dtsName);
     }
 
@@ -65,6 +74,17 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         log.warn("Following preferences received during sync iteration: {}", updatedPreferences.toString());
         preferences.clear();
         preferences.putAll(updatedPreferences);
+    }
+
+    @Override
+    public Optional<List<AutonomousSyncRule>> getSyncRules() {
+        final String rulesAsString = preferences.getOrDefault(dtsLocalSyncRulesKey, "[]");
+        try {
+            return Optional.of(new ObjectMapper()
+                                   .readValue(rulesAsString, new TypeReference<List<AutonomousSyncRule>>() {}));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
     }
 
     @Override

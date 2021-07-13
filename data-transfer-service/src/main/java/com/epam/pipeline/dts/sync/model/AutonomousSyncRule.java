@@ -14,11 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.service;
+package com.epam.pipeline.dts.sync.model;
 
-import com.epam.pipeline.dts.transfer.model.TransferTask;
+import lombok.Value;
+import org.thymeleaf.util.StringUtils;
 
-public interface DataUploaderProviderManager {
 
-    void transferData(TransferTask transferTask);
+@Value
+public class AutonomousSyncRule {
+
+    private String source;
+    private String destination;
+    private String cron;
+
+    public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {
+        return StringUtils.equals(source, anotherRule.getSource())
+               && StringUtils.equals(destination, anotherRule.getDestination());
+    }
 }

@@ -20,8 +20,11 @@ import com.epam.pipeline.dts.sync.service.PreferenceService;
 import com.epam.pipeline.dts.sync.service.ShutdownService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +39,11 @@ public class ShutdownServiceImpl implements ShutdownService {
         log.info("Shutdown will be preformed.");
         preferenceService.clearShutdownFlag();
         log.info("Closing context...");
-        context.close();
+        Integer exitCode = null;
+        try {
+            exitCode = SpringApplication.exit(context);
+        } finally {
+            Runtime.getRuntime().halt(Optional.ofNullable(exitCode).orElse(1));
+        }
     }
 }

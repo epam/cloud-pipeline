@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,12 +45,18 @@ public class CommonConfiguration {
         return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("Task", taskPoolSize));
     }
 
+    //for async execution of autonomous transfer
+    @Bean
+    public Executor autonomousTransferExecutor(@Value("${task.local.pool.size:3}") int taskPoolSize) {
+        return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("LocalTask", taskPoolSize));
+    }
+
     //for scheduled methods (SubmissionMonitor)
     @Bean
-    public TaskScheduler taskScheduler() {
+    public TaskScheduler taskScheduler(@Value("${task.scheduled.pool.size:2}") int scheduledTasksPoolSize) {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setRemoveOnCancelPolicy(true);
-        scheduler.setPoolSize(1);
+        scheduler.setPoolSize(scheduledTasksPoolSize);
         return scheduler;
     }
 
