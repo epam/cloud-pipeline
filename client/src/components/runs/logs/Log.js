@@ -93,6 +93,7 @@ import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command'
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import VSActions from '../../versioned-storages/vs-actions';
+import pingLocation from '../../../utils/pingLinks';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -156,6 +157,7 @@ class Logs extends localization.LocalizedReactComponent {
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
+    pingLocation().then(res => console.log(res));
   }
 
   componentWillUnmount () {
