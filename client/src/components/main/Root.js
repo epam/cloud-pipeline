@@ -58,6 +58,7 @@ import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
+import multiZoneManager from '../../utils/multizone';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -141,7 +142,8 @@ const Root = () =>
       systemDictionaries,
       userMetadataKeys,
       cloudCredentialProfiles,
-      [HiddenObjects.injectionName]: hiddenObjects
+      [HiddenObjects.injectionName]: hiddenObjects,
+      multiZoneManager
     }}>
     <AppRouter />
   </Provider>;

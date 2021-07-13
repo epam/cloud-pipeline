@@ -65,7 +65,6 @@ import displayDate from '../../../utils/displayDate';
 import displayDuration from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
-import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import parseQueryParameters from '../../../utils/queryParameters';
 import styles from './Log.css';
 import AdaptedLink from '../../special/AdaptedLink';
@@ -93,7 +92,6 @@ import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command'
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import VSActions from '../../versioned-storages/vs-actions';
-import pingLocation from '../../../utils/pingLinks';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -107,8 +105,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList')
-@inject(({pipelineRun, routing, pipelines}, {params}) => {
+@inject('preferences', 'dtsList', 'multiZoneManager')
+@inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   let task = null;
   if (params.taskName) {
@@ -132,7 +130,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     task,
     pipelines,
     roles: new Roles(),
-    routing
+    routing,
+    multiZone: multiZoneManager.getMultiZoneConfiguration(`run-${params.runId}`)
   };
 })
 @observer
@@ -157,7 +156,19 @@ class Logs extends localization.LocalizedReactComponent {
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
-    pingLocation().then(res => console.log(res));
+    this.updateMultiZone();
+  }
+
+  updateMultiZone () {
+    const {
+      multiZone,
+      run,
+      runSSH,
+      runFSBrowser
+    } = this.props;
+    multiZone.checkRun(run);
+    multiZone.checkRunUrlRequest(runSSH);
+    multiZone.checkRunUrlRequest(runFSBrowser);
   }
 
   componentWillUnmount () {
@@ -1356,7 +1367,10 @@ class Logs extends localization.LocalizedReactComponent {
       let share;
       let kubeServices;
       if (this.endpointAvailable) {
-        const urls = parseRunServiceUrl(this.props.run.value.serviceUrl);
+        const urls = this.props.multiZone.getDefaultRunServiceUrls(this.props.run.value.serviceUrl);
+        // todo: use regionedUrls
+        // const regionedUrls = this.props.multiZone.parseRunServiceUrlConfiguration(this.props.run.value.serviceUrl);
+        // console.log(regionedUrls, regionedUrls.map(url => this.props.multiZone.getDefaultURLRegion(url.url)));
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
             <th style={{verticalAlign: 'top'}}>{urls.length > 1 ? 'Endpoints: ': 'Endpoint: '}</th>
@@ -1723,10 +1737,28 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       if (this.sshEnabled) {
-        SSHButton = (<a href={this.props.runSSH.value} target="_blank">SSH</a>);
+        // todo:
+        // console.log(this.props.runSSH.value, this.props.multiZone.getDefaultURLRegion(this.props.runSSH.value));
+        SSHButton = (
+          <a
+            href={this.props.multiZone.getDefaultURL(this.props.runSSH.value)}
+            target="_blank"
+          >
+            SSH
+          </a>
+        );
       }
       if (this.fsBrowserEnabled) {
-        FSBrowserButton = (<a href={this.props.runFSBrowser.value} target="_blank">BROWSE</a>);
+        // todo:
+        // console.log(this.props.runFSBrowser.value, this.props.multiZone.getDefaultURLRegion(this.props.runFSBrowser.value));
+        FSBrowserButton = (
+          <a
+            href={this.props.multiZone.getDefaultURL(this.props.runFSBrowser.value)}
+            target="_blank"
+          >
+            BROWSE
+          </a>
+        );
       }
 
       if (runIsCommittable(this.props.run.value)) {
@@ -1906,6 +1938,7 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   componentDidUpdate () {
+    this.updateMultiZone();
     if (this.language === null && this.props.run.loaded) {
       if (this.props.run.value.pipelineId && this.props.run.value.version) {
         this.language = pipelines.getLanguage(

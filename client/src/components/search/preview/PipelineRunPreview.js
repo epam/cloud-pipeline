@@ -31,7 +31,6 @@ import styles from './preview.css';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
 import moment from 'moment-timezone';
-import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import UserName from '../../special/UserName';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunTags from '../../runs/run-tags';
@@ -120,15 +119,17 @@ const icons = {
   [Statuses.stopped]: 'clock-circle-o'
 };
 
-@inject('dtsList', 'preferences')
-@inject(({}, params) => {
+@inject('dtsList', 'preferences', 'multiZoneManager')
+@inject(({multiZoneManager}, params) => {
   return {
     runInfo: params.item && (params.item.id || params.item.elasticId)
       ? pipelineRun.run((params.item.id || params.item.elasticId), {refresh: false})
       : null,
     runTasks: params.item && (params.item.id || params.item.elasticId)
       ? pipelineRun.runTasks((params.item.id || params.item.elasticId))
-      : null
+      : null,
+    multiZone: multiZoneManager
+      .getMultiZoneConfiguration(`run-${params.item.id || params.item.elasticId}`)
   };
 })
 @observer
@@ -142,6 +143,24 @@ export default class PipelineRunPreview extends React.Component {
     }),
     lightMode: PropTypes.bool
   };
+
+  componentDidMount () {
+    this.updateMultiZone();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    this.updateMultiZone();
+  }
+
+  updateMultiZone () {
+    const {
+      multiZone,
+      runInfo
+    } = this.props;
+    if (runInfo) {
+      multiZone.checkRun(runInfo);
+    }
+  }
 
   @computed
   get runName () {
@@ -374,7 +393,7 @@ export default class PipelineRunPreview extends React.Component {
         );
       }
       const endpointsAvailable = this.props.runInfo.value.initialized;
-      const urls = parseRunServiceUrl(this.props.runInfo.value.serviceUrl);
+      const urls = this.props.multiZone.getDefaultRunServiceUrls(this.props.runInfo.value.serviceUrl);
       const {
         owner
       } = this.props.runInfo.value;

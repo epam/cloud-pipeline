@@ -55,7 +55,9 @@ function fetchEndpoint (runId) {
           // eslint-disable-next-line
           reject(new Error(`Error fetching FS Browser endpoint for #${runId} run: ${fsBrowserRequest.error}`));
         } else {
-          resolve(fsBrowserRequest.value);
+          // todo: multizone support
+          const [url] = Object.values(fsBrowserRequest.value);
+          resolve(url);
         }
       })
       .catch(e => {
