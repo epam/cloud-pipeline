@@ -76,7 +76,7 @@ export default function (callbacks) {
             icon: 'code-o',
             action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
           });
-          if (!run.sensitive) {
+          if (!run.sensitive && run.platform !== 'windows') {
             actions.push({
               title: (
                 <VSActions
@@ -95,7 +95,7 @@ export default function (callbacks) {
             });
           }
         }
-        if (canPauseRun(run)) {
+        if (canPauseRun(run) && run.platform !== 'windows') {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',
@@ -112,7 +112,10 @@ export default function (callbacks) {
         }
         break;
       case 'PAUSED':
-        if (run.initialized && run.instance && run.instance.spot !== undefined && !run.instance.spot) {
+        if (
+          run.initialized && run.instance && run.instance.spot !== undefined &&
+          !run.instance.spot && run.platform !== 'windows'
+        ) {
           actions.push({
             title: 'RESUME',
             icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',

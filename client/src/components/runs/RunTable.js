@@ -721,7 +721,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (roleModel.executeAllowed(record) && roleModel.isOwner(record) &&
       record.initialized && !(record.nodeCount > 0) &&
       !(record.parentRunId && record.parentRunId > 0) &&
-      record.instance && record.instance.spot !== undefined && !record.instance.spot) {
+      record.instance && record.instance.spot !== undefined &&
+      !record.instance.spot && record.platform !== 'windows'
+    ) {
       switch (record.status.toLowerCase()) {
         case 'pausing':
           return <span id={`run-${record.id}-pausing`}>PAUSING</span>;
