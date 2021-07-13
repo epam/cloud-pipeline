@@ -132,6 +132,8 @@ public final class AclExpressions {
     public static final String OR_HAS_ASSIGNED_USER_OR_ROLE =
             " OR @grantPermissionManager.hasCloudProfilePermissions(#profileId)";
 
+    public static final String DTS_REGISTRY_PERMISSIONS = ADMIN_ONLY + OR + "hasRole('ROLE_DTS_MANAGER')";
+
     private AclExpressions() {
         // no op
     }

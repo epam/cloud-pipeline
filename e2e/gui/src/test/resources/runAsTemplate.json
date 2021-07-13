@@ -1,0 +1,14 @@
+[{
+  "name" : "default",
+  "default" : true,
+  "description" : "Initial default configuration",
+  "configuration" : {
+    "instance_size" : "{{instance_type}}",
+    "instance_disk" : "20",
+    "docker_image" : "library/centos:7",
+    "cmd_template" : "sleep infinity",
+    "parameters": {},
+    "run_as": "{{user_name}}",
+    "share_with_roles": [{"name": "{{user_role}}"}]
+  }
+}]

@@ -16,16 +16,23 @@
 
 package com.epam.pipeline.manager.utils;
 
+import com.epam.pipeline.entity.git.GitCommitsFilter;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.report.GitParsedDiff;
 import com.epam.pipeline.entity.git.report.GitParsedDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -41,6 +48,8 @@ public final class DiffUtils {
     public static final String DELETION_MARK = "---";
     public static final String ADDITION_MARK = "+++";
     public static final String EMPTY = "";
+    public static final String NEW_FILE_HEADER_MESSAGE = "new file mode";
+    public static final String DELETED_FILE_HEADER_MESSAGE = "deleted file mode";
 
     private DiffUtils() {
 
@@ -93,46 +102,101 @@ public final class DiffUtils {
         return result;
     }
 
-    public static boolean isFileCreated(final Diff diff) {
-        return diff.getFromFileName().equals(DEV_NULL) && !diff.getToFileName().equals(DEV_NULL);
+    public static DiffType defineDiffType(final Diff diff) {
+        if (isFileWasCreated(diff)) {
+            return DiffType.ADDED;
+        } else if (isFileWasDeleted(diff)) {
+            return DiffType.DELETED;
+        } else if (!diff.getFromFileName().equals(diff.getToFileName())) {
+            return DiffType.RENAMED;
+        } else {
+            return DiffType.CHANGED;
+        }
     }
 
-    public static boolean isFileDeleted(final Diff diff) {
-        return !diff.getFromFileName().equals(DEV_NULL) && diff.getToFileName().equals(DEV_NULL);
+    private static boolean isFileWasDeleted(Diff diff) {
+        return !diff.getFromFileName().equals(DEV_NULL) && diff.getToFileName().equals(DEV_NULL)
+                || ListUtils.emptyIfNull(diff.getHeaderLines()).stream()
+                        .anyMatch(h -> h.contains(DELETED_FILE_HEADER_MESSAGE));
     }
 
-    public static GitParsedDiff reduceDiffByFile(GitReaderDiff gitReaderDiff) {
+    private static boolean isFileWasCreated(Diff diff) {
+        return diff.getFromFileName().equals(DEV_NULL) && !diff.getToFileName().equals(DEV_NULL)
+                || ListUtils.emptyIfNull(diff.getHeaderLines()).stream()
+                        .anyMatch(h -> h.contains(NEW_FILE_HEADER_MESSAGE));
+    }
+
+    public static GitParsedDiff reduceDiffByFile(GitReaderDiff gitReaderDiff, GitDiffReportFilter reportFilters) {
         final DiffParser diffParser = new UnifiedDiffParser();
         return GitParsedDiff.builder()
                 .entries(
-                        gitReaderDiff.getEntries().stream().flatMap(diff -> {
-                            final String[] diffsByFile = diff.getDiff().split(DIFF_GIT_PREFIX);
-                            return Arrays.stream(diffsByFile)
-                                    .filter(org.apache.commons.lang.StringUtils::isNotBlank)
-                                    .map(fileDiff -> {
-                                        try {
-                                            final Diff parsed = diffParser.parse(
-                                                    (DIFF_GIT_PREFIX + fileDiff).getBytes(StandardCharsets.UTF_8)
-                                            ).stream().findFirst().orElseThrow(IllegalArgumentException::new);
-                                            return GitParsedDiffEntry.builder()
-                                                    .commit(diff.getCommit())
-                                                    .diff(DiffUtils.normalizeDiff(parsed)).build();
-                                        } catch (IllegalArgumentException | IllegalStateException e) {
-                                            // If we fail to parse diff with diffParser lets
-                                            // try to parse it as binary diffs
-                                            return GitParsedDiffEntry.builder()
-                                                    .commit(diff.getCommit())
-                                                    .diff(DiffUtils.parseBinaryDiff(DIFF_GIT_PREFIX + fileDiff))
-                                                    .build();
-                                        }
-                                    });
-                        }).collect(Collectors.toList())
-                ).filters(gitReaderDiff.getFilters()).build();
+                    gitReaderDiff.getEntries().stream().flatMap(diff -> {
+                        final String[] diffsByFile = diff.getDiff().split(DIFF_GIT_PREFIX);
+                        return Arrays.stream(diffsByFile)
+                                .filter(org.apache.commons.lang.StringUtils::isNotBlank)
+                                .map(fileDiff -> {
+                                    final GitParsedDiffEntry.GitParsedDiffEntryBuilder fileDiffBuilder =
+                                            GitParsedDiffEntry.builder().commit(
+                                                    diff.getCommit().toBuilder()
+                                                            .authorDate(
+                                                                new Date(diff.getCommit().getAuthorDate().toInstant()
+                                                                .plus(reportFilters.getUserTimeOffsetInMin(),
+                                                                        ChronoUnit.MINUTES).toEpochMilli()))
+                                                            .committerDate(
+                                                                new Date(diff.getCommit().getCommitterDate().toInstant()
+                                                                .plus(reportFilters.getUserTimeOffsetInMin(),
+                                                                        ChronoUnit.MINUTES).toEpochMilli())
+                                                    ).build());
+                                    try {
+                                        final Diff parsed = diffParser.parse(
+                                                (DIFF_GIT_PREFIX + fileDiff).getBytes(StandardCharsets.UTF_8)
+                                        ).stream().findFirst().orElseThrow(IllegalArgumentException::new);
+                                        return fileDiffBuilder.diff(DiffUtils.normalizeDiff(parsed)).build();
+                                    } catch (IllegalArgumentException | IllegalStateException e) {
+                                        // If we fail to parse diff with diffParser lets
+                                        // try to parse it as binary diffs
+                                        return fileDiffBuilder.diff(
+                                                DiffUtils.parseBinaryDiff(DIFF_GIT_PREFIX + fileDiff))
+                                                .build();
+                                    }
+                                });
+                    }).collect(Collectors.toList())
+                ).filters(convertFiltersToUserTimeZone(gitReaderDiff, reportFilters)).build();
     }
 
-    public static String getChangedFileName(Diff diff) {
+    private static GitCommitsFilter convertFiltersToUserTimeZone(final GitReaderDiff gitReaderDiff,
+                                                                 final GitDiffReportFilter reportFilters) {
+        if (gitReaderDiff.getFilters() == null) {
+            return null;
+        }
+
+        final GitCommitsFilter.GitCommitsFilterBuilder gitCommitsFilterBuilder = gitReaderDiff.getFilters().toBuilder();
+        if (Optional.ofNullable(reportFilters.getCommitsFilter()).map(GitCommitsFilter::getDateFrom).isPresent()) {
+            gitCommitsFilterBuilder
+                    .dateFrom(reportFilters.getCommitsFilter().getDateFrom()
+                            .plus(reportFilters.getUserTimeOffsetInMin(), ChronoUnit.MINUTES));
+        }
+        if (Optional.ofNullable(reportFilters.getCommitsFilter()).map(GitCommitsFilter::getDateTo).isPresent()) {
+            gitCommitsFilterBuilder
+                    .dateTo(reportFilters.getCommitsFilter().getDateTo()
+                            .plus(reportFilters.getUserTimeOffsetInMin(), ChronoUnit.MINUTES));
+        }
+        return gitCommitsFilterBuilder.build();
+    }
+
+    public static String getChangedFileName(final Diff diff) {
         return diff.getFromFileName().equals(DEV_NULL)
                 ? diff.getToFileName()
                 : diff.getFromFileName();
+    }
+
+    public static boolean isBinary(final Diff diff, final List<String> binaryExts) {
+        return ListUtils.emptyIfNull(diff.getHunks()).isEmpty() ||
+                binaryExts.stream()
+                        .anyMatch(ext -> diff.getToFileName().endsWith(ext) || diff.getFromFileName().endsWith(ext));
+    }
+
+    public enum DiffType {
+        ADDED, DELETED, CHANGED, RENAMED
     }
 }

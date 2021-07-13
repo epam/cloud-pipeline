@@ -24,6 +24,7 @@ import lombok.Value;
 @Builder(toBuilder = true)
 public class GitDiffReportFilter {
     GitCommitsFilter commitsFilter;
+    long userTimeOffsetInMin;
     boolean includeDiff;
     GitDiffGroupType groupType;
     boolean archive;

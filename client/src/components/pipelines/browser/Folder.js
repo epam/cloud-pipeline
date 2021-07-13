@@ -914,7 +914,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       await request.send({
         lastCommitId: opts.lastCommitId,
         path,
-        comment: `creating folders ${path}`
+        comment: `Creating folder ${path}`
       });
       if (request.error) {
         message.error(request.error, 5);

@@ -42,6 +42,7 @@ from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_t
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
+from src.utilities.dts_operations_manager import DtsOperationsManager
 from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
@@ -51,6 +52,10 @@ RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline
 TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying'
 SYNC_FLAG_DESCRIPTION = 'Perform operation in a sync mode. When set - terminal will be blocked' \
                         ' until the expected status of the operation won\'t be returned'
+STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION = 'Enables additional destination path check: if destination already ' \
+                                                'exists an error will be occurred. Cannot be used in combination' \
+                                                ' with --force (-f) option: if --force (-f) specified ' \
+                                                '--verify-destination (-vd) will be ignored.'
 
 
 def silent_print_api_version():
@@ -927,15 +932,18 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to move a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
+@click.option('-vd', '--verify-destination', is_flag=True, required=False,
+              help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads):
+                      symlinks, threads, verify_destination):
     """ Moves a file or a folder from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, threads, clean=True, skip_existing=skip_existing)
+                             symlinks, threads, clean=True, skip_existing=skip_existing,
+                             verify_destination=verify_destination)
 
 
 @storage.command('cp')
@@ -966,15 +974,18 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to copy a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
+@click.option('-vd', '--verify-destination', is_flag=True, required=False,
+              help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads):
+                      symlinks, threads, verify_destination):
     """ Copies files from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, threads, skip_existing=skip_existing)
+                             exclude, include, quiet, tags, file_list, symlinks, threads, skip_existing=skip_existing,
+                             verify_destination=verify_destination)
 
 
 @storage.command('du')
@@ -1409,10 +1420,12 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @Config.validate_access_token
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
-                 timeout, foreground, retries, trace):
+                 timeout, foreground, retries, trace, region):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1485,7 +1498,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
     try:
         create_tunnel(host_id, local_port, remote_port, connection_timeout,
                       ssh, ssh_path, ssh_host, ssh_keep, direct, log_file, log_level,
-                      timeout, foreground, retries)
+                      timeout, foreground, retries, region)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         if trace:
@@ -1718,6 +1731,72 @@ def import_users(file_path, create_user, create_group, create_metadata):
     Registers a new users, roles and metadata specified in input file
     """
     UserOperationsManager().import_users(file_path, create_user, create_group, create_metadata)
+
+
+@cli.group()
+def dts():
+    """ Data-transfer-service commands
+    """
+    pass
+
+
+@dts.command(name='create')
+@click.option('--url', '-u', required=True, type=str)
+@click.option('--name', '-n', required=True, type=str)
+@click.option('--schedulable', '-s', required=False, is_flag=True)
+@click.option('--prefix', required=False, type=str, multiple=True,
+              help='String, describing URL prefix for a DTS. Multiple options supported')
+@click.option('--preference', required=False, type=str, multiple=True,
+              help='String, describing preference''s key and value: key=value. Multiple options supported')
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@Config.validate_access_token
+def create_dts(url, name, schedulable, prefix, preference, json_out):
+    """
+    Registers a DTS
+    """
+    DtsOperationsManager().create(url, name, schedulable, prefix, preference, json_out)
+
+
+@dts.command(name='list')
+@click.argument('registry-name-or-id', required=False, type=str)
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@Config.validate_access_token
+def list_dts(registry_name_or_id, json_out):
+    """
+    Shows details of all DTS registries or the one for ID specified
+    """
+    DtsOperationsManager().list(registry_name_or_id, json_out)
+
+
+@dts.group()
+def preferences():
+    """ Commands for DTS preferences management
+    """
+    pass
+
+
+@preferences.command(name='update')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--preference', '-p', multiple=True, type=str,
+              help='String, describing preference''s key and value: key=value. Multiple options supported')
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+def update_dts_preferences(registry_name_or_id, preference, json_out):
+    """
+    Updates preferences for the given DTS
+    """
+    DtsOperationsManager().upsert_preferences(registry_name_or_id, preference, json_out)
+
+
+@preferences.command(name='delete')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--key', '-k', multiple=True, type=str,
+              help="Key of the preference, that should be removed. Multiple options supported")
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+def delete_dts_preferences(registry_name_or_id, key, json_out):
+    """
+    Removes preferences for specified keys from the given DTS
+    """
+    DtsOperationsManager().delete_preferences(registry_name_or_id, key, json_out)
 
 
 # Used to run a PyInstaller "freezed" version

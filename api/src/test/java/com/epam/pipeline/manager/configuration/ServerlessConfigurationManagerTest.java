@@ -64,6 +64,7 @@ public class ServerlessConfigurationManagerTest {
     private static final Long PIPELINE_ID = 1L;
     private static final Long RUN_ID = 2L;
     private static final Long CONFIGURATION_ID = 3L;
+    private static final String TEST_REGION = "region";
 
     private final RunConfigurationManager runConfigurationManager = mock(RunConfigurationManager.class);
     private final ConfigurationRunner configurationRunner = mock(ConfigurationRunner.class);
@@ -91,7 +92,8 @@ public class ServerlessConfigurationManagerTest {
         final RunConfiguration configuration = runConfiguration(TEST_NAME, entry);
         final RunConfigurationWithEntitiesVO runConfigurationVO = runConfigurationWithEntitiesVO(TEST_NAME, entry);
         final PipelineRun pipelineRun = pipelineRun();
-        pipelineRun.setServiceUrl(String.format("[{\"url\": \"%s\"}]", TEST_URL));
+        pipelineRun.setServiceUrl(Collections.singletonMap(TEST_REGION,
+                String.format("[{\"url\": \"%s\"}]", TEST_URL)));
         final PagedResult<List<PipelineRun>> activeRuns = new PagedResult<>(Collections.emptyList(), 0);
 
         when(runConfigurationManager.load(any())).thenReturn(configuration);
@@ -118,7 +120,8 @@ public class ServerlessConfigurationManagerTest {
         final RunConfiguration configuration = runConfiguration(TEST_NAME, entry);
         final RunConfigurationWithEntitiesVO runConfigurationVO = runConfigurationWithEntitiesVO(TEST_NAME, entry);
         final PipelineRun pipelineRun = pipelineRun();
-        pipelineRun.setServiceUrl(String.format("[{\"url\": \"%s\", \"name\": \"%s\"}]", TEST_URL, TEST_NAME));
+        pipelineRun.setServiceUrl(Collections.singletonMap(TEST_REGION,
+                String.format("[{\"url\": \"%s\", \"name\": \"%s\"}]", TEST_URL, TEST_NAME)));
         final PagedResult<List<PipelineRun>> activeRuns = new PagedResult<>(Collections.emptyList(), 0);
 
         when(runConfigurationManager.load(any())).thenReturn(configuration);
@@ -144,7 +147,8 @@ public class ServerlessConfigurationManagerTest {
         entry.setEndpointName(TEST_NAME);
         final RunConfiguration configuration = runConfiguration(TEST_NAME, entry);
         final PipelineRun pipelineRun = pipelineRun();
-        pipelineRun.setServiceUrl(String.format("[{\"url\": \"%s\", \"name\": \"%s\"}]", TEST_URL, TEST_NAME));
+        pipelineRun.setServiceUrl(Collections.singletonMap(TEST_REGION,
+                String.format("[{\"url\": \"%s\", \"name\": \"%s\"}]", TEST_URL, TEST_NAME)));
         final PagedResult<List<PipelineRun>> activeRuns = new PagedResult<>(
                 Collections.singletonList(pipelineRun), 1);
 
@@ -228,7 +232,8 @@ public class ServerlessConfigurationManagerTest {
         final RunConfiguration configuration = runConfiguration(TEST_NAME, entry);
         final RunConfigurationWithEntitiesVO runConfigurationVO = runConfigurationWithEntitiesVO(TEST_NAME, entry);
         final PipelineRun pipelineRun = pipelineRun();
-        pipelineRun.setServiceUrl(String.format("[{\"url\": \"%s\"}]", TEST_URL_TO_REPLACE));
+        pipelineRun.setServiceUrl(Collections.singletonMap(TEST_REGION,
+                String.format("[{\"url\": \"%s\"}]", TEST_URL_TO_REPLACE)));
         final PagedResult<List<PipelineRun>> activeRuns = new PagedResult<>(Collections.emptyList(), 0);
 
         final ServerlessConfigurationManager serverlessConfigurationManager =

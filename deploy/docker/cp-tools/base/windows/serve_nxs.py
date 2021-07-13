@@ -57,6 +57,7 @@ def start(local_port, nomachine_port, proxy, proxy_port, template_path):
     user_name = os.getenv('OWNER')
     if not user_name:
         raise RuntimeError('Cannot get OWNER name from environment')
+    user_name = user_name.split('@')[0]
 
     ssh_pass = os.getenv('OWNER_PASSWORD')
     if not ssh_pass:

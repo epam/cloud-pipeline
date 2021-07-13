@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.epam.pipeline.test.creator.dts;
 
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesRemovalVO;
+import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesUpdateVO;
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
@@ -61,5 +63,13 @@ public final class DtsCreatorUtils {
 
     public static DtsRegistryVO getDtsRegistryVO() {
         return new DtsRegistryVO();
+    }
+
+    public static DtsRegistryPreferencesUpdateVO getPreferenceUpdateVO() {
+        return new DtsRegistryPreferencesUpdateVO();
+    }
+
+    public static DtsRegistryPreferencesRemovalVO getPreferenceRemovalVO() {
+        return new DtsRegistryPreferencesRemovalVO();
     }
 }

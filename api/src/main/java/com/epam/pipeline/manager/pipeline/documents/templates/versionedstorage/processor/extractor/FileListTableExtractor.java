@@ -69,8 +69,8 @@ public class FileListTableExtractor implements ReportDataExtractor<Table> {
             ).forEach((file, commit) -> {
                 TableRow row = result.addRow(file);
                 tableColumns.forEach(
-                    (e, v) -> result.setData(row.getName(), v, e.dataExtractor.apply(file, commit))
-                );
+                    (columnType, column) ->
+                            result.setData(row.getName(), column, columnType.dataExtractor.apply(file, commit)));
             });
         return result;
     }
@@ -94,7 +94,10 @@ public class FileListTableExtractor implements ReportDataExtractor<Table> {
         }
         try {
             return OBJECT_MAPPER.readValue(
-                    tableStructureString,
+                    tableStructureString
+                            // replacing word's quotas with the real one
+                            .replace("”", "\"")
+                            .replace("“", "\""),
                     new TypeReference<LinkedHashMap<FileListTableColumn, String>>() {}
             );
         } catch (IOException e) {

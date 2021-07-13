@@ -798,6 +798,7 @@ export default class PersonalToolsPanel extends React.Component {
                 parameters={this.state.runToolInfo.payload.params}
                 permissionErrors={this.state.runToolInfo.permissionErrors}
                 preferences={this.props.preferences}
+                platform={this.state.runToolInfo.tool.platform}
               />
           }
           {

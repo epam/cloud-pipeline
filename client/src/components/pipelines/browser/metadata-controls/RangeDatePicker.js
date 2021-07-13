@@ -118,9 +118,12 @@ class RangeDatePicker extends React.Component {
   }
   handleRangeFilterVisibility = (visible) => {
     const {fromPickerVisible, toPickerVisible} = this.state;
+    const {visibilityChanged} = this.props;
     if (visible || (!fromPickerVisible && !toPickerVisible)) {
       this.setState({
         rangeFilterVisible: visible
+      }, () => {
+        visibilityChanged && visibilityChanged(visible);
       });
     }
   };
@@ -256,7 +259,8 @@ RangeDatePicker.propTypes = {
   from: PropTypes.string,
   to: PropTypes.string,
   onChange: PropTypes.func,
-  children: PropTypes.node
+  children: PropTypes.node,
+  visibilityChanged: PropTypes.func
 };
 
 export default RangeDatePicker;

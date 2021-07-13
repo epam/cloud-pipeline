@@ -76,6 +76,7 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
+import OpenInHaloAction from '../../special/file-actions/open-in-halo';
 
 const PAGE_SIZE = 40;
 
@@ -796,6 +797,17 @@ export default class DataStorage extends React.Component {
       );
     };
     if (item.downloadable) {
+      if (OpenInHaloAction.ActionAvailable(item.path)) {
+        actions.push((
+          <OpenInHaloAction
+            key="open-in-halo"
+            mode="link"
+            file={item.path}
+            storageId={this.props.storageId}
+            className={styles.downloadButton}
+          />
+        ));
+      }
       actions.push(
         <a
           key="download"

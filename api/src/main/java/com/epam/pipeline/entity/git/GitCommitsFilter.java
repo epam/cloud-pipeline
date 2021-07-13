@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class GitCommitsFilter {
     List<String> authors;
     String path;

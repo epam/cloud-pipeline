@@ -209,6 +209,7 @@ public final class MessageConstants {
     public static final String ERROR_NODE_DOWN_TIMEOUT = "error.kube.node.down.timeout";
     public static final String LOG_WAS_TRUNCATED = "log.truncated";
     public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
+    public static final String ERROR_KUBE_ENDPOINTS_CREATE = "error.kube.endpoints.create";
     public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
 
     // Data storage messages
@@ -449,13 +450,18 @@ public final class MessageConstants {
     public static final String ERROR_FIRECLOUD_REQUEST_FAILED = "error.firecloud.request.failed";
 
     //DTS
-    public static final String ERROR_DTS_REGISTRY_DOES_NOT_EXIST = "error.dts.registry.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_ID_DOES_NOT_EXIST = "error.dts.registry.id.does.not.exist";
+    public static final String ERROR_DTS_REGISTRY_NAME_DOES_NOT_EXIST = "error.dts.registry.name.does.not.exist";
     public static final String ERROR_DTS_REGISTRY_IS_EMPTY = "error.dts.registry.is.empty";
     public static final String ERROR_DTS_REGISTRY_URL_IS_EMPTY = "error.dts.registry.url.is.empty";
     public static final String ERROR_DTS_REGISTRY_PREFIXES_ARE_EMPTY = "error.dts.registry.prefixes.are.empty";
     public static final String ERROR_DTS_REGISTRY_ID_IS_EMPTY = "error.dts.registry.id.is.empty";
     public static final String ERROR_DTS_REGISTRY_NAME_IS_EMPTY = "error.dts.registry.name.is.empty";
+    public static final String ERROR_DTS_REGISTRY_NAME_CONSIST_OF_NUMBERS = "error.dts.registry.name.numbers.only";
     public static final String ERROR_DTS_NOT_SCHEDULABLE = "error.dts.registry.not.schedulable";
+    public static final String ERROR_DTS_PREFERENCES_DOESNT_EXIST = "error.dts.preferences.not.exist";
+    public static final String ERROR_DTS_PREFERENCES_UPDATE_EMPTY = "error.dts.preferences.update.empty";
+    public static final String ERROR_DTS_PREFERENCES_DELETE_EMPTY = "error.dts.preferences.delete.empty";
 
     //Cloud region
     public static final String ERROR_REGION_NOT_FOUND = "error.region.not.found";

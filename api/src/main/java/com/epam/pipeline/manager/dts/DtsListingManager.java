@@ -53,7 +53,7 @@ public class DtsListingManager {
     }
 
     private String getDtsBaseUrl(String path, Long dtsId) {
-        DtsRegistry registry = dtsRegistryManager.load(dtsId);
+        DtsRegistry registry = dtsRegistryManager.loadById(dtsId);
         Assert.isTrue(registry.getPrefixes()
                         .stream()
                         .anyMatch(prefix -> path.startsWith(trimTrailingDelimiter(prefix))),

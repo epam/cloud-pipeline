@@ -28,6 +28,7 @@ import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.dao.filter.FilterRunParameters;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
+import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.KubernetesService;
@@ -42,6 +43,7 @@ import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
@@ -66,9 +68,11 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_OWNER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
@@ -91,6 +95,7 @@ public class RunApiService {
     private final PipelineRunKubernetesManager pipelineRunKubernetesManager;
     private final PipelineRunAsManager pipelineRunAsManager;
     private final RunPermissionManager runPermissionManager;
+    private final EdgeServiceManager edgeServiceManager;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
@@ -186,8 +191,9 @@ public class RunApiService {
 
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public PipelineRun updateServiceUrl(Long runId, PipelineRunServiceUrlVO serviceUrl) {
-        return runManager.updateServiceUrl(runId, serviceUrl);
+    public PipelineRun updateServiceUrl(final Long runId, final String region,
+                                        final PipelineRunServiceUrlVO serviceUrl) {
+        return runManager.updateServiceUrl(runId, region, serviceUrl);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)
@@ -237,13 +243,13 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_SSH)
-    public String buildSshUrl(Long runId) {
-        return utilsManager.buildSshUrl(runId);
+    public Map<String, String> buildSshUrl(final Long runId) {
+        return edgeServiceManager.buildSshUrl(runId);
     }
 
     @PreAuthorize(RUN_ID_SSH)
-    public String buildFSBrowserUrl(Long runId) {
-        return utilsManager.buildFSBrowserUrl(runId);
+    public Map<String, String> buildFSBrowserUrl(final Long runId) {
+        return edgeServiceManager.buildFSBrowserUrl(runId);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
@@ -330,5 +336,10 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_EXECUTE)
     public KubernetesService getKubernetesService(final Long runId) {
         return pipelineRunKubernetesManager.getKubernetesService(runId);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<ServiceDescription> loadEdgeServices() {
+        return edgeServiceManager.getEdgeServices();
     }
 }

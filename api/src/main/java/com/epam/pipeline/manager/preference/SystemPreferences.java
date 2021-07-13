@@ -112,6 +112,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
+    private static final String FACETED_FILTER_GROUP = "Faceted Filter";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -148,6 +149,9 @@ public class SystemPreferences {
             "storage.operations.bulk.size", 1000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final StringPreference VERSION_STORAGE_REPORT_TEMPLATE = new StringPreference(
             "storage.version.storage.report.template", null, DATA_STORAGE_GROUP, isNullOrValidLocalPath());
+    public static final StringPreference VERSION_STORAGE_BINARY_FILE_EXTS = new StringPreference(
+            "storage.version.storage.report.binary.file.exts",
+            "pdf", DATA_STORAGE_GROUP, pass);
 
 
     /**
@@ -405,6 +409,10 @@ public class SystemPreferences {
             CLUSTER_GROUP, isGreaterThan(0L));
     public static final IntPreference CLUSTER_KUBE_MASTER_PORT =
             new IntPreference("cluster.kube.master.port", 6443, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_KUBE_WINDOWS_SERVICE_PORT =
+            new IntPreference("cluster.kube.windows.service.port", 22, CLUSTER_GROUP, isGreaterThan(0));
+    public static final BooleanPreference CLUSTER_WINDOWS_NODE_LOOPBACK_ROUTE =
+            new BooleanPreference("cluster.windows.node.loopback.route", false, CLUSTER_GROUP, pass);
     public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
             "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<Set<String>>() {}));
@@ -412,6 +420,8 @@ public class SystemPreferences {
             "instance.dns.hosted.zone.id", null, CLUSTER_GROUP, pass);
     public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_BASE = new StringPreference(
             "instance.dns.hosted.zone.base", null, CLUSTER_GROUP, pass);
+    public static final StringPreference DEFAULT_EDGE_REGION = new StringPreference(
+            "default.edge.region", "eu-central", CLUSTER_GROUP, pass);
 
 
     //LAUNCH_GROUP
@@ -550,6 +560,11 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    // Facet Filters
+    public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
+            "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
+            FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,

@@ -25,6 +25,8 @@ import DocumentListPresentation from './document-presentation/list';
 import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
 import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
+import OpenInHaloAction from '../../special/file-actions/open-in-halo';
+import {SearchItemTypes} from '../../../models/search';
 
 const RESULT_ITEM_HEIGHT = 46;
 const TABLE_ROW_HEIGHT = 32;
@@ -155,6 +157,21 @@ class SearchResults extends React.Component {
             this.setPreview(resultItem);
           }}
         />
+        {
+          [
+            SearchItemTypes.s3File,
+            SearchItemTypes.azFile,
+            SearchItemTypes.gsFile
+          ].indexOf(resultItem.type) >= 0 &&
+            OpenInHaloAction.ActionAvailable(resultItem.path) && (
+            <OpenInHaloAction
+              file={resultItem.path}
+              storageId={resultItem.parentId}
+              className={classNames(styles.previewBtn, styles.action)}
+              style={{height: RESULT_ITEM_HEIGHT, marginBottom: RESULT_ITEM_MARGIN}}
+            />
+          )
+        }
         <div
           id={`search-result-item-${resultItem.elasticId}`}
           className={

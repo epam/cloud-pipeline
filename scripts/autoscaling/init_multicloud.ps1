@@ -18,6 +18,16 @@ function NewDirIfRequired($Path) {
     }
 }
 
+function InitializeDisks {
+    Get-Disk `
+        | Where-Object { $_.PartitionStyle -eq "raw" } `
+        | Initialize-Disk -PartitionStyle MBR -PassThru `
+        | New-Partition -AssignDriveLetter -UseMaximumSize `
+        | Format-Volume -FileSystem NTFS -Confirm:$false `
+        | ForEach-Object { $_.DriveLetter + ":" } `
+        | ForEach-Object { AllowRegularUsersAccess -Path $_ }
+}
+
 function InstallNoMachineIfRequired {
     $restartRequired=$false
     $nomachineInstalled = Get-Service -Name nxservice `
@@ -80,6 +90,20 @@ function InstallPGinaIfRequired {
     return $restartRequired
 }
 
+function InstallDockerIfRequired {
+    $restartRequired=$false
+    $dockerInstalled = Get-Service -Name docker `
+        | Measure-Object `
+        | ForEach-Object { $_.Count -gt 0 }
+    if (-not ($dockerInstalled)) {
+        Get-PackageProvider -Name NuGet -ForceBootstrap
+        Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+        Install-Package -Name docker -ProviderName DockerMsftProvider -Force -RequiredVersion 19.03.14
+        $restartRequired=$true
+    }
+    return $restartRequired
+}
+
 function StartOpenSSHServices {
     Set-Service -Name sshd -StartupType Automatic
     Start-Service sshd
@@ -137,6 +161,13 @@ function AddPublicKeyToAuthorizedKeys($SourcePath, $DestinationPath) {
 function CopyPrivateKey($SourcePath, $DestinationPath) {
     Copy-Item -Path (Split-Path -Path $SourcePath) -Destination (Split-Path -Path $DestinationPath) -Recurse
     RestrictRegularUsersAccess -Path $DestinationPath
+}
+
+function AllowRegularUsersAccess($Path) {
+    $acl = Get-Acl $Path
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\Users", "Write", "ContainerInherit,ObjectInherit", "None", "Allow")
+    $acl.AddAccessRule($rule)
+    $acl | Set-Acl $Path
 }
 
 function RestrictRegularUsersAccess($Path) {
@@ -311,11 +342,37 @@ function ConfigureAwsRoutes($Addrs, $Interface) {
     w32tm /resync /rediscover /nowait
 }
 
-function ConfigureLoopbackRoute($Interface) {
-    $interfaceIndex = Get-NetAdapter $Interface | ForEach-Object { $_.ifIndex }
-    $interfaceIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $interfaceIndex | Select-Object -ExpandProperty IPAddress
-    $Addrs = @("$interfaceIp/32")
-    ConfigureAwsRoutes -Addrs $Addrs -Interface $Interface
+function ConfigureLoopbackRouteIfEnabled($Preferences, $Interface) {
+    $loopbackRouteEnabled = $Preferences `
+        | Where-Object { $_.Name -eq "cluster.windows.node.loopback.route" } `
+        | ForEach-Object { $_.Value -eq "true" }
+    if ($loopbackRouteEnabled) {
+        Write-Host "Configuring loopback route..."
+        $interfaceIndex = Get-NetAdapter $Interface | ForEach-Object { $_.ifIndex }
+        $interfaceIp = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $interfaceIndex | Select-Object -ExpandProperty IPAddress
+        $Addrs = @("$interfaceIp/32")
+        ConfigureAwsRoutes -Addrs $Addrs -Interface $Interface
+    }
+}
+
+function LoadPreferences($ApiUrl, $ApiToken) {
+    return RequestApi -ApiUrl $ApiUrl -ApiToken $ApiToken -HttpMethod "GET" -ApiMethod "preferences"
+}
+
+function RequestApi($ApiUrl, $ApiToken, $HttpMethod, $ApiMethod, $Body = $null) {
+    Write-Host "Requesting ${ApiUrl}${ApiMethod}..."
+    $Response = Invoke-RestMethod -Method $HttpMethod `
+                                  -Uri "${ApiUrl}${ApiMethod}" `
+                                  -Body $Body `
+                                  -Headers @{
+                                      "Authorization" = "Bearer $ApiToken"
+                                      "Content-Type" = "application/json"
+                                  }
+    if ($Response.status -ne "OK") {
+        Write-Error $Response.message
+        return $null
+    }
+    return $Response.payload
 }
 
 function ListenForConnection($Port) {
@@ -335,6 +392,8 @@ function ListenForConnection($Port) {
     $listener.Stop()
 }
 
+$apiUrl = "@API_URL@"
+$apiToken = "@API_TOKEN@"
 $kubeAddress = "@KUBE_IP@"
 $kubeHost, $kubePort = $kubeAddress.split(":",2)
 $kubeToken = "@KUBE_TOKEN@"
@@ -366,6 +425,9 @@ Start-Transcript -path $initLog -append
 Write-Host "Changing working directory..."
 Set-Location -Path "$workingDir"
 
+Write-Host "Initializing disks..."
+InitializeDisks
+
 $restartRequired = $false
 
 Write-Host "Installing nomachine if required..."
@@ -382,6 +444,10 @@ Write-Host "Restart required: $restartRequired"
 
 Write-Host "Installing pGina if required..."
 $restartRequired = (InstallPGinaIfRequired | Select-Object -Last 1) -or $restartRequired
+Write-Host "Restart required: $restartRequired"
+
+Write-Host "Installing docker if required..."
+$restartRequired = (InstallDockerIfRequired | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Restarting computer if required..."
@@ -439,14 +505,17 @@ WriteKubeConfig -KubeHost $kubeHost -KubePort $kubePort -KubeNodeToken $kubeNode
 Write-Host "Joining kubernetes cluster using Sig Windows Tools..."
 JoinKubeClusterUsingSigWindowsTools
 
-Write-Host "Waiting for dns to be accessible if required..."
-WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
-
 Write-Host "Configuring AWS routes..."
 ConfigureAwsRoutes -Addrs $awsAddrs -Interface $interfacePost
 
-Write-Host "Configuring loopback route..."
-ConfigureLoopbackRoute -Interface $interfacePost
+Write-Host "Waiting for dns to be accessible if required..."
+WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
+
+Write-Host "Loading preferences..."
+$preferences = LoadPreferences -ApiUrl $apiUrl -ApiToken $apiToken
+
+Write-Host "Configuring loopback route if it is enabled in preferences..."
+ConfigureLoopbackRouteIfEnabled -Preferences $preferences -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
 ListenForConnection -Port 8888
