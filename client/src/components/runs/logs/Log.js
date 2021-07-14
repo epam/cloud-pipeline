@@ -92,6 +92,7 @@ import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command'
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import VSActions from '../../versioned-storages/vs-actions';
+import {MultizoneUrl} from './MultizoneUrl';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -136,10 +137,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @observer
 class Logs extends localization.LocalizedReactComponent {
-
   @observable language = null;
   @observable _pipelineLanguage = null;
-
   state = {
     timings: false,
     commitRun: false,
@@ -247,6 +246,7 @@ class Logs extends localization.LocalizedReactComponent {
     return false;
   }
 
+  setRegion = (region) => {};
   exportLog = async () => {
     const {runId} = this.props.params;
 
@@ -523,6 +523,7 @@ class Logs extends localization.LocalizedReactComponent {
 
     return environment;
   };
+  buttonsWrapper = (button) => (<div style={{lineHeight: '29px', height: '29px'}}>{button}</div>);
 
   renderInstanceHeader = (instance, run) => {
     if (this.state.openedPanels.indexOf('instance') >= 0) {
@@ -960,7 +961,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   renderContentPlainMode () {
-    const {runId}=this.props.params;
+    const {runId} = this.props.params;
     const selectedTask = this.props.task ? this.getTaskUrl(this.props.task) : null;
     let Tasks;
 
@@ -1368,17 +1369,21 @@ class Logs extends localization.LocalizedReactComponent {
       let kubeServices;
       if (this.endpointAvailable) {
         const urls = this.props.multiZone.getDefaultRunServiceUrls(this.props.run.value.serviceUrl);
-        // todo: use regionedUrls
-        // const regionedUrls = this.props.multiZone.parseRunServiceUrlConfiguration(this.props.run.value.serviceUrl);
-        // console.log(regionedUrls, regionedUrls.map(url => this.props.multiZone.getDefaultURLRegion(url.url)));
+        const regionedUrls = this.props.multiZone.parseRunServiceUrlConfiguration(this.props.run.value.serviceUrl);
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
-            <th style={{verticalAlign: 'top'}}>{urls.length > 1 ? 'Endpoints: ': 'Endpoint: '}</th>
+            <th style={{verticalAlign: 'middle'}}>{urls.length > 1 ? 'Endpoints: ' : 'Endpoint: '}</th>
             <td>
               <ul>
                 {
-                  urls.map((url, index) =>
-                    <li key={index}><a href={url.url} target="_blank">{url.name || url.url}</a></li>
+                  regionedUrls.map(({name, url}, index) =>
+                    <li key={index}>
+                      <MultizoneUrl
+                        title={name || url}
+                        regions={url}
+                        defaultRegion={this.props.multiZone.getDefaultURLRegion(url)}
+                      />
+                    </li>
                   )
                 }
               </ul>
@@ -1586,11 +1591,11 @@ class Logs extends localization.LocalizedReactComponent {
               {kubeServices}
               {share}
               <tr>
-                <th>Owner: </th><td><UserName userName={owner}/></td>
+                <th>Owner: </th><td><UserName userName={owner} /></td>
               </tr>
               {
-                configName ?
-                  (
+                configName
+                  ? (
                     <tr>
                       <th>Configuration:</th>
                       <td>{configName}</td>
@@ -1737,27 +1742,35 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       if (this.sshEnabled) {
-        // todo:
-        // console.log(this.props.runSSH.value, this.props.multiZone.getDefaultURLRegion(this.props.runSSH.value));
         SSHButton = (
-          <a
-            href={this.props.multiZone.getDefaultURL(this.props.runSSH.value)}
-            target="_blank"
-          >
-            SSH
-          </a>
+          <div style={{
+            width: '100px',
+            marginLeft: 10,
+            paddingLeft: '12px'
+          }}>
+            <MultizoneUrl
+              defaultRegion={this.props.multiZone.getDefaultURLRegion(this.props.runSSH.value)}
+              regions={this.props.runSSH.value}
+              title={'SSH'}
+            />
+          </div>
         );
       }
       if (this.fsBrowserEnabled) {
-        // todo:
-        // console.log(this.props.runFSBrowser.value, this.props.multiZone.getDefaultURLRegion(this.props.runFSBrowser.value));
         FSBrowserButton = (
-          <a
-            href={this.props.multiZone.getDefaultURL(this.props.runFSBrowser.value)}
-            target="_blank"
+          <div
+            style={{
+              width: '100px',
+              marginLeft: 10,
+              paddingLeft: '12px'
+            }}
           >
-            BROWSE
-          </a>
+            <MultizoneUrl
+              defaultRegion={this.props.multiZone.getDefaultURLRegion(this.props.runFSBrowser.value)}
+              regions={this.props.runFSBrowser.value}
+              title={'BROWSE'}
+            />
+          </div>
         );
       }
 
@@ -1863,11 +1876,11 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {PauseResumeButton}
-              {ActionButton}
+              {this.buttonsWrapper(PauseResumeButton)}
+              {this.buttonsWrapper(ActionButton)}
               {SSHButton}
               {FSBrowserButton}
-              {ExportLogsButton}
+              {this.buttonsWrapper(ExportLogsButton)}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
