@@ -64,6 +64,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
@@ -105,6 +106,7 @@ public class GitlabClient {
     public static final String DOT_CHAR = ".";
     public static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
     public static final String GITKEEP_FILE = ".gitkeep";
+    public static final String EMAIL_SEPARATOR = "@";
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -449,6 +451,19 @@ public class GitlabClient {
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
     }
 
+    public Optional<GitlabUser> findUser(final String userName) throws GitClientException {
+        Optional<GitlabUser> gitlabUser = Optional.empty();
+        for (String name : generateGitLabUsernames(userName)) {
+            gitlabUser = Optional.of(execute(gitLabApi.searchUser(name)))
+                    .map(List::stream)
+                    .flatMap(Stream::findFirst);
+            if (gitlabUser.isPresent()) {
+                break;
+            }
+        }
+        return gitlabUser;
+    }
+
     private void createFile(GitProject project, String path, String content) {
         try {
             final Response<GitFile> response = gitLabApi.createFiles(
@@ -514,10 +529,10 @@ public class GitlabClient {
                 adminToken)).getToken();
     }
 
-    private Optional<GitlabUser> findUser(String userName) throws GitClientException {
-        return Optional.of(execute(gitLabApi.searchUser(userName)))
-                .map(List::stream)
-                .flatMap(Stream::findFirst);
+    private List<String> generateGitLabUsernames(final String userName) {
+        // try to split by @ if user name is an email it will crop it by @, if not - it will leave it as is
+        final String trimmed = userName.split(EMAIL_SEPARATOR)[0];
+        return Arrays.asList(trimmed.toUpperCase(), trimmed);
     }
 
     private GitProject createRepo(String repoName, String description) throws GitClientException {
