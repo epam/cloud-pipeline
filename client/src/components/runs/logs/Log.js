@@ -1813,7 +1813,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       if (status !== 'RUNNING') {
-        ExportLogsButton = this.buttonsWrapper(<a onClick={this.exportLog}>EXPORT LOGS</a>);
+        ExportLogsButton = <a onClick={this.exportLog}>EXPORT LOGS</a>;
       }
 
       let switchModeUrl;
@@ -1880,7 +1880,7 @@ class Logs extends localization.LocalizedReactComponent {
               {this.buttonsWrapper(ActionButton)}
               {SSHButton}
               {FSBrowserButton}
-              {ExportLogsButton}
+              {this.buttonsWrapper(ExportLogsButton)}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
