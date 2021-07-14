@@ -1381,7 +1381,7 @@ class Logs extends localization.LocalizedReactComponent {
                       <MultizoneUrl
                         title={name || url}
                         regions={url}
-                        defaultRegion={regionedUrls.map(url => this.props.multiZone.getDefaultURLRegion(url.url))[index]}
+                        defaultRegion={this.props.multiZone.getDefaultURLRegion(url)}
                       />
                     </li>
                   )
