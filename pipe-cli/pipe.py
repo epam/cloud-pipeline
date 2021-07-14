@@ -1255,9 +1255,11 @@ def chown(user_name, entity_class, entity_name):
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @click.pass_context
 @Config.validate_access_token
-def ssh(ctx, run_id, retries, trace):
+def ssh(ctx, run_id, retries, trace, region):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with
@@ -1277,7 +1279,7 @@ def ssh(ctx, run_id, retries, trace):
         pipe ssh 12345 echo \$HOSTNAME
     """
     try:
-        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries)
+        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries, region=region)
         sys.exit(ssh_exit_code)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
@@ -1295,8 +1297,10 @@ def ssh(ctx, run_id, retries, trace):
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help='The edge region name. If not specified the default edge region '
+                                                      'will be used.')
 @Config.validate_access_token
-def scp(source, destination, recursive, quiet, retries, trace):
+def scp(source, destination, recursive, quiet, retries, trace, region):
     """
     Transfers files or directories between local workstation and run instance.
 
@@ -1330,7 +1334,7 @@ def scp(source, destination, recursive, quiet, retries, trace):
         pipe scp -r 12345:/common/workdir/dir dir
     """
     try:
-        run_scp(source, destination, recursive, quiet, retries)
+        run_scp(source, destination, recursive, quiet, retries, region)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         if trace:
