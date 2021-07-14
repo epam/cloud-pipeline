@@ -92,7 +92,7 @@ import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command'
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import VSActions from '../../versioned-storages/vs-actions';
-import {RegionsDropdown} from './RegionsDropdown';
+import {MultizoneUrl} from './MultizoneUrl';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -523,6 +523,7 @@ class Logs extends localization.LocalizedReactComponent {
 
     return environment;
   };
+  buttonsWrapper = (button) => (<div style={{lineHeight: '29px', height: '29px'}}>{button}</div>);
 
   renderInstanceHeader = (instance, run) => {
     if (this.state.openedPanels.indexOf('instance') >= 0) {
@@ -1375,12 +1376,11 @@ class Logs extends localization.LocalizedReactComponent {
             <td>
               <ul>
                 {
-                  regionedUrls.map((url, index) =>
+                  regionedUrls.map(({name, url}, index) =>
                     <li key={index}>
-                      <RegionsDropdown
-                        title={url.name || url.url}
-                        regions={Object.assign({}, ...regionedUrls.map(({url}) => url))}
-                        run={this.runPayload}
+                      <MultizoneUrl
+                        title={name || url}
+                        regions={url}
                         defaultRegion={regionedUrls.map(url => this.props.multiZone.getDefaultURLRegion(url.url))[index]}
                       />
                     </li>
@@ -1748,10 +1748,9 @@ class Logs extends localization.LocalizedReactComponent {
             marginLeft: 10,
             paddingLeft: '12px'
           }}>
-            <RegionsDropdown
+            <MultizoneUrl
               defaultRegion={this.props.multiZone.getDefaultURLRegion(this.props.runSSH.value)}
               regions={this.props.runSSH.value}
-              run={this.runPayload}
               title={'SSH'}
             />
           </div>
@@ -1766,10 +1765,9 @@ class Logs extends localization.LocalizedReactComponent {
               paddingLeft: '12px'
             }}
           >
-            <RegionsDropdown
+            <MultizoneUrl
               defaultRegion={this.props.multiZone.getDefaultURLRegion(this.props.runFSBrowser.value)}
               regions={this.props.runFSBrowser.value}
-              run={this.runPayload}
               title={'BROWSE'}
             />
           </div>
@@ -1815,7 +1813,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       if (status !== 'RUNNING') {
-        ExportLogsButton = <a onClick={this.exportLog}>EXPORT LOGS</a>;
+        ExportLogsButton = this.buttonsWrapper(<a onClick={this.exportLog}>EXPORT LOGS</a>);
       }
 
       let switchModeUrl;
@@ -1878,8 +1876,8 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              <div style={{lineHeight: '29px', height: '29px'}}>{PauseResumeButton}</div>
-              <div style={{lineHeight: '29px', height: '29px'}}>{ActionButton}</div>
+              {this.buttonsWrapper(PauseResumeButton)}
+              {this.buttonsWrapper(ActionButton)}
               {SSHButton}
               {FSBrowserButton}
               {ExportLogsButton}
