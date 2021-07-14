@@ -63,16 +63,19 @@ def update_tool_info(tool, max_retry=100):
 def run_test(tool, command, endpoints_structure, url_checker=None, check_access=True, friendly_url=None,
              no_machine=False, spark=False):
     run_id, node_name = run(tool, command, no_machine=no_machine, spark=spark, friendly_url=friendly_url)
+    number_of_edge_regions = 1  # TODO fetch real values
     try:
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, len(endpoints_structure))
-        for name in urls:
-            url = urls[name]
+        endpoints = get_endpoint_urls(run_id)
+        check_for_number_of_endpoints(endpoints, len(endpoints_structure) * number_of_edge_regions)
+        for endpoint in endpoints:
+            url = endpoint["url"]
+            name = endpoint["name"]
+            region = endpoint["region"]
             pattern = endpoints_structure[name].format(run_id=run_id)
             structure_is_fine = check_service_url_structure(url, pattern, checker=url_checker)
             assert structure_is_fine, "service url: {}, has wrong format.".format(url)
             is_accessible = not check_access or follow_service_url(url, 100)
-            assert is_accessible, "service url: {}, is not accessible.".format(url)
+            assert is_accessible, "service url: {} : {} : {}, is not accessible.".format(name, region, url)
         return run_id, node_name
     finally:
         stop_pipe_with_retry(run_id)
