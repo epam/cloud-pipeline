@@ -35,10 +35,8 @@ class DtsModel(object):
         dts.url = json['url']
         dts.created_date = date_utilities.server_date_representation(json['createdDate'])
         dts.schedulable = json['schedulable']
-        if 'prefixes' in json:
-            dts.prefixes = json['prefixes']
-        if 'preferences' in json:
-            dts.preferences = json['preferences']
+        dts.prefixes = json.get('prefixes') or []
+        dts.preferences = json.get('preferences') or {}
         return dts
 
 

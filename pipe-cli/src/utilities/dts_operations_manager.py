@@ -23,7 +23,7 @@ from src.model.dts_model import DtsEncoder
 
 class DtsOperationsManager:
 
-    _DTS_TABLE_HEADERS = ['Registry ID', 'Name', 'URL', 'Created date', 'Schedulable', 'Prefixes', 'Preferences']
+    _DTS_TABLE_HEADERS = ['ID', 'Name', 'Schedulable']
     _PREF_DELIMITER = "="
 
     def __init__(self):
@@ -61,9 +61,9 @@ class DtsOperationsManager:
     def _convert_preferences_list_to_dict(self, preferences_list):
         preferences_dict = {}
         for preference_entry in preferences_list:
-            preference_value_and_key = preference_entry.split(self._PREF_DELIMITER)
+            preference_value_and_key = preference_entry.split(self._PREF_DELIMITER, 1)
             if len(preference_value_and_key) != 2:
-                click.echo('Error [%s]: preference should contain exactly one delimiter!' % preference_entry, err=True)
+                click.echo('Error [%s]: preference declaration should contain a delimiter!' % preference_entry, err=True)
                 sys.exit(1)
             else:
                 preferences_dict[preference_value_and_key[0]] = preference_value_and_key[1]
@@ -73,10 +73,47 @@ class DtsOperationsManager:
         if json_out:
             self._print_dts_json(registry)
         else:
-            self._print_registries_prettytable([registry])
+            self._print_single_registry_pretty(registry)
 
     def _print_dts_json(self, object):
         click.echo(json.dumps(object, cls=DtsEncoder))
+
+    def _print_single_registry_pretty(self, registry):
+        registry_info_table = prettytable.PrettyTable()
+        registry_info_table.field_names = ['key', 'value']
+        registry_info_table.align = 'l'
+        registry_info_table.set_style(12)
+        registry_info_table.header = False
+        registry_info_table.add_row(['ID:', registry.id])
+        registry_info_table.add_row(['Name:', registry.name])
+        registry_info_table.add_row(['URL:', registry.url])
+        registry_info_table.add_row(['Created:', registry.created_date])
+        registry_info_table.add_row(['Schedulable:', registry.schedulable])
+        click.echo(registry_info_table)
+        self._print_list_as_table('Prefixes', registry.prefixes)
+        self._print_list_as_table('Preferences', self.get_flat_preferences(registry))
+
+    def get_flat_preferences(self, registry):
+        flat_preferences = []
+        for preference, value in registry.preferences.items():
+            flat_preferences.append(preference + ': ' + value)
+        return flat_preferences
+
+    def _print_list_as_table(self, header_name, elements):
+        click.echo()
+        if elements:
+            self._echo_title('{}:'.format(header_name))
+            for prefix in elements:
+                click.echo(prefix)
+        else:
+            click.echo('No {} specified.'.format(header_name.lower()))
+
+    def _echo_title(self, title, line=True):
+        click.echo(title)
+        if line:
+            for i in title:
+                click.echo('-', nl=False)
+            click.echo('')
 
     def _print_registries_prettytable(self, registries):
         table = self._init_table()
@@ -92,8 +129,4 @@ class DtsOperationsManager:
         return table
 
     def _convert_registry_to_prettytable_row(self, registry):
-        flat_preferences = []
-        for preference in registry.preferences.items():
-            flat_preferences.append(preference[0] + self._PREF_DELIMITER + preference[1])
-        return [registry.id, registry.name, registry.url, registry.created_date, registry.schedulable,
-                '\n'.join(registry.prefixes), '\n'.join(flat_preferences)]
+        return [registry.id, registry.name, registry.schedulable]

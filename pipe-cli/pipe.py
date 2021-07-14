@@ -1742,7 +1742,7 @@ def dts():
 @click.option('--url', '-u', required=True, type=str)
 @click.option('--name', '-n', required=True, type=str)
 @click.option('--schedulable', '-s', required=False, is_flag=True)
-@click.option('--prefix', required=False, type=str, multiple=True,
+@click.option('--prefix', required=True, type=str, multiple=True,
               help='String, describing URL prefix for a DTS. Multiple options supported')
 @click.option('--preference', required=False, type=str, multiple=True,
               help='String, describing preference''s key and value: key=value. Multiple options supported')
