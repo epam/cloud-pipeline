@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -77,6 +78,7 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -972,7 +974,8 @@ public class GitManager {
         final GitCommitsFilter filter) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommits(
-                GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize, filter
+                GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize,
+                buildFiltersWithUsersFromGitLab(filter)
         ));
     }
 
@@ -981,7 +984,7 @@ public class GitManager {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiffs(
                 GitRepositoryUrl.from(pipeline.getRepository()),
-                includeDiff, filter
+                includeDiff, buildFiltersWithUsersFromGitLab(filter)
         ));
     }
 
@@ -992,6 +995,20 @@ public class GitManager {
                 GitRepositoryUrl.from(pipeline.getRepository()),
                 commit, path
         ));
+    }
+
+    private GitCommitsFilter buildFiltersWithUsersFromGitLab(GitCommitsFilter filter) {
+        return filter.toBuilder().authors(
+                CollectionUtils.emptyIfNull(filter.getAuthors()).stream().map(user -> {
+                    try {
+                        return getDefaultGitlabClient().findUser(user)
+                                .map(GitlabUser::getUsername).orElse(user);
+                    } catch (GitClientException e) {
+                        LOGGER.warn(e.getMessage());
+                        return user;
+                    }
+                }).filter(Objects::nonNull).collect(Collectors.toList())
+        ).build();
     }
 
     private <T> T callGitReaderApi(final GitClientMethodCall<GitReaderClient, T> method) {
