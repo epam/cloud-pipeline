@@ -115,9 +115,9 @@ class PipelineRunModel(object):
     def parse_service_urls(items):
         endpoints = []
         for region, service_urls_string in items:
-            service_urls = [record['url'] for record in json.loads(service_urls_string) if 'url' in record]
-            for service_url in service_urls:
-                endpoints.append("'%s' - %s" % (region, service_url))
+            service_urls = {record["name"]: record['url'] for record in json.loads(service_urls_string) if 'url' in record}
+            for name, service_url in service_urls:
+                endpoints.append("'%s' - %s: %s" % (region, name, service_url))
         return endpoints
 
 
