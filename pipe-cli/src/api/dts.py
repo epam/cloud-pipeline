@@ -26,10 +26,8 @@ class DTS(API):
     @classmethod
     def create(cls, url, name, schedulable, prefixes, preferences):
         api = cls.instance()
-        if not prefixes:
-            prefixes = []
-        if not preferences:
-            preferences = {}
+        prefixes = prefixes or []
+        preferences = preferences or {}
         dts = {
             'url': url,
             'name': name,
@@ -37,38 +35,38 @@ class DTS(API):
             'prefixes': prefixes,
             'preferences': preferences
         }
-        response = api.call('/dts', json.dumps(dts), http_method='post')
-        return DtsModel().load(response['payload'])
+        response = api.retryable_call('POST', '/dts', data=dts)
+        return DtsModel().load(response)
 
     @classmethod
     def load_all(cls):
         api = cls.instance()
-        response = api.call('/dts', None)
+        response = api.retryable_call('GET', '/dts')
         registries = []
-        for registry_json in response['payload']:
+        for registry_json in response:
             registries.append(DtsModel().load(registry_json))
         return registries
 
     @classmethod
     def load(cls, registry_id):
         api = cls.instance()
-        response = api.call('/dts/{}'.format(registry_id), None)
-        return DtsModel().load(response['payload'])
+        response = api.retryable_call('GET', '/dts/{}'.format(registry_id))
+        return DtsModel().load(response)
 
     @classmethod
     def update_preferences(cls, registry_id, preferences):
         api = cls.instance()
-        data = {
+        preferences_update = {
             'preferencesToUpdate': preferences
         }
-        response = api.call('/dts/{}/preferences'.format(registry_id), json.dumps(data), http_method='put')
-        return DtsModel().load(response['payload'])
+        response = api.retryable_call('PUT', '/dts/{}/preferences'.format(registry_id), data=preferences_update)
+        return DtsModel().load(response)
 
     @classmethod
     def delete_preferences(cls, registry_id, preferences_keys):
         api = cls.instance()
-        data = {
+        preferences_removal = {
             'preferenceKeysToRemove': preferences_keys
         }
-        response = api.call('/dts/{}/preferences'.format(registry_id), json.dumps(data), http_method='delete')
-        return DtsModel().load(response['payload'])
+        response = api.retryable_call('DELETE', '/dts/{}/preferences'.format(registry_id), preferences_removal)
+        return DtsModel().load(response)
