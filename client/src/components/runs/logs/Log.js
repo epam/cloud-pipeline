@@ -522,6 +522,7 @@ class Logs extends localization.LocalizedReactComponent {
 
     return environment;
   };
+  buttonsWrapper = (button) => (<div style={{lineHeight: '29px', height: '29px'}}>{button}</div>);
 
   buttonsWrapper = (button) => button
     ? (<div style={{lineHeight: '29px', height: '29px'}}>{button}</div>)
@@ -1802,7 +1803,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       if (status !== 'RUNNING') {
-        ExportLogsButton = <a onClick={this.exportLog}>EXPORT LOGS</a>;
+        ExportLogsButton = this.buttonsWrapper(<a onClick={this.exportLog}>EXPORT LOGS</a>);
       }
 
       let switchModeUrl;
