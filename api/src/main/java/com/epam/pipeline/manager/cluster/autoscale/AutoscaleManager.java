@@ -113,6 +113,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> poolNodeUpTaskInProgress = new ConcurrentHashMap<>();
+        private final Map<Long, Integer> lostRunIds = new ConcurrentHashMap<>();
 
         @Autowired
         AutoscaleManagerCore(final PipelineRunManager pipelineRunManager,
@@ -167,6 +168,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                         clusterSize + nodeUpTasksSize);
                 log.debug("Current retry queue size: {}.", nodeUpAttempts.size());
                 log.debug("Current pool instance queue: {}.", poolNodeUpTaskInProgress);
+                log.debug("Current lost runs queue: {}.", lostRunIds);
             } catch (KubernetesClientException e) {
                 log.error(e.getMessage(), e);
             }
@@ -371,10 +373,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 try {
                     PipelineRun run = idToRun.get(runId);
                     if (run == null) {
-                        log.error("Failed to load pipeline run {}.", runId);
-                        cleanDeletedRun(client, pod, runId);
+                        handleLostRun(client, pod, runId);
                         continue;
                     }
+                    lostRunIds.remove(runId);
                     if (run.getStatus().isFinal()) {
                         log.debug("Pipeline run {} is already in final status", runId);
                         continue;
@@ -390,9 +392,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     checkedPods.add(pod);
                     priorityScore.put(pod, getParameterValue(runParameters, "priority-score", 0L));
                 } catch (IllegalArgumentException e) {
-                    log.error("Failed to load pipeline run {}.", runId);
                     log.error(e.getMessage(), e);
-                    cleanDeletedRun(client, pod, runId);
+                    handleLostRun(client, pod, runId);
                 }
             }
             if (!CollectionUtils.isEmpty(checkedPods)) {
@@ -409,6 +410,21 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 return checkedPods;
             } else {
                 return Collections.emptyList();
+            }
+        }
+
+        private void handleLostRun(final KubernetesClient client, final Pod pod, final Long runId) {
+            final Integer lostRunCount = lostRunIds.getOrDefault(runId, 0);
+            final Integer lostRunAttempts = preferenceManager.getPreference(
+                    SystemPreferences.CLUSTER_LOST_RUN_ATTEMPTS);
+            if (lostRunCount > lostRunAttempts) {
+                log.error("Failed to load pipeline run {}. Deleting associated pod.", runId);
+                lostRunIds.remove(runId);
+                cleanDeletedRun(client, pod, runId);
+            } else {
+                log.error("Failed to load pipeline run {}. Leaving pod alive for {} more attempt(s).",
+                        runId, lostRunAttempts - lostRunCount);
+                lostRunIds.put(runId, lostRunCount + 1);
             }
         }
 

@@ -356,6 +356,9 @@ public class SystemPreferences {
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
+    public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
+            5, CLUSTER_GROUP, isGreaterThan(0));
+
     /**
      * If this property is true, pipelines without parent (batch ID) will have the highest priority,
      * otherwise - the lowest
