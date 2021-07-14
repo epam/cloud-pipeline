@@ -894,6 +894,8 @@ if is_service_requested cp-git-sync; then
 fi
 
 # GitLab Reader
+## Always register preference for gitlab-reader
+api_register_git_reader
 if is_service_requested cp-gitlab-reader; then
     print_ok "[Starting GitLab Reader deployment]"
 
@@ -908,7 +910,6 @@ if is_service_requested cp-gitlab-reader; then
 
         print_info "-> Waiting for GitLab Reader to initialize"
         wait_for_deployment "cp-gitlab-reader"
-        api_register_git_reader
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-reader: deployed"
     fi
     echo
