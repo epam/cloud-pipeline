@@ -414,7 +414,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private void handleLostRun(final KubernetesClient client, final Pod pod, final Long runId) {
-            final Integer lostRunCount = lostRunIds.getOrDefault(runId, 0);
+            final Integer lostRunCount = lostRunIds.getOrDefault(runId, 1);
             final Integer lostRunAttempts = preferenceManager.getPreference(
                     SystemPreferences.CLUSTER_LOST_RUN_ATTEMPTS);
             if (lostRunCount > lostRunAttempts) {
