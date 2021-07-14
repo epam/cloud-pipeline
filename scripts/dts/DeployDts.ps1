@@ -201,7 +201,8 @@ While ($True) {
         & "$env:APP_HOME\bin\dts.bat" >$null 2>&1
         Log "Data transfer service has exited."
 
-        Log "Finishing cycle..."
+        Log "Removing existing temporary data transfer service launcher..."
+        RemoveFileIfExists ("$env:DTS_LAUNCHER_PATH" + ".new")
 
         Log "Downloading data transfer service launcher..."
         Invoke-WebRequest "$env:DTS_LAUNCHER_URL" -OutFile ("$env:DTS_LAUNCHER_PATH" + ".new") -ErrorAction Stop
@@ -209,9 +210,7 @@ While ($True) {
         Log "Replacing existing data transfer service launcher..."
         Move-Item -Path ("$env:DTS_LAUNCHER_PATH" + ".new") -Destination "$env:DTS_LAUNCHER_PATH" -Force -ErrorAction Stop
 
-        Log "Removing temporary data transfer service launcher..."
-        RemoveFileIfExists ("$env:DTS_LAUNCHER_PATH" + ".new")
-
+        Log "Finishing cycle..."
         Break
     } catch {
         Log "Finishing cycle with error: $_"
