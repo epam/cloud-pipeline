@@ -1803,7 +1803,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       if (status !== 'RUNNING') {
-        ExportLogsButton = this.buttonsWrapper(<a onClick={this.exportLog}>EXPORT LOGS</a>);
+        ExportLogsButton = <a onClick={this.exportLog}>EXPORT LOGS</a>;
       }
 
       let switchModeUrl;
