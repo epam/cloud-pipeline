@@ -134,6 +134,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get metadataSystemKeys () {
+    const value = this.getPreferenceValue('misc.metadata.system.keys');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.metadata.system.keys" preference:', e);
+      }
+    }
+    return [];
+  }
+
+  @computed
   get hiddenObjects () {
     const value = this.getPreferenceValue('ui.hidden.objects');
     if (value) {
