@@ -48,7 +48,7 @@ public class FolderApiService {
         return folderManager.update(folder);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
+    @PreAuthorize("hasRole('ADMIN') OR @metadataPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
     @AclTree
     public FolderWithMetadata getProject(final Long id, final AclClass aclClass) {
         return folderManager.getProject(id, aclClass);

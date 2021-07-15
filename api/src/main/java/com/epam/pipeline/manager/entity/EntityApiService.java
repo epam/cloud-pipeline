@@ -37,7 +37,7 @@ public class EntityApiService {
     @Autowired
     private HierarchicalEntityManager hierarchicalEntityManager;
 
-    @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.entityPermission(returnObject, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR @metadataPermissionManager.entityPermission(returnObject, 'READ')")
     public AbstractSecuredEntity loadByNameOrId(AclClass entityClass, String identifier) {
         return entityManager.loadByNameOrId(entityClass, identifier);
     }

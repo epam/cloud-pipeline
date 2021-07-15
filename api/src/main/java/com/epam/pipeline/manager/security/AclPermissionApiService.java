@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
         return permissionManager.setPermissions(grantVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @grantPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
+    @PreAuthorize("hasRole('ADMIN') or @metadataPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
     public AclSecuredEntry getPermissions(Long id, AclClass aclClass) {
         return permissionManager.getPermissions(id, aclClass);
     }
@@ -55,7 +55,7 @@ import org.springframework.stereotype.Service;
         return permissionManager.changeOwner(id, aclClass, userName);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @grantPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
+    @PreAuthorize("hasRole('ADMIN') or @metadataPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
     public EntityPermissionVO loadEntityPermission(final Long id, final AclClass aclClass) {
         return permissionManager.loadEntityPermission(aclClass, id);
     }
