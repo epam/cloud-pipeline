@@ -61,12 +61,14 @@ def update_tool_info(tool, max_retry=100):
 
 
 def run_test(tool, command, endpoints_structure, url_checker=None, check_access=True, friendly_url=None,
-             no_machine=False, spark=False):
+             no_machine=False, spark=False, custom_dns_endpoints=0):
     run_id, node_name = run(tool, command, no_machine=no_machine, spark=spark, friendly_url=friendly_url)
-    number_of_edge_regions = 1  # TODO fetch real values
+    edge_services = get_edge_services()
+    # calculate number of endpoints should be generated regarding to existing edges
+    number_of_endpoints = custom_dns_endpoints + (len(endpoints_structure) - custom_dns_endpoints) * len(edge_services)
     try:
         endpoints = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(endpoints, len(endpoints_structure) * number_of_edge_regions)
+        check_for_number_of_endpoints(endpoints, number_of_endpoints)
         for endpoint in endpoints:
             url = endpoint["url"]
             name = endpoint["name"]
@@ -79,6 +81,34 @@ def run_test(tool, command, endpoints_structure, url_checker=None, check_access=
         return run_id, node_name
     finally:
         stop_pipe_with_retry(run_id)
+
+
+def get_custom_dns_hosted_zone():
+    result = UtilsManager.get_preference_or_none("instance.dns.hosted.zone.base")
+    return result if result else ""
+
+
+def get_edge_services(max_retry=100):
+
+    def curl_edge_api():
+        api = os.environ['API']
+        token = os.environ['API_TOKEN']
+        command = [
+            'curl', '-H', 'Authorization: Bearer {}'.format(token), '-k', '-L',
+            '{}/{}'.format(api.strip("/"), "edge/services")
+        ]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        return process.wait(), ''.join(process.stdout.readlines())
+
+    rep_count = 1
+    code, result = curl_edge_api()
+    while rep_count < max_retry and code != 0:
+        code, result = curl_edge_api()
+
+    if code == 0:
+        if 'payload' in result:
+            return json.loads(result)['payload']
+    raise RuntimeError("Can't load edges info from API")
 
 
 def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spark=False, friendly_url=None,

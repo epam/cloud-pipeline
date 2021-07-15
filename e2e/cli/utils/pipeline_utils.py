@@ -131,17 +131,20 @@ def get_endpoint_urls(run_id, *args):
     collecting = False
     while line != '':
         endpoint = ""
+
+        if line.strip().startswith("Scheduled"):
+            break
+
         if line.startswith("Endpoints"):
             collecting = True
-            endpoint = line.rstrip().split(":", 1)
+            endpoint = line.strip().split(":", 1)[1]
         elif collecting:
-            endpoint = line.rstrip()
+            endpoint = line.strip()
 
         if collecting and endpoint.rstrip() != "":
-            region_endpoint = endpoint.split(":")
-            endpoints_info.append({"name": region_endpoint[0].rstrip(), "region": region_endpoint[1].rstrip(), "url": region_endpoint[2].rstrip()})
-            if line.startswith("Scheduled"):
-                break
+            region_endpoint = endpoint.split(" : ")
+            endpoints_info.append({"name": region_endpoint[0].strip(), "region": region_endpoint[1].strip(), "url": region_endpoint[2].strip()})
+
         line = process.stdout.readline()
     return endpoints_info
 

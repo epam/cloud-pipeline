@@ -23,6 +23,7 @@ class TestRStudioEndpoints(object):
     state = FailureIndicator()
     custom_dns_swap_flags = {}
     test_case = ''
+    custom_dns_hosted_zone = ''
 
     @classmethod
     def setup_class(cls):
@@ -35,6 +36,8 @@ class TestRStudioEndpoints(object):
                 cls.custom_dns_swap_flags[i] = True
                 tool_info["endpoints"][i] = tool_info["endpoints"][i].replace('"customDNS":false', '"customDNS":true')
         update_tool_info(tool_info)
+        cls.custom_dns_hosted_zone = get_custom_dns_hosted_zone()
+
 
 
     @classmethod
@@ -56,8 +59,9 @@ class TestRStudioEndpoints(object):
                                                       "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                          "RStudio": "https://pipeline-{run_id}-8788-0.jobs.cloud-pipeline.com:\\d*"
-                                                      })
+                                                          "RStudio": "https://pipeline-{run_id}-8788-0." + self.custom_dns_hosted_zone + ":\\d*"
+                                                          if self.custom_dns_hosted_zone != '' else '.*pipeline-{run_id}-8788-0'
+                                                      }, custom_dns_endpoints=1)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
 
@@ -69,8 +73,8 @@ class TestRStudioEndpoints(object):
                                                       friendly_url="rstudio",
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                          "RStudio": "https://rstudio.jobs.cloud-pipeline.com:\\d*/"
-                                                      })
+                                                          "RStudio": "https://rstudio." + self.custom_dns_hosted_zone + ":\\d*/" if self.custom_dns_hosted_zone != '' else '.*rstudio'
+                                                      }, custom_dns_endpoints=1)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
 
@@ -85,7 +89,7 @@ class TestRStudioEndpoints(object):
                                                   url_checker=lambda u, p: u == p,
                                                   endpoints_structure={
                                                       "RStudio": "https://friendly.com"
-                                                  })
+                                                  }, custom_dns_endpoints=0)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
 
@@ -100,9 +104,11 @@ class TestRStudioEndpoints(object):
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
                                                           "RStudio": "https://friendly.com.*/friendly"
-                                                      })
+                                                      }, custom_dns_endpoints=0)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
     @pipe_test
     def test_custom_domain_rstudio_and_no_machine_endpoint(self):
@@ -113,9 +119,9 @@ class TestRStudioEndpoints(object):
                                                       no_machine=True,
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                           "RStudio": "https://pipeline-{run_id}-8788-0.jobs.cloud-pipeline.com:.*/",
+                                                           "RStudio": "https://pipeline-{run_id}-8788-0." + self.custom_dns_hosted_zone + ":.*/" if self.custom_dns_hosted_zone != '' else '.*pipeline-{run_id}-8788-0',
                                                            "NoMachine": ".*pipeline-{run_id}-8089-0",
-                                                      })
+                                                      }, custom_dns_endpoints=1)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
 
@@ -129,9 +135,9 @@ class TestRStudioEndpoints(object):
                                                       friendly_url="friendly",
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                          "RStudio": "https://friendly-RStudio.jobs.cloud-pipeline.com:.*/",
+                                                          "RStudio": "https://friendly-RStudio." + self.custom_dns_hosted_zone + ":.*/" if self.custom_dns_hosted_zone != '' else '.*friendly-RStudio',
                                                           "NoMachine": ".*friendly-NoMachine",
-                                                      })
+                                                      }, custom_dns_endpoints=1)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
 
@@ -146,9 +152,9 @@ class TestRStudioEndpoints(object):
                                                       friendly_url="friendly",
                                                       url_checker=lambda u, p: bool(re.compile(p).match(u)),
                                                       endpoints_structure={
-                                                          "RStudio": "https://friendly-RStudio.jobs.cloud-pipeline.com:.*/",
+                                                          "RStudio": "https://friendly-RStudio." + self.custom_dns_hosted_zone + ":.*/"  if self.custom_dns_hosted_zone != '' else '.*friendly-RStudio',
                                                           "NoMachine": ".*friendly-NoMachine",
                                                           "SparkUI": ".*friendly-SparkUI"
-                                                      })
+                                                      }, custom_dns_endpoints=1)
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
