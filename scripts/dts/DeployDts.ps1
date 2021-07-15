@@ -64,6 +64,7 @@ if ($Install) {
 `$env:DTS_RESTART_DELAY_SECONDS = "10"
 `$env:DTS_FINISH_DELAY_SECONDS = "10"
 `$env:DTS_RESTART_INTERVAL = "PT1M"
+`$env:DTS_LAUNCHER_URL = "$env:DISTRIBUTION_URL/DeployDts.ps1"
 `$env:DTS_LAUNCHER_PATH = "$env:DTS_DIR\DeployDts.ps1"
 `$env:DTS_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/data-transfer-service-windows.zip"
 `$env:DTS_DISTRIBUTION_PATH = "$env:DTS_DIR\data-transfer-service-windows.zip"
@@ -200,7 +201,17 @@ While ($True) {
         & "$env:APP_HOME\bin\dts.bat" >$null 2>&1
         Log "Data transfer service has exited."
 
+        Log "Removing existing temporary data transfer service launcher..."
+        RemoveFileIfExists ("$env:DTS_LAUNCHER_PATH" + ".new")
+
+        Log "Downloading data transfer service launcher..."
+        Invoke-WebRequest "$env:DTS_LAUNCHER_URL" -OutFile ("$env:DTS_LAUNCHER_PATH" + ".new") -ErrorAction Stop
+
+        Log "Replacing existing data transfer service launcher..."
+        Move-Item -Path ("$env:DTS_LAUNCHER_PATH" + ".new") -Destination "$env:DTS_LAUNCHER_PATH" -Force -ErrorAction Stop
+
         Log "Finishing cycle..."
+        Break
     } catch {
         Log "Finishing cycle with error: $_"
     }
@@ -208,3 +219,6 @@ While ($True) {
     Log "Waiting for $env:DTS_RESTART_DELAY_SECONDS seconds before proceeding..."
     Start-Sleep -Seconds "$env:DTS_RESTART_DELAY_SECONDS"
 }
+
+Log "Stopping logs capturing..."
+Stop-Transcript
