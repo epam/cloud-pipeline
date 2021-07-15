@@ -39,61 +39,60 @@ public class MetadataApiService {
     @Autowired
     private MetadataManager metadataManager;
 
-    @PreAuthorize(AclExpressions.METADATA_OWNER)
+    @PreAuthorize(AclExpressions.METADATA_UPDATE)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
         return metadataManager.updateMetadataItemKey(metadataVO);
     }
 
-    @PreAuthorize(AclExpressions.METADATA_OWNER)
+    @PreAuthorize(AclExpressions.METADATA_UPDATE)
     public MetadataEntry updateMetadataItemKeys(MetadataVO metadataVO) {
         return metadataManager.updateMetadataItemKeys(metadataVO);
     }
 
-    @PreAuthorize(AclExpressions.METADATA_OWNER)
+    @PreAuthorize(AclExpressions.METADATA_UPDATE)
     public MetadataEntry updateMetadataItem(MetadataVO metadataVO) {
         return metadataManager.updateMetadataItem(metadataVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.listMetadataPermissions(#entities, 'READ')")
+    @PreAuthorize("hasRole('ADMIN') OR @metadataPermissionManager.listMetadataPermission(#entities, 'READ')")
     public List<MetadataEntry> listMetadataItems(List<EntityVO> entities) {
         return metadataManager.listMetadataItems(entities);
     }
 
-    @PreAuthorize(AclExpressions.METADATA_ENTRY_OWNER)
+    @PreAuthorize(AclExpressions.METADATA_UPDATE_KEY)
     public MetadataEntry deleteMetadataItemKey(EntityVO entityVO, String key) {
         return metadataManager.deleteMetadataItemKey(entityVO, key);
     }
 
-    @PreAuthorize(AclExpressions.METADATA_ENTRY_OWNER)
+    @PreAuthorize(AclExpressions.METADATA_OWNER)
     public MetadataEntry deleteMetadataItem(EntityVO entityVO) {
         return metadataManager.deleteMetadataItem(entityVO);
     }
 
-    @PreAuthorize(AclExpressions.METADATA_OWNER)
+    @PreAuthorize(AclExpressions.METADATA_UPDATE)
     public MetadataEntry deleteMetadataItemKeys(MetadataVO metadataVO) {
         return metadataManager.deleteMetadataItemKeys(metadataVO);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.metadataPermission(returnObject, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR @metadataPermissionManager.metadataPermission(returnObject, 'READ')")
     public MetadataEntry findMetadataEntityIdByName(String entityName, AclClass entityClass) {
         return metadataManager.findMetadataEntryByNameOrId(entityName, entityClass);
     }
 
-    @PreAuthorize(AclExpressions.METADATA_ENTRY_OWNER)
+    @PreAuthorize(AclExpressions.METADATA_OWNER)
     public MetadataEntry uploadMetadataFromFile(final EntityVO entityVO,
                                                 final MultipartFile file,
                                                 final boolean mergeWithExistingMetadata) {
         return metadataManager.uploadMetadataFromFile(entityVO, file, mergeWithExistingMetadata);
     }
 
-    @PostFilter("hasRole('ADMIN') OR " + "@grantPermissionManager.metadataPermission(" +
-            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')")
+    @PostFilter(AclExpressions.METADATA_FILTER)
     public List<MetadataEntryWithIssuesCount> loadEntitiesMetadataFromFolder(Long parentFolderId) {
         return metadataManager.loadEntitiesMetadataFromFolder(parentFolderId);
     }
 
-    @PostFilter("hasRole('ADMIN') OR " + "@grantPermissionManager.metadataPermission(" +
-            "filterObject.entityId, filterObject.entityClass, 'READ')")
+    @PostFilter("hasRole('ADMIN') or " +
+            "@metadataPermissionManager.metadataPermission(filterObject.entityId, filterObject.entityClass, 'READ')")
     public List<EntityVO> searchMetadataByClassAndKeyValue(final AclClass entityClass, final String key,
                                                            final String value) {
         return metadataManager.searchMetadataByClassAndKeyValue(entityClass, key, value);
