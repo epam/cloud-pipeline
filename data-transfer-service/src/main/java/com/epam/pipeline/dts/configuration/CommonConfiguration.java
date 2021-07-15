@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dts.configuration;
 
+import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.common.service.FileService;
 import com.epam.pipeline.dts.common.service.impl.FileServiceImpl;
@@ -62,8 +63,10 @@ public class CommonConfiguration {
 
     @Bean
     public CloudPipelineAPIClient apiClient(final @Value("${dts.api.url}") String apiUrl,
-                                            final @Value("${dts.api.token}") String apiToken) {
-        return CloudPipelineAPIClient.from(apiUrl, apiToken);
+                                            final @Value("${dts.api.token}") String apiToken,
+                                            final @Value("${dts.api.timeout.seconds}") int apiTimeoutInSeconds) {
+        return CloudPipelineAPIClient.from(new CloudPipelineApiBuilder(apiTimeoutInSeconds, apiTimeoutInSeconds, apiUrl, apiToken)
+                .buildClient());
     }
 
     private Executor getThreadPoolTaskExecutor(String name, int taskPoolSize) {
