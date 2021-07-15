@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.dts.submission;
+package com.epam.pipeline.dts.sync;
 
-import com.epam.pipeline.entity.BaseEntity;
-import java.util.List;
-import java.util.Map;
+import com.epam.pipeline.dts.configuration.CommonConfiguration;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Import;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+@SpringBootConfiguration
+@ComponentScan(basePackages = "com.epam.pipeline.dts.sync")
+@Import({CommonConfiguration.class})
+public class SyncConfiguration {
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class DtsRegistry extends BaseEntity {
-    private String url;
-    private List<String> prefixes;
-    private Map<String, String> preferences;
-    private boolean schedulable = false;
 }

@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.dts.submission;
+package com.epam.pipeline.vo.dts;
 
-import com.epam.pipeline.entity.BaseEntity;
+
+import lombok.Value;
+
 import java.util.List;
-import java.util.Map;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+@Value
+public class DtsRegistryPreferencesRemovalVO {
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class DtsRegistry extends BaseEntity {
-    private String url;
-    private List<String> prefixes;
-    private Map<String, String> preferences;
-    private boolean schedulable = false;
+    private List<String> preferenceKeysToRemove;
 }

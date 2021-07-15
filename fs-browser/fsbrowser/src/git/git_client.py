@@ -205,12 +205,19 @@ class GitClient:
         repo = self._repository(repo_path)
         return self._is_merge_in_progress(repo)
 
-    def checkout(self, repo_path, revision, branch=GitHelper.DEFAULT_BRANCH_NAME):
+    def checkout(self, repo_path, revision, branch=GitHelper.DEFAULT_BRANCH_NAME,
+                 remote_name=GitHelper.DEFAULT_REMOTE_NAME):
         repo = self._repository(repo_path)
         status_files = self.status(repo_path)
         if status_files and len(status_files) > 0:
             self.revert(repo_path, branch)
-        if self._revision_is_latest(repo, revision):
+
+        callbacks = self._build_callback()
+        remote = self._get_remote(repo, remote_name)
+        remote.fetch(callbacks=callbacks)
+        remote_master_id = GitHelper.get_remote_head(repo, remote_name, branch).target
+
+        if str(remote_master_id) == str(revision):
             repo.checkout('refs/heads/%s' % branch)
         else:
             self._checkout(repo, revision)
@@ -335,5 +342,7 @@ class GitClient:
             commit = repo.get(revision)
         except ValueError:
             raise RuntimeError("Requested revision '%s' doesn't exist" % revision)
+        if not commit:
+            raise RuntimeError("Requested revision '%s' not found. Try to update repository." % revision)
         repo.checkout_tree(commit)
         repo.set_head(commit.id)

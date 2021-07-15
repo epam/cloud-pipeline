@@ -84,7 +84,7 @@ const ASCEND = 'ascend';
 const DESCEND = 'descend';
 
 function filterColumns (column) {
-  return !column.predefined || ['externalId', 'createdDate'].indexOf(column.name) >= 0;
+  return !column.predefined || ['externalId', 'createdDate'].includes(column.name);
 }
 
 function mapColumnName (column) {
@@ -99,6 +99,10 @@ function unmapColumnName (name) {
     return 'externalId';
   }
   return name;
+}
+
+function isPredefined (name) {
+  return ['externalId', 'createdDate'].includes(name);
 }
 
 function getDefaultColumnName (displayName) {
@@ -403,9 +407,17 @@ export default class Metadata extends React.Component {
     let currentMetadata = [];
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
-        .map(o => ({...o, field: unmapColumnName(o.field)}));
+        .map(o => ({
+          ...o,
+          field: unmapColumnName(o.field),
+          predefined: isPredefined(unmapColumnName(o.field))
+        }));
       filters = (filterModel.filters || [])
-        .map(o => ({...o, field: unmapColumnName(o.field)}));
+        .map(o => ({
+          key: unmapColumnName(o.key),
+          values: o.values || [],
+          predefined: isPredefined(unmapColumnName(o.key))
+        }));
     }
     if (!selectedItemsAreShowing) {
       await this.metadataRequest.send(
@@ -871,17 +883,51 @@ export default class Metadata extends React.Component {
 
   onColumnSelect = (item) => {
     const currentColumns = [...this.state.columns];
+    const column = currentColumns.find(obj => obj.key === item);
+    if (column) {
+      column.selected = !column.selected;
+      this.setState(
+        {columns: [...currentColumns]},
+        this.resetColumnsFiltersAndSorting
+      );
+    }
+  };
 
-    const index = currentColumns.findIndex(obj => obj.key === item);
-    const isSelected = currentColumns.findIndex(obj => obj.key === item && obj.selected) > -1;
-
-    currentColumns[index] = {key: item, selected: !isSelected};
-    this.setState({columns: currentColumns}, this.clearSelection);
+  resetColumnsFiltersAndSorting = () => {
+    const {
+      columns,
+      filterModel: oldFilters = {}
+    } = this.state;
+    const {
+      orderBy,
+      filters,
+      startDateFrom,
+      endDateTo,
+      ...filterModelRest
+    } = oldFilters;
+    const selectedColumnsKeys = new Set(
+      columns
+        .filter(column => column.selected)
+        .map(column => column.key)
+    );
+    const filterModel = {
+      orderBy: orderBy.filter(col => selectedColumnsKeys.has(col.field)),
+      filters: filters.filter(filter => selectedColumnsKeys.has(filter.key)),
+      startDateFrom: selectedColumnsKeys.has('createdDate') ? startDateFrom : undefined,
+      endDateTo: selectedColumnsKeys.has('createdDate') ? endDateTo : undefined,
+      ...filterModelRest
+    };
+    this.setState({
+      filterModel
+    }, () => {
+      this.clearSelection();
+      this.loadData();
+    });
   };
 
   onResetColumns = () => {
     this.resetColumns(this.state.columns)
-      .then(columns => this.setState({columns}, this.clearSelection));
+      .then(columns => this.setState({columns}, this.resetColumnsFiltersAndSorting));
   };
 
   onSetOrder = (order) => {

@@ -42,6 +42,7 @@ from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_t
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
+from src.utilities.dts_operations_manager import DtsOperationsManager
 from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
@@ -1730,6 +1731,72 @@ def import_users(file_path, create_user, create_group, create_metadata):
     Registers a new users, roles and metadata specified in input file
     """
     UserOperationsManager().import_users(file_path, create_user, create_group, create_metadata)
+
+
+@cli.group()
+def dts():
+    """ Data-transfer-service commands
+    """
+    pass
+
+
+@dts.command(name='create')
+@click.option('--url', '-u', required=True, type=str)
+@click.option('--name', '-n', required=True, type=str)
+@click.option('--schedulable', '-s', required=False, is_flag=True)
+@click.option('--prefix', required=False, type=str, multiple=True,
+              help='String, describing URL prefix for a DTS. Multiple options supported')
+@click.option('--preference', required=False, type=str, multiple=True,
+              help='String, describing preference''s key and value: key=value. Multiple options supported')
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@Config.validate_access_token
+def create_dts(url, name, schedulable, prefix, preference, json_out):
+    """
+    Registers a DTS
+    """
+    DtsOperationsManager().create(url, name, schedulable, prefix, preference, json_out)
+
+
+@dts.command(name='list')
+@click.argument('registry-name-or-id', required=False, type=str)
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+@Config.validate_access_token
+def list_dts(registry_name_or_id, json_out):
+    """
+    Shows details of all DTS registries or the one for ID specified
+    """
+    DtsOperationsManager().list(registry_name_or_id, json_out)
+
+
+@dts.group()
+def preferences():
+    """ Commands for DTS preferences management
+    """
+    pass
+
+
+@preferences.command(name='update')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--preference', '-p', multiple=True, type=str,
+              help='String, describing preference''s key and value: key=value. Multiple options supported')
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+def update_dts_preferences(registry_name_or_id, preference, json_out):
+    """
+    Updates preferences for the given DTS
+    """
+    DtsOperationsManager().upsert_preferences(registry_name_or_id, preference, json_out)
+
+
+@preferences.command(name='delete')
+@click.argument('registry-name-or-id', required=True, type=str)
+@click.option('--key', '-k', multiple=True, type=str,
+              help="Key of the preference, that should be removed. Multiple options supported")
+@click.option('--json-out', '-jo', required=False, is_flag=True, help='Defines if output should be JSON-formatted')
+def delete_dts_preferences(registry_name_or_id, key, json_out):
+    """
+    Removes preferences for specified keys from the given DTS
+    """
+    DtsOperationsManager().delete_preferences(registry_name_or_id, key, json_out)
 
 
 # Used to run a PyInstaller "freezed" version

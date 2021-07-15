@@ -1880,7 +1880,7 @@ class Logs extends localization.LocalizedReactComponent {
               {CommitStatusButton}
             </Row>
             <br />
-            {!this.props.run.value.sensitive ? (
+            {!this.props.run.value.sensitive && this.props.run.value.platform !== 'windows' ? (
               <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
                 <VSActions
                   run={this.props.run.value}

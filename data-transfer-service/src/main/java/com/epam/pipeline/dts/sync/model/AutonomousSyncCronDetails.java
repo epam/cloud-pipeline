@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.dts.submission;
+package com.epam.pipeline.dts.sync.model;
 
-import com.epam.pipeline.entity.BaseEntity;
-import java.util.List;
-import java.util.Map;
-
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import org.springframework.scheduling.support.CronSequenceGenerator;
+
+import java.util.Date;
 
 @Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class DtsRegistry extends BaseEntity {
-    private String url;
-    private List<String> prefixes;
-    private Map<String, String> preferences;
-    private boolean schedulable = false;
+public class AutonomousSyncCronDetails {
+
+    private String expression;
+    private CronSequenceGenerator generator;
+    private Date lastExecution;
+
+    public AutonomousSyncCronDetails(final String expression, final Date lastExecution) {
+        this.expression = expression;
+        this.generator = new CronSequenceGenerator(expression);
+        this.lastExecution = lastExecution;
+    }
 }

@@ -14,10 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-_GIT_REPO=$1
-_REPO_REVISION=$2
-_RESUMED_RUN=$3
-_BRANCH=$4
+_REPO_REVISION=$1
+_RESUMED_RUN=$2
 
 echo "Setup FSBrowser"
 echo "-"
@@ -30,9 +28,11 @@ if ! jq --version > /dev/null 2>&1; then
 fi
 
 CP_FSBROWSER_PORT="${CP_FSBROWSER_PORT:-8091}"
+CP_FSBROWSER_HOST="${CP_FSBROWSER_HOST:-0.0.0.0}"
 CP_FSBROWSER_WD="${CP_FSBROWSER_WD:-/}"
 CP_FSBROWSER_TMP="${CP_FSBROWSER_TMP:-/tmp}"
 CP_FSBROWSER_BLACK_LIST="${CP_FSBROWSER_BLACK_LIST:-/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc}"
+CP_FSBROWSER_PASS=$(echo -n "root:${SSH_PASS}" | base64)
 if [ -z "$CP_FSBROWSER_STORAGE" ]; then
     CP_FSBROWSER_STORAGE="$(curl -k \
                                     -s \
@@ -74,7 +74,7 @@ echo "- Port:        $CP_FSBROWSER_PORT"
 echo "- WD:          $CP_FSBROWSER_WD"
 echo "- Git workdir: $CP_FSBROWSER_VS_WD"
 echo "- Storage:     $CP_FSBROWSER_STORAGE"
-env SSL_CERT_DIR="$_SSL_CERT_DIR" nohup fsbrowser --host 0.0.0.0 \
+env SSL_CERT_DIR="$_SSL_CERT_DIR" nohup fsbrowser --host "$CP_FSBROWSER_HOST" \
                 --port "${CP_FSBROWSER_PORT}" \
                 --working_directory "${CP_FSBROWSER_WD}" \
                 --vs_working_directory "${CP_FSBROWSER_VS_WD}" \
@@ -82,7 +82,14 @@ env SSL_CERT_DIR="$_SSL_CERT_DIR" nohup fsbrowser --host 0.0.0.0 \
                 --exclude "${CP_FSBROWSER_BLACK_LIST}" \
                 --transfer_storage "${CP_FSBROWSER_STORAGE}" > /var/log/fsbrowser.log 2>&1 &
 _fsbfowser_launch_exit_code=$?
-if [ $_fsbfowser_launch_exit_code -eq 0 ] && [ -n "$PIPELINE_ID" ]; then
+if [ "$_RESUMED_RUN" == true ]; then
+      echo "Skipping pipeline repository clone for a resumed run"
+elif [ $_fsbfowser_launch_exit_code -eq 0 ] && [ -n "$PIPELINE_ID" ]; then
+    timeout 5 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' "$CP_FSBROWSER_HOST" "${CP_FSBROWSER_PORT}"
+    if [ "$?" -ne 0 ]; then
+      echo "Excited max retries count for waiting FSBrowser startup"
+      exit 1
+    fi
     _pipeline_type="$(curl -k \
                                -s \
                                -X GET \

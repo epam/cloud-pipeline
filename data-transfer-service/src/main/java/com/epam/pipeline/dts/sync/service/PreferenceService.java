@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.dts.submission;
+package com.epam.pipeline.dts.sync.service;
 
-import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.dts.sync.model.AutonomousSyncRule;
+
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+public interface PreferenceService {
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class DtsRegistry extends BaseEntity {
-    private String url;
-    private List<String> prefixes;
-    private Map<String, String> preferences;
-    private boolean schedulable = false;
+    Optional<List<AutonomousSyncRule>> getSyncRules();
+    boolean isShutdownRequired();
+    void clearShutdownFlag();
 }

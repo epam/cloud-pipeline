@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.service;
+package com.epam.pipeline.dts.transfer.service.impl;
 
 import com.epam.pipeline.dts.transfer.model.TransferTask;
+import com.epam.pipeline.dts.transfer.service.DataUploaderProviderManager;
+import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
-public interface DataUploaderProviderManager {
+@Service("commonDataUploaderProviderManager")
+@RequiredArgsConstructor
+public class AsyncDataUploaderProviderManager implements DataUploaderProviderManager {
 
-    void transferData(TransferTask transferTask);
+    private final DataUploaderProviderManager syncDataUploaderProviderManager;
+
+    @Async("taskExecutor")
+    @Override
+    public void transferData(final TransferTask transferTask) {
+        syncDataUploaderProviderManager.transferData(transferTask);
+    }
 }

@@ -41,7 +41,7 @@ task copyFsAutoscalerScripts(type: Copy) {
 }
 
 task copyLocalDtsStartupScripts(type: Copy) {
-    from "$rootDir/scripts/dts/RunLocalDts.ps1"
+    from "$rootDir/scripts/dts/DeployDts.ps1"
     into "$rootDir/api/src/main/resources/static/"
 }
 

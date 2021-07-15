@@ -27,35 +27,21 @@ import com.epam.pipeline.dts.transfer.service.DataUploaderProviderManager;
 import com.epam.pipeline.dts.transfer.service.TaskService;
 import com.epam.pipeline.dts.transfer.service.TransferService;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-@Service
-@ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
+@RequiredArgsConstructor
 @Slf4j
 public class ImpersonatingTransferServiceImpl implements TransferService {
     private final TaskService taskService;
     private final DataUploaderProviderManager dataUploaderProviderManager;
     private final SecurityService securityService;
     private final String dtsNameMetadataKey;
-
-    public ImpersonatingTransferServiceImpl(final TaskService taskService,
-                                            final DataUploaderProviderManager dataUploaderProviderManager,
-                                            final SecurityService securityService,
-                                            @Value("${dts.impersonation.name.metadata.key}")
-                                            final String dtsNameMetadataKey) {
-        this.taskService = taskService;
-        this.dataUploaderProviderManager = dataUploaderProviderManager;
-        this.securityService = securityService;
-        this.dtsNameMetadataKey = dtsNameMetadataKey;
-    }
 
     @Override
     public TransferTask runTransferTask(@NonNull final StorageItem source,
