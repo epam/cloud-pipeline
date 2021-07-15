@@ -32,7 +32,8 @@ export default function MultizoneUrl (props) {
     defaultRegion: defaultRegionValue,
     title
   } = props;
-  const fallbackRegion = Object.keys(regions).pop();
+  const regionsKeys = Object.keys(regions);
+  const fallbackRegion = regionsKeys.pop();
   const defaultRegion = defaultRegionValue || fallbackRegion;
   const menu = (
     <Menu
@@ -40,7 +41,7 @@ export default function MultizoneUrl (props) {
     >
       {
         regions &&
-        Object.keys(regions)
+        regionsKeys
           .map((key) => (
             <Menu.Item key={key} style={{display: 'flex'}}>
               <AWSRegionTag
@@ -82,17 +83,20 @@ export default function MultizoneUrl (props) {
             regionUID={defaultRegion}
           />
         </a>
-        <Dropdown
-          trigger={['click']}
-          overlay={menu}
-          placement="bottomRight"
-          style={{minWidth: '150px'}}
-        >
-          <Icon
-            className={styles.expander}
-            type="down"
-          />
-        </Dropdown>
+        {
+          regionsKeys.length > 1 && (
+            <Dropdown
+              trigger={['click']}
+              overlay={menu}
+              placement="bottomRight"
+              style={{minWidth: '150px'}}
+            >
+              <Icon
+                className={styles.expander}
+                type="down"
+              />
+            </Dropdown>)
+        }
       </div>
     );
   }
