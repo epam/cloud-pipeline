@@ -25,6 +25,8 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -39,6 +41,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,6 +51,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_SET;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class MetadataApiServiceTest extends AbstractAclTest {
@@ -55,6 +59,8 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     private static final AclClass ENTITY_ACL_CLASS = AclClass.DATA_STORAGE;
     private static final AclClass PIPELINE_USER_ACL_CLASS = AclClass.PIPELINE_USER;
     private static final AclClass ROLE_ACL_CLASS = AclClass.ROLE;
+    private static final String SENSITIVE_KEY = "sensitive";
+    private static final String NON_SENSITIVE_KEY = "type";
 
     private final MetadataVO metadataVO = MetadataCreatorUtils.getMetadataVO(ENTITY_ACL_CLASS);
     private final MetadataVO pipelineUserVO = MetadataCreatorUtils.getMetadataVO(PIPELINE_USER_ACL_CLASS);
@@ -81,13 +87,13 @@ public class MetadataApiServiceTest extends AbstractAclTest {
             MetadataCreatorUtils.getMetadataEntryWithIssuesCount(pipelineUserEntityVO);
     private final MetadataEntryWithIssuesCount roleEntryWithIssuesCount =
             MetadataCreatorUtils.getMetadataEntryWithIssuesCount(roleEntityVO);
-
-    private final List<MetadataEntry> metadataEntries = Collections.singletonList(metadataEntry);
+    private final List<MetadataEntry> metadataEntries = new ArrayList<>(Collections.singletonList(metadataEntry));
     private final List<EntityVO> entityVOList = Collections.singletonList(entityVO);
     private final List<EntityVO> roleEntityVOList = Collections.singletonList(roleEntityVO);
     private final List<EntityVO> pipelineUserEntityVOList = Collections.singletonList(pipelineUserEntityVO);
-    private final List<MetadataEntry> pipelineUserEntries = Collections.singletonList(pipelineUserEntry);
-    private final List<MetadataEntry> roleEntries = Collections.singletonList(roleEntry);
+    private final List<MetadataEntry> pipelineUserEntries = new ArrayList<>(
+            Collections.singletonList(pipelineUserEntry));
+    private final List<MetadataEntry> roleEntries = new ArrayList<>(Collections.singletonList(roleEntry));
 
     @Autowired
     private MetadataApiService metadataApiService;
@@ -100,6 +106,9 @@ public class MetadataApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private UserManager mockUserManager;
+
+    @Autowired
+    private PreferenceManager mockPreferenceManager;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -127,6 +136,7 @@ public class MetadataApiServiceTest extends AbstractAclTest {
         assertThat(metadataApiService.updateMetadataItemKey(pipelineUserVO)).isEqualTo(pipelineUserEntry);
     }
 
+
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateMetadataItemKeyForPipelineUser() {
@@ -150,6 +160,7 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     public void shouldDenyUpdateMetadataItemKeyForNonOwner() {
         doReturn(metadataEntry).when(mockMetadataManager).updateMetadataItemKey(metadataVO);
         mockLoadEntity(entityWithOwner, ID);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItemKey(metadataVO));
     }
@@ -203,6 +214,7 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     public void shouldDenyUpdateMetadataItemKeysForNonOwner() {
         doReturn(metadataEntry).when(mockMetadataManager).updateMetadataItemKeys(metadataVO);
         mockLoadEntity(entityWithOwner, ID);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItemKeys(metadataVO));
     }
@@ -234,12 +246,42 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldUpdateMetadataItemForPipelineUser() {
+    @WithMockUser(username = ANOTHER_SIMPLE_USER)
+    public void shouldDenyUpdateUserMetadataItemForAnotherUser() {
         doReturn(pipelineUserEntry).when(mockMetadataManager).updateMetadataItem(pipelineUserVO);
         mockUser();
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
-        assertThat(metadataApiService.updateMetadataItem(pipelineUserVO)).isEqualTo(pipelineUserEntry);
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItem(pipelineUserVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdateUserMetadataItemForSensitiveKeys() {
+        final MetadataVO sensitiveMetadata = MetadataCreatorUtils.getMetadataVO(PIPELINE_USER_ACL_CLASS);
+        sensitiveMetadata.setData(Collections.singletonMap(SENSITIVE_KEY, null));
+        doReturn(Collections.singletonList(SENSITIVE_KEY))
+                .when(mockPreferenceManager)
+                .getPreference(eq(SystemPreferences.MISC_METADATA_SENSITIVE_KEYS));
+        doReturn(pipelineUserEntry).when(mockMetadataManager).updateMetadataItem(sensitiveMetadata);
+        mockUser();
+
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItem(sensitiveMetadata));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldUpdateMetadataItemForPipelineUser() {
+        final MetadataVO nonSensitiveMetadata = MetadataCreatorUtils.getMetadataVO(PIPELINE_USER_ACL_CLASS);
+        nonSensitiveMetadata.setData(Collections.singletonMap(NON_SENSITIVE_KEY, null));
+        doReturn(Collections.singletonList(SENSITIVE_KEY))
+                .when(mockPreferenceManager)
+                .getPreference(eq(SystemPreferences.MISC_METADATA_SENSITIVE_KEYS));
+
+        doReturn(pipelineUserEntry).when(mockMetadataManager).updateMetadataItem(nonSensitiveMetadata);
+        mockUser();
+
+        assertThat(metadataApiService.updateMetadataItem(nonSensitiveMetadata)).isEqualTo(pipelineUserEntry);
     }
 
     @Test
@@ -256,6 +298,7 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     public void shouldDenyUpdateMetadataItemForNonOwner() {
         doReturn(metadataEntry).when(mockMetadataManager).updateMetadataItem(metadataVO);
         mockLoadEntity(entityWithOwner, ID);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItem(metadataVO));
     }
@@ -368,6 +411,7 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeleteMetadataItemKeyForNonOwner() {
         doReturn(metadataEntry).when(mockMetadataManager).deleteMetadataItemKey(entityVO, TEST_STRING);
         mockLoadEntity(entityWithOwner, ID);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () ->
                 metadataApiService.deleteMetadataItemKey(entityVO, TEST_STRING));
@@ -401,11 +445,11 @@ public class MetadataApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldDeleteMetadataItemForPipelineUser() {
+    public void shouldDenyDeleteMetadataItemForPipelineUser() {
         doReturn(pipelineUserEntry).when(mockMetadataManager).deleteMetadataItem(pipelineUserEntityVO);
         mockUser();
 
-        assertThat(metadataApiService.deleteMetadataItem(pipelineUserEntityVO)).isEqualTo(pipelineUserEntry);
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.deleteMetadataItem(pipelineUserEntityVO));
     }
 
     @Test
@@ -422,6 +466,7 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeleteMetadataItemForNonOwner() {
         doReturn(metadataEntry).when(mockMetadataManager).deleteMetadataItem(entityVO);
         mockLoadEntity(entityWithOwner, ID);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () -> metadataApiService.deleteMetadataItem(entityVO));
     }
@@ -475,6 +520,7 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeleteMetadataItemKeysForNonOwner() {
         doReturn(metadataEntry).when(mockMetadataManager).deleteMetadataItemKeys(metadataVO);
         mockLoadEntity(entityWithOwner, ID);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () -> metadataApiService.deleteMetadataItemKeys(metadataVO));
     }
@@ -573,13 +619,13 @@ public class MetadataApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldUploadMetadataFromFileForPipelineUser() {
+    public void shouldDenyUploadMetadataFromFileForPipelineUser() {
         doReturn(pipelineUserEntry).when(mockMetadataManager)
                 .uploadMetadataFromFile(pipelineUserEntityVO, file, true);
         mockUser();
 
-        assertThat(metadataApiService.uploadMetadataFromFile(pipelineUserEntityVO, file, true))
-                .isEqualTo(pipelineUserEntry);
+        assertThrows(AccessDeniedException.class, () ->
+                metadataApiService.uploadMetadataFromFile(pipelineUserEntityVO, file, true));
     }
 
     @Test
@@ -598,6 +644,7 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     public void shouldDenyUploadMetadataFromFileForNonOwner() {
         doReturn(metadataEntry).when(mockMetadataManager).uploadMetadataFromFile(entityVO, file, true);
         mockLoadEntity(entityWithOwner, ID);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class, () ->
                 metadataApiService.uploadMetadataFromFile(entityVO, file, true));

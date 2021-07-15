@@ -252,7 +252,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
         doReturn(entityPermissionVO).when(spyPermissionManager)
                 .loadEntityPermission(AclClass.DATA_STORAGE, ID);
-        mockUser(SIMPLE_USER);
+        mockAuthUser(SIMPLE_USER);
 
         assertThat(aclPermissionApiService.loadEntityPermission(ID, AclClass.DATA_STORAGE))
                 .isEqualTo(entityPermissionVO);
@@ -263,7 +263,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     @Ignore("with changes from issue #1936 this test shall be updated")
     public void shouldDenyLoadEntityPermissionForNotOwner() {
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
-        mockUser(ANOTHER_SIMPLE_USER);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
 
         assertThrows(AccessDeniedException.class,
             () -> aclPermissionApiService.loadEntityPermission(ID, AclClass.DATA_STORAGE));
