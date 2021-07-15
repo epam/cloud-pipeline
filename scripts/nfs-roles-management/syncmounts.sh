@@ -188,18 +188,28 @@ done <<< "$fs_mounts"
 echo
 
 storages="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/datastorage/loadAll | \
-             jq -r '.payload[] | select(.type!="NFS" and .sensitive==false) | "\(.id)|\(.name)|\(.path)|\(.type)|\(.regionId)"')"
-storages_allowed_for_mount="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" "${_API_URL%/}/metadata/search?entityClass=DATA_STORAGE&key=${_DAV_MOUNT_TAG_NAME}&value=${_DAV_MOUNT_TAG_VALUE}" | \
-            jq -r '.payload[] | .entityId')"
+             jq -r '.payload[]? | select(.type!="NFS" and .sensitive==false) | "\(.id)|\(.name)|\(.path)|\(.type)|\(.regionId)"')"
 
 if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot get list of the storages, exiting"
     exit 1
 fi
 
+storages_allowed_for_mount="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" "${_API_URL%/}/metadata/search?entityClass=DATA_STORAGE&key=${_DAV_MOUNT_TAG_NAME}&value=${_DAV_MOUNT_TAG_VALUE}" | \
+            jq -r '.payload[]? | .entityId')"
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Cannot get list of the allowed storages, exiting"
+    exit 1
+fi
+
 while IFS='|' read -r id name path type region_id; do
      echo
      echo "[INFO] Staring processing: $path (id: ${id}, name: ${name}, region: ${region_id} type: ${type}, path: ${path})"
+
+     if [ -z "$id" ] || [ -z "$name" ] || [ -z "$path" ] || [ -z "$region_id" ] || [ -z "$type" ]; then
+        echo "[ERROR] One of the required parameters for the data storage cannot be retrieved (see message above), skipping."
+        continue
+     fi
 
      if [[ "${type}" == "AZ" ]]; then
          mount_root_srv_dir="${_MOUNT_ROOT}/AZ/${name}"
