@@ -42,6 +42,10 @@ public class CloudPipelineAPIClient {
     private final CloudPipelineAPI cloudPipelineAPI;
     private final RetryingCloudPipelineApiExecutor pipelineApiExecutor = RetryingCloudPipelineApiExecutor.basic();
 
+    public static CloudPipelineAPIClient from(final CloudPipelineAPI api) {
+        return new CloudPipelineAPIClient(api);
+    }
+
     public static CloudPipelineAPIClient from(final String apiUrl, final String apiToken) {
         return new CloudPipelineAPIClient(
                 new CloudPipelineApiBuilder(0, 0, apiUrl, apiToken)
