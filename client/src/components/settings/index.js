@@ -71,6 +71,12 @@ const SettingsTabs = [
     path: '/settings/logs',
     title: 'System Logs',
     available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'profile',
+    path: '/settings/profile',
+    title: 'My Profile',
+    available: () => true
   }
 ];
 
