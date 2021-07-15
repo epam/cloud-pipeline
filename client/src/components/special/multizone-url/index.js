@@ -22,7 +22,10 @@ import {
   Icon
 } from 'antd';
 import AWSRegionTag from '../AWSRegionTag';
+import MultizoneUrlPopover from './multizone-url-popover';
 import styles from './multizone-url.css';
+
+export {MultizoneUrlPopover};
 
 export default function MultizoneUrl (props) {
   const {
@@ -33,7 +36,7 @@ export default function MultizoneUrl (props) {
     title
   } = props;
   const regionsKeys = Object.keys(regions);
-  const fallbackRegion = regionsKeys.pop();
+  const fallbackRegion = [...regionsKeys].pop();
   const defaultRegion = defaultRegionValue || fallbackRegion;
   const menu = (
     <Menu

@@ -93,6 +93,7 @@ import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -132,7 +133,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     pipelines,
     roles: new Roles(),
     routing,
-    multiZone: multiZoneManager.getMultiZoneConfiguration(`run-${params.runId}`)
+    multiZone: multiZoneManager.getRunMultiZoneConfiguration(params.runId)
   };
 })
 @observer
@@ -1371,7 +1372,7 @@ class Logs extends localization.LocalizedReactComponent {
       let kubeServices;
       if (this.endpointAvailable) {
         const urls = this.props.multiZone.getDefaultRunServiceUrls(this.props.run.value.serviceUrl);
-        const regionedUrls = this.props.multiZone.parseRunServiceUrlConfiguration(this.props.run.value.serviceUrl);
+        const regionedUrls = parseRunServiceUrlConfiguration(this.props.run.value.serviceUrl);
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
             <th style={{verticalAlign: 'middle'}}>{urls.length > 1 ? 'Endpoints: ' : 'Endpoint: '}</th>

@@ -15,11 +15,16 @@
  */
 
 import Mutlizone from './mutlizone';
+import parseRunServiceUrlConfiguration from './parse-run-service-url-configuration';
 
 class MultizoneManager extends Mutlizone {
   constructor () {
     super();
     this.cache = new Map();
+  }
+
+  getRunMultiZoneConfiguration (runId) {
+    return this.getMultiZoneConfiguration(`run-${runId}`);
   }
 
   getMultiZoneConfiguration (key) {
@@ -32,4 +37,4 @@ class MultizoneManager extends Mutlizone {
 
 const defaultManager = new MultizoneManager();
 export default defaultManager;
-export {MultizoneManager, Mutlizone};
+export {MultizoneManager, Mutlizone, parseRunServiceUrlConfiguration};

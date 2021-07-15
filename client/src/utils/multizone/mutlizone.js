@@ -114,6 +114,7 @@ class Mutlizone {
             result[region] = latency;
           });
           this._latencies = result;
+          console.log(result);
           this.updateDefaultRegion();
         })
         .then(() => {
@@ -153,28 +154,6 @@ class Mutlizone {
       return parseRunServiceUrl(serviceUrl[defaultRegion]);
     }
     return [];
-  }
-
-  parseRunServiceUrlConfiguration (serviceUrl) {
-    const result = [];
-    Object.entries(serviceUrl || {})
-      .map(([region, urls]) => {
-        parseRunServiceUrl(urls)
-          .forEach(urlConfiguration => {
-            const urlName = urlConfiguration.name || urlConfiguration.url;
-            let url = result.find(r => r.name === urlName);
-            if (!url) {
-              url = {
-                name: urlName,
-                isDefault: urlConfiguration.isDefault,
-                url: {}
-              };
-              result.push(url);
-            }
-            url.url[region] = urlConfiguration.url;
-          });
-      });
-    return result;
   }
 
   getDefaultURL (configuration) {
