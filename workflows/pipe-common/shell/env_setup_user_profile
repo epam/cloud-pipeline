@@ -16,6 +16,7 @@
 
 _OWNER_ATTRIBUTES_ENV_FILE="$1"
 _OWNER_ATTRIBUTES_BLACKLIST="confirmed_notifications ssh_prv ssh_pub"
+_OWNER_ATTRIBUTES_FILE_PATTERN="\"(.*)\" > \"(\\/.*)\""
 
 echo "Starting env setup from the user profile"
 
@@ -70,9 +71,21 @@ for _ATTRIBUTE_NAME in $_OWNER_ATTRIBUTES_NAMES; do
 
     if [ -z "$CP_OWNER_ATTRIBUTES_WHITELIST" ] || \
         ( [ "$CP_OWNER_ATTRIBUTES_WHITELIST" ] && [[ " $CP_OWNER_ATTRIBUTES_WHITELIST " == *" ${_ATTRIBUTE_NAME} "* ]] ); then
-        # Escape double quotes with a backslash
-        _ATTRIBUTE_ENV_VALUE=$(echo "$_ATTRIBUTE_ENV_VALUE" | sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g' | sed 's/"/\\"/g')
-        echo "export ${_ATTRIBUTE_ENV_NAME}=\"${_ATTRIBUTE_ENV_VALUE}\"" >> "$_OWNER_ATTRIBUTES_ENV_FILE"
+        if [[ $_ATTRIBUTE_ENV_VALUE =~ $_OWNER_ATTRIBUTES_FILE_PATTERN ]]; then
+            # If it's a "redirection" string - the value will be stored in the file
+            _ATTRIBUTE_ENV_VALUE="${BASH_REMATCH[1]}"
+            _ATTRIBUTE_ENV_PATH="${BASH_REMATCH[2]}"
+            mkdir -p $(dirname $_ATTRIBUTE_ENV_PATH)
+            echo "$_ATTRIBUTE_ENV_VALUE" > "$_ATTRIBUTE_ENV_PATH"
+            if [ $? -ne 0 ]; then
+                echo "[ERROR] Unable to write value of $_ATTRIBUTE_ENV_NAME to $_ATTRIBUTE_ENV_PATH"
+            fi
+        else
+            # Otherwise - the variable will be exported into the environment
+            # Escape double quotes with a backslash
+            _ATTRIBUTE_ENV_VALUE=$(echo "$_ATTRIBUTE_ENV_VALUE" | sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g' | sed 's/"/\\"/g')
+            echo "export ${_ATTRIBUTE_ENV_NAME}=\"${_ATTRIBUTE_ENV_VALUE}\"" >> "$_OWNER_ATTRIBUTES_ENV_FILE"
+        fi
     else
         echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME is not in the whitelist, skipping it"
         continue
