@@ -35,19 +35,21 @@ pipe dts create --name "$DTS_NAME" \
 To synchronise some local directory as well as dts logs directory every midnight the command below can be used.
 
 ```bash
-pipe dts preferences update -p 'dts.local.sync.rules=[{
-                                    "source": "c:\\local\\path\\to\\source\\directory",
-                                    "destination": "s3://data/storage/path/to/destination/directory",
-                                    "cron": "0 0/1 * ? * *"
-                                }, {
-                                    "source": "c:\\Program Files\\CloudPipeline\\DTS\\logs",
-                                    "destination": "s3://data/storage/path/to/logs/directory",
-                                    "cron": "0 0/1 * ? * *"
-                                }]'
+DTS_NAME="{PUT DTS HOST NAME HERE}"
+pipe dts preferences update "$DTS_NAME" -p 'dts.local.sync.rules=[{
+                                                "source": "c:\\local\\path\\to\\source\\directory",
+                                                "destination": "s3://data/storage/path/to/destination/directory",
+                                                "cron": "0 0/1 * ? * *"
+                                            }, {
+                                                "source": "c:\\Program Files\\CloudPipeline\\DTS\\logs",
+                                                "destination": "s3://data/storage/path/to/logs/directory",
+                                                "cron": "0 0/1 * ? * *"
+                                            }]'
 ```
 
 To restart dts the command below can be used.
 
 ```bash
-pipe dts preferences update -p 'dts.restart.force=true'
+DTS_NAME="{PUT DTS HOST NAME HERE}"
+pipe dts preferences update "$DTS_NAME" -p 'dts.restart.force=true'
 ```

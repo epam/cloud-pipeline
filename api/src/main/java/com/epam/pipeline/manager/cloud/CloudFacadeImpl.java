@@ -101,9 +101,13 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public void scaleDownNode(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
-        final PipelineRun run = runCRUDService.loadRunById(runId);
-        final RunInstance instance = run.getInstance();
-        kubernetesManager.deleteNodeService(instance);
+        try {
+            final PipelineRun run = runCRUDService.loadRunById(runId);
+            final RunInstance instance = run.getInstance();
+            kubernetesManager.deleteNodeService(instance);
+        } catch (IllegalArgumentException e) {
+            log.debug(e.getMessage(), e);
+        }
         getInstanceService(region).scaleDownNode(region, runId);
     }
 
