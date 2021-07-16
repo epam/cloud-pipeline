@@ -31,7 +31,7 @@ class TestRStudioEndpoints(object):
     @classmethod
     def teardown_class(cls):
         for node in cls.nodes:
-            terminate_node(node)
+            terminate_node_with_retry(node)
             logging.info("Node %s was terminated" % node)
 
     @pipe_test
@@ -126,6 +126,8 @@ class TestRStudioEndpoints(object):
                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
     @pipe_test
     def test_rstudio_and_no_machine_endpoint_friendly_domain_and_endpoint_url(self):
@@ -142,6 +144,8 @@ class TestRStudioEndpoints(object):
                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
     @pipe_test
     def test_rstudio_spark_endpoints(self):
@@ -217,6 +221,8 @@ class TestRStudioEndpoints(object):
                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
     @pipe_test
     def test_rstudio_spark_no_machine_endpoint_friendly_domain_url(self):
@@ -234,6 +240,8 @@ class TestRStudioEndpoints(object):
                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
     @pipe_test
     def test_rstudio_spark_endpoints_friendly_domain_and_url(self):
@@ -250,6 +258,8 @@ class TestRStudioEndpoints(object):
                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)
 
     @pipe_test
     def test_rstudio_spark_no_machine_endpoint_friendly_domain_and_url(self):
@@ -268,3 +278,5 @@ class TestRStudioEndpoints(object):
                                       })
         self.run_ids.append(run_id)
         self.nodes.add(node_name)
+        # Sleep 1 min to be sure that edge is reloaded
+        sleep(60)

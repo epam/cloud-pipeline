@@ -61,21 +61,49 @@ def update_tool_info(tool, max_retry=100):
 
 
 def run_test(tool, command, endpoints_structure, url_checker=None, check_access=True, friendly_url=None,
-             no_machine=False, spark=False):
+             no_machine=False, spark=False, custom_dns_endpoints=0):
     run_id, node_name = run(tool, command, no_machine=no_machine, spark=spark, friendly_url=friendly_url)
     try:
-        urls = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(urls, len(endpoints_structure))
-        for name in urls:
-            url = urls[name]
+        edge_services = get_edge_services()
+        # calculate number of endpoints should be generated regarding to existing edges
+        number_of_endpoints = custom_dns_endpoints + (len(endpoints_structure) - custom_dns_endpoints) * len(edge_services)
+        endpoints = get_endpoint_urls(run_id)
+        check_for_number_of_endpoints(endpoints, number_of_endpoints)
+        for endpoint in endpoints:
+            url = endpoint["url"]
+            name = endpoint["name"]
+            region = endpoint["region"]
             pattern = endpoints_structure[name].format(run_id=run_id)
             structure_is_fine = check_service_url_structure(url, pattern, checker=url_checker)
             assert structure_is_fine, "service url: {}, has wrong format.".format(url)
             is_accessible = not check_access or follow_service_url(url, 100)
-            assert is_accessible, "service url: {}, is not accessible.".format(url)
+            assert is_accessible, "service url: {} : {} : {}, is not accessible.".format(name, region, url)
         return run_id, node_name
     finally:
-        stop_pipe(run_id)
+        stop_pipe_with_retry(run_id)
+
+
+def get_edge_services(max_retry=100):
+
+    def curl_edge_api():
+        api = os.environ['API']
+        token = os.environ['API_TOKEN']
+        command = [
+            'curl', '-H', 'Authorization: Bearer {}'.format(token), '-k', '-L',
+            '{}/{}'.format(api.strip("/"), "edge/services")
+        ]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        return process.wait(), ''.join(process.stdout.readlines())
+
+    rep_count = 1
+    code, result = curl_edge_api()
+    while rep_count < max_retry and code != 0:
+        code, result = curl_edge_api()
+
+    if code == 0:
+        if 'payload' in result:
+            return json.loads(result)['payload']
+    raise RuntimeError("Can't load edges info from API")
 
 
 def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spark=False, friendly_url=None,
@@ -83,7 +111,7 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
     args = ["-id", "50",
             "-pt", "on-demand",
             "-cmd", command.format(test_case=test_case),
-            "-di", image]
+            "-di", image, "-np"]
 
     if friendly_url:
         args.append("--friendly-url")
@@ -100,19 +128,22 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
         args.append("CP_CAP_SPARK")
         args.append('boolean?true')
 
+    node_name = None
     (run_id, _) = run_tool(*args)
-    logging.info("Pipeline run with ID %s." % run_id)
-    wait_for_instance_creation(run_id, MAX_REPETITIONS)
-    logging.info("Instance %s created." % run_id)
+    try:
+        logging.info("Pipeline run with ID %s." % run_id)
+        wait_for_instance_creation(run_id, MAX_REPETITIONS)
+        logging.info("Instance %s created." % run_id)
 
-    node_state = wait_for_node_up(run_id, MAX_REPETITIONS)
-    node_name = get_node_name_from_cluster_state(node_state)
-    logging.info("Used node %s." % node_name)
+        node_state = wait_for_node_up(run_id, MAX_REPETITIONS)
+        node_name = get_node_name_from_cluster_state(node_state)
+        logging.info("Used node %s." % node_name)
 
-    wait_for_run_initialized(run_id, MAX_REPETITIONS)
-    wait_for_service_urls(run_id, MAX_REPETITIONS / 4)
-    logging.info("Pipeline %s has initialized successfully." % run_id)
-
+        wait_for_run_initialized(run_id, MAX_REPETITIONS)
+        wait_for_service_urls(run_id, MAX_REPETITIONS / 4)
+        logging.info("Pipeline %s has initialized successfully." % run_id)
+    except RuntimeError as e:
+        stop_pipe_with_retry(run_id)
     return run_id, node_name
 
 
