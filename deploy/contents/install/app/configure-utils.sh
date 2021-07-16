@@ -907,6 +907,9 @@ function api_setup_base_preferences {
     api_set_preference "system.disk.consume.threshold" "${CP_PREF_SYSTEM_DISK_CONSUME_THRESHOLD:-95}" "false"               # %% of disk utilization that is considered "HIGH" (default: runs with Disk utilization above 95% are under pressure)
     api_set_preference "system.monitoring.time.range" "${CP_PREF_SYSTEM_MONITORING_TIME_RANGE:-30}" "false"                 # Period of time (in seconds) used to calculate average of the RAM/Disk utilization (default: 30 seconds)
 
+    ## Metadata
+    api_set_preference "misc.metadata.sensitive.keys" "${CP_PREF_METADATA_SENSITIVE_KEYS:-"[]"}" "true"
+
     ## Commit
     api_set_preference "commit.username" "${CP_PREF_COMMIT_USERNAME:-"pipeline"}" "false"
     if [ "$CP_PREF_COMMIT_DEPLOY_KEY" ]; then
