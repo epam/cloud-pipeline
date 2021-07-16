@@ -42,6 +42,7 @@ import Schedule from './schedule';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import HiddenObjects from '../../../utils/hidden-objects';
+import getPathParameters from '../browser/metadata-controls/get-path-parameters';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -54,12 +55,16 @@ const DTS_ENVIRONMENT = 'DTS';
 })
 @localization.localizedComponent
 @HiddenObjects.checkConfigurations(props => props?.params?.id)
-@inject(({configurations, folders, pipelinesLibrary, preferences, history, routing}, {onReloadTree, params}) => {
+@inject('projects')
+@inject((
+  {configurations, projects, folders, pipelinesLibrary, preferences, history, routing},
+  {onReloadTree, params}) => {
   return {
     history,
     routing,
     onReloadTree,
     configurations: configurations.getConfiguration(params.id),
+    project: projects.getProjectFor(params.id, 'CONFIGURATION'),
     pipelines,
     folders,
     pipelinesLibrary,
@@ -594,9 +599,16 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   runSelected = (opts, entitiesIds, metadataClass, expansionExpression, folderId) => {
-
     const launchFn = async () => {
-      const entries = this.props.configurations.value.entries.map(e => e);
+      await this.props.project.fetchIfNeededOrWait();
+      let parameters = {};
+      if (this.props.project.loaded && this.props.project.value) {
+        parameters = await getPathParameters(
+          this.props.pipelinesLibrary,
+          this.props.project.value.id
+        );
+      }
+      const entries = this.props.configurations.value.entries.map(e => ({...e}));
       const [configuration] = entries
         .filter(c => c.name.toLowerCase() === this.selectedConfigurationName.toLowerCase());
       if (configuration) {
@@ -655,6 +667,13 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         } else {
           configuration.configuration = opts;
         }
+        if (!configuration.configuration) {
+          configuration.configuration = {};
+        }
+        configuration.configuration.parameters = {
+          ...parameters,
+          ...(configuration.configuration.parameters || {})
+        };
       }
       const hide = message.loading('Launching...', 0);
       const request = new ConfigurationRun(expansionExpression);
@@ -689,9 +708,17 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
   runCluster = (opts, entitiesIds, metadataClass, expansionExpression, folderId) => {
     const launchFn = async () => {
+      await this.props.project.fetchIfNeededOrWait();
+      let parameters = {};
+      if (this.props.project.loaded && this.props.project.value) {
+        parameters = await getPathParameters(
+          this.props.pipelinesLibrary,
+          this.props.project.value.id
+        );
+      }
       const entries = this.props.configurations.value.entries.map(e => {
         if (e.name.toLowerCase() === this.selectedConfigurationName.toLowerCase()) {
-          return e;
+          return {...e};
         }
         return {
           name: e.name
@@ -757,6 +784,13 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         } else {
           configuration.configuration = opts;
         }
+        if (!configuration.configuration) {
+          configuration.configuration = {};
+        }
+        configuration.configuration.parameters = {
+          ...parameters,
+          ...(configuration.configuration.parameters || {})
+        };
       }
       const hide = message.loading('Launching...', 0);
       const request = new ConfigurationRun(expansionExpression);

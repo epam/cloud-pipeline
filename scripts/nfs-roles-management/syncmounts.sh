@@ -94,6 +94,10 @@ _API_URL="$1"
 _API_TOKEN="$2"
 _MOUNT_ROOT="$3"
 
+_DAV_MOUNT_TAG_NAME=${CP_DAV_MOUNT_TAG_NAME:-"dav-mount"}
+_DAV_MOUNT_TAG_VALUE=${CP_DAV_MOUNT_TAG_VALUE:-"true"}
+_DAV_MOUNT_ALL_S3=${CP_DAV_MOUNT_ALL_S3:-"false"}
+
 if [ -z "$_API_URL" ] || [ -z "$_API_TOKEN" ] || [ -z "$_MOUNT_ROOT" ]; then
     echo "[ERROR] Not enough input parameters, exiting"
     exit 1
@@ -183,17 +187,29 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
 done <<< "$fs_mounts"
 echo
 
-storages="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/datastorage/loadAll |    \
-             jq -r '.payload[] |  select(.type!="NFS") | "\(.id)|\(.name)|\(.path)|\(.type)|\(.regionId)"')"
+storages="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/datastorage/loadAll | \
+             jq -r '.payload[]? | select(.type!="NFS" and .sensitive==false) | "\(.id)|\(.name)|\(.path)|\(.type)|\(.regionId)"')"
 
 if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot get list of the storages, exiting"
     exit 1
 fi
 
+storages_allowed_for_mount="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" "${_API_URL%/}/metadata/search?entityClass=DATA_STORAGE&key=${_DAV_MOUNT_TAG_NAME}&value=${_DAV_MOUNT_TAG_VALUE}" | \
+            jq -r '.payload[]? | .entityId')"
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Cannot get list of the allowed storages, exiting"
+    exit 1
+fi
+
 while IFS='|' read -r id name path type region_id; do
      echo
      echo "[INFO] Staring processing: $path (id: ${id}, name: ${name}, region: ${region_id} type: ${type}, path: ${path})"
+
+     if [ -z "$id" ] || [ -z "$name" ] || [ -z "$path" ] || [ -z "$region_id" ] || [ -z "$type" ]; then
+        echo "[ERROR] One of the required parameters for the data storage cannot be retrieved (see message above), skipping."
+        continue
+     fi
 
      if [[ "${type}" == "AZ" ]]; then
          mount_root_srv_dir="${_MOUNT_ROOT}/AZ/${name}"
@@ -203,6 +219,12 @@ while IFS='|' read -r id name path type region_id; do
          mount_root_srv_dir="${_MOUNT_ROOT}/GCP/${name}"
      else
          echo "[INFO] Storage with id: ${id} and path: ${path} is not a AZ/GCP/S3 storage, skipping."
+         continue
+     fi
+
+     # Check if the object storage is allowed to be mounted (via tag/value)
+     if [[ ! " ${storages_allowed_for_mount[@]} " =~ " ${id} " ]] && [ "$_DAV_MOUNT_ALL_S3" != "true" ]; then
+         echo "[INFO] Storage with id: ${id} and path: ${path} is not tagged with ${_DAV_MOUNT_TAG_NAME}=${_DAV_MOUNT_TAG_VALUE}, skipping."
          continue
      fi
 

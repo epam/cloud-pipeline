@@ -444,7 +444,7 @@ export default class MetadataPanel extends React.Component {
   renderMetadataItem = (metadataItem) => {
     let valueElement = [];
     for (let key in metadataItem) {
-      if (key !== 'rowKey') {
+      if (key !== 'rowKey' && metadataItem[key]) {
         let value = metadataItem[key].value;
         if (metadataItem[key].type.startsWith('Array')) {
           try {

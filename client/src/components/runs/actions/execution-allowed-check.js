@@ -17,7 +17,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Button, Icon, Popover, Row} from 'antd';
+import {
+  Button,
+  Icon,
+  Popover,
+  Row,
+  Dropdown
+} from 'antd';
 import roleModel from '../../../utils/roleModel';
 
 const SCHEMAS = /^(gs:\/\/|s3:\/\/|az:\/\/|cp:\/\/)/i;
@@ -356,14 +362,54 @@ class SubmitButton extends React.Component {
       onClick,
       size,
       style,
-      type
+      type,
+      dropdown,
+      dropdownRenderer,
+      dropdownId
     } = this.props;
     const {
       errors
     } = this.state;
     const pending = (dataStorages.pending && !dataStorages.loaded) ||
       (dockerRegistries.pending && !dockerRegistries.loaded);
-    const submitButton = (
+    const submitButton = dropdown && dropdownRenderer ? (
+      <Button.Group
+        size={size}
+      >
+        <Button
+          id={id}
+          type={type}
+          htmlType={htmlType}
+          onClick={onClick}
+          style={style}
+          disabled={pending || errors.length > 0}
+        >
+          {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
+          {children}
+        </Button>
+        <Dropdown
+          overlay={dropdownRenderer()}
+          placement="bottomRight"
+          disabled={pending || errors.length > 0}
+        >
+          <Button
+            id={dropdownId || null}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            type="primary"
+          >
+            <Icon
+              type="down"
+              style={{
+                lineHeight: 'inherit'
+              }}
+            />
+          </Button>
+        </Dropdown>
+      </Button.Group>
+    ) : (
       <Button
         id={id}
         type={type}
