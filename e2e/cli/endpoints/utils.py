@@ -83,11 +83,6 @@ def run_test(tool, command, endpoints_structure, url_checker=None, check_access=
         stop_pipe_with_retry(run_id)
 
 
-def get_custom_dns_hosted_zone():
-    result = UtilsManager.get_preference_or_none("instance.dns.hosted.zone.base")
-    return result if result else ""
-
-
 def get_edge_services(max_retry=100):
 
     def curl_edge_api():
