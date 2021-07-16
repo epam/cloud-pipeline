@@ -928,7 +928,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const style = {
           display: 'inline-table',
-          marginLeft: run.parentRunId ? '10px' : 0,
+          marginLeft: run.parentRunId ? '10px' : 0
         };
         let instanceOrSensitiveFlag;
         if (run.instance || run.sensitive) {
@@ -966,7 +966,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         if (run.serviceUrl && run.initialized) {
           const renderMultiZoneServiceUrls = (multiZone) => {
             const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
-            console.log(regionedUrls);
+            // console.log(regionedUrls);
             return (
               <div>
                 <ul>
