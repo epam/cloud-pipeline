@@ -201,6 +201,7 @@ if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot get list of the allowed storages, exiting"
     exit 1
 fi
+storages_allowed_for_mount=($storages_allowed_for_mount)
 
 while IFS='|' read -r id name path type region_id; do
      echo
