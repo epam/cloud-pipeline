@@ -278,7 +278,7 @@ function buildAutoFillAction (options) {
         shift: getNumberShift(value)
       };
     }
-    const exec = /^([^\d]*)([\d]+)$/.exec(`${value}`);
+    const exec = /^(.*[^\d])([\d]+)$/.exec(`${value}`);
     if (exec && exec.length === 3) {
       return {
         value: exec[0],
