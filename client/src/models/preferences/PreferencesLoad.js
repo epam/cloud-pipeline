@@ -135,12 +135,12 @@ class PreferencesLoad extends Remote {
 
   @computed
   get metadataSystemKeys () {
-    const value = this.getPreferenceValue('misc.metadata.system.keys');
+    const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
     if (value) {
       try {
         return JSON.parse(value);
       } catch (e) {
-        console.warn('Error parsing "misc.metadata.system.keys" preference:', e);
+        console.warn('Error parsing "misc.metadata.sensitive.keys" preference:', e);
       }
     }
     return [];
