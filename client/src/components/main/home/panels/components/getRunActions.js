@@ -39,7 +39,6 @@ export default function (callbacks) {
           const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
           const multizoneOverlay = {
             content: (multiZone) => {
-              const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
               return (
                 <div>
                   <ul>
