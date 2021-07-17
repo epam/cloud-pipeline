@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">3</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">28m11.22s</div>
+<div class="counter">28m9.59s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">66%</div>
+<div class="percent">50%</div>
 <p>successful</p>
 </div>
 </td>
@@ -78,8 +78,8 @@
 <span class="code">
 <pre>Element not found {a}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1626433377930.164.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1626433377930.164.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1626523857388.94.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1626523857388.94.html
 Timeout: 1200 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;a&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -113,10 +113,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '5cd05a68c635', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '870b16235f8f', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 69b78b0410043205c16ca3b1fd6cb638
+Session ID: 9b6ac9fb0107bbc554d228757d32bfe6
 *** Element info: {Using=css selector, value=a}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -142,13 +142,40 @@ Session ID: 69b78b0410043205c16ca3b1fd6cb638
 </span>
 </div>
 <div class="test">
+<a name="userAuthentication - EPMCMBIBPC-3162"></a>
+<h3 class="failures">userAuthentication - EPMCMBIBPC-3162</h3>
+<span class="code">
+<pre>java.lang.AssertionError: expected [true] but found [false]
+	at org.testng.Assert.fail(Assert.java:93)
+	at org.testng.Assert.failNotEquals(Assert.java:512)
+	at org.testng.Assert.assertTrue(Assert.java:41)
+	at org.testng.Assert.assertTrue(Assert.java:51)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$SystemLogsAO.validateTimeOrder(SettingsPageAO.java:1428)
+	at com.epam.pipeline.autotests.SystemLoggingTest.userAuthentication(SystemLoggingTest.java:100)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
 <a name="userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163"></a>
 <h3 class="failures">userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163</h3>
 <span class="code">
 <pre>Element not found {with text: CloudPipeline was not able to authorize you}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1626433667895.165.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1626433667895.165.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1626524146138.95.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1626524146138.95.html
 Timeout: 80 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -185,10 +212,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '5cd05a68c635', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '870b16235f8f', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 69b78b0410043205c16ca3b1fd6cb638
+Session ID: 9b6ac9fb0107bbc554d228757d32bfe6
 *** Element info: {Using=xpath, value=.//*/text()[contains(normalize-space(translate(string(.), '	
  ', '    ')), &quot;CloudPipeline was not able to authorize you&quot;)]/parent::*}
 	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
@@ -226,32 +253,32 @@ Session ID: 69b78b0410043205c16ca3b1fd6cb638
 </thead>
 <tr>
 <td class="success">createAndDeleteUser - EPMCMBIBPC-3167</td>
-<td>27.724s</td>
+<td>27.219s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">interactiveEndpointsAccess - EPMCMBIBPC-3166</td>
-<td>20m33.54s</td>
+<td>20m33.83s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">permissionsManagement - EPMCMBIBPC-3165</td>
-<td>1m17.80s</td>
+<td>1m16.56s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">userAuthentication - EPMCMBIBPC-3162</td>
-<td>1m36.28s</td>
-<td class="success">passed</td>
+<td class="failures">userAuthentication - EPMCMBIBPC-3162</td>
+<td>1m36.52s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163</td>
-<td>3m34.36s</td>
+<td>3m34.13s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">userProfileModifications - EPMCMBIBPC-3164</td>
-<td>41.517s</td>
+<td>41.333s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -259,7 +286,7 @@ Session ID: 69b78b0410043205c16ca3b1fd6cb638
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 1470 from [1470]
+<pre>Returns latest run with runId 1628 from [1628]
 </pre>
 </span>
 </div>
@@ -271,7 +298,7 @@ Session ID: 69b78b0410043205c16ca3b1fd6cb638
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 16, 2021 12:32:34 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 17, 2021 2:17:08 PM</p>
 </div>
 </div>
 </body>
