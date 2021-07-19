@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">5</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">7m56.02s</div>
+<div class="counter">4m46.61s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">88%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,98 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validationOfEditNewConfiguration - EPMCMBIBPC-797"></a>
+<h3 class="failures">validationOfEditNewConfiguration - EPMCMBIBPC-797</h3>
+<span class="code">
+<pre>Element not found {By.xpath: //pre[contains(@class, 'CodeMirror-line') and contains(., '&quot;instance_disk&quot; : &quot;23&quot;')]}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1626679472778.84.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1626679472778.84.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//pre[contains(@class, 'CodeMirror-line') and contains(., '&quot;instance_disk&quot; : &quot;23&quot;')]&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelineCodeTabAO$FileEditingPopupAO.lambda$shouldContainInCode$1(PipelineCodeTabAO.java:282)
+	at java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:183)
+	at java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:193)
+	at java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:193)
+	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
+	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+	at java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:485)
+	at com.epam.pipeline.autotests.ao.PipelineCodeTabAO$FileEditingPopupAO.shouldContainInCode(PipelineCodeTabAO.java:282)
+	at com.epam.pipeline.autotests.PipelineConfigurationTest.validationOfEditNewConfiguration(PipelineConfigurationTest.java:271)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//pre[contains(@class, 'CodeMirror-line') and contains(., '&quot;instance_disk&quot; : &quot;23&quot;')]&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'b9f3d72e2491', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 2edc95210ce1ed02461d753711151993
+*** Element info: {Using=xpath, value=//pre[contains(@class, 'CodeMirror-line') and contains(., '&quot;instance_disk&quot; : &quot;23&quot;')]}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 33 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,81 +164,80 @@
 </thead>
 <tr>
 <td class="success">changeInstancePriceTypeInConfigurationFile - EPMCMBIBPC-1256</td>
-<td>37.139s</td>
+<td>39.117s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changeInstancePriceTypeToSpotInConfigurationFile - EPMCMBIBPC-1257</td>
-<td>34.085s</td>
+<td>36.700s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkConfigurationTabOnPipelineEditPage - EPMCMBIBPC-795</td>
-<td>15.097s</td>
+<td>14.636s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">launchAndCheckLaunchParametersInPipelineLogsPage - EPMCMBIBPC-803</td>
-<td>3m29.84s</td>
-<td class="success">passed</td>
+<td class="skipped">launchAndCheckLaunchParametersInPipelineLogsPage</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">launchPipelineThatHaveSeveralConfigurations - EPMCMBIBPC-800</td>
-<td>5.200s</td>
-<td class="success">passed</td>
+<td class="skipped">launchPipelineThatHaveSeveralConfigurations</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">parametersDoesntChangeOnSwitchingConfigurations - EPMCMBIBPC-1500</td>
-<td>44.187s</td>
+<td>45.942s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">priceTypeValidation - EPMCMBIBPC-1517</td>
-<td>0.508s</td>
+<td>0.590s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfAddingNewConfigurationFeature - EPMCMBIBPC-796</td>
-<td>9.029s</td>
+<td>8.615s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfConfigurationRemoving - EPMCMBIBPC-805</td>
-<td>11.249s</td>
-<td class="success">passed</td>
+<td class="skipped">validationOfConfigurationRemoving</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">validationOfDefaultPriceType - EPMCMBIBPC-1263</td>
-<td>15.427s</td>
+<td>16.596s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfEditConfigurationInConfigurationFile - EPMCMBIBPC-799</td>
-<td>34.305s</td>
-<td class="success">passed</td>
+<td class="skipped">validationOfEditConfigurationInConfigurationFile</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validationOfEditNewConfiguration - EPMCMBIBPC-797</td>
-<td>18.475s</td>
-<td class="success">passed</td>
+<td class="failures">validationOfEditNewConfiguration - EPMCMBIBPC-797</td>
+<td>1m37.08s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validationOfRunPipelineUsingOnDemandInstance - EPMCMBIBPC-1241</td>
-<td>26.432s</td>
+<td>27.333s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfSettingAsDefaultBehavior - EPMCMBIBPC-804</td>
-<td>15.047s</td>
-<td class="success">passed</td>
+<td class="skipped">validationOfSettingAsDefaultBehavior</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 1602 from [1602]
-Returns latest run with runId 1603 from [1602, 1603]
+<pre>Returns latest run with runId 1677 from [1677]
 </pre>
 </span>
 </div>
@@ -165,7 +249,7 @@ Returns latest run with runId 1603 from [1602, 1603]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 17, 2021 2:17:08 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 19, 2021 12:41:31 PM</p>
 </div>
 </div>
 </body>

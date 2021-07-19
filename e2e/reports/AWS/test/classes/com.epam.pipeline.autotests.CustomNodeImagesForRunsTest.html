@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3m9.74s</div>
+<div class="counter">25m57.85s</div>
 <p>duration</p>
 </div>
 </td>
@@ -66,6 +66,9 @@
 <li>
 <a href="#tab1">Tests</a>
 </li>
+<li>
+<a href="#tab2">Standard output</a>
+</li>
 </ul>
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
@@ -73,35 +76,22 @@
 <a name="checkCustomNodeImageForThePipelineRun - 1517_1"></a>
 <h3 class="failures">checkCustomNodeImageForThePipelineRun - 1517_1</h3>
 <span class="code">
-<pre>Element not found {.pipeline-details__tabs-menu}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1626530368265.124.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1626530368265.124.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;.pipeline-details__tabs-menu&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.findElements(Unknown Source)
-	at com.codeborne.selenide.impl.WebElementSelector.findElements(WebElementSelector.java:38)
-	at com.codeborne.selenide.impl.BySelectorCollection.getActualElements(BySelectorCollection.java:38)
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:50)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+<pre>Element should be status-icon__icon-green {By.className: log__run-title}
+Element: '&lt;h1 class=&quot;log__run-title&quot;&gt;Run #1723 - pipe-config-4580631727359768064 (draft-231d0c26) - Logs&lt;/h1&gt;'
+Actual value: WORKING
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1626697405310.156.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1626697405310.156.html
+Timeout: 1500 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:100)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.changeTabTo(AbstractPipelineTabAO.java:99)
-	at com.epam.pipeline.autotests.ao.PipelineCodeTabAO.open(PipelineCodeTabAO.java:79)
-	at com.epam.pipeline.autotests.ao.PipelineCodeTabAO.open(PipelineCodeTabAO.java:62)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.onTab(AbstractPipelineTabAO.java:67)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.codeTab(AbstractPipelineTabAO.java:79)
-	at com.epam.pipeline.autotests.CustomNodeImagesForRunsTest.checkCustomNodeImageForThePipelineRun(CustomNodeImagesForRunsTest.java:76)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.waitForCompletion(LogAO.java:72)
+	at com.epam.pipeline.autotests.CustomNodeImagesForRunsTest.checkCustomNodeImageForThePipelineRun(CustomNodeImagesForRunsTest.java:87)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -115,36 +105,6 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;.pipeline-details__tabs-menu&quot;}
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '870b16235f8f', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 3aca9479c5cd0d9010d838d09a6edf3b
-*** Element info: {Using=css selector, value=.pipeline-details__tabs-menu}
-	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElementByCssSelector(RemoteWebDriver.java:465)
-	at org.openqa.selenium.By$ByCssSelector.findElement(By.java:430)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
-	... 33 more
 </pre>
 </span>
 </div>
@@ -161,7 +121,7 @@ Session ID: 3aca9479c5cd0d9010d838d09a6edf3b
 </thead>
 <tr>
 <td class="failures">checkCustomNodeImageForThePipelineRun - 1517_1</td>
-<td>3m9.74s</td>
+<td>25m57.85s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -171,6 +131,13 @@ Session ID: 3aca9479c5cd0d9010d838d09a6edf3b
 </tr>
 </table>
 </div>
+<div id="tab2" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>Returns latest run with runId 1723 from [1723]
+</pre>
+</span>
+</div>
 </div>
 <div id="footer">
 <p>
@@ -179,7 +146,7 @@ Session ID: 3aca9479c5cd0d9010d838d09a6edf3b
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 17, 2021 2:17:08 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 19, 2021 12:41:31 PM</p>
 </div>
 </div>
 </body>
