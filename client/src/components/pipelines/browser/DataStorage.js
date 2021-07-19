@@ -180,7 +180,17 @@ export default class DataStorage extends React.Component {
 
   @computed
   get generateFolderURLAvailable () {
-    return /^azure$/i.test(this.provider);
+    return /^azure$/i.test(this.provider) && this.storageAllowSignedUrls;
+  }
+
+  @computed
+  get storageAllowSignedUrls () {
+    return this.props.authenticatedUserInfo.loaded
+      ? (
+        this.props.authenticatedUserInfo.value.admin ||
+        this.props.preferences.storageAllowSignedUrls
+      )
+      : false;
   }
 
   @computed
@@ -1328,6 +1338,7 @@ export default class DataStorage extends React.Component {
             <div style={{paddingRight: 8}}>
               {
                 this.bulkDownloadEnabled &&
+                this.storageAllowSignedUrls &&
                 <Button
                   id="bulk-url-button"
                   size="small"
