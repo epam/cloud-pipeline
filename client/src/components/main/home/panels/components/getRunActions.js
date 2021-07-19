@@ -37,37 +37,47 @@ export default function (callbacks) {
       case 'RUNNING':
         if (run.initialized && run.serviceUrl) {
           const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
-          const multizoneOverlay = {
-            content: (multiZone) => {
-              return (
-                <div>
-                  <ul>
-                    {
-                      regionedUrls.map(({name, url}, index) =>
-                        <li key={index} style={{margin: 4}}>
-                          <MultizoneUrl
-                            title={name}
-                            regions={url}
-                            defaultRegion={multiZone.getDefaultURLRegion(url)}
-                          />
-                        </li>
-                      )
-                    }
-                  </ul>
-                </div>
-              );
-            },
-            runServiceUrlConfiguration: run.serviceUrl,
-            runId: run.id
-          };
-          let defaultAction;
-          if (regionedUrls.filter(url => `${url.isDefault}` === 'true').length === 1) {
-            const [url] = regionedUrls.filter(url => `${url.isDefault}` === 'true');
-            if (url && url.url) {
-              defaultAction = callbacks && callbacks.openUrl
-                ? () => callbacks.openUrl(url.url)
-                : undefined;
-            }
+          if (
+            regionedUrls.length === 1 &&
+            Object.values(regionedUrls[0].url).length === 1
+          ) {
+            const url = Object.values(regionedUrls[0].url).pop();
+            actions.push({
+              title: 'OPEN',
+              icon: 'export',
+              action: callbacks && callbacks.openUrl
+                ? () => callbacks.openUrl(url)
+                : undefined
+            });
+          } else {
+            const multizoneOverlay = {
+              content: (multiZone) => {
+                return (
+                  <div>
+                    <ul>
+                      {
+                        regionedUrls.map(({name, url}, index) =>
+                          <li key={index} style={{margin: 4}}>
+                            <MultizoneUrl
+                              title={name}
+                              regions={url}
+                              defaultRegion={multiZone.getDefaultURLRegion(url)}
+                            />
+                          </li>
+                        )
+                      }
+                    </ul>
+                  </div>
+                );
+              },
+              runServiceUrlConfiguration: run.serviceUrl,
+              runId: run.id
+            };
+            actions.push({
+              title: 'OPEN',
+              icon: 'export',
+              multizoneOverlay
+            });
           }
           actions.push({
             title: 'OPEN',
@@ -80,7 +90,8 @@ export default function (callbacks) {
           actions.push({
             title: 'SSH',
             icon: 'code-o',
-            action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
+            runSSH: true,
+            runId: run.id
           });
           if (!run.sensitive) {
             actions.push({

@@ -133,7 +133,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     pipelines,
     roles: new Roles(),
     routing,
-    multiZone: multiZoneManager.getRunMultiZoneConfiguration(params.runId)
+    multiZone: multiZoneManager
   };
 })
 @observer
@@ -1371,11 +1371,16 @@ class Logs extends localization.LocalizedReactComponent {
       let share;
       let kubeServices;
       if (this.endpointAvailable) {
-        const urls = this.props.multiZone.getDefaultRunServiceUrls(this.props.run.value.serviceUrl);
         const regionedUrls = parseRunServiceUrlConfiguration(this.props.run.value.serviceUrl);
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
-            <th style={{verticalAlign: 'middle'}}>{urls.length > 1 ? 'Endpoints: ' : 'Endpoint: '}</th>
+            <th style={{verticalAlign: 'middle'}}>
+              {
+                regionedUrls.length > 1
+                  ? 'Endpoints: '
+                  : 'Endpoint: '
+              }
+            </th>
             <td>
               <ul>
                 {

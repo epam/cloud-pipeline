@@ -14,27 +14,57 @@
  *  limitations under the License.
  */
 
-export default function measureUrlLatency (url) {
+function measureSingleUrlLatency (url, experiment = 0) {
+  const urlWithQuery = url;// + `?e=${experiment || 0}&r=${Math.floor(Math.random() * 1000000)}`;
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
     xhr.withCredentials = true;
+    xhr.timeout = 2000;
     xhr.onload = () => {
       if (performance !== undefined) {
         const resources = performance.getEntriesByType('resource');
-        const resourceTiming = resources.find(resource => resource.name === (new URL(url)).href);
+        const resourceTiming = resources
+          .find(resource => resource.name === (new URL(urlWithQuery)).href);
         if (resourceTiming) {
           const latency = resourceTiming.duration;
+          xhr.abort();
           resolve(latency);
         } else {
+          xhr.abort();
           resolve(Infinity);
         }
-        performance.clearResourceTimings();
       } else {
+        xhr.abort();
         resolve(Infinity);
       }
     };
-    xhr.onerror = () => resolve({url, latency: Infinity});
-    xhr.open('GET', url);
+    xhr.onerror = () => {
+      resolve(Infinity);
+    };
+    xhr.ontimeout = () => {
+      resolve(Infinity);
+    };
+    xhr.open('OPTIONS', urlWithQuery);
     xhr.send();
+  });
+}
+
+export default function measureUrlLatency (url, experimentsCount = 5) {
+  return new Promise(resolve => {
+    Promise.all(
+      (new Array(experimentsCount))
+        .fill(true)
+        .map((o, index) => measureSingleUrlLatency(url, index))
+    )
+      .then(results => {
+        results.sort((a, b) => a - b);
+        if (results.length >= 3) {
+          results.pop();
+          results.shift();
+        }
+        const sum = results.reduce((r, c) => r + c, 0);
+        const average = sum / results.length;
+        resolve(average);
+      });
   });
 }

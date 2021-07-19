@@ -23,6 +23,7 @@ import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
 import {favouriteStorage} from '../../utils/favourites';
 import {MultizoneUrlPopover} from '../../../../special/multizone-url';
+import RunSSHButton from './run-ssh-button';
 
 const ACTION = PropTypes.shape({
   title: PropTypes.string,
@@ -179,7 +180,15 @@ export default class CardsPanel extends React.Component {
             className={styles.actionsContainerBackground} />
           {
             actions.map((action, index, array) => {
-              const {title, icon, style, overlay, multizoneOverlay} = action;
+              const {
+                title,
+                icon,
+                style,
+                overlay,
+                multizoneOverlay,
+                runSSH,
+                runId
+              } = action;
               return (
                 <Row
                   type="flex"
@@ -199,7 +208,15 @@ export default class CardsPanel extends React.Component {
                         : undefined
                     }
                     {
-                      overlay && (
+                      runSSH && (
+                        <RunSSHButton
+                          runId={runId}
+                          visibilityChanged={onVisibleChange}
+                        />
+                      )
+                    }
+                    {
+                      !runSSH && overlay && (
                         <Popover
                           onVisibleChange={onVisibleChange}
                           content={overlay}>
@@ -208,22 +225,23 @@ export default class CardsPanel extends React.Component {
                       )
                     }
                     {
-                      multizoneOverlay && (
+                      !runSSH && multizoneOverlay && (
                         <MultizoneUrlPopover
                           onVisibleChange={onVisibleChange}
                           trigger={['click']}
                           content={multizoneOverlay.content}
                           runServiceUrlConfiguration={multizoneOverlay.runServiceUrlConfiguration}
-                          runId={multizoneOverlay.runId}
                         >
                           {title}
                         </MultizoneUrlPopover>
                       )
                     }
-                    { (!multizoneOverlay && !overlay) && (
-                      <span style={style}>
-                        {title}
-                      </span>)
+                    {
+                      (!runSSH && !multizoneOverlay && !overlay) && (
+                        <span style={style}>
+                          {title}
+                        </span>
+                      )
                     }
                   </Row>
                 </Row>

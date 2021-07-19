@@ -37,7 +37,9 @@ export default function MultizoneUrl (props) {
   } = props;
   const regionsKeys = Object.keys(regions);
   const fallbackRegion = [...regionsKeys].pop();
-  const defaultRegion = defaultRegionValue || fallbackRegion;
+  const defaultRegion = defaultRegionValue === undefined
+    ? fallbackRegion
+    : defaultRegionValue;
   const menu = (
     <Menu
       style={{minWidth: 150}}
@@ -69,7 +71,7 @@ export default function MultizoneUrl (props) {
       }
     </Menu>
   );
-  if (defaultRegion && Object.values(regions || {}).length > 0) {
+  if (Object.values(regions || {}).length > 0) {
     return (
       <div
         className={className}
@@ -106,5 +108,5 @@ MultizoneUrl.propTypes = {
   style: PropTypes.object,
   regions: PropTypes.object,
   defaultRegion: PropTypes.string,
-  title: PropTypes.string
+  title: PropTypes.node
 };
