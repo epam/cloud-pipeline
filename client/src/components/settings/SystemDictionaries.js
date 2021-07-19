@@ -143,7 +143,7 @@ class SystemDictionaries extends React.Component {
       return;
     }
     const {router} = this.props;
-    router && router.push(`settings/dictionaries/${name}`);
+    router && router.push(`settings/dictionaries/${encodeURIComponent(name)}`);
   };
 
   onDictionaryChanged = (name, items, changed) => {
@@ -184,7 +184,7 @@ class SystemDictionaries extends React.Component {
           navigating: true
         }, () => {
           if (currentDictionary !== name) {
-            router.push(`/settings/dictionaries/${name}`);
+            router.push(`/settings/dictionaries/${encodeURIComponent(name)}`);
             this.setState({navigating: false});
           }
         });

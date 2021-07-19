@@ -21,7 +21,8 @@ import PropTypes from 'prop-types';
 import {Modal, Row, Button, message, Icon, Table, Select} from 'antd';
 import User from '../../../models/user/User';
 import Roles from '../../../models/user/Roles';
-import MetadataUpdate from '../../../models/metadata/MetadataUpdate';
+import MetadataUpdateKeys from '../../../models/metadata/MetadataUpdateKeys';
+import MetadataDeleteKeys from '../../../models/metadata/MetadataDeleteKeys';
 import RoleAssign from '../../../models/user/RoleAssign';
 import RoleRemove from '../../../models/user/RoleRemoveFromUser';
 import UserUpdate from '../../../models/user/UserUpdate';
@@ -592,20 +593,74 @@ export default class EditUserRolesDialog extends React.Component {
       }
       if (metadata) {
         const hide = message.loading('Updating attributes...', 0);
-        const request = new MetadataUpdate();
-        await request.send({
-          entity: {
-            entityId: this.props.userId,
-            entityClass: 'PIPELINE_USER'
-          },
-          data: metadata
-        });
-        hide();
-        if (request.error) {
+        const fetchMetadata = this.props.metadataCache
+          .getMetadata(this.props.userId, 'PIPELINE_USER');
+        await fetchMetadata.fetchIfNeededOrWait();
+        if (fetchMetadata.error) {
+          hide();
           mainHide();
-          message.error(request.error, 5);
+          message.error(fetchMetadata.error, 5);
           return;
         }
+        const {data = {}} = (fetchMetadata.value || [])[0] || {};
+        const modified = {};
+        const removed = {};
+        Object.keys(metadata || {})
+          .forEach((key) => {
+            if (!data.hasOwnProperty(key)) {
+              modified[key] = {
+                value: metadata[key].value,
+                type: metadata[key].type
+              };
+            } else if (data[key].value !== metadata[key].value) {
+              modified[key] = {
+                value: metadata[key].value,
+                type: metadata[key].type || data[key].type
+              };
+            }
+          });
+        Object.keys(data || {})
+          .forEach(key => {
+            if (!metadata.hasOwnProperty(key)) {
+              removed[key] = {
+                value: data[key].value,
+                type: data[key].type
+              };
+            }
+          });
+        if (Object.keys(removed).length > 0) {
+          const removeRequest = new MetadataDeleteKeys();
+          await removeRequest.send({
+            entity: {
+              entityId: this.props.userId,
+              entityClass: 'PIPELINE_USER'
+            },
+            data: removed
+          });
+          if (removeRequest.error) {
+            hide();
+            mainHide();
+            message.error(removeRequest.error, 5);
+            return;
+          }
+        }
+        if (Object.keys(modified).length > 0) {
+          const updateRequest = new MetadataUpdateKeys();
+          await updateRequest.send({
+            entity: {
+              entityId: this.props.userId,
+              entityClass: 'PIPELINE_USER'
+            },
+            data: modified
+          });
+          if (updateRequest.error) {
+            hide();
+            mainHide();
+            message.error(updateRequest.error, 5);
+            return;
+          }
+        }
+        hide();
         await this.props.metadataCache.getMetadata(this.props.userId, 'PIPELINE_USER').fetch();
       }
       if (this.instanceTypesForm && instanceTypesChanged) {

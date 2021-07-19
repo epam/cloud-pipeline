@@ -19,7 +19,7 @@ import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import roleModel from '../../utils/roleModel';
 import LoadingView from '../special/LoadingView';
-import Metadata, {ApplyChanges} from '../special/metadata/Metadata';
+import Metadata from '../special/metadata/Metadata';
 import UserName from '../special/UserName';
 import displayDate from '../../utils/displayDate';
 import styles from './user-profile.css';
@@ -159,7 +159,6 @@ class UserProfile extends React.Component {
           titleStyle={{fontWeight: 'bold'}}
           entityId={userInfo.id}
           entityClass="PIPELINE_USER"
-          applyChanges={ApplyChanges.inline}
           removeAllAvailable={userInfo.admin}
           restrictedKeys={userInfo.admin ? [] : metadataKeys}
         />
