@@ -233,20 +233,18 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
             raise
 
 
-def get_conn_info(run_id):
+def get_conn_info(run_id, region=None):
     run_model = PipelineRun.get(run_id)
-    if not run_model.is_initialized:
-        raise RuntimeError("The specified Run ID #{} is not initialized for the SSH session".format(run_id))
-    ssh_url = PipelineRun.get_ssh_url(run_id)
-    if not ssh_url:
-        raise RuntimeError("Cannot get the SSH proxy endpoint for the specified Run ID #{}".format(run_id))
-    ssh_url_parts = urlparse(ssh_url)
-    ssh_proxy_host = ssh_url_parts.hostname
+    proxy_url = Cluster.get_edge_external_url(region)
+    if not proxy_url:
+        raise RuntimeError('Cannot retrieve EDGE service external url')
+    proxy_url_parts = urlparse(proxy_url)
+    ssh_proxy_host = proxy_url_parts.hostname
     if not ssh_proxy_host:
-        raise RuntimeError("Cannot get the SSH proxy hostname from the endpoint {} for the specified Run ID #{}".format(ssh_url, run_id))
-    ssh_proxy_port = ssh_url_parts.port
+        raise RuntimeError('Cannot resolve EDGE service hostname from its external url for the specified Run ID #{}'.format(run_id))
+    ssh_proxy_port = proxy_url_parts.port
     if not ssh_proxy_port:
-        ssh_proxy_port = 80 if ssh_url_parts.scheme == "http" else 443
+        ssh_proxy_port = 80 if proxy_url_parts.scheme == 'http' else 443
     return run_conn_info(ssh_proxy=(ssh_proxy_host, ssh_proxy_port),
                          ssh_endpoint=(run_model.pod_ip, DEFAULT_SSH_PORT),
                          ssh_pass=run_model.ssh_pass,
@@ -296,9 +294,9 @@ def setup_paramiko_transport(conn_info, retries):
             raise
 
 
-def setup_authenticated_paramiko_transport(run_id, user, retries):
+def setup_authenticated_paramiko_transport(run_id, user, retries, region=None):
     # Grab the run information from the API to setup the run's IP and EDGE proxy address
-    conn_info = get_conn_info(run_id)
+    conn_info = get_conn_info(run_id, region)
 
     # Initialize Paramiko SSH client
     setup_paramiko_logging()
@@ -376,7 +374,7 @@ def run_ssh_session(channel):
     interactive_shell(channel)
 
 
-def run_ssh(run_identifier, command, user=None, retries=10):
+def run_ssh(run_identifier, command, user=None, retries=10, region=None):
     run_id = parse_run_identifier(run_identifier)
     if not run_id:
         raise RuntimeError('The specified run {} is not a valid run identifier.'.format(run_identifier))
@@ -384,7 +382,7 @@ def run_ssh(run_identifier, command, user=None, retries=10):
     transport = None
     channel = None
     try:
-        transport = setup_authenticated_paramiko_transport(run_id, user, retries)
+        transport = setup_authenticated_paramiko_transport(run_id, user, retries, region)
         channel = transport.open_session()
         # "get_pty" is used for non-interactive commands too
         # This allows to get stdout and stderr in a correct order
@@ -417,7 +415,7 @@ def parse_run_identifier(run_identifier):
     return None
 
 
-def run_scp(source, destination, recursive, quiet, retries):
+def run_scp(source, destination, recursive, quiet, retries, region=None):
     source_location, source_run_id = parse_scp_location(source)
     destination_location, destination_run_id = parse_scp_location(destination)
 
@@ -426,14 +424,14 @@ def run_scp(source, destination, recursive, quiet, retries):
     if not source_run_id and not destination_run_id:
         raise RuntimeError('Both source and destination are local locations.')
 
-    conn_info = get_conn_info(source_run_id if source_run_id else destination_run_id)
+    conn_info = get_conn_info(source_run_id if source_run_id else destination_run_id, region)
     if conn_info.sensitive:
         raise RuntimeError('Tunnel connections to sensitive runs are not allowed.')
 
     if source_run_id:
         try:
             run_scp_download(source_run_id, source_location, destination_location,
-                             recursive=recursive, quiet=quiet, user=None, retries=retries)
+                             recursive=recursive, quiet=quiet, user=None, retries=retries, region=region)
         except SCPException as e:
             if not recursive and 'not a regular file' in str(e):
                 raise RuntimeError('Flag --recursive (-r) is required to copy directories.')
@@ -443,7 +441,7 @@ def run_scp(source, destination, recursive, quiet, retries):
         if not recursive and os.path.isdir(source_location):
             raise RuntimeError('Flag --recursive (-r) is required to copy directories.')
         run_scp_upload(destination_run_id, source_location, destination_location,
-                       recursive=recursive, quiet=quiet, user=None, retries=retries)
+                       recursive=recursive, quiet=quiet, user=None, retries=retries, region=region)
 
 
 def parse_scp_location(location):
@@ -488,7 +486,7 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
     if run_id:
         create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
                              ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
-                             timeout, foreground, retries)
+                             timeout, foreground, retries, region)
     else:
         create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
                               direct, log_file, log_level,
@@ -728,8 +726,8 @@ def get_flag_value(proc_args, arg_index, arg_names):
 
 def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
                          ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
-                         timeout, foreground, retries):
-    conn_info = get_conn_info(run_id)
+                         timeout, foreground, retries, region=None):
+    conn_info = get_conn_info(run_id, region)
     if conn_info.sensitive:
         raise RuntimeError('Tunnel connections are only allowed to non sensitive runs.')
     remote_host = ssh_host or 'pipeline-{}'.format(run_id)
@@ -1520,14 +1518,14 @@ def send_signal_to_process(proc, signal, timeout):
         proc.wait(timeout if timeout else None)
 
 
-def run_scp_upload(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None):
-    with closing(setup_authenticated_paramiko_transport(run_id, user, retries)) as transport:
+def run_scp_upload(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None, region=None):
+    with closing(setup_authenticated_paramiko_transport(run_id, user, retries, region)) as transport:
         with closing(SCPClient(transport, progress=None if quiet else build_scp_progress())) as scp:
             scp.put(source, destination, recursive=recursive)
 
 
-def run_scp_download(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None):
-    with closing(setup_authenticated_paramiko_transport(run_id, user, retries)) as transport:
+def run_scp_download(run_id, source, destination, recursive=False, quiet=True, user=None, retries=None, region=None):
+    with closing(setup_authenticated_paramiko_transport(run_id, user, retries, region)) as transport:
         with closing(SCPClient(transport, progress=None if quiet else build_scp_progress())) as scp:
             scp.get(source, destination, recursive=recursive)
 

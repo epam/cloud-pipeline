@@ -1502,9 +1502,10 @@ def chown(user_name, entity_class, entity_name):
     allow_extra_args=True))
 @click.argument('run-id', required=True, type=str)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help=EDGE_REGION_OPTION_DESCRIPTION)
 @click.pass_context
 @common_options
-def ssh(ctx, run_id, retries):
+def ssh(ctx, run_id, retries, region):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with
@@ -1523,7 +1524,7 @@ def ssh(ctx, run_id, retries):
 
         pipe ssh 12345 echo \$HOSTNAME
     """
-    ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries)
+    ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries, region=region)
     sys.exit(ssh_exit_code)
 
 
@@ -1534,8 +1535,9 @@ def ssh(ctx, run_id, retries):
               help='Recursive transferring (required for directories transferring)')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True, default=False)
 @click.option('--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help=EDGE_REGION_OPTION_DESCRIPTION)
 @common_options
-def scp(source, destination, recursive, quiet, retries):
+def scp(source, destination, recursive, quiet, retries, region):
     """
     Transfers files or directories between local workstation and run instance.
 
@@ -1568,7 +1570,7 @@ def scp(source, destination, recursive, quiet, retries):
 
         pipe scp -r 12345:/common/workdir/dir dir
     """
-    run_scp(source, destination, recursive, quiet, retries)
+    run_scp(source, destination, recursive, quiet, retries, region)
 
 
 @cli.group()
