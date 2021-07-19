@@ -120,8 +120,45 @@ def view_runs(run_id, *args):
     return pipe_info
 
 
-def run_pipe(pipeline_name, *args):
-    command = ['pipe', 'run', '--pipeline', pipeline_name, '-y']
+def get_endpoint_urls(run_id, *args):
+    endpoints_info = []
+    command = ['pipe', 'view-runs', run_id]
+    for arg in args:
+        command.append(arg)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    line = process.stdout.readline()
+    collecting = False
+    while line != '':
+        endpoint = ""
+
+        if line.strip().startswith("Scheduled"):
+            break
+
+        if line.startswith("Endpoints"):
+            collecting = True
+            endpoint = line.strip().split(":", 1)[1]
+        elif collecting:
+            endpoint = line.strip()
+
+        if collecting and endpoint.rstrip() != "":
+            region_endpoint = endpoint.split(" : ")
+            endpoints_info.append({"name": region_endpoint[0].strip(), "region": region_endpoint[1].strip(), "url": region_endpoint[2].strip()})
+
+        line = process.stdout.readline()
+    return endpoints_info
+
+
+def task_in_status(run_id, task, status):
+    command = ['pipe', 'view-runs', run_id, '-td']
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    line = process.stdout.readline()
+    while task not in line and line != '':
+        line = process.stdout.readline()
+    return status in line
+
+
+def run_tool(*args):
+    command = ['pipe', 'run', '-y']
 
     instance_type = os.environ['CP_TEST_INSTANCE_TYPE']
     if instance_type and "-it" not in args:
@@ -189,6 +226,32 @@ def wait_for_required_status(required_status, run_id, max_rep_count, validation=
     if validation and status != required_status:
         raise RuntimeError("Exceeded retry count ({}) for required pipeline status. Required: {}, actual: {}"
                            .format(max_rep_count, required_status, status))
+
+
+def wait_for_run_initialized(run_id, max_rep_count):
+    initialized = task_in_status(run_id, "InitializeEnvironment", "SUCCESS")
+    rep = 0
+    while rep < max_rep_count:
+        if initialized:
+            return
+        sleep(5)
+        rep = rep + 1
+        initialized = task_in_status(run_id, "InitializeEnvironment", "SUCCESS")
+    raise RuntimeError("Exceeded retry count ({}) for required service urls."
+                       .format(max_rep_count))
+
+
+def wait_for_service_urls(run_id, max_rep_count):
+    urls = get_endpoint_urls(run_id)
+    rep = 0
+    while rep < max_rep_count:
+        if urls and len(urls) > 0:
+            return
+        sleep(5)
+        rep = rep + 1
+        urls = get_endpoint_urls(run_id)
+    raise RuntimeError("Exceeded retry count ({}) for required service urls."
+                       .format(max_rep_count))
 
 
 def get_node_name(run_id):
