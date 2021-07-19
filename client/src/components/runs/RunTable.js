@@ -437,7 +437,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
                         </Checkbox>
                       </Row>
                     );
-                })
+                  })
               }
             </div>
           </Row>
@@ -821,13 +821,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
           <span>
             {moment.utc(item.endDate)
               .diff(moment.utc(item.startDate), 'minutes', true).toFixed(2)} min
-        </span>
+          </span>
         );
       } else {
         return (
           <span>
             Running for {moment.utc().diff(moment.utc(item.startDate), 'minutes', true).toFixed(2)} min
-        </span>
+          </span>
         );
       }
     };
@@ -914,7 +914,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       title: '',
       dataIndex: '',
       key: 'expandIcon',
-      className: styles.expandIconColumn,
+      className: styles.expandIconColumn
     };
     const runColumn = {
       title: <span>Run</span>,
@@ -928,7 +928,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const style = {
           display: 'inline-table',
-          marginLeft: run.parentRunId ? '10px' : 0,
+          marginLeft: run.parentRunId ? '10px' : 0
         };
         let instanceOrSensitiveFlag;
         if (run.instance || run.sensitive) {
@@ -1279,7 +1279,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         size="small"
         indentSize={10}
         locale={{emptyText: 'No Data', filterConfirm: 'OK', filterReset: 'Clear'}}
-    />);
+      />);
   }
 
   componentDidMount () {

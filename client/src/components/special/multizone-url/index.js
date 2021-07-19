@@ -81,10 +81,6 @@ export default function MultizoneUrl (props) {
           className={styles.link}
         >
           {title || regions[defaultRegion] || '\u00A0'}
-          <AWSRegionTag
-            style={{fontSize: 'larger', marginLeft: 2}}
-            regionUID={defaultRegion}
-          />
         </a>
         {
           regionsKeys.length > 1 && (

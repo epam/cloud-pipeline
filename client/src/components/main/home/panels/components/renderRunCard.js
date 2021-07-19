@@ -16,9 +16,8 @@
 
 import React from 'react';
 import StatusIcon from '../../../../special/run-status-icon';
-import {Icon, Popover, Row} from 'antd';
+import {Icon, Row} from 'antd';
 import moment from 'moment-timezone';
-import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
@@ -26,6 +25,8 @@ import JobEstimatedPriceInfo from '../../../../special/job-estimated-price-info'
 import styles from './CardsPanel.css';
 import RunTags from '../../../../runs/run-tags';
 import PlatformIcon from '../../../../tools/platform-icon';
+import MultizoneUrl, {MultizoneUrlPopover} from '../../../../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 
 function renderTitle (run) {
   const podId = run.podId;
@@ -64,28 +65,37 @@ function renderPipeline (run) {
   }
   displayName = <span type="main">{displayName}</span>;
   if (run.serviceUrl && run.initialized) {
-    const urls = parseRunServiceUrl(run.serviceUrl);
+    const renderMultiZoneServiceUrls = (multiZone) => {
+      const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
+      return (
+        <div>
+          <ul>
+            {
+              regionedUrls.map(({name, url}, index) =>
+                <li key={index} style={{margin: 4}}>
+                  <MultizoneUrl
+                    title={name}
+                    regions={url}
+                    defaultRegion={multiZone.getDefaultURLRegion(url)}
+                  />
+                </li>
+              )
+            }
+          </ul>
+        </div>
+      );
+    };
     return (
       <span>
         <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
-        <Popover
-          mouseEnterDelay={1}
-          content={
-            <div>
-              <ul>
-                {
-                  urls.map((url, index) =>
-                    <li key={index} style={{margin: 4}}>
-                      <a href={url.url} target="_blank">{url.name || url.url}</a>
-                    </li>
-                  )
-                }
-              </ul>
-            </div>
-          }
-          trigger="hover">
-          <Icon type="export" /> {clusterIcon} {displayName}
-        </Popover>
+        <MultizoneUrlPopover
+          trigger={['hover']}
+          content={renderMultiZoneServiceUrls}
+          runServiceUrlConfiguration={run.serviceUrl}
+          runId={run.id}
+        >
+          {clusterIcon} <Icon type="export" /> {displayName}
+        </MultizoneUrlPopover>
       </span>
     );
   } else {

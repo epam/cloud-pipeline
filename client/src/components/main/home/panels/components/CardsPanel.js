@@ -22,6 +22,7 @@ import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
 import {favouriteStorage} from '../../utils/favourites';
+import {MultizoneUrlPopover} from '../../../../special/multizone-url';
 
 const ACTION = PropTypes.shape({
   title: PropTypes.string,
@@ -178,6 +179,7 @@ export default class CardsPanel extends React.Component {
             className={styles.actionsContainerBackground} />
           {
             actions.map((action, index, array) => {
+              const {title, icon, style, overlay, multizoneOverlay} = action;
               return (
                 <Row
                   type="flex"
@@ -192,20 +194,36 @@ export default class CardsPanel extends React.Component {
                   }}>
                   <Row type="flex" align="middle">
                     {
-                      action.icon
-                        ? <Icon style={action.style} type={getIconType(action)} />
+                      icon
+                        ? <Icon style={style} type={getIconType(action)} />
                         : undefined
                     }
                     {
-                      action.overlay
-                        ? (
-                          <Popover
-                            onVisibleChange={onVisibleChange}
-                            content={action.overlay}>
-                            <span style={action.style}>{action.title}</span>
-                          </Popover>
-                        )
-                        : <span style={action.style}>{action.title}</span>
+                      overlay && (
+                        <Popover
+                          onVisibleChange={onVisibleChange}
+                          content={overlay}>
+                          <span style={style}>{title}</span>
+                        </Popover>
+                      )
+                    }
+                    {
+                      multizoneOverlay && (
+                        <MultizoneUrlPopover
+                          onVisibleChange={onVisibleChange}
+                          trigger={['click']}
+                          content={multizoneOverlay.content}
+                          runServiceUrlConfiguration={multizoneOverlay.runServiceUrlConfiguration}
+                          runId={multizoneOverlay.runId}
+                        >
+                          {title}
+                        </MultizoneUrlPopover>
+                      )
+                    }
+                    { (!multizoneOverlay && !overlay) && (
+                      <span style={style}>
+                        {title}
+                      </span>)
                     }
                   </Row>
                 </Row>

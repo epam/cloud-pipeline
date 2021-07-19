@@ -106,6 +106,9 @@ class MultizoneUrlPopover extends React.Component {
 
   handleVisibilityChange = (visible) => {
     this.setState({visible}, this.fetch);
+    if (this.props.onVisibleChange) {
+      this.props.onVisibleChange(visible);
+    }
   };
 
   render () {
@@ -113,7 +116,8 @@ class MultizoneUrlPopover extends React.Component {
       children,
       trigger,
       placement,
-      content
+      content,
+      getPopupContainer
     } = this.props;
     if (
       !content ||
@@ -144,7 +148,8 @@ MultizoneUrlPopover.propTypes = {
   configuration: PropTypes.object,
   runServiceUrlConfiguration: PropTypes.object,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  multiZone: PropTypes.object
+  multiZone: PropTypes.object,
+  onVisibleChange: PropTypes.func
 };
 
 MultizoneUrlPopover.defaultProps = {
