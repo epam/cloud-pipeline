@@ -257,8 +257,10 @@ class PipeFS(Operations):
     def release(self, path, fh):
         self.container.release(fh)
 
+    @syncronized
+    @errorlogged
     def fsync(self, path, fdatasync, fh):
-        pass
+        self.client.flush(fh, path)
 
     class FallocateFlag:
         # See http://man7.org/linux/man-pages/man2/fallocate.2.html.
