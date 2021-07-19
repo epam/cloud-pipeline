@@ -194,6 +194,8 @@ public class SystemPreferences {
     public static final IntPreference STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS =
             new IntPreference("storage.incomplete.upload.clean.days", 5, DATA_STORAGE_GROUP,
                     isNullOrGreaterThan(0));
+    public static final BooleanPreference STORAGE_ALLOW_SIGNED_URLS =
+            new BooleanPreference("storage.allow.signed.urls", true, DATA_STORAGE_GROUP, pass);
 
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
