@@ -21,9 +21,8 @@ import connect from '../../../utils/connect';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import dataStorageCache from '../../../models/dataStorage/DataStorageCache';
-import MetadataUpdate from '../../../models/metadata/MetadataUpdate';
-import MetadataDeleteKey from '../../../models/metadata/MetadataDeleteKey';
-import MetadataDelete from '../../../models/metadata/MetadataDelete';
+import MetadataUpdateKeys from '../../../models/metadata/MetadataUpdateKeys';
+import MetadataDeleteKeys from '../../../models/metadata/MetadataDeleteKeys';
 import DataStorageTagsUpdate from '../../../models/dataStorage/tags/DataStorageTagsUpdate';
 import DataStorageTagsDelete from '../../../models/dataStorage/tags/DataStorageTagsDelete';
 import LoadingView from '../../special/LoadingView';
@@ -112,6 +111,50 @@ const MetadataDisplayOptions = {
 const ApplyChanges = {
   callback: 'callback',
   inline: 'inline'
+};
+
+const queueRequests = (requests, results = []) => {
+  if (requests.length === 0) {
+    return Promise.resolve(results);
+  }
+  const [current, ...next] = requests;
+  return new Promise((resolve, reject) => {
+    current()
+      .then((result) => {
+        return queueRequests(next, [...results, result]);
+      })
+      .then(resolve)
+      .catch(reject);
+  });
+};
+
+const wrapRequest = (request, fn) => new Promise((resolve) => {
+  fn()
+    .then(() => {
+      if (request.error) {
+        resolve({error: request.error});
+      } else {
+        resolve({});
+      }
+    })
+    .catch(e => resolve({error: e.message}));
+});
+
+const applyRequests = (requests) => {
+  if (requests.length === 0) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    queueRequests(
+      requests.map(({request, apply}) => () => wrapRequest(request, apply))
+    )
+      .then(payloads => {
+        const error = payloads
+          .map(payload => payload.error)
+          .find(Boolean);
+        resolve(error);
+      });
+  });
 };
 
 @connect({
@@ -231,7 +274,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     }
   };
 
-  applyChanges = async (metadata, modified, ignoreKeys = []) => {
+  applyChanges = async (modified = [], removed = []) => {
     const {
       applyChanges,
       dataStorageTags,
@@ -241,91 +284,96 @@ export default class Metadata extends localization.LocalizedReactComponent {
       entityVersion,
       entityClass
     } = this.props;
-    const previousMetadata = {};
-    if (dataStorageTags) {
-      for (let i = 0; i < metadata.length; i++) {
-        if (ignoreKeys.indexOf(metadata[i].key) === -1) {
-          previousMetadata[metadata[i].key] = metadata[i].value;
-        }
-      }
-    } else {
-      for (let i = 0; i < metadata.length; i++) {
-        if (ignoreKeys.indexOf(metadata[i].key) === -1) {
-          previousMetadata[metadata[i].key] = {
-            value: metadata[i].value,
-            type: metadata[i].type
-          };
-        }
-      }
-    }
-    const payload = Object.assign(previousMetadata, modified || {});
     if (applyChanges === ApplyChanges.callback && onChange) {
-      await onChange(payload);
+      const mapItem = ({key, value, type}) => ({key, value, type});
+      const metadata = this.metadata
+        .map(mapItem)
+        .filter(({key}) => !this.isReadOnlyTag(key) && !removed.find(r => r.key === key))
+        .concat(modified.map(mapItem))
+        .map(({key, ...rest}) => ({[key]: rest}))
+        .reduce((r, c) => ({...r, ...c}), {});
+      await onChange(metadata);
       return {refresh: false};
-    } else if (dataStorageTags) {
-      const request = new DataStorageTagsUpdate(
-        entityParentId,
-        entityId,
-        entityVersion
-      );
-      await request.send(payload);
-      return {error: request.error, refresh: !request.error};
     } else {
-      const request = new MetadataUpdate();
-      await request.send({
-        entity: {
-          entityId,
-          entityClass
-        },
-        data: payload
-      });
-      return {error: request.error, refresh: !request.error};
+      const requests = [];
+      if (dataStorageTags) {
+        if (removed.length > 0) {
+          const removeRequest = new DataStorageTagsDelete(
+            entityParentId,
+            entityId,
+            entityVersion
+          );
+          const removeRequestFn = () => removeRequest.send(
+            removed.map(item => item.key)
+          );
+          requests.push({
+            request: removeRequest,
+            apply: removeRequestFn
+          });
+        }
+        if (modified.length > 0) {
+          const updateRequest = new DataStorageTagsUpdate(
+            entityParentId,
+            entityId,
+            entityVersion,
+            false
+          );
+          const updateRequestFn = () => updateRequest.send(
+            modified
+              .map(({key, value}) => ({[key]: value}))
+              .reduce((r, c) => ({...r, ...c}), {})
+          );
+          requests.push({
+            request: updateRequest,
+            apply: updateRequestFn
+          });
+        }
+      } else {
+        if (removed.length > 0) {
+          const removeRequest = new MetadataDeleteKeys();
+          const removeRequestFn = () => removeRequest.send({
+            entity: {
+              entityId,
+              entityClass
+            },
+            data: removed
+              .map(({key, value, type}) => ({[key]: {value, type: type || 'string'}}))
+              .reduce((r, c) => ({...r, ...c}), {})
+          });
+          requests.push({
+            request: removeRequest,
+            apply: removeRequestFn
+          });
+        }
+        if (modified.length > 0) {
+          const updateRequest = new MetadataUpdateKeys();
+          const updateRequestFn = () => updateRequest.send({
+            entity: {
+              entityId,
+              entityClass
+            },
+            data: modified
+              .map(({key, value, type}) => ({[key]: {value, type: type || 'string'}}))
+              .reduce((r, c) => ({...r, ...c}), {})
+          });
+          requests.push({
+            request: updateRequest,
+            apply: updateRequestFn
+          });
+        }
+      }
+      const error = await applyRequests(requests);
+      return {error, refresh: !error};
     }
   };
 
   applyRemoveChanges = async ({item, all = false}) => {
-    const {
-      applyChanges,
-      dataStorageTags,
-      onChange,
-      entityParentId,
-      entityId,
-      entityVersion,
-      entityClass
-    } = this.props;
-    if (applyChanges === ApplyChanges.callback && onChange) {
-      if (all) {
-        await onChange({});
-        return {refresh: false};
-      } else {
-        return this.applyChanges(this.metadata, {}, item ? [item.key] : []);
-      }
-    } else if (dataStorageTags) {
-      const request = new DataStorageTagsDelete(
-        entityParentId,
-        entityId,
-        entityVersion
-      );
-      await request.send(all ? this.metadata.map(m => m.key) : (item ? [item.key] : []));
-      return {error: request.error, refresh: !request.error};
+    if (all) {
+      return this.applyChanges([], this.metadata.filter(({key}) => !this.isReadOnlyTag(key)));
+    } else if (item) {
+      return this.applyChanges([], [item]);
     } else {
-      if (all) {
-        const request = new MetadataDelete();
-        await request.send({
-          entityId,
-          entityClass
-        });
-        return {error: request.error, refresh: !request.error};
-      } else if (item) {
-        const request = new MetadataDeleteKey(item.key);
-        await request.send({
-          entityId,
-          entityClass
-        });
-        return {error: request.error, refresh: !request.error};
-      } else {
-        return {refresh: false};
-      }
+      return {refresh: false};
     }
   };
 
@@ -333,7 +381,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
     const {index, field} = opts;
     const metadata = this.metadata;
     const [currentMetadataItem] = metadata.filter(m => m.index === index);
-    const modified = {};
+    const modified = [];
+    const removed = [];
     if (this.state.addKey) {
       if (
         !this.state.addKey.key ||
@@ -363,20 +412,6 @@ export default class Metadata extends localization.LocalizedReactComponent {
           ? (this.props.systemDictionaries.value || [])
           : []
       );
-      if (this.props.dataStorageTags) {
-        modified[this.state.addKey.key.trim()] = this.state.addKey.value;
-        result.forEach(({key, value}) => {
-          modified[key] = value;
-        });
-      } else {
-        modified[this.state.addKey.key] = {
-          value: this.state.addKey.value,
-          type: 'string'
-        };
-        result.forEach(({key, value}) => {
-          modified[key] = {value, type: 'string'};
-        });
-      }
       if (warnings.size > 0) {
         message.warning(
           // eslint-disable-next-line
@@ -384,8 +419,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
           5
         );
       }
-    }
-    if (currentMetadataItem) {
+      modified.push(...result);
+    } else if (currentMetadataItem) {
       const value = this.state.editableText;
       if ((field === 'key' && currentMetadataItem.key === value) ||
         (field === 'value' && currentMetadataItem.value === value)) {
@@ -402,12 +437,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
           message.error(`Key '${value}' already exists.`, 5);
           return;
         }
-        currentMetadataItem.key = value.trim();
+        modified.push({...currentMetadataItem, key: value.trim()});
+        removed.push({...currentMetadataItem});
       } else if (field === 'value') {
-        currentMetadataItem.value = value;
+        modified.push({...currentMetadataItem, value});
       }
     }
-    const {error, refresh} = await this.applyChanges(metadata, modified);
+    const {error, refresh} = await this.applyChanges(modified, removed);
     if (error) {
       message.error(error, 5);
       return;
@@ -425,15 +461,16 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   applyValues = async (values = []) => {
     const metadata = this.metadata;
+    const modified = [];
     values.forEach(({key, value}) => {
       const currentMetadataItem = metadata.find(m => m.key === key);
       if (currentMetadataItem) {
-        currentMetadataItem.value = value;
+        modified.push({...currentMetadataItem, value});
       } else {
-        metadata.push({key, value});
+        modified.push({key, value});
       }
     });
-    const {error, refresh} = await this.applyChanges(metadata, {});
+    const {error, refresh} = await this.applyChanges(modified);
     if (error) {
       message.error(error, 5);
       return;
@@ -506,29 +543,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
     const {index} = opts;
     const metadata = this.metadata;
     const [currentMetadataItem] = metadata.filter(m => m.index === index);
-    const modified = {};
     if (currentMetadataItem) {
       if (currentMetadataItem.value === value) {
         this.setState({editableKeyIndex: null, editableValueIndex: null, editableText: null});
         return;
       }
-      currentMetadataItem.value = value;
       await this.applyCascadeValues(currentMetadataItem.key, value);
     }
-    const {error, refresh} = await this.applyChanges(metadata, modified);
-    if (error) {
-      message.error(error, 5);
-      return;
-    }
-    if (refresh) {
-      this.props.metadata.fetch();
-    }
-    this.setState({
-      addKey: null,
-      editableKeyIndex: null,
-      editableValueIndex: null,
-      editableText: null
-    });
   };
 
   saveItemsMetadata = (index) => async (value) => {
@@ -538,8 +559,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       if (currentMetadataItem.value === value) {
         return;
       }
-      currentMetadataItem.value = value;
-      const {error, refresh} = await this.applyChanges(metadata);
+      const {error, refresh} = await this.applyChanges([{...currentMetadataItem, value}]);
       if (error) {
         message.error(error, 5);
         return false;
@@ -557,9 +577,19 @@ export default class Metadata extends localization.LocalizedReactComponent {
       return;
     }
     if (field === 'key') {
-      this.setState({addKey: null, editableKeyIndex: index, editableValueIndex: null, editableText: value});
+      this.setState({
+        addKey: null,
+        editableKeyIndex: index,
+        editableValueIndex: null,
+        editableText: value
+      });
     } else if (field === 'value') {
-      this.setState({addKey: null, editableKeyIndex: null, editableValueIndex: index, editableText: value});
+      this.setState({
+        addKey: null,
+        editableKeyIndex: null,
+        editableValueIndex: index,
+        editableText: value
+      });
     }
   };
 
@@ -619,7 +649,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
   renderOwnerTag = (metadata) => {
     const [ownerTag] = metadata.filter(item => item.key === AutoGeneratedTags.owner);
     if (ownerTag) {
-      return this.renderAutogeneratedTag(ownerTag.key, 'Owner', 'user', false, <UserName userName={ownerTag.value} />);
+      return this.renderAutogeneratedTag(
+        ownerTag.key,
+        'Owner',
+        'user',
+        false,
+        (<UserName userName={ownerTag.value} />)
+      );
     }
     return [];
   };
@@ -627,7 +663,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
   renderSourceTag = (metadata) => {
     const [sourceTag] = metadata.filter(item => item.key === AutoGeneratedTags.source);
     if (sourceTag) {
-      return this.renderAutogeneratedTag(sourceTag.key, 'Source', 'download', false, sourceTag.value);
+      return this.renderAutogeneratedTag(
+        sourceTag.key,
+        'Source',
+        'download',
+        false,
+        sourceTag.value
+      );
     }
     return [];
   };
@@ -651,7 +693,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
     const [pipelineNameTag] = metadata.filter(item => item.key === AutoGeneratedTags.job.name);
     let pipelineName = 'Unknown';
     if (!pipelineNameTag && pipelineIdTag) {
-      const pipelines = this.props.pipelines.loaded ? (this.props.pipelines.value || []).map(p => p) : [];
+      const pipelines = this.props.pipelines.loaded
+        ? (this.props.pipelines.value || []).map(p => p)
+        : [];
       const [pipeline] = pipelines.filter(p => `${p.id}` === `${pipelineIdTag.value}`);
       if (pipeline) {
         pipelineName = pipeline.name;
@@ -672,8 +716,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   renderJobVersionTag = (metadata) => {
-    const [pipelineVersionTag] = metadata.filter(item => item.key === AutoGeneratedTags.job.version);
-    const [pipelineIdTag] = metadata.filter(item => item.key === AutoGeneratedTags.job.id);
+    const pipelineVersionTag = metadata.find(item => item.key === AutoGeneratedTags.job.version);
+    const pipelineIdTag = metadata.find(item => item.key === AutoGeneratedTags.job.id);
     if (pipelineIdTag && pipelineVersionTag) {
       return this.renderAutogeneratedTag(
         pipelineVersionTag.key,
@@ -687,16 +731,20 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   renderJobConfigurationTag = (metadata) => {
-    const [pipelineIdTag] = metadata.filter(item => item.key === AutoGeneratedTags.job.id);
-    const [pipelineVersionTag] = metadata.filter(item => item.key === AutoGeneratedTags.job.version);
-    const [pipelineConfigurationTag] = metadata.filter(item => item.key === AutoGeneratedTags.job.configuration);
+    const pipelineIdTag = metadata.find(item => item.key === AutoGeneratedTags.job.id);
+    const pipelineVersionTag = metadata.find(item => item.key === AutoGeneratedTags.job.version);
+    const pipelineConfigurationTag = metadata
+      .find(item => item.key === AutoGeneratedTags.job.configuration);
     if (pipelineIdTag && pipelineVersionTag && pipelineConfigurationTag) {
+      const id = pipelineIdTag.value;
+      const version = pipelineVersionTag.value;
+      const configuration = pipelineConfigurationTag.value;
       return this.renderAutogeneratedTag(
         pipelineConfigurationTag.key,
         `${this.localizedString('Pipeline')} configuration`,
         'setting',
-        `/${pipelineIdTag.value}/${pipelineVersionTag.value}/configuration/${pipelineConfigurationTag.value}`,
-        pipelineConfigurationTag.value
+        `/${id}/${version}/configuration/${configuration}`,
+        configuration
       );
     }
     return [];
@@ -708,13 +756,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
     if (dockerImageTag && this.props.dockerRegistries.loaded) {
       const [registryPath, groupName, toolWithVersion] = dockerImageTag.value.split('/');
       const [toolName] = toolWithVersion.split(':');
-      const [registry] = (this.props.dockerRegistries.value.registries || [])
-        .filter(r => r.path.toLowerCase() === (registryPath || '').toLowerCase());
+      const registry = (this.props.dockerRegistries.value.registries || [])
+        .find(r => r.path.toLowerCase() === (registryPath || '').toLowerCase());
       if (registry) {
-        const [group] = (registry.groups || []).filter(g => g.name.toLowerCase() === (groupName || '').toLowerCase());
+        const group = (registry.groups || [])
+          .find(g => g.name.toLowerCase() === (groupName || '').toLowerCase());
         if (group) {
-          const [tool] = (group.tools || [])
-            .filter(t => t.image.toLowerCase() === `${(groupName || '')}/${toolName}`.toLowerCase());
+          const tool = (group.tools || [])
+            .find(t => t.image.toLowerCase() === `${(groupName || '')}/${toolName}`.toLowerCase());
           if (tool) {
             dockerImageId = tool.id;
           }
@@ -734,7 +783,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   renderCalculationConfigTag = (metadata) => {
-    const [calcConfigTag] = metadata.filter(item => item.key === AutoGeneratedTags.calculationConfig);
+    const calcConfigTag = metadata
+      .find(item => item.key === AutoGeneratedTags.calculationConfig);
     if (calcConfigTag) {
       let [instanceType, workersCount, totalCPU] = calcConfigTag.value.split(':');
       instanceType = (instanceType || '').toLowerCase() === 'none' ? null : instanceType;
@@ -842,8 +892,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
             {metadataItem.key}
           </td>
           {
-            readOnly ? undefined :
-              (
+            readOnly
+              ? undefined
+              : (
                 <td style={{minWidth: 30, textAlign: 'right'}}>
                   <Button
                     id={`delete-metadata-key-${metadataItem.key}-button`}
@@ -915,7 +966,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
       );
     } else {
       valueElement = (
-        <tr key={`${metadataItem.key}_value`} className={readOnly ? styles.readOnlyValueRow : styles.valueRow}>
+        <tr
+          key={`${metadataItem.key}_value`}
+          className={
+            readOnly
+              ? styles.readOnlyValueRow
+              : styles.valueRow
+          }
+        >
           <td
             id={`value-column-${metadataItem.key}`}
             colSpan={6}
@@ -1053,7 +1111,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
           .filter(dict => !existingKeys.has(dict))
         : [];
       const addKeyCancelClicked = () => {
-        this.setState({editableKeyIndex: null, editableValueIndex: null, editableText: null, addKey: null});
+        this.setState({
+          editableKeyIndex: null,
+          editableValueIndex: null,
+          editableText: null,
+          addKey: null
+        });
       };
 
       const onChange = (field) => (e) => {
@@ -1250,7 +1313,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
     }
     if (!mayBeBinary) {
       previewRes.push(
-        <Row id="file-preview-container" type="flex" key="preview body" style={{color: '#777', flex: 1}}>
+        <Row
+          id="file-preview-container"
+          type="flex"
+          key="preview body"
+          style={{color: '#777', flex: 1}}
+        >
           <Input
             spellCheck="false"
             autoComplete="off"
@@ -1283,7 +1351,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
       const downloadUrl = this.downloadUrl;
       if (downloadUrl) {
         previewRes.push(
-          <Row type="flex" key="preview footer" style={{color: '#777', marginTop: 5, marginBottom: 5}}>
+          <Row
+            type="flex"
+            key="preview footer"
+            style={{color: '#777', marginTop: 5, marginBottom: 5}}
+          >
+            {/* eslint-disable-next-line */}
             File preview is not available. {this.props.downloadable && renderDownloadLink(downloadUrl)}
           </Row>
         );
@@ -1292,7 +1365,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
       const downloadUrl = this.downloadUrl;
       if (downloadUrl) {
         previewRes.push(
-          <Row type="flex" key="preview footer" style={{color: '#777', marginTop: 5, marginBottom: 5}}>
+          <Row
+            type="flex"
+            key="preview footer"
+            style={{color: '#777', marginTop: 5, marginBottom: 5}}
+          >
+            {/* eslint-disable-next-line */}
             File is too large to be shown. {this.props.downloadable && renderDownloadLink(downloadUrl)}
           </Row>
         );

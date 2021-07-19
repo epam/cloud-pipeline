@@ -18,7 +18,6 @@ import Remote from '../basic/Remote';
 import defer from '../../utils/defer';
 
 export default class MetadataLoad extends Remote {
-
   static fetchOptions = {
     mode: 'cors',
     credentials: 'include',
