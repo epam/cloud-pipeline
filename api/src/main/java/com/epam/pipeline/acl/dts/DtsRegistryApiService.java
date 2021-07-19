@@ -55,6 +55,11 @@ public class DtsRegistryApiService {
     }
 
     @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
+    public DtsRegistry updateHeartbeat(final String registryId) {
+        return dtsRegistryManager.updateHeartbeat(registryId);
+    }
+
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public DtsRegistry delete(Long registryId) {
         return dtsRegistryManager.delete(registryId);
     }

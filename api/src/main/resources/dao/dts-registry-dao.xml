@@ -141,5 +141,30 @@
                 ]]>
             </value>
         </property>
+        <property name="updateDtsRegistryHeartbeatQuery">
+            <value>
+                <![CDATA[
+                    UPDATE
+                        pipeline.dts_registry
+                    SET
+                        heartbeat = :HEARTBEAT,
+                        status = :STATUS
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateDtsRegistryStatusQuery">
+            <value>
+                <![CDATA[
+                    UPDATE
+                        pipeline.dts_registry
+                    SET
+                        status = :STATUS
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

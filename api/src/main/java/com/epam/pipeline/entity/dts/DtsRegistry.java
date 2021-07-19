@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -36,4 +37,6 @@ public class DtsRegistry extends BaseEntity {
     private List<String> prefixes;
     private Map<String, String> preferences;
     private boolean schedulable = false;
+    private LocalDateTime heartbeat;
+    private DtsStatus status;
 }

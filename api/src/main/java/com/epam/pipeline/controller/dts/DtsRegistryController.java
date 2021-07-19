@@ -103,6 +103,19 @@ public class DtsRegistryController extends AbstractRestController {
         return Result.success(dtsRegistryApiService.update(registryId, dtsRegistryVO));
     }
 
+    @PutMapping(value = "/{registryId}/heartbeat")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates Data Transfer Service registry heartbeat.",
+            notes = "Updates Data Transfer Service registry heartbeat.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<DtsRegistry> updateDtsRegistryHeartbeat(final @PathVariable(value = REGISTRY_ID) String registryId) {
+        return Result.success(dtsRegistryApiService.updateHeartbeat(registryId));
+    }
+
     @DeleteMapping(value = "/{registryId}")
     @ResponseBody
     @ApiOperation(

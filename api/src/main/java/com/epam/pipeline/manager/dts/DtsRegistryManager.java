@@ -23,6 +23,8 @@ import com.epam.pipeline.controller.vo.dts.DtsRegistryPreferencesUpdateVO;
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.dao.dts.DtsRegistryDao;
 import com.epam.pipeline.entity.dts.DtsRegistry;
+import com.epam.pipeline.entity.dts.DtsStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.mapper.DtsRegistryMapper;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -115,6 +117,36 @@ public class DtsRegistryManager {
         DtsRegistry dtsRegistry = dtsRegistryMapper.toDtsRegistry(dtsRegistryVO);
         dtsRegistry.setId(registryId);
         dtsRegistryDao.update(dtsRegistry);
+        return dtsRegistry;
+    }
+
+    /**
+     * Updates a {@link DtsRegistry} heartbeat specified by ID. If required {@link DtsRegistry} does not exist an error will be
+     * thrown.
+     * @param registryId a {@link DtsRegistry} ID to update heartbeat
+     * @return updated {@link DtsRegistry}
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public DtsRegistry updateHeartbeat(final String registryId) {
+        final DtsRegistry dtsRegistry = loadByNameOrId(registryId);
+        dtsRegistry.setHeartbeat(DateUtils.nowUTC());
+        dtsRegistry.setStatus(DtsStatus.ONLINE);
+        dtsRegistryDao.updateHeartbeat(dtsRegistry.getId(), dtsRegistry.getHeartbeat(), dtsRegistry.getStatus());
+        return dtsRegistry;
+    }
+
+    /**
+     * Updates a {@link DtsRegistry} status specified by ID. If required {@link DtsRegistry} does not exist an error will be
+     * thrown.
+     * @param registryId a {@link DtsRegistry} ID to update heartbeat
+     * @param status a {@link DtsRegistry} status to set
+     * @return updated {@link DtsRegistry}
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public DtsRegistry updateStatus(final Long registryId, final DtsStatus status) {
+        final DtsRegistry dtsRegistry = loadById(registryId);
+        dtsRegistry.setStatus(status);
+        dtsRegistryDao.updateStatus(dtsRegistry.getId(), dtsRegistry.getStatus());
         return dtsRegistry;
     }
 
