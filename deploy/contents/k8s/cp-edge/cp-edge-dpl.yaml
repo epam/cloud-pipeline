@@ -24,7 +24,9 @@ spec:
           command: ["/init"]
           env:
           - name: NODE_OPTIONS
-            value: "--max_old_space_size=4096" 
+            value: "--max_old_space_size=4096"
+          - name: CP_EDGE_REGION
+            value: $CP_CLOUD_REGION_ID
           envFrom:
           - configMapRef:
               name: cp-config-global
