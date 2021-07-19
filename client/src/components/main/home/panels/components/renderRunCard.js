@@ -92,7 +92,6 @@ function renderPipeline (run) {
           trigger={['hover']}
           content={renderMultiZoneServiceUrls}
           runServiceUrlConfiguration={run.serviceUrl}
-          runId={run.id}
         >
           {clusterIcon} <Icon type="export" /> {displayName}
         </MultizoneUrlPopover>

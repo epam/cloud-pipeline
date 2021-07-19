@@ -18,7 +18,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Alert, Icon, Popover} from 'antd';
-import {Mutlizone} from '../../../utils/multizone';
 
 @inject('multiZoneManager')
 @observer
@@ -69,8 +68,7 @@ class MultizoneUrlPopover extends React.Component {
         configuration,
         multiZone,
         multiZoneManager,
-        runServiceUrlConfiguration,
-        runId
+        runServiceUrlConfiguration
       } = this.props;
       if (!configuration && !runServiceUrlConfiguration) {
         this.setState({
@@ -83,11 +81,8 @@ class MultizoneUrlPopover extends React.Component {
           fetching: true
         }, () => {
           let multiZoneRequest = multiZone;
-          if (!multiZoneRequest && runId) {
-            multiZoneRequest = multiZoneManager.getRunMultiZoneConfiguration(runId);
-          }
           if (!multiZoneRequest) {
-            multiZoneRequest = new Mutlizone(multiZoneManager.defaultRegion);
+            multiZoneRequest = multiZoneManager;
           }
           multiZoneRequest
             .check(configuration || {})
@@ -131,6 +126,7 @@ class MultizoneUrlPopover extends React.Component {
         content={this.renderContent()}
         onVisibleChange={this.handleVisibilityChange}
         placement={placement}
+        getPopupContainer={getPopupContainer}
       >
         {children}
       </Popover>
@@ -147,7 +143,6 @@ MultizoneUrlPopover.propTypes = {
   placement: PropTypes.string,
   configuration: PropTypes.object,
   runServiceUrlConfiguration: PropTypes.object,
-  runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   multiZone: PropTypes.object,
   onVisibleChange: PropTypes.func
 };

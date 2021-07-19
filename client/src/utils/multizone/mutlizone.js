@@ -114,7 +114,6 @@ class Mutlizone {
             result[region] = latency;
           });
           this._latencies = result;
-          console.log(result);
           this.updateDefaultRegion();
         })
         .then(() => {
@@ -147,28 +146,10 @@ class Mutlizone {
     return this.defaultRegion;
   }
 
-  getDefaultRunServiceUrls (serviceUrl) {
-    const regions = Object.keys(serviceUrl || {});
-    const defaultRegion = this.getDefaultRegion(...regions) || regions[0];
-    if (defaultRegion && serviceUrl.hasOwnProperty(defaultRegion)) {
-      return parseRunServiceUrl(serviceUrl[defaultRegion]);
-    }
-    return [];
-  }
-
-  getDefaultURL (configuration) {
-    const regions = Object.keys(configuration || {});
-    const defaultRegion = this.getDefaultRegion(...regions) || regions[0];
-    if (defaultRegion && configuration.hasOwnProperty(defaultRegion)) {
-      return configuration[defaultRegion];
-    }
-    return undefined;
-  }
-
   getDefaultURLRegion (configuration) {
     const regions = Object.keys(configuration || {});
     const defaultRegion = this.getDefaultRegion(...regions) || regions[0];
-    if (defaultRegion && configuration.hasOwnProperty(defaultRegion)) {
+    if (configuration.hasOwnProperty(defaultRegion)) {
       return defaultRegion;
     }
     return undefined;
