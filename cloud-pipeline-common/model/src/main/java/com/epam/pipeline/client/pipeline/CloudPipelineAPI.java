@@ -250,4 +250,7 @@ public interface CloudPipelineAPI {
     @HTTP(method = "DELETE", path = "dts/{id}/preferences", hasBody = true)
     Call<Result<DtsRegistry>> deleteDtsPreferences(@Path(ID) String dtsNameOrId,
                                                    @Body DtsRegistryPreferencesRemovalVO removalVO);
+
+    @PUT("dts/{id}/preferences")
+    Call<Result<DtsRegistry>> updateDtsHeartbeat(@Path(ID) final String dtsId);
 }

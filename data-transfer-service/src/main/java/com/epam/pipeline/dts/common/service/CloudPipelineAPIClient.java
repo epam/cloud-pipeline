@@ -98,4 +98,8 @@ public class CloudPipelineAPIClient {
         return pipelineApiExecutor.execute(
             cloudPipelineAPI.deleteDtsPreferences(dtsId, new DtsRegistryPreferencesRemovalVO(preferencesToRemove)));
     }
+
+    public DtsRegistry updateDtsRegistryHeartbeat(final String dtsId) {
+        return pipelineApiExecutor.execute(cloudPipelineAPI.updateDtsHeartbeat(dtsId));
+    }
 }
