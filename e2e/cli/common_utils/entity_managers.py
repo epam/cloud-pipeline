@@ -153,6 +153,14 @@ class UtilsManager(API):
         raise RuntimeError('Response is not valid while getting cloud pipeline {} preference'.format(preference))
 
     @classmethod
+    def get_preference_or_none(cls, preference):
+        api = cls.instance()
+        response_data = api.call('preferences/' + preference, None)
+        if 'payload' in response_data and 'value' in response_data['payload']:
+            return response_data['payload']['value']
+        return None
+
+    @classmethod
     def get_region(cls, region_id):
         api = cls.instance()
         response_data = api.call('cloud/region/' + str(region_id), None)
