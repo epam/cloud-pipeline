@@ -166,6 +166,16 @@ export default class DataStorage extends React.Component {
   }
 
   @computed
+  get storageAllowSignedUrls () {
+    return this.props.authenticatedUserInfo.loaded
+      ? (
+        this.props.authenticatedUserInfo.value.admin ||
+        this.props.preferences.storageAllowSignedUrls
+      )
+      : false;
+  }
+
+  @computed
   get dataStorageShareLinkDisclaimer () {
     if (this.props.preferences.loaded) {
       let code = (this.props.preferences.getPreferenceValue('data.sharing.disclaimer') || '');
@@ -1273,6 +1283,7 @@ export default class DataStorage extends React.Component {
             <div style={{paddingRight: 8}}>
               {
                 this.bulkDownloadEnabled &&
+                this.storageAllowSignedUrls &&
                 <Button
                   id="bulk-url-button"
                   size="small"

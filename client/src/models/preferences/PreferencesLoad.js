@@ -135,6 +135,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get storageAllowSignedUrls () {
+    return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
+  }
+
+  @computed
   get hiddenObjects () {
     const value = this.getPreferenceValue('ui.hidden.objects');
     if (value) {
