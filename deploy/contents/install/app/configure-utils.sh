@@ -923,7 +923,7 @@ function api_setup_base_preferences {
     api_set_preference "commit.timeout" "${CP_PREF_COMMIT_TIMEOUT:-18000}" "true"
 
     # EDGE
-    api_set_preference "default.edge.region" "${CP_DEFAULT_EDGE_REGION:-"eu-central"}" "true"
+    api_set_preference "default.edge.region" "${CP_CLOUD_REGION_ID:-"eu-central-1"}" "true"
 
     # Set "file-based" preferences
     ### General
