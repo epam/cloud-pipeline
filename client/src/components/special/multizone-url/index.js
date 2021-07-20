@@ -42,12 +42,13 @@ export default class MultizoneUrl extends React.Component {
     const {
       className,
       style,
+      dropDownIconStyle,
       regions,
       defaultRegion: defaultRegionValue,
       title,
       getPopupContainer
     } = this.props;
-    const regionsKeys = Object.keys(regions);
+    const regionsKeys = Object.keys(regions || {});
     const fallbackRegion = [...regionsKeys].pop();
     const defaultRegion = defaultRegionValue === undefined
       ? fallbackRegion
@@ -57,29 +58,27 @@ export default class MultizoneUrl extends React.Component {
         style={{minWidth: 150}}
       >
         {
-          regions &&
-        regionsKeys
-          .map((key) => (
-            <Menu.Item key={key} style={{display: 'flex'}}>
-              <AWSRegionTag
-                style={{verticalAlign: 'top', marginLeft: -3, fontSize: 'larger'}}
-                regionUID={key}
-              />
-              <a
-                className={styles.menuLink}
-                target="_blank"
-                href={regions[key]}
-              >
-                {key || (<i>Unknown region</i>)}
-                {
-                  key === defaultRegion
-                    ? (<i style={{marginLeft: 5}}>(best)</i>)
-                    : false
-                }
-              </a>
-            </Menu.Item>
-          )
-          )
+          regionsKeys
+            .map((key) => (
+              <Menu.Item key={key} style={{display: 'flex'}}>
+                <AWSRegionTag
+                  style={{verticalAlign: 'top', marginLeft: -3, fontSize: 'larger'}}
+                  regionUID={key}
+                />
+                <a
+                  className={styles.menuLink}
+                  target="_blank"
+                  href={regions[key]}
+                >
+                  {key || (<i>Unknown region</i>)}
+                  {
+                    key === defaultRegion
+                      ? (<i style={{marginLeft: 5}}>(best)</i>)
+                      : false
+                  }
+                </a>
+              </Menu.Item>
+            ))
         }
       </Menu>
     );
@@ -93,6 +92,7 @@ export default class MultizoneUrl extends React.Component {
             target="_blank"
             href={regions[defaultRegion]}
             className={styles.link}
+            onClick={e => e.stopPropagation()}
           >
             {title || regions[defaultRegion] || '\u00A0'}
           </a>
@@ -111,6 +111,8 @@ export default class MultizoneUrl extends React.Component {
                 <Icon
                   className={styles.expander}
                   type="down"
+                  onClick={e => e.stopPropagation()}
+                  style={dropDownIconStyle}
                 />
               </Dropdown>)
           }
@@ -123,8 +125,10 @@ export default class MultizoneUrl extends React.Component {
 MultizoneUrl.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
+  dropDownIconStyle: PropTypes.object,
   regions: PropTypes.object,
   defaultRegion: PropTypes.string,
   title: PropTypes.node,
-  getPopupContainer: PropTypes.func
+  getPopupContainer: PropTypes.func,
+  visibilityChanged: PropTypes.func
 };

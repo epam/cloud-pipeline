@@ -56,26 +56,42 @@ class Mutlizone {
    * @param request
    */
   checkRunUrlRequest (request) {
-    request
-      .fetchIfNeededOrWait()
-      .then(() => {
-        if (request.loaded) {
-          this.check(request.value);
-        }
-      })
-      .catch(() => {});
+    return new Promise((resolve) => {
+      request
+        .fetchIfNeededOrWait()
+        .then(() => {
+          if (request.loaded) {
+            return this.check(request.value);
+          }
+          return Promise.resolve();
+        })
+        .then(resolve)
+        .catch(() => resolve());
+    });
   }
 
   checkRun (runRequest) {
-    runRequest
-      .fetchIfNeededOrWait()
-      .then(() => {
-        if (runRequest.loaded && runRequest.value.serviceUrl) {
-          const {serviceUrl = {}} = runRequest.value;
-          this.checkRunServiceUrl(serviceUrl);
-        }
-      })
-      .catch(() => {});
+    return new Promise((resolve) => {
+      runRequest
+        .fetchIfNeededOrWait()
+        .then(() => {
+          if (runRequest.loaded && runRequest.value.serviceUrl) {
+            const {serviceUrl = {}} = runRequest.value;
+            return this.checkRunServiceUrl(serviceUrl);
+          }
+          return Promise.resolve();
+        })
+        .then(resolve)
+        .catch(() => resolve());
+    });
+  }
+
+  checkRunsServiceUrls (runs) {
+    const serviceUrls = (runs || [])
+      .map(run => run.serviceUrl)
+      .filter(Boolean);
+    const configuration = serviceUrls.reduce((r, c) => ({...r, ...c}), {});
+    return this.checkRunServiceUrl(configuration);
   }
 
   checkRunServiceUrl (serviceUrl) {
@@ -85,7 +101,7 @@ class Mutlizone {
         [region]: getDefaultServiceUrl(urlConfiguration)
       }))
       .reduce((r, c) => ({...r, ...c}), {});
-    this.check(configurations);
+    return this.check(configurations);
   }
 
   check (urlConfiguration, recalculate = false) {
@@ -114,6 +130,13 @@ class Mutlizone {
             result[region] = latency;
           });
           this._latencies = result;
+          const ms = value => value === Infinity ? '---' : (`${Math.round(value * 100) / 100.0}ms`);
+          console.info(
+            'Multi-zone latency check:',
+            Object.entries(result)
+              .map(([key, value]) => `${key}: ${ms(value)}`)
+              .join(', ')
+          );
           this.updateDefaultRegion();
         })
         .then(() => {

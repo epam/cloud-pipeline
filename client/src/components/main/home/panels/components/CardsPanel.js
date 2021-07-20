@@ -15,14 +15,14 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Card, Icon, Input, Popover, Row} from 'antd';
 import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
 import {favouriteStorage} from '../../utils/favourites';
-import {MultizoneUrlPopover} from '../../../../special/multizone-url';
+import MultizoneUrl, {MultizoneUrlPopover} from '../../../../special/multizone-url';
 import RunSSHButton from './run-ssh-button';
 
 const ACTION = PropTypes.shape({
@@ -35,6 +35,7 @@ const ACTION = PropTypes.shape({
 const ACTION_MIN_HEIGHT = 18;
 
 @favouriteStorage
+@inject('multiZoneManager')
 @observer
 export default class CardsPanel extends React.Component {
   static propTypes = {
@@ -186,9 +187,18 @@ export default class CardsPanel extends React.Component {
                 style,
                 overlay,
                 multizoneOverlay,
+                multiZoneUrl,
                 runSSH,
                 runId
               } = action;
+              const containerStyle = {
+                flex: 1.0 / array.length,
+                minHeight: ACTION_MIN_HEIGHT,
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-start'
+              };
               if (runSSH) {
                 return (
                   <RunSSHButton
@@ -196,15 +206,41 @@ export default class CardsPanel extends React.Component {
                     runId={runId}
                     visibilityChanged={onVisibleChange}
                     className={styles.actionButton}
-                    style={{
-                      flex: 1.0 / array.length,
-                      minHeight: ACTION_MIN_HEIGHT,
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'flex-start'
-                    }}
+                    style={containerStyle}
                     icon={icon}
+                  />
+                );
+              }
+              if (multiZoneUrl) {
+                const {multiZoneManager} = this.props;
+                return (
+                  <MultizoneUrl
+                    key={index}
+                    className={styles.actionButton}
+                    visibilityChanged={onVisibleChange}
+                    style={containerStyle}
+                    title={(
+                      <div
+                        style={{
+                          fontWeight: 'bold',
+                          display: 'inline'
+                        }}
+                      >
+                        {
+                          icon
+                            ? (
+                              <Icon
+                                style={style}
+                                type={getIconType(action)}
+                              />
+                            )
+                            : undefined
+                        }
+                        <span>{title}</span>
+                      </div>
+                    )}
+                    regions={multiZoneUrl}
+                    defaultRegion={multiZoneManager.getDefaultURLRegion(multiZoneUrl)}
                   />
                 );
               }

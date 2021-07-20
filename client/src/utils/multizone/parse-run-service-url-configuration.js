@@ -22,7 +22,7 @@ export default function parseRunServiceUrlConfiguration (serviceUrl) {
     .map(([region, urls]) => {
       parseRunServiceUrl(urls)
         .forEach(urlConfiguration => {
-          const urlName = urlConfiguration.name || urlConfiguration.url;
+          const urlName = urlConfiguration.name;
           let url = result.find(r => r.name === urlName);
           if (!url) {
             url = {

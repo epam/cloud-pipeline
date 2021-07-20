@@ -412,7 +412,6 @@ export default class PipelineRunPreview extends React.Component {
       }
       const endpointsAvailable = this.props.runInfo.value.initialized;
       const regionedUrls = parseRunServiceUrlConfiguration(this.props.runInfo.value.serviceUrl);
-      console.log('pipeline run preivew', regionedUrls);
       const {
         owner
       } = this.props.runInfo.value;

@@ -166,9 +166,12 @@ class Logs extends localization.LocalizedReactComponent {
       runSSH,
       runFSBrowser
     } = this.props;
-    multiZone.checkRun(run);
-    multiZone.checkRunUrlRequest(runSSH);
-    multiZone.checkRunUrlRequest(runFSBrowser);
+    if (this.initializeEnvironmentFinished) {
+      multiZone
+        .checkRun(run)
+        .then(() => multiZone.checkRunUrlRequest(runSSH))
+        .then(() => multiZone.checkRunUrlRequest(runFSBrowser));
+    }
   }
 
   componentWillUnmount () {
@@ -1390,6 +1393,8 @@ class Logs extends localization.LocalizedReactComponent {
                         title={name}
                         regions={url}
                         defaultRegion={this.props.multiZone.getDefaultURLRegion(url)}
+                        style={{display: 'inline-flex'}}
+                        dropDownIconStyle={{marginTop: 2}}
                       />
                     </li>
                   )

@@ -21,7 +21,7 @@ import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 
-export default function (callbacks) {
+export default function (multiZoneManager, callbacks) {
   return function (run) {
     const actions = [];
     switch (run.status.toUpperCase()) {
@@ -37,15 +37,15 @@ export default function (callbacks) {
       case 'RUNNING':
         if (run.initialized && run.serviceUrl) {
           const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
-          if (
-            regionedUrls.length === 1 &&
-            Object.values(regionedUrls[0].url).length === 1
-          ) {
-            const url = Object.values(regionedUrls[0].url).pop();
+          if (regionedUrls.length === 1) {
+            const regionedUrl = regionedUrls[0];
+            const defaultUrlRegion = multiZoneManager.getDefaultURLRegion(regionedUrl.url);
+            const url = regionedUrl.url[defaultUrlRegion];
             actions.push({
               title: 'OPEN',
               icon: 'export',
-              action: callbacks && callbacks.openUrl
+              multiZoneUrl: regionedUrl.url,
+              action: url && callbacks && callbacks.openUrl
                 ? () => callbacks.openUrl(url)
                 : undefined
             });

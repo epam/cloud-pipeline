@@ -39,6 +39,7 @@ function measureSingleUrlLatency (url, experiment = 0) {
       }
     };
     xhr.onerror = () => {
+      console.log('error');
       resolve(Infinity);
     };
     xhr.ontimeout = () => {
@@ -57,14 +58,19 @@ export default function measureUrlLatency (url, experimentsCount = 5) {
         .map((o, index) => measureSingleUrlLatency(url, index))
     )
       .then(results => {
-        results.sort((a, b) => a - b);
-        if (results.length >= 3) {
-          results.pop();
-          results.shift();
+        const filtered = results.filter(result => result !== Infinity);
+        if (filtered.length === 0) {
+          resolve(Infinity);
+        } else {
+          filtered.sort((a, b) => a - b);
+          if (filtered.length >= 3) {
+            filtered.pop();
+            filtered.shift();
+          }
+          const sum = filtered.reduce((r, c) => r + c, 0);
+          const average = sum / filtered.length;
+          resolve(average);
         }
-        const sum = results.reduce((r, c) => r + c, 0);
-        const average = sum / results.length;
-        resolve(average);
       });
   });
 }

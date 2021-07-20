@@ -222,6 +222,11 @@ class OpenInHaloAction extends React.Component {
           </div>
         </li>
         <li>
+          <HaloJobLink
+            jobId="1726"
+          />
+        </li>
+        <li>
           {
             activeJobsFetching && (<Icon type="loading" />)
           }
