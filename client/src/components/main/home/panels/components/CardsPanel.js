@@ -189,12 +189,30 @@ export default class CardsPanel extends React.Component {
                 runSSH,
                 runId
               } = action;
+              if (runSSH) {
+                return (
+                  <RunSSHButton
+                    key={index}
+                    runId={runId}
+                    visibilityChanged={onVisibleChange}
+                    className={styles.actionButton}
+                    style={style}
+                    config={{
+                      icon: getIconType(action),
+                      wrapperStyle: {
+                        flex: 1.0 / array.length,
+                        minHeight: ACTION_MIN_HEIGHT
+                      }
+                    }}
+                  />
+                );
+              }
               return (
                 <Row
+                  key={index}
                   type="flex"
                   justify="start"
                   align="middle"
-                  key={index}
                   className={styles.actionButton}
                   onClick={e => this.onActionClicked(e, action, child)}
                   style={{
@@ -208,15 +226,7 @@ export default class CardsPanel extends React.Component {
                         : undefined
                     }
                     {
-                      runSSH && (
-                        <RunSSHButton
-                          runId={runId}
-                          visibilityChanged={onVisibleChange}
-                        />
-                      )
-                    }
-                    {
-                      !runSSH && overlay && (
+                      overlay && (
                         <Popover
                           onVisibleChange={onVisibleChange}
                           content={overlay}>
@@ -225,7 +235,7 @@ export default class CardsPanel extends React.Component {
                       )
                     }
                     {
-                      !runSSH && multizoneOverlay && (
+                      multizoneOverlay && (
                         <MultizoneUrlPopover
                           onVisibleChange={onVisibleChange}
                           trigger={['click']}
@@ -237,19 +247,15 @@ export default class CardsPanel extends React.Component {
                       )
                     }
                     {
-                      (!runSSH && !multizoneOverlay && !overlay) && (
+                      (!multizoneOverlay && !overlay) && (
                         <span style={style}>
                           {title}
                         </span>
                       )
                     }
                   </Row>
-                </Row>
-              );
-            })
-          }
-        </div>
-      );
+                </Row>);
+            })}</div>);
     }
     return null;
   };

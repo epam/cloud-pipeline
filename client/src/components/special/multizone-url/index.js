@@ -27,25 +27,36 @@ import styles from './multizone-url.css';
 
 export {MultizoneUrlPopover};
 
-export default function MultizoneUrl (props) {
-  const {
-    className,
-    style,
-    regions,
-    defaultRegion: defaultRegionValue,
-    title
-  } = props;
-  const regionsKeys = Object.keys(regions);
-  const fallbackRegion = [...regionsKeys].pop();
-  const defaultRegion = defaultRegionValue === undefined
-    ? fallbackRegion
-    : defaultRegionValue;
-  const menu = (
-    <Menu
-      style={{minWidth: 150}}
-    >
-      {
-        regions &&
+export default class MultizoneUrl extends React.Component {
+  state = {
+    visible: false
+  }
+  handleVisibilityChange = (visible) => {
+    this.setState({
+      visible
+    }, () => this.props.visibilityChanged(visible));
+  }
+
+  render () {
+    const {
+      className,
+      style,
+      regions,
+      defaultRegion: defaultRegionValue,
+      title,
+      getPopupContainer
+    } = this.props;
+    const regionsKeys = Object.keys(regions);
+    const fallbackRegion = [...regionsKeys].pop();
+    const defaultRegion = defaultRegionValue === undefined
+      ? fallbackRegion
+      : defaultRegionValue;
+    const menu = (
+      <Menu
+        style={{minWidth: 150}}
+      >
+        {
+          regions &&
         regionsKeys
           .map((key) => (
             <Menu.Item key={key} style={{display: 'flex'}}>
@@ -68,45 +79,51 @@ export default function MultizoneUrl (props) {
             </Menu.Item>
           )
           )
-      }
-    </Menu>
-  );
-  if (Object.values(regions || {}).length > 0) {
-    return (
-      <div
-        className={className}
-        style={style}
-      >
-        <a
-          target="_blank"
-          href={regions[defaultRegion]}
-          className={styles.link}
-        >
-          {title || regions[defaultRegion] || '\u00A0'}
-        </a>
-        {
-          regionsKeys.length > 1 && (
-            <Dropdown
-              trigger={['click']}
-              overlay={menu}
-              placement="bottomRight"
-              style={{minWidth: '150px'}}
-            >
-              <Icon
-                className={styles.expander}
-                type="down"
-              />
-            </Dropdown>)
         }
-      </div>
+      </Menu>
     );
+    if (Object.values(regions || {}).length > 0) {
+      return (
+        <div
+          className={className}
+          style={style}
+        >
+          <a
+            target="_blank"
+            href={regions[defaultRegion]}
+            className={styles.link}
+          >
+            {title || regions[defaultRegion] || '\u00A0'}
+          </a>
+          {
+            regionsKeys.length > 1 && (
+              <Dropdown
+                trigger={['click']}
+                overlay={menu}
+                placement="bottomRight"
+                style={{minWidth: '150px'}}
+                onVisibleChange={this.handleVisibilityChange}
+                visible={this.state.visible}
+                getPopupContainer={getPopupContainer}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Icon
+                  className={styles.expander}
+                  type="down"
+                />
+              </Dropdown>)
+          }
+        </div>
+      );
+    }
+    return null;
   }
-  return null;
 }
 MultizoneUrl.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   regions: PropTypes.object,
   defaultRegion: PropTypes.string,
-  title: PropTypes.node
+  title: PropTypes.node,
+  getPopupContainer: PropTypes.func
 };
