@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +35,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -673,7 +676,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     public EditUserPopup addRoleOrGroup(final String value) {
                         click(SEARCH);
-                        $$(byClassName("ant-select-dropdown-menu-item")).findBy(text(value)).click();
+                        $$(byClassName("ant-select-dropdown-menu-item")).findBy(exactText(value)).click();
                         click(ADD_KEY);
                         return this;
                     }
@@ -1435,7 +1438,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public String getUserId(final SelenideElement element) {
             final String message = getMessage(element);
-            return message.split("id=")[1].substring(0, 1);
+            final Pattern pattern = Pattern.compile("\\d+");
+            final Matcher matcher = pattern.matcher(getMessage(element));
+            if (!matcher.find()) {
+                final String screenName = format("SystemLogsGetUserId_%s", Utils.randomSuffix());
+                screenshot(screenName);
+                throw new ElementNotFound(format("Could not get user id from message: %s. Screenshot: %s.png", message,
+                        screenName), exist);
+            }
+            return matcher.group();
         }
 
         @Override

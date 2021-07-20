@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,10 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
 
     public AbstractPipelineTabAO(String pipelineName) {
         this.pipelineName = pipelineName;
+    }
+
+    public String getPipelineName() {
+        return pipelineName;
     }
 
     public <TAB_AO extends AbstractPipelineTabAO> TAB_AO onTab(final Class<TAB_AO> tabClass) {
