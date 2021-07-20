@@ -69,7 +69,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 'onHostMaintenance': 'terminate',
                 'preemptible': is_spot
             },
-            'canIpForward': True,
+            # No need for IP forwarding as it can be used as a security breach
+            'canIpForward': False,
             'disks': self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size),
             'networkInterfaces': network_interfaces,
             'labels': GCPInstanceProvider.get_tags(run_id, self.cloud_region),
