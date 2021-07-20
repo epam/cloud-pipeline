@@ -67,7 +67,7 @@ spec:
       volumes:
         - name: edge-logs
           hostPath:
-            path: /opt/edge/logs
+            path: /opt/edge/logs/$CP_CLOUD_REGION_ID
         - name: api-pki
           hostPath:
             path: /opt/api/pki
