@@ -18,6 +18,17 @@ _SERIES_NUM="$3"
 
 # 2^32 / 8^2 / 2
 BFTOOL_CONVERTER_LIMIT=${WSI_PARSING_CONVERSION_LIMIT:-33554432}
+WSI_PROCESSING_TASK_NAME="WSI processing"
+
+function log_info() {
+    _message="$1"
+    pipe_log_info "[$_FILE_PATH] $_message" "$WSI_PROCESSING_TASK_NAME"
+}
+
+function log_warn() {
+    _message="$1"
+    pipe_log_warn "[$_FILE_PATH] $_message" "$WSI_PROCESSING_TASK_NAME"
+}
 
 function get_file_without_extention() {
     _path="$1"
@@ -27,7 +38,7 @@ function get_file_without_extention() {
 function convert_to_jpeg() {
     _path="$1"
     _dest_file="$(get_file_without_extention "$_path").jpeg"
-    echo "Converting '$_path' to '$_dest_file'"
+    log_info "Converting '$_path' to '$_dest_file'"
     convert "$_path" "$_dest_file"
     rm -f "$_path"
 }
@@ -41,32 +52,31 @@ function build_jpeg() {
     _width=$(echo $_series_details | xpath "string(/Pixels/@SizeX)" 2>/dev/null | grep -Eo "[0-9]+$")
     _height=$(echo $_series_details | xpath "string(/Pixels/@SizeY)" 2>/dev/null | grep -Eo "[0-9]+$")
 
-    echo "Converting series=$_series of '$_file_path' to JPEG [width=$_width | height=$_height]"
-
+    log_info "Converting series=$_series of '$_file_path' to JPEG [width=$_width | height=$_height]"
     _file_wo_extension=$(get_file_without_extention "$_file_path")
     _crop_piece_width=$(( $BFTOOL_CONVERTER_LIMIT/$_height ))
 
     if [[ $_crop_piece_width -ge $_width ]]; then
-        echo "Conversion should not exceed memory limits, processing whole image"
+        log_info "Conversion should not exceed memory limits, processing whole image"
         bfconvert -series $_series -overwrite "$_file_path" "$_file_wo_extension.png"
         convert_to_jpeg "$_file_wo_extension.png"
         return $?
     fi
 
-    echo "Conversion of the whole image at once could cause out-of-memory issues, processing in chunks"
+    log_info "Conversion of the whole image at once could cause out-of-memory issues, processing in chunks"
     _full_pieces=$(( $_width/$_crop_piece_width ))
     _last_chunk_width=$(( $_width - _full_pieces*$_crop_piece_width ))
 
     if [[ $_last_chunk_width -gt 0 ]]; then
-        echo "Total chunks: $(( $_full_pieces + 1 ))"
+        log_info "Total chunks: $(( $_full_pieces + 1 ))"
     else
-        echo "Total chunks: $_full_pieces"
+        log_info "Total chunks: $_full_pieces"
     fi
 
-    echo "Cropping params: [width=$_crop_piece_width | height=$_height]"
+    log_info "Cropping params: [width=$_crop_piece_width | height=$_height]"
 
     for (( i=0; i < $_full_pieces; i++ )); do
-        echo -e "\nConverting peiece number=$i"
+        log_info "Converting peiece number=$i"
         _width_padding=$(( $i*_crop_piece_width ))
         _target_png="$_file_wo_extension""_$i.png"
         bfconvert -series $_series -crop $_width_padding,0,$_crop_piece_width,$_height -overwrite "$_file_path" "$_target_png"
@@ -74,7 +84,7 @@ function build_jpeg() {
     done
 
     if [[ $_last_chunk_width -gt 0 ]]; then
-        echo -e "\nConverting last chunk"
+        log_info "Converting last chunk"
         _last_chunk_width_padding=$(( $_full_pieces*$_crop_piece_width ))
         _target_png="$_file_wo_extension""_$(( $_full_pieces )).png"
         bfconvert -series $_series -crop $_last_chunk_width_padding,0,$_last_chunk_width,$_height -overwrite "$_file_path" "$_target_png"
@@ -83,7 +93,7 @@ function build_jpeg() {
       _full_pieces=$(( $_full_pieces - 1 ))
     fi
 
-    echo -e "\nMerging chunks..."
+    log_info "Merging chunks..."
     _merged_file="$_file_wo_extension.jpeg"
     mv -f "$_file_wo_extension""_0.jpeg" "$_merged_file"
     for (( i=1; i <= $_full_pieces; i++ )); do
@@ -94,20 +104,24 @@ function build_jpeg() {
     return 0
 }
 
-echo "Start processing '$_FILE_PATH'"
+log_info "Start processing '$_FILE_PATH'"
 
 build_jpeg "$_FILE_PATH" "$_XML_DETAILS_PATH" "$_SERIES_NUM"
 if [ $? -ne 0 ]; then
-    echo "Unable to retrieve .jpeg image to build deep zoom"
+    log_warn "Unable to retrieve .jpeg image to build deep zoom"
     exit 1
 fi
 
 _FILE_PATH_WO_EXTENSION=$(get_file_without_extention "$_FILE_PATH")
-echo -e "\nGenerating deep zoom structure..."
-vips dzsave "$_FILE_PATH_WO_EXTENSION.jpeg" "$_FILE_PATH_WO_EXTENSION.tiles" --background 0 --centre --layout google
+log_info "Generating deep zoom structure..."
+dz_tmp="$_FILE_PATH_WO_EXTENSION.tiles.new"
+rm -rf "$dz_tmp"
+vips dzsave "$_FILE_PATH_WO_EXTENSION.jpeg" "$dz_tmp" --background 0 --centre --layout google
 if [ $? -ne 0 ]; then
-    echo "Errors during deep zoom generation, exiting..."
+    log_warn "Errors during deep zoom generation, exiting..."
     exit 1
 fi
+mv -f "$dz_tmp/" "$_FILE_PATH_WO_EXTENSION.tiles"
+log_info "Deep zoom is generated successfully!"
 
 exit 0

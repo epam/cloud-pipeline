@@ -25,7 +25,7 @@ RUN  yum install -y -q  gcc \
                         libtiff-devel \
                         libjpeg-turbo-devel \
                         libgsf-devel \
-                        libpng \
+                        libpng-devel \
                         pkgconfig \
                         perl-XML-XPath \
                         wget \
@@ -52,4 +52,4 @@ RUN mkdir -p $WSI_PARSER_HOME && \
 
 ENV PATH="$WSI_PARSER_HOME/bftools:$PATH"
 ADD create_deepzoom.sh "$WSI_PARSER_HOME/create_deepzoom.sh"
-ADD process_file.py "$WSI_PARSER_HOME/process_file.py"
+ADD process_files.py "$WSI_PARSER_HOME/process_file.py"
