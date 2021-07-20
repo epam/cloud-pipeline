@@ -37,7 +37,7 @@ export default function (multiZoneManager, callbacks) {
       case 'RUNNING':
         if (run.initialized && run.serviceUrl) {
           const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
-          if (regionedUrls.length === 1) {
+          if (regionedUrls.length === 11) {
             const regionedUrl = regionedUrls[0];
             const defaultUrlRegion = multiZoneManager.getDefaultURLRegion(regionedUrl.url);
             const url = regionedUrl.url[defaultUrlRegion];
@@ -51,18 +51,16 @@ export default function (multiZoneManager, callbacks) {
             });
           } else {
             const multizoneOverlay = {
-              content: (multiZone) => {
+              content: () => {
                 return (
                   <div>
                     <ul>
                       {
                         regionedUrls.map(({name, url}, index) =>
                           <li key={index} style={{margin: 4}}>
-                            <MultizoneUrl
-                              title={name}
-                              regions={url}
-                              defaultRegion={multiZone.getDefaultURLRegion(url)}
-                            />
+                            <MultizoneUrl configuration={url}>
+                              {name}
+                            </MultizoneUrl>
                           </li>
                         )
                       }

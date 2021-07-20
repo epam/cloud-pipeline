@@ -65,7 +65,7 @@ function renderPipeline (run) {
   }
   displayName = <span type="main">{displayName}</span>;
   if (run.serviceUrl && run.initialized) {
-    const renderMultiZoneServiceUrls = (multiZone) => {
+    const renderMultiZoneServiceUrls = () => {
       const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
       return (
         <div>
@@ -73,11 +73,9 @@ function renderPipeline (run) {
             {
               regionedUrls.map(({name, url}, index) =>
                 <li key={index} style={{margin: 4}}>
-                  <MultizoneUrl
-                    title={name}
-                    regions={url}
-                    defaultRegion={multiZone.getDefaultURLRegion(url)}
-                  />
+                  <MultizoneUrl configuration={url}>
+                    {name}
+                  </MultizoneUrl>
                 </li>
               )
             }

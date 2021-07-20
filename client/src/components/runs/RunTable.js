@@ -964,7 +964,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const name = <b>{text}</b>;
         if (run.serviceUrl && run.initialized) {
-          const renderMultiZoneServiceUrls = (multiZone) => {
+          const renderMultiZoneServiceUrls = () => {
             const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
             return (
               <div>
@@ -972,11 +972,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
                   {
                     regionedUrls.map(({name, url}, index) =>
                       <li key={index} style={{margin: 4}}>
-                        <MultizoneUrl
-                          title={name}
-                          regions={url}
-                          defaultRegion={multiZone.getDefaultURLRegion(url)}
-                        />
+                        <MultizoneUrl configuration={url}>
+                          {name}
+                        </MultizoneUrl>
                       </li>
                     )
                   }

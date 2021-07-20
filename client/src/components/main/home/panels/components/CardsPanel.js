@@ -15,7 +15,6 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Card, Icon, Input, Popover, Row} from 'antd';
 import classNames from 'classnames';
@@ -35,8 +34,6 @@ const ACTION = PropTypes.shape({
 const ACTION_MIN_HEIGHT = 18;
 
 @favouriteStorage
-@inject('multiZoneManager')
-@observer
 export default class CardsPanel extends React.Component {
   static propTypes = {
     search: PropTypes.shape({
@@ -212,36 +209,33 @@ export default class CardsPanel extends React.Component {
                 );
               }
               if (multiZoneUrl) {
-                const {multiZoneManager} = this.props;
                 return (
                   <MultizoneUrl
                     key={index}
                     className={styles.actionButton}
                     visibilityChanged={onVisibleChange}
                     style={containerStyle}
-                    title={(
-                      <div
-                        style={{
-                          fontWeight: 'bold',
-                          display: 'inline'
-                        }}
-                      >
-                        {
-                          icon
-                            ? (
-                              <Icon
-                                style={style}
-                                type={getIconType(action)}
-                              />
-                            )
-                            : undefined
-                        }
-                        <span>{title}</span>
-                      </div>
-                    )}
-                    regions={multiZoneUrl}
-                    defaultRegion={multiZoneManager.getDefaultURLRegion(multiZoneUrl)}
-                  />
+                    configuration={multiZoneUrl}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        display: 'inline'
+                      }}
+                    >
+                      {
+                        icon
+                          ? (
+                            <Icon
+                              style={style}
+                              type={getIconType(action)}
+                            />
+                          )
+                          : undefined
+                      }
+                      <span>{title}</span>
+                    </div>
+                  </MultizoneUrl>
                 );
               }
               return (

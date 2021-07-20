@@ -17,6 +17,7 @@
 import {computed, observable} from 'mobx';
 import UserToken from '../../user/UserToken';
 import pipelineRunFSBrowserCache from '../../pipelines/PipelineRunFSBrowserCache';
+import multiZoneManager from '../../../utils/multizone';
 
 const TOKEN_EXPIRATION_SECONDS = 60 * 60 * 24;
 
@@ -45,7 +46,7 @@ function fetchToken () {
   });
 }
 
-function fetchEndpoint (runId) {
+function fetchEndpoint (runId, defaultRegion = undefined) {
   return new Promise((resolve, reject) => {
     const fsBrowserRequest = pipelineRunFSBrowserCache.getPipelineRunFSBrowser(runId);
     fsBrowserRequest
@@ -55,9 +56,16 @@ function fetchEndpoint (runId) {
           // eslint-disable-next-line
           reject(new Error(`Error fetching FS Browser endpoint for #${runId} run: ${fsBrowserRequest.error}`));
         } else {
-          // todo: multizone support
-          const [url] = Object.values(fsBrowserRequest.value);
-          resolve(url);
+          const multiZoneEndpoints = fsBrowserRequest.value;
+          multiZoneManager
+            .check(multiZoneEndpoints)
+            .then(() => {
+              let bestRegion = defaultRegion;
+              if (!bestRegion || !multiZoneEndpoints.hasOwnProperty(bestRegion)) {
+                bestRegion = multiZoneManager.getDefaultURLRegion(multiZoneEndpoints);
+              }
+              resolve({url: multiZoneEndpoints[bestRegion], configuration: multiZoneEndpoints});
+            });
         }
       })
       .catch(e => {
@@ -66,15 +74,16 @@ function fetchEndpoint (runId) {
   });
 }
 
-function fetchConfigurations (runId) {
+function fetchConfigurations (runId, defaultRegion = undefined) {
   return new Promise((resolve, reject) => {
     Promise.all([
       fetchToken(),
-      fetchEndpoint(runId)
+      fetchEndpoint(runId, defaultRegion)
     ])
       .then(payloads => {
         const [token, endpoint] = payloads;
-        resolve({token, endpoint});
+        const {url, configuration} = endpoint || {};
+        resolve({token, endpoint: url, configuration});
       })
       .catch(reject);
   });
@@ -84,6 +93,7 @@ export default function wrapStandardRequest (RequestClass) {
   return class extends RequestClass {
     @observable _endpoint;
     @observable _token;
+    @observable _endpointsConfiguration;
     fetchConfigurationPromise;
     runId;
 
@@ -99,6 +109,11 @@ export default function wrapStandardRequest (RequestClass) {
       } else {
         this._endpoint = undefined;
       }
+    }
+
+    @computed
+    get endpointsConfiguration () {
+      return this._endpointsConfiguration;
     }
 
     @computed
@@ -121,9 +136,10 @@ export default function wrapStandardRequest (RequestClass) {
       }
     }
 
-    constructor (runId) {
+    constructor (runId, defaultRegion = undefined) {
       super();
       this.runId = runId;
+      this.defaultRegion = defaultRegion;
     }
 
     fetchRequestOptions () {
@@ -138,7 +154,7 @@ export default function wrapStandardRequest (RequestClass) {
       }
       const runId = this.runId;
       this.fetchConfigurationPromise = new Promise((resolve) => {
-        fetchConfigurations(runId)
+        fetchConfigurations(runId, this.defaultRegion)
           .then((configuration) => {
             if (configuration && configuration.endpoint && configuration.token) {
               this.endpoint = configuration.endpoint;

@@ -140,24 +140,19 @@ class RunSSHButton extends React.Component {
       );
     }
     if (sshConfiguration) {
-      const {multiZoneManager} = this.props;
       return (
         <MultizoneUrl
           className={className}
           style={style}
-          defaultRegion={multiZoneManager.getDefaultURLRegion(sshConfiguration)}
-          regions={sshConfiguration}
-          title={(
-            <div style={{display: 'inline'}}>
-              {
-                icon && (<Icon type={icon} />)
-              }
-              <span>SSH</span>
-            </div>
-          )}
+          configuration={sshConfiguration}
           getPopupContainer={() => document.getElementById('root')}
           visibilityChanged={visibilityChanged}
-        />
+        >
+          {
+            icon && (<Icon type={icon} />)
+          }
+          <span>SSH</span>
+        </MultizoneUrl>
       );
     }
     return (
@@ -169,7 +164,7 @@ class RunSSHButton extends React.Component {
         onMouseLeave={this.clearLoadRunSSHConfigurationTimer}
       >
         {
-          icon && (<Icon type={icon} />)
+          icon && (<Icon type={icon}/>)
         }
         <span>SSH</span>
         {

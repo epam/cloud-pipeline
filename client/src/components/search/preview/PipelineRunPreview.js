@@ -447,10 +447,10 @@ export default class PipelineRunPreview extends React.Component {
                       regionedUrls.map(({name, url}, index) =>
                         <MultizoneUrl
                           key={index}
-                          title={name}
-                          regions={url}
-                          defaultRegion={this.props.multiZone.getDefaultURLRegion(url)}
-                        />
+                          configuration={url}
+                        >
+                          {name}
+                        </MultizoneUrl>
                       )
                     }
                   </td>

@@ -177,6 +177,24 @@ class Mutlizone {
     }
     return undefined;
   }
+
+  getSortedRegions (regions) {
+    const sorted = [...regions];
+    const getRegionLatency = region => this._latencies.hasOwnProperty(region)
+      ? this._latencies[region]
+      : Infinity;
+    sorted.sort((a, b) => getRegionLatency(a) - getRegionLatency(b));
+    return sorted;
+  }
+
+  getSortedRegionsWithUrls (configuration) {
+    return this
+      .getSortedRegions(Object.keys(configuration || {}))
+      .map(region => ({
+        region,
+        url: configuration[region]
+      }));
+  }
 }
 
 export default Mutlizone;

@@ -21,12 +21,15 @@ import {
   Menu,
   Icon
 } from 'antd';
+import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../AWSRegionTag';
 import MultizoneUrlPopover from './multizone-url-popover';
 import styles from './multizone-url.css';
 
 export {MultizoneUrlPopover};
 
+@inject('multiZoneManager')
+@observer
 export default class MultizoneUrl extends React.Component {
   state = {
     visible: false
@@ -41,38 +44,38 @@ export default class MultizoneUrl extends React.Component {
   render () {
     const {
       className,
+      children,
       style,
       dropDownIconStyle,
-      regions,
-      defaultRegion: defaultRegionValue,
-      title,
-      getPopupContainer
+      configuration,
+      getPopupContainer,
+      multiZoneManager
     } = this.props;
-    const regionsKeys = Object.keys(regions || {});
-    const fallbackRegion = [...regionsKeys].pop();
-    const defaultRegion = defaultRegionValue === undefined
-      ? fallbackRegion
-      : defaultRegionValue;
+    const regions = multiZoneManager.getSortedRegionsWithUrls(configuration);
+    if (regions.length === 0) {
+      return null;
+    }
+    const defaultRegion = regions[0];
     const menu = (
       <Menu
         style={{minWidth: 150}}
       >
         {
-          regionsKeys
-            .map((key) => (
-              <Menu.Item key={key} style={{display: 'flex'}}>
+          regions
+            .map(({region, url}) => (
+              <Menu.Item key={region} style={{display: 'flex'}}>
                 <AWSRegionTag
                   style={{verticalAlign: 'top', marginLeft: -3, fontSize: 'larger'}}
-                  regionUID={key}
+                  regionUID={region}
                 />
                 <a
                   className={styles.menuLink}
                   target="_blank"
-                  href={regions[key]}
+                  href={url}
                 >
-                  {key || (<i>Unknown region</i>)}
+                  {region || (<i>Unknown region</i>)}
                   {
-                    key === defaultRegion
+                    region === defaultRegion.region
                       ? (<i style={{marginLeft: 5}}>(best)</i>)
                       : false
                   }
@@ -82,53 +85,49 @@ export default class MultizoneUrl extends React.Component {
         }
       </Menu>
     );
-    if (Object.values(regions || {}).length > 0) {
-      return (
-        <div
-          className={className}
-          style={style}
+    return (
+      <div
+        className={className}
+        style={style}
+      >
+        <a
+          target="_blank"
+          href={defaultRegion.url}
+          className={styles.link}
+          onClick={e => e.stopPropagation()}
         >
-          <a
-            target="_blank"
-            href={regions[defaultRegion]}
-            className={styles.link}
-            onClick={e => e.stopPropagation()}
-          >
-            {title || regions[defaultRegion] || '\u00A0'}
-          </a>
-          {
-            regionsKeys.length > 1 && (
-              <Dropdown
-                trigger={['click']}
-                overlay={menu}
-                placement="bottomRight"
-                style={{minWidth: '150px'}}
-                onVisibleChange={this.handleVisibilityChange}
-                visible={this.state.visible}
-                getPopupContainer={getPopupContainer}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Icon
-                  className={styles.expander}
-                  type="down"
-                  onClick={e => e.stopPropagation()}
-                  style={dropDownIconStyle}
-                />
-              </Dropdown>)
-          }
-        </div>
-      );
-    }
-    return null;
+          {children || defaultRegion.url || '\u00A0'}
+        </a>
+        {
+          regions.length > 1 && (
+            <Dropdown
+              trigger={['click']}
+              overlay={menu}
+              placement="bottomRight"
+              style={{minWidth: '150px'}}
+              onVisibleChange={this.handleVisibilityChange}
+              visible={this.state.visible}
+              getPopupContainer={getPopupContainer}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Icon
+                className={styles.expander}
+                type="down"
+                onClick={e => e.stopPropagation()}
+                style={dropDownIconStyle}
+              />
+            </Dropdown>)
+        }
+      </div>
+    );
   }
 }
 MultizoneUrl.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   dropDownIconStyle: PropTypes.object,
-  regions: PropTypes.object,
-  defaultRegion: PropTypes.string,
-  title: PropTypes.node,
+  configuration: PropTypes.object,
+  children: PropTypes.node,
   getPopupContainer: PropTypes.func,
   visibilityChanged: PropTypes.func
 };

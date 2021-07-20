@@ -1390,12 +1390,12 @@ class Logs extends localization.LocalizedReactComponent {
                   regionedUrls.map(({name, url}, index) =>
                     <li key={index}>
                       <MultizoneUrl
-                        title={name}
-                        regions={url}
-                        defaultRegion={this.props.multiZone.getDefaultURLRegion(url)}
+                        configuration={url}
                         style={{display: 'inline-flex'}}
                         dropDownIconStyle={{marginTop: 2}}
-                      />
+                      >
+                        {name}
+                      </MultizoneUrl>
                     </li>
                   )
                 }
@@ -1756,20 +1756,16 @@ class Logs extends localization.LocalizedReactComponent {
 
       if (this.sshEnabled) {
         SSHButton = (
-          <MultizoneUrl
-            defaultRegion={this.props.multiZone.getDefaultURLRegion(this.props.runSSH.value)}
-            regions={this.props.runSSH.value}
-            title={'SSH'}
-          />
+          <MultizoneUrl configuration={this.props.runSSH.value}>
+            SSH
+          </MultizoneUrl>
         );
       }
       if (this.fsBrowserEnabled) {
         FSBrowserButton = (
-          <MultizoneUrl
-            defaultRegion={this.props.multiZone.getDefaultURLRegion(this.props.runFSBrowser.value)}
-            regions={this.props.runFSBrowser.value}
-            title={'BROWSE'}
-          />
+          <MultizoneUrl configuration={this.props.runFSBrowser.value}>
+            BROWSE
+          </MultizoneUrl>
         );
       }
 

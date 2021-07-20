@@ -138,11 +138,11 @@ class HaloJobLink extends React.Component {
             display: 'inline-flex',
             marginLeft: 5
           }}
-          defaultRegion={multiZoneManager.getDefaultURLRegion(this.url.url)}
-          regions={this.url.url}
-          title="Download remote desktop shortcut"
+          configuration={this.url.url}
           dropDownIconStyle={{marginTop: 2}}
-        />
+        >
+          Download remote desktop shortcut
+        </MultizoneUrl>
       </span>
     );
   }
