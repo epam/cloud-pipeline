@@ -79,12 +79,6 @@ export default function (callbacks) {
               multizoneOverlay
             });
           }
-          actions.push({
-            title: 'OPEN',
-            icon: 'export',
-            multizoneOverlay,
-            action: defaultAction
-          });
         }
         if (run.initialized && run.podIP) {
           actions.push({
