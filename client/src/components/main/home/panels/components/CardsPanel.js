@@ -196,14 +196,15 @@ export default class CardsPanel extends React.Component {
                     runId={runId}
                     visibilityChanged={onVisibleChange}
                     className={styles.actionButton}
-                    style={style}
-                    config={{
-                      icon: getIconType(action),
-                      wrapperStyle: {
-                        flex: 1.0 / array.length,
-                        minHeight: ACTION_MIN_HEIGHT
-                      }
+                    style={{
+                      flex: 1.0 / array.length,
+                      minHeight: ACTION_MIN_HEIGHT,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start'
                     }}
+                    icon={icon}
                   />
                 );
               }
@@ -283,7 +284,9 @@ export default class CardsPanel extends React.Component {
     if (cardClassName) {
       cardClass = `${cardClassName} ${cardClass}`;
     }
-    cardClass = childIsFavourite ? `${cardClass} ${styles.favouriteItem}` : `${cardClass} ${styles.notFavouriteItem}`;
+    cardClass = childIsFavourite
+      ? `${cardClass} ${styles.favouriteItem}`
+      : `${cardClass} ${styles.notFavouriteItem}`;
     return (
       <Card
         key={child.id || index}
@@ -320,12 +323,18 @@ export default class CardsPanel extends React.Component {
 
   render () {
     const items = this.props.search && this.props.search.searchFn
-      ? (this.props.children || []).filter(item => this.props.search.searchFn(item, this.state.search))
+      ? (this.props.children || [])
+        .filter(item => this.props.search.searchFn(item, this.state.search))
       : (this.props.children || []);
     const personalItemsFiltered = items.filter(item => !item.isGlobal);
     const globalItemsFiltered = items.filter(item => item.isGlobal);
-    let personalItems = [...personalItemsFiltered, ...globalItemsFiltered.filter(this.childIsFavourite)];
-    let globalItems = this.state.search ? globalItemsFiltered.filter(i => !this.childIsFavourite(i)) : [];
+    let personalItems = [
+      ...personalItemsFiltered,
+      ...globalItemsFiltered.filter(this.childIsFavourite)
+    ];
+    let globalItems = this.state.search
+      ? globalItemsFiltered.filter(i => !this.childIsFavourite(i))
+      : [];
     if (!this.state.search && this.props.displayOnlyFavourites) {
       personalItems = personalItems.filter(this.childIsFavourite);
       globalItems = [];

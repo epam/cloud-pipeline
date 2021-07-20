@@ -32,9 +32,10 @@ export default class MultizoneUrl extends React.Component {
     visible: false
   }
   handleVisibilityChange = (visible) => {
+    const {visibilityChanged} = this.props;
     this.setState({
       visible
-    }, () => this.props.visibilityChanged(visible));
+    }, () => visibilityChanged && visibilityChanged(visible));
   }
 
   render () {

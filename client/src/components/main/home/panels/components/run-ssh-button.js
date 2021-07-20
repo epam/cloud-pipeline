@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Icon, Tooltip, Row} from 'antd';
+import {Icon, Tooltip} from 'antd';
 import pipelineRunSSHCache from '../../../../../models/pipelines/PipelineRunSSHCache';
 import MultizoneUrl from '../../../../special/multizone-url';
 
@@ -117,71 +117,80 @@ class RunSSHButton extends React.Component {
     } = this.state;
     const {
       visibilityChanged,
-      multiZoneManager,
       style,
       className,
-      config
+      icon
     } = this.props;
     if (error) {
       return (
         <Tooltip
           title={error}
         >
-          SSH
-          <Icon type="exclamation-circle-o" />
+          <div
+            className={className}
+            style={style}
+          >
+            {
+              icon && (<Icon type={icon} />)
+            }
+            SSH
+            <Icon type="exclamation-circle-o" />
+          </div>
         </Tooltip>
       );
     }
-
+    if (sshConfiguration) {
+      const {multiZoneManager} = this.props;
+      return (
+        <MultizoneUrl
+          className={className}
+          style={style}
+          defaultRegion={multiZoneManager.getDefaultURLRegion(sshConfiguration)}
+          regions={sshConfiguration}
+          title={(
+            <div style={{display: 'inline'}}>
+              {
+                icon && (<Icon type={icon} />)
+              }
+              <span>SSH</span>
+            </div>
+          )}
+          getPopupContainer={() => document.getElementById('root')}
+          visibilityChanged={visibilityChanged}
+        />
+      );
+    }
     return (
-      <Row
-        type="flex"
-        justify="start"
-        align="middle"
+      <div
         className={className}
-        style={config.wrapperStyle}
+        style={style}
+        onClick={this.onClick}
         onMouseEnter={this.onMouseEnter}
         onMouseLeave={this.clearLoadRunSSHConfigurationTimer}
       >
         {
-          config.icon
-            ? <Icon style={style} type={config.icon} />
-            : undefined
+          icon && (<Icon type={icon} />)
         }
-        <Row type="flex" align="middle">
-          { sshConfiguration ? (
-            <MultizoneUrl
-              getPopupContainer={() => document.getElementById('root')}
-              visibilityChanged={visibilityChanged}
-              defaultRegion={multiZoneManager.getDefaultURLRegion(sshConfiguration)}
-              regions={sshConfiguration}
-              title={(<span>SSH</span>)}
+        <span>SSH</span>
+        {
+          pending && (
+            <Icon
+              type="loading"
+              style={{marginLeft: 5}}
             />
-          ) : (
-            <span
-              onClick={this.onClick}
-            >
-              SSH
-              {
-                pending && (
-                  <Icon
-                    type="loading"
-                    style={{marginLeft: 5}}
-                  />)
-              }
-            </span>
           )
-          }
-        </Row>
-      </Row>
+        }
+      </div>
     );
   }
 }
 
 RunSSHButton.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   visibilityChanged: PropTypes.func,
-  config: PropTypes.object
+  icon: PropTypes.string
 };
 
 export default RunSSHButton;
