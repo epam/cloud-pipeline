@@ -88,7 +88,7 @@ if ($Install) {
         try {
             Log "Creating scheduled task..."
             $action = New-ScheduledTaskAction -Execute "powershell.exe" `
-                                              -Argument "-file `"$env:DTS_LAUNCHER_PATH`"" `
+                                              -Argument "-executionpolicy bypass -file `"$env:DTS_LAUNCHER_PATH`"" `
                                               -WorkingDirectory "$env:DTS_DIR"
             $trigger = @(
                 (New-ScheduledTaskTrigger -AtStartup),

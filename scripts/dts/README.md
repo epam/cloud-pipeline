@@ -3,27 +3,20 @@
 Launcher script allows deploying Data Transfer Service for local directories' synchronisation to Windows hosts.
 It handles Data Transfer Service failures and host restarts allowing to maintain continuous data synchronisation process.
 
-# Deploy
+# Install
 
-To deploy dts using the launcher script the Powershell commands below can be used.
-Notice that `API`, `API_TOKEN` and `API_PUBLIC_KEY` environment variables have to be set.
+To install dts InstallDts.ps1 script can be used.
+Download the script and set `API`, `API_TOKEN` and `API_PUBLIC_KEY` environment variable placeholders in it.
+Once the script is ready it can be executed from a Powershell console with administrative permissions using the commands below.
 
 ```powershell
-$env:API = "{PUT REST API URL HERE}"
-$env:API_TOKEN = "{PUT REST API TOKEN HERE}"
-$env:API_PUBLIC_KEY = "{PUT REST API PUBLIC KEY}"
-$env:DISTRIBUTION_URL = "$env:API" -replace "/restapi/",""
-$env:DTS_DIR = "$env:ProgramFiles\CloudPipeline\DTS"
-$env:DTS_NAME = hostname
-if (-not(Test-Path "$env:DTS_DIR")) { New-Item -Path "$env:DTS_DIR" -ItemType "Directory" -Force }
-Invoke-WebRequest "$env:DISTRIBUTION_URL/DeployDts.ps1" -OutFile "$env:DTS_DIR\DeployDts.ps1"
-Set-ExecutionPolicy Unrestricted -Scope Process
-& "$env:DTS_DIR\DeployDts.ps1" -Install
+Set-ExecutionPolicy Bypass -Scope Process -Force -Confirm:$false
+& "$HOME\Downloads\InstallDts.ps1"
 ```
 
 # Configure
 
-To register new dts the command below can be used. Notice that DTS name should be the same as in the _Deploy_ step.
+To register new dts the command below can be used. Notice that DTS name should be the same as in the _Install_ step.
 
 ```bash
 DTS_NAME="{PUT DTS HOST NAME HERE}"
