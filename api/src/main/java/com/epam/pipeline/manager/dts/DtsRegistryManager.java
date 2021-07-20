@@ -98,7 +98,9 @@ public class DtsRegistryManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public DtsRegistry create(DtsRegistryVO dtsRegistryVO) {
         validateDtsRegistryVO(dtsRegistryVO);
+        validateDtsRegistryDoesNotExist(dtsRegistryVO.getName());
         DtsRegistry dtsRegistry = dtsRegistryMapper.toDtsRegistry(dtsRegistryVO);
+        dtsRegistry.setStatus(DtsStatus.OFFLINE);
         return dtsRegistryDao.create(dtsRegistry);
     }
 
@@ -228,5 +230,10 @@ public class DtsRegistryManager {
 
     private void validateDtsRegistryId(Long registryId) {
         Assert.notNull(registryId, messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_ID_IS_EMPTY));
+    }
+
+    private void validateDtsRegistryDoesNotExist(final String registryId) {
+        Assert.isTrue(!dtsRegistryDao.loadByName(registryId).isPresent(),
+                messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_NAME_ALREADY_EXISTS, registryId));
     }
 }

@@ -216,6 +216,7 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
             Array prefixesArray = mapListToSqlArray(dtsRegistry.getPrefixes(), connection);
             params.addValue(PREFIXES.name(), prefixesArray);
             if (extended) {
+                params.addValue(STATUS.name(), dtsRegistry.getStatus().getId());
                 params.addValue(PREFERENCES.name(), JsonMapper
                     .convertDataToJsonStringForQuery(MapUtils.emptyIfNull(dtsRegistry.getPreferences())));
             }
@@ -253,7 +254,9 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
                 dtsRegistry.setName(rs.getString(NAME.name()));
                 dtsRegistry.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
                 dtsRegistry.setSchedulable(rs.getBoolean(SCHEDULABLE.name()));
-                dtsRegistry.setHeartbeat(rs.getTimestamp(HEARTBEAT.name()).toLocalDateTime());
+                Optional.ofNullable(rs.getTimestamp(HEARTBEAT.name()))
+                        .map(Timestamp::toLocalDateTime)
+                        .ifPresent(dtsRegistry::setHeartbeat);
                 dtsRegistry.setStatus(DtsStatus.findById(rs.getLong(STATUS.name())).orElse(DtsStatus.OFFLINE));
                 Array prefixesSqlArray = rs.getArray(PREFIXES.name());
                 List<String> prefixesList = Arrays.asList((String[]) prefixesSqlArray.getArray());

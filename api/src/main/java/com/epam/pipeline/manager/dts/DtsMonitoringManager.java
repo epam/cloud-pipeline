@@ -33,7 +33,7 @@ public class DtsMonitoringManager extends AbstractSchedulingManager {
     @PostConstruct
     public void init() {
         scheduleFixedDelaySecured(this::monitor, SystemPreferences.DTS_MONITORING_PERIOD_SECONDS,
-                TimeUnit.SECONDS, "DTS Monitoring");
+                TimeUnit.SECONDS, "Data Transfer Service Monitoring");
     }
 
     private void monitor() {
@@ -44,8 +44,13 @@ public class DtsMonitoringManager extends AbstractSchedulingManager {
                 registry.setStatus(DtsStatus.OFFLINE);
                 registryManager.updateStatus(registry.getId(), registry.getStatus());
             }
-            log.debug(messageHelper.getMessage(MessageConstants.INFO_DTS_MONITORING_STATUS,
-                    registry.getName(), registry.getId(), registry.getStatus(), registry.getHeartbeat()));
+            if (heartbeat.isAfter(LocalDateTime.MIN)) {
+                log.debug(messageHelper.getMessage(MessageConstants.INFO_DTS_MONITORING_STATUS,
+                        registry.getName(), registry.getId(), registry.getStatus(), registry.getHeartbeat()));
+            } else {
+                log.debug(messageHelper.getMessage(MessageConstants.INFO_DTS_MONITORING_STATUS_MISSING_HEARTBEAT,
+                        registry.getName(), registry.getId(), registry.getStatus()));
+            }
         }
     }
 

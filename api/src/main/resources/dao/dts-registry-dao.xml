@@ -29,6 +29,7 @@
                         schedulable,
                         created_date,
                         url,
+                        status,
                         prefixes,
                         preferences)
                     VALUES (
@@ -37,6 +38,7 @@
                         :SCHEDULABLE,
                         :CREATED_DATE,
                         :URL,
+                        :STATUS,
                         :PREFIXES,
                         to_jsonb(:PREFERENCES::jsonb))
                 ]]>
@@ -51,6 +53,8 @@
                         r.schedulable,
                         r.created_date,
                         r.url,
+                        r.status,
+                        r.heartbeat,
                         r.prefixes,
                         r.preferences
                     FROM
@@ -68,6 +72,8 @@
                         r.schedulable,
                         r.created_date,
                         r.url,
+                        r.status,
+                        r.heartbeat,
                         r.prefixes,
                         r.preferences
                     FROM
@@ -85,6 +91,8 @@
                         r.schedulable,
                         r.created_date,
                         r.url,
+                        r.status,
+                        r.heartbeat,
                         r.prefixes,
                         r.preferences
                     FROM
