@@ -24,6 +24,8 @@ class DtsModel(object):
         self.url = None
         self.created_date = None
         self.schedulable = False
+        self.status = None
+        self.heartbeat = None
         self.prefixes = []
         self.preferences = {}
 
@@ -35,6 +37,10 @@ class DtsModel(object):
         dts.url = json['url']
         dts.created_date = date_utilities.server_date_representation(json['createdDate'])
         dts.schedulable = json['schedulable']
+        dts.status = json['status']
+        dts.heartbeat = json.get('heartbeat')
+        if dts.heartbeat:
+            dts.heartbeat = date_utilities.server_date_representation(dts.heartbeat)
         dts.prefixes = json.get('prefixes') or []
         dts.preferences = json.get('preferences') or {}
         return dts

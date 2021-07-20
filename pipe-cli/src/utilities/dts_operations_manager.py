@@ -23,7 +23,7 @@ from src.model.dts_model import DtsEncoder
 
 class DtsOperationsManager:
 
-    _DTS_TABLE_HEADERS = ['ID', 'Name', 'Schedulable']
+    _DTS_TABLE_HEADERS = ['ID', 'Name', 'Status']
     _PREF_DELIMITER = "="
 
     def __init__(self):
@@ -41,8 +41,10 @@ class DtsOperationsManager:
             registries = DTS.load_all()
             if json_out:
                 self._print_dts_json(registries)
-            else:
+            elif registries:
                 self._print_registries_prettytable(registries)
+            else:
+                click.echo('No data transfer services are available.')
 
     def upsert_preferences(self, registry_id, preferences_list, json_out):
         if not preferences_list:
@@ -89,6 +91,8 @@ class DtsOperationsManager:
         registry_info_table.add_row(['URL:', registry.url])
         registry_info_table.add_row(['Created:', registry.created_date])
         registry_info_table.add_row(['Schedulable:', registry.schedulable])
+        registry_info_table.add_row(['Status:', registry.status])
+        registry_info_table.add_row(['Last heartbeat:', registry.heartbeat or 'No heartbeat was received yet'])
         click.echo(registry_info_table)
         self._print_list_as_table('Prefixes', registry.prefixes)
         self._print_list_as_table('Preferences', self.get_flat_preferences(registry))
@@ -129,4 +133,4 @@ class DtsOperationsManager:
         return table
 
     def _convert_registry_to_prettytable_row(self, registry):
-        return [registry.id, registry.name, registry.schedulable]
+        return [registry.id, registry.name, registry.status]
